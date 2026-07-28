@@ -525,6 +525,35 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testPlannerAssumedDoneResolutionUsesLightweightPresentationOverlay() throws {
+        let viewSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let supportSource = try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanSupport.swift")
+        guard
+            let overlayStart = supportSource.range(of: "struct DayPlanAssumedDoneResolutionOverlay"),
+            let presentationStart = supportSource.range(
+                of: "enum DayPlanDayTaskListPresentation",
+                range: overlayStart.upperBound..<supportSource.endIndex
+            )
+        else {
+            XCTFail("Expected the Planner assumed-done resolution overlay")
+            return
+        }
+        let overlaySource = String(
+            supportSource[overlayStart.lowerBound..<presentationStart.lowerBound]
+        )
+
+        XCTAssertTrue(viewSource.contains("@State private var assumedDoneResolutionOverlay"))
+        XCTAssertTrue(viewSource.contains("assumedDoneResolutionOverlay.applying("))
+        XCTAssertFalse(
+            overlaySource.contains("FetchDescriptor"),
+            "Immediate row resolution must not fetch task history."
+        )
+        XCTAssertFalse(
+            overlaySource.contains("ModelContext"),
+            "Immediate row resolution must remain a presentation-only O(visible rows) update."
+        )
+    }
+
     func testMacPlannerCompanionLayoutKeepsHeaderInsidePlannerColumn() throws {
         XCTAssertEqual(
             MacDetailContainerSizing.plannerInspectorContentMinWidth,

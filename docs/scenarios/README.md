@@ -1125,6 +1125,11 @@ Given Mac Home is fullscreen and Planner Calendar is in `List` task-view mode
 When the user exits fullscreen
 Then Planner Calendar remains in `List` task-view mode instead of resetting to `Schedule`
 
+Given an assumed-done row is visible in Mac Planner Calendar `List` while a task-detail companion pane keeps full Planner snapshot refresh deferred
+When the user clicks the row's green check
+Then the persisted completion moves the row from `Assumed done` to `Dones` immediately
+And the immediate transition only overlays the visible day-task presentation instead of fetching or regrouping full task history
+
 ### Calendar List Done Durations Accept Custom Minutes
 
 Area: Planner, Tasks

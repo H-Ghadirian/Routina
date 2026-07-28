@@ -782,6 +782,69 @@ struct DayPlanDayTaskListPresentationTests {
         #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(done: 1))
     }
 
+    @Test
+    func confirmedAssumedDoneOverlayMovesOnlyTheMatchingDayRowToDone() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let nextDay = try #require(calendar.date(byAdding: .day, value: 1, to: day))
+        let completedAt = try #require(calendar.date(byAdding: .minute, value: 8 * 60 + 45, to: day))
+        let taskID = try #require(UUID(uuidString: "71717171-7171-7171-7171-717171717171"))
+        let assumedItem = DayPlanDayTaskListItem(
+            id: "assumed-\(taskID.uuidString)",
+            taskID: taskID,
+            blockID: nil,
+            title: "Brush Teeth",
+            emoji: "✨",
+            section: .assumedDone,
+            placement: .timed(startMinute: 8 * 60 + 45, durationMinutes: 5)
+        )
+        var overlay = DayPlanAssumedDoneResolutionOverlay()
+
+        overlay.confirm(
+            assumedItem,
+            on: day,
+            completedAt: completedAt,
+            calendar: calendar
+        )
+
+        let resolvedItems = overlay.applying(to: [assumedItem], on: day, calendar: calendar)
+        let unchangedNextDayItems = overlay.applying(to: [assumedItem], on: nextDay, calendar: calendar)
+
+        #expect(resolvedItems.map(\.section) == [.done])
+        #expect(resolvedItems.first?.doneOccurrence == DayPlanDoneTaskOccurrence(
+            source: .taskLastDone,
+            completedAt: completedAt,
+            durationMinutes: 5,
+            hasSpecificTime: true
+        ))
+        #expect(unchangedNextDayItems == [assumedItem])
+    }
+
+    @Test
+    func missedAssumedDoneOverlayRemovesTheMatchingRowImmediately() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let taskID = try #require(UUID(uuidString: "72727272-7272-7272-7272-727272727272"))
+        let assumedItem = DayPlanDayTaskListItem(
+            id: "assumed-\(taskID.uuidString)",
+            taskID: taskID,
+            blockID: nil,
+            title: "Evening reset",
+            emoji: nil,
+            section: .assumedDone,
+            placement: .durationOnly(durationMinutes: 10)
+        )
+        var overlay = DayPlanAssumedDoneResolutionOverlay()
+
+        overlay.markMissed(taskID: taskID, on: day, calendar: calendar)
+
+        #expect(overlay.applying(to: [assumedItem], on: day, calendar: calendar).isEmpty)
+
+        overlay.reset()
+
+        #expect(overlay.applying(to: [assumedItem], on: day, calendar: calendar) == [assumedItem])
+    }
+
     private var testCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

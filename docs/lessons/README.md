@@ -95,3 +95,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0051 — Isolate Add Task event catalog refresh](0051-isolate-add-task-event-catalog-refresh.md)
 - [0052 — Stage locate scrolling through lazy ancestors](0052-stage-locate-scrolling-through-lazy-ancestors.md)
 - [0053 — Match day projections against the authoritative recurrence](0053-match-day-projections-against-authoritative-recurrence.md)
+- [0054 — Resolve Planner assumptions before snapshot refresh](0054-resolve-planner-assumptions-before-snapshot-refresh.md)

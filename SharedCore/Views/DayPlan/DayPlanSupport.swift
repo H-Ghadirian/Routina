@@ -540,6 +540,102 @@ struct DayPlanDayTaskCounts: Equatable {
     }
 }
 
+struct DayPlanAssumedDoneResolutionOverlay: Equatable {
+    enum Resolution: Equatable {
+        case confirmed(DayPlanDoneTaskOccurrence)
+        case missed
+    }
+
+    private struct Key: Hashable {
+        var taskID: UUID
+        var dayKey: String
+    }
+
+    private var resolutions: [Key: Resolution] = [:]
+
+    mutating func confirm(
+        _ item: DayPlanDayTaskListItem,
+        on date: Date,
+        completedAt: Date,
+        calendar: Calendar
+    ) {
+        resolutions[key(for: item.taskID, on: date, calendar: calendar)] = .confirmed(
+            DayPlanDoneTaskOccurrence(
+                source: .taskLastDone,
+                completedAt: completedAt,
+                durationMinutes: durationMinutes(for: item.placement),
+                hasSpecificTime: hasSpecificTime(for: item.placement)
+            )
+        )
+    }
+
+    mutating func markMissed(
+        taskID: UUID,
+        on date: Date,
+        calendar: Calendar
+    ) {
+        resolutions[key(for: taskID, on: date, calendar: calendar)] = .missed
+    }
+
+    mutating func reset() {
+        resolutions.removeAll(keepingCapacity: true)
+    }
+
+    func applying(
+        to items: [DayPlanDayTaskListItem],
+        on date: Date,
+        calendar: Calendar
+    ) -> [DayPlanDayTaskListItem] {
+        guard !resolutions.isEmpty else { return items }
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+
+        return items.compactMap { item in
+            guard item.section == .assumedDone,
+                  let resolution = resolutions[Key(taskID: item.taskID, dayKey: dayKey)]
+            else {
+                return item
+            }
+
+            switch resolution {
+            case let .confirmed(doneOccurrence):
+                var confirmedItem = item
+                confirmedItem.section = .done
+                confirmedItem.doneOccurrence = doneOccurrence
+                return confirmedItem
+            case .missed:
+                return nil
+            }
+        }
+    }
+
+    private func key(
+        for taskID: UUID,
+        on date: Date,
+        calendar: Calendar
+    ) -> Key {
+        Key(
+            taskID: taskID,
+            dayKey: DayPlanStorage.dayKey(for: date, calendar: calendar)
+        )
+    }
+
+    private func durationMinutes(for placement: DayPlanDayTaskListItem.Placement) -> Int {
+        switch placement {
+        case let .durationOnly(durationMinutes), let .timed(_, durationMinutes):
+            return durationMinutes
+        case .anyTime, .allDay:
+            return 0
+        }
+    }
+
+    private func hasSpecificTime(for placement: DayPlanDayTaskListItem.Placement) -> Bool {
+        if case .timed = placement {
+            return true
+        }
+        return false
+    }
+}
+
 enum DayPlanDayTaskListPresentation {
     static func items(
         on date: Date,
