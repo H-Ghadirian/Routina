@@ -19,6 +19,9 @@ struct TaskFormModel {
     // MARK: Task Type
     var taskType: Binding<RoutineTaskType>
 
+    // MARK: Sidebar Path
+    var customTaskSectionID: Binding<UUID?> = .constant(nil)
+
     // MARK: Emoji
     var emoji: Binding<String>
     var emojiOptions: [String]

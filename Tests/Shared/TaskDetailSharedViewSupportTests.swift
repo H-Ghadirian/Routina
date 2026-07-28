@@ -435,6 +435,10 @@ struct TaskDetailSharedViewSupportTests {
         state.editRoutineNotes = "Draft and proofread the weekly notes"
         #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
 
+        state.editRoutineNotes = "Draft the weekly notes"
+        state.editCustomTaskSectionID = UUID()
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+
         state.editRoutineName = "   "
         #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)) == false)
     }

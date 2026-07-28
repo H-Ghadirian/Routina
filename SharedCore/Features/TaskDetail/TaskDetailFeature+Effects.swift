@@ -598,6 +598,7 @@ extension TaskDetailFeature {
         handleEditSave(
             taskID: request.taskID,
             name: request.name,
+            customTaskSectionID: request.customTaskSectionID,
             emoji: request.emoji,
             notes: request.notes,
             link: request.link,
@@ -643,6 +644,7 @@ extension TaskDetailFeature {
     func handleEditSave(
         taskID: UUID,
         name: String,
+        customTaskSectionID: UUID?,
         emoji: String,
         notes: String?,
         link: String?,
@@ -708,6 +710,7 @@ extension TaskDetailFeature {
                 let previousActualDurationMinutes = task.actualDurationMinutes
                 let previousCreatedAt = task.createdAt
                 task.name = name
+                task.customTaskSectionID = customTaskSectionID
                 task.emoji = emoji
                 task.notes = CalendarTaskImportSupport.notesPreservingCalendarMarkers(
                     visibleNotes: notes,

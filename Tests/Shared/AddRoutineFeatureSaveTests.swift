@@ -12,6 +12,43 @@ import Testing
 @MainActor
 struct AddRoutineFeatureSaveTests {
     @Test
+    func saveTapped_includesSelectedSidebarPathAndNewTaskPersistsIt() async throws {
+        let sectionID = UUID()
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Buy AirPods"),
+                organization: AddRoutineOrganizationState(
+                    customTaskSectionID: sectionID,
+                    existingRoutineNames: []
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.setValue(request)
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped) { $0.isSaving = true }
+
+        let request = try #require(capturedRequest.value)
+        #expect(request.customTaskSectionID == sectionID)
+        let task = HomeAddRoutineSupport.makeRoutine(
+            from: request,
+            name: request.name,
+            goalIDs: [],
+            scheduleAnchor: makeDate("2026-03-20T10:00:00Z")
+        )
+        #expect(task.customTaskSectionID == sectionID)
+    }
+
+    @Test
     func saveTapped_includesVoiceNoteInRequest() async {
         let createdAt = makeDate("2026-03-20T10:00:00Z")
         let voiceNote = RoutineVoiceNote(

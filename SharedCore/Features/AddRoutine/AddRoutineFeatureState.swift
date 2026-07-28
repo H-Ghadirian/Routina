@@ -32,6 +32,7 @@ struct AddRoutineBasicsState: Equatable {
 }
 
 struct AddRoutineOrganizationState: Equatable {
+    var customTaskSectionID: UUID?
     var routineTags: [String] = []
     var routineGoals: [RoutineGoalSummary] = []
     var eventIDs: [UUID] = []

@@ -79,6 +79,7 @@ struct AddRoutineDraftFinalizer {
 
 struct AddRoutineSaveRequest: Equatable {
     let name: String
+    let customTaskSectionID: UUID?
     let frequencyInDays: Int
     let recurrenceRule: RoutineRecurrenceRule
     let emoji: String
@@ -122,6 +123,7 @@ struct AddRoutineSaveRequest: Equatable {
 
     init(
         name: String,
+        customTaskSectionID: UUID? = nil,
         frequencyInDays: Int,
         recurrenceRule: RoutineRecurrenceRule,
         emoji: String,
@@ -165,6 +167,7 @@ struct AddRoutineSaveRequest: Equatable {
         trackingNudgesEnabled: Bool = true
     ) {
         self.name = name
+        self.customTaskSectionID = customTaskSectionID
         self.frequencyInDays = frequencyInDays
         self.recurrenceRule = recurrenceRule
         self.emoji = emoji
@@ -286,6 +289,7 @@ struct AddRoutineSaveRequest: Equatable {
         }
 
         self.name = state.trimmedRoutineName
+        self.customTaskSectionID = organization.customTaskSectionID
         self.frequencyInDays = frequencyInDays
         self.recurrenceRule = recurrenceRule
         self.emoji = basics.routineEmoji

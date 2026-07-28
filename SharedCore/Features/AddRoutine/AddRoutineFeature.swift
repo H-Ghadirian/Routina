@@ -30,6 +30,7 @@ struct AddRoutineFeature: Reducer {
         case attachmentPicked(Data, String)
         case removeAttachment(UUID)
         case taskTypeChanged(RoutineTaskType)
+        case customTaskSectionChanged(UUID?)
         case availableTagsChanged([String])
         case availableTagSummariesChanged([RoutineTagSummary])
         case availableGoalsChanged([RoutineGoalSummary])
@@ -198,6 +199,10 @@ struct AddRoutineFeature: Reducer {
                 link,
                 basics: &state.basics
             )
+            return .none
+
+        case let .customTaskSectionChanged(sectionID):
+            state.organization.customTaskSectionID = sectionID
             return .none
 
         case let .deadlineEnabledChanged(isEnabled):

@@ -111,6 +111,28 @@ struct HomeCustomTaskSectionStorageTests {
     }
 
     @Test
+    func pathTitlesResolveSuperSectionsAndSubsections() {
+        let workID = UUID()
+        let projectsID = UUID()
+        let sections = [
+            HomeCustomTaskSection(id: workID, title: "Work", createdAt: nil),
+            HomeCustomTaskSection(
+                id: projectsID,
+                parentSectionID: workID,
+                title: "Projects",
+                createdAt: nil
+            )
+        ]
+
+        #expect(HomeCustomTaskSectionStorage.pathTitles(for: workID, in: sections) == ["Work"])
+        #expect(
+            HomeCustomTaskSectionStorage.pathTitles(for: projectsID, in: sections)
+                == ["Work", "Projects"]
+        )
+        #expect(HomeCustomTaskSectionStorage.pathTitles(for: UUID(), in: sections) == nil)
+    }
+
+    @Test
     func deletingSuperSectionAlsoDeletesItsSubsections() {
         let workID = UUID()
         let workChildID = UUID()

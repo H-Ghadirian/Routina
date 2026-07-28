@@ -46,6 +46,10 @@ struct AddRoutineTaskFormModelFactory {
             nameValidationMessage: store.organization.nameValidationMessage,
             onApplySmartName: { store.send(.applyQuickAddDraftFromName) },
             taskType: binding(get: { store.taskType }, send: AddRoutineFeature.Action.taskTypeChanged),
+            customTaskSectionID: binding(
+                get: { store.organization.customTaskSectionID },
+                send: AddRoutineFeature.Action.customTaskSectionChanged
+            ),
             emoji: binding(get: { store.basics.routineEmoji }, send: AddRoutineFeature.Action.routineEmojiChanged),
             emojiOptions: emojiOptions,
             isEmojiPickerPresented: isEmojiPickerPresented,

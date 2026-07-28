@@ -32,6 +32,30 @@ struct HomeFeatureAddRoutinePresentationTests {
     }
 
     @Test
+    func openAddTaskInCustomSectionSeedsVisibleFormPath() async {
+        let context = makeInMemoryContext()
+        let sectionID = UUID()
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.openAddTaskInCustomSection(sectionID)) {
+            $0.isAddRoutineSheetPresented = true
+            $0.macSidebarMode = .addTask
+            $0.addRoutineState = AddRoutineFeature.State(
+                organization: AddRoutineOrganizationState(
+                    customTaskSectionID: sectionID,
+                    availableTagSummaries: [],
+                    existingRoutineNames: []
+                )
+            )
+        }
+    }
+
+    @Test
     func addRoutineCancel_fromMacAddTaskModeRestoresRoutinesSidebar() async {
         let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)

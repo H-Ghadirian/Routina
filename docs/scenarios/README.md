@@ -731,6 +731,14 @@ Given a user-created Mac task super section contains a subsection
 When the super section is expanded in the left sidebar
 Then the subsection uses the same nested card surface and persistent collapse behavior as a built-in tag subsection
 
+Given a Mac custom super-section or subsection header is visible
+When the user right-clicks it and chooses `New Task`
+Then Add Task opens with that exact custom path visible and selected in Identity
+
+Given Mac Add Task or Edit Task is open
+When the user changes `Path` between Default, a super section, and a subsection and saves
+Then the task's one durable custom-section assignment matches the chosen destination
+
 Given Mac task details show a task that is currently inside a sidebar section and nested subsection
 When the user clicks the section breadcrumb in the detail header
 Then the left sidebar opens in task-list mode, expands both ancestors, selects the task, and scrolls its row into view

@@ -3,6 +3,7 @@ import Foundation
 struct TaskDetailEditSaveRequest: Equatable {
     var taskID: UUID
     var name: String
+    var customTaskSectionID: UUID?
     var emoji: String
     var notes: String?
     var link: String?
@@ -119,6 +120,7 @@ struct TaskDetailEditSaveRequestBuilder {
         return TaskDetailEditSaveRequest(
             taskID: state.task.id,
             name: trimmedName,
+            customTaskSectionID: state.editCustomTaskSectionID,
             emoji: state.editRoutineEmoji,
             notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
             link: sanitizedLinks.first?.url,
@@ -257,6 +259,7 @@ extension TaskDetailFeature {
         let updatedTask = state.task.detachedCopy()
 
         updatedTask.name = request.name
+        updatedTask.customTaskSectionID = request.customTaskSectionID
         updatedTask.emoji = request.emoji
         updatedTask.notes = CalendarTaskImportSupport.notesPreservingCalendarMarkers(
             visibleNotes: request.notes,

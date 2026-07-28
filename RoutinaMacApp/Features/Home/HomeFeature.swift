@@ -547,6 +547,7 @@ struct HomeFeature {
 
         case setAddRoutineSheet(Bool)
         case openAddTaskSheet(seedName: String?)
+        case openAddTaskInCustomSection(UUID)
         case deleteTasksTapped([UUID])
         case setDeleteConfirmation(Bool)
         case setMacFilterDetailPresented(Bool)
@@ -1138,6 +1139,17 @@ struct HomeFeature {
                     true,
                     state: &state,
                     seedName: seedName
+                )
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .openAddTaskInCustomSection(sectionID):
+                state.macSidebarMode = .addTask
+                state.macSidebarSelection = nil
+                addRoutinePresentationRouter().setSheet(
+                    true,
+                    state: &state,
+                    customTaskSectionID: sectionID
                 )
                 persistTemporaryViewState(state)
                 return .none

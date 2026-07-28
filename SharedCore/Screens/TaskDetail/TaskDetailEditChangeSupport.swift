@@ -2,6 +2,7 @@ import Foundation
 
 struct TaskDetailEditChangeRequest {
     let name: String
+    let customTaskSectionID: UUID?
     let emoji: String
     let notes: String
     let link: String
@@ -63,6 +64,7 @@ struct TaskDetailEditChangeRequest {
 
     init(state: TaskDetailFeature.State) {
         self.name = state.editRoutineName
+        self.customTaskSectionID = state.editCustomTaskSectionID
         self.emoji = state.editRoutineEmoji
         self.notes = state.editRoutineNotes
         self.link = state.editRoutineLink
@@ -171,6 +173,7 @@ enum TaskDetailEditChangeDetector {
         }
 
         return trimmedName != currentName
+            || request.customTaskSectionID != task.customTaskSectionID
             || request.emoji != currentEmoji
             || request.notes != currentNotes
             || RoutineTask.linkEditorText(for: RoutineTask.sanitizedLinkItems(fromEditorText: request.link)) != currentLink

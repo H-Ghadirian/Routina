@@ -1275,6 +1275,12 @@ extension HomeTCAView {
         let showsFutureSubsectionActions = section.kind == .future && section.taskGroups.contains { $0.isCollapsible }
         let customSectionID = customTaskSectionID(for: section)
 
+        if let customSectionID {
+            menu.addActionItem(title: "New Task", systemImage: "plus") {
+                store.send(.openAddTaskInCustomSection(customSectionID))
+            }
+        }
+
         if showsFutureSubsectionActions {
             menu.addActionItem(title: "Expand All", systemImage: "chevron.down.2") {
                 expandAllFutureTaskListSubsections(in: section)
@@ -1332,18 +1338,38 @@ extension HomeTCAView {
     private func taskListGroupHasContextMenu(
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> Bool {
-        areMacHomeSectionFocusTimersEnabled && group.canStartFocusTimer
+        customTaskSectionID(for: group) != nil
+            || (areMacHomeSectionFocusTimersEnabled && group.canStartFocusTimer)
     }
 
     private func taskListGroupNativeContextMenu(
         for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> NSMenu {
         let menu = NSMenu(title: group.title ?? "Focus Timer")
+        if let customSectionID = customTaskSectionID(for: group) {
+            menu.addActionItem(title: "New Task", systemImage: "plus") {
+                store.send(.openAddTaskInCustomSection(customSectionID))
+            }
+        }
         if areMacHomeSectionFocusTimersEnabled, group.canStartFocusTimer {
+            if customTaskSectionID(for: group) != nil {
+                menu.addItem(.separator())
+            }
             menu.addItem(.sectionHeader(title: "Focus Timer"))
             addTaskListGroupFocusItems(to: menu, for: group)
         }
         return menu
+    }
+
+    private func customTaskSectionID(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> UUID? {
+        guard group.kind == .custom,
+              let identityKey = group.identityKey
+        else {
+            return nil
+        }
+        return HomeCustomTaskSectionStorage.sectionID(fromManualOrderSectionKey: identityKey)
     }
 
     private func addTaskListSectionFocusItems(

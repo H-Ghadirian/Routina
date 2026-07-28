@@ -4,6 +4,7 @@ import Foundation
 extension TaskDetailFeature {
     func syncEditFormFromTask(_ state: inout State) {
         state.editRoutineName = state.task.name ?? ""
+        state.editCustomTaskSectionID = state.task.customTaskSectionID
         state.editRoutineEmoji = CalendarTaskImportSupport.displayEmoji(for: state.task.emoji) ?? "✨"
         state.editRoutineNotes = CalendarTaskImportSupport.displayNotes(from: state.task.notes) ?? ""
         state.editRoutineLink = RoutineTask.linkEditorText(for: state.task.linkItems)

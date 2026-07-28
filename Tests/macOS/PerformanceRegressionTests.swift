@@ -157,6 +157,26 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacCustomSectionMenusSeedNewTasksAndFormsExposePathPicker() throws {
+        let taskListSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"
+        )
+        let formSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Shared/TaskFormMacCards.swift"
+        )
+
+        XCTAssertGreaterThanOrEqual(
+            taskListSource.components(
+                separatedBy: "store.send(.openAddTaskInCustomSection(customSectionID))"
+            ).count - 1,
+            2,
+            "Both custom super-section and subsection menus must seed Add Task with their section."
+        )
+        XCTAssertTrue(formSource.contains("Label(\"Path\""))
+        XCTAssertTrue(formSource.contains("model.customTaskSectionID.wrappedValue = sectionID"))
+        XCTAssertTrue(formSource.contains("HomeCustomTaskSectionStorage.pathTitles("))
+    }
+
     func testMacTaskDetailsUseLiveSidebarLocationAndExistingRevealPath() throws {
         let taskDetailSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"

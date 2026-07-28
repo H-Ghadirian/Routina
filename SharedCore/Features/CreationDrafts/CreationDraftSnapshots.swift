@@ -42,6 +42,7 @@ enum CreationDraftPersistence {
 
 struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var routineName = ""
+    var customTaskSectionID: UUID?
     var routineEmoji = "✨"
     var routineNotes = ""
     var routineLink = ""
@@ -104,6 +105,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         let checklist = state.checklist
 
         routineName = basics.routineName
+        customTaskSectionID = organization.customTaskSectionID
         routineEmoji = basics.routineEmoji
         routineNotes = basics.routineNotes
         routineLink = basics.routineLink
@@ -169,6 +171,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
 
     var isMeaningful: Bool {
         hasText(routineName)
+            || customTaskSectionID != nil
             || routineEmoji != "✨"
             || hasText(routineNotes)
             || hasText(routineLink)
@@ -263,6 +266,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             routineTags,
             preferredTags: state.organization.availableTags
         )
+        state.organization.customTaskSectionID = customTaskSectionID
         state.organization.routineGoals = RoutineGoalSummary.sanitized(routineGoals)
         state.organization.eventIDs = availableEventIDs(in: state)
         state.organization.relationships = availableRelationships(in: state)

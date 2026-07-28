@@ -17,14 +17,16 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
     func setSheet(
         _ isPresented: Bool,
         state: inout State,
-        seedName: String? = nil
+        seedName: String? = nil,
+        customTaskSectionID: UUID? = nil
     ) {
         state.presentation.isAddRoutineSheetPresented = isPresented
         if isPresented {
             state.presentation.isMacFilterDetailPresented = false
             state.presentation.addRoutineState = makeAddRoutineState(
                 for: state,
-                seedName: seedName
+                seedName: seedName,
+                customTaskSectionID: customTaskSectionID
             )
         } else {
             state.presentation.addRoutineState = nil
@@ -75,7 +77,8 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
     private func makeAddRoutineState(
         for state: State,
         preselectedRelationships: [RoutineTaskRelationship] = [],
-        seedName: String? = nil
+        seedName: String? = nil,
+        customTaskSectionID: UUID? = nil
     ) -> AddRoutineFeature.State {
         var addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
             tasks: state.routineTasks,
@@ -92,13 +95,19 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
                 seedName,
                 state: &addRoutineState
             )
+            addRoutineState.organization.customTaskSectionID = customTaskSectionID
             return addRoutineState
         }
         guard preselectedRelationships.isEmpty,
               let draft = addRoutineDraft()
         else {
+            addRoutineState.organization.customTaskSectionID = customTaskSectionID
             return addRoutineState
         }
-        return draft.applied(to: addRoutineState)
+        draft.apply(to: &addRoutineState)
+        if let customTaskSectionID {
+            addRoutineState.organization.customTaskSectionID = customTaskSectionID
+        }
+        return addRoutineState
     }
 }

@@ -50,6 +50,7 @@ enum HomeAddRoutineSupport {
             links: request.links,
             deadline: request.deadline,
             plannedDate: request.plannedDate,
+            customTaskSectionID: request.customTaskSectionID,
             isAllDay: request.isAllDay,
             routineDurationMode: request.routineDurationMode,
             availabilityStartDate: request.availabilityStartDate,

@@ -43,6 +43,10 @@ struct TaskDetailEditRoutineContent: View {
             ),
             nameValidationMessage: nil,
             taskType: taskTypeBinding,
+            customTaskSectionID: Binding(
+                get: { store.editCustomTaskSectionID },
+                set: { store.send(.editCustomTaskSectionChanged($0)) }
+            ),
             emoji: Binding(
                 get: { store.editRoutineEmoji },
                 set: { store.send(.editRoutineEmojiChanged($0)) }

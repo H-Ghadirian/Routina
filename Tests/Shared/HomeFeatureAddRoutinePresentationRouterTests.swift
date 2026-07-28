@@ -119,6 +119,27 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
     }
 
     @Test
+    func setSheetSectionSeedOverridesAStoredDraftPath() {
+        let storedSectionID = UUID()
+        let requestedSectionID = UUID()
+        var draftState = AddRoutineFeature.State()
+        draftState.organization.customTaskSectionID = storedSectionID
+        let draft = AddRoutineDraftSnapshot(state: draftState)
+        var state = TestAddRoutinePresentationState()
+
+        makeRouter(addRoutineDraft: { draft }).setSheet(
+            true,
+            state: &state,
+            customTaskSectionID: requestedSectionID
+        )
+
+        #expect(
+            state.presentation.addRoutineState?.organization.customTaskSectionID
+                == requestedSectionID
+        )
+    }
+
+    @Test
     func openLinkedTaskSheetIgnoresSavedAddRoutineDraft() {
         let currentTask = RoutineTask(id: UUID(), name: "Current", emoji: "C")
         let otherTask = RoutineTask(id: UUID(), name: "Other", emoji: "O")

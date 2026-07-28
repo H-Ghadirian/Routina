@@ -347,6 +347,25 @@ enum HomeCustomTaskSectionStorage {
         )
     }
 
+    static func pathTitles(
+        for sectionID: UUID,
+        in sections: [HomeCustomTaskSection]
+    ) -> [String]? {
+        let sanitizedSections = sanitized(sections)
+        guard let section = sanitizedSections.first(where: { $0.id == sectionID }) else {
+            return nil
+        }
+        guard let parentSectionID = section.parentSectionID else {
+            return [section.title]
+        }
+        guard let parent = sanitizedSections.first(where: {
+            $0.id == parentSectionID && $0.parentSectionID == nil
+        }) else {
+            return nil
+        }
+        return [parent.title, section.title]
+    }
+
     private static func normalizedTitleKey(_ title: String) -> String {
         title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .lowercased()

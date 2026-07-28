@@ -290,6 +290,10 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
     let smartNameCalendar: Calendar
     let onApplySmartName: (() -> Void)?
     @ViewBuilder let nameField: NameField
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
+        store: SharedDefaults.app
+    ) private var customTaskSectionsRawValue = ""
 
     var body: some View {
         TaskFormMacSectionCard(
@@ -301,10 +305,115 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
             VStack(alignment: .leading, spacing: 14) {
                 nameField
                 validationMessage
+                sidebarPathControl
                 smartNamePreview
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var customTaskSections: [HomeCustomTaskSection] {
+        HomeCustomTaskSectionStorage.decoded(from: customTaskSectionsRawValue)
+    }
+
+    private var selectedPathTitles: [String]? {
+        guard let sectionID = model.customTaskSectionID.wrappedValue else { return nil }
+        return HomeCustomTaskSectionStorage.pathTitles(
+            for: sectionID,
+            in: customTaskSections
+        )
+    }
+
+    private var selectedPathTitle: String {
+        selectedPathTitles?.joined(separator: " › ") ?? "Default"
+    }
+
+    private var sidebarPathControl: some View {
+        HStack(spacing: 12) {
+            Label("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 12)
+
+            Menu {
+                sidebarPathButton(title: "Default", sectionID: nil)
+
+                if !customTaskSections.isEmpty {
+                    Divider()
+                    ForEach(
+                        HomeCustomTaskSectionStorage.topLevelSections(in: customTaskSections)
+                    ) { section in
+                        let subsections = HomeCustomTaskSectionStorage.subsections(
+                            of: section.id,
+                            in: customTaskSections
+                        )
+                        if subsections.isEmpty {
+                            sidebarPathButton(title: section.title, sectionID: section.id)
+                        } else {
+                            Menu(section.title) {
+                                sidebarPathButton(
+                                    title: "Use \(section.title)",
+                                    sectionID: section.id
+                                )
+                                Divider()
+                                ForEach(subsections) { subsection in
+                                    sidebarPathButton(
+                                        title: subsection.title,
+                                        sectionID: subsection.id
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 7) {
+                    Text(selectedPathTitle)
+                        .lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2.weight(.semibold))
+                }
+                .frame(maxWidth: 360, alignment: .trailing)
+                .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize(horizontal: true, vertical: false)
+            .help("Choose where this task appears in the custom sidebar hierarchy")
+            .accessibilityLabel("Task path")
+            .accessibilityValue(selectedPathTitle)
+        }
+        .onAppear(perform: clearMissingSidebarPath)
+        .onChange(of: customTaskSectionsRawValue) { _, _ in
+            clearMissingSidebarPath()
+        }
+    }
+
+    private func sidebarPathButton(
+        title: String,
+        sectionID: UUID?
+    ) -> some View {
+        Button {
+            model.customTaskSectionID.wrappedValue = sectionID
+        } label: {
+            if model.customTaskSectionID.wrappedValue == sectionID {
+                Label(title, systemImage: "checkmark")
+            } else {
+                Text(title)
+            }
+        }
+    }
+
+    private func clearMissingSidebarPath() {
+        guard let sectionID = model.customTaskSectionID.wrappedValue,
+              HomeCustomTaskSectionStorage.pathTitles(
+                for: sectionID,
+                in: customTaskSections
+              ) == nil
+        else {
+            return
+        }
+        model.customTaskSectionID.wrappedValue = nil
     }
 
     @ViewBuilder

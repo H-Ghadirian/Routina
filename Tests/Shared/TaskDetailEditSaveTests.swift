@@ -13,6 +13,47 @@ import Testing
 @MainActor
 struct TaskDetailEditSaveTests {
     @Test
+    func editSaveRequestMovesTaskToSelectedSidebarPath() throws {
+        let originalSectionID = UUID()
+        let selectedSectionID = UUID()
+        let task = RoutineTask(
+            name: "Buy AirPods",
+            customTaskSectionID: originalSectionID
+        )
+        var state = TaskDetailFeature.State(task: task)
+        let feature = TaskDetailFeature()
+
+        withDependencies {
+            setTestDateDependencies(&$0)
+        } operation: {
+            feature.syncEditFormFromTask(&state)
+        }
+        state.editCustomTaskSectionID = selectedSectionID
+
+        let request = try #require(
+            TaskDetailEditSaveRequestBuilder(
+                now: { makeDate("2026-03-20T10:00:00Z") },
+                calendar: makeTestCalendar(),
+                matrixPriority: { importance, urgency in
+                    AddRoutinePriorityMatrix.priority(
+                        importance: importance,
+                        urgency: urgency
+                    )
+                }
+            )
+            .build(state: &state)
+        )
+
+        #expect(request.customTaskSectionID == selectedSectionID)
+        withDependencies {
+            setTestDateDependencies(&$0)
+        } operation: {
+            feature.applyEditSaveRequest(request, to: &state)
+        }
+        #expect(state.task.customTaskSectionID == selectedSectionID)
+    }
+
+    @Test
     func editAllDayChanged_forTodoWithoutDeadlineDoesNotCreateDeadline() async {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
