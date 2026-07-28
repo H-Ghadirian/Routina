@@ -70,6 +70,10 @@ extension HomeTaskListPresentationSectionKind {
             return false
         }
     }
+
+    var isMacSidebarMoveMenuEligible: Bool {
+        isMacSidebarReorderable && self != .plannedToday && self != .plannedTomorrow
+    }
 }
 
 struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiable {
@@ -270,6 +274,37 @@ enum HomeMacTaskListSectionOrder {
         let insertionIndex = placement == .before ? targetIndex : targetIndex + 1
         result.insert(sourceID, at: insertionIndex)
         return result
+    }
+
+    static func canMove(
+        _ sectionID: String,
+        by offset: Int,
+        visibleIDs: [String]
+    ) -> Bool {
+        guard let currentIndex = visibleIDs.firstIndex(of: sectionID) else { return false }
+        return visibleIDs.indices.contains(currentIndex + offset)
+    }
+
+    static func moving(
+        _ sectionID: String,
+        by offset: Int,
+        preferredIDs: [String],
+        visibleIDs: [String]
+    ) -> [String] {
+        guard canMove(sectionID, by: offset, visibleIDs: visibleIDs),
+              let currentIndex = visibleIDs.firstIndex(of: sectionID)
+        else {
+            return resolvedIDs(preferredIDs: preferredIDs, defaultIDs: visibleIDs)
+        }
+
+        let targetID = visibleIDs[currentIndex + offset]
+        return moving(
+            sectionID,
+            relativeTo: targetID,
+            placement: offset < 0 ? .before : .after,
+            preferredIDs: preferredIDs,
+            visibleIDs: visibleIDs
+        )
     }
 
     private static func resolvedIDs(

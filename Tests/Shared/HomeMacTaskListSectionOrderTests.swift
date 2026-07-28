@@ -70,4 +70,57 @@ struct HomeMacTaskListSectionOrderTests {
             "custom:work",
         ])
     }
+
+    @Test
+    func moveMenuExcludesPlannedSections() {
+        #expect(HomeTaskListPresentationSectionKind.pinned.isMacSidebarMoveMenuEligible)
+        #expect(HomeTaskListPresentationSectionKind.custom.isMacSidebarMoveMenuEligible)
+        #expect(HomeTaskListPresentationSectionKind.future.isMacSidebarMoveMenuEligible)
+        #expect(HomeTaskListPresentationSectionKind.archived.isMacSidebarMoveMenuEligible)
+        #expect(!HomeTaskListPresentationSectionKind.plannedToday.isMacSidebarMoveMenuEligible)
+        #expect(!HomeTaskListPresentationSectionKind.plannedTomorrow.isMacSidebarMoveMenuEligible)
+    }
+
+    @Test
+    func movingByOneStepUsesVisibleOrderAndPreservesHiddenIDs() {
+        let visibleIDs = [
+            "plannedToday:plannedToday",
+            "custom:work",
+            "future:future",
+        ]
+        let preferredIDs = [
+            "plannedToday:plannedToday",
+            "custom:hidden",
+            "custom:work",
+            "future:future",
+        ]
+
+        #expect(
+            HomeMacTaskListSectionOrder.canMove(
+                "custom:work",
+                by: -1,
+                visibleIDs: visibleIDs
+            )
+        )
+        #expect(
+            HomeMacTaskListSectionOrder.moving(
+                "custom:work",
+                by: -1,
+                preferredIDs: preferredIDs,
+                visibleIDs: visibleIDs
+            ) == [
+                "custom:work",
+                "plannedToday:plannedToday",
+                "custom:hidden",
+                "future:future",
+            ]
+        )
+        #expect(
+            !HomeMacTaskListSectionOrder.canMove(
+                "plannedToday:plannedToday",
+                by: -1,
+                visibleIDs: visibleIDs
+            )
+        )
+    }
 }

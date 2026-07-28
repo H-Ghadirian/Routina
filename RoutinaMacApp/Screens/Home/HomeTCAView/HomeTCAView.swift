@@ -316,7 +316,6 @@ struct HomeTCAView: View {
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
     @State var hoveredAssumedDoneTaskID: UUID?
-    @State var macTaskListSectionDropTargetID: String?
     @State var macTimelineSidebarPresentationID = UUID()
     @State var macTimelineSidebarPositionedPresentationID: UUID?
     @State var macTimelineSidebarScrollRequest: MacTimelineSidebarScrollRequest?

@@ -434,18 +434,14 @@ extension HomeTCAView {
                         .id(MacTaskSourceListScrollAnchor.top)
 
                     ForEach(presentation.sections) { section in
-                        taskListReorderableSection(
-                            taskListSectionView(
-                                for: section,
-                                in: presentation,
-                                collapsedTagIDs: collapsedTagIDs,
-                                rowNumbersByTaskID: rowNumbersByTaskID,
-                                metadataPresenter: metadataPresenter,
-                                rowVisibility: rowVisibility,
-                                allowsPlannerDrag: allowsPlannerDrag
-                            ),
-                            section: section,
-                            in: presentation
+                        taskListSectionView(
+                            for: section,
+                            in: presentation,
+                            collapsedTagIDs: collapsedTagIDs,
+                            rowNumbersByTaskID: rowNumbersByTaskID,
+                            metadataPresenter: metadataPresenter,
+                            rowVisibility: rowVisibility,
+                            allowsPlannerDrag: allowsPlannerDrag
                         )
                         .padding(.top, taskListTopLevelSectionSpacing(before: section, in: presentation))
                         .id(MacTaskSourceListScrollAnchor.section(section.id))
@@ -531,7 +527,11 @@ extension HomeTCAView {
         if section.kind.isCollapsible {
             if taskListSectionUsesContinuousSurface(section) {
                 VStack(alignment: .leading, spacing: isExpanded ? 8 : 0) {
-                    taskListCollapsibleSectionHeader(for: section, isExpanded: isExpanded)
+                    taskListCollapsibleSectionHeader(
+                        for: section,
+                        isExpanded: isExpanded,
+                        in: presentation
+                    )
 
                     if isExpanded {
                         taskListSectionTaskGroups(
@@ -564,7 +564,11 @@ extension HomeTCAView {
                 .padding(.horizontal, -10)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    taskListCollapsibleSectionHeader(for: section, isExpanded: isExpanded)
+                    taskListCollapsibleSectionHeader(
+                        for: section,
+                        isExpanded: isExpanded,
+                        in: presentation
+                    )
                         .padding(.bottom, isExpanded ? 6 : 0)
 
                     if isExpanded {
@@ -601,7 +605,7 @@ extension HomeTCAView {
             }
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                taskListSectionHeader(for: section)
+                taskListSectionHeader(for: section, in: presentation)
 
                 if isExpanded {
                     taskListSectionTaskGroups(
@@ -618,75 +622,33 @@ extension HomeTCAView {
         }
     }
 
-    @ViewBuilder
-    private func taskListReorderableSection<Content: View>(
-        _ content: Content,
-        section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
-        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
-    ) -> some View {
-        if section.kind.isMacSidebarReorderable {
-            content
-                .overlay {
-                    if macTaskListSectionDropTargetID == section.id {
-                        Rectangle()
-                            .stroke(.tint, lineWidth: 2)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .dropDestination(for: HomeMacTaskListSectionDragPayload.self) { payloads, _ in
-                    guard let sourceID = payloads.first?.sectionID else { return false }
-                    return moveMacTaskListSection(
-                        sourceID,
-                        relativeTo: section.id,
-                        in: presentation
-                    )
-                } isTargeted: { isTargeted in
-                    if isTargeted {
-                        macTaskListSectionDropTargetID = section.id
-                    } else if macTaskListSectionDropTargetID == section.id {
-                        macTaskListSectionDropTargetID = nil
-                    }
-                }
-        } else {
-            content
-        }
-    }
-
     private func moveMacTaskListSection(
-        _ sourceID: String,
-        relativeTo targetID: String,
+        _ sectionID: String,
+        by offset: Int,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
-    ) -> Bool {
+    ) {
         let visibleIDs = presentation.sections
             .filter(\.kind.isMacSidebarReorderable)
             .map(\.id)
-        guard let sourceIndex = visibleIDs.firstIndex(of: sourceID),
-              let targetIndex = visibleIDs.firstIndex(of: targetID),
-              sourceIndex != targetIndex
-        else {
-            macTaskListSectionDropTargetID = nil
-            return false
-        }
+        guard HomeMacTaskListSectionOrder.canMove(
+            sectionID,
+            by: offset,
+            visibleIDs: visibleIDs
+        ) else { return }
 
         let preferredIDs = HomeMacTaskListSectionOrder.decoded(
             from: macHomeTaskListSectionOrderRawValue
         )
-        let placement: HomeMacTaskListSectionOrder.Placement = sourceIndex < targetIndex
-            ? .after
-            : .before
         let updatedIDs = HomeMacTaskListSectionOrder.moving(
-            sourceID,
-            relativeTo: targetID,
-            placement: placement,
+            sectionID,
+            by: offset,
             preferredIDs: preferredIDs,
             visibleIDs: visibleIDs
         )
 
-        macTaskListSectionDropTargetID = nil
         withAnimation(.easeInOut(duration: 0.2)) {
             macHomeTaskListSectionOrderRawValue = HomeMacTaskListSectionOrder.encoded(updatedIDs)
         }
-        return true
     }
 
     private func taskListSectionUsesContinuousSurface(
@@ -738,7 +700,8 @@ extension HomeTCAView {
     @ViewBuilder
     private func taskListCollapsibleSectionHeader(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
-        isExpanded: Bool
+        isExpanded: Bool,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
     ) -> some View {
         let header = taskListCollapsibleSectionHeaderButton(
             for: section,
@@ -748,7 +711,7 @@ extension HomeTCAView {
         if taskListSectionHasContextMenu(section) {
             header
                 .routinaMacContextMenu {
-                    taskListSectionNativeContextMenu(for: section)
+                    taskListSectionNativeContextMenu(for: section, in: presentation)
                 }
         } else {
             header
@@ -759,20 +722,14 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         isExpanded: Bool
     ) -> some View {
-        HStack(spacing: 0) {
-            Button {
-                toggleTaskListSection(section)
-            } label: {
-                taskListSectionHeaderContent(for: section, isExpanded: isExpanded)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(section.title)
-            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
-
-            taskListSectionReorderHandle(for: section)
-                .padding(.trailing, 6)
+        Button {
+            toggleTaskListSection(section)
+        } label: {
+            taskListSectionHeaderContent(for: section, isExpanded: isExpanded)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(.plain)
+        .accessibilityLabel(section.title)
+        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
     }
 
     @ViewBuilder
@@ -1137,32 +1094,27 @@ extension HomeTCAView {
         .contentShape(Rectangle())
     }
 
+    @ViewBuilder
     private func taskListSectionHeader(
-        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
     ) -> some View {
-        HStack(spacing: 6) {
+        let header = HStack(spacing: 6) {
             Text(section.title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             Spacer(minLength: 0)
-
-            taskListSectionReorderHandle(for: section)
         }
         .padding(.horizontal, 10)
-    }
 
-    @ViewBuilder
-    private func taskListSectionReorderHandle(
-        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
-    ) -> some View {
-        if section.kind.isMacSidebarReorderable {
-            HomeMacTaskListSectionReorderHandle(
-                sectionID: section.id,
-                title: section.title,
-                systemImage: taskListSectionHeaderIcon(for: section),
-                tint: taskListSectionHeaderTint(for: section)
-            )
+        if taskListSectionHasContextMenu(section) {
+            header
+                .routinaMacContextMenu {
+                    taskListSectionNativeContextMenu(for: section, in: presentation)
+                }
+        } else {
+            header
         }
     }
 
@@ -1400,7 +1352,8 @@ extension HomeTCAView {
     }
 
     private func taskListSectionNativeContextMenu(
-        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
     ) -> NSMenu {
         let menu = NSMenu(title: section.title)
         let showsFutureSubsectionActions = section.kind == .future && section.taskGroups.contains { $0.isCollapsible }
@@ -1436,13 +1389,39 @@ extension HomeTCAView {
             }
         }
 
-        if (showsFutureSubsectionActions || customSectionID != nil),
-           areMacHomeSectionFocusTimersEnabled,
-           section.canStartFocusTimer {
-            menu.addItem(.separator())
+        if section.kind.isMacSidebarMoveMenuEligible {
+            addTaskListSectionMenuSeparatorIfNeeded(to: menu)
+            let visibleIDs = presentation.sections
+                .filter(\.kind.isMacSidebarReorderable)
+                .map(\.id)
+
+            menu.addActionItem(
+                title: "Move Up",
+                systemImage: "arrow.up",
+                isEnabled: HomeMacTaskListSectionOrder.canMove(
+                    section.id,
+                    by: -1,
+                    visibleIDs: visibleIDs
+                )
+            ) {
+                moveMacTaskListSection(section.id, by: -1, in: presentation)
+            }
+
+            menu.addActionItem(
+                title: "Move Down",
+                systemImage: "arrow.down",
+                isEnabled: HomeMacTaskListSectionOrder.canMove(
+                    section.id,
+                    by: 1,
+                    visibleIDs: visibleIDs
+                )
+            ) {
+                moveMacTaskListSection(section.id, by: 1, in: presentation)
+            }
         }
 
         if areMacHomeSectionFocusTimersEnabled, section.canStartFocusTimer {
+            addTaskListSectionMenuSeparatorIfNeeded(to: menu)
             menu.addItem(.sectionHeader(title: "Focus Timer"))
             addTaskListSectionFocusItems(to: menu, for: section)
         }
@@ -1456,7 +1435,15 @@ extension HomeTCAView {
         let hasFutureSubsectionActions = section.kind == .future && section.taskGroups.contains { $0.isCollapsible }
         let hasCustomSectionActions = customTaskSectionID(for: section) != nil
         let hasFocusActions = areMacHomeSectionFocusTimersEnabled && section.canStartFocusTimer
-        return hasFutureSubsectionActions || hasCustomSectionActions || hasFocusActions
+        return section.kind.isMacSidebarMoveMenuEligible
+            || hasFutureSubsectionActions
+            || hasCustomSectionActions
+            || hasFocusActions
+    }
+
+    private func addTaskListSectionMenuSeparatorIfNeeded(to menu: NSMenu) {
+        guard !menu.items.isEmpty, menu.items.last?.isSeparatorItem != true else { return }
+        menu.addItem(.separator())
     }
 
     private func customTaskSectionID(

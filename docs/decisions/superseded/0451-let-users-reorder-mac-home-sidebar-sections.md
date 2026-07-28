@@ -2,9 +2,9 @@
 
 Date: 2026-07-28
 
-Status: Accepted
+Status: Superseded by [0453 Use Context Menu Actions to Reorder Mac Home Sections](../0453-use-context-menu-actions-to-reorder-mac-home-sections.md)
 
-Refines: [0252 Stabilize Home Task List Presentation Identity](0252-stabilize-home-task-list-presentation-identity.md), [0350 Add Optional Mac Tomorrow Task Section](0350-add-optional-mac-tomorrow-task-section.md), [0394 Add Custom Mac Sidebar Task Sections](0394-add-custom-mac-sidebar-task-sections.md), [0418 Keep Whole-History Work Out of Scrolling Render Paths](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0450 Use Progressive Custom Section Management](0450-use-progressive-custom-section-management.md)
+Refines: [0252 Stabilize Home Task List Presentation Identity](../0252-stabilize-home-task-list-presentation-identity.md), [0350 Add Optional Mac Tomorrow Task Section](../0350-add-optional-mac-tomorrow-task-section.md), [0394 Add Custom Mac Sidebar Task Sections](../0394-add-custom-mac-sidebar-task-sections.md), [0418 Keep Whole-History Work Out of Scrolling Render Paths](../0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0450 Use Progressive Custom Section Management](../0450-use-progressive-custom-section-management.md)
 
 ## Context
 

@@ -98,3 +98,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0054 — Resolve Planner assumptions before snapshot refresh](0054-resolve-planner-assumptions-before-snapshot-refresh.md)
 - [0055 — Resolve today before advancing recurrence](0055-resolve-today-before-advancing-recurrence.md)
 - [0056 — Preserve local drafts across catalog writes](0056-preserve-local-drafts-across-catalog-writes.md)
+- [0057 — Prefer discrete reordering in drag-heavy lists](0057-prefer-discrete-reordering-in-drag-heavy-lists.md)

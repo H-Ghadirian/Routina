@@ -698,7 +698,7 @@ Then the primary action, active range, completed span, and undo behavior stay co
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md), [0451](../decisions/0451-let-users-reorder-mac-home-sidebar-sections.md), [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md), [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md), [0453](../decisions/0453-use-context-menu-actions-to-reorder-mac-home-sections.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
@@ -814,9 +814,21 @@ When Home derives tasks planned for tomorrow or calendar routines scheduled tomo
 Then `Tomorrow` defaults between `Today` and `Future`, uses the `plannedTomorrow` manual-order bucket, and those rows retain their ordinary section placement
 
 Given Mac Home shows two or more durable top-level task-list sections
-When the user drags one section handle above or below another section
-Then the complete section moves to that position and the display order persists across presentation rebuilds
+When the user right-clicks an eligible section and chooses `Move Up` or `Move Down`
+Then the complete section moves one visible durable-section position and the display order persists across presentation rebuilds
 And task membership, planning projection, custom-section rules, and row order remain unchanged
+
+Given an eligible Mac Home section is already the first or last movable direction
+When its right-click menu opens
+Then both move commands remain visible and the unavailable direction is disabled
+
+Given the user right-clicks the Mac Home `Today` or `Tomorrow` section
+When its native context menu opens
+Then neither `Move Up` nor `Move Down` is available
+
+Given Mac Home renders durable top-level task-list sections
+When the user inspects their headers and section surfaces
+Then there are no section drag handles or section drop targets
 
 Given a previously ordered section becomes empty or is hidden by current filters
 When that section becomes visible again
