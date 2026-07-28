@@ -196,6 +196,67 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macMoveToMenuOnlyNestsSuperSectionsWithSubsections() throws {
+        let leafSectionID = UUID()
+        let parentSectionID = UUID()
+        let subsectionID = UUID()
+        let key = UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue
+        let previousValue = SharedDefaults.app.object(forKey: key)
+        defer {
+            if let previousValue {
+                SharedDefaults.app.set(previousValue, forKey: key)
+            } else {
+                SharedDefaults.app.removeObject(forKey: key)
+            }
+        }
+
+        var view = makeHomeViewForContextMenu()
+        view.customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded([
+            HomeCustomTaskSection(
+                id: leafSectionID,
+                title: "Everyday",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: parentSectionID,
+                title: "Chores",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: subsectionID,
+                parentSectionID: parentSectionID,
+                title: "Dish Washer",
+                createdAt: nil
+            ),
+        ])
+        let task = makeDisplay(
+            taskID: UUID(),
+            name: "Read",
+            emoji: "📚",
+            interval: 3,
+            scheduleMode: .oneOff,
+            lastDone: nil,
+            isOneOffTask: true,
+            isDoneToday: false
+        )
+
+        let menu = view.routineNativeContextMenu(for: task, includeMarkDone: true)
+        let moveToItem = try #require(menu.items.first { $0.title == "Move to" })
+        let moveToSubmenu = try #require(moveToItem.submenu)
+        let leafItem = try #require(moveToSubmenu.items.first { $0.title == "Everyday" })
+        let parentItem = try #require(moveToSubmenu.items.first { $0.title == "Chores" })
+        let parentSubmenu = try #require(parentItem.submenu)
+
+        #expect(leafItem.submenu == nil)
+        #expect(leafItem.action != nil)
+        #expect(
+            parentSubmenu.items.compactMap { item in
+                item.isSeparatorItem ? nil : item.title
+            } == ["In Chores", "Dish Washer"]
+        )
+    }
+
+    @Test
     func openNoteDeepLink_selectsTimelineSidebarEntryAndClearsTimelineFilters() async {
         let noteID = UUID()
         let selectedTaskID = UUID()

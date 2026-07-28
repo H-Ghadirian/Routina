@@ -479,37 +479,48 @@ extension NSMenu {
         var hasSectionItems = false
 
         for section in HomeCustomTaskSectionStorage.topLevelSections(in: customSections) {
-            let sectionItem = NSMenuItem(
-                title: section.title,
-                action: nil,
-                keyEquivalent: ""
-            )
-            sectionItem.image = NSImage(
-                systemSymbolName: "rectangle.stack",
-                accessibilityDescription: section.title
-            )
-            let sectionSubmenu = NSMenu(title: section.title)
-            sectionSubmenu.addActionItem(
-                title: "In \(section.title)",
-                systemImage: "rectangle.stack",
-                isEnabled: currentCustomSectionID != section.id
-            ) {
-                moveToCustomSection(section.id)
-            }
-            for subsection in HomeCustomTaskSectionStorage.subsections(
+            let subsections = HomeCustomTaskSectionStorage.subsections(
                 of: section.id,
                 in: customSections
-            ) {
-                sectionSubmenu.addActionItem(
-                    title: subsection.title,
-                    systemImage: "rectangle.inset.filled",
-                    isEnabled: currentCustomSectionID != subsection.id
+            )
+            if subsections.isEmpty {
+                submenu.addActionItem(
+                    title: section.title,
+                    systemImage: "rectangle.stack",
+                    isEnabled: currentCustomSectionID != section.id
                 ) {
-                    moveToCustomSection(subsection.id)
+                    moveToCustomSection(section.id)
                 }
+            } else {
+                let sectionItem = NSMenuItem(
+                    title: section.title,
+                    action: nil,
+                    keyEquivalent: ""
+                )
+                sectionItem.image = NSImage(
+                    systemSymbolName: "rectangle.stack",
+                    accessibilityDescription: section.title
+                )
+                let sectionSubmenu = NSMenu(title: section.title)
+                sectionSubmenu.addActionItem(
+                    title: "In \(section.title)",
+                    systemImage: "rectangle.stack",
+                    isEnabled: currentCustomSectionID != section.id
+                ) {
+                    moveToCustomSection(section.id)
+                }
+                for subsection in subsections {
+                    sectionSubmenu.addActionItem(
+                        title: subsection.title,
+                        systemImage: "rectangle.inset.filled",
+                        isEnabled: currentCustomSectionID != subsection.id
+                    ) {
+                        moveToCustomSection(subsection.id)
+                    }
+                }
+                sectionItem.submenu = sectionSubmenu
+                submenu.addItem(sectionItem)
             }
-            sectionItem.submenu = sectionSubmenu
-            submenu.addItem(sectionItem)
             hasSectionItems = true
         }
 

@@ -788,6 +788,10 @@ Given a user-created Mac task super section contains a subsection
 When the super section is expanded in the left sidebar
 Then the subsection uses the same nested card surface and persistent collapse behavior as a built-in tag subsection
 
+Given Mac task-row `Move to` shows custom super sections with and without subsections
+When the user opens the menu
+Then leaf super sections are direct actions without chevrons, while only super sections that contain subsections open nested menus
+
 Given a Mac custom super-section or subsection header is visible
 When the user right-clicks it and chooses `New Task`
 Then Add Task opens with that exact custom path visible and selected in Identity
