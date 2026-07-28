@@ -55,6 +55,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0439](../decisions/0439-keep-cadence-dependent-controls-after-repeat.md)
 - [0440](../decisions/0440-treat-day-planning-sections-as-additive.md)
 - [0451](../decisions/0451-let-users-reorder-mac-home-sidebar-sections.md)
+- [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md)
 
 ## Current Contract
 
@@ -75,6 +76,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Home row actions that resolve missed exact-time or time-window occurrences prefer an unresolved occurrence on the current reference day. Choosing `I did it` after today's time window has ended records the just-finished occurrence before older unresolved missed history.
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - Home `Today` is an additive planning section. It includes active tasks planned for the current day, including pinned and custom-section tasks, plus weekly/month-day calendar routines whose configured occurrence is today. Those tasks also remain visible in their ordinary Pinned, custom, tag, deadline, or regular placement. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` appear in Today only when explicitly planned.
+- On Mac, a task with an effective date-only plan for the current day shows a compact `Planned today` label on its ordinary Pinned, custom, or Future row. Its copy inside Today does not repeat the label because the section already communicates that context. Daily and calendar routines that enter Today only through cadence do not receive the planning label, and the task's normal lifecycle status badge remains visible independently.
 - On Mac, daily routines are shown inside `Today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
 - On Mac, Settings -> General -> Task List can enable the additive `Tomorrow` planning section. It defaults between `Today` and `Future` until the user customizes top-level section order. When enabled, `Tomorrow` contains active tasks explicitly planned for tomorrow, exact-date one-off todos available tomorrow, plus weekly/month-day calendar routines scheduled tomorrow. Those rows also remain in their ordinary Pinned, custom, tag, deadline, or Future placement. The row context menu exposes `Plan to do -> Tomorrow` only while this setting is enabled; choosing it stores tomorrow as a date-only planned date.
 - On Mac, a non-empty toolbar search that leaves the normal sidebar sections empty can show a search-only `Search Results` section for matching known task rows that are hidden from normal active placement, such as already-done scheduled tasks, without changing normal section membership after search clears.

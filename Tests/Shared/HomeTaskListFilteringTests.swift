@@ -1312,6 +1312,11 @@ struct HomeTaskListFilteringTests {
         #expect(Set(futureSection?.taskGroups.last?.tasks.map(\.taskID) ?? []) == [plannedID, regularID])
         #expect(futureSection?.taskGroups.map(\.kind) == [.regular, .regular])
         #expect(futureSection?.taskGroups.map(\.isCollapsible) == [false, false])
+        #expect(presentation.datePlannedTodayTaskIDs == [plannedID])
+        #expect(!presentation.showsPlannedTodayLabel(
+            for: scheduledID,
+            in: presentation.sections[1]
+        ))
     }
 
     @Test
@@ -1926,6 +1931,19 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.last?.taskGroups.map(\.title) == [String?("#HSE")])
         #expect(presentation.sections.last?.taskGroups.map(\.kind) == [.tag])
         #expect(presentation.sections.last?.taskGroups.map(\.isCollapsible) == [true])
+        #expect(presentation.datePlannedTodayTaskIDs == [plannedID])
+        #expect(!presentation.showsPlannedTodayLabel(
+            for: plannedID,
+            in: presentation.sections[0]
+        ))
+        #expect(presentation.showsPlannedTodayLabel(
+            for: plannedID,
+            in: presentation.sections[1]
+        ))
+        #expect(!presentation.showsPlannedTodayLabel(
+            for: tagID,
+            in: presentation.sections[1]
+        ))
     }
 
     @Test

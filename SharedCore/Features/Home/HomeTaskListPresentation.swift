@@ -327,9 +327,29 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
     let sections: [HomeTaskListPresentationSection<Display>]
     let hiddenUnavailableTaskCount: Int
     let emptyState: HomeTaskListEmptyState?
+    let datePlannedTodayTaskIDs: Set<UUID>
+
+    init(
+        sections: [HomeTaskListPresentationSection<Display>],
+        hiddenUnavailableTaskCount: Int,
+        emptyState: HomeTaskListEmptyState?,
+        datePlannedTodayTaskIDs: Set<UUID> = []
+    ) {
+        self.sections = sections
+        self.hiddenUnavailableTaskCount = hiddenUnavailableTaskCount
+        self.emptyState = emptyState
+        self.datePlannedTodayTaskIDs = datePlannedTodayTaskIDs
+    }
 
     var visibleTaskCount: Int {
         sections.reduce(0) { $0 + $1.tasks.count }
+    }
+
+    func showsPlannedTodayLabel(
+        for taskID: UUID,
+        in section: HomeTaskListPresentationSection<Display>
+    ) -> Bool {
+        section.kind != .plannedToday && datePlannedTodayTaskIDs.contains(taskID)
     }
 
     func addingSearchFallbackResults(
@@ -606,6 +626,11 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let plannedTodayTasks = uniqueTasks(
             filtering.filteredPlannedTodayTasks(activeDisplays)
         )
+        let datePlannedTodayTaskIDs = Set(
+            plannedTodayTasks.lazy
+                .filter { $0.plannedDate != nil }
+                .map(\.taskID)
+        )
         let plannedTomorrowTasks = showTomorrowSection
             ? uniqueTasks(filtering.filteredPlannedTomorrowTasks(activeDisplays))
             : []
@@ -825,7 +850,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         return HomeTaskListPresentation(
             sections: presentationSections,
             hiddenUnavailableTaskCount: 0,
-            emptyState: presentationSections.isEmpty ? emptyState : nil
+            emptyState: presentationSections.isEmpty ? emptyState : nil,
+            datePlannedTodayTaskIDs: datePlannedTodayTaskIDs
         )
     }
 

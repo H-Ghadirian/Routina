@@ -210,7 +210,8 @@ extension HomeTCAView {
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
-        rowVisibility suppliedRowVisibility: HomeTaskRowVisibility? = nil
+        rowVisibility suppliedRowVisibility: HomeTaskRowVisibility? = nil,
+        showsPlannedTodayLabel: Bool = false
     ) -> some View {
         let metadataText = metadataPresenter.rowMetadataText(for: task)
         let rowVisibility = suppliedRowVisibility ?? taskRowVisibility
@@ -254,8 +255,12 @@ extension HomeTCAView {
                         .lineLimit(1)
                 }
 
-                if rowVisibility.shows(.tags) {
-                    tagRow(for: task)
+                if rowVisibility.shows(.tags) || showsPlannedTodayLabel {
+                    taskListRowLabels(
+                        for: task,
+                        showsTags: rowVisibility.shows(.tags),
+                        showsPlannedTodayLabel: showsPlannedTodayLabel
+                    )
                 }
 
                 if rowVisibility.shows(.goals), !task.goalTitles.isEmpty {
@@ -379,15 +384,36 @@ extension HomeTCAView {
             )
     }
 
-    private func tagRow(for task: HomeFeature.RoutineDisplay) -> some View {
+    private func taskListRowLabels(
+        for task: HomeFeature.RoutineDisplay,
+        showsTags: Bool,
+        showsPlannedTodayLabel: Bool
+    ) -> some View {
         HStack(spacing: 6) {
-            ForEach(task.tags, id: \.self) { tag in
-                sidebarTagChip(tag)
+            if showsPlannedTodayLabel {
+                Label("Planned today", systemImage: "calendar")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14)
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color.accentColor.opacity(0.30), lineWidth: 0.5)
+                    )
+                    .accessibilityLabel("Planned for today")
+            }
+
+            if showsTags {
+                ForEach(task.tags, id: \.self) { tag in
+                    sidebarTagChip(tag)
+                }
             }
         }
         .lineLimit(1)
         .frame(minHeight: 20, alignment: .leading)
-        .accessibilityHidden(task.tags.isEmpty)
     }
 
     private func macTaskSourceList(
@@ -953,6 +979,10 @@ extension HomeTCAView {
                     moveContext: group.moveContext ?? section.moveContext,
                     metadataPresenter: metadataPresenter,
                     rowVisibility: rowVisibility,
+                    showsPlannedTodayLabel: presentation.showsPlannedTodayLabel(
+                        for: task.taskID,
+                        in: section
+                    ),
                     allowsPlannerDrag: allowsPlannerDrag
                 )
             }
@@ -2015,13 +2045,15 @@ extension HomeTCAView {
         moveContext: HomeTaskListMoveContext?,
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
         rowVisibility: HomeTaskRowVisibility,
+        showsPlannedTodayLabel: Bool,
         allowsPlannerDrag: Bool
     ) -> some View {
         let row = platformRoutineRow(
             for: task,
             rowNumber: rowNumber,
             metadataPresenter: metadataPresenter,
-            rowVisibility: rowVisibility
+            rowVisibility: rowVisibility,
+            showsPlannedTodayLabel: showsPlannedTodayLabel
         )
             .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task, rowVisibility: rowVisibility))
             .padding(.horizontal, 8)
