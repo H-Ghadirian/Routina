@@ -6,6 +6,8 @@ Date: 2026-07-23
 
 Refines: [0394 Add Custom Mac Sidebar Task Sections](0394-add-custom-mac-sidebar-task-sections.md), [0395 Delete Custom Mac Sidebar Task Sections](0395-delete-custom-mac-sidebar-task-sections.md), [0403 Rename Custom Mac Sidebar Task Sections](0403-rename-custom-mac-sidebar-task-sections.md), [0411 Manage Custom Task Sections in Settings](0411-manage-custom-task-sections-in-settings.md)
 
+Refined by: [0450 Use Progressive Custom Section Management](0450-use-progressive-custom-section-management.md)
+
 ## Context
 
 Custom task sections were flat top-level buckets. Users need one additional organization level so a broad area can contain smaller task buckets without introducing recursive trees or using tags as a substitute.

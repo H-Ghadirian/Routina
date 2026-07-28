@@ -14,8 +14,9 @@ struct SettingsMacTaskSectionsDetailView: View {
 
     @State private var newSectionTitle = ""
     @State private var newSubsectionTitles: [UUID: String] = [:]
-    @State private var renameDrafts: [UUID: String] = [:]
-    @State private var tagRuleDrafts: [UUID: String] = [:]
+    @State private var drafts = HomeCustomTaskSectionDraftState()
+    @State private var expandedSectionID: UUID?
+    @State private var didInitializeExpansion = false
     @State private var pendingDeleteSection: HomeCustomTaskSection?
     @State private var isDeleteConfirmationPresented = false
     @State private var statusMessage = ""
@@ -23,35 +24,17 @@ struct SettingsMacTaskSectionsDetailView: View {
     var body: some View {
         SettingsMacDetailShell(
             title: "Sections",
-            subtitle: "Manage custom task-list sections and automatic section rules."
+            subtitle: "Organize the task list with custom sections and subsections."
         ) {
             SettingsMacDetailCard(title: "Custom Sections") {
-                HStack(spacing: 10) {
-                    TextField("Section name", text: $newSectionTitle)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit(createSection)
-
-                    Button {
-                        createSection()
-                    } label: {
-                        Label("Add", systemImage: "plus")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!canCreateSection)
-                }
+                newSectionComposer
 
                 if superSections.isEmpty {
-                    Text("No super sections")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    emptySectionsView
                 } else {
-                    VStack(alignment: .leading, spacing: 14) {
-                        ForEach(Array(superSections.enumerated()), id: \.element.id) { index, section in
-                            sectionEditor(for: section)
-
-                            if index < superSections.count - 1 {
-                                Divider()
-                            }
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(superSections) { section in
+                            sectionCard(for: section)
                         }
                     }
                 }
@@ -63,11 +46,12 @@ struct SettingsMacTaskSectionsDetailView: View {
                 }
             }
         }
-        .onAppear(perform: syncRenameDrafts)
+        .onAppear(perform: prepareSectionEditor)
         .onChange(of: customTaskSectionsRawValue) { _, _ in
             syncRenameDrafts()
+            normalizeExpandedSection()
         }
-        .alert("Delete Section?", isPresented: $isDeleteConfirmationPresented) {
+        .alert(deleteConfirmationTitle, isPresented: $isDeleteConfirmationPresented) {
             Button("Delete", role: .destructive) {
                 confirmDeleteSection()
             }
@@ -97,146 +81,467 @@ struct SettingsMacTaskSectionsDetailView: View {
         return result.sections.count > customTaskSections.count
     }
 
+    private var newSectionComposer: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                TextField("New section name", text: $newSectionTitle)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit(createSection)
+
+                Button {
+                    createSection()
+                } label: {
+                    Label("Add Section", systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!canCreateSection)
+            }
+
+            if let newSectionValidationMessage {
+                Text(newSectionValidationMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var newSectionValidationMessage: String? {
+        guard HomeCustomTaskSectionStorage.sanitizedTitle(newSectionTitle) != nil,
+              !canCreateSection else {
+            return nil
+        }
+        return "A section with this name already exists."
+    }
+
+    private var emptySectionsView: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "rectangle.3.group")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .frame(width: 36, height: 36)
+                .background(
+                    Circle()
+                        .fill(Color.secondary.opacity(0.10))
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("No custom sections")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("Add one above to create a new task-list area.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+
+    private var deleteConfirmationTitle: String {
+        pendingDeleteSection?.parentSectionID == nil
+            ? "Delete Section?"
+            : "Delete Subsection?"
+    }
+
     private var deleteConfirmationMessage: String {
         guard let pendingDeleteSection else {
-            return "Tasks in this section will move back to their built-in sections or matching custom rules."
+            return "Assigned tasks will return to their automatic task-list placement."
         }
-        return "Delete \"\(pendingDeleteSection.title)\"? Tasks in this section will move back to their built-in sections or matching custom rules."
+
+        let subsections = HomeCustomTaskSectionStorage.subsections(
+            of: pendingDeleteSection.id,
+            in: customTaskSections
+        )
+        let descendantText: String
+        if subsections.isEmpty {
+            descendantText = ""
+        } else if subsections.count == 1 {
+            descendantText = " and its subsection"
+        } else {
+            descendantText = " and its \(subsections.count) subsections"
+        }
+
+        return "Delete \"\(pendingDeleteSection.title)\"\(descendantText)? Assigned tasks will return to their automatic task-list placement."
     }
 
     @ViewBuilder
-    private func sectionEditor(for section: HomeCustomTaskSection) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: "rectangle.3.group")
+    private func sectionCard(for section: HomeCustomTaskSection) -> some View {
+        let isExpanded = expandedSectionID == section.id
+
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                Button {
+                    toggleSection(section.id)
+                } label: {
+                    sectionHeader(for: section, isExpanded: isExpanded)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(section.title)
+                .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+
+                sectionActionsMenu(for: section)
+            }
+            .padding(.leading, 12)
+            .padding(.trailing, 10)
+            .padding(.vertical, 6)
+
+            if isExpanded {
+                Divider()
+                    .padding(.horizontal, 12)
+
+                sectionDetails(for: section)
+                    .padding(14)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.secondary.opacity(isExpanded ? 0.08 : 0.04))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(
+                    sectionTint(for: section).opacity(isExpanded ? 0.28 : 0.12),
+                    lineWidth: 1
+                )
+        )
+        .animation(.easeInOut(duration: 0.16), value: isExpanded)
+    }
+
+    private func sectionHeader(
+        for section: HomeCustomTaskSection,
+        isExpanded: Bool
+    ) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                .frame(width: 12)
+
+            Circle()
+                .fill(sectionTint(for: section))
+                .frame(width: 12, height: 12)
+                .overlay(
+                    Circle()
+                        .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(section.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Text(sectionSummary(for: section))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                    .frame(width: 22)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    private func sectionActionsMenu(for section: HomeCustomTaskSection) -> some View {
+        Menu {
+            Button {
+                moveSection(section, by: -1)
+            } label: {
+                Label("Move Up", systemImage: "arrow.up")
+            }
+            .disabled(!canMoveSection(section, by: -1))
+
+            Button {
+                moveSection(section, by: 1)
+            } label: {
+                Label("Move Down", systemImage: "arrow.down")
+            }
+            .disabled(!canMoveSection(section, by: 1))
+
+            Divider()
+
+            Button(role: .destructive) {
+                requestDelete(section)
+            } label: {
+                Label("Delete Section…", systemImage: "trash")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+                .contentShape(Circle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Section actions")
+        .accessibilityLabel("More actions for \(section.title)")
+    }
+
+    private func sectionDetails(for section: HomeCustomTaskSection) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionNameEditor(for: section)
+            sectionColorEditor(for: section)
+
+            Divider()
+
+            tagRuleEditor(for: section)
+
+            Divider()
+
+            subsectionEditor(for: section)
+        }
+    }
+
+    private func sectionNameEditor(for section: HomeCustomTaskSection) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                settingsFieldLabel("Name")
 
                 TextField("Section name", text: titleDraftBinding(for: section))
                     .textFieldStyle(.roundedBorder)
-                    .onSubmit {
-                        saveTitle(for: section)
-                    }
+                    .onSubmit { saveTitle(for: section) }
 
-                Button {
-                    saveTitle(for: section)
-                } label: {
-                    Label("Save", systemImage: "checkmark")
-                }
-                .buttonStyle(.bordered)
-                .disabled(!canSaveTitle(for: section))
-
-                Button(role: .destructive) {
-                    requestDelete(section)
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-                .buttonStyle(.bordered)
-                .tint(.red)
-            }
-
-            HStack(spacing: 10) {
-                Text("Color")
-                    .font(.subheadline.weight(.semibold))
-
-                ColorPicker(
-                    "Section color",
-                    selection: colorBinding(for: section),
-                    supportsOpacity: false
-                )
-                .labelsHidden()
-
-                if section.colorHex != nil {
-                    Button("Reset") {
-                        setColor(nil, for: section.id)
+                if hasTitleChanges(for: section) {
+                    Button {
+                        drafts.titleDrafts[section.id] = section.title
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward")
                     }
                     .buttonStyle(.bordered)
-                }
-            }
-            .padding(.leading, 32)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Rules")
-                    .font(.subheadline.weight(.semibold))
-
-                VStack(alignment: .leading, spacing: 6) {
-                    TextField("Tags", text: tagRuleDraftBinding(for: section))
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit {
-                            saveTagRule(for: section)
-                        }
-
-                    HStack(spacing: 8) {
-                        Button {
-                            saveTagRule(for: section)
-                        } label: {
-                            Label("Save Tags", systemImage: "tag")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(!canSaveTagRule(for: section))
-
-                        if !section.rules.tagNames.isEmpty {
-                            Text(section.rules.tagNames.joined(separator: ", "))
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-            }
-            .padding(.leading, 32)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Subsections")
-                    .font(.subheadline.weight(.semibold))
-
-                ForEach(HomeCustomTaskSectionStorage.subsections(of: section.id, in: customTaskSections)) { subsection in
-                    HStack(spacing: 10) {
-                        Image(systemName: "rectangle.inset.filled")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 22)
-
-                        TextField("Subsection name", text: titleDraftBinding(for: subsection))
-                            .textFieldStyle(.roundedBorder)
-                            .onSubmit { saveTitle(for: subsection) }
-
-                        Button {
-                            saveTitle(for: subsection)
-                        } label: {
-                            Label("Save", systemImage: "checkmark")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(!canSaveTitle(for: subsection))
-
-                        Button(role: .destructive) {
-                            requestDelete(subsection)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(.red)
-                    }
-                }
-
-                HStack(spacing: 10) {
-                    TextField(
-                        "New subsection",
-                        text: newSubsectionTitleBinding(for: section.id)
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { createSubsection(in: section.id) }
+                    .help("Discard name change")
 
                     Button {
-                        createSubsection(in: section.id)
+                        saveTitle(for: section)
                     } label: {
-                        Label("Add Subsection", systemImage: "plus")
+                        Label("Save", systemImage: "checkmark")
                     }
-                    .buttonStyle(.bordered)
-                    .disabled(!canCreateSubsection(in: section.id))
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!canSaveTitle(for: section))
                 }
             }
-            .padding(.leading, 32)
+
+            if let titleValidationMessage = titleValidationMessage(for: section) {
+                Text(titleValidationMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 80)
+            }
         }
+    }
+
+    private func sectionColorEditor(for section: HomeCustomTaskSection) -> some View {
+        HStack(spacing: 8) {
+            settingsFieldLabel("Color")
+
+            ColorPicker(
+                "Section color",
+                selection: colorBinding(for: section),
+                supportsOpacity: false
+            )
+            .labelsHidden()
+
+            Text(section.colorHex == nil ? "Default" : "Custom")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if section.colorHex != nil {
+                Button("Reset") {
+                    setColor(nil, for: section.id)
+                }
+                .buttonStyle(.borderless)
+            }
+
+            Spacer()
+        }
+    }
+
+    private func tagRuleEditor(for section: HomeCustomTaskSection) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Automatic tags", systemImage: "tag")
+                .font(.subheadline.weight(.semibold))
+
+            Text("Unassigned tasks with any matching tag appear in this section.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                TextField("Work, Urgent", text: tagRuleDraftBinding(for: section))
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { saveTagRule(for: section) }
+                    .help("Separate multiple tags with commas.")
+
+                if hasTagRuleChanges(for: section) {
+                    Button {
+                        drafts.tagRuleDrafts[section.id] = tagRuleDraftText(
+                            for: section.rules.tagNames
+                        )
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Discard tag changes")
+
+                    Button {
+                        saveTagRule(for: section)
+                    } label: {
+                        Label("Save", systemImage: "checkmark")
+                    }
+                    .buttonStyle(.borderedProminent)
+                } else if !section.rules.tagNames.isEmpty {
+                    Button("Clear") {
+                        clearTagRule(for: section)
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+        }
+    }
+
+    private func subsectionEditor(for section: HomeCustomTaskSection) -> some View {
+        let subsections = HomeCustomTaskSectionStorage.subsections(
+            of: section.id,
+            in: customTaskSections
+        )
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("Subsections", systemImage: "rectangle.inset.filled")
+                    .font(.subheadline.weight(.semibold))
+
+                Spacer()
+
+                if !subsections.isEmpty {
+                    Text("\(subsections.count)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if subsections.isEmpty {
+                Text("No subsections")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(subsections) { subsection in
+                    subsectionRow(subsection)
+                }
+            }
+
+            HStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20)
+
+                TextField(
+                    "New subsection name",
+                    text: newSubsectionTitleBinding(for: section.id)
+                )
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { createSubsection(in: section.id) }
+
+                Button("Add") {
+                    createSubsection(in: section.id)
+                }
+                .buttonStyle(.bordered)
+                .disabled(!canCreateSubsection(in: section.id))
+            }
+
+            if let message = newSubsectionValidationMessage(in: section.id) {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 28)
+            }
+        }
+    }
+
+    private func subsectionRow(_ subsection: HomeCustomTaskSection) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: "rectangle.inset.filled")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20)
+
+                TextField("Subsection name", text: titleDraftBinding(for: subsection))
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { saveTitle(for: subsection) }
+
+                if hasTitleChanges(for: subsection) {
+                    Button {
+                        drafts.titleDrafts[subsection.id] = subsection.title
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Discard name change")
+
+                    Button {
+                        saveTitle(for: subsection)
+                    } label: {
+                        Label("Save", systemImage: "checkmark")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!canSaveTitle(for: subsection))
+                }
+
+                subsectionActionsMenu(for: subsection)
+            }
+
+            if let titleValidationMessage = titleValidationMessage(for: subsection) {
+                Text(titleValidationMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 28)
+            }
+        }
+    }
+
+    private func subsectionActionsMenu(for subsection: HomeCustomTaskSection) -> some View {
+        Menu {
+            Button {
+                moveSection(subsection, by: -1)
+            } label: {
+                Label("Move Up", systemImage: "arrow.up")
+            }
+            .disabled(!canMoveSection(subsection, by: -1))
+
+            Button {
+                moveSection(subsection, by: 1)
+            } label: {
+                Label("Move Down", systemImage: "arrow.down")
+            }
+            .disabled(!canMoveSection(subsection, by: 1))
+
+            Divider()
+
+            Button(role: .destructive) {
+                requestDelete(subsection)
+            } label: {
+                Label("Delete Subsection…", systemImage: "trash")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+                .contentShape(Circle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Subsection actions")
+        .accessibilityLabel("More actions for \(subsection.title)")
+    }
+
+    private func settingsFieldLabel(_ title: String) -> some View {
+        Text(title)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.secondary)
+            .frame(width: 64, alignment: .leading)
     }
 
     private func newSubsectionTitleBinding(for sectionID: UUID) -> Binding<String> {
@@ -248,15 +553,15 @@ struct SettingsMacTaskSectionsDetailView: View {
 
     private func titleDraftBinding(for section: HomeCustomTaskSection) -> Binding<String> {
         Binding(
-            get: { renameDrafts[section.id] ?? section.title },
-            set: { renameDrafts[section.id] = $0 }
+            get: { drafts.titleDrafts[section.id] ?? section.title },
+            set: { drafts.titleDrafts[section.id] = $0 }
         )
     }
 
     private func tagRuleDraftBinding(for section: HomeCustomTaskSection) -> Binding<String> {
         Binding(
-            get: { tagRuleDrafts[section.id] ?? tagRuleDraftText(for: section.rules.tagNames) },
-            set: { tagRuleDrafts[section.id] = $0 }
+            get: { drafts.tagRuleDrafts[section.id] ?? tagRuleDraftText(for: section.rules.tagNames) },
+            set: { drafts.tagRuleDrafts[section.id] = $0 }
         )
     }
 
@@ -267,8 +572,100 @@ struct SettingsMacTaskSectionsDetailView: View {
         )
     }
 
+    private func sectionTint(for section: HomeCustomTaskSection) -> Color {
+        Color(routineTagHex: section.colorHex) ?? .secondary
+    }
+
+    private func sectionSummary(for section: HomeCustomTaskSection) -> String {
+        let subsections = HomeCustomTaskSectionStorage.subsections(
+            of: section.id,
+            in: customTaskSections
+        )
+        var summaryParts: [String] = []
+
+        if !section.rules.tagNames.isEmpty {
+            let visibleTags = section.rules.tagNames.prefix(2).joined(separator: ", ")
+            let remainingCount = section.rules.tagNames.count - 2
+            let suffix = remainingCount > 0 ? " +\(remainingCount)" : ""
+            summaryParts.append("Tags: \(visibleTags)\(suffix)")
+        }
+
+        if !subsections.isEmpty {
+            summaryParts.append(
+                subsections.count == 1
+                    ? "1 subsection"
+                    : "\(subsections.count) subsections"
+            )
+        }
+
+        return summaryParts.isEmpty
+            ? "No automatic tags or subsections"
+            : summaryParts.joined(separator: " • ")
+    }
+
+    private func toggleSection(_ sectionID: UUID) {
+        withAnimation(.easeInOut(duration: 0.16)) {
+            expandedSectionID = expandedSectionID == sectionID ? nil : sectionID
+        }
+    }
+
+    private func canMoveSection(
+        _ section: HomeCustomTaskSection,
+        by offset: Int
+    ) -> Bool {
+        HomeCustomTaskSectionStorage.movingSection(
+            section.id,
+            by: offset,
+            in: customTaskSections
+        ) != nil
+    }
+
+    private func moveSection(
+        _ section: HomeCustomTaskSection,
+        by offset: Int
+    ) {
+        guard let sections = HomeCustomTaskSectionStorage.movingSection(
+            section.id,
+            by: offset,
+            in: customTaskSections
+        ) else {
+            return
+        }
+
+        persistSections(sections)
+        statusMessage = ""
+    }
+
+    private func hasTitleChanges(for section: HomeCustomTaskSection) -> Bool {
+        (drafts.titleDrafts[section.id] ?? section.title) != section.title
+    }
+
+    private func titleValidationMessage(
+        for section: HomeCustomTaskSection
+    ) -> String? {
+        guard hasTitleChanges(for: section) else { return nil }
+        let draft = drafts.titleDrafts[section.id] ?? section.title
+
+        guard let sanitizedTitle = HomeCustomTaskSectionStorage.sanitizedTitle(draft) else {
+            return "A name is required."
+        }
+        guard sanitizedTitle != section.title else {
+            return "No name change to save."
+        }
+        guard HomeCustomTaskSectionStorage.renamingSection(
+            section.id,
+            title: draft,
+            in: customTaskSections
+        ) != nil else {
+            return section.parentSectionID == nil
+                ? "Another section already uses this name."
+                : "Another subsection already uses this name."
+        }
+        return nil
+    }
+
     private func canSaveTitle(for section: HomeCustomTaskSection) -> Bool {
-        let draft = renameDrafts[section.id] ?? section.title
+        let draft = drafts.titleDrafts[section.id] ?? section.title
         guard HomeCustomTaskSectionStorage.sanitizedTitle(draft) != section.title else {
             return false
         }
@@ -279,8 +676,17 @@ struct SettingsMacTaskSectionsDetailView: View {
         ) != nil
     }
 
-    private func canSaveTagRule(for section: HomeCustomTaskSection) -> Bool {
+    private func hasTagRuleChanges(for section: HomeCustomTaskSection) -> Bool {
         parsedTagRuleDraft(for: section) != section.rules.tagNames
+    }
+
+    private func newSubsectionValidationMessage(in sectionID: UUID) -> String? {
+        let draft = newSubsectionTitles[sectionID] ?? ""
+        guard HomeCustomTaskSectionStorage.sanitizedTitle(draft) != nil,
+              !canCreateSubsection(in: sectionID) else {
+            return nil
+        }
+        return "A subsection with this name already exists."
     }
 
     private func createSection() {
@@ -293,9 +699,10 @@ struct SettingsMacTaskSectionsDetailView: View {
         }
 
         persistSections(result.sections)
-        renameDrafts[result.section.id] = result.section.title
-        tagRuleDrafts[result.section.id] = ""
+        drafts.titleDrafts[result.section.id] = result.section.title
+        drafts.tagRuleDrafts[result.section.id] = ""
         newSectionTitle = ""
+        expandedSectionID = result.section.id
         statusMessage = ""
     }
 
@@ -325,7 +732,7 @@ struct SettingsMacTaskSectionsDetailView: View {
     }
 
     private func saveTitle(for section: HomeCustomTaskSection) {
-        let draft = renameDrafts[section.id] ?? section.title
+        let draft = drafts.titleDrafts[section.id] ?? section.title
         guard let sections = HomeCustomTaskSectionStorage.renamingSection(
             section.id,
             title: draft,
@@ -350,6 +757,11 @@ struct SettingsMacTaskSectionsDetailView: View {
 
         persistSections(sections)
         statusMessage = ""
+    }
+
+    private func clearTagRule(for section: HomeCustomTaskSection) {
+        drafts.tagRuleDrafts[section.id] = ""
+        saveTagRule(for: section)
     }
 
     private func setColor(_ colorHex: String?, for sectionID: UUID) {
@@ -382,6 +794,9 @@ struct SettingsMacTaskSectionsDetailView: View {
         for sectionID in deletedSectionIDs {
             removeCollapseState(for: sectionID)
         }
+        if expandedSectionID.map(deletedSectionIDs.contains) == true {
+            expandedSectionID = nil
+        }
         statusMessage = ""
         clearDeletedSectionAssignments(deletedSectionIDs)
         pendingDeleteSection = nil
@@ -398,20 +813,27 @@ struct SettingsMacTaskSectionsDetailView: View {
     }
 
     private func syncRenameDrafts(with sections: [HomeCustomTaskSection]) {
-        var drafts: [UUID: String] = [:]
-        var tagDrafts: [UUID: String] = [:]
-        for section in sections {
-            drafts[section.id] = section.title
-            tagDrafts[section.id] = tagRuleDraftText(for: section.rules.tagNames)
+        drafts.sync(with: sections)
+    }
+
+    private func prepareSectionEditor() {
+        syncRenameDrafts()
+        guard !didInitializeExpansion else { return }
+        expandedSectionID = superSections.first?.id
+        didInitializeExpansion = true
+    }
+
+    private func normalizeExpandedSection() {
+        guard let expandedSectionID else { return }
+        if !superSections.contains(where: { $0.id == expandedSectionID }) {
+            self.expandedSectionID = nil
         }
-        renameDrafts = drafts
-        tagRuleDrafts = tagDrafts
     }
 
     private func parsedTagRuleDraft(for section: HomeCustomTaskSection) -> [String] {
         HomeCustomTaskSectionRules.sanitizedTagNames(
             RoutineTag.parseDraft(
-                tagRuleDrafts[section.id] ?? tagRuleDraftText(for: section.rules.tagNames)
+                drafts.tagRuleDrafts[section.id] ?? tagRuleDraftText(for: section.rules.tagNames)
             )
         )
     }

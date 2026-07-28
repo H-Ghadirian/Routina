@@ -42,6 +42,42 @@ struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
     }
 }
 
+struct HomeCustomTaskSectionDraftState: Equatable, Sendable {
+    var titleDrafts: [UUID: String] = [:]
+    var tagRuleDrafts: [UUID: String] = [:]
+
+    private var syncedTitles: [UUID: String] = [:]
+    private var syncedTagRuleDrafts: [UUID: String] = [:]
+
+    mutating func sync(with sections: [HomeCustomTaskSection]) {
+        let validSectionIDs = Set(sections.map(\.id))
+        titleDrafts = titleDrafts.filter { validSectionIDs.contains($0.key) }
+        tagRuleDrafts = tagRuleDrafts.filter { validSectionIDs.contains($0.key) }
+
+        var updatedSyncedTitles: [UUID: String] = [:]
+        var updatedSyncedTagRuleDrafts: [UUID: String] = [:]
+
+        for section in sections {
+            let tagRuleText = section.rules.tagNames.joined(separator: ", ")
+
+            if titleDrafts[section.id] == nil
+                || titleDrafts[section.id] == syncedTitles[section.id] {
+                titleDrafts[section.id] = section.title
+            }
+            if tagRuleDrafts[section.id] == nil
+                || tagRuleDrafts[section.id] == syncedTagRuleDrafts[section.id] {
+                tagRuleDrafts[section.id] = tagRuleText
+            }
+
+            updatedSyncedTitles[section.id] = section.title
+            updatedSyncedTagRuleDrafts[section.id] = tagRuleText
+        }
+
+        syncedTitles = updatedSyncedTitles
+        syncedTagRuleDrafts = updatedSyncedTagRuleDrafts
+    }
+}
+
 struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendable {
     var id: UUID
     var parentSectionID: UUID?
@@ -231,6 +267,33 @@ enum HomeCustomTaskSectionStorage {
         guard !titleBelongsToOtherSection else { return nil }
 
         sanitizedSections[sectionIndex].title = title
+        return sanitizedSections
+    }
+
+    static func movingSection(
+        _ sectionID: UUID,
+        by offset: Int,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection]? {
+        guard offset == -1 || offset == 1 else { return nil }
+
+        var sanitizedSections = sanitized(sections)
+        guard let sectionIndex = sanitizedSections.firstIndex(where: { $0.id == sectionID }) else {
+            return nil
+        }
+
+        let parentSectionID = sanitizedSections[sectionIndex].parentSectionID
+        let siblingIndices = sanitizedSections.indices.filter {
+            sanitizedSections[$0].parentSectionID == parentSectionID
+        }
+        guard let siblingPosition = siblingIndices.firstIndex(of: sectionIndex) else {
+            return nil
+        }
+
+        let destinationPosition = siblingPosition + offset
+        guard siblingIndices.indices.contains(destinationPosition) else { return nil }
+
+        sanitizedSections.swapAt(sectionIndex, siblingIndices[destinationPosition])
         return sanitizedSections
     }
 

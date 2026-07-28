@@ -158,6 +158,120 @@ struct HomeCustomTaskSectionStorageTests {
     }
 
     @Test
+    func movingSectionsReordersOnlyWithinTheirHierarchyLevel() throws {
+        let workID = UUID()
+        let projectsID = UUID()
+        let errandsID = UUID()
+        let personalID = UUID()
+        let sections = [
+            HomeCustomTaskSection(id: workID, title: "Work", createdAt: nil),
+            HomeCustomTaskSection(
+                id: projectsID,
+                parentSectionID: workID,
+                title: "Projects",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(id: personalID, title: "Personal", createdAt: nil),
+            HomeCustomTaskSection(
+                id: errandsID,
+                parentSectionID: workID,
+                title: "Errands",
+                createdAt: nil
+            )
+        ]
+
+        let reorderedTopLevel = try #require(
+            HomeCustomTaskSectionStorage.movingSection(
+                personalID,
+                by: -1,
+                in: sections
+            )
+        )
+        let reorderedSubsections = try #require(
+            HomeCustomTaskSectionStorage.movingSection(
+                errandsID,
+                by: -1,
+                in: sections
+            )
+        )
+
+        #expect(
+            HomeCustomTaskSectionStorage.topLevelSections(in: reorderedTopLevel).map(\.id)
+                == [personalID, workID]
+        )
+        #expect(
+            HomeCustomTaskSectionStorage.subsections(of: workID, in: reorderedTopLevel).map(\.id)
+                == [projectsID, errandsID]
+        )
+        #expect(
+            HomeCustomTaskSectionStorage.topLevelSections(in: reorderedSubsections).map(\.id)
+                == [workID, personalID]
+        )
+        #expect(
+            HomeCustomTaskSectionStorage.subsections(of: workID, in: reorderedSubsections).map(\.id)
+                == [errandsID, projectsID]
+        )
+        #expect(
+            HomeCustomTaskSectionStorage.movingSection(
+                workID,
+                by: -1,
+                in: sections
+            ) == nil
+        )
+    }
+
+    @Test
+    func syncingPersistencePreservesUnsavedLocalDrafts() {
+        let sectionID = UUID()
+        let original = HomeCustomTaskSection(
+            id: sectionID,
+            title: "Work",
+            createdAt: nil,
+            rules: HomeCustomTaskSectionRules(tagNames: ["Focus"])
+        )
+        var state = HomeCustomTaskSectionDraftState()
+        state.sync(with: [original])
+        state.titleDrafts[sectionID] = "Deep Work"
+        state.tagRuleDrafts[sectionID] = "Focus, Urgent"
+
+        let colorOnlyUpdate = HomeCustomTaskSection(
+            id: sectionID,
+            title: "Work",
+            createdAt: nil,
+            rules: HomeCustomTaskSectionRules(tagNames: ["Focus"]),
+            colorHex: "#FF453A"
+        )
+        state.sync(with: [colorOnlyUpdate])
+
+        #expect(state.titleDrafts[sectionID] == "Deep Work")
+        #expect(state.tagRuleDrafts[sectionID] == "Focus, Urgent")
+    }
+
+    @Test
+    func syncingPersistenceAdoptsExternalValuesWhenDraftsAreUnchanged() {
+        let sectionID = UUID()
+        let original = HomeCustomTaskSection(
+            id: sectionID,
+            title: "Work",
+            createdAt: nil,
+            rules: HomeCustomTaskSectionRules(tagNames: ["Focus"])
+        )
+        var state = HomeCustomTaskSectionDraftState()
+        state.sync(with: [original])
+
+        let externalUpdate = HomeCustomTaskSection(
+            id: sectionID,
+            title: "Studio",
+            createdAt: nil,
+            rules: HomeCustomTaskSectionRules(tagNames: ["Creative"])
+        )
+        state.sync(with: [externalUpdate])
+
+        #expect(state.titleDrafts[sectionID] == "Studio")
+        #expect(state.tagRuleDrafts[sectionID] == "Creative")
+    }
+
+    @Test
     func settingColorSanitizesHexAndPreservesOtherMetadata() throws {
         let sectionID = UUID()
         let sections = [

@@ -703,6 +703,7 @@ Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
 - `Tests/iOS/HomeFeatureTaskListModeTests.swift`
+- `Tests/Shared/HomeCustomTaskSectionStorageTests.swift`
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
 
 Given Mac Home shows `Today`
@@ -728,6 +729,14 @@ Then both values persist and Home shows the task in the matching planning and cu
 Given a user edits a custom super section in Mac Settings -> Sections
 When automatic rules are shown
 Then only tag routing is available, planned-today and planned-tomorrow options are absent, and legacy saved planned-day rules do not affect placement
+
+Given several custom super sections exist in Mac Settings -> Sections
+When the user scans and edits the catalog
+Then compact color-and-summary headers keep one editor expanded at a time, the full header surface toggles disclosure, move and delete actions stay in More menus, and Save or revert controls appear only for unfinished fields
+
+Given a section name or automatic-tag draft is unfinished
+When a color, order, neighboring section, or external catalog value is persisted
+Then the unfinished local draft survives while untouched fields adopt the new persisted values
 
 Given Mac Home shows expanded `Future`
 When future task groups are visible
