@@ -2355,7 +2355,7 @@ private struct DayPlanTimelinePanelContentView: View {
     var onSidebarPresentationRequested: (() -> Void)? = nil
     @State private var selectedEventID: UUID?
     @State private var allocatingPlanFocusSession: DayPlanFocusAllocationPresentation?
-    @State private var assumedDoneResolutionOverlay = DayPlanAssumedDoneResolutionOverlay()
+    @State private var dayTaskResolutionOverlay = DayPlanDayTaskResolutionOverlay()
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
         store: SharedDefaults.app
@@ -2498,7 +2498,7 @@ private struct DayPlanTimelinePanelContentView: View {
             context: renderSnapshot.visibleBlockContext
         )
         let calendarDayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { date in
-            assumedDoneResolutionOverlay.applying(
+            dayTaskResolutionOverlay.applying(
                 to: dayTaskListItems(
                     on: date,
                     plannedBlocksByDayKey: visibleTimedBlocksByDayKey,
@@ -2508,6 +2508,7 @@ private struct DayPlanTimelinePanelContentView: View {
                         : [],
                     tasks: currentTasks,
                     logs: logs,
+                    referenceDate: referenceDate,
                     timelineActivityBlocks: timelineSuggestionsVisible
                         ? dayTimelineActivityBlocks(
                             on: date,
@@ -2658,6 +2659,9 @@ private struct DayPlanTimelinePanelContentView: View {
                     } else {
                         onOpenTaskDetails?(item.taskID)
                     }
+                },
+                onCompletePlannedDayTask: { item, date in
+                    completePlannedDayTask(item, on: date)
                 },
                 onConfirmAssumedDayTask: { item, date in
                     confirmAssumedDayTask(item, on: date)
@@ -2930,7 +2934,7 @@ private struct DayPlanTimelinePanelContentView: View {
             activatePlannerUndoManager()
         }
         .onChange(of: dataSnapshotID) { _, _ in
-            assumedDoneResolutionOverlay.reset()
+            dayTaskResolutionOverlay.reset()
         }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             timelinePlacementCache.requireFullValidation()
@@ -3305,6 +3309,7 @@ private struct DayPlanTimelinePanelContentView: View {
         plannedDateTasks: [RoutineTask],
         tasks: [RoutineTask],
         logs: [RoutineLog],
+        referenceDate: Date,
         timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
         visibilitySignature: DayPlanDayTaskListVisibilitySignature
     ) -> [DayPlanDayTaskListItem] {
@@ -3318,6 +3323,7 @@ private struct DayPlanTimelinePanelContentView: View {
             timelineActivityBlocks: timelineActivityBlocks,
             tasks: tasks,
             logs: logs,
+            referenceDate: referenceDate,
             calendar: calendar,
             visibilitySignature: visibilitySignature,
             visibilityCache: plannedDateTaskVisibilityCache
@@ -3685,6 +3691,78 @@ private struct DayPlanTimelinePanelContentView: View {
         planner.commitBlock(task: task, calendar: calendar, context: modelContext)
     }
 
+    private func completePlannedDayTask(_ item: DayPlanDayTaskListItem, on date: Date) {
+        guard item.section == .planned,
+              let task = tasks.first(where: { $0.id == item.taskID })
+        else {
+            return
+        }
+        let referenceDate = Date()
+        guard let completedAt = DayPlanPlannedTaskCompletion.completionDate(
+            for: task,
+            on: date,
+            placement: item.placement,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        ) else {
+            return
+        }
+
+        let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext)
+        let previousTodoStateTitle = task.isOneOffTask ? task.todoState?.displayTitle : nil
+        do {
+            guard let update = try RoutineLogHistory.advanceTask(
+                taskID: item.taskID,
+                completedAt: completedAt,
+                referenceDate: referenceDate,
+                allowEarlyScheduledCompletion: true,
+                context: context,
+                calendar: calendar
+            ), update.result == .completedRoutine else {
+                return
+            }
+            if update.task.isOneOffTask,
+               previousTodoStateTitle != TodoState.done.displayTitle {
+                update.task.appendChangeLogEntry(
+                    RoutineTaskChangeLogEntry(
+                        timestamp: referenceDate,
+                        kind: .stateChanged,
+                        previousValue: previousTodoStateTitle,
+                        newValue: TodoState.done.displayTitle
+                    )
+                )
+                try context.save()
+            }
+            if NotificationCoordinator.shouldScheduleNotification(
+                for: update.task,
+                referenceDate: completedAt,
+                calendar: calendar
+            ) {
+                let payload = NotificationCoordinator.notificationPayload(
+                    for: update.task,
+                    referenceDate: completedAt,
+                    calendar: calendar
+                )
+                Task {
+                    await NotificationCoordinator.scheduleNotification(payload)
+                }
+            } else {
+                NotificationCoordinator.cancelNotification(item.taskID.uuidString)
+            }
+            dayTaskResolutionOverlay.complete(
+                item,
+                on: date,
+                completedAt: completedAt,
+                calendar: calendar
+            )
+            WidgetStatsService.refreshAndReload(using: context)
+            NotificationCenter.default.postRoutineDidUpdate()
+        } catch {
+            NSLog("Failed to complete planned planner day task: \(error.localizedDescription)")
+        }
+    }
+
     private func confirmAssumedDayTask(_ item: DayPlanDayTaskListItem, on date: Date) {
         guard item.section == .assumedDone else { return }
         let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext)
@@ -3705,7 +3783,7 @@ private struct DayPlanTimelinePanelContentView: View {
                 referenceDate: referenceDate,
                 calendar: calendar
             )
-            assumedDoneResolutionOverlay.confirm(
+            dayTaskResolutionOverlay.complete(
                 item,
                 on: date,
                 completedAt: completedAt,
@@ -3729,7 +3807,7 @@ private struct DayPlanTimelinePanelContentView: View {
                 referenceDate: referenceDate,
                 calendar: calendar
             )
-            assumedDoneResolutionOverlay.markMissed(
+            dayTaskResolutionOverlay.markMissed(
                 taskID: item.taskID,
                 on: date,
                 calendar: calendar

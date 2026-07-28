@@ -545,25 +545,25 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
-    func testPlannerAssumedDoneResolutionUsesLightweightPresentationOverlay() throws {
+    func testPlannerDayTaskResolutionUsesLightweightPresentationOverlay() throws {
         let viewSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
         let supportSource = try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanSupport.swift")
         guard
-            let overlayStart = supportSource.range(of: "struct DayPlanAssumedDoneResolutionOverlay"),
+            let overlayStart = supportSource.range(of: "struct DayPlanDayTaskResolutionOverlay"),
             let presentationStart = supportSource.range(
                 of: "enum DayPlanDayTaskListPresentation",
                 range: overlayStart.upperBound..<supportSource.endIndex
             )
         else {
-            XCTFail("Expected the Planner assumed-done resolution overlay")
+            XCTFail("Expected the Planner day-task resolution overlay")
             return
         }
         let overlaySource = String(
             supportSource[overlayStart.lowerBound..<presentationStart.lowerBound]
         )
 
-        XCTAssertTrue(viewSource.contains("@State private var assumedDoneResolutionOverlay"))
-        XCTAssertTrue(viewSource.contains("assumedDoneResolutionOverlay.applying("))
+        XCTAssertTrue(viewSource.contains("@State private var dayTaskResolutionOverlay"))
+        XCTAssertTrue(viewSource.contains("dayTaskResolutionOverlay.applying("))
         XCTAssertFalse(
             overlaySource.contains("FetchDescriptor"),
             "Immediate row resolution must not fetch task history."

@@ -644,7 +644,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func rightSidebarDayTaskRowsDragButCalendarListColumnsStayReadOnly() throws {
+    func rightSidebarDayTaskRowsDragButCalendarListColumnsDoNotDrag() throws {
         let projectRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -666,8 +666,33 @@ struct DayPlanPlannerStateTests {
         #expect(calendarSource.contains(".dayPlanDayTaskDrag(dragProvider)"))
         #expect(columnSource.contains("DayPlanDayTaskListContentView("))
         #expect(!columnSource.contains("onDragProvider:"))
+        #expect(columnSource.contains("onCompletePlannedDayTask:"))
         #expect(sidebarSource.contains("onDragProvider: { item in"))
         #expect(sidebarSource.contains("NSItemProvider(object: item.taskID.uuidString as NSString)"))
+    }
+
+    @Test
+    func calendarListPlannedRowsCompleteThroughRoutineHistoryWithoutEditingBlocks() throws {
+        let calendarSource = try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift")
+        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let actionStart = try #require(
+            dayPlanSource.range(
+                of: "private func completePlannedDayTask(_ item: DayPlanDayTaskListItem, on date: Date) {"
+            )
+        )
+        let actionEnd = try #require(
+            dayPlanSource[actionStart.upperBound...].range(
+                of: "\n    private func confirmAssumedDayTask"
+            )
+        )
+        let actionSource = dayPlanSource[actionStart.lowerBound..<actionEnd.lowerBound]
+
+        #expect(calendarSource.contains("accessibilityLabel: \"Mark done\""))
+        #expect(calendarSource.contains("onCompletePlannedDayTask?(item, date)"))
+        #expect(actionSource.contains("RoutineLogHistory.advanceTask("))
+        #expect(actionSource.contains("dayTaskResolutionOverlay.complete("))
+        #expect(!actionSource.contains("DayPlanStorage.save"))
+        #expect(!actionSource.contains("planner.commitBlock"))
     }
 
     @Test

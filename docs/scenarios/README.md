@@ -314,7 +314,7 @@ And Save updates that exact completion's timestamp and actual duration
 And `When` is the work's start while the stored completion timestamp is start plus duration
 And planned and assumed-done rows do not show the completion card
 And Planner blocks, other completion occurrences, task recurrence, availability, reminders, estimates, and other days are unchanged
-And the Calendar `List` column itself remains read-only
+And correcting an existing Done row's time remains in Task Detail rather than becoming an inline List editor
 
 ### Mac Internal Record Time Action Reveals Its Editor
 
@@ -1105,7 +1105,7 @@ Then the top range segmented picker can remain visible
 ### Planner Day Headers Open Planned Task Lists
 
 Area: Planner
-Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md), [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md)
+Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md), [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md), [0448](../decisions/0448-complete-planned-tasks-inline-from-calendar-list.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanDayTaskListPresentationTests.swift`
@@ -1129,7 +1129,8 @@ Then the title uses the same task payload as the left task list and schedules th
 
 Given Planner Calendar is in `List` task-view mode
 When day-task columns render the same agenda rows
-Then those column rows remain read-only and do not provide drag payloads
+Then those columns do not provide drag payloads or general Planner-block editing
+And eligible planned rows may expose their focused completion action
 
 Given Task A is done for a day via linked source Task B
 When Task B is already visible in that day's Planner task list
@@ -1143,6 +1144,16 @@ Given an assumed-done row is visible in Mac Planner Calendar `List` while a task
 When the user clicks the row's green check
 Then the persisted completion moves the row from `Assumed done` to `Dones` immediately
 And the immediate transition only overlays the visible day-task presentation instead of fetching or regrouping full task history
+
+Given an eligible standard planned row is visible for today or a past day in Mac Planner Calendar `List`
+When the user hovers the row and clicks its green check
+Then the represented occurrence is persisted through the normal task-completion history path
+And the row moves from `Planned tasks` to `Dones` immediately
+And no Planner block is created, moved, resized, or deleted
+
+Given a planned row represents a future day, sequential-step task, or checklist-completion task
+When the Calendar `List` row renders
+Then it does not show the one-click Done action
 
 ### Calendar List Done Durations Accept Custom Minutes
 

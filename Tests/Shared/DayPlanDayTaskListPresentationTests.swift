@@ -783,6 +783,82 @@ struct DayPlanDayTaskListPresentationTests {
     }
 
     @Test
+    func plannedTaskCompletionUsesHistoricalTimedBlockFinishAndRejectsFutureDays() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let nextDay = try #require(calendar.date(byAdding: .day, value: 1, to: day))
+        let referenceDate = try #require(calendar.date(
+            byAdding: .hour,
+            value: 9,
+            to: nextDay
+        ))
+        let futureDay = try #require(calendar.date(byAdding: .day, value: 2, to: day))
+        let task = RoutineTask(name: "Daily", scheduleMode: .oneOff)
+        task.plannedDate = day
+        let placement = DayPlanDayTaskListItem.Placement.timed(
+            startMinute: 10 * 60,
+            durationMinutes: 15
+        )
+
+        let completionDate = DayPlanPlannedTaskCompletion.completionDate(
+            for: task,
+            on: day,
+            placement: placement,
+            referenceDate: referenceDate,
+            logs: [],
+            calendar: calendar
+        )
+        let expectedFinish = try #require(calendar.date(
+            byAdding: .minute,
+            value: 10 * 60 + 15,
+            to: day
+        ))
+
+        #expect(completionDate == expectedFinish)
+        #expect(DayPlanPlannedTaskCompletion.completionDate(
+            for: task,
+            on: futureDay,
+            placement: placement,
+            referenceDate: referenceDate,
+            logs: [],
+            calendar: calendar
+        ) == nil)
+    }
+
+    @Test
+    func completedPlannedTaskOverlayMovesTheMatchingRowToDone() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let completedAt = try #require(calendar.date(byAdding: .minute, value: 10 * 60 + 15, to: day))
+        let taskID = try #require(UUID(uuidString: "70707070-7070-7070-7070-707070707070"))
+        let plannedItem = DayPlanDayTaskListItem(
+            id: "planned-\(taskID.uuidString)",
+            taskID: taskID,
+            blockID: nil,
+            title: "Daily",
+            emoji: "✨",
+            section: .planned,
+            placement: .timed(startMinute: 10 * 60, durationMinutes: 15),
+            plannedCompletionDate: completedAt
+        )
+        var overlay = DayPlanDayTaskResolutionOverlay()
+
+        overlay.complete(
+            plannedItem,
+            on: day,
+            completedAt: completedAt,
+            calendar: calendar
+        )
+
+        let resolvedItem = try #require(
+            overlay.applying(to: [plannedItem], on: day, calendar: calendar).first
+        )
+        #expect(resolvedItem.section == .done)
+        #expect(resolvedItem.plannedCompletionDate == nil)
+        #expect(resolvedItem.doneOccurrence?.completedAt == completedAt)
+    }
+
+    @Test
     func confirmedAssumedDoneOverlayMovesOnlyTheMatchingDayRowToDone() throws {
         let calendar = testCalendar
         let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
@@ -798,9 +874,9 @@ struct DayPlanDayTaskListPresentationTests {
             section: .assumedDone,
             placement: .timed(startMinute: 8 * 60 + 45, durationMinutes: 5)
         )
-        var overlay = DayPlanAssumedDoneResolutionOverlay()
+        var overlay = DayPlanDayTaskResolutionOverlay()
 
-        overlay.confirm(
+        overlay.complete(
             assumedItem,
             on: day,
             completedAt: completedAt,
@@ -834,7 +910,7 @@ struct DayPlanDayTaskListPresentationTests {
             section: .assumedDone,
             placement: .durationOnly(durationMinutes: 10)
         )
-        var overlay = DayPlanAssumedDoneResolutionOverlay()
+        var overlay = DayPlanDayTaskResolutionOverlay()
 
         overlay.markMissed(taskID: taskID, on: day, calendar: calendar)
 

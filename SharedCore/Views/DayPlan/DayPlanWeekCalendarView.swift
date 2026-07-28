@@ -91,6 +91,7 @@ struct DayPlanWeekCalendarView: View {
     var dayTaskTint: (UUID) -> Color = { _ in .accentColor }
     var isDayTaskOpenable: (UUID) -> Bool = { _ in false }
     var onOpenDayTaskDetails: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
+    var onCompletePlannedDayTask: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
     var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
     var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
     var onSelectSlot: (Date, Int) -> Void
@@ -176,6 +177,7 @@ struct DayPlanWeekCalendarView: View {
                         taskTint: dayTaskTint,
                         isTaskOpenable: isDayTaskOpenable,
                         onOpenTaskDetails: onOpenDayTaskDetails,
+                        onCompletePlannedDayTask: onCompletePlannedDayTask,
                         onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                         onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
                     )
@@ -988,6 +990,7 @@ private struct DayPlanDayTaskColumnsView: View {
     var taskTint: (UUID) -> Color
     var isTaskOpenable: (UUID) -> Bool
     var onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
+    var onCompletePlannedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
 
@@ -1021,6 +1024,7 @@ private struct DayPlanDayTaskColumnsView: View {
                             calendar: calendar,
                             isTaskOpenable: isTaskOpenable,
                             onOpenTaskDetails: onOpenTaskDetails,
+                            onCompletePlannedDayTask: onCompletePlannedDayTask,
                             onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                             onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
                         )
@@ -1046,6 +1050,7 @@ private struct DayPlanDayTaskColumnView: View {
     var calendar: Calendar
     var isTaskOpenable: (UUID) -> Bool
     var onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
+    var onCompletePlannedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
 
@@ -1061,6 +1066,7 @@ private struct DayPlanDayTaskColumnView: View {
                     calendar: calendar,
                     isTaskOpenable: isTaskOpenable,
                     onOpenTaskDetails: onOpenTaskDetails,
+                    onCompletePlannedDayTask: onCompletePlannedDayTask,
                     onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                     onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                     availableRowWidth: availableRowWidth,
@@ -1103,6 +1109,7 @@ struct DayPlanDayTaskListContentView: View {
     let calendar: Calendar
     let isTaskOpenable: (UUID) -> Bool
     let onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
+    var onCompletePlannedDayTask: ((DayPlanDayTaskListItem, Date) -> Void)? = nil
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     var onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)? = nil
@@ -1123,6 +1130,7 @@ struct DayPlanDayTaskListContentView: View {
                         calendar: calendar,
                         isTaskOpenable: isTaskOpenable,
                         onOpenTaskDetails: onOpenTaskDetails,
+                        onCompletePlannedDayTask: onCompletePlannedDayTask,
                         onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                         onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                         onDragProvider: onDragProvider,
@@ -1147,6 +1155,7 @@ private struct DayPlanDayTaskListContentSectionView: View {
     let calendar: Calendar
     let isTaskOpenable: (UUID) -> Bool
     let onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
+    let onCompletePlannedDayTask: ((DayPlanDayTaskListItem, Date) -> Void)?
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
@@ -1181,6 +1190,7 @@ private struct DayPlanDayTaskListContentSectionView: View {
                     calendar: calendar,
                     isOpenable: isTaskOpenable(item.taskID),
                     onOpenTaskDetails: onOpenTaskDetails,
+                    onCompletePlannedDayTask: onCompletePlannedDayTask,
                     onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                     onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                     onDragProvider: onDragProvider,
@@ -1199,6 +1209,7 @@ private struct DayPlanDayTaskListContentRow: View {
     let calendar: Calendar
     let isOpenable: Bool
     let onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
+    let onCompletePlannedDayTask: ((DayPlanDayTaskListItem, Date) -> Void)?
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
@@ -1208,7 +1219,7 @@ private struct DayPlanDayTaskListContentRow: View {
 
     var body: some View {
         Group {
-            if isOpenable && item.section != .assumedDone {
+            if isOpenable && !hasInlineActions {
                 Button {
                     onOpenTaskDetails(item, date)
                 } label: {
@@ -1264,11 +1275,20 @@ private struct DayPlanDayTaskListContentRow: View {
             interactive: isOpenable
         )
         .overlay(alignment: .trailing) {
-            if item.section == .assumedDone {
-                assumedDoneActions
+            if hasInlineActions {
+                inlineResolutionActions
                     .padding(.trailing, 8)
             }
         }
+    }
+
+    private var hasInlineActions: Bool {
+        if item.section == .assumedDone {
+            return true
+        }
+        return item.section == .planned
+            && item.plannedCompletionDate != nil
+            && onCompletePlannedDayTask != nil
     }
 
     private var showsAvatar: Bool {
@@ -1283,23 +1303,46 @@ private struct DayPlanDayTaskListContentRow: View {
         }
     }
 
-    private var assumedDoneActions: some View {
-        HStack(spacing: 5) {
-            assumedDoneButton(
-                systemImage: "checkmark",
-                tint: .green,
-                accessibilityLabel: "I did it"
-            ) {
-                onConfirmAssumedDayTask(item, date)
+    @ViewBuilder
+    private var inlineResolutionActions: some View {
+        if item.section == .planned {
+            resolutionActionsContainer {
+                resolutionButton(
+                    systemImage: "checkmark",
+                    tint: .green,
+                    accessibilityLabel: "Mark done"
+                ) {
+                    onCompletePlannedDayTask?(item, date)
+                }
             }
+        } else {
+            resolutionActionsContainer {
+                HStack(spacing: 5) {
+                    resolutionButton(
+                        systemImage: "checkmark",
+                        tint: .green,
+                        accessibilityLabel: "I did it"
+                    ) {
+                        onConfirmAssumedDayTask(item, date)
+                    }
 
-            assumedDoneButton(
-                systemImage: "xmark",
-                tint: .red,
-                accessibilityLabel: "I didn't do it"
-            ) {
-                onMarkAssumedDayTaskMissed(item, date)
+                    resolutionButton(
+                        systemImage: "xmark",
+                        tint: .red,
+                        accessibilityLabel: "I didn't do it"
+                    ) {
+                        onMarkAssumedDayTaskMissed(item, date)
+                    }
+                }
             }
+        }
+    }
+
+    private func resolutionActionsContainer<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 5) {
+            content()
         }
         .padding(4)
         .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
@@ -1308,7 +1351,7 @@ private struct DayPlanDayTaskListContentRow: View {
         .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
 
-    private func assumedDoneButton(
+    private func resolutionButton(
         systemImage: String,
         tint: Color,
         accessibilityLabel: String,
