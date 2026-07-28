@@ -698,7 +698,7 @@ Then the primary action, active range, completed span, and undo behavior stay co
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
@@ -724,6 +724,10 @@ Then the row appears in `Today` or enabled `Tomorrow` and also remains in its no
 Given a task belongs to a custom section and also has a planned date
 When the user changes either its plan or its custom assignment
 Then both values persist and Home shows the task in the matching planning and custom sections
+
+Given a user edits a custom super section in Mac Settings -> Sections
+When automatic rules are shown
+Then only tag routing is available, planned-today and planned-tomorrow options are absent, and legacy saved planned-day rules do not affect placement
 
 Given Mac Home shows expanded `Future`
 When future task groups are visible

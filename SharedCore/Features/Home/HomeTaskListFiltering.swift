@@ -229,59 +229,7 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         _ rules: HomeCustomTaskSectionRules,
         task: Display
     ) -> Bool {
-        guard !rules.isEmpty else { return false }
-        if rules.matchesTags(task.tags) {
-            return true
-        }
-        for rule in rules.enabledRules where matchesCustomTaskSectionRule(rule, task: task) {
-            return true
-        }
-        return false
-    }
-
-    private func matchesCustomTaskSectionRule(
-        _ rule: HomeCustomTaskSectionRule,
-        task: Display
-    ) -> Bool {
-        switch rule {
-        case .plannedToday:
-            return matchesExplicitPlannedDate(
-                for: task,
-                on: metrics.configuration.referenceDate,
-                rejectsCurrentDayCanceledTasks: true
-            )
-        case .plannedTomorrow:
-            guard let tomorrow = metrics.configuration.calendar.date(
-                byAdding: .day,
-                value: 1,
-                to: metrics.configuration.calendar.startOfDay(for: metrics.configuration.referenceDate)
-            ) else {
-                return false
-            }
-            return matchesExplicitPlannedDate(
-                for: task,
-                on: tomorrow,
-                rejectsCurrentDayCanceledTasks: false
-            )
-        }
-    }
-
-    private func matchesExplicitPlannedDate(
-        for task: Display,
-        on day: Date,
-        rejectsCurrentDayCanceledTasks: Bool
-    ) -> Bool {
-        guard RoutineTaskPlanningSupport.supportsStoredPlanning(
-            scheduleMode: task.scheduleMode,
-            trackingCadenceEnabled: task.trackingCadenceEnabled,
-            isDailyRoutine: task.isDailyRoutine
-        ),
-              matchesUncompletedTodayClaim(task, on: day),
-              let plannedDate = task.plannedDate else {
-            return false
-        }
-        guard !rejectsCurrentDayCanceledTasks || !task.isCanceledToday else { return false }
-        return metrics.configuration.calendar.isDate(plannedDate, inSameDayAs: day)
+        !rules.isEmpty && rules.matchesTags(task.tags)
     }
 
     private func filteredPlannedTasks(

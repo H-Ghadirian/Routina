@@ -1674,7 +1674,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationAppliesPlanningRulesWithoutRemovingBuiltIns() {
+    func sidebarPresentationDoesNotRoutePlannedRowsIntoTaglessCustomSections() {
         let referenceDate = makeDate("2026-06-22T10:00:00Z")
         let customTodaySectionID = UUID()
         let dailyID = UUID()
@@ -1714,8 +1714,7 @@ struct HomeTaskListFilteringTests {
                 HomeCustomTaskSection(
                     id: customTodaySectionID,
                     title: "Custom Today",
-                    createdAt: nil,
-                    rules: HomeCustomTaskSectionRules(enabledRules: [.plannedToday])
+                    createdAt: nil
                 ),
             ],
             emptyState: HomeTaskListEmptyState(
@@ -1725,11 +1724,13 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .future])
-        #expect(presentation.sections.map(\.title) == ["Today", "Custom Today", "Future"])
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .future])
+        #expect(presentation.sections.map(\.title) == ["Today", "Future"])
         #expect(presentation.sections[0].tasks.map(\.taskID) == [plannedTodayID, dailyID])
-        #expect(presentation.sections[1].tasks.map(\.taskID) == [plannedTodayID])
-        #expect(Set(presentation.sections[2].tasks.map(\.taskID)) == [trackingID, futureID])
+        #expect(
+            Set(presentation.sections[1].tasks.map(\.taskID))
+                == [plannedTodayID, trackingID, futureID]
+        )
     }
 
     @Test

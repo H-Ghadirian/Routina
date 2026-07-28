@@ -165,7 +165,7 @@ struct HomeCustomTaskSectionStorageTests {
                 id: sectionID,
                 title: "Work",
                 createdAt: nil,
-                rules: HomeCustomTaskSectionRules(enabledRules: [.plannedToday])
+                rules: HomeCustomTaskSectionRules(tagNames: ["Focus"])
             )
         ]
 
@@ -178,7 +178,7 @@ struct HomeCustomTaskSectionStorageTests {
         )
 
         #expect(updatedSections.first?.colorHex == "#11AACC")
-        #expect(updatedSections.first?.rules.contains(.plannedToday) == true)
+        #expect(updatedSections.first?.rules.tagNames == ["Focus"])
         #expect(
             HomeCustomTaskSectionStorage.settingColor(
                 nil,
@@ -186,29 +186,6 @@ struct HomeCustomTaskSectionStorageTests {
                 in: updatedSections
             )?.first?.colorHex == nil
         )
-    }
-
-    @Test
-    func settingRulePreservesSectionIdentityAndTitle() throws {
-        let sectionID = UUID()
-        let createdAt = Date(timeIntervalSince1970: 100)
-        let sections = [
-            HomeCustomTaskSection(id: sectionID, title: "Tomorrow", createdAt: createdAt)
-        ]
-
-        let updatedSections = try #require(
-            HomeCustomTaskSectionStorage.settingRule(
-                .plannedTomorrow,
-                isEnabled: true,
-                for: sectionID,
-                in: sections
-            )
-        )
-
-        #expect(updatedSections.map(\.id) == [sectionID])
-        #expect(updatedSections.first?.title == "Tomorrow")
-        #expect(updatedSections.first?.createdAt == createdAt)
-        #expect(updatedSections.first?.rules.contains(.plannedTomorrow) == true)
     }
 
     @Test
@@ -230,25 +207,25 @@ struct HomeCustomTaskSectionStorageTests {
     }
 
     @Test
-    func encodedRulesRoundTripInStableRuleOrder() throws {
+    func legacyPlannedRulesDecodeAsTagOnlyAndAreNotReencoded() throws {
         let sectionID = UUID()
-        let rawValue = HomeCustomTaskSectionStorage.encoded([
-            HomeCustomTaskSection(
-                id: sectionID,
-                title: "Today",
-                createdAt: nil,
-                rules: HomeCustomTaskSectionRules(
-                    enabledRules: [.plannedTomorrow, .plannedToday],
-                    tagNames: ["Work", "Focus"]
-                )
-            )
-        ])
+        let rawValue = """
+        [{
+          "id":"\(sectionID.uuidString)",
+          "title":"Today",
+          "createdAt":null,
+          "rules":{
+            "enabled":["plannedTomorrow","plannedToday"],
+            "tags":["Work","Focus"]
+          }
+        }]
+        """
 
         let decodedSection = try #require(HomeCustomTaskSectionStorage.decoded(from: rawValue).first)
+        let reencoded = HomeCustomTaskSectionStorage.encoded([decodedSection])
 
         #expect(decodedSection.id == sectionID)
-        #expect(decodedSection.rules.contains(.plannedToday))
-        #expect(decodedSection.rules.contains(.plannedTomorrow))
         #expect(decodedSection.rules.tagNames == ["Work", "Focus"])
+        #expect(!reencoded.contains("\"enabled\""))
     }
 }

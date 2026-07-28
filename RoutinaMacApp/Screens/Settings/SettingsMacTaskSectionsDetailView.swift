@@ -159,11 +159,6 @@ struct SettingsMacTaskSectionsDetailView: View {
                 Text("Rules")
                     .font(.subheadline.weight(.semibold))
 
-                ForEach(HomeCustomTaskSectionRule.allCases) { rule in
-                    Toggle(rule.title, isOn: ruleBinding(sectionID: section.id, rule: rule))
-                        .toggleStyle(.checkbox)
-                }
-
                 VStack(alignment: .leading, spacing: 6) {
                     TextField("Tags", text: tagRuleDraftBinding(for: section))
                         .textFieldStyle(.roundedBorder)
@@ -258,20 +253,6 @@ struct SettingsMacTaskSectionsDetailView: View {
         )
     }
 
-    private func ruleBinding(
-        sectionID: UUID,
-        rule: HomeCustomTaskSectionRule
-    ) -> Binding<Bool> {
-        Binding(
-            get: {
-                customTaskSections.first { $0.id == sectionID }?.rules.contains(rule) ?? false
-            },
-            set: { isEnabled in
-                setRule(rule, isEnabled: isEnabled, for: sectionID)
-            }
-        )
-    }
-
     private func tagRuleDraftBinding(for section: HomeCustomTaskSection) -> Binding<String> {
         Binding(
             get: { tagRuleDrafts[section.id] ?? tagRuleDraftText(for: section.rules.tagNames) },
@@ -362,24 +343,6 @@ struct SettingsMacTaskSectionsDetailView: View {
         guard let sections = HomeCustomTaskSectionStorage.settingTagNames(
             tagNames,
             for: section.id,
-            in: customTaskSections
-        ) else {
-            return
-        }
-
-        persistSections(sections)
-        statusMessage = ""
-    }
-
-    private func setRule(
-        _ rule: HomeCustomTaskSectionRule,
-        isEnabled: Bool,
-        for sectionID: UUID
-    ) {
-        guard let sections = HomeCustomTaskSectionStorage.settingRule(
-            rule,
-            isEnabled: isEnabled,
-            for: sectionID,
             in: customTaskSections
         ) else {
             return

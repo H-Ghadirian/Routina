@@ -6,6 +6,8 @@ Date: 2026-07-26
 
 Refines: [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0252 Stabilize Home Task List Presentation Identity](0252-stabilize-home-task-list-presentation-identity.md), [0350 Add Optional Mac Tomorrow Task Section](0350-add-optional-mac-tomorrow-task-section.md), [0394 Add Custom Mac Sidebar Task Sections](0394-add-custom-mac-sidebar-task-sections.md), [0400 Plan Tracking Rows Into Today](0400-plan-tracking-rows-into-today.md), [0411 Manage Custom Task Sections in Settings](0411-manage-custom-task-sections-in-settings.md)
 
+Refined by: [0449 Keep Custom Section Rules Tag-Based](0449-keep-custom-section-rules-tag-based.md)
+
 ## Context
 
 Home previously treated planning as exclusive task-list classification. A task
