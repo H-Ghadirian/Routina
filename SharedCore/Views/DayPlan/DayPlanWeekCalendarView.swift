@@ -1268,6 +1268,10 @@ struct DayPlanDayTaskListContentView: View {
     var onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)? = nil
     var availableRowWidth: CGFloat? = nil
     var sectionSpacing: CGFloat = 14
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) private var rowHiddenFieldsRawValue = ""
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: sectionSpacing) {
@@ -1287,7 +1291,8 @@ struct DayPlanDayTaskListContentView: View {
                         onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                         onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                         onDragProvider: onDragProvider,
-                        availableRowWidth: availableRowWidth
+                        availableRowWidth: availableRowWidth,
+                        rowVisibility: rowVisibility
                     )
                 }
             }
@@ -1296,6 +1301,10 @@ struct DayPlanDayTaskListContentView: View {
 
     private func items(in section: DayPlanDayTaskListItem.Section) -> [DayPlanDayTaskListItem] {
         items.filter { $0.section == section }
+    }
+
+    private var rowVisibility: DayPlanCalendarListRowVisibility {
+        DayPlanCalendarListRowVisibility(storageRawValue: rowHiddenFieldsRawValue)
     }
 }
 
@@ -1313,6 +1322,7 @@ private struct DayPlanDayTaskListContentSectionView: View {
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
     let availableRowWidth: CGFloat?
+    let rowVisibility: DayPlanCalendarListRowVisibility
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1347,7 +1357,8 @@ private struct DayPlanDayTaskListContentSectionView: View {
                     onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                     onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                     onDragProvider: onDragProvider,
-                    availableRowWidth: availableRowWidth
+                    availableRowWidth: availableRowWidth,
+                    rowVisibility: rowVisibility
                 )
             }
         }
@@ -1367,6 +1378,7 @@ private struct DayPlanDayTaskListContentRow: View {
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
     let availableRowWidth: CGFloat?
+    let rowVisibility: DayPlanCalendarListRowVisibility
 
     @State private var isHovered = false
 
@@ -1410,11 +1422,13 @@ private struct DayPlanDayTaskListContentRow: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
-                Label(placementText, systemImage: placementSystemImage)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                if rowVisibility.shows(.placement) {
+                    Label(placementText, systemImage: placementSystemImage)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             }
 
             Spacer(minLength: 6)
@@ -1423,8 +1437,8 @@ private struct DayPlanDayTaskListContentRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .routinaGlassCard(
             cornerRadius: 8,
-            tint: tint,
-            tintOpacity: 0.08,
+            tint: rowVisibility.shows(.rowColor) ? tint : .secondary,
+            tintOpacity: rowVisibility.shows(.rowColor) ? 0.08 : 0.05,
             interactive: isOpenable
         )
         .overlay(alignment: .trailing) {
@@ -1445,7 +1459,8 @@ private struct DayPlanDayTaskListContentRow: View {
     }
 
     private var showsAvatar: Bool {
-        DayPlanWeekCalendarSizing.showsDayTaskListAvatar(rowWidth: availableRowWidth)
+        rowVisibility.shows(.icon)
+            && DayPlanWeekCalendarSizing.showsDayTaskListAvatar(rowWidth: availableRowWidth)
     }
 
     private var dragProvider: (() -> NSItemProvider)? {

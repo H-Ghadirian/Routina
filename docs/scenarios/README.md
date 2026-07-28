@@ -1208,6 +1208,12 @@ When day-task columns render the same agenda rows
 Then those columns do not provide drag payloads or general Planner-block editing
 And eligible planned rows may expose their focused completion action
 
+Given the user opens Calendar filters and selects `Appearance`
+When they hide Icon, Time and Duration, or Row Color
+Then Calendar `List` columns and the focused day-task sidebar update their shared task rows
+And the main Task List and Timeline row appearance choices remain unchanged
+And row titles and eligible inline resolution actions remain available
+
 Given Task A is done for a day via linked source Task B
 When Task B is already visible in that day's Planner task list
 Then Task A is not also shown as a separate `Dones` row for the same fulfilled action

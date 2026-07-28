@@ -132,6 +132,47 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func calendarListRowVisibilityRoundTripsHiddenFields() {
+        let visibility = DayPlanCalendarListRowVisibility(
+            hiddenFields: [.icon, .rowColor]
+        )
+
+        #expect(
+            DayPlanCalendarListRowVisibility(
+                storageRawValue: visibility.storageRawValue
+            ) == visibility
+        )
+        #expect(DayPlanCalendarListRowVisibility(storageRawValue: nil) == .defaultValue)
+        #expect(!visibility.shows(.icon))
+        #expect(visibility.shows(.placement))
+        #expect(!visibility.shows(.rowColor))
+        #expect(visibility.setting(.icon, visible: true).shows(.icon))
+        #expect(visibility.summaryText == "1 of 3 fields")
+    }
+
+    @Test
+    func calendarFiltersOfferAppearanceAndDayTaskRowsConsumeIt() throws {
+        let filterSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacCalendarFiltersDetailView.swift"
+        )
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
+        )
+
+        #expect(filterSource.contains("case appearance"))
+        #expect(filterSource.contains("HomeMacSidebarSectionCard(title: \"Calendar Task Row\")"))
+        #expect(filterSource.contains("ForEach(DayPlanCalendarListRowField.allCases)"))
+        #expect(
+            filterSource.contains(
+                "UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue"
+            )
+        )
+        #expect(calendarSource.contains("rowVisibility.shows(.icon)"))
+        #expect(calendarSource.contains("if rowVisibility.shows(.placement)"))
+        #expect(calendarSource.contains("rowVisibility.shows(.rowColor) ? tint : .secondary"))
+    }
+
+    @Test
     func displayModePickerReservesRoomForTimelineLabel() {
         #expect(DayPlanHeaderRangePickerVisibility.displayModePickerWidth >= 220)
         #expect(

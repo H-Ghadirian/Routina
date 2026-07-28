@@ -120,6 +120,7 @@ struct SettingsRoutineDataPersistenceTests {
         let keysToRestore = [
             UserDefaultStringValueKey.selectedMacAppIcon.rawValue,
             UserDefaultStringValueKey.appSettingAppColorScheme.rawValue,
+            UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue,
             UserDefaultStringValueKey.appSettingRelatedTagRules.rawValue,
             UserDefaultStringValueKey.appSettingTagColors.rawValue,
             UserDefaultStringValueKey.appSettingFastFilterTags.rawValue,
@@ -162,6 +163,7 @@ struct SettingsRoutineDataPersistenceTests {
 
         defaults[.selectedMacAppIcon] = AppIconOption.teal.rawValue
         defaults[.appSettingAppColorScheme] = AppColorScheme.dark.rawValue
+        defaults[.appSettingDayPlanCalendarListRowHiddenFields] = "icon,rowColor"
         defaults[.appSettingRelatedTagRules] = "[{\"tag\":\"Focus\",\"relatedTags\":[\"Deep Work\"]}]"
         defaults[.appSettingTagColors] = "{\"Focus\":\"#112233\"}"
         defaults[.appSettingFastFilterTags] = "Focus,Health"
@@ -207,6 +209,7 @@ struct SettingsRoutineDataPersistenceTests {
         let backup = try SettingsRoutineDataBackupCoding.decodeBackup(from: package.manifestData)
 
         #expect(backup.userPreferences?.selectedAppIcon == AppIconOption.teal.rawValue)
+        #expect(backup.userPreferences?.dayPlanCalendarListRowHiddenFields == "icon,rowColor")
         #expect(backup.userPreferences?.tagColors == "{\"Focus\":\"#112233\"}")
         #expect(backup.userPreferences?.taskSharingEnabled == true)
         #expect(backup.userPreferences?.taskRelationshipVisualizerEnabled == true)
@@ -232,6 +235,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(summary.userPreferences == 1)
         #expect(restored.selectedAppIcon == AppIconOption.teal.rawValue)
         #expect(restored.appColorScheme == AppColorScheme.dark.rawValue)
+        #expect(restored.dayPlanCalendarListRowHiddenFields == "icon,rowColor")
         #expect(restored.relatedTagRules == "[{\"tag\":\"Focus\",\"relatedTags\":[\"Deep Work\"]}]")
         #expect(restored.tagColors == "{\"Focus\":\"#112233\"}")
         #expect(restored.fastFilterTags == "Focus,Health")

@@ -14,6 +14,7 @@ final class RoutinaUserPreferences {
     var macHomeTaskListSectionOrder: String?
     var homeTaskRowHiddenFields: String?
     var homeTimelineRowHiddenFields: String?
+    var dayPlanCalendarListRowHiddenFields: String?
     var relatedTagRules: String?
     var tagColors: String?
     var fastFilterTags: String?
@@ -165,6 +166,9 @@ enum RoutinaUserPreferencesStore {
         preferences.macHomeTaskListSectionOrder = defaults[.appSettingMacHomeTaskListSectionOrder]
         preferences.homeTaskRowHiddenFields = defaults[.appSettingHomeTaskRowHiddenFields]
         preferences.homeTimelineRowHiddenFields = defaults[.appSettingHomeTimelineRowHiddenFields]
+        preferences.dayPlanCalendarListRowHiddenFields = defaults[
+            .appSettingDayPlanCalendarListRowHiddenFields
+        ]
         preferences.relatedTagRules = defaults[.appSettingRelatedTagRules]
         preferences.tagColors = defaults[.appSettingTagColors]
         preferences.fastFilterTags = defaults[.appSettingFastFilterTags]
@@ -230,6 +234,8 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingMacHomeTaskListSectionOrder] = preferences.macHomeTaskListSectionOrder
         defaults[.appSettingHomeTaskRowHiddenFields] = preferences.homeTaskRowHiddenFields
         defaults[.appSettingHomeTimelineRowHiddenFields] = preferences.homeTimelineRowHiddenFields
+        defaults[.appSettingDayPlanCalendarListRowHiddenFields] =
+            preferences.dayPlanCalendarListRowHiddenFields
         defaults[.appSettingRelatedTagRules] = preferences.relatedTagRules
         defaults[.appSettingTagColors] = preferences.tagColors
         defaults[.appSettingFastFilterTags] = preferences.fastFilterTags

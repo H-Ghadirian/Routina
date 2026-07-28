@@ -1062,6 +1062,8 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.customTaskSections = backupPreferences.customTaskSections
         preferences.macHomeTaskListSectionOrder = backupPreferences.macHomeTaskListSectionOrder
         preferences.homeTaskRowHiddenFields = backupPreferences.homeTaskRowHiddenFields
+        preferences.dayPlanCalendarListRowHiddenFields =
+            backupPreferences.dayPlanCalendarListRowHiddenFields
         preferences.relatedTagRules = backupPreferences.relatedTagRules
         preferences.tagColors = backupPreferences.tagColors
         preferences.fastFilterTags = backupPreferences.fastFilterTags

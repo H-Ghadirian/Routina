@@ -476,6 +476,7 @@ let package = Package(
                 "SharedCore/Views/CalendarTaskSuggestionRowPresentation.swift",
                 "SharedCore/Views/CalendarTaskImportSheet.swift",
                 "SharedCore/Views/DayPlan/DayPlanPlannerState.swift",
+                "SharedCore/Views/DayPlan/DayPlanCalendarListRowVisibility.swift",
                 "SharedCore/Views/DayPlan/DayPlanSupport.swift",
                 "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift",
                 "SharedCore/Views/DayPlan/DayPlanBlockCard.swift",

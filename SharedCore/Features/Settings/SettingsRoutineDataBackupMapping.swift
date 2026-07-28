@@ -366,6 +366,7 @@ enum SettingsRoutineDataBackupMapping {
             customTaskSections: preferences.customTaskSections,
             macHomeTaskListSectionOrder: preferences.macHomeTaskListSectionOrder,
             homeTaskRowHiddenFields: preferences.homeTaskRowHiddenFields,
+            dayPlanCalendarListRowHiddenFields: preferences.dayPlanCalendarListRowHiddenFields,
             relatedTagRules: preferences.relatedTagRules,
             tagColors: preferences.tagColors,
             fastFilterTags: preferences.fastFilterTags,

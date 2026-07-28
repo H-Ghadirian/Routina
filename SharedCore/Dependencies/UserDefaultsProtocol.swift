@@ -99,6 +99,7 @@ enum AppSettingsDefaults {
         UserDefaultStringValueKey.appSettingMacHomeTaskListSectionOrder.rawValue: "",
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue: "",
+        UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue: "",
         UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue: ProtectionBlockingMode.encodedSet(
             ProtectionBlockingMode.defaultEnabledModes
         ),
@@ -203,6 +204,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingTagCounterDisplayMode
     case appSettingHomeTaskRowHiddenFields
     case appSettingHomeTimelineRowHiddenFields
+    case appSettingDayPlanCalendarListRowHiddenFields
     case appSettingRelatedTagRules
     case appSettingTagColors
     case appSettingFastFilterTags
