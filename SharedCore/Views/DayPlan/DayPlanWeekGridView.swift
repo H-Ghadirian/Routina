@@ -5,7 +5,7 @@ struct DayPlanWeekGridView: View {
     var selectedDate: Date
     var calendar: Calendar
     var dayWidth: CGFloat
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
 
     var body: some View {
@@ -18,12 +18,12 @@ struct DayPlanWeekGridView: View {
             ForEach(Array(dates.enumerated()), id: \.element) { index, date in
                 Rectangle()
                     .fill(calendar.isDate(date, inSameDayAs: selectedDate) ? Color.secondary.opacity(0.035) : Color.clear)
-                    .frame(width: dayWidth, height: hourHeight * 24)
+                    .frame(width: dayWidth, height: timeAxis.contentHeight)
                     .offset(x: timeColumnWidth + CGFloat(index) * dayWidth)
 
                 Rectangle()
                     .fill(Color.secondary.opacity(0.18))
-                    .frame(width: 1, height: hourHeight * 24)
+                    .frame(width: 1, height: timeAxis.contentHeight)
                     .offset(x: timeColumnWidth + CGFloat(index) * dayWidth)
             }
         }
@@ -43,12 +43,12 @@ struct DayPlanWeekGridView: View {
         Rectangle()
             .fill(Color.secondary.opacity(0.22))
             .frame(width: CGFloat(dates.count) * dayWidth, height: 1)
-            .offset(x: timeColumnWidth, y: CGFloat(hour) * hourHeight)
+            .offset(x: timeColumnWidth, y: timeAxis.yOffset(forMinute: hour * 60))
             .id(DayPlanScrollTarget.hour(hour))
     }
 
     private func hourLabelYOffset(for hour: Int) -> CGFloat {
-        max((CGFloat(hour) * hourHeight) - 8, 0)
+        max(timeAxis.yOffset(forMinute: hour * 60) - 8, 0)
     }
 
     private var contentWidth: CGFloat {
@@ -56,6 +56,6 @@ struct DayPlanWeekGridView: View {
     }
 
     private var contentHeight: CGFloat {
-        hourHeight * 24
+        timeAxis.contentHeight
     }
 }

@@ -135,11 +135,19 @@ struct DayPlanWeekCalendarView: View {
     @State private var selectedSlotDraft: DayPlanSelectedSlotDraft?
     @State private var selectedDayTaskListDate: Date?
     @State private var draftResizeBaseline: DayPlanSelectedSlotDraft?
+    @State private var frozenTimeAxis: DayPlanAdaptiveTimeAxis?
+    @StateObject private var adaptiveTimeAxisCache = DayPlanAdaptiveTimeAxisCache()
     @Namespace private var blockAnimationNamespace
 
     private let timeColumnWidth: CGFloat = DayPlanWeekCalendarSizing.timeColumnWidth
 
     var body: some View {
+        let resolvedTimeAxis = adaptiveTimeAxisCache.axis(
+            baseHourHeight: hourHeight,
+            intervals: adaptiveTimeAxisIntervals
+        )
+        let timeAxis = frozenTimeAxis ?? resolvedTimeAxis
+
         HStack(spacing: 0) {
             VStack(spacing: 0) {
                 DayPlanWeekHeaderRow(
@@ -193,7 +201,7 @@ struct DayPlanWeekCalendarView: View {
                     onConfirmTimelineActivity: onConfirmTimelineActivity,
                     onHideTimelineActivity: onHideTimelineActivity,
                     onTimelineDragProvider: { activity, date in
-                        dragProvider(for: activity, on: date)
+                        dragProvider(for: activity, on: date, timeAxis: timeAxis)
                     }
                 )
 
@@ -222,7 +230,7 @@ struct DayPlanWeekCalendarView: View {
                                 isExternalInspectorPresented: isExternalInspectorPresented
                             )
                             let contentWidth = timeColumnWidth + (CGFloat(dates.count) * dayWidth)
-                            let contentHeight = hourHeight * 24
+                            let contentHeight = timeAxis.contentHeight
 
                             ZStack(alignment: .topLeading) {
                                 DayPlanWeekGridView(
@@ -230,13 +238,13 @@ struct DayPlanWeekCalendarView: View {
                                     selectedDate: selectedDate,
                                     calendar: calendar,
                                     dayWidth: dayWidth,
-                                    hourHeight: hourHeight,
+                                    timeAxis: timeAxis,
                                     timeColumnWidth: timeColumnWidth
                                 )
                                 DayPlanSlotSelectionLayer(
                                     dates: dates,
                                     dayWidth: dayWidth,
-                                    hourHeight: hourHeight,
+                                    timeAxis: timeAxis,
                                     timeColumnWidth: timeColumnWidth,
                                     onSelectSlot: { date, minute in
                                         updateSelectedSlotDraft(on: date, startMinute: minute)
@@ -249,7 +257,7 @@ struct DayPlanWeekCalendarView: View {
                                 )
                                 selectedSlotDraftLayer(
                                     dayWidth: dayWidth,
-                                    hourHeight: hourHeight,
+                                    timeAxis: timeAxis,
                                     timeColumnWidth: timeColumnWidth,
                                     contentWidth: contentWidth,
                                     contentHeight: contentHeight
@@ -263,7 +271,7 @@ struct DayPlanWeekCalendarView: View {
                                     focusedSleepSessionID: focusedSleep?.sessionID,
                                     calendar: calendar,
                                     dayWidth: dayWidth,
-                                    hourHeight: hourHeight,
+                                    timeAxis: timeAxis,
                                     timeColumnWidth: timeColumnWidth,
                                     blockAnimationNamespace: blockAnimationNamespace,
                                     blocksForDate: blocksForDate,
@@ -286,18 +294,24 @@ struct DayPlanWeekCalendarView: View {
                                     onConfirmTimelineActivity: onConfirmTimelineActivity,
                                     onHideTimelineActivity: onHideTimelineActivity,
                                     onTimelineDragProvider: { activity, date in
-                                        dragProvider(for: activity, on: date)
+                                        dragProvider(for: activity, on: date, timeAxis: timeAxis)
                                     },
                                     onDeleteBlock: onDeleteBlock,
                                     onResizeStarted: { block, date in
-                                        beginResize(block, date)
+                                        beginResize(block, date, timeAxis: timeAxis)
                                     },
                                     onResizeChanged: { block, date, edge, verticalDelta in
-                                        resize(block, date, edge: edge, verticalDelta: verticalDelta)
+                                        resize(
+                                            block,
+                                            date,
+                                            edge: edge,
+                                            verticalDelta: verticalDelta,
+                                            timeAxis: timeAxis
+                                        )
                                     },
                                     onResizeEnded: endResize,
                                     onDragProvider: { block, date in
-                                        dragProvider(for: block, on: date)
+                                        dragProvider(for: block, on: date, timeAxis: timeAxis)
                                     }
                                 )
                                 .id(timedBlockLayerIdentity)
@@ -307,21 +321,21 @@ struct DayPlanWeekCalendarView: View {
                                     dates: dates,
                                     calendar: calendar,
                                     dayWidth: dayWidth,
-                                    hourHeight: hourHeight,
+                                    timeAxis: timeAxis,
                                     timeColumnWidth: timeColumnWidth
                                 )
                             }
                             DayPlanCurrentTimeScrollAnchor(
                                 dates: dates,
                                 calendar: calendar,
-                                hourHeight: hourHeight,
+                                timeAxis: timeAxis,
                                 timeColumnWidth: timeColumnWidth
                             )
                             if let focusedSleep {
                                 DayPlanMinuteScrollAnchor(
                                     target: .focusedSleep(focusedSleep.scrollTargetID),
                                     minute: focusedSleep.startMinute,
-                                    hourHeight: hourHeight,
+                                    timeAxis: timeAxis,
                                     timeColumnWidth: timeColumnWidth
                                 )
                             }
@@ -329,7 +343,7 @@ struct DayPlanWeekCalendarView: View {
                                 DayPlanMinuteScrollAnchor(
                                     target: .plannerBlock(highlightedBlockID),
                                     minute: highlightedBlockScrollMinute,
-                                    hourHeight: hourHeight,
+                                    timeAxis: timeAxis,
                                     timeColumnWidth: timeColumnWidth
                                 )
                             }
@@ -340,7 +354,7 @@ struct DayPlanWeekCalendarView: View {
                                             dates: dates,
                                             calendar: calendar,
                                             dayWidth: dayWidth,
-                                            hourHeight: hourHeight,
+                                            timeAxis: timeAxis,
                                             timeColumnWidth: timeColumnWidth,
                                             focusSessionBlocks: activeFocusSessionBlocks(timeline.date),
                                             taskTint: taskTint,
@@ -354,7 +368,7 @@ struct DayPlanWeekCalendarView: View {
                                             dates: dates,
                                             calendar: calendar,
                                             dayWidth: dayWidth,
-                                            hourHeight: hourHeight,
+                                            timeAxis: timeAxis,
                                             timeColumnWidth: timeColumnWidth,
                                             sprintFocusBlocks: activeSprintFocusBlocks(timeline.date),
                                             taskTint: taskTint,
@@ -368,14 +382,14 @@ struct DayPlanWeekCalendarView: View {
                                         now: timeline.date,
                                         calendar: calendar,
                                         dayWidth: dayWidth,
-                                        hourHeight: hourHeight,
+                                        timeAxis: timeAxis,
                                         timeColumnWidth: timeColumnWidth
                                     )
                                     .zIndex(20)
                                 }
                                 .frame(
                                     width: timeColumnWidth + (CGFloat(dates.count) * dayWidth),
-                                    height: hourHeight * 24,
+                                    height: timeAxis.contentHeight,
                                     alignment: .topLeading
                                 )
                             }
@@ -388,7 +402,7 @@ struct DayPlanWeekCalendarView: View {
                                 dates: dates,
                                 dayWidth: dayWidth,
                                 timeColumnWidth: timeColumnWidth,
-                                hourHeight: hourHeight,
+                                timeAxis: timeAxis,
                                 dropDurationMinutes: dropDurationMinutes,
                                 draggedBlockID: $draggedBlockID,
                                 draggedTimelineActivity: $draggedTimelineActivity,
@@ -404,7 +418,7 @@ struct DayPlanWeekCalendarView: View {
                             )
                         )
                     }
-                    .frame(height: hourHeight * 24)
+                    .frame(height: timeAxis.contentHeight)
                 }
                 .onAppear {
                     scrollToInitialTarget(with: scrollProxy)
@@ -451,6 +465,12 @@ struct DayPlanWeekCalendarView: View {
         }
         .animation(.easeInOut(duration: 0.16), value: selectedSlotDraft)
         .animation(.easeInOut(duration: 0.16), value: isRightSidebarPresented)
+        .onChange(of: draggedBlockID) { _, _ in
+            releaseFrozenTimeAxisAfterDragIfNeeded()
+        }
+        .onChange(of: draggedTimelineActivity?.id) { _, _ in
+            releaseFrozenTimeAxisAfterDragIfNeeded()
+        }
         .onChange(of: isFilterSidebarPresented.wrappedValue) { _, isPresented in
             guard isPresented else { return }
             onSidebarPresentationRequested?()
@@ -482,20 +502,25 @@ struct DayPlanWeekCalendarView: View {
         }
     }
 
-    private func beginResize(_ block: DayPlanBlock, _ date: Date) {
+    private func beginResize(
+        _ block: DayPlanBlock,
+        _ date: Date,
+        timeAxis: DayPlanAdaptiveTimeAxis
+    ) {
         selectedSlotDraft = nil
         draftResizeBaseline = nil
         clearDropState()
         draggedBlockID = nil
         draggedTimelineActivity = nil
         draggedBlockDurationMinutes = nil
+        frozenTimeAxis = timeAxis
         onSelectBlock(block, date)
         onBeginResizeBlock(block, date)
         resizeSession = DayPlanResizeSession(
             blockID: block.id,
             startMinute: block.startMinute,
             durationMinutes: block.durationMinutes,
-            contentLayoutHeight: blockHeight(forDurationMinutes: block.durationMinutes)
+            contentLayoutHeight: blockHeight(for: block, timeAxis: timeAxis)
         )
     }
 
@@ -503,30 +528,34 @@ struct DayPlanWeekCalendarView: View {
         _ block: DayPlanBlock,
         _ date: Date,
         edge: DayPlanResizeEdge,
-        verticalDelta: CGFloat
+        verticalDelta: CGFloat,
+        timeAxis: DayPlanAdaptiveTimeAxis
     ) {
         let session = resizeSession ?? DayPlanResizeSession(
             blockID: block.id,
             startMinute: block.startMinute,
             durationMinutes: block.durationMinutes,
-            contentLayoutHeight: blockHeight(forDurationMinutes: block.durationMinutes)
+            contentLayoutHeight: blockHeight(for: block, timeAxis: timeAxis)
         )
         guard session.blockID == block.id else { return }
 
-        let deltaMinutes = minuteDelta(for: verticalDelta)
         let originalStart = session.startMinute
         let originalEnd = originalStart + session.durationMinutes
+        let deltaMinutes = timeAxis.minuteDelta(
+            forVerticalDelta: verticalDelta,
+            fromMinute: edge == .top ? originalStart : originalEnd
+        )
         let startMinute: Int
         let durationMinutes: Int
 
         switch edge {
         case .top:
             let minStart = 0
-            let maxStart = originalEnd - DayPlanBlock.minimumDurationMinutes
+            let maxStart = originalEnd - DayPlanBlock.minimumStoredDurationMinutes
             startMinute = min(max(originalStart + deltaMinutes, minStart), maxStart)
             durationMinutes = originalEnd - startMinute
         case .bottom:
-            let minEnd = originalStart + DayPlanBlock.minimumDurationMinutes
+            let minEnd = originalStart + DayPlanBlock.minimumStoredDurationMinutes
             let maxEnd = DayPlanBlock.minutesPerDay
             let endMinute = min(max(originalEnd + deltaMinutes, minEnd), maxEnd)
             startMinute = originalStart
@@ -540,12 +569,8 @@ struct DayPlanWeekCalendarView: View {
     private func endResize() {
         let blockID = resizeSession?.blockID
         resizeSession = nil
+        frozenTimeAxis = nil
         onEndResizeBlock(blockID)
-    }
-
-    private func minuteDelta(for verticalDelta: CGFloat) -> Int {
-        let rawMinutes = (verticalDelta / hourHeight) * 60
-        return Int(rawMinutes.rounded())
     }
 
     private var timedBlockLayerIdentity: String {
@@ -564,13 +589,108 @@ struct DayPlanWeekCalendarView: View {
         .joined(separator: "|")
     }
 
-    private func blockHeight(forDurationMinutes durationMinutes: Int) -> CGFloat {
-        max(CGFloat(durationMinutes) / 60 * hourHeight, 18)
+    private var adaptiveTimeAxisIntervals: [DayPlanAdaptiveTimeAxis.Interval] {
+        guard calendarTaskViewMode == .schedule else { return [] }
+
+        var intervals: [DayPlanAdaptiveTimeAxis.Interval] = []
+        intervals.reserveCapacity(dates.count * 8)
+
+        for date in dates {
+            intervals.append(
+                contentsOf: blocksForDate(date).map {
+                    adaptiveInterval(for: $0)
+                }
+            )
+            intervals.append(
+                contentsOf: automaticTimelineBlocksForDate(date).map {
+                    adaptiveInterval(for: $0.block)
+                }
+            )
+            intervals.append(
+                contentsOf: eventBlocksForDate(date).map {
+                    adaptiveInterval(for: $0.block)
+                }
+            )
+            intervals.append(
+                contentsOf: sleepBlocksForDate(date).map {
+                    adaptiveInterval(for: $0.block)
+                }
+            )
+            intervals.append(
+                contentsOf: awayBlocksForDate(date).map {
+                    adaptiveInterval(for: $0.block)
+                }
+            )
+            intervals.append(
+                contentsOf: sprintFocusBlocksForDate(date).map { sprintBlock in
+                    DayPlanAdaptiveTimeAxis.Interval(
+                        groupID: sprintBlock.block.dayKey,
+                        startMinute: sprintBlock.block.startMinute,
+                        durationMinutes: sprintBlock.isActive
+                            ? sprintBlock.renderedDurationMinutes
+                            : sprintBlock.block.durationMinutes
+                    )
+                }
+            )
+        }
+
+        if let selectedSlotDraft,
+           dates.contains(where: {
+               calendar.isDate($0, inSameDayAs: selectedSlotDraft.date)
+           }) {
+            intervals.append(
+                DayPlanAdaptiveTimeAxis.Interval(
+                    groupID: DayPlanStorage.dayKey(
+                        for: selectedSlotDraft.date,
+                        calendar: calendar
+                    ),
+                    startMinute: selectedSlotDraft.startMinute,
+                    durationMinutes: selectedSlotDraft.durationMinutes
+                )
+            )
+        }
+
+        return intervals
+    }
+
+    private func adaptiveInterval(
+        for block: DayPlanBlock
+    ) -> DayPlanAdaptiveTimeAxis.Interval {
+        DayPlanAdaptiveTimeAxis.Interval(
+            groupID: block.dayKey,
+            startMinute: block.startMinute,
+            durationMinutes: block.durationMinutes
+        )
+    }
+
+    private func blockHeight(
+        for block: DayPlanBlock,
+        timeAxis: DayPlanAdaptiveTimeAxis
+    ) -> CGFloat {
+        max(
+            timeAxis.height(
+                startMinute: block.startMinute,
+                durationMinutes: block.durationMinutes
+            ),
+            DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+        )
     }
 
     private func clearDropState() {
         isDropTargeted = false
         dropPreview = nil
+    }
+
+    private func releaseFrozenTimeAxisAfterDragIfNeeded() {
+        guard draggedBlockID == nil,
+              draggedTimelineActivity == nil,
+              resizeSession == nil,
+              draftResizeBaseline == nil
+        else {
+            return
+        }
+
+        frozenTimeAxis = nil
     }
 
     private func dismissScheduleInteractionState() {
@@ -580,11 +700,16 @@ struct DayPlanWeekCalendarView: View {
         draggedBlockID = nil
         draggedTimelineActivity = nil
         draggedBlockDurationMinutes = nil
+        frozenTimeAxis = nil
         clearDropState()
         endResize()
     }
 
-    private func dragProvider(for block: DayPlanBlock, on date: Date) -> NSItemProvider {
+    private func dragProvider(
+        for block: DayPlanBlock,
+        on date: Date,
+        timeAxis: DayPlanAdaptiveTimeAxis
+    ) -> NSItemProvider {
         selectedSlotDraft = nil
         draftResizeBaseline = nil
         isCompletingDrop = false
@@ -593,11 +718,16 @@ struct DayPlanWeekCalendarView: View {
         draggedBlockID = block.id
         draggedTimelineActivity = nil
         draggedBlockDurationMinutes = block.durationMinutes
+        frozenTimeAxis = timeAxis
         onSelectBlock(block, date)
         return NSItemProvider(object: DayPlanBlockDragPayload.text(for: block.id) as NSString)
     }
 
-    private func dragProvider(for activity: DayPlanTimelineActivityBlock, on date: Date) -> NSItemProvider {
+    private func dragProvider(
+        for activity: DayPlanTimelineActivityBlock,
+        on date: Date,
+        timeAxis: DayPlanAdaptiveTimeAxis
+    ) -> NSItemProvider {
         selectedSlotDraft = nil
         draftResizeBaseline = nil
         isCompletingDrop = false
@@ -606,6 +736,7 @@ struct DayPlanWeekCalendarView: View {
         draggedBlockID = nil
         draggedTimelineActivity = activity
         draggedBlockDurationMinutes = activity.block.durationMinutes
+        frozenTimeAxis = timeAxis
         return NSItemProvider(object: "day-plan-timeline-activity:\(activity.id)" as NSString)
     }
 
@@ -667,7 +798,7 @@ struct DayPlanWeekCalendarView: View {
         draft.durationMinutes = DayPlanBlock.clampedDuration(
             draft.durationMinutes,
             startMinute: clampedStartMinute,
-            minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
         )
         selectedSlotDraft = draft
     }
@@ -685,7 +816,7 @@ struct DayPlanWeekCalendarView: View {
     @ViewBuilder
     private func selectedSlotDraftLayer(
         dayWidth: CGFloat,
-        hourHeight: CGFloat,
+        timeAxis: DayPlanAdaptiveTimeAxis,
         timeColumnWidth: CGFloat,
         contentWidth: CGFloat,
         contentHeight: CGFloat
@@ -695,8 +826,8 @@ struct DayPlanWeekCalendarView: View {
            let dayIndex = dates.firstIndex(where: { calendar.isDate($0, inSameDayAs: selectedSlotDraft.date) }) {
             let draftX = timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5
             let draftWidth = max(dayWidth - 10, 90)
-            let draftY = yOffset(for: selectedSlotDraft.startMinute, hourHeight: hourHeight)
-            let draftHeight = draftBlockHeight(for: selectedSlotDraft, hourHeight: hourHeight)
+            let draftY = timeAxis.yOffset(forMinute: selectedSlotDraft.startMinute)
+            let draftHeight = draftBlockHeight(for: selectedSlotDraft, timeAxis: timeAxis)
 
             ZStack(alignment: .topLeading) {
                 DayPlanSlotDraftBlock(
@@ -705,8 +836,16 @@ struct DayPlanWeekCalendarView: View {
                     durationMinutes: selectedSlotDraft.durationMinutes,
                     renderedHeight: draftHeight,
                     calendar: calendar,
-                    onResizeStarted: beginDraftResize,
-                    onResizeChanged: resizeDraft,
+                    onResizeStarted: {
+                        beginDraftResize(timeAxis: timeAxis)
+                    },
+                    onResizeChanged: { edge, verticalDelta in
+                        resizeDraft(
+                            edge: edge,
+                            verticalDelta: verticalDelta,
+                            timeAxis: timeAxis
+                        )
+                    },
                     onResizeEnded: endDraftResize
                 )
                 .frame(width: draftWidth, height: draftHeight)
@@ -817,32 +956,48 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func clampedSlotDraftDuration(_ durationMinutes: Int) -> Int {
-        min(max(durationMinutes, 5), 16 * 60)
+        min(
+            max(durationMinutes, DayPlanBlock.minimumStoredDurationMinutes),
+            16 * 60
+        )
     }
 
-    private func beginDraftResize() {
+    private func beginDraftResize(timeAxis: DayPlanAdaptiveTimeAxis) {
         draftResizeBaseline = selectedSlotDraft
+        frozenTimeAxis = timeAxis
     }
 
-    private func resizeDraft(edge: DayPlanResizeEdge, verticalDelta: CGFloat) {
+    private func resizeDraft(
+        edge: DayPlanResizeEdge,
+        verticalDelta: CGFloat,
+        timeAxis: DayPlanAdaptiveTimeAxis
+    ) {
         guard let baseline = draftResizeBaseline ?? selectedSlotDraft else { return }
 
-        let deltaMinutes = snappedMinuteDelta(for: verticalDelta)
         let originalStart = baseline.startMinute
         let visualOriginalEnd = min(
             DayPlanBlock.minutesPerDay,
-            originalStart + max(baseline.durationMinutes, DayPlanBlock.minimumDurationMinutes)
+            originalStart
+                + max(
+                    baseline.durationMinutes,
+                    DayPlanBlock.minimumStoredDurationMinutes
+                )
+        )
+        let deltaMinutes = timeAxis.minuteDelta(
+            forVerticalDelta: verticalDelta,
+            fromMinute: edge == .top ? originalStart : visualOriginalEnd,
+            snappingTo: 15
         )
         let startMinute: Int
         let durationMinutes: Int
 
         switch edge {
         case .top:
-            let maxStart = visualOriginalEnd - DayPlanBlock.minimumDurationMinutes
+            let maxStart = visualOriginalEnd - DayPlanBlock.minimumStoredDurationMinutes
             startMinute = min(max(originalStart + deltaMinutes, 0), maxStart)
             durationMinutes = visualOriginalEnd - startMinute
         case .bottom:
-            let minEnd = originalStart + DayPlanBlock.minimumDurationMinutes
+            let minEnd = originalStart + DayPlanBlock.minimumStoredDurationMinutes
             let endMinute = min(max(visualOriginalEnd + deltaMinutes, minEnd), DayPlanBlock.minutesPerDay)
             startMinute = originalStart
             durationMinutes = endMinute - originalStart
@@ -856,26 +1011,24 @@ struct DayPlanWeekCalendarView: View {
 
     private func endDraftResize() {
         draftResizeBaseline = nil
-    }
-
-    private func snappedMinuteDelta(for verticalDelta: CGFloat) -> Int {
-        let rawMinutes = (verticalDelta / hourHeight) * 60
-        return Int((rawMinutes / 15).rounded()) * 15
-    }
-
-    private func yOffset(for minute: Int, hourHeight: CGFloat) -> CGFloat {
-        CGFloat(minute) / 60 * hourHeight
+        frozenTimeAxis = nil
     }
 
     private func draftBlockHeight(
         for selection: DayPlanSelectedSlotDraft,
-        hourHeight: CGFloat
+        timeAxis: DayPlanAdaptiveTimeAxis
     ) -> CGFloat {
         let visibleDurationMinutes = min(
-            max(selection.durationMinutes, 5),
+            max(selection.durationMinutes, DayPlanBlock.minimumStoredDurationMinutes),
             DayPlanBlock.minutesPerDay - selection.startMinute
         )
-        return max(CGFloat(visibleDurationMinutes) / 60 * hourHeight, 18)
+        return max(
+            timeAxis.height(
+                startMinute: selection.startMinute,
+                durationMinutes: visibleDurationMinutes
+            ),
+            DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+        )
     }
 
 }

@@ -9,7 +9,7 @@ struct DayPlanBlockLayer: View {
     var focusedSleepSessionID: UUID?
     var calendar: Calendar
     var dayWidth: CGFloat
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
     var blockAnimationNamespace: Namespace.ID
     var blocksForDate: (Date) -> [DayPlanBlock]
@@ -309,11 +309,17 @@ struct DayPlanBlockLayer: View {
     }
 
     private func yOffset(for minute: Int) -> CGFloat {
-        CGFloat(minute) / 60 * hourHeight
+        timeAxis.yOffset(forMinute: minute)
     }
 
     private func blockHeight(for block: DayPlanBlock) -> CGFloat {
-        max(CGFloat(block.durationMinutes) / 60 * hourHeight, 18)
+        max(
+            timeAxis.height(
+                startMinute: block.startMinute,
+                durationMinutes: block.durationMinutes
+            ),
+            DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+        )
     }
 
     private func contentLayoutHeight(for block: DayPlanBlock) -> CGFloat? {
@@ -370,7 +376,13 @@ struct DayPlanBlockLayer: View {
 
     private func sprintFocusBlockHeight(for sprintFocusBlock: DayPlanSprintFocusBlock) -> CGFloat {
         if sprintFocusBlock.isActive {
-            return CGFloat(sprintFocusBlock.renderedDurationMinutes) / 60 * hourHeight
+            return max(
+                timeAxis.height(
+                    startMinute: sprintFocusBlock.block.startMinute,
+                    durationMinutes: sprintFocusBlock.renderedDurationMinutes
+                ),
+                DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+            )
         }
 
         return blockHeight(for: sprintFocusBlock.block)
@@ -483,7 +495,7 @@ struct DayPlanBlockLayer: View {
     }
 
     private var contentHeight: CGFloat {
-        hourHeight * 24
+        timeAxis.contentHeight
     }
 }
 
@@ -508,7 +520,7 @@ struct DayPlanFocusSessionBlockLayer: View {
     var dates: [Date]
     var calendar: Calendar
     var dayWidth: CGFloat
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
     var focusSessionBlocks: [DayPlanFocusSessionBlock]
     var taskTint: (DayPlanBlock) -> Color
@@ -574,12 +586,18 @@ struct DayPlanFocusSessionBlockLayer: View {
     }
 
     private func yOffset(for minute: Int) -> CGFloat {
-        CGFloat(minute) / 60 * hourHeight
+        timeAxis.yOffset(forMinute: minute)
     }
 
     private func blockHeight(for focusBlock: DayPlanFocusSessionBlock) -> CGFloat {
         let visibleMinutes = max(focusBlock.durationMinutes, 1)
-        return max(CGFloat(visibleMinutes) / 60 * hourHeight, 18)
+        return max(
+            timeAxis.height(
+                startMinute: focusBlock.block.startMinute,
+                durationMinutes: visibleMinutes
+            ),
+            DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+        )
     }
 
     private var contentWidth: CGFloat {
@@ -587,7 +605,7 @@ struct DayPlanFocusSessionBlockLayer: View {
     }
 
     private var contentHeight: CGFloat {
-        hourHeight * 24
+        timeAxis.contentHeight
     }
 }
 
@@ -605,7 +623,7 @@ struct DayPlanSprintFocusBlockLayer: View {
     var dates: [Date]
     var calendar: Calendar
     var dayWidth: CGFloat
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
     var sprintFocusBlocks: [DayPlanSprintFocusBlock]
     var taskTint: (DayPlanBlock) -> Color
@@ -673,15 +691,27 @@ struct DayPlanSprintFocusBlockLayer: View {
     }
 
     private func yOffset(for minute: Int) -> CGFloat {
-        CGFloat(minute) / 60 * hourHeight
+        timeAxis.yOffset(forMinute: minute)
     }
 
     private func blockHeight(for sprintFocusBlock: DayPlanSprintFocusBlock) -> CGFloat {
         if sprintFocusBlock.isActive {
-            return CGFloat(sprintFocusBlock.renderedDurationMinutes) / 60 * hourHeight
+            return max(
+                timeAxis.height(
+                    startMinute: sprintFocusBlock.block.startMinute,
+                    durationMinutes: sprintFocusBlock.renderedDurationMinutes
+                ),
+                DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+            )
         }
 
-        return max(CGFloat(sprintFocusBlock.block.durationMinutes) / 60 * hourHeight, 18)
+        return max(
+            timeAxis.height(
+                startMinute: sprintFocusBlock.block.startMinute,
+                durationMinutes: sprintFocusBlock.block.durationMinutes
+            ),
+            DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+        )
     }
 
     private var contentWidth: CGFloat {
@@ -689,7 +719,7 @@ struct DayPlanSprintFocusBlockLayer: View {
     }
 
     private var contentHeight: CGFloat {
-        hourHeight * 24
+        timeAxis.contentHeight
     }
 }
 

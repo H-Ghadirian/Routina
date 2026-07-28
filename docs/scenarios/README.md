@@ -591,6 +591,34 @@ Given Planner previously created a matching scheduled block for an available-win
 When Planner refreshes that later day
 Then the stale scheduled block is removed while manually moved or resized blocks for that routine remain
 
+### Dense Planner Hours Preserve Exact Short Durations
+
+Area: Planner
+Decision links: [0454](../decisions/0454-adapt-planner-hour-heights-to-visible-density.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given twelve sequential Planner blocks each have an exact five-minute duration within one clock hour
+When Calendar `Schedule` renders that visible range
+Then that hour expands enough for every block to keep the minimum interactive visual height without overlapping its sequential neighbor
+And the other hours retain their normal base height
+And every block remains five minutes in storage, labels, conflict checks, drag/drop duration, and completion data
+
+Given a dense hour is expanded in any visible day column
+When the Planner shows Day, 3 Days, or Week
+Then every visible column uses the same expanded height for that clock hour
+And grid lines, cards, scroll anchors, current time, slot selection, drop targets, and resize calculations share one time axis
+
+Given the user drags or resizes a short block
+When visible density changes during that interaction
+Then the active time axis stays frozen until the interaction ends so the pointer target does not shift
+
+Given Planner rebuilds adaptive geometry
+When the visible block snapshot and base spacing are unchanged
+Then it reuses the cached axis without fetching or regrouping whole history
+
 ### New Routine Checklists Use Checklist Completion
 
 Area: Tasks

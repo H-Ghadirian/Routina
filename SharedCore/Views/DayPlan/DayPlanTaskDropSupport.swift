@@ -59,21 +59,36 @@ enum DayPlanDropTargetResolver {
         dates: [Date],
         dayWidth: CGFloat,
         timeColumnWidth: CGFloat,
-        hourHeight: CGFloat
+        timeAxis: DayPlanAdaptiveTimeAxis
     ) -> DayPlanDropTarget? {
-        guard !dates.isEmpty, dayWidth > 0, hourHeight > 0 else { return nil }
+        guard !dates.isEmpty, dayWidth > 0, timeAxis.contentHeight > 0 else { return nil }
 
         let dayX = max(location.x - timeColumnWidth, 0)
         let dayIndex = min(max(Int(dayX / dayWidth), 0), dates.count - 1)
-        let timelineHeight = hourHeight * 24
+        let timelineHeight = timeAxis.contentHeight
         let boundedY = min(max(location.y, 0), max(timelineHeight - 1, 0))
-        let rawMinute = Int((boundedY / hourHeight) * 60)
-        let quarterHourMinute = (rawMinute / 15) * 15
+        let quarterHourMinute = timeAxis.snappedMinute(atYOffset: boundedY)
 
         return DayPlanDropTarget(
             dayIndex: dayIndex,
             date: dates[dayIndex],
             startMinute: DayPlanBlock.clampedStartMinute(quarterHourMinute)
+        )
+    }
+
+    static func target(
+        for location: CGPoint,
+        dates: [Date],
+        dayWidth: CGFloat,
+        timeColumnWidth: CGFloat,
+        hourHeight: CGFloat
+    ) -> DayPlanDropTarget? {
+        target(
+            for: location,
+            dates: dates,
+            dayWidth: dayWidth,
+            timeColumnWidth: timeColumnWidth,
+            timeAxis: DayPlanAdaptiveTimeAxis(baseHourHeight: hourHeight)
         )
     }
 }
@@ -95,7 +110,7 @@ struct DayPlanTaskDropDelegate: DropDelegate {
     let dates: [Date]
     let dayWidth: CGFloat
     let timeColumnWidth: CGFloat
-    let hourHeight: CGFloat
+    let timeAxis: DayPlanAdaptiveTimeAxis
     let dropDurationMinutes: Int
     @Binding var draggedBlockID: DayPlanBlock.ID?
     @Binding var draggedTimelineActivity: DayPlanTimelineActivityBlock?
@@ -298,7 +313,7 @@ struct DayPlanTaskDropDelegate: DropDelegate {
             dates: dates,
             dayWidth: dayWidth,
             timeColumnWidth: timeColumnWidth,
-            hourHeight: hourHeight
+            timeAxis: timeAxis
         )
     }
 

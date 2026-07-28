@@ -10,7 +10,7 @@ Accepted
 
 ## Refines
 
-- [0282: Expand Day Planner Hour Spacing](0282-expand-day-planner-hour-spacing.md)
+- [0282: Expand Day Planner Hour Spacing](superseded/0282-expand-day-planner-hour-spacing.md)
 - [0292: Unify Planner Header Date Control](0292-unify-planner-header-date-control.md)
 - [0303: Align Mac Planner Range Picker with Adaptive Days](0303-align-mac-planner-range-picker-with-adaptive-days.md)
 

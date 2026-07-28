@@ -3,7 +3,7 @@ import SwiftUI
 struct DayPlanSlotSelectionLayer: View {
     var dates: [Date]
     var dayWidth: CGFloat
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
     var onSelectSlot: (Date, Int) -> Void
     var onOpenSlotActions: (Date, Int) -> Void
@@ -14,7 +14,7 @@ struct DayPlanSlotSelectionLayer: View {
         Color.clear
             .frame(
                 width: timeColumnWidth + (CGFloat(dates.count) * dayWidth),
-                height: hourHeight * 24
+                height: timeAxis.contentHeight
             )
             .contentShape(Rectangle())
             .simultaneousGesture(
@@ -50,7 +50,7 @@ struct DayPlanSlotSelectionLayer: View {
         guard location.x >= timeColumnWidth,
               location.x < timeColumnWidth + daysWidth,
               location.y >= 0,
-              location.y < hourHeight * 24
+              location.y < timeAxis.contentHeight
         else {
             return nil
         }
@@ -60,7 +60,7 @@ struct DayPlanSlotSelectionLayer: View {
             dates: dates,
             dayWidth: dayWidth,
             timeColumnWidth: timeColumnWidth,
-            hourHeight: hourHeight
+            timeAxis: timeAxis
         )
     }
 }

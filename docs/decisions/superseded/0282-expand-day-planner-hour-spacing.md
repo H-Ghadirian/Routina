@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0454: Adapt Planner Hour Heights to Visible Density](../0454-adapt-planner-hour-heights-to-visible-density.md)
 
 ## Date
 
@@ -10,8 +10,8 @@ Accepted
 
 ## Refines
 
-- [0191: Support One-Day Planner View](0191-support-one-day-planner-view.md)
-- [0274: Present Resizable Planner Slot Draft](superseded/0274-present-resizable-planner-slot-draft.md)
+- [0191: Support One-Day Planner View](../0191-support-one-day-planner-view.md)
+- [0274: Present Resizable Planner Slot Draft](0274-present-resizable-planner-slot-draft.md)
 
 ## Context
 

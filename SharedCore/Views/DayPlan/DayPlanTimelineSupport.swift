@@ -538,7 +538,8 @@ enum DayPlanTimelineTasks {
                 titleSnapshot: taskInfo.title,
                 emojiSnapshot: taskInfo.emoji,
                 createdAt: activity.timestamp,
-                updatedAt: activity.timestamp
+                updatedAt: activity.timestamp,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             )
             let activityBlock = DayPlanTimelineActivityBlock(
                 block: block,
@@ -1086,12 +1087,15 @@ private extension DayPlanTimelineActivityBlock {
         avoiding occupiedIntervals: [DayPlanOccupiedInterval]
     ) -> DayPlanTimelineActivityBlock? {
         let preferredEndMinute = max(endMinute, block.durationMinutes)
-        var clampedEndMinute = min(max(preferredEndMinute, DayPlanBlock.minimumDurationMinutes), DayPlanBlock.minutesPerDay)
+        var clampedEndMinute = min(
+            max(preferredEndMinute, DayPlanBlock.minimumStoredDurationMinutes),
+            DayPlanBlock.minutesPerDay
+        )
         var startMinute = max(0, clampedEndMinute - block.durationMinutes)
 
-        while clampedEndMinute >= DayPlanBlock.minimumDurationMinutes {
+        while clampedEndMinute >= DayPlanBlock.minimumStoredDurationMinutes {
             let durationMinutes = clampedEndMinute - startMinute
-            guard durationMinutes >= DayPlanBlock.minimumDurationMinutes else {
+            guard durationMinutes >= DayPlanBlock.minimumStoredDurationMinutes else {
                 return nil
             }
 
@@ -1112,7 +1116,8 @@ private extension DayPlanTimelineActivityBlock {
                 titleSnapshot: block.titleSnapshot,
                 emojiSnapshot: block.emojiSnapshot,
                 createdAt: block.createdAt,
-                updatedAt: block.updatedAt
+                updatedAt: block.updatedAt,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             )
 
             return DayPlanTimelineActivityBlock(

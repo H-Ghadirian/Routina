@@ -11,7 +11,7 @@ struct DayPlanDropIndicator: View {
     var dates: [Date]
     var calendar: Calendar
     var dayWidth: CGFloat
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
 
     var body: some View {
@@ -66,7 +66,13 @@ struct DayPlanDropIndicator: View {
     }
 
     private var indicatorHeight: CGFloat {
-        CGFloat(preview.durationMinutes) / 60 * hourHeight
+        max(
+            timeAxis.height(
+                startMinute: preview.startMinute,
+                durationMinutes: preview.durationMinutes
+            ),
+            DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+        )
     }
 
     private var indicatorX: CGFloat {
@@ -74,7 +80,7 @@ struct DayPlanDropIndicator: View {
     }
 
     private var indicatorY: CGFloat {
-        CGFloat(preview.startMinute) / 60 * hourHeight
+        timeAxis.yOffset(forMinute: preview.startMinute)
     }
 
     private var timeText: String {

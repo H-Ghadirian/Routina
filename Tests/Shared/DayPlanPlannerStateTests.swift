@@ -12,6 +12,114 @@ import Testing
 @MainActor
 struct DayPlanPlannerStateTests {
     @Test
+    func denseFiveMinuteBlocksStretchOnlyTheirHourWithoutChangingTime() {
+        let startMinute = 9 * 60
+        let intervals = (0..<12).map { index in
+            DayPlanAdaptiveTimeAxis.Interval(
+                startMinute: startMinute + index * 5,
+                durationMinutes: 5
+            )
+        }
+        let axis = DayPlanAdaptiveTimeAxis(
+            baseHourHeight: 64,
+            intervals: intervals
+        )
+        let isolatedShortBlockAxis = DayPlanAdaptiveTimeAxis(
+            baseHourHeight: 64,
+            intervals: [intervals[0]]
+        )
+
+        #expect(abs(isolatedShortBlockAxis.height(forHour: 9) - 64) < 0.001)
+        #expect(abs(axis.height(forHour: 8) - 64) < 0.001)
+        #expect(abs(axis.height(forHour: 9) - 216) < 0.001)
+        #expect(abs(axis.height(forHour: 10) - 64) < 0.001)
+        #expect(abs(axis.contentHeight - ((23 * 64) + 216)) < 0.001)
+
+        for interval in intervals {
+            #expect(interval.durationMinutes == 5)
+            #expect(
+                abs(
+                    axis.height(
+                        startMinute: interval.startMinute,
+                        durationMinutes: interval.durationMinutes
+                    ) - DayPlanAdaptiveTimeAxis.minimumInteractiveBlockHeight
+                ) < 0.001
+            )
+        }
+
+        for index in 1..<intervals.count {
+            let previous = intervals[index - 1]
+            let current = intervals[index]
+            let previousBottom = axis.yOffset(
+                forMinute: previous.startMinute + previous.durationMinutes
+            )
+            let currentTop = axis.yOffset(forMinute: current.startMinute)
+            #expect(abs(previousBottom - currentTop) < 0.001)
+        }
+    }
+
+    @Test
+    func adaptiveTimeAxisRoundTripsMinutesAndKeepsQuarterHourTargeting() throws {
+        let axis = DayPlanAdaptiveTimeAxis(
+            baseHourHeight: 64,
+            intervals: [
+                DayPlanAdaptiveTimeAxis.Interval(
+                    startMinute: 9 * 60,
+                    durationMinutes: 5
+                ),
+                DayPlanAdaptiveTimeAxis.Interval(
+                    startMinute: 9 * 60 + 5,
+                    durationMinutes: 5
+                ),
+            ]
+        )
+
+        for minute in [0, 8 * 60, 9 * 60, 9 * 60 + 5, 10 * 60, 23 * 60 + 59] {
+            let roundTrippedMinute = axis.minute(
+                atYOffset: axis.yOffset(forMinute: minute)
+            )
+            #expect(abs(roundTrippedMinute - CGFloat(minute)) < 0.001)
+        }
+
+        let date = try #require(
+            ISO8601DateFormatter().date(from: "2026-07-28T12:00:00Z")
+        )
+        let target = try #require(
+            DayPlanDropTargetResolver.target(
+                for: CGPoint(
+                    x: DayPlanWeekCalendarSizing.timeColumnWidth + 20,
+                    y: axis.yOffset(forMinute: 9 * 60 + 37)
+                ),
+                dates: [date],
+                dayWidth: 120,
+                timeColumnWidth: DayPlanWeekCalendarSizing.timeColumnWidth,
+                timeAxis: axis
+            )
+        )
+
+        #expect(target.startMinute == 9 * 60 + 30)
+    }
+
+    @Test
+    func adaptiveTimeAxisRenderPathUsesVisibleCachedDataWithoutPersistenceWork() throws {
+        let axisSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanSupport.swift"
+        )
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
+        )
+
+        #expect(axisSource.contains("final class DayPlanAdaptiveTimeAxisCache"))
+        #expect(calendarSource.contains("@StateObject private var adaptiveTimeAxisCache"))
+        #expect(calendarSource.contains("private var adaptiveTimeAxisIntervals"))
+        #expect(calendarSource.contains("for date in dates"))
+        #expect(!axisSource.contains("FetchDescriptor"))
+        #expect(!axisSource.contains("ModelContext"))
+        #expect(!calendarSource.contains("FetchDescriptor"))
+        #expect(!calendarSource.contains("ModelContext"))
+    }
+
+    @Test
     func displayModeTitlesUseTimelineForListMode() {
         #expect(DayPlanDisplayMode.calendar.title == "Calendar")
         #expect(DayPlanDisplayMode.list.title == "Timeline")
@@ -538,7 +646,7 @@ struct DayPlanPlannerStateTests {
         )
 
         #expect(calendarSource.contains("resizingContentLayoutHeight: resizeSession?.contentLayoutHeight"))
-        #expect(calendarSource.contains("contentLayoutHeight: blockHeight(forDurationMinutes: block.durationMinutes)"))
+        #expect(calendarSource.contains("contentLayoutHeight: blockHeight(for: block, timeAxis: timeAxis)"))
         #expect(blockLayerSource.contains("renderedHeight: blockHeight"))
         #expect(blockLayerSource.contains("contentLayoutHeight: contentLayoutHeight(for: block)"))
         #expect(blockLayerSource.contains("showsResizeHandles: false"))
@@ -1628,8 +1736,8 @@ struct DayPlanPlannerStateTests {
         #expect(summarySuggestions[dayKey]?.count == 1)
         #expect(summary.block.taskID == taskID)
         #expect(summary.source == .assumedDone)
-        #expect(summary.block.startMinute == 11 * 60 + 45)
-        #expect(summary.block.durationMinutes == 15)
+        #expect(summary.block.startMinute == 11 * 60 + 55)
+        #expect(summary.block.durationMinutes == 5)
     }
 
     @Test

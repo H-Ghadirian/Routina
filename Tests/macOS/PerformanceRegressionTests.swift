@@ -103,6 +103,24 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testPlannerAdaptiveTimeAxisUsesVisibleSnapshotsWithoutPersistenceWork() throws {
+        let axisSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanSupport.swift"
+        )
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
+        )
+
+        XCTAssertTrue(axisSource.contains("final class DayPlanAdaptiveTimeAxisCache"))
+        XCTAssertTrue(calendarSource.contains("@StateObject private var adaptiveTimeAxisCache"))
+        XCTAssertTrue(calendarSource.contains("private var adaptiveTimeAxisIntervals"))
+        XCTAssertTrue(calendarSource.contains("for date in dates"))
+        XCTAssertFalse(axisSource.contains("FetchDescriptor"))
+        XCTAssertFalse(axisSource.contains("ModelContext"))
+        XCTAssertFalse(calendarSource.contains("FetchDescriptor"))
+        XCTAssertFalse(calendarSource.contains("ModelContext"))
+    }
+
     func testMacToolbarSearchDefersResponderMutationsPastRepresentableUpdate() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"

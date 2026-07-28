@@ -5,7 +5,7 @@ struct DayPlanCurrentTimeIndicator: View {
     var now: Date
     var calendar: Calendar
     var dayWidth: CGFloat
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
 
     @Environment(\.colorScheme) private var colorScheme
@@ -84,13 +84,13 @@ struct DayPlanCurrentTimeIndicator: View {
     }
 
     private var yOffset: CGFloat {
-        CGFloat(currentMinute) / 60 * hourHeight
+        timeAxis.yOffset(forMinute: currentMinute)
     }
 
     private var timeLabelYOffset: CGFloat {
         let defaultOffset = yOffset - (timeLabelEstimatedHeight / 2)
-        let nearestVisibleHour = min(max(Int((yOffset / hourHeight).rounded()), 0), 23)
-        let nearestHourY = CGFloat(nearestVisibleHour) * hourHeight
+        let nearestVisibleHour = timeAxis.nearestHour(toYOffset: yOffset)
+        let nearestHourY = timeAxis.yOffset(forMinute: nearestVisibleHour * 60)
         let isNearHourLabel = abs(yOffset - nearestHourY) < timeLabelCollisionDistance
         let proposedOffset: CGFloat
 
@@ -135,7 +135,7 @@ struct DayPlanCurrentTimeIndicator: View {
     }
 
     private var contentHeight: CGFloat {
-        hourHeight * 24
+        timeAxis.contentHeight
     }
 
     private func todayColumnX(todayIndex: Int) -> CGFloat {

@@ -3,7 +3,7 @@ import SwiftUI
 struct DayPlanCurrentTimeScrollAnchor: View {
     var dates: [Date]
     var calendar: Calendar
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
 
     var body: some View {
@@ -19,14 +19,14 @@ struct DayPlanCurrentTimeScrollAnchor: View {
 
                     Spacer(minLength: 0)
                 }
-                .frame(width: 1, height: hourHeight * 24)
+                .frame(width: 1, height: timeAxis.contentHeight)
                 .offset(x: timeColumnWidth)
             }
         }
     }
 
     private func currentTimeYOffset(for date: Date) -> CGFloat {
-        CGFloat(currentMinute(for: date)) / 60 * hourHeight
+        timeAxis.yOffset(forMinute: currentMinute(for: date))
     }
 
     private func currentMinute(for date: Date) -> Int {
@@ -39,7 +39,7 @@ struct DayPlanCurrentTimeScrollAnchor: View {
 struct DayPlanMinuteScrollAnchor: View {
     var target: DayPlanScrollTarget
     var minute: Int
-    var hourHeight: CGFloat
+    var timeAxis: DayPlanAdaptiveTimeAxis
     var timeColumnWidth: CGFloat
 
     var body: some View {
@@ -53,12 +53,12 @@ struct DayPlanMinuteScrollAnchor: View {
 
             Spacer(minLength: 0)
         }
-        .frame(width: 1, height: hourHeight * 24)
+        .frame(width: 1, height: timeAxis.contentHeight)
         .offset(x: timeColumnWidth)
     }
 
     private var yOffset: CGFloat {
         let clampedMinute = min(max(minute, 0), DayPlanBlock.minutesPerDay)
-        return CGFloat(clampedMinute) / 60 * hourHeight
+        return timeAxis.yOffset(forMinute: clampedMinute)
     }
 }
