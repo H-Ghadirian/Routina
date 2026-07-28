@@ -324,6 +324,36 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func filteredPlannedTodayTasksRespectsStructuredWeeklyIntervalAnchor() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        calendar.firstWeekday = 2
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: makeDate("2026-07-21T11:15:00Z"),
+            weekdays: [3],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = TestTaskDisplay(
+            name: "Biweekly Tuesday",
+            recurrenceRule: .advanced(advanced)
+        )
+
+        let firstOccurrence = makeFiltering(referenceDate: makeDate("2026-07-21T12:00:00Z"))
+            .filteredPlannedTodayTasks([task])
+        let interveningTuesday = makeFiltering(referenceDate: makeDate("2026-07-28T12:00:00Z"))
+            .filteredPlannedTodayTasks([task])
+        let nextOccurrence = makeFiltering(referenceDate: makeDate("2026-08-04T12:00:00Z"))
+            .filteredPlannedTodayTasks([task])
+
+        #expect(firstOccurrence.map(\.name) == ["Biweekly Tuesday"])
+        #expect(interveningTuesday.isEmpty)
+        #expect(nextOccurrence.map(\.name) == ["Biweekly Tuesday"])
+    }
+
+    @Test
     func filteredPlannedTodayTasksExcludesCalendarOccurrenceSatisfiedEarly() {
         let referenceDate = makeDate("2026-07-27T10:00:00Z")
         let tasks = [

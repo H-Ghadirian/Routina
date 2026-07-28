@@ -812,6 +812,53 @@ enum RoutineDateMath {
         scheduledOccurrences(for: task, on: day, calendar: calendar).first
     }
 
+    static func isFixedCalendarOccurrence(
+        for recurrenceRule: RoutineRecurrenceRule,
+        on day: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        switch recurrenceRule.kind {
+        case .weekly, .monthlyDay:
+            break
+        case .intervalDays, .dailyTime:
+            return false
+        }
+
+        if let advanced = recurrenceRule.advanced {
+            let occurrenceCalendar = advancedCalendar(for: advanced, input: calendar)
+            let startOfDay = occurrenceCalendar.startOfDay(for: day)
+            guard let endOfDay = occurrenceCalendar.date(
+                byAdding: .day,
+                value: 1,
+                to: startOfDay
+            ) else {
+                return false
+            }
+            let occurrence = RoutineAdvancedRecurrenceGenerator.nextOccurrence(
+                for: advanced,
+                after: startOfDay.addingTimeInterval(-0.001),
+                calendar: occurrenceCalendar
+            )
+            return occurrence.map { $0 < endOfDay } ?? false
+        }
+
+        let normalizedDay = calendar.startOfDay(for: day)
+        switch recurrenceRule.kind {
+        case .weekly:
+            return recurrenceRule.resolvedWeekdays(calendar: calendar)
+                .contains(calendar.component(.weekday, from: normalizedDay))
+
+        case .monthlyDay:
+            let dayCount = calendar.range(of: .day, in: .month, for: normalizedDay)?.count ?? 31
+            let scheduledDays = recurrenceRule.resolvedDaysOfMonth(calendar: calendar)
+                .map { min(max($0, 1), dayCount) }
+            return scheduledDays.contains(calendar.component(.day, from: normalizedDay))
+
+        case .intervalDays, .dailyTime:
+            return false
+        }
+    }
+
     static func scheduledOccurrences(
         for task: RoutineTask,
         on day: Date,

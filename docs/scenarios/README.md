@@ -755,6 +755,11 @@ Given a weekly or month-day calendar routine is configured for today's weekday o
 When Home derives `Today`
 Then that calendar routine appears in the existing today list without a separate scheduled-today group, while rolling interval routines stay in the normal due/status sections unless explicitly planned
 
+Given a structured weekly routine repeats every two weeks on Tuesday starting July 21
+When Home derives `Today` for the intervening Tuesday, July 28
+Then the routine does not appear in `Today`
+And it appears when Home derives `Today` for the next anchored occurrence on August 4
+
 Given a weekly or month-day calendar routine has a canceled occurrence for today
 When Home derives `Today`
 Then that routine no longer appears in the today plan for the canceled day
