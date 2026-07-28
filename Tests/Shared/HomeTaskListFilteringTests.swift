@@ -1176,6 +1176,40 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationAppliesPersistentTopLevelSectionOrderAndReindexesRows() {
+        let pinnedID = UUID()
+        let regularID = UUID()
+        let archivedID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(taskID: regularID, name: "Regular", daysUntilDue: 4),
+                TestTaskDisplay(taskID: pinnedID, name: "Pinned", isPinned: true),
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [TestTaskDisplay(taskID: archivedID, name: "Archived")],
+            sectionOrderIDs: [
+                "archived:archived",
+                "future:future",
+                "pinned:pinned",
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Archived", "Future", "Pinned"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 2])
+        #expect(presentation.sections.flatMap(\.tasks).map(\.taskID) == [
+            archivedID,
+            regularID,
+            pinnedID,
+        ])
+    }
+
+    @Test
     func sidebarPresentationDeadlineDateGroupsAreCollapsibleInsideFuture() {
         let missedID = UUID()
         let overdueID = UUID()

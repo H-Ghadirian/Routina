@@ -64,6 +64,9 @@ extension HomeTCAView {
             message: emptyTaskListMessage,
             systemImage: "magnifyingglass"
         )
+        let sectionOrderIDs = HomeMacTaskListSectionOrder.decoded(
+            from: macHomeTaskListSectionOrderRawValue
+        )
         let signature = HomeMacTaskListPresentationSignature(
             routineDisplays: routineDisplays,
             awayRoutineDisplays: awayRoutineDisplays,
@@ -73,6 +76,7 @@ extension HomeTCAView {
             separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
             showTomorrowSection: showsTomorrowInTaskList,
             customSections: customTaskSections,
+            sectionOrderIDs: sectionOrderIDs,
             separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
             separateDeadlineStatusInTagSections: separatesDeadlineStatusInTagTaskListSections,
             emptyState: emptyState,
@@ -112,6 +116,7 @@ extension HomeTCAView {
                 separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
                 showTomorrowSection: showsTomorrowInTaskList,
                 customSections: customTaskSections,
+                sectionOrderIDs: sectionOrderIDs,
                 separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
                 emptyState: emptyState
             )
@@ -277,6 +282,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let separateDailyRoutinesInTaskList: Bool
     let showTomorrowSection: Bool
     let customSections: [HomeCustomTaskSection]
+    let sectionOrderIDs: [String]
     let separateTodosAndRoutinesInTagSections: Bool
     let separateDeadlineStatusInTagSections: Bool
     let emptyState: HomeTaskListEmptyState
@@ -316,6 +322,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         separateDailyRoutinesInTaskList: Bool,
         showTomorrowSection: Bool,
         customSections: [HomeCustomTaskSection],
+        sectionOrderIDs: [String],
         separateTodosAndRoutinesInTagSections: Bool,
         separateDeadlineStatusInTagSections: Bool,
         emptyState: HomeTaskListEmptyState,
@@ -359,6 +366,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.separateDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
         self.showTomorrowSection = showTomorrowSection
         self.customSections = HomeCustomTaskSectionStorage.sanitized(customSections)
+        self.sectionOrderIDs = sectionOrderIDs
         self.separateTodosAndRoutinesInTagSections = separateTodosAndRoutinesInTagSections
         self.separateDeadlineStatusInTagSections = separateDeadlineStatusInTagSections
         self.emptyState = emptyState

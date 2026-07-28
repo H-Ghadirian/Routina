@@ -408,14 +408,18 @@ extension HomeTCAView {
                         .id(MacTaskSourceListScrollAnchor.top)
 
                     ForEach(presentation.sections) { section in
-                        taskListSectionView(
-                            for: section,
-                            in: presentation,
-                            collapsedTagIDs: collapsedTagIDs,
-                            rowNumbersByTaskID: rowNumbersByTaskID,
-                            metadataPresenter: metadataPresenter,
-                            rowVisibility: rowVisibility,
-                            allowsPlannerDrag: allowsPlannerDrag
+                        taskListReorderableSection(
+                            taskListSectionView(
+                                for: section,
+                                in: presentation,
+                                collapsedTagIDs: collapsedTagIDs,
+                                rowNumbersByTaskID: rowNumbersByTaskID,
+                                metadataPresenter: metadataPresenter,
+                                rowVisibility: rowVisibility,
+                                allowsPlannerDrag: allowsPlannerDrag
+                            ),
+                            section: section,
+                            in: presentation
                         )
                         .padding(.top, taskListTopLevelSectionSpacing(before: section, in: presentation))
                         .id(MacTaskSourceListScrollAnchor.section(section.id))
@@ -588,6 +592,77 @@ extension HomeTCAView {
         }
     }
 
+    @ViewBuilder
+    private func taskListReorderableSection<Content: View>(
+        _ content: Content,
+        section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        if section.kind.isMacSidebarReorderable {
+            content
+                .overlay {
+                    if macTaskListSectionDropTargetID == section.id {
+                        Rectangle()
+                            .stroke(.tint, lineWidth: 2)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .dropDestination(for: HomeMacTaskListSectionDragPayload.self) { payloads, _ in
+                    guard let sourceID = payloads.first?.sectionID else { return false }
+                    return moveMacTaskListSection(
+                        sourceID,
+                        relativeTo: section.id,
+                        in: presentation
+                    )
+                } isTargeted: { isTargeted in
+                    if isTargeted {
+                        macTaskListSectionDropTargetID = section.id
+                    } else if macTaskListSectionDropTargetID == section.id {
+                        macTaskListSectionDropTargetID = nil
+                    }
+                }
+        } else {
+            content
+        }
+    }
+
+    private func moveMacTaskListSection(
+        _ sourceID: String,
+        relativeTo targetID: String,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    ) -> Bool {
+        let visibleIDs = presentation.sections
+            .filter(\.kind.isMacSidebarReorderable)
+            .map(\.id)
+        guard let sourceIndex = visibleIDs.firstIndex(of: sourceID),
+              let targetIndex = visibleIDs.firstIndex(of: targetID),
+              sourceIndex != targetIndex
+        else {
+            macTaskListSectionDropTargetID = nil
+            return false
+        }
+
+        let preferredIDs = HomeMacTaskListSectionOrder.decoded(
+            from: macHomeTaskListSectionOrderRawValue
+        )
+        let placement: HomeMacTaskListSectionOrder.Placement = sourceIndex < targetIndex
+            ? .after
+            : .before
+        let updatedIDs = HomeMacTaskListSectionOrder.moving(
+            sourceID,
+            relativeTo: targetID,
+            placement: placement,
+            preferredIDs: preferredIDs,
+            visibleIDs: visibleIDs
+        )
+
+        macTaskListSectionDropTargetID = nil
+        withAnimation(.easeInOut(duration: 0.2)) {
+            macHomeTaskListSectionOrderRawValue = HomeMacTaskListSectionOrder.encoded(updatedIDs)
+        }
+        return true
+    }
+
     private func taskListSectionUsesContinuousSurface(
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> Bool {
@@ -658,14 +733,20 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         isExpanded: Bool
     ) -> some View {
-        Button {
-            toggleTaskListSection(section)
-        } label: {
-            taskListSectionHeaderContent(for: section, isExpanded: isExpanded)
+        HStack(spacing: 0) {
+            Button {
+                toggleTaskListSection(section)
+            } label: {
+                taskListSectionHeaderContent(for: section, isExpanded: isExpanded)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(section.title)
+            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+
+            taskListSectionReorderHandle(for: section)
+                .padding(.trailing, 6)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(section.title)
-        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
@@ -1029,10 +1110,30 @@ extension HomeTCAView {
     private func taskListSectionHeader(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
-        Text(section.title)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
+        HStack(spacing: 6) {
+            Text(section.title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
+
+            taskListSectionReorderHandle(for: section)
+        }
+        .padding(.horizontal, 10)
+    }
+
+    @ViewBuilder
+    private func taskListSectionReorderHandle(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        if section.kind.isMacSidebarReorderable {
+            HomeMacTaskListSectionReorderHandle(
+                sectionID: section.id,
+                title: section.title,
+                systemImage: taskListSectionHeaderIcon(for: section),
+                tint: taskListSectionHeaderTint(for: section)
+            )
+        }
     }
 
     private func taskListSectionHeaderContent(

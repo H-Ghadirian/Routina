@@ -364,6 +364,7 @@ enum SettingsRoutineDataBackupMapping {
             routineListSectioningMode: preferences.routineListSectioningMode,
             tagCounterDisplayMode: preferences.tagCounterDisplayMode,
             customTaskSections: preferences.customTaskSections,
+            macHomeTaskListSectionOrder: preferences.macHomeTaskListSectionOrder,
             homeTaskRowHiddenFields: preferences.homeTaskRowHiddenFields,
             relatedTagRules: preferences.relatedTagRules,
             tagColors: preferences.tagColors,

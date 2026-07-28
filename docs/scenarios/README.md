@@ -698,12 +698,13 @@ Then the primary action, active range, completed span, and undo behavior stay co
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md), [0451](../decisions/0451-let-users-reorder-mac-home-sidebar-sections.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
 - `Tests/iOS/HomeFeatureTaskListModeTests.swift`
 - `Tests/Shared/HomeCustomTaskSectionStorageTests.swift`
+- `Tests/Shared/HomeMacTaskListSectionOrderTests.swift`
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
 
 Given Mac Home shows `Today`
@@ -801,7 +802,20 @@ Then the direct `Tomorrow` shortcut is hidden
 
 Given the Mac `Show Tomorrow section` task-list setting is on
 When Home derives tasks planned for tomorrow or calendar routines scheduled tomorrow
-Then `Tomorrow` appears between `Today` and `Future`, uses the `plannedTomorrow` manual-order bucket, and those rows retain their ordinary section placement
+Then `Tomorrow` defaults between `Today` and `Future`, uses the `plannedTomorrow` manual-order bucket, and those rows retain their ordinary section placement
+
+Given Mac Home shows two or more durable top-level task-list sections
+When the user drags one section handle above or below another section
+Then the complete section moves to that position and the display order persists across presentation rebuilds
+And task membership, planning projection, custom-section rules, and row order remain unchanged
+
+Given a previously ordered section becomes empty or is hidden by current filters
+When that section becomes visible again
+Then it returns to its stored relative position
+
+Given a new built-in or custom section becomes visible after the user has stored an order
+When Home rebuilds the task-list presentation
+Then the new section enters beside its nearest default-order neighbors without resetting the user's existing relative order
 
 Given the Mac `Show Tomorrow section` task-list setting is on
 When a Todo has exact `At date` availability for tomorrow

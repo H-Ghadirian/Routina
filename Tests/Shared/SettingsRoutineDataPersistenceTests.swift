@@ -200,6 +200,8 @@ struct SettingsRoutineDataPersistenceTests {
             )
         ])
         defaults[.appSettingCustomTaskSections] = customTaskSectionsRawValue
+        let macHomeTaskListSectionOrder = "future:future\nplannedToday:plannedToday"
+        defaults[.appSettingMacHomeTaskListSectionOrder] = macHomeTaskListSectionOrder
 
         let package = try SettingsRoutineDataPersistence.buildBackupPackage(from: context)
         let backup = try SettingsRoutineDataBackupCoding.decodeBackup(from: package.manifestData)
@@ -218,6 +220,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.showTomorrowInTaskList == true)
         #expect(backup.userPreferences?.macShowDoneCountInToolbar == true)
         #expect(backup.userPreferences?.customTaskSections == customTaskSectionsRawValue)
+        #expect(backup.userPreferences?.macHomeTaskListSectionOrder == macHomeTaskListSectionOrder)
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
@@ -233,6 +236,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.tagColors == "{\"Focus\":\"#112233\"}")
         #expect(restored.fastFilterTags == "Focus,Health")
         #expect(restored.customTaskSections == customTaskSectionsRawValue)
+        #expect(restored.macHomeTaskListSectionOrder == macHomeTaskListSectionOrder)
         #expect(restored.iOSStatsDashboardHiddenItemIDs == "movement")
         #expect(restored.macStatsDashboardItemOrderIDs == "done,focus")
         #expect(restored.protectionBlockingEnabledModes == ProtectionBlockingMode.encodedSet([.focus]))

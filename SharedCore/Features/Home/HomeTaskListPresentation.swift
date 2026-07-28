@@ -61,6 +61,15 @@ extension HomeTaskListPresentationSectionKind {
             return false
         }
     }
+
+    var isMacSidebarReorderable: Bool {
+        switch self {
+        case .pinned, .plannedToday, .plannedTomorrow, .custom, .future, .archived:
+            return true
+        case .daily, .regular, .deadlineDate, .tag, .untagged, .away:
+            return false
+        }
+    }
 }
 
 struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiable {
@@ -112,6 +121,20 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
 
     func rowNumber(forTaskAt index: Int) -> Int {
         rowNumberOffset + index + 1
+    }
+
+    func replacingRowNumberOffset(_ rowNumberOffset: Int) -> Self {
+        HomeTaskListPresentationSection(
+            kind: kind,
+            identityKey: identityKey,
+            title: title,
+            tasks: tasks,
+            rowNumberOffset: rowNumberOffset,
+            includeMarkDone: includeMarkDone,
+            colorHex: colorHex,
+            moveContext: moveContext,
+            taskGroups: taskGroups
+        )
     }
 
     private static func deduplicatedTaskGroups(
@@ -191,6 +214,106 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
             sectionKey: moveContext.sectionKey,
             orderedTaskIDs: tasks.map(\.taskID)
         )
+    }
+}
+
+enum HomeMacTaskListSectionOrder {
+    enum Placement {
+        case before
+        case after
+    }
+
+    static func decoded(from rawValue: String) -> [String] {
+        uniqueIDs(
+            rawValue
+                .split(whereSeparator: \.isNewline)
+                .map(String.init)
+        )
+    }
+
+    static func encoded(_ sectionIDs: [String]) -> String {
+        uniqueIDs(sectionIDs).joined(separator: "\n")
+    }
+
+    static func visibleSectionIDs(
+        preferredIDs: [String],
+        defaultIDs: [String]
+    ) -> [String] {
+        let availableIDs = uniqueIDs(defaultIDs)
+        let availableIDSet = Set(availableIDs)
+        return resolvedIDs(
+            preferredIDs: preferredIDs,
+            defaultIDs: availableIDs
+        ).filter(availableIDSet.contains)
+    }
+
+    static func moving(
+        _ sourceID: String,
+        relativeTo targetID: String,
+        placement: Placement,
+        preferredIDs: [String],
+        visibleIDs: [String]
+    ) -> [String] {
+        guard sourceID != targetID,
+              visibleIDs.contains(sourceID),
+              visibleIDs.contains(targetID)
+        else {
+            return resolvedIDs(preferredIDs: preferredIDs, defaultIDs: visibleIDs)
+        }
+
+        var result = resolvedIDs(preferredIDs: preferredIDs, defaultIDs: visibleIDs)
+        result.removeAll { $0 == sourceID }
+        guard let targetIndex = result.firstIndex(of: targetID) else {
+            return result
+        }
+
+        let insertionIndex = placement == .before ? targetIndex : targetIndex + 1
+        result.insert(sourceID, at: insertionIndex)
+        return result
+    }
+
+    private static func resolvedIDs(
+        preferredIDs: [String],
+        defaultIDs: [String]
+    ) -> [String] {
+        let canonicalIDs = uniqueIDs(defaultIDs)
+        var result = uniqueIDs(preferredIDs)
+        guard !result.isEmpty else { return canonicalIDs }
+
+        for (canonicalIndex, sectionID) in canonicalIDs.enumerated()
+        where !result.contains(sectionID) {
+            let followingID = canonicalIDs
+                .dropFirst(canonicalIndex + 1)
+                .first(where: result.contains)
+            if let followingID,
+               let insertionIndex = result.firstIndex(of: followingID) {
+                result.insert(sectionID, at: insertionIndex)
+                continue
+            }
+
+            let precedingID = canonicalIDs[..<canonicalIndex]
+                .reversed()
+                .first(where: result.contains)
+            if let precedingID,
+               let precedingIndex = result.firstIndex(of: precedingID) {
+                result.insert(sectionID, at: precedingIndex + 1)
+            } else {
+                result.append(sectionID)
+            }
+        }
+
+        return result
+    }
+
+    private static func uniqueIDs(_ sectionIDs: [String]) -> [String] {
+        var seenIDs: Set<String> = []
+        return sectionIDs.compactMap { sectionID in
+            let trimmedID = sectionID.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedID.isEmpty, seenIDs.insert(trimmedID).inserted else {
+                return nil
+            }
+            return trimmedID
+        }
     }
 }
 
@@ -465,6 +588,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         separateDailyRoutinesInTaskList: Bool = false,
         showTomorrowSection: Bool = false,
         customSections: [HomeCustomTaskSection] = [],
+        sectionOrderIDs: [String] = [],
         separateTodosAndRoutinesInTagSections: Bool = false,
         emptyState: HomeTaskListEmptyState
     ) -> Self {
@@ -678,6 +802,24 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                     )
                 )
             )
+        }
+
+        let reorderableSections = presentationSections.filter(\.kind.isMacSidebarReorderable)
+        let reorderableIDs = Set(reorderableSections.map(\.id))
+        let orderedReorderableIDs = HomeMacTaskListSectionOrder.visibleSectionIDs(
+            preferredIDs: sectionOrderIDs,
+            defaultIDs: reorderableSections.map(\.id)
+        )
+        let reorderableSectionsByID = Dictionary(
+            uniqueKeysWithValues: reorderableSections.map { ($0.id, $0) }
+        )
+        var orderedSections = orderedReorderableIDs.compactMap { reorderableSectionsByID[$0] }
+        orderedSections += presentationSections.filter { !reorderableIDs.contains($0.id) }
+
+        var reorderedOffset = 0
+        presentationSections = orderedSections.map { section in
+            defer { reorderedOffset += section.tasks.count }
+            return section.replacingRowNumberOffset(reorderedOffset)
         }
 
         return HomeTaskListPresentation(

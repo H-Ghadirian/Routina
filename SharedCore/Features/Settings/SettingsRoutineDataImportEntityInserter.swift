@@ -1060,6 +1060,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.routineListSectioningMode = backupPreferences.routineListSectioningMode
         preferences.tagCounterDisplayMode = backupPreferences.tagCounterDisplayMode
         preferences.customTaskSections = backupPreferences.customTaskSections
+        preferences.macHomeTaskListSectionOrder = backupPreferences.macHomeTaskListSectionOrder
         preferences.homeTaskRowHiddenFields = backupPreferences.homeTaskRowHiddenFields
         preferences.relatedTagRules = backupPreferences.relatedTagRules
         preferences.tagColors = backupPreferences.tagColors

@@ -346,6 +346,7 @@ extension SettingsRoutineDataPersistence {
             var routineListSectioningMode: String?
             var tagCounterDisplayMode: String?
             var customTaskSections: String?
+            var macHomeTaskListSectionOrder: String?
             var homeTaskRowHiddenFields: String?
             var relatedTagRules: String?
             var tagColors: String?

@@ -260,6 +260,10 @@ struct HomeTCAView: View {
         UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
         store: SharedDefaults.app
     ) var customTaskSectionsRawValue = ""
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingMacHomeTaskListSectionOrder.rawValue,
+        store: SharedDefaults.app
+    ) var macHomeTaskListSectionOrderRawValue = ""
     @StateObject var collapsedTagTaskListSectionIDsCache = HomeCollapsedTagTaskListSectionIDsCache()
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
@@ -312,6 +316,7 @@ struct HomeTCAView: View {
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
     @State var hoveredAssumedDoneTaskID: UUID?
+    @State var macTaskListSectionDropTargetID: String?
     @State var macTimelineSidebarPresentationID = UUID()
     @State var macTimelineSidebarPositionedPresentationID: UUID?
     @State var macTimelineSidebarScrollRequest: MacTimelineSidebarScrollRequest?
