@@ -786,6 +786,29 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacSettingsWindowKeepsStandardWindowActionsAvailable() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
+
+        XCTAssertTrue(source.contains(".background(RoutinaMacSettingsWindowConfigurator())"))
+        XCTAssertTrue(source.contains(".windowResizability(.contentMinSize)"))
+        XCTAssertTrue(
+            source.contains("window.styleMask.formUnion([.miniaturizable, .resizable])"),
+            "Settings must opt back into the standard minimize and resize window capabilities."
+        )
+        XCTAssertTrue(source.contains("window.collectionBehavior.insert(.fullScreenPrimary)"))
+        XCTAssertTrue(
+            source.contains("window.standardWindowButton(.miniaturizeButton)?.isEnabled = true")
+        )
+        XCTAssertTrue(
+            source.contains("window.standardWindowButton(.zoomButton)?.isEnabled = true")
+        )
+        XCTAssertTrue(
+            source.contains("width: CGFloat.greatestFiniteMagnitude")
+                && source.contains("height: CGFloat.greatestFiniteMagnitude"),
+            "Settings must not retain the preference scene's fixed maximum size."
+        )
+    }
+
     func testMacAppTargetsDoNotShipWidgetExtensions() throws {
         let project = try Self.sourceFile("RoutinaMacOS.xcodeproj/project.pbxproj")
         let prodTarget = try Self.projectBlock(

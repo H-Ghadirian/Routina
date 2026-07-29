@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0461](0461-use-standard-window-controls-for-mac-settings.md) establishes the Mac Settings window contract:** Routina retains the SwiftUI Settings scene and system routing while explicitly enabling minimize, resize/zoom, and native full screen above the existing content minimum.
+
 - **[0460](0460-match-custom-section-tags-by-any-or-all.md) refines [0449](0449-keep-custom-section-rules-tag-based.md) and [0450](0450-use-progressive-custom-section-management.md) for custom-section tag composition:** Each custom super section chooses backward-compatible `Any` matching or intersection-based `All` matching; Settings presents rule tags as removable chips with saved-tag suggestions and Tab completion.
 
 - **[0459](0459-route-single-ios-new-action-directly.md) refines [0173](0173-use-ios-new-tab-sheet.md) and [0458](0458-align-ios-new-actions-with-beta-gates.md) for chooser cardinality:** Tapping the iOS bottom-bar New action routes directly when feature availability leaves exactly one destination, opens the chooser for two or more destinations, and retains destination-level availability guards.
@@ -399,6 +401,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0461](0461-use-standard-window-controls-for-mac-settings.md) | Use Standard Window Controls for Mac Settings | Accepted | 2026-07-29 |
 | [0460](0460-match-custom-section-tags-by-any-or-all.md) | Match Custom Section Tags by Any or All | Accepted | 2026-07-29 |
 | [0458](0458-align-ios-new-actions-with-beta-gates.md) | Align iOS New Actions With Beta Gates | Accepted | 2026-07-29 |
 | [0456](0456-show-resolved-automatic-paths-in-edit-task.md) | Show Resolved Automatic Paths in Edit Task | Accepted | 2026-07-29 |

@@ -25,10 +25,12 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0293](../decisions/0293-add-settings-unlimited-task-override-while-products-unavailable.md)
 - [0313](../decisions/0313-disable-mac-app-widgets-in-app-targets.md)
 - [0374](../decisions/0374-move-unlimited-task-override-to-beta-experiments.md)
+- [0461](../decisions/0461-use-standard-window-controls-for-mac-settings.md)
 
 ## Current Contract
 
 - User-owned preferences that should back up, restore, reset, and sync belong in SwiftData.
+- The Mac Settings window retains the system Settings command and Command-comma routing while supporting minimize, free resizing and zoom above its 640 by 560 minimum, and native full screen.
 - Purchase entitlement is resolved from StoreKit rather than backed up in user data. Weekly, monthly, annual, and lifetime products unlock unlimited active tasks. Settings -> Support & About -> Beta Experiments includes a temporary unlimited-task override while StoreKit products are unavailable; production defaults the override off.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.

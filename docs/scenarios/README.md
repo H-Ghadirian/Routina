@@ -826,6 +826,10 @@ Given a section name or automatic-tag draft is unfinished
 When a color, order, neighboring section, or external catalog value is persisted
 Then the unfinished local draft survives while untouched fields adopt the new persisted values
 
+Given the Mac Settings window is open
+When the user uses its native traffic-light controls
+Then minimize, resize or zoom, and native full screen are available while the existing minimum content size remains enforced
+
 Given Mac Home shows expanded `Future`
 When future task groups are visible
 Then the header and groups share one full-bleed section surface while nested tag groups keep their own collapsible surfaces
