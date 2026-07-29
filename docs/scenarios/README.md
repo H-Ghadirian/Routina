@@ -1420,3 +1420,29 @@ When its confirmation appears
 Then `Open details` remains available
 And the optional action and close control align to the toast's normal trailing
 inset rather than leaving unused width after them
+
+### iOS New Actions Follow Feature Availability
+
+Area: Settings / UI
+Decision links: [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md)
+Current behavior: [Settings](../current-behavior/settings.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/IOSNewTabActionAvailabilityTests.swift`
+
+Given Event and Emotion, Goals, or Sleep is disabled in Beta Experiments
+When the user opens the iOS bottom-bar New sheet
+Then the matching Event and Emotion, Goal, or Going to sleep rows are absent
+
+Given the Sleep experiment is enabled but the dedicated New-sheet Sleep
+preference is disabled
+When the user opens New
+Then Going to sleep remains absent
+
+Given the persisted Sleep experiment is enabled but its parent Away experiment
+is disabled
+When the user opens New
+Then Going to sleep remains absent
+
+Given an optional action becomes unavailable before a queued selection routes
+When the pending action is performed
+Then its editor or protected-session start does not open

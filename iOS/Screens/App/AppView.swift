@@ -25,8 +25,12 @@ struct AppView: View {
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
     @AppStorage(UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue, store: SharedDefaults.app)
     private var isSleepNewSheetEnabled = true
+    @AppStorage(UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue, store: SharedDefaults.app)
+    private var isSleepExperimentEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue, store: SharedDefaults.app)
     private var isGoalsTabEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue, store: SharedDefaults.app)
+    private var areEventEmotionActionsEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue, store: SharedDefaults.app)
@@ -193,12 +197,18 @@ Group {
     }
 
     private var isNewSheetSleepActionEnabled: Bool {
-        isSleepNewSheetEnabled && sleepSessions.first(where: { $0.endedAt == nil }) == nil
+        isAwayEnabled
+            && isSleepExperimentEnabled
+            && isSleepNewSheetEnabled
+            && sleepSessions.first(where: { $0.endedAt == nil }) == nil
     }
 
     private var availableNewTabActions: [NewTabAction] {
         (NewTabAction.creationActions + NewTabAction.sessionActions).filter { action in
+            guard action != .event || areEventEmotionActionsEnabled else { return false }
+            guard action != .emotion || areEventEmotionActionsEnabled else { return false }
             guard action != .note || isNotesEnabled else { return false }
+            guard action != .goal || isGoalsTabEnabled else { return false }
             guard action != .checkIn || isPlacesEnabled else { return false }
             guard action != .away || isAwayEnabled else { return false }
             return action != .sleep || isNewSheetSleepActionEnabled
@@ -239,13 +249,16 @@ Group {
     private func performNewTabAction(_ action: NewTabAction) {
         switch action {
         case .event:
+            guard areEventEmotionActionsEnabled else { return }
             presentedNewActionSheet = .event
         case .emotion:
+            guard areEventEmotionActionsEnabled else { return }
             presentedNewActionSheet = .emotion
         case .note:
             guard isNotesEnabled else { return }
             presentedNewActionSheet = .note
         case .goal:
+            guard isGoalsTabEnabled else { return }
             openNewGoal()
         case .task:
             openNewTask()
@@ -256,6 +269,7 @@ Group {
             guard isAwayEnabled else { return }
             presentedNewActionSheet = .away
         case .sleep:
+            guard isNewSheetSleepActionEnabled else { return }
             requestSleepFromNewSheet()
         }
     }
@@ -282,9 +296,13 @@ Group {
     private func newActionSheetContent(for sheet: NewActionSheet) -> some View {
         switch sheet {
         case .event:
-            RoutineEventEditorView()
+            if areEventEmotionActionsEnabled {
+                RoutineEventEditorView()
+            }
         case .emotion:
-            EmotionLogEditorView()
+            if areEventEmotionActionsEnabled {
+                EmotionLogEditorView()
+            }
         case .note:
             if isNotesEnabled {
                 RoutineNoteEditorView()
@@ -302,6 +320,8 @@ Group {
 
     @MainActor
     private func requestSleepFromNewSheet() {
+        guard isNewSheetSleepActionEnabled else { return }
+
         do {
             if let warningMessage = try SleepSessionSupport.activeFocusTimerWarningMessage(in: modelContext) {
                 newSheetSleepWarningMessage = warningMessage
@@ -317,6 +337,8 @@ Group {
 
     @MainActor
     private func startSleepFromNewSheet() {
+        guard isNewSheetSleepActionEnabled else { return }
+
         do {
             _ = try SleepSessionSupport.startSleep(in: modelContext)
             newSheetSleepWarningMessage = nil

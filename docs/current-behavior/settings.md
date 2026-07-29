@@ -41,6 +41,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Settings hides Devices by default behind the beta toggle.
 - Settings hides Places by default behind Support & About -> Beta Experiments -> `Show Places`.
 - Settings hides Notes and Away by default behind Support & About -> Beta Experiments; while Away is off, Blocking exposes only Focus mode controls and Stats hides Sleep-specific surfaces.
+- iOS Beta Experiments gates Event and Emotion creation, Goal navigation and New-sheet creation, and Sleep scope plus New-sheet entry. The separate Shortcuts preference can further hide Going to sleep from New but cannot enable it while Away or the nested Sleep experiment is off.
 - Task sharing is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
 - The linked-task Visualize button is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
 - Home and Stats Query sections are hidden in filter panels until enabled from Support & About -> Beta Experiments.

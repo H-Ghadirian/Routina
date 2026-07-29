@@ -65,6 +65,10 @@ private struct SettingsBetaExperimentsSection: View {
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isAdventureMapEnabled = false
@@ -123,7 +127,7 @@ private struct SettingsBetaExperimentsSection: View {
 
             Toggle("Show Away", isOn: awayBinding)
 
-            Text("Show Away mode controls, Away planner blocks, Away timeline items, Away stats, and Sleep stats/blocking surfaces.")
+            Text("Show Away mode controls and history, plus Sleep creation, stats, and blocking surfaces.")
                 .foregroundStyle(.secondary)
 
             Toggle("Show filter query sections", isOn: filterQuerySectionsBinding)
@@ -131,9 +135,14 @@ private struct SettingsBetaExperimentsSection: View {
             Text("Show advanced query controls in Home and Stats filters.")
                 .foregroundStyle(.secondary)
 
+            Toggle("Show Event and Emotion actions", isOn: $areEventEmotionActionsEnabled)
+
+            Text("Show Event and Emotion in the New sheet.")
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
-            Text("Show Goal navigation, controls, and Stats reports.")
+            Text("Show Goal navigation, New action, controls, and Stats reports.")
                 .foregroundStyle(.secondary)
 
             Toggle("Show Adventure map", isOn: $isAdventureMapEnabled)
@@ -149,7 +158,7 @@ private struct SettingsBetaExperimentsSection: View {
             if store.appearance.isAwayEnabled {
                 Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
 
-                Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
+                Text("Show Going to sleep in New and the Sleep-specific dashboard scope in Stats.")
                     .foregroundStyle(.secondary)
             }
 

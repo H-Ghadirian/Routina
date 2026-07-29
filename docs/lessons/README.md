@@ -105,3 +105,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0061 — Keep task-creation confirmation explicit](0061-keep-task-creation-confirmation-explicit.md)
 - [0062 — Contrast labels against glass selection surfaces](0062-contrast-labels-against-glass-selection-surfaces.md)
 - [0063 — Avoid stacking low-contrast semantic styles](0063-avoid-stacking-low-contrast-semantic-styles.md)
+- [0064 — Gate global entry points with feature availability](0064-gate-global-entry-points-with-feature-availability.md)
