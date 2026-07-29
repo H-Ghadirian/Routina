@@ -726,7 +726,7 @@ Then the primary action, active range, completed span, and undo behavior stay co
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md), [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md), [0453](../decisions/0453-use-context-menu-actions-to-reorder-mac-home-sections.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md), [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md), [0453](../decisions/0453-use-context-menu-actions-to-reorder-mac-home-sections.md), [0456](../decisions/0456-show-resolved-automatic-paths-in-edit-task.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
@@ -734,6 +734,7 @@ Coverage:
 - `Tests/Shared/HomeCustomTaskSectionStorageTests.swift`
 - `Tests/Shared/HomeMacTaskListSectionOrderTests.swift`
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/Shared/TaskFormPresentationTests.swift`
 
 Given Mac Home shows `Today`
 When daily routines are loaded with the grouping setting off or on
@@ -797,8 +798,13 @@ When the user right-clicks it and chooses `New Task`
 Then Add Task opens with that exact custom path visible and selected in Identity
 
 Given Mac Add Task or Edit Task is open
-When the user changes `Path` between Default, a super section, and a subsection and saves
+When the user changes `Path` between Automatic, a super section, and a subsection and saves
 Then the task's one durable custom-section assignment matches the chosen destination
+
+Given Mac Task Details shows an unassigned task inside its live resolved sidebar path
+When the user opens Edit Task
+Then the Identity `Path` control shows that same breadcrumb with `Automatic` context instead of `Default`
+And saving without choosing an explicit custom destination keeps the custom-section assignment empty
 
 Given Mac task details show a task that is currently inside a sidebar section and nested subsection
 When the user clicks the section breadcrumb in the detail header

@@ -11,6 +11,46 @@ import Testing
 
 struct TaskFormPresentationTests {
     @Test
+    func sidebarPathPresentationShowsResolvedAutomaticPathInsteadOfDefault() {
+        #expect(
+            TaskFormSidebarPathPresentation.title(
+                explicitPathTitles: nil,
+                automaticPathTitles: ["Work", "Deep Focus"]
+            ) == "Work › Deep Focus (Automatic)"
+        )
+        #expect(
+            TaskFormSidebarPathPresentation.title(
+                explicitPathTitles: ["Personal"],
+                automaticPathTitles: ["Today"]
+            ) == "Personal"
+        )
+        #expect(
+            TaskFormSidebarPathPresentation.title(
+                explicitPathTitles: nil,
+                automaticPathTitles: nil
+            ) == "Automatic"
+        )
+    }
+
+    @Test
+    func editAutomaticPathUsesLiveSidebarLocationOnlyForUnassignedTasks() {
+        let manualSectionID = UUID()
+
+        #expect(
+            TaskFormSidebarPathPresentation.automaticPathTitles(
+                customTaskSectionID: nil,
+                sidebarPathTitles: ["Future", "Work"]
+            ) == ["Future", "Work"]
+        )
+        #expect(
+            TaskFormSidebarPathPresentation.automaticPathTitles(
+                customTaskSectionID: manualSectionID,
+                sidebarPathTitles: ["Work"]
+            ) == nil
+        )
+    }
+
+    @Test
     func userFacingTaskTypeSelectorsOmitInternalRecordCompatibility() {
         #expect(RoutineTaskType.record.rawValue == "Tracking")
         #expect(RoutineTaskType.record.pluralTitle == "Routines")

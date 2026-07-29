@@ -21,6 +21,7 @@ struct TaskFormModel {
 
     // MARK: Sidebar Path
     var customTaskSectionID: Binding<UUID?> = .constant(nil)
+    var automaticPathTitles: [String]? = nil
 
     // MARK: Emoji
     var emoji: Binding<String>

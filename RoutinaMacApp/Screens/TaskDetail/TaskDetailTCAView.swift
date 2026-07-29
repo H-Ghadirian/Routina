@@ -276,7 +276,8 @@ struct TaskDetailTCAView: View {
                 store: store,
                 isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
                 emojiOptions: emojiOptions,
-                canSaveCurrentEdit: canSaveCurrentEdit
+                canSaveCurrentEdit: canSaveCurrentEdit,
+                automaticPathTitles: editAutomaticPathTitles
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else if store.task.isOneOffTask {
@@ -804,6 +805,7 @@ struct TaskDetailTCAView: View {
                 isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
                 emojiOptions: emojiOptions,
                 canSaveCurrentEdit: canSaveCurrentEdit,
+                automaticPathTitles: editAutomaticPathTitles,
                 layout: .embeddedSections(inlineEditSections),
                 onCancel: cancelInlineEditSections,
                 onSave: saveInlineEditSections
@@ -813,6 +815,13 @@ struct TaskDetailTCAView: View {
 
     private func isInlineEditSectionRevealed(_ section: FormSection) -> Bool {
         inlineEditSections.contains(section)
+    }
+
+    private var editAutomaticPathTitles: [String]? {
+        TaskFormSidebarPathPresentation.automaticPathTitles(
+            customTaskSectionID: store.task.customTaskSectionID,
+            sidebarPathTitles: sidebarLocation?.titles
+        )
     }
 
     private func cancelInlineEditSections() {

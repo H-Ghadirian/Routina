@@ -325,7 +325,10 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
     }
 
     private var selectedPathTitle: String {
-        selectedPathTitles?.joined(separator: " › ") ?? "Default"
+        TaskFormSidebarPathPresentation.title(
+            explicitPathTitles: selectedPathTitles,
+            automaticPathTitles: model.automaticPathTitles
+        )
     }
 
     private var sidebarPathControl: some View {
@@ -337,7 +340,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
             Spacer(minLength: 12)
 
             Menu {
-                sidebarPathButton(title: "Default", sectionID: nil)
+                sidebarPathButton(title: "Automatic", sectionID: nil)
 
                 if !customTaskSections.isEmpty {
                     Divider()
@@ -379,7 +382,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize(horizontal: true, vertical: false)
-            .help("Choose where this task appears in the custom sidebar hierarchy")
+            .help("Choose a custom sidebar path, or use Automatic to follow the current sidebar rules")
             .accessibilityLabel("Task path")
             .accessibilityValue(selectedPathTitle)
         }

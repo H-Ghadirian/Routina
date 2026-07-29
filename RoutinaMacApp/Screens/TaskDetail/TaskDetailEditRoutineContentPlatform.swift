@@ -6,6 +6,7 @@ struct TaskDetailEditRoutineContent: View {
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
     let canSaveCurrentEdit: Bool
+    let automaticPathTitles: [String]?
     var layout: TaskFormContentLayout = .fullForm
     var onCancel: (() -> Void)?
     var onSave: (() -> Void)?
@@ -47,6 +48,7 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editCustomTaskSectionID },
                 set: { store.send(.editCustomTaskSectionChanged($0)) }
             ),
+            automaticPathTitles: automaticPathTitles,
             emoji: Binding(
                 get: { store.editRoutineEmoji },
                 set: { store.send(.editRoutineEmojiChanged($0)) }

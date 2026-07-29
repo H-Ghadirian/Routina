@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0456](0456-show-resolved-automatic-paths-in-edit-task.md) refines [0420](0420-show-task-sidebar-location-in-mac-details.md) and [0446](0446-edit-custom-section-paths-in-mac-task-forms.md) for truthful automatic placement:** Mac Edit Task reuses the live Task Details sidebar breadcrumb when no custom section is explicitly assigned, labels it as automatic, and leaves the durable custom-section ID empty unless the user chooses a custom destination.
+
 - **[0455](0455-customize-calendar-list-task-rows.md) refines [0038](0038-configure-home-task-row-fields.md), [0222](0222-configure-timeline-row-fields.md), [0254](0254-move-mac-task-row-appearance-to-home-filter-detail.md), and [0369](0369-show-day-task-list-columns-in-planner-calendar.md) for Planner row ownership:** Mac Calendar filters expose a dedicated `Appearance` tab whose persisted Icon, Time and Duration, and Row Color choices apply to Calendar `List` columns and the shared focused day-task sidebar without changing Task List or Timeline rows.
 
 - **[0454](0454-adapt-planner-hour-heights-to-visible-density.md) supersedes [0282](superseded/0282-expand-day-planner-hour-spacing.md) and refines [0191](0191-support-one-day-planner-view.md), [0269](0269-support-planner-slot-actions.md), [0304](0304-place-day-spacing-controls-in-time-header.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) for truthful dense Schedule geometry:** Planner preserves exact whole-minute interval data and expands only the clock hours whose visible short blocks need more room, using one cached piecewise axis for drawing, scrolling, selection, drag/drop, and resize math across all visible dates.
@@ -389,6 +391,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0456](0456-show-resolved-automatic-paths-in-edit-task.md) | Show Resolved Automatic Paths in Edit Task | Accepted | 2026-07-29 |
 | [0454](0454-adapt-planner-hour-heights-to-visible-density.md) | Adapt Planner Hour Heights to Visible Density | Accepted | 2026-07-28 |
 | [0450](0450-use-progressive-custom-section-management.md) | Use Progressive Custom Section Management | Accepted | 2026-07-28 |
 | [0449](0449-keep-custom-section-rules-tag-based.md) | Keep Custom Section Rules Tag-Based | Accepted | 2026-07-28 |

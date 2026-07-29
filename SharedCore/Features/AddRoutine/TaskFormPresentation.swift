@@ -76,6 +76,41 @@ enum TaskFormDateAvailabilityMode: String, CaseIterable, Equatable, Identifiable
     var id: String { rawValue }
 }
 
+enum TaskFormSidebarPathPresentation {
+    static func automaticPathTitles(
+        customTaskSectionID: UUID?,
+        sidebarPathTitles: [String]?
+    ) -> [String]? {
+        guard customTaskSectionID == nil,
+              breadcrumb(from: sidebarPathTitles) != nil
+        else {
+            return nil
+        }
+        return sidebarPathTitles
+    }
+
+    static func title(
+        explicitPathTitles: [String]?,
+        automaticPathTitles: [String]?
+    ) -> String {
+        if let explicitPath = breadcrumb(from: explicitPathTitles) {
+            return explicitPath
+        }
+        if let automaticPath = breadcrumb(from: automaticPathTitles) {
+            return "\(automaticPath) (Automatic)"
+        }
+        return "Automatic"
+    }
+
+    private static func breadcrumb(from titles: [String]?) -> String? {
+        let nonemptyTitles = titles?.filter {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        } ?? []
+        guard !nonemptyTitles.isEmpty else { return nil }
+        return nonemptyTitles.joined(separator: " › ")
+    }
+}
+
 enum TaskFormFixedSchedulePresentation {
     static func startIncludesTime(
         frequency: RoutineAdvancedRecurrenceRule.Frequency,

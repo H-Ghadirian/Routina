@@ -6,6 +6,8 @@ Date: 2026-07-28
 
 Refines: [0058 Use Progressive Task Forms](0058-use-progressive-task-forms.md), [0419 Nest Custom Subsections Under Super Sections](0419-nest-custom-subsections-under-super-sections.md), [0429 Keep Task List Visible Beside Mac Task Forms](0429-keep-task-list-visible-beside-mac-task-forms.md)
 
+Refined by: [0456 Show Resolved Automatic Paths in Edit Task](0456-show-resolved-automatic-paths-in-edit-task.md)
+
 ## Context
 
 Mac users can move an existing task into a custom super section or subsection
