@@ -1461,6 +1461,14 @@ Given an optional action becomes unavailable before a queued selection routes
 When the pending action is performed
 Then its editor or protected-session start does not open
 
+Given feature availability leaves Task as the only iOS New action
+When the user taps the bottom-bar New action
+Then task creation opens directly without presenting a one-row chooser
+
+Given two or more iOS New actions are available
+When the user taps the bottom-bar New action
+Then the feature-gated chooser opens with those available actions
+
 ### iOS Stats Scrolls From Stable Lazy Snapshots
 
 Area: Stats / UI

@@ -219,9 +219,10 @@ Group {
         min(CGFloat(availableNewTabActions.count) * 54 + 92, 520)
     }
 
+    @MainActor
     private func selectTab(_ tab: AppTabBarItem) {
         if tab == .addTask {
-            isNewActionListPresented = true
+            openNewTabActionDestination()
             return
         }
 
@@ -231,6 +232,17 @@ Group {
 
         guard let appTab = tab.appTab else { return }
         store.send(.tabSelected(appTab))
+    }
+
+    @MainActor
+    private func openNewTabActionDestination() {
+        let actions = availableNewTabActions
+        guard let action = actions.first else { return }
+        guard actions.count > 1 else {
+            performNewTabAction(action)
+            return
+        }
+        isNewActionListPresented = true
     }
 
     private func queueNewTabAction(_ action: NewTabAction) {

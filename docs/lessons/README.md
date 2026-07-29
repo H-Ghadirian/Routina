@@ -108,3 +108,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0064 — Gate global entry points with feature availability](0064-gate-global-entry-points-with-feature-availability.md)
 - [0065 — Keep Stats history out of scroll builders](0065-keep-stats-history-out-of-scroll-builders.md)
 - [0066 — Refetch iOS Timeline after sync invalidation](0066-refetch-ios-timeline-after-sync-invalidation.md)
+- [0067 — Match New-action presentation to cardinality](0067-match-new-action-presentation-to-cardinality.md)

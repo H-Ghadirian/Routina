@@ -32,6 +32,22 @@ struct IOSNewTabActionAvailabilityTests {
     }
 
     @Test
+    func singleAvailableActionRoutesDirectlyWithoutPresentingChooser() throws {
+        let source = try Self.sourceFile("iOS/Screens/App/AppView.swift")
+        let routing = try Self.functionSource(
+            named: "private func openNewTabActionDestination",
+            endingAt: "private func queueNewTabAction",
+            in: source
+        )
+
+        #expect(routing.contains("let actions = availableNewTabActions"))
+        #expect(routing.contains("guard let action = actions.first else { return }"))
+        #expect(routing.contains("guard actions.count > 1 else"))
+        #expect(routing.contains("performNewTabAction(action)"))
+        #expect(routing.contains("isNewActionListPresented = true"))
+    }
+
+    @Test
     func sleepRequiresBetaAvailabilityAndNewSheetPreference() throws {
         let source = try Self.sourceFile("iOS/Screens/App/AppView.swift")
         let sleepAvailability = try Self.functionSource(

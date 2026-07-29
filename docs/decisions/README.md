@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0459](0459-route-single-ios-new-action-directly.md) refines [0173](0173-use-ios-new-tab-sheet.md) and [0458](0458-align-ios-new-actions-with-beta-gates.md) for chooser cardinality:** Tapping the iOS bottom-bar New action routes directly when feature availability leaves exactly one destination, opens the chooser for two or more destinations, and retains destination-level availability guards.
+
 - **[0458](0458-align-ios-new-actions-with-beta-gates.md) refines [0173](0173-use-ios-new-tab-sheet.md), [0212](0212-hide-goals-tab-by-default.md), [0220](0220-nest-sleep-and-gate-mac-event-emotion-actions.md), and [0221](0221-hide-stats-sleep-tab-behind-beta-toggle.md) for iOS global creation availability:** The iOS bottom-bar New sheet hides Event and Emotion, Goal, and Going to sleep when their related Beta Experiments are disabled; Sleep also requires Away and its dedicated New-sheet preference, and action routing repeats the same guards.
 
 - **[0457](0457-confirm-successful-mac-task-creation.md) refines [0076](0076-select-saved-home-items-after-creation.md) and [0341](0341-consolidate-mac-home-toolbar-row.md) for explicit Mac save feedback:** Successful full Add Task saves keep routing to the new task's selected detail and also show a transient created-task confirmation; toolbar Quick Add retains `Open details`, while the full-form confirmation omits that redundant action and keeps trailing controls aligned to the panel inset.
