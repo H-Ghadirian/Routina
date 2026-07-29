@@ -769,15 +769,20 @@ Then that timestamp appears once rather than producing duplicate occurrences
 ### Multi-Day Routine Lifecycle
 
 Area: Tasks
-Decision links: [0199](../decisions/0199-support-multiday-routine-start-flow.md), [0246](../decisions/0246-show-multiday-ongoing-range.md)
+Decision links: [0199](../decisions/0199-support-multiday-routine-start-flow.md), [0246](../decisions/0246-show-multiday-ongoing-range.md), [0463](../decisions/0463-limit-ongoing-entry-to-multiday-routines.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 - `Tests/Shared/TaskDetailCalendarGridSupportTests.swift`
+- `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
 
 Given a multi-day routine has not started
 When the user starts it, views it while active, stops it, and undoes completion
 Then the primary action, active range, completed span, and undo behavior stay consistent
+
+Given a one-day Gentle or checklist-driven routine is open in Task Detail
+When lifecycle actions are presented on iOS or macOS
+Then neither platform shows a separate `Start ongoing` action
 
 ### Today Routines Stay In Today Section
 

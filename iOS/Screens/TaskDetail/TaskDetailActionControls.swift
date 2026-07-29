@@ -122,13 +122,11 @@ struct TaskDetailRoutinePrimaryActionSection: View {
             HStack(spacing: 10) {
                 pauseResumeButton
                 notTodayButton
-                startOngoingButton
             }
 
             VStack(alignment: .leading, spacing: 10) {
                 pauseResumeButton
                 notTodayButton
-                startOngoingButton
             }
         }
     }
@@ -160,22 +158,6 @@ struct TaskDetailRoutinePrimaryActionSection: View {
             }
             .buttonStyle(.bordered)
             .tint(.indigo)
-            .routinaPlatformSecondaryActionControlSize()
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    @ViewBuilder
-    private var startOngoingButton: some View {
-        if store.task.isSoftIntervalRoutine && !store.task.isOngoing && !store.task.isArchived() {
-            Button {
-                store.send(.startOngoingTapped)
-            } label: {
-                Label("Start ongoing", systemImage: "play.circle")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .tint(.teal)
             .routinaPlatformSecondaryActionControlSize()
             .frame(maxWidth: .infinity)
         }

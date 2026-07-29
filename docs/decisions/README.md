@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0463](0463-limit-ongoing-entry-to-multiday-routines.md) refines [0199](0199-support-multiday-routine-start-flow.md) and [0246](0246-show-multiday-ongoing-range.md) for cross-platform lifecycle parity:** Task Detail offers Start/Stop ongoing entry only to multi-day routines; one-day Gentle and checklist-driven routines do not show the iOS-only secondary `Start ongoing` action, while legacy ongoing state remains finishable.
+
 - **[0462](0462-use-a-compact-progressive-ios-task-editor.md) refines [0058](0058-use-progressive-task-forms.md), [0100](0100-reveal-task-form-details-by-section.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), and [0431](0431-present-one-progressive-recurrence-composer.md) for iOS task-form hierarchy:** Add Task and Edit Task separate type, duration, and availability; use readable navigation choices for multi-option availability; and reveal one selected optional detail at a time through a full-row Add details menu.
 
 - **[0461](0461-use-standard-window-controls-for-mac-settings.md) establishes the Mac Settings window contract:** Routina retains the SwiftUI Settings scene and system routing while explicitly enabling minimize, resize/zoom, and native full screen above the existing content minimum.
@@ -403,6 +405,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0463](0463-limit-ongoing-entry-to-multiday-routines.md) | Limit Ongoing Entry to Multi-Day Routines | Accepted | 2026-07-29 |
 | [0462](0462-use-a-compact-progressive-ios-task-editor.md) | Use a Compact Progressive iOS Task Editor | Accepted | 2026-07-29 |
 | [0461](0461-use-standard-window-controls-for-mac-settings.md) | Use Standard Window Controls for Mac Settings | Accepted | 2026-07-29 |
 | [0460](0460-match-custom-section-tags-by-any-or-all.md) | Match Custom Section Tags by Any or All | Accepted | 2026-07-29 |

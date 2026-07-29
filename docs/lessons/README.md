@@ -112,3 +112,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0068 — Prioritize segment labels at compact widths](0068-prioritize-segment-labels-at-compact-widths.md)
 - [0069 — Do not inherit fixed preference-window capabilities](0069-do-not-inherit-fixed-preference-window-capabilities.md)
 - [0070 — Do not use standalone dividers as Form rows](0070-do-not-use-standalone-dividers-as-form-rows.md)
+- [0071 — Centralize cross-platform action eligibility](0071-centralize-cross-platform-action-eligibility.md)
