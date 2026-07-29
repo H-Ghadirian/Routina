@@ -1,9 +1,19 @@
 import SwiftUI
 
-struct MacQuickAddCreatedToast: Equatable, Identifiable {
-    let id = UUID()
+struct MacTaskCreatedToast: Equatable, Identifiable {
+    let id: UUID
     let taskID: UUID
     let taskName: String
+
+    init(
+        id: UUID = UUID(),
+        taskID: UUID,
+        taskName: String
+    ) {
+        self.id = id
+        self.taskID = taskID
+        self.taskName = taskName
+    }
 }
 
 struct MacHomeNoticeToast: Identifiable {
@@ -14,9 +24,9 @@ struct MacHomeNoticeToast: Identifiable {
     let tint: Color
 }
 
-struct MacQuickAddCreatedToastView: View {
-    let toast: MacQuickAddCreatedToast
-    let onOpen: () -> Void
+struct MacTaskCreatedToastView: View {
+    let toast: MacTaskCreatedToast
+    let onOpen: (() -> Void)?
     let onClose: () -> Void
 
     var body: some View {
@@ -36,10 +46,14 @@ struct MacQuickAddCreatedToastView: View {
                     .lineLimit(1)
             }
 
-            Button("Open details") {
-                onOpen()
+            Spacer(minLength: 12)
+
+            if let onOpen {
+                Button("Open details") {
+                    onOpen()
+                }
+                .buttonStyle(.link)
             }
-            .buttonStyle(.link)
 
             Button {
                 onClose()

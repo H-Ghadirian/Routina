@@ -2840,6 +2840,10 @@ struct HomeFeatureTests {
             $0.macSidebarSelection = .task(task.id)
             $0.selectedTaskID = task.id
             $0.taskDetailState = HomeTaskSupport.makeTaskDetailState(for: task, now: now, calendar: calendar)
+            $0.taskCreationConfirmation = HomeFeature.TaskCreationConfirmation(
+                taskID: task.id,
+                taskName: "Walk"
+            )
         }
 
         #expect(store.state.routineTasks.count == 1)
@@ -2886,6 +2890,14 @@ struct HomeFeatureTests {
             $0.taskDetailState = HomeTaskSupport.makeTaskDetailState(for: task, now: now, calendar: calendar)
             $0.isAddRoutineSheetPresented = false
             $0.addRoutineState = nil
+            $0.taskCreationConfirmation = HomeFeature.TaskCreationConfirmation(
+                taskID: task.id,
+                taskName: "Walk"
+            )
+        }
+
+        await store.send(.dismissTaskCreationConfirmation) {
+            $0.taskCreationConfirmation = nil
         }
         await store.skipReceivedActions()
     }

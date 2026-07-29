@@ -736,8 +736,35 @@ extension HomeTCAView {
             }
             .overlay(alignment: .topTrailing) {
                 VStack(alignment: .trailing, spacing: 10) {
+                    if let taskCreationConfirmation = store.taskCreationConfirmation {
+                        let toast = MacTaskCreatedToast(
+                            id: taskCreationConfirmation.id,
+                            taskID: taskCreationConfirmation.taskID,
+                            taskName: taskCreationConfirmation.taskName
+                        )
+
+                        MacTaskCreatedToastView(
+                            toast: toast,
+                            onOpen: nil,
+                            onClose: {
+                                store.send(.dismissTaskCreationConfirmation)
+                            }
+                        )
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .task(id: toast.id) {
+                            do {
+                                try await Task.sleep(for: .seconds(10))
+                                await MainActor.run {
+                                    if store.taskCreationConfirmation?.id == toast.id {
+                                        store.send(.dismissTaskCreationConfirmation)
+                                    }
+                                }
+                            } catch {}
+                        }
+                    }
+
                     if let quickAddCreatedToast {
-                        MacQuickAddCreatedToastView(
+                        MacTaskCreatedToastView(
                             toast: quickAddCreatedToast,
                             onOpen: {
                                 openQuickAddCreatedTask(quickAddCreatedToast)
@@ -785,6 +812,10 @@ extension HomeTCAView {
             .animation(
                 .easeOut(duration: 0.12),
                 value: toolbarSearchCreateDraft
+            )
+            .animation(
+                .easeOut(duration: 0.18),
+                value: store.taskCreationConfirmation
             )
             .sheet(isPresented: subscriptionPaywallBinding) {
                 subscriptionPaywallContent
@@ -911,14 +942,14 @@ extension HomeTCAView {
     private func handleQuickAddCreated(_ result: RoutinaQuickAddCreateResult) {
         requestRefresh()
         withAnimation(.easeOut(duration: 0.18)) {
-            quickAddCreatedToast = MacQuickAddCreatedToast(
+            quickAddCreatedToast = MacTaskCreatedToast(
                 taskID: result.taskID,
                 taskName: result.taskName
             )
         }
     }
 
-    private func openQuickAddCreatedTask(_ toast: MacQuickAddCreatedToast) {
+    private func openQuickAddCreatedTask(_ toast: MacTaskCreatedToast) {
         quickAddCreatedToast = nil
         macHomeDetailMode = .details
         taskDetailPanePlacement = nil

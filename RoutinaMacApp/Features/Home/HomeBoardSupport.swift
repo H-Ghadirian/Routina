@@ -336,6 +336,11 @@ extension HomeFeature {
         _ task: RoutineTask,
         state: inout State
     ) -> Effect<Action> {
+        state.taskCreationConfirmation = TaskCreationConfirmation(
+            taskID: task.id,
+            taskName: RoutineTask.trimmedName(task.name) ?? "Untitled task"
+        )
+
         let backlogSaveEffect: Effect<Action>
         if HomeBoardMutationSupport.assignNewTodoToMatchingBacklog(
             taskID: task.id,

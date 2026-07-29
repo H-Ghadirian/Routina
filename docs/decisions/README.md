@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0457](0457-confirm-successful-mac-task-creation.md) refines [0076](0076-select-saved-home-items-after-creation.md) and [0341](0341-consolidate-mac-home-toolbar-row.md) for explicit Mac save feedback:** Successful full Add Task saves keep routing to the new task's selected detail and also show a transient created-task confirmation; toolbar Quick Add retains `Open details`, while the full-form confirmation omits that redundant action and keeps trailing controls aligned to the panel inset.
+
 - **[0456](0456-show-resolved-automatic-paths-in-edit-task.md) refines [0420](0420-show-task-sidebar-location-in-mac-details.md) and [0446](0446-edit-custom-section-paths-in-mac-task-forms.md) for truthful automatic placement:** Mac Edit Task reuses the live Task Details sidebar breadcrumb when no custom section is explicitly assigned, labels it as automatic, and leaves the durable custom-section ID empty unless the user chooses a custom destination.
 
 - **[0455](0455-customize-calendar-list-task-rows.md) refines [0038](0038-configure-home-task-row-fields.md), [0222](0222-configure-timeline-row-fields.md), [0254](0254-move-mac-task-row-appearance-to-home-filter-detail.md), and [0369](0369-show-day-task-list-columns-in-planner-calendar.md) for Planner row ownership:** Mac Calendar filters expose a dedicated `Appearance` tab whose persisted Icon, Time and Duration, and Row Color choices apply to Calendar `List` columns and the shared focused day-task sidebar without changing Task List or Timeline rows.

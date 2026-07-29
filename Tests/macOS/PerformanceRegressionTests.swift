@@ -2,6 +2,44 @@ import XCTest
 @testable @preconcurrency import RoutinaMacOSDev
 
 final class PerformanceRegressionTests: XCTestCase {
+    func testMacTaskCreatedToastAnchorsItsTrailingActions() throws {
+        let toastSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/MacQuickAddCreatedToastView.swift"
+        )
+
+        XCTAssertTrue(
+            toastSource.contains(
+                """
+                            Spacer(minLength: 12)
+
+                            if let onOpen {
+                """
+            ),
+            "The flexible gap must sit before the toast actions so unused width does not become trailing padding."
+        )
+
+        let platformSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
+        )
+        let fullFormConfirmationStart = try XCTUnwrap(
+            platformSource.range(of: "if let taskCreationConfirmation = store.taskCreationConfirmation")
+        )
+        let quickAddConfirmationStart = try XCTUnwrap(
+            platformSource.range(
+                of: "if let quickAddCreatedToast",
+                range: fullFormConfirmationStart.upperBound..<platformSource.endIndex
+            )
+        )
+        let fullFormConfirmation = platformSource[
+            fullFormConfirmationStart.lowerBound..<quickAddConfirmationStart.lowerBound
+        ]
+
+        XCTAssertTrue(
+            fullFormConfirmation.contains("onOpen: nil"),
+            "Full Add Task already opens the saved task detail, so its confirmation must not offer a redundant action."
+        )
+    }
+
     func testMacDeepLinkMenuDefersSystemSharingServiceDiscovery() throws {
         let source = try Self.sourceFile(
             "SharedCore/Views/RoutinaDeepLinkShareViews.swift"

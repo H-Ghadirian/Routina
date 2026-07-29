@@ -267,7 +267,7 @@ struct HomeTCAView: View {
     @StateObject var collapsedTagTaskListSectionIDsCache = HomeCollapsedTagTaskListSectionIDsCache()
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
-    @State var quickAddCreatedToast: MacQuickAddCreatedToast?
+    @State var quickAddCreatedToast: MacTaskCreatedToast?
     @State var isToolbarSearchTextFocused = false
     @State var isToolbarSearchExpanded = false
     @State var toolbarSearchVisiblePillWidth = HomeMacToolbarSearchLayout.compactWidth

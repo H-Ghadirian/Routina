@@ -18,6 +18,13 @@ struct HomeFeature {
 
     typealias RoutineDisplay = HomeRoutineDisplay
 
+    struct TaskCreationConfirmation: Equatable, Identifiable {
+        let taskID: UUID
+        let taskName: String
+
+        var id: UUID { taskID }
+    }
+
     enum MacSidebarSelection: Hashable, Equatable {
         case task(UUID)
         case timelineEntry(UUID)
@@ -90,6 +97,7 @@ struct HomeFeature {
         var tagColors: [String: String] = [:]
         var statusComposerSaveCount = 0
         var statusComposerErrorMessage: String?
+        var taskCreationConfirmation: TaskCreationConfirmation?
 
         init(
             routineTasks: [RoutineTask] = [],
@@ -548,6 +556,7 @@ struct HomeFeature {
         case setAddRoutineSheet(Bool)
         case openAddTaskSheet(seedName: String?)
         case openAddTaskInCustomSection(UUID)
+        case dismissTaskCreationConfirmation
         case deleteTasksTapped([UUID])
         case setDeleteConfirmation(Bool)
         case setMacFilterDetailPresented(Bool)
@@ -1152,6 +1161,10 @@ struct HomeFeature {
                     customTaskSectionID: sectionID
                 )
                 persistTemporaryViewState(state)
+                return .none
+
+            case .dismissTaskCreationConfirmation:
+                state.taskCreationConfirmation = nil
                 return .none
 
             case let .deleteTasksTapped(ids):

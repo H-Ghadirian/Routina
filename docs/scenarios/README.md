@@ -1373,3 +1373,24 @@ Coverage:
 Given the Mac task form shows a section in both the sidebar navigator and the main form
 When the Behavior section is rendered
 Then both surfaces use the canonical `Behavior` title
+
+### Mac Task Creation Has Visible Confirmation
+
+Area: Tasks / UI
+Decision links: [0457](../decisions/0457-confirm-successful-mac-task-creation.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/macOS/HomeFeatureTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given the full Mac Add Task form is open
+When a task saves successfully
+Then the form closes, the new task is selected with its details visible, and a
+transient created-task confirmation names the task
+And the confirmation omits a redundant `Open details` action
+
+Given the Mac toolbar creates a task through Quick Add
+When its confirmation appears
+Then `Open details` remains available
+And the optional action and close control align to the toast's normal trailing
+inset rather than leaving unused width after them

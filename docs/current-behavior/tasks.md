@@ -57,6 +57,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0453](../decisions/0453-use-context-menu-actions-to-reorder-mac-home-sections.md)
 - [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md)
 - [0456](../decisions/0456-show-resolved-automatic-paths-in-edit-task.md)
+- [0457](../decisions/0457-confirm-successful-mac-task-creation.md)
 
 ## Current Contract
 
@@ -64,6 +65,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks. Settings -> Support & About -> Beta Experiments can temporarily unlock unlimited task creation while StoreKit products are unavailable; production defaults this override off.
 - Active-task counting includes todos and routines that are not paused, snoozed, archived, done, or canceled; internal record-shaped rows count as routines.
 - Full task create and edit forms offer `One-time` / `Repeating` without a separate third task type. New repeating tasks are routines. Repeating routines can use `Repeat type: None` when they are reusable but have no known cadence; they remain immediately available after completion and preserve every completion in history without cadence-derived occurrences, overdue pressure, nudges, or daily classification.
+- On Mac, a successful full Add Task save closes the form, returns to the task list, selects and opens the new task's details, and shows a transient confirmation containing the task name. Canceling, a failed save, or a subscription-gated save does not show that success confirmation.
 - Gentle repeating routines expose an independent `Nudges` preference. Turning it off preserves cadence and history while suppressing Ready and Gentle-nudge threshold badges. Due routines do not expose the preference, and cadence-free routines cannot nudge.
 - Home, Timeline, Stats, Settings, badges, search vocabulary, and sidebar sections do not expose a separate Tracking category. Transitional tracking-named storage fields remain internal implementation details only.
 - Mac Add Task and Edit Task tag sections always show the draft's selected tags and related suggestions. The remaining saved-tag chips default to the six most-used tags and expose `Show all` / `Show less`; autocomplete continues to search the full saved-tag catalog.
