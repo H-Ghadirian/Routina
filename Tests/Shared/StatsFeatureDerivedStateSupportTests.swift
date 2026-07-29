@@ -893,4 +893,100 @@ struct StatsFeatureDerivedStateSupportTests {
             #expect(source.contains("x: .fit(to: .chart)"), "Missing horizontal annotation fitting in \(path)")
         }
     }
+
+    @Test
+    func achievementSnapshotDomainFilteringPreservesEnabledContentOnly() {
+        let sleepAchievement = StatsAchievementProgress(
+            id: "sleep",
+            title: "Sleep",
+            subtitle: "Sleep",
+            systemImage: "bed.double.fill",
+            domain: .sleep,
+            category: .sleep,
+            currentValue: 1,
+            targetValue: 1,
+            unit: .count(singular: "session", plural: "sessions")
+        )
+        let doneAchievement = StatsAchievementProgress(
+            id: "done",
+            title: "Done",
+            subtitle: "Done",
+            systemImage: "checkmark",
+            domain: .done,
+            category: .done,
+            currentValue: 1,
+            targetValue: 1,
+            unit: .count(singular: "done", plural: "done")
+        )
+        let snapshot = StatsAchievementPresentationSnapshot(
+            achievements: [sleepAchievement, doneAchievement],
+            earnedAchievementIDsByPeriod: [.today: ["sleep", "done"]],
+            celebrations: [
+                StatsAchievementCelebration(
+                    period: .today,
+                    highlights: [
+                        StatsAchievementCelebrationHighlight(
+                            id: "sleep",
+                            title: "Sleep",
+                            value: "1 session",
+                            systemImage: "bed.double.fill",
+                            domain: .sleep
+                        ),
+                        StatsAchievementCelebrationHighlight(
+                            id: "done",
+                            title: "Done",
+                            value: "1 done",
+                            systemImage: "checkmark",
+                            domain: .done
+                        )
+                    ]
+                )
+            ]
+        )
+
+        let filtered = snapshot.filteringDomains { $0 != .sleep }
+
+        #expect(filtered.achievements.map(\.id) == ["done"])
+        #expect(filtered.celebrations.first?.highlights.map(\.id) == ["done"])
+        #expect(filtered.earnedAchievementIDsByPeriod == snapshot.earnedAchievementIDsByPeriod)
+    }
+
+    @Test
+    func iOSStatsScrollBuilderStaysLazyAndHistoryFree() throws {
+        let repositoryURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let viewSource = try String(
+            contentsOf: repositoryURL.appendingPathComponent("iOS/Screens/Stats/StatsView.swift"),
+            encoding: .utf8
+        )
+        let featureSource = try String(
+            contentsOf: repositoryURL.appendingPathComponent("iOS/Features/App/AppFeature.swift"),
+            encoding: .utf8
+        )
+        let dashboardStart = try #require(
+            viewSource.range(of: "private var statsDashboardContent: some View")
+        )
+        let dashboardEnd = try #require(
+            viewSource.range(
+                of: "private var statsSidebarContent: some View",
+                range: dashboardStart.upperBound..<viewSource.endIndex
+            )
+        )
+        let dashboardSource = viewSource[
+            dashboardStart.lowerBound..<dashboardEnd.lowerBound
+        ]
+
+        #expect(dashboardSource.contains("LazyVStack(alignment: .leading, spacing: 24)"))
+        #expect(!dashboardSource.contains("AnyView("))
+        #expect(!viewSource.contains("StatsAchievementStats.achievements("))
+        #expect(!viewSource.contains("StatsAchievementStats.achievementIDsEarnedByPeriod("))
+        #expect(!viewSource.contains("StatsAchievementStats.celebrationPeriods("))
+        #expect(!viewSource.contains("publisher(for: ModelContext.didSave)"))
+        #expect(featureSource.contains("StatsAchievementPresentationSnapshot.build("))
+        #expect(featureSource.contains("continuousClock.sleep(for: .seconds(1))"))
+        #expect(featureSource.contains(".cancellable(id: CancelID.dataRefreshDebounce, cancelInFlight: true)"))
+        #expect(featureSource.contains("if !state.hasLoadedDataSnapshot"))
+    }
 }

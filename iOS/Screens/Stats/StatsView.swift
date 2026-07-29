@@ -1,6 +1,5 @@
 import Charts
 import ComposableArchitecture
-import SwiftData
 import SwiftUI
 
 struct StatsViewWrapper: View {
@@ -47,18 +46,7 @@ struct StatsView: View {
     private typealias Metrics = StatsFeature.Metrics
 
     private var tasks: [RoutineTask] { store.tasks }
-    private var logs: [RoutineLog] { store.logs }
     private var focusSessions: [FocusSession] { store.focusSessions }
-    private var sprintFocusSessions: [SprintFocusSessionRecord] { store.sprintFocusSessions }
-    private var boardSprints: [BoardSprintRecord] { store.boardSprints }
-    private var sleepSessions: [SleepSession] { store.sleepSessions }
-    private var awaySessions: [AwaySession] { store.awaySessions }
-    private var emotionLogs: [EmotionLog] { store.emotionLogs }
-    private var notes: [RoutineNote] { store.notes }
-    private var events: [RoutineEvent] { store.events }
-    private var goals: [RoutineGoal] { store.goals }
-    private var places: [RoutinePlace] { store.places }
-    private var placeCheckInSessions: [PlaceCheckInSession] { store.placeCheckInSessions }
 
     init(
         store: StoreOf<StatsFeature>,
@@ -79,28 +67,19 @@ struct StatsView: View {
         store.selectedRange
     }
 
-    private var statsPlaces: [RoutinePlace] {
-        isPlacesEnabled ? places : []
-    }
-
-    private var statsPlaceCheckInSessions: [PlaceCheckInSession] {
-        isPlacesEnabled ? placeCheckInSessions : []
-    }
-
-    private var statsAwaySessions: [AwaySession] {
-        isAwayEnabled ? awaySessions : []
-    }
-
-    private var statsSleepSessions: [SleepSession] {
-        isAwayEnabled ? sleepSessions : []
-    }
-
-    private var statsNotes: [RoutineNote] {
-        isNotesEnabled ? notes : []
-    }
-
-    private var statsNoteAttachmentNoteIDs: Set<UUID> {
-        isNotesEnabled ? store.noteAttachmentNoteIDs : []
+    private var visibleAchievementSnapshot: StatsAchievementPresentationSnapshot {
+        store.achievementSnapshot.filteringDomains { domain in
+            switch domain {
+            case .places:
+                isPlacesEnabled
+            case .notes:
+                isNotesEnabled
+            case .sleep, .away:
+                isAwayEnabled
+            default:
+                true
+            }
+        }
     }
 
     private var filterSheetBinding: Binding<Bool> {
@@ -378,9 +357,6 @@ struct StatsView: View {
                 addDashboardItemSheet
             }
             .task { store.send(.onAppear) }
-            .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
-                store.send(.dataRefreshRequested)
-            }
             .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
                 store.send(.dataRefreshRequested)
             }
@@ -428,20 +404,20 @@ struct StatsView: View {
         ) {
             let currentMetrics = metrics
             let blocks = dashboardBlocks(metrics: currentMetrics)
-            VStack(alignment: .leading, spacing: 24) {
-                AnyView(rangeSection)
-                AnyView(dashboardScopePicker)
+            LazyVStack(alignment: .leading, spacing: 24) {
+                rangeSection
+                dashboardScopePicker
 
                 if hasActiveSheetFilters {
-                    AnyView(activeFilterChipBar)
+                    activeFilterChipBar
                 }
 
                 if isEditingDashboard {
-                    AnyView(dashboardEditControls)
+                    dashboardEditControls
                 }
 
                 if shouldShowHealthAccessCard {
-                    AnyView(healthAccessCard)
+                    healthAccessCard
                 }
 
                 if blocks.isEmpty {
@@ -998,54 +974,19 @@ struct StatsView: View {
     }
 
     private func achievementsSection() -> some View {
-        StatsAchievementsSection(
-            achievements: StatsAchievementStats.achievements(
-                focusSessions: focusSessions,
-                sleepSessions: statsSleepSessions,
-                awaySessions: statsAwaySessions,
-                logs: logs,
-                emotionLogs: emotionLogs,
-                notes: statsNotes,
-                noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
-                goals: goals,
-                places: statsPlaces,
-                placeCheckInSessions: statsPlaceCheckInSessions,
-                calendar: calendar
-            ),
-            earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
-                focusSessions: focusSessions,
-                sleepSessions: statsSleepSessions,
-                awaySessions: statsAwaySessions,
-                logs: logs,
-                emotionLogs: emotionLogs,
-                notes: statsNotes,
-                noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
-                goals: goals,
-                places: statsPlaces,
-                placeCheckInSessions: statsPlaceCheckInSessions,
-                referenceDate: Date(),
-                calendar: calendar
-            ),
+        let snapshot = visibleAchievementSnapshot
+        return StatsAchievementsSection(
+            achievements: snapshot.achievements,
+            earnedAchievementIDsByPeriod: snapshot.earnedAchievementIDsByPeriod,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme
         )
     }
 
     private func recentWinsSection() -> some View {
-        StatsRecentWinsSection(
-            celebrations: StatsAchievementStats.celebrationPeriods(
-                focusSessions: focusSessions,
-                sleepSessions: statsSleepSessions,
-                awaySessions: statsAwaySessions,
-                logs: logs,
-                emotionLogs: emotionLogs,
-                notes: statsNotes,
-                goals: goals,
-                places: statsPlaces,
-                placeCheckInSessions: statsPlaceCheckInSessions,
-                referenceDate: Date(),
-                calendar: calendar
-            ),
+        let snapshot = visibleAchievementSnapshot
+        return StatsRecentWinsSection(
+            celebrations: snapshot.celebrations,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme
         )

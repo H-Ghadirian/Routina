@@ -10,6 +10,8 @@ enum RoutinaUITestSeeder {
             switch profile {
             case "performance":
                 try seedPerformanceProfile(in: context)
+            case "stats-performance":
+                try seedStatsPerformanceProfile(in: context)
             case "timeline-e2e":
                 try seedTimelineE2EProfile(in: context)
             default:
@@ -35,6 +37,45 @@ enum RoutinaUITestSeeder {
         for task in performanceTasks(referenceDate: Date()) {
             context.insert(task)
         }
+        try context.save()
+    }
+
+    @MainActor
+    private static func seedStatsPerformanceProfile(in context: ModelContext) throws {
+        var descriptor = FetchDescriptor<RoutineTask>()
+        descriptor.fetchLimit = 1
+        guard try context.fetch(descriptor).isEmpty else { return }
+
+        let referenceDate = Date()
+        let tasks = performanceTasks(referenceDate: referenceDate)
+        tasks.forEach(context.insert)
+
+        for index in 0..<12_000 {
+            let task = tasks[index % tasks.count]
+            let dayOffset = index % 365
+            let hourOffset = (index * 7) % 24
+            let timestamp = Calendar.current.date(
+                byAdding: DateComponents(day: -dayOffset, hour: -hourOffset),
+                to: referenceDate
+            ) ?? referenceDate.addingTimeInterval(TimeInterval(-dayOffset * 86_400))
+            let kind: RoutineLogKind = switch index % 10 {
+            case 0:
+                .missed
+            case 1:
+                .canceled
+            default:
+                .completed
+            }
+            context.insert(
+                RoutineLog(
+                    timestamp: timestamp,
+                    taskID: task.id,
+                    kind: kind,
+                    actualDurationMinutes: kind == .completed ? 5 + (index % 120) : nil
+                )
+            )
+        }
+
         try context.save()
     }
 

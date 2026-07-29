@@ -52,6 +52,29 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         }
     }
 
+    func testSeededStatsScrollInteractionPerformance() {
+        let app = makeApp(seedProfile: "stats-performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+
+        openStats(in: app)
+        XCTAssertTrue(app.navigationBars["Stats"].waitForExistence(timeout: 30))
+
+        app.swipeUp()
+        app.swipeUp()
+        app.swipeDown()
+        app.swipeDown()
+
+        measureInteraction {
+            app.swipeUp()
+            app.swipeUp()
+            app.swipeUp()
+            app.swipeDown()
+            app.swipeDown()
+            app.swipeDown()
+        }
+    }
+
     func testSeededTaskDetailNavigationInteractionPerformance() {
         let app = makeApp(seedProfile: "performance")
         app.launch()
@@ -201,6 +224,21 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let tab = app.tabBars.buttons[label].firstMatch
         XCTAssertTrue(tab.waitForExistence(timeout: 10), "Missing \(label) tab")
         tab.tap()
+    }
+
+    private func openStats(in app: XCUIApplication) {
+        let directTab = app.tabBars.buttons["Stats"].firstMatch
+        if directTab.exists {
+            directTab.tap()
+            return
+        }
+
+        tapTab("More", in: app)
+        let statsButton = app.buttons.containing(
+            NSPredicate(format: "label BEGINSWITH %@", "Stats")
+        ).firstMatch
+        XCTAssertTrue(statsButton.waitForExistence(timeout: 10), "Missing Stats destination")
+        statsButton.tap()
     }
 
     private func homeAddTaskButton(in app: XCUIApplication) -> XCUIElement {

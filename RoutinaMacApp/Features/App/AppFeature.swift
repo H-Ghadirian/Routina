@@ -322,6 +322,7 @@ struct StatsFeature {
         var taskCountForSelectedTypeFilter: Int = 0
         var filteredTaskCount: Int = 0
         var metrics = Metrics()
+        var achievementSnapshot = StatsAchievementPresentationSnapshot()
         var gitHubConnection = GitHubConnectionStatus.disconnected
         var gitHubStats: GitHubStatsSnapshot?
         var isGitHubStatsLoading: Bool = false
@@ -424,6 +425,20 @@ struct StatsFeature {
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
                 )
                 state.tagColors = appSettingsClient.tagColors()
+                state.achievementSnapshot = StatsAchievementPresentationSnapshot.build(
+                    focusSessions: focusSessions,
+                    sleepSessions: sleepSessions,
+                    awaySessions: awaySessions,
+                    logs: logs,
+                    emotionLogs: emotionLogs,
+                    notes: notes,
+                    noteAttachmentNoteIDs: noteAttachmentNoteIDs,
+                    goals: goals,
+                    places: places,
+                    placeCheckInSessions: placeCheckInSessions,
+                    referenceDate: now,
+                    calendar: calendar
+                )
                 refreshDerivedState(&state)
                 return .none
 

@@ -1446,3 +1446,20 @@ Then Going to sleep remains absent
 Given an optional action becomes unavailable before a queued selection routes
 When the pending action is performed
 Then its editor or protected-session start does not open
+
+### iOS Stats Scrolls From Stable Lazy Snapshots
+
+Area: Stats / UI
+Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/StatsFeatureDerivedStateSupportTests.swift`
+- `Tests/iOSUI/RoutinaUIPerformanceTests.swift`
+
+Given Stats has production-like task and activity history
+When the user continuously scrolls the iOS dashboard
+Then off-screen reports are constructed lazily with stable concrete view types
+And Achievements and Recent Wins render a reducer-owned presentation snapshot
+instead of walking whole history from a scrolling section builder
+And raw persistence saves do not duplicate semantic refresh notifications
+And bursts of semantic updates are coalesced before Stats reloads its snapshot

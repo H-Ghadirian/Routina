@@ -288,6 +288,7 @@ struct StatsFeature {
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var filteredTaskCount: Int = 0
         var metrics = Metrics()
+        var achievementSnapshot = StatsAchievementPresentationSnapshot()
         var gitHubConnection = GitHubConnectionStatus.disconnected
         var gitHubStats: GitHubStatsSnapshot?
         var isGitHubStatsLoading: Bool = false
@@ -297,6 +298,7 @@ struct StatsFeature {
         var healthSummary: HealthStatsSummary?
         var isHealthStatsLoading: Bool = false
         var healthStatsErrorMessage: String?
+        var hasLoadedDataSnapshot = false
 
         var hasActiveFilters: Bool {
             selectedRange != .week
@@ -341,6 +343,7 @@ struct StatsFeature {
             placeCheckInSessions: [PlaceCheckInSession] = []
         )
         case dataRefreshRequested
+        case dataRefreshDebounceCompleted
         case dataRefreshFailed
         case onAppear
         case selectedRangeChanged(DoneChartRange)
@@ -364,6 +367,7 @@ struct StatsFeature {
     }
 
     @Dependency(\.calendar) var calendar
+    @Dependency(\.continuousClock) var continuousClock
     @Dependency(\.date.now) var now
     @Dependency(\.gitHubStatsClient) var gitHubStatsClient
     @Dependency(\.gitLabStatsClient) var gitLabStatsClient
@@ -375,6 +379,7 @@ struct StatsFeature {
         Reduce { state, action in
             switch action {
             case let .setData(tasks, logs, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions):
+                state.hasLoadedDataSnapshot = true
                 state.tasks = tasks
                 state.logs = logs
                 state.focusSessions = focusSessions
@@ -394,10 +399,31 @@ struct StatsFeature {
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
                 )
                 state.tagColors = appSettingsClient.tagColors()
+                state.achievementSnapshot = StatsAchievementPresentationSnapshot.build(
+                    focusSessions: focusSessions,
+                    sleepSessions: sleepSessions,
+                    awaySessions: awaySessions,
+                    logs: logs,
+                    emotionLogs: emotionLogs,
+                    notes: notes,
+                    noteAttachmentNoteIDs: noteAttachmentNoteIDs,
+                    goals: goals,
+                    places: places,
+                    placeCheckInSessions: placeCheckInSessions,
+                    referenceDate: now,
+                    calendar: calendar
+                )
                 refreshDerivedState(&state)
                 return .none
 
             case .dataRefreshRequested:
+                return .run { send in
+                    try await continuousClock.sleep(for: .seconds(1))
+                    await send(.dataRefreshDebounceCompleted)
+                }
+                .cancellable(id: CancelID.dataRefreshDebounce, cancelInFlight: true)
+
+            case .dataRefreshDebounceCompleted:
                 return refreshDataEffect()
 
             case .dataRefreshFailed:
@@ -417,7 +443,9 @@ struct StatsFeature {
                     state.isGitHubStatsLoading = false
                     state.gitHubStats = nil
                     state.gitHubStatsErrorMessage = nil
-                    effects.append(refreshDataEffect())
+                    if !state.hasLoadedDataSnapshot {
+                        effects.append(refreshDataEffect())
+                    }
                     return .merge(effects)
                 }
                 state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
@@ -427,7 +455,9 @@ struct StatsFeature {
                     state.gitHubStatsErrorMessage = nil
                 }
                 effects.append(refreshGitHubStatsEffect(state: &state))
-                effects.append(refreshDataEffect())
+                if !state.hasLoadedDataSnapshot {
+                    effects.append(refreshDataEffect())
+                }
                 return .merge(effects)
 
             case let .selectedRangeChanged(range):
@@ -551,6 +581,10 @@ struct StatsFeature {
                 return refreshHealthStatsEffect(state: &state)
             }
         }
+    }
+
+    private enum CancelID {
+        case dataRefreshDebounce
     }
 
     private func refreshDataEffect() -> Effect<Action> {

@@ -139,20 +139,19 @@ struct StatsView: View {
         store.taskTypeFilter
     }
 
-    private var statsPlaces: [RoutinePlace] {
-        isPlacesEnabled ? store.places : []
-    }
-
-    private var statsPlaceCheckInSessions: [PlaceCheckInSession] {
-        isPlacesEnabled ? store.placeCheckInSessions : []
-    }
-
-    private var statsSleepSessions: [SleepSession] {
-        isAwayEnabled ? store.sleepSessions : []
-    }
-
-    private var statsAwaySessions: [AwaySession] {
-        isAwayEnabled ? store.awaySessions : []
+    private var visibleAchievementSnapshot: StatsAchievementPresentationSnapshot {
+        store.achievementSnapshot.filteringDomains { domain in
+            switch domain {
+            case .places:
+                isPlacesEnabled
+            case .notes:
+                isNotesEnabled
+            case .sleep, .away:
+                isAwayEnabled
+            default:
+                true
+            }
+        }
     }
 
     private var activeItemsBreakdown: StatsActiveItemsBreakdown {
@@ -780,54 +779,19 @@ struct StatsView: View {
     }
 
     private func achievementsSection() -> some View {
-        StatsAchievementsSection(
-            achievements: StatsAchievementStats.achievements(
-                focusSessions: store.focusSessions,
-                sleepSessions: statsSleepSessions,
-                awaySessions: statsAwaySessions,
-                logs: store.logs,
-                emotionLogs: store.emotionLogs,
-                notes: store.notes,
-                noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
-                goals: store.goals,
-                places: statsPlaces,
-                placeCheckInSessions: statsPlaceCheckInSessions,
-                calendar: calendar
-            ),
-            earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
-                focusSessions: store.focusSessions,
-                sleepSessions: statsSleepSessions,
-                awaySessions: statsAwaySessions,
-                logs: store.logs,
-                emotionLogs: store.emotionLogs,
-                notes: store.notes,
-                noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
-                goals: store.goals,
-                places: statsPlaces,
-                placeCheckInSessions: statsPlaceCheckInSessions,
-                referenceDate: Date(),
-                calendar: calendar
-            ),
+        let snapshot = visibleAchievementSnapshot
+        return StatsAchievementsSection(
+            achievements: snapshot.achievements,
+            earnedAchievementIDsByPeriod: snapshot.earnedAchievementIDsByPeriod,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme
         )
     }
 
     private func recentWinsSection() -> some View {
-        StatsRecentWinsSection(
-            celebrations: StatsAchievementStats.celebrationPeriods(
-                focusSessions: store.focusSessions,
-                sleepSessions: statsSleepSessions,
-                awaySessions: statsAwaySessions,
-                logs: store.logs,
-                emotionLogs: store.emotionLogs,
-                notes: store.notes,
-                goals: store.goals,
-                places: statsPlaces,
-                placeCheckInSessions: statsPlaceCheckInSessions,
-                referenceDate: Date(),
-                calendar: calendar
-            ),
+        let snapshot = visibleAchievementSnapshot
+        return StatsRecentWinsSection(
+            celebrations: snapshot.celebrations,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme
         )
