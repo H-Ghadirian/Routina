@@ -20,9 +20,12 @@ struct HomeFiltersTaskListModeSection: View {
                 accessibilityLabel: "Task type",
                 options: HomeFeature.TaskListMode.allCases,
                 selection: $taskListMode,
+                minimumSegmentWidth: 82,
+                horizontalPadding: 10,
                 fillsAvailableWidth: true
             ) { mode in
-                Label(mode.title, systemImage: mode.systemImage)
+                Text(mode.title)
+                    .fixedSize(horizontal: true, vertical: false)
             }
 
             Text("Choose which tasks the Home list should show.")

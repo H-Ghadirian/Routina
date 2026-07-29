@@ -356,6 +356,19 @@ When one of its segments is selected and receives the bright selected glass surf
 Then the selected text and symbol use an explicit dark foreground
 And the selection does not inherit a dark-appearance primary foreground that disappears into the bright glass
 
+### iOS Task Type Segments Keep Full Labels
+
+Area: Tasks
+Decision links: [0024](../decisions/0024-adopt-liquid-glass-ui-surfaces.md), [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/HomeIOSTaskTypeSegmentLayoutTests.swift`
+
+Given the iOS Home Filters sheet shows the `All`, `Routines`, and `Todos` task types
+When the Task Type segmented control is laid out at the sheet's compact width
+Then each segment prioritizes its complete text label
+And decorative symbols do not consume the space needed by `Routines`
+
 ### iOS Collapsible Section Counts Stay Readable
 
 Area: Tasks
