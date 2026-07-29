@@ -18,7 +18,7 @@ struct TaskFormContent: View {
     }
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isFileImporterPresented = false
-    @State private var isShowingMoreDetails = false
+    @State private var revealedSections: Set<TaskFormCompactSection> = []
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
@@ -33,14 +33,33 @@ struct TaskFormContent: View {
     ) private var isNotesEnabled = false
 
     var body: some View {
-        Form {
-            ForEach(visibleCompactSections, id: \.self) { section in
-                compactSection(section)
-            }
+        ScrollViewReader { proxy in
+            Form {
+                ForEach(
+                    visibleCompactSections.filter { $0 != .delete },
+                    id: \.self
+                ) { section in
+                    compactSection(section)
+                        .id(section)
+                }
 
-            if model.visibilityMode.usesProgressiveDisclosure {
-                moreDetailsSection
+                if model.visibilityMode.usesProgressiveDisclosure,
+                   !hiddenOptionalSections.isEmpty {
+                    addDetailsSection(
+                        hiddenOptionalSections,
+                        proxy: proxy
+                    )
+                }
+
+                if visibleCompactSections.contains(.delete) {
+                    compactSection(.delete)
+                        .id(TaskFormCompactSection.delete)
+                }
             }
+            .formStyle(.grouped)
+            .listSectionSpacing(20)
+            .contentMargins(.top, 10, for: .scrollContent)
+            .scrollDismissesKeyboard(.interactively)
         }
         .sheet(isPresented: $isTagManagerPresented) {
             SettingsTagManagerPresentationView(store: tagManagerStore)
@@ -71,18 +90,35 @@ struct TaskFormContent: View {
 
     // MARK: - Helpers
 
-    private var moreDetailsSection: some View {
+    private func addDetailsSection(
+        _ sections: [TaskFormCompactSection],
+        proxy: ScrollViewProxy
+    ) -> some View {
         Section {
-            Button {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    isShowingMoreDetails.toggle()
+            Menu {
+                ForEach(sections, id: \.self) { section in
+                    Button {
+                        reveal(section, proxy: proxy)
+                    } label: {
+                        Label(
+                            section.iosAddDetailsTitle,
+                            systemImage: section.iosAddDetailsSystemImage
+                        )
+                    }
                 }
             } label: {
-                Label(
-                    isShowingMoreDetails ? "Hide More Details" : "More Details",
-                    systemImage: isShowingMoreDetails ? "chevron.up.circle" : "ellipsis.circle"
-                )
+                HStack(spacing: 12) {
+                    Label("Add details", systemImage: "plus.circle.fill")
+                        .font(.body.weight(.semibold))
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(.rect)
             }
+            .buttonStyle(.plain)
         }
     }
 
@@ -108,7 +144,30 @@ struct TaskFormContent: View {
     }
 
     private var visibleCompactSections: [TaskFormCompactSection] {
-        model.visibleCompactSections(isShowingMoreDetails: isShowingMoreDetails).filter {
+        let availableSections = filteredCompactSections(showingAllDetails: true)
+        guard model.visibilityMode.usesProgressiveDisclosure else {
+            return availableSections
+        }
+
+        let defaultSections = Set(filteredCompactSections(showingAllDetails: false))
+        return availableSections.filter {
+            defaultSections.contains($0)
+                || revealedSections.contains($0)
+                || $0 == .delete
+        }
+    }
+
+    private var hiddenOptionalSections: [TaskFormCompactSection] {
+        let visibleSections = Set(visibleCompactSections)
+        return filteredCompactSections(showingAllDetails: true).filter {
+            !visibleSections.contains($0) && $0 != .delete
+        }
+    }
+
+    private func filteredCompactSections(
+        showingAllDetails: Bool
+    ) -> [TaskFormCompactSection] {
+        model.visibleCompactSections(isShowingMoreDetails: showingAllDetails).filter {
             switch $0 {
             case .place:
                 return isPlacesEnabled
@@ -116,6 +175,22 @@ struct TaskFormContent: View {
                 return isNotesEnabled
             default:
                 return true
+            }
+        }
+    }
+
+    private func reveal(
+        _ section: TaskFormCompactSection,
+        proxy: ScrollViewProxy
+    ) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            _ = revealedSections.insert(section)
+        }
+
+        Task { @MainActor in
+            await Task.yield()
+            withAnimation(.easeInOut(duration: 0.2)) {
+                proxy.scrollTo(section, anchor: .top)
             }
         }
     }
@@ -357,4 +432,66 @@ struct TaskFormContent: View {
         }
     }
 
+}
+
+private extension TaskFormCompactSection {
+    var iosAddDetailsTitle: String {
+        switch self {
+        case .name: return "Name"
+        case .taskType: return "Task type"
+        case .emoji: return "Emoji"
+        case .color: return "Color"
+        case .notes: return "Notes"
+        case .voiceNote: return "Voice note"
+        case .link: return "Links"
+        case .planning: return "Planning"
+        case .deadline: return "Deadline"
+        case .reminder: return "Reminder"
+        case .importanceUrgency: return "Importance & urgency"
+        case .pressure: return "Pressure"
+        case .estimation: return "Estimation"
+        case .image: return "Image"
+        case .attachment: return "File attachment"
+        case .tags: return "Tags"
+        case .goals: return "Goals"
+        case .events: return "Events"
+        case .relationships: return "Relationships"
+        case .scheduleType: return "Schedule behavior"
+        case .steps: return "Steps"
+        case .checklist: return "Checklist"
+        case .place: return "Places"
+        case .repeatPattern: return "Repeat"
+        case .delete: return "Delete task"
+        }
+    }
+
+    var iosAddDetailsSystemImage: String {
+        switch self {
+        case .name: return "text.cursor"
+        case .taskType: return "repeat"
+        case .emoji: return "face.smiling"
+        case .color: return "paintpalette"
+        case .notes: return "note.text"
+        case .voiceNote: return "waveform"
+        case .link: return "link"
+        case .planning: return "calendar.badge.clock"
+        case .deadline: return "calendar.badge.exclamationmark"
+        case .reminder: return "bell"
+        case .importanceUrgency: return "square.grid.2x2"
+        case .pressure: return "brain.head.profile"
+        case .estimation: return "timer"
+        case .image: return "photo"
+        case .attachment: return "paperclip"
+        case .tags: return "tag"
+        case .goals: return "target"
+        case .events: return "calendar"
+        case .relationships: return "point.3.connected.trianglepath.dotted"
+        case .scheduleType: return "calendar.badge.clock"
+        case .steps: return "list.number"
+        case .checklist: return "checklist"
+        case .place: return "mappin.and.ellipse"
+        case .repeatPattern: return "repeat"
+        case .delete: return "trash"
+        }
+    }
 }

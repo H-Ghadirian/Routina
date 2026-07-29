@@ -204,6 +204,23 @@ Given a yearly schedule uses several months and several dates
 When the user creates or edits it on iOS or macOS
 Then every stored month and date remains visibly selected and save preserves their cross-product
 
+### iOS Task Forms Stay Compact and Targeted
+
+Area: UI, Tasks
+Decision links: [0058](../decisions/0058-use-progressive-task-forms.md), [0100](../decisions/0100-reveal-task-form-details-by-section.md), [0462](../decisions/0462-use-a-compact-progressive-ios-task-editor.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+
+Given Add Task or Edit Task is open on iOS
+When task type, duration, and availability are visible
+Then each logical group has its own section without blank divider rows
+And every date or time availability option remains readable at phone width
+
+Given an empty optional detail is hidden in the compact form
+When the user selects that detail from `Add details`
+Then only the chosen section appears and the form scrolls it into view
+
 ### Wide Mac Task Forms Keep Scheduling Controls Grouped
 
 Area: UI, Tasks

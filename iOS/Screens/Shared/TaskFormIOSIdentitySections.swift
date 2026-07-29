@@ -5,9 +5,15 @@ struct TaskFormIOSNameSection: View {
     let isNameFocused: FocusState<Bool>.Binding
 
     var body: some View {
-        Section(header: Text("Name")) {
+        Section(header: Text("Task")) {
             TextField("Task name", text: model.name)
                 .focused(isNameFocused)
+                .font(.title3.weight(.semibold))
+                .padding(.vertical, 6)
+                .submitLabel(.done)
+                .onSubmit {
+                    isNameFocused.wrappedValue = false
+                }
             if let msg = model.nameValidationMessage {
                 Text(msg)
                     .font(.caption)
@@ -23,16 +29,18 @@ struct TaskFormIOSTaskTypeSection: View {
     @Environment(\.calendar) private var calendar
 
     var body: some View {
-        Section(header: Text(model.visibilityMode == .progressiveCreate ? "Task Type" : "Kind")) {
+        Section(header: Text("Task Type")) {
             creationControls
+        }
 
-            if showsRoutineDurationControl {
-                Divider()
+        if showsRoutineDurationControl {
+            Section(header: Text("Duration")) {
                 routineDurationContent
             }
+        }
 
-            if showsAvailabilityControl {
-                Divider()
+        if showsAvailabilityControl {
+            Section(header: Text("Availability")) {
                 availabilityContent
             }
         }
@@ -70,77 +78,62 @@ struct TaskFormIOSTaskTypeSection: View {
         }
     }
 
+    @ViewBuilder
     private var availabilityContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if model.taskType.wrappedValue == .todo {
-                dateAvailabilityContent
-            }
-
-            timeAvailabilityContent
+        if model.taskType.wrappedValue == .todo {
+            dateAvailabilityContent
         }
+
+        timeAvailabilityContent
     }
 
+    @ViewBuilder
     private var dateAvailabilityContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Date availability")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Date availability",
-                options: TaskFormDateAvailabilityMode.allCases,
-                selection: dateAvailabilityModeBinding,
-                fillsAvailableWidth: true
-            ) { mode in
+        Picker("Dates", selection: dateAvailabilityModeBinding) {
+            ForEach(TaskFormDateAvailabilityMode.allCases) { mode in
                 Text(mode.rawValue)
+                    .tag(mode)
             }
-
-            dateAvailabilityPickers
         }
+        .pickerStyle(.navigationLink)
+
+        dateAvailabilityPickers
     }
 
+    @ViewBuilder
     private var timeAvailabilityContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Time availability")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Time availability",
-                options: TaskFormTimingMode.cases(for: model.taskType.wrappedValue),
-                selection: timingModeBinding,
-                fillsAvailableWidth: true
-            ) { mode in
+        Picker("Time", selection: timingModeBinding) {
+            ForEach(TaskFormTimingMode.cases(for: model.taskType.wrappedValue)) { mode in
                 Text(mode.rawValue)
+                    .tag(mode)
             }
+        }
+        .pickerStyle(.navigationLink)
 
-            if currentTimingMode == .exact {
-                DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
-            } else if currentTimingMode.usesTimeRange {
-                if let timeRangeHelpText {
-                    Text(timeRangeHelpText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                routineTimeRangePickers
+        if currentTimingMode == .exact {
+            DatePicker(
+                "At",
+                selection: model.recurrenceTimeOfDay,
+                displayedComponents: .hourAndMinute
+            )
+        } else if currentTimingMode.usesTimeRange {
+            routineTimeRangePickers
+            if let timeRangeHelpText {
+                Text(timeRangeHelpText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
     }
 
     private var routineDurationContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Duration")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Duration",
-                options: RoutineDurationMode.allCases,
-                selection: model.routineDurationMode,
-                fillsAvailableWidth: true
-            ) { mode in
-                Text(mode.rawValue)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Duration",
+            options: RoutineDurationMode.allCases,
+            selection: model.routineDurationMode,
+            fillsAvailableWidth: true
+        ) { mode in
+            Text(mode.rawValue)
         }
     }
 
@@ -156,11 +149,18 @@ struct TaskFormIOSTaskTypeSection: View {
         }
     }
 
+    @ViewBuilder
     private var routineTimeRangePickers: some View {
-        VStack(spacing: 8) {
-            DatePicker("Starts", selection: model.recurrenceTimeRangeStart, displayedComponents: .hourAndMinute)
-            DatePicker("Ends", selection: model.recurrenceTimeRangeEnd, displayedComponents: .hourAndMinute)
-        }
+        DatePicker(
+            "Starts",
+            selection: model.recurrenceTimeRangeStart,
+            displayedComponents: .hourAndMinute
+        )
+        DatePicker(
+            "Ends",
+            selection: model.recurrenceTimeRangeEnd,
+            displayedComponents: .hourAndMinute
+        )
     }
 
     private var timeRangeHelpText: String? {
@@ -178,11 +178,18 @@ struct TaskFormIOSTaskTypeSection: View {
         )
     }
 
+    @ViewBuilder
     private var todoDateRangePickers: some View {
-        VStack(spacing: 8) {
-            DatePicker("Starts", selection: todoAvailabilityStartBinding, displayedComponents: .date)
-            DatePicker("Ends", selection: todoAvailabilityEndBinding, displayedComponents: .date)
-        }
+        DatePicker(
+            "Starts",
+            selection: todoAvailabilityStartBinding,
+            displayedComponents: .date
+        )
+        DatePicker(
+            "Ends",
+            selection: todoAvailabilityEndBinding,
+            displayedComponents: .date
+        )
     }
 
     private var dateAvailabilityModeBinding: Binding<TaskFormDateAvailabilityMode> {
