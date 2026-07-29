@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded By
+
+[0464: Host Mac Settings in a Standard Window](../0464-host-mac-settings-in-a-standard-window.md)
 
 ## Date
 

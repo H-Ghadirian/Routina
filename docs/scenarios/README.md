@@ -852,6 +852,11 @@ Given the Mac Settings window is open
 When the user uses its native traffic-light controls
 Then minimize, resize or zoom, and native full screen are available while the existing minimum content size remains enforced
 
+Given the standalone Mac Settings window is closed
+When the user chooses the app Settings command or presses Command-comma
+Then one standard Settings window opens or returns to the front
+And the Settings window remains suppressed during ordinary app launch
+
 Given Mac Home shows expanded `Future`
 When future task groups are visible
 Then the header and groups share one full-bleed section surface while nested tag groups keep their own collapsible surfaces

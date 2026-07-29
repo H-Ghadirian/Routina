@@ -68,13 +68,16 @@ struct RoutinaMacRootScene: Scene {
             RoutineCommands()
         }
 
-        Settings {
+        Window("Routinam Settings", id: RoutinaMacSceneID.settings) {
             settingsRoot
                 .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
-                .background(RoutinaMacSettingsWindowConfigurator())
                 .background(RoutinaMacUndoBridge(persistence: persistence))
         }
         .windowResizability(.contentMinSize)
+        .defaultLaunchBehavior(.suppressed)
+        .commands {
+            RoutineCommands()
+        }
     }
 
     @MainActor
@@ -125,10 +128,6 @@ private final class RoutinaMacWidgetRefreshScheduler {
     private func refreshStatsWidget() {
         WidgetStatsService.refreshAndReload(using: persistence.container)
     }
-}
-
-private enum RoutinaMacSceneID {
-    static let home = "routina-home"
 }
 
 private struct RoutinaMacWindowRouterInstaller: View {
@@ -241,54 +240,6 @@ private enum RoutinaMacHomeWindowChrome {
         } else {
             window.styleMask.remove(.fullSizeContentView)
         }
-    }
-}
-
-private struct RoutinaMacSettingsWindowConfigurator: NSViewRepresentable {
-    func makeNSView(context: Context) -> RoutinaMacSettingsWindowConfigurationView {
-        RoutinaMacSettingsWindowConfigurationView()
-    }
-
-    func updateNSView(
-        _ view: RoutinaMacSettingsWindowConfigurationView,
-        context: Context
-    ) {
-        RoutinaMacSettingsWindowChrome.configure(view.window)
-    }
-}
-
-private final class RoutinaMacSettingsWindowConfigurationView: NSView {
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        RoutinaMacSettingsWindowChrome.configure(window)
-
-        DispatchQueue.main.async { [weak window] in
-            RoutinaMacSettingsWindowChrome.configure(window)
-        }
-    }
-}
-
-private enum RoutinaMacSettingsWindowChrome {
-    @MainActor
-    static func configure(_ window: NSWindow?) {
-        guard let window else { return }
-
-        window.styleMask.formUnion([.miniaturizable, .resizable])
-        window.collectionBehavior.remove(.fullScreenAuxiliary)
-        window.collectionBehavior.insert(.fullScreenPrimary)
-        window.contentMinSize = NSSize(
-            width: RoutinaMacSettingsSizing.minWidth,
-            height: RoutinaMacSettingsSizing.minHeight
-        )
-        window.maxSize = NSSize(
-            width: CGFloat.greatestFiniteMagnitude,
-            height: CGFloat.greatestFiniteMagnitude
-        )
-
-        window.standardWindowButton(.miniaturizeButton)?.isHidden = false
-        window.standardWindowButton(.miniaturizeButton)?.isEnabled = true
-        window.standardWindowButton(.zoomButton)?.isHidden = false
-        window.standardWindowButton(.zoomButton)?.isEnabled = true
     }
 }
 

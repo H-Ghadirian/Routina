@@ -786,26 +786,31 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
-    func testMacSettingsWindowKeepsStandardWindowActionsAvailable() throws {
+    func testMacSettingsUsesAStandardFullscreenWindowWithSystemCommandRouting() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
+        let commands = try Self.sourceFile("RoutinaMacApp/Commands/RoutineCommands.swift")
 
-        XCTAssertTrue(source.contains(".background(RoutinaMacSettingsWindowConfigurator())"))
+        XCTAssertTrue(
+            source.contains("Window(\"Routinam Settings\", id: RoutinaMacSceneID.settings)"),
+            "Settings must use a standard Window host so AppKit permits native fullscreen."
+        )
         XCTAssertTrue(source.contains(".windowResizability(.contentMinSize)"))
-        XCTAssertTrue(
-            source.contains("window.styleMask.formUnion([.miniaturizable, .resizable])"),
-            "Settings must opt back into the standard minimize and resize window capabilities."
+        XCTAssertTrue(source.contains(".defaultLaunchBehavior(.suppressed)"))
+        XCTAssertFalse(
+            source.contains("Settings {"),
+            "SwiftUI's preference-panel Settings scene does not become fullscreen-capable by mutating its NSWindow flags."
         )
-        XCTAssertTrue(source.contains("window.collectionBehavior.insert(.fullScreenPrimary)"))
+        XCTAssertFalse(source.contains("RoutinaMacSettingsWindowConfigurator"))
         XCTAssertTrue(
-            source.contains("window.standardWindowButton(.miniaturizeButton)?.isEnabled = true")
+            commands.contains("CommandGroup(replacing: .appSettings)"),
+            "Replacing the special Settings scene must preserve the system Settings menu location."
         )
         XCTAssertTrue(
-            source.contains("window.standardWindowButton(.zoomButton)?.isEnabled = true")
+            commands.contains("openWindow(id: RoutinaMacSceneID.settings)")
         )
         XCTAssertTrue(
-            source.contains("width: CGFloat.greatestFiniteMagnitude")
-                && source.contains("height: CGFloat.greatestFiniteMagnitude"),
-            "Settings must not retain the preference scene's fixed maximum size."
+            commands.contains(".keyboardShortcut(\",\", modifiers: .command)"),
+            "The standard Command-comma Settings shortcut must survive the custom window host."
         )
     }
 

@@ -1,6 +1,11 @@
 import AppKit
 import SwiftUI
 
+enum RoutinaMacSceneID {
+    static let home = "routina-home"
+    static let settings = "routina-settings"
+}
+
 extension Notification.Name {
     static let routinaMacOpenRoutinesInSidebar = Notification.Name("routina.mac.openRoutinesInSidebar")
     static let routinaMacOpenTimelineInSidebar = Notification.Name("routina.mac.openTimelineInSidebar")
@@ -50,6 +55,7 @@ enum RoutinaMacSearchOrCreateFocus {
 }
 
 struct RoutineCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
     @StateObject private var textEditingMonitor = RoutinaMacTextEditingMonitor.shared
 
     #if !SWIFT_PACKAGE
@@ -90,6 +96,13 @@ struct RoutineCommands: Commands {
                 performRedo()
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
+        }
+
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings…") {
+                openWindow(id: RoutinaMacSceneID.settings)
+            }
+            .keyboardShortcut(",", modifiers: .command)
         }
 
         CommandGroup(before: .appSettings) {
