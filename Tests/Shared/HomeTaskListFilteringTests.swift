@@ -1817,6 +1817,51 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationRequiresEveryTagForAllModeCustomSectionRules() {
+        let tagSectionID = UUID()
+        let bothTagsID = UUID()
+        let oneTagID = UUID()
+
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: bothTagsID,
+                    name: "Deep work",
+                    tags: ["work", "Deep Focus"]
+                ),
+                TestTaskDisplay(
+                    taskID: oneTagID,
+                    name: "Ordinary work",
+                    tags: ["Work"]
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(
+                    id: tagSectionID,
+                    title: "Deep Work",
+                    createdAt: nil,
+                    rules: HomeCustomTaskSectionRules(
+                        tagNames: ["Work", "deep focus"],
+                        tagMatchMode: .all
+                    )
+                )
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Deep Work", "Future"])
+        #expect(presentation.sections[0].tasks.map(\.taskID) == [bothTagsID])
+        #expect(presentation.sections[1].tasks.map(\.taskID) == [oneTagID])
+    }
+
+    @Test
     func sidebarPresentationKeepsManualCustomAssignmentForInternalRecordRows() {
         let manualSectionID = UUID()
         let trackingID = UUID()

@@ -2,6 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct SettingsMacTaskSectionsDetailView: View {
+    let availableTagSummaries: [RoutineTagSummary]
+
     @Environment(\.modelContext) private var modelContext
     @AppStorage(
         UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
@@ -20,6 +22,7 @@ struct SettingsMacTaskSectionsDetailView: View {
     @State private var pendingDeleteSection: HomeCustomTaskSection?
     @State private var isDeleteConfirmationPresented = false
     @State private var statusMessage = ""
+    @State private var tagRuleInputs: [UUID: String] = [:]
 
     var body: some View {
         SettingsMacDetailShell(
@@ -361,29 +364,40 @@ struct SettingsMacTaskSectionsDetailView: View {
 
     private func tagRuleEditor(for section: HomeCustomTaskSection) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Automatic tags", systemImage: "tag")
-                .font(.subheadline.weight(.semibold))
+            HStack(spacing: 12) {
+                Label("Automatic tags", systemImage: "tag")
+                    .font(.subheadline.weight(.semibold))
 
-            Text("Unassigned tasks with any matching tag appear in this section.")
+                Spacer()
+
+                Picker(
+                    "Tag matching",
+                    selection: tagMatchModeBinding(for: section)
+                ) {
+                    Text("Any").tag(RoutineTagMatchMode.any)
+                    Text("All").tag(RoutineTagMatchMode.all)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 136)
+                .accessibilityLabel("Automatic tag matching")
+            }
+
+            Text(tagMatchModeDescription(for: section.rules.tagMatchMode))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 8) {
-                TextField("Work, Urgent", text: tagRuleDraftBinding(for: section))
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { saveTagRule(for: section) }
-                    .help("Separate multiple tags with commas.")
+            tagRuleComposer(for: section)
+            tagRuleChips(for: section)
 
-                if hasTagRuleChanges(for: section) {
+            if hasTagRuleChanges(for: section) {
+                HStack(spacing: 8) {
                     Button {
-                        drafts.tagRuleDrafts[section.id] = tagRuleDraftText(
-                            for: section.rules.tagNames
-                        )
+                        discardTagRuleChanges(for: section)
                     } label: {
-                        Image(systemName: "arrow.uturn.backward")
+                        Label("Revert", systemImage: "arrow.uturn.backward")
                     }
                     .buttonStyle(.bordered)
-                    .help("Discard tag changes")
 
                     Button {
                         saveTagRule(for: section)
@@ -391,13 +405,119 @@ struct SettingsMacTaskSectionsDetailView: View {
                         Label("Save", systemImage: "checkmark")
                     }
                     .buttonStyle(.borderedProminent)
-                } else if !section.rules.tagNames.isEmpty {
-                    Button("Clear") {
-                        clearTagRule(for: section)
+                }
+            } else if !section.rules.tagNames.isEmpty {
+                Button("Clear all") {
+                    clearTagRule(for: section)
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+    }
+
+    private func tagRuleComposer(for section: HomeCustomTaskSection) -> some View {
+        HStack(spacing: 8) {
+            ZStack(alignment: .trailing) {
+                MacTagAutocompleteTextField(
+                    placeholder: "Add a tag",
+                    text: tagRuleInputBinding(for: section),
+                    suggestion: tagAutocompleteSuggestion(for: section),
+                    onSubmit: { addTagRuleInput(for: section) },
+                    onAcceptSuggestion: {
+                        acceptTagAutocompleteSuggestion(for: section)
                     }
-                    .buttonStyle(.borderless)
+                )
+                .frame(height: 28)
+
+                if let suggestion = tagAutocompleteSuggestion(for: section) {
+                    Button {
+                        acceptTagAutocompleteSuggestion(for: section)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("#\(suggestion)")
+                                .lineLimit(1)
+                            Text("Tab")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .routinaGlassCard(
+                                    cornerRadius: 4,
+                                    tint: .secondary,
+                                    tintOpacity: 0.08
+                                )
+                        }
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(tagTint(for: suggestion))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .routinaGlassPill(
+                            tint: tagTint(for: suggestion),
+                            tintOpacity: 0.12,
+                            interactive: true
+                        )
+                        .overlay {
+                            Capsule()
+                                .stroke(tagTint(for: suggestion).opacity(0.28), lineWidth: 1)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 5)
+                    .help("Press Tab to complete #\(suggestion)")
                 }
             }
+
+            Button {
+                addTagRuleInput(for: section)
+            } label: {
+                Image(systemName: "plus")
+            }
+            .buttonStyle(.bordered)
+            .disabled(
+                RoutineTag.parseDraft(tagRuleInputs[section.id] ?? "").isEmpty
+            )
+            .accessibilityLabel("Add automatic tag")
+            .help("Add automatic tag")
+        }
+    }
+
+    @ViewBuilder
+    private func tagRuleChips(for section: HomeCustomTaskSection) -> some View {
+        let tags = parsedTagRuleDraft(for: section)
+
+        if !tags.isEmpty {
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(tags, id: \.self) { tag in
+                    Button {
+                        removeTagRuleDraftTag(tag, from: section)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("#\(tag)")
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(tagTint(for: tag))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .routinaGlassPill(
+                            tint: tagTint(for: tag),
+                            tintOpacity: 0.14,
+                            interactive: true
+                        )
+                        .overlay {
+                            Capsule()
+                                .stroke(tagTint(for: tag).opacity(0.28), lineWidth: 1)
+                        }
+                        .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .fixedSize()
+                    .accessibilityLabel("Remove automatic tag \(tag)")
+                }
+            }
+            .padding(.vertical, 2)
         }
     }
 
@@ -558,10 +678,22 @@ struct SettingsMacTaskSectionsDetailView: View {
         )
     }
 
-    private func tagRuleDraftBinding(for section: HomeCustomTaskSection) -> Binding<String> {
+    private func tagRuleInputBinding(for section: HomeCustomTaskSection) -> Binding<String> {
         Binding(
-            get: { drafts.tagRuleDrafts[section.id] ?? tagRuleDraftText(for: section.rules.tagNames) },
-            set: { drafts.tagRuleDrafts[section.id] = $0 }
+            get: { tagRuleInputs[section.id] ?? "" },
+            set: { tagRuleInputs[section.id] = $0 }
+        )
+    }
+
+    private func tagMatchModeBinding(
+        for section: HomeCustomTaskSection
+    ) -> Binding<RoutineTagMatchMode> {
+        Binding(
+            get: {
+                customTaskSections.first(where: { $0.id == section.id })?
+                    .rules.tagMatchMode ?? section.rules.tagMatchMode
+            },
+            set: { setTagMatchMode($0, for: section.id) }
         )
     }
 
@@ -587,7 +719,9 @@ struct SettingsMacTaskSectionsDetailView: View {
             let visibleTags = section.rules.tagNames.prefix(2).joined(separator: ", ")
             let remainingCount = section.rules.tagNames.count - 2
             let suffix = remainingCount > 0 ? " +\(remainingCount)" : ""
-            summaryParts.append("Tags: \(visibleTags)\(suffix)")
+            summaryParts.append(
+                "\(section.rules.tagMatchMode.rawValue) tags: \(visibleTags)\(suffix)"
+            )
         }
 
         if !subsections.isEmpty {
@@ -680,6 +814,78 @@ struct SettingsMacTaskSectionsDetailView: View {
         parsedTagRuleDraft(for: section) != section.rules.tagNames
     }
 
+    private func tagMatchModeDescription(
+        for matchMode: RoutineTagMatchMode
+    ) -> String {
+        switch matchMode {
+        case .any:
+            return "Unassigned tasks with any one of these tags appear in this section."
+        case .all:
+            return "Only unassigned tasks containing every one of these tags appear in this section."
+        }
+    }
+
+    private var availableTags: [String] {
+        availableTagSummaries.map(\.name)
+    }
+
+    private func tagAutocompleteSuggestion(
+        for section: HomeCustomTaskSection
+    ) -> String? {
+        RoutineTag.autocompleteSuggestion(
+            for: tagRuleInputs[section.id] ?? "",
+            availableTags: availableTags,
+            selectedTags: parsedTagRuleDraft(for: section)
+        )
+    }
+
+    private func acceptTagAutocompleteSuggestion(
+        for section: HomeCustomTaskSection
+    ) {
+        guard let suggestion = tagAutocompleteSuggestion(for: section) else {
+            return
+        }
+
+        tagRuleInputs[section.id] = RoutineTag.acceptingAutocompleteSuggestion(
+            suggestion,
+            in: tagRuleInputs[section.id] ?? ""
+        )
+    }
+
+    private func addTagRuleInput(for section: HomeCustomTaskSection) {
+        let input = tagRuleInputs[section.id] ?? ""
+        guard !RoutineTag.parseDraft(input).isEmpty else { return }
+
+        let tags = RoutineTag.appending(
+            input,
+            to: parsedTagRuleDraft(for: section),
+            availableTags: availableTags
+        )
+        drafts.tagRuleDrafts[section.id] = tagRuleDraftText(for: tags)
+        tagRuleInputs[section.id] = ""
+    }
+
+    private func removeTagRuleDraftTag(
+        _ tag: String,
+        from section: HomeCustomTaskSection
+    ) {
+        let tags = RoutineTag.removing(tag, from: parsedTagRuleDraft(for: section))
+        drafts.tagRuleDrafts[section.id] = tagRuleDraftText(for: tags)
+    }
+
+    private func discardTagRuleChanges(for section: HomeCustomTaskSection) {
+        drafts.tagRuleDrafts[section.id] = tagRuleDraftText(
+            for: section.rules.tagNames
+        )
+        tagRuleInputs[section.id] = ""
+    }
+
+    private func tagTint(for tag: String) -> Color {
+        availableTagSummaries.first {
+            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
+        }?.displayColor ?? .accentColor
+    }
+
     private func newSubsectionValidationMessage(in sectionID: UUID) -> String? {
         let draft = newSubsectionTitles[sectionID] ?? ""
         guard HomeCustomTaskSectionStorage.sanitizedTitle(draft) != nil,
@@ -756,12 +962,30 @@ struct SettingsMacTaskSectionsDetailView: View {
         }
 
         persistSections(sections)
+        tagRuleInputs[section.id] = ""
         statusMessage = ""
     }
 
     private func clearTagRule(for section: HomeCustomTaskSection) {
         drafts.tagRuleDrafts[section.id] = ""
+        tagRuleInputs[section.id] = ""
         saveTagRule(for: section)
+    }
+
+    private func setTagMatchMode(
+        _ tagMatchMode: RoutineTagMatchMode,
+        for sectionID: UUID
+    ) {
+        guard let sections = HomeCustomTaskSectionStorage.settingTagMatchMode(
+            tagMatchMode,
+            for: sectionID,
+            in: customTaskSections
+        ) else {
+            return
+        }
+
+        persistSections(sections)
+        statusMessage = ""
     }
 
     private func setColor(_ colorHex: String?, for sectionID: UUID) {
@@ -814,6 +1038,8 @@ struct SettingsMacTaskSectionsDetailView: View {
 
     private func syncRenameDrafts(with sections: [HomeCustomTaskSection]) {
         drafts.sync(with: sections)
+        let validSectionIDs = Set(sections.map(\.id))
+        tagRuleInputs = tagRuleInputs.filter { validSectionIDs.contains($0.key) }
     }
 
     private func prepareSectionEditor() {

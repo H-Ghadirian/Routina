@@ -321,6 +321,61 @@ struct HomeCustomTaskSectionStorageTests {
     }
 
     @Test
+    func tagRulesCanMatchAnyOrAllConfiguredTags() {
+        let anyRules = HomeCustomTaskSectionRules(
+            tagNames: ["Work", "Deep Focus"],
+            tagMatchMode: .any
+        )
+        let allRules = HomeCustomTaskSectionRules(
+            tagNames: ["Work", "Deep Focus"],
+            tagMatchMode: .all
+        )
+
+        #expect(anyRules.matchesTags(["work"]))
+        #expect(anyRules.matchesTags(["Deep Focus"]))
+        #expect(!anyRules.matchesTags(["Home"]))
+        #expect(allRules.matchesTags(["deep focus", "WORK", "Other"]))
+        #expect(!allRules.matchesTags(["Work"]))
+        #expect(!HomeCustomTaskSectionRules(tagMatchMode: .all).matchesTags([]))
+    }
+
+    @Test
+    func settingTagMatchModePreservesTagsAndOtherSectionMetadata() throws {
+        let sectionID = UUID()
+        let sections = [
+            HomeCustomTaskSection(
+                id: sectionID,
+                title: "Work",
+                createdAt: nil,
+                rules: HomeCustomTaskSectionRules(tagNames: ["Focus"]),
+                colorHex: "#FF453A"
+            )
+        ]
+
+        let updatedSections = try #require(
+            HomeCustomTaskSectionStorage.settingTagMatchMode(
+                .all,
+                for: sectionID,
+                in: sections
+            )
+        )
+
+        #expect(updatedSections.first?.rules.tagMatchMode == .all)
+        #expect(updatedSections.first?.rules.tagNames == ["Focus"])
+        #expect(updatedSections.first?.colorHex == "#FF453A")
+
+        let retaggedSections = try #require(
+            HomeCustomTaskSectionStorage.settingTagNames(
+                ["Planning"],
+                for: sectionID,
+                in: updatedSections
+            )
+        )
+        #expect(retaggedSections.first?.rules.tagMatchMode == .all)
+        #expect(retaggedSections.first?.rules.tagNames == ["Planning"])
+    }
+
+    @Test
     func legacyPlannedRulesDecodeAsTagOnlyAndAreNotReencoded() throws {
         let sectionID = UUID()
         let rawValue = """
@@ -340,6 +395,7 @@ struct HomeCustomTaskSectionStorageTests {
 
         #expect(decodedSection.id == sectionID)
         #expect(decodedSection.rules.tagNames == ["Work", "Focus"])
+        #expect(decodedSection.rules.tagMatchMode == .any)
         #expect(!reencoded.contains("\"enabled\""))
     }
 }

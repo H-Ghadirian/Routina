@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0460](0460-match-custom-section-tags-by-any-or-all.md) refines [0449](0449-keep-custom-section-rules-tag-based.md) and [0450](0450-use-progressive-custom-section-management.md) for custom-section tag composition:** Each custom super section chooses backward-compatible `Any` matching or intersection-based `All` matching; Settings presents rule tags as removable chips with saved-tag suggestions and Tab completion.
+
 - **[0459](0459-route-single-ios-new-action-directly.md) refines [0173](0173-use-ios-new-tab-sheet.md) and [0458](0458-align-ios-new-actions-with-beta-gates.md) for chooser cardinality:** Tapping the iOS bottom-bar New action routes directly when feature availability leaves exactly one destination, opens the chooser for two or more destinations, and retains destination-level availability guards.
 
 - **[0458](0458-align-ios-new-actions-with-beta-gates.md) refines [0173](0173-use-ios-new-tab-sheet.md), [0212](0212-hide-goals-tab-by-default.md), [0220](0220-nest-sleep-and-gate-mac-event-emotion-actions.md), and [0221](0221-hide-stats-sleep-tab-behind-beta-toggle.md) for iOS global creation availability:** The iOS bottom-bar New sheet hides Event and Emotion, Goal, and Going to sleep when their related Beta Experiments are disabled; Sleep also requires Away and its dedicated New-sheet preference, and action routing repeats the same guards.
@@ -397,6 +399,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0460](0460-match-custom-section-tags-by-any-or-all.md) | Match Custom Section Tags by Any or All | Accepted | 2026-07-29 |
 | [0458](0458-align-ios-new-actions-with-beta-gates.md) | Align iOS New Actions With Beta Gates | Accepted | 2026-07-29 |
 | [0456](0456-show-resolved-automatic-paths-in-edit-task.md) | Show Resolved Automatic Paths in Edit Task | Accepted | 2026-07-29 |
 | [0454](0454-adapt-planner-hour-heights-to-visible-density.md) | Adapt Planner Hour Heights to Visible Density | Accepted | 2026-07-28 |

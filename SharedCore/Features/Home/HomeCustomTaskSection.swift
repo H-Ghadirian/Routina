@@ -2,9 +2,14 @@ import Foundation
 
 struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
     var tagNames: [String]
+    var tagMatchMode: RoutineTagMatchMode
 
-    init(tagNames: [String] = []) {
+    init(
+        tagNames: [String] = [],
+        tagMatchMode: RoutineTagMatchMode = .any
+    ) {
         self.tagNames = Self.sanitizedTagNames(tagNames)
+        self.tagMatchMode = tagMatchMode
     }
 
     var isEmpty: Bool {
@@ -12,12 +17,31 @@ struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
     }
 
     func settingTagNames(_ rawTagNames: [String]) -> Self {
-        HomeCustomTaskSectionRules(tagNames: rawTagNames)
+        HomeCustomTaskSectionRules(
+            tagNames: rawTagNames,
+            tagMatchMode: tagMatchMode
+        )
+    }
+
+    func settingTagMatchMode(_ tagMatchMode: RoutineTagMatchMode) -> Self {
+        HomeCustomTaskSectionRules(
+            tagNames: tagNames,
+            tagMatchMode: tagMatchMode
+        )
     }
 
     func matchesTags(_ taskTags: [String]) -> Bool {
-        tagNames.contains { tagName in
-            RoutineTag.contains(tagName, in: taskTags)
+        guard !tagNames.isEmpty else { return false }
+
+        switch tagMatchMode {
+        case .any:
+            return tagNames.contains { tagName in
+                RoutineTag.contains(tagName, in: taskTags)
+            }
+        case .all:
+            return tagNames.allSatisfy { tagName in
+                RoutineTag.contains(tagName, in: taskTags)
+            }
         }
     }
 
@@ -27,6 +51,7 @@ struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case tags
+        case tagMatchMode
     }
 
     init(from decoder: Decoder) throws {
@@ -34,11 +59,16 @@ struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
         tagNames = Self.sanitizedTagNames(
             (try? container.decode([String].self, forKey: .tags)) ?? []
         )
+        tagMatchMode = (try? container.decode(
+            RoutineTagMatchMode.self,
+            forKey: .tagMatchMode
+        )) ?? .any
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(tagNames, forKey: .tags)
+        try container.encode(tagMatchMode, forKey: .tagMatchMode)
     }
 }
 
@@ -323,6 +353,21 @@ enum HomeCustomTaskSectionStorage {
 
         sanitizedSections[sectionIndex].rules = sanitizedSections[sectionIndex].rules
             .settingTagNames(tagNames)
+        return sanitizedSections
+    }
+
+    static func settingTagMatchMode(
+        _ tagMatchMode: RoutineTagMatchMode,
+        for sectionID: UUID,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection]? {
+        var sanitizedSections = sanitized(sections)
+        guard let sectionIndex = sanitizedSections.firstIndex(where: { $0.id == sectionID }) else {
+            return nil
+        }
+
+        sanitizedSections[sectionIndex].rules = sanitizedSections[sectionIndex].rules
+            .settingTagMatchMode(tagMatchMode)
         return sanitizedSections
     }
 

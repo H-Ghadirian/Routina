@@ -808,6 +808,16 @@ Given a user edits a custom super section in Mac Settings -> Sections
 When automatic rules are shown
 Then only tag routing is available, planned-today and planned-tomorrow options are absent, and legacy saved planned-day rules do not affect placement
 
+Given a custom super section has multiple automatic tags
+When its match mode is Any
+Then an unassigned task with at least one configured tag appears in that section
+When its match mode is All
+Then only an unassigned task with every configured tag appears in that section
+
+Given a user types the beginning of a saved tag in a custom section's automatic-tag composer
+When a matching suggestion appears
+Then pressing Tab completes the tag, committing it renders an individually removable chip, and unsaved chip changes retain the existing Save and Revert workflow
+
 Given several custom super sections exist in Mac Settings -> Sections
 When the user scans and edits the catalog
 Then compact color-and-summary headers keep one editor expanded at a time, the full header surface toggles disclosure, move and delete actions stay in More menus, and Save or revert controls appear only for unfinished fields

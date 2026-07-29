@@ -98,7 +98,9 @@ struct SettingsMacDetailView: View {
         case .tags:
             SettingsMacTagsDetailView(store: store)
         case .sections:
-            SettingsMacTaskSectionsDetailView()
+            SettingsMacTaskSectionsDetailView(
+                availableTagSummaries: store.tags.savedTags
+            )
         case .appearance:
             SettingsMacAppearanceDetailView(store: store)
         case .iCloud, .backup:

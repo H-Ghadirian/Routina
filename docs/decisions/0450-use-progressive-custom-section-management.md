@@ -6,6 +6,8 @@ Status: Accepted
 
 Refines: [0188 Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0264 Match Button Hit Areas to Visual Surfaces](0264-match-button-hit-areas-to-visual-surfaces.md), [0411 Manage Custom Task Sections in Settings](0411-manage-custom-task-sections-in-settings.md), [0419 Nest Custom Subsections Under Super Sections](0419-nest-custom-subsections-under-super-sections.md), [0449 Keep Custom Section Rules Tag-Based](0449-keep-custom-section-rules-tag-based.md)
 
+Refined by: [0460 Match Custom Section Tags by Any or All](0460-match-custom-section-tags-by-any-or-all.md)
+
 ## Context
 
 Mac Settings rendered every custom section as a permanently expanded form.

@@ -6,7 +6,7 @@ Status: Accepted
 
 Refines: [0411 Manage Custom Task Sections in Settings](0411-manage-custom-task-sections-in-settings.md), [0440 Treat Day Planning Sections as Additive](0440-treat-day-planning-sections-as-additive.md)
 
-Refined by: [0450 Use Progressive Custom Section Management](0450-use-progressive-custom-section-management.md)
+Refined by: [0450 Use Progressive Custom Section Management](0450-use-progressive-custom-section-management.md), [0460 Match Custom Section Tags by Any or All](0460-match-custom-section-tags-by-any-or-all.md)
 
 ## Context
 
