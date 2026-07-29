@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -1368,5 +1369,60 @@ struct TimelineLogicTests {
         #expect(entries.count == 1)
         #expect(entries[0].taskName == "First copy")
         #expect(entries[0].taskEmoji == "🥇")
+    }
+
+    @MainActor
+    @Test
+    func timelineDataSnapshotRefetchIncludesNewerActivity() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let reader = persistence.container.mainContext
+        let writer = ModelContext(persistence.container)
+        let task = RoutineTask(name: "Synced task")
+        let yesterday = RoutineLog(
+            timestamp: makeDate("2026-07-28T18:00:00Z"),
+            taskID: task.id,
+            kind: .completed
+        )
+        writer.insert(task)
+        writer.insert(yesterday)
+        try writer.save()
+
+        let initialSnapshot = try TimelineDataSnapshot.fetch(from: reader)
+
+        let today = RoutineLog(
+            timestamp: makeDate("2026-07-29T10:00:00Z"),
+            taskID: task.id,
+            kind: .completed
+        )
+        writer.insert(today)
+        try writer.save()
+
+        let refreshedSnapshot = try TimelineDataSnapshot.fetch(from: reader)
+
+        #expect(initialSnapshot.logs.map(\.id) == [yesterday.id])
+        #expect(refreshedSnapshot.logs.map(\.id) == [today.id, yesterday.id])
+    }
+
+    @Test
+    func iOSTimelineRefetchesOnSyncInvalidationInsteadOfWatchingQueries() throws {
+        let source = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
+
+        #expect(!source.contains("@Query"))
+        #expect(source.contains("@State private var dataSnapshot = TimelineDataSnapshot()"))
+        #expect(source.contains("TimelineDataSnapshot.fetch(from: modelContext)"))
+        #expect(source.contains("NotificationCenter.default.publisher(for: .routineDidUpdate)"))
+        #expect(source.contains("PlatformSupport.didBecomeActiveNotification"))
+        #expect(!source.contains("ChangeToken"))
+    }
+
+    private static func sourceFile(_ relativePath: String) throws -> String {
+        let testsDirectory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let projectRoot = testsDirectory.deletingLastPathComponent()
+        return try String(
+            contentsOf: projectRoot.appendingPathComponent(relativePath),
+            encoding: .utf8
+        )
     }
 }

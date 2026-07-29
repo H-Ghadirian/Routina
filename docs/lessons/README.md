@@ -107,3 +107,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0063 — Avoid stacking low-contrast semantic styles](0063-avoid-stacking-low-contrast-semantic-styles.md)
 - [0064 — Gate global entry points with feature availability](0064-gate-global-entry-points-with-feature-availability.md)
 - [0065 — Keep Stats history out of scroll builders](0065-keep-stats-history-out-of-scroll-builders.md)
+- [0066 — Refetch iOS Timeline after sync invalidation](0066-refetch-ios-timeline-after-sync-invalidation.md)

@@ -9,19 +9,7 @@ struct TimelineView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
-    @Query private var tasks: [RoutineTask]
-    @Query private var fileAttachments: [RoutineAttachment]
-    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
-    @Query(sort: \EmotionLog.createdAt, order: .reverse) private var emotionLogs: [EmotionLog]
-    @Query(sort: \RoutineNote.createdAt, order: .reverse) private var notes: [RoutineNote]
-    @Query private var noteAttachments: [RoutineNoteAttachment]
-    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
-    @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
-    @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) private var boardSprints: [BoardSprintRecord]
-    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
-    @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
-    @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
+    @Environment(\.modelContext) private var modelContext
     @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue,
         store: SharedDefaults.app
@@ -38,6 +26,7 @@ struct TimelineView: View {
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isAwayEnabled = false
+    @State private var dataSnapshot = TimelineDataSnapshot()
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
     @State private var editingAwaySession: AwaySession?
@@ -49,36 +38,32 @@ struct TimelineView: View {
     private var timelineWithDataObservers: some View {
         timelineRootWithSheets
             .task(timelineTask)
-            .onChange(of: tasks) { _, _ in refreshTimelineData() }
-            .onChange(of: taskChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: logs) { _, _ in refreshTimelineData() }
-            .onChange(of: focusSessionChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: sprintFocusSessionChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: boardSprintChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: sleepSessionChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: awaySessionChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: placeCheckInChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: fileAttachmentChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: eventChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: emotionLogChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: noteChangeToken) { _, _ in refreshTimelineData() }
-            .onChange(of: noteAttachmentChangeToken) { _, _ in refreshTimelineData() }
+            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                refreshTimelineDataSnapshot()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: PlatformSupport.didBecomeActiveNotification
+                )
+            ) { _ in
+                refreshTimelineDataSnapshot()
+            }
     }
 
     private var timelineWithRoutingObservers: some View {
         timelineWithDataObservers
             .onChange(of: isPlacesEnabled) { _, _ in
-                refreshTimelineData()
+                syncTimelineData()
                 validateTimelineFilterVisibility()
             }
             .onChange(of: isNotesEnabled) { _, _ in
-                refreshTimelineData()
+                syncTimelineData()
                 validateTimelineFilterVisibility()
                 guard !isNotesEnabled, let noteID = store.deepLinkedNoteID else { return }
                 store.send(.noteDeepLinkPresentationDismissed(noteID))
             }
             .onChange(of: isAwayEnabled) { _, _ in
-                refreshTimelineData()
+                syncTimelineData()
                 validateTimelineFilterVisibility()
                 if !isAwayEnabled {
                     editingAwaySession = nil
@@ -135,154 +120,30 @@ struct TimelineView: View {
         groupedByDay.flatMap { $0.entries.map(\.id) }
     }
 
-    private var taskChangeToken: [String] {
-        tasks.map { task in
-            [
-                task.id.uuidString,
-                task.name ?? "",
-                task.emoji ?? "",
-                task.tagsStorage,
-                task.importanceRawValue,
-                task.urgencyRawValue,
-                task.scheduleModeRawValue,
-                task.lastDone?.timeIntervalSinceReferenceDate.description ?? "",
-                task.canceledAt?.timeIntervalSinceReferenceDate.description ?? "",
-                task.scheduleAnchor?.timeIntervalSinceReferenceDate.description ?? "",
-                task.todoStateRawValue ?? "",
-                task.imageData?.count.description ?? "",
-                task.voiceNoteData?.count.description ?? "",
-            ].joined(separator: ":")
-        }
+    private var tasks: [RoutineTask] { dataSnapshot.tasks }
+    private var logs: [RoutineLog] { dataSnapshot.logs }
+    private var fileAttachments: [RoutineAttachment] { dataSnapshot.fileAttachments }
+    private var events: [RoutineEvent] { dataSnapshot.events }
+    private var emotionLogs: [EmotionLog] { dataSnapshot.emotionLogs }
+    private var notes: [RoutineNote] { dataSnapshot.notes }
+    private var noteAttachments: [RoutineNoteAttachment] { dataSnapshot.noteAttachments }
+    private var focusSessions: [FocusSession] { dataSnapshot.focusSessions }
+    private var sprintFocusSessions: [SprintFocusSessionRecord] {
+        dataSnapshot.sprintFocusSessions
     }
-
-    private var sleepSessionChangeToken: [String] {
-        sleepSessions.map { session in
-            [
-                session.id.uuidString,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var focusSessionChangeToken: [String] {
-        focusSessions.map { session in
-            [
-                session.id.uuidString,
-                session.taskID.uuidString,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.completedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.abandonedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.accumulatedPausedSeconds.description,
-            ].joined(separator: ":")
-        }
-    }
-
-    private var sprintFocusSessionChangeToken: [String] {
-        sprintFocusSessions.map { session in
-            [
-                session.id.uuidString,
-                session.sprintID.uuidString,
-                session.startedAt.timeIntervalSinceReferenceDate.description,
-                session.stoppedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.accumulatedPausedSeconds.description,
-            ].joined(separator: ":")
-        }
-    }
-
-    private var boardSprintChangeToken: [String] {
-        boardSprints.map { sprint in
-            [
-                sprint.id.uuidString,
-                sprint.title,
-                sprint.statusRawValue,
-                sprint.createdAt.timeIntervalSinceReferenceDate.description,
-                sprint.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                sprint.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var awaySessionChangeToken: [String] {
-        awaySessions.map { session in
-            [
-                session.id.uuidString,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.state.rawValue,
-                session.linkedTaskID?.uuidString ?? "",
-                session.title,
-                session.presetRawValue,
-            ].joined(separator: ":")
-        }
+    private var boardSprints: [BoardSprintRecord] { dataSnapshot.boardSprints }
+    private var sleepSessions: [SleepSession] { dataSnapshot.sleepSessions }
+    private var awaySessions: [AwaySession] { dataSnapshot.awaySessions }
+    private var placeCheckInSessions: [PlaceCheckInSession] {
+        dataSnapshot.placeCheckInSessions
     }
 
     private var fileAttachmentTaskIDs: Set<UUID> {
         Set(fileAttachments.map(\.taskID))
     }
 
-    private var fileAttachmentChangeToken: [String] {
-        fileAttachments.map { "\($0.id.uuidString):\($0.taskID.uuidString)" }.sorted()
-    }
-
     private var noteAttachmentNoteIDs: Set<UUID> {
         Set(noteAttachments.map(\.noteID))
-    }
-
-    private var eventChangeToken: [String] {
-        events.map { event in
-            [
-                event.id.uuidString,
-                event.title ?? "",
-                event.notes ?? "",
-                event.emoji ?? "",
-                event.tagsStorage,
-                event.isAllDay.description,
-                event.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                event.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                event.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var emotionLogChangeToken: [String] {
-        emotionLogs.map { emotion in
-            [
-                emotion.id.uuidString,
-                emotion.familyRawValue,
-                emotion.familyRawValuesStorage,
-                emotion.label,
-                emotion.labelsStorage,
-                emotion.valence.description,
-                emotion.arousal.description,
-                emotion.intensity.description,
-                emotion.bodyAreasStorage,
-                emotion.reflection ?? "",
-                emotion.createdAt?.timeIntervalSinceReferenceDate.description ?? "",
-                emotion.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var noteChangeToken: [String] {
-        notes.map { note in
-            [
-                note.id.uuidString,
-                note.title ?? "",
-                note.body ?? "",
-                note.tagsStorage,
-                note.createdAt?.timeIntervalSinceReferenceDate.description ?? "",
-                note.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                note.imageData?.count.description ?? "",
-                note.voiceNoteData?.count.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var noteAttachmentChangeToken: [String] {
-        noteAttachments.map { "\($0.id.uuidString):\($0.noteID.uuidString):\($0.fileName):\($0.data.count)" }.sorted()
     }
 
     private func syncTimelineData() {
@@ -303,12 +164,17 @@ struct TimelineView: View {
         ))
     }
 
-    private func refreshTimelineData() {
-        syncTimelineData()
+    private func refreshTimelineDataSnapshot() {
+        do {
+            dataSnapshot = try TimelineDataSnapshot.fetch(from: modelContext)
+            syncTimelineData()
+        } catch {
+            assertionFailure("Unable to refresh Timeline data: \(error)")
+        }
     }
 
     private func timelineTask() async {
-        syncTimelineData()
+        refreshTimelineDataSnapshot()
         resolveTimelineRouting()
     }
 
@@ -316,19 +182,6 @@ struct TimelineView: View {
         ensureTimelineSelection()
         routePendingDeepLinkedNote()
         routePendingDeepLinkedEvent()
-    }
-
-    private var placeCheckInChangeToken: [String] {
-        placeCheckInSessions.map { session in
-            [
-                session.id.uuidString,
-                session.placeName,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.activityRawValue ?? "",
-                session.imageData?.count.description ?? "",
-            ].joined(separator: ":")
-        }
     }
 
     private var selectedTimelineEntry: TimelineEntry? {

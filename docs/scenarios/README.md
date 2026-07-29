@@ -982,6 +982,20 @@ Given Mac Home is showing the Timeline filter companion pane
 When a filter change updates the visible timeline rows
 Then the sidebar does not automatically select a fallback row or close the filter pane until the user explicitly leaves the filter pane or selects a row
 
+### iOS Timeline Refreshes After Synced Activity
+
+Area: Timeline / Sync
+Decision links: [0280](../decisions/0280-show-timeline-newest-first.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/TimelineLogicTests.swift`
+
+Given today's activity is imported into the iOS SwiftData store from another device
+When Routina posts its coalesced semantic update notification or becomes active
+Then iOS Timeline explicitly refetches its stable data snapshot
+And today's newest activity appears above yesterday without reopening Timeline
+And the scrolling view does not depend on unbounded SwiftData queries or whole-history change tokens
+
 ### Planner List Honors Home Timeline Filters
 
 Area: Timeline

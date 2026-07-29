@@ -2,61 +2,6 @@ import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
-private struct TimelineDataSnapshot {
-    var tasks: [RoutineTask] = []
-    var logs: [RoutineLog] = []
-    var fileAttachments: [RoutineAttachment] = []
-    var events: [RoutineEvent] = []
-    var emotionLogs: [EmotionLog] = []
-    var notes: [RoutineNote] = []
-    var noteAttachments: [RoutineNoteAttachment] = []
-    var focusSessions: [FocusSession] = []
-    var sprintFocusSessions: [SprintFocusSessionRecord] = []
-    var boardSprints: [BoardSprintRecord] = []
-    var sleepSessions: [SleepSession] = []
-    var awaySessions: [AwaySession] = []
-    var placeCheckInSessions: [PlaceCheckInSession] = []
-
-    @MainActor
-    static func fetch(from context: ModelContext) throws -> Self {
-        Self(
-            tasks: try context.fetch(FetchDescriptor<RoutineTask>()),
-            logs: try context.fetch(FetchDescriptor<RoutineLog>(
-                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-            )),
-            fileAttachments: try context.fetch(FetchDescriptor<RoutineAttachment>()),
-            events: try context.fetch(FetchDescriptor<RoutineEvent>(
-                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
-            )),
-            emotionLogs: try context.fetch(FetchDescriptor<EmotionLog>(
-                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-            )),
-            notes: try context.fetch(FetchDescriptor<RoutineNote>(
-                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-            )),
-            noteAttachments: try context.fetch(FetchDescriptor<RoutineNoteAttachment>()),
-            focusSessions: try context.fetch(FetchDescriptor<FocusSession>(
-                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
-            )),
-            sprintFocusSessions: try context.fetch(FetchDescriptor<SprintFocusSessionRecord>(
-                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
-            )),
-            boardSprints: try context.fetch(FetchDescriptor<BoardSprintRecord>(
-                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-            )),
-            sleepSessions: try context.fetch(FetchDescriptor<SleepSession>(
-                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
-            )),
-            awaySessions: try context.fetch(FetchDescriptor<AwaySession>(
-                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
-            )),
-            placeCheckInSessions: try context.fetch(FetchDescriptor<PlaceCheckInSession>(
-                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
-            ))
-        )
-    }
-}
-
 struct TimelineView: View {
     let store: StoreOf<TimelineFeature>
     @Environment(\.calendar) private var calendar
