@@ -356,6 +356,19 @@ When one of its segments is selected and receives the bright selected glass surf
 Then the selected text and symbol use an explicit dark foreground
 And the selection does not inherit a dark-appearance primary foreground that disappears into the bright glass
 
+### iOS Collapsible Section Counts Stay Readable
+
+Area: Tasks
+Decision links: [0200](../decisions/0200-support-task-planned-dates.md), [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md)
+Current behavior: [UI](../current-behavior/ui.md), [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/HomeIOSSectionHeaderContrastTests.swift`
+
+Given iOS Home shows a collapsible task section such as `Daily Routines`
+When its task count is rendered in light or dark appearance
+Then the count uses secondary semantic contrast within the already-subdued List section header
+And it does not compound that header treatment with a tertiary foreground
+
 ### Mac Toolbar Search Does Not Steal Editor Focus
 
 Area: Other

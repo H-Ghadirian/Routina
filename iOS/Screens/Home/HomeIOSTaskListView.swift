@@ -116,7 +116,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
 
                     Text("\(section.tasks.count)")
                         .font(.caption2.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                 }
                 .contentShape(Rectangle())
             }
