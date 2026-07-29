@@ -103,3 +103,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0059 — Only nest menu destinations that have children](0059-only-nest-menu-destinations-that-have-children.md)
 - [0060 — Distinguish automatic placement from missing placement](0060-distinguish-automatic-placement-from-missing-placement.md)
 - [0061 — Keep task-creation confirmation explicit](0061-keep-task-creation-confirmation-explicit.md)
+- [0062 — Contrast labels against glass selection surfaces](0062-contrast-labels-against-glass-selection-surfaces.md)

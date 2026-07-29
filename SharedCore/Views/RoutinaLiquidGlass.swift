@@ -26,7 +26,7 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
         maximumSegmentsPerRow: Int? = nil,
         tint: @escaping (Option) -> Color = { _ in .accentColor },
         foregroundColor: @escaping (Option, Bool) -> Color = { _, isSelected in
-            isSelected ? .primary : .secondary
+            isSelected ? .black.opacity(0.82) : .secondary
         },
         @ViewBuilder label: @escaping (Option) -> Label
     ) {
@@ -56,7 +56,7 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
         maximumSegmentsPerRow: Int? = nil,
         tint: @escaping (Option) -> Color = { _ in .accentColor },
         foregroundColor: @escaping (Option, Bool) -> Color = { _, isSelected in
-            isSelected ? .primary : .secondary
+            isSelected ? .black.opacity(0.82) : .secondary
         },
         @ViewBuilder label: @escaping (Option) -> Label
     ) {

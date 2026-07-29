@@ -343,6 +343,19 @@ Given a custom or plain SwiftUI button has a visible padded card, chip, row, or 
 When the user taps or clicks inside that visible surface but outside the text, emoji, or icon glyphs
 Then the button action still runs
 
+### Glass Segmented Selections Stay Readable
+
+Area: Other
+Decision links: [0024](../decisions/0024-adopt-liquid-glass-ui-surfaces.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/RoutinaLiquidGlassContrastTests.swift`
+
+Given a shared glass segmented control is shown in light or dark appearance
+When one of its segments is selected and receives the bright selected glass surface
+Then the selected text and symbol use an explicit dark foreground
+And the selection does not inherit a dark-appearance primary foreground that disappears into the bright glass
+
 ### Mac Toolbar Search Does Not Steal Editor Focus
 
 Area: Other
