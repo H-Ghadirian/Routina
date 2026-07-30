@@ -1,15 +1,23 @@
-import SwiftUI
 import ComposableArchitecture
+import Foundation
+import SwiftData
+import SwiftUI
 
 struct SettingsMacAppearanceDetailView: View {
     let store: StoreOf<SettingsFeature>
 
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     private var isMacTodoBoardCompactCards = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isBoardScreenEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacDevelopmentBadgeVisible.rawValue,
+        store: SharedDefaults.app
+    ) private var showsDevelopmentBadgeInToolbar = true
+    @State private var screenshotDataStatusMessage = ""
 
     private let columns = [
         GridItem(.adaptive(minimum: 124), spacing: 12)
@@ -74,6 +82,36 @@ SettingsMacDetailShell(
         Text("When enabled, the Home toolbar shows your total Done count.")
             .font(.footnote)
             .foregroundStyle(.secondary)
+
+        if AppEnvironment.isDevelopmentAppVariant {
+            Toggle("Show development badge", isOn: $showsDevelopmentBadgeInToolbar)
+                .toggleStyle(.switch)
+
+            Text("Turn this off temporarily when preparing screenshots from the development app.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    if AppEnvironment.isDevelopmentAppVariant {
+        SettingsMacDetailCard(title: "Screenshot Data") {
+            Button {
+                generateScreenshotData()
+            } label: {
+                Label("Generate Screenshot Data", systemImage: "sparkles")
+            }
+            .buttonStyle(.borderedProminent)
+
+            Text("Adds realistic routines, todos, history, planner blocks, focus sessions, goals, notes, events, and wellness activity. Existing data is preserved.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if !screenshotDataStatusMessage.isEmpty {
+                Text(screenshotDataStatusMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     SettingsMacDetailCard(title: "Tag Counters") {
@@ -150,6 +188,22 @@ SettingsMacDetailShell(
             get: { store.appearance.showsDoneCountInToolbar },
             set: { store.send(.showDoneCountInToolbarToggled($0)) }
         )
+    }
+
+    private func generateScreenshotData() {
+        guard AppEnvironment.isDevelopmentAppVariant else { return }
+
+        do {
+            let result = try RoutinaScreenshotDataSeeder.seed(in: modelContext)
+            if result.totalInsertedCount == 0 {
+                screenshotDataStatusMessage = "Screenshot data is already available."
+            } else {
+                screenshotDataStatusMessage = "Added \(result.taskCount) tasks and \(result.totalInsertedCount - result.taskCount) supporting activity records."
+                NotificationCenter.default.postRoutineDidUpdate()
+            }
+        } catch {
+            screenshotDataStatusMessage = "Could not generate screenshot data: \(error.localizedDescription)"
+        }
     }
 
     private var resetButtonSystemImage: String {

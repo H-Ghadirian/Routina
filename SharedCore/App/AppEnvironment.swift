@@ -38,6 +38,33 @@ enum AppEnvironment {
         isUITestMode || processEnvironment["XCTestConfigurationFilePath"] != nil
     }()
 
+    static let isDevelopmentAppVariant: Bool = {
+        if let infoValue = infoDictionary["RoutinaSandboxDataMode"] as? Bool {
+            return infoValue
+        }
+
+        if let infoString = infoDictionary["RoutinaSandboxDataMode"] as? String,
+           let value = boolValue(from: infoString) {
+            return value
+        }
+
+        return bundleIdentifier?.contains(".dev") == true
+    }()
+
+    static let isScreenshotDataSeedRequested: Bool = {
+#if os(macOS)
+        guard isDevelopmentAppVariant else { return false }
+        return boolValue(from: processEnvironment["ROUTINA_SCREENSHOT_DATA_SEED"]) ?? false
+#else
+        return false
+#endif
+    }()
+
+    static let exitsAfterScreenshotDataSeed: Bool = {
+        guard isScreenshotDataSeedRequested else { return false }
+        return boolValue(from: processEnvironment["ROUTINA_SCREENSHOT_DATA_SEED_EXIT"]) ?? false
+    }()
+
     static let defaultUnlocksAllTasks: Bool = {
         if let value = boolValue(from: processEnvironment["ROUTINA_UNLOCK_ALL_TASKS"]) {
             return value

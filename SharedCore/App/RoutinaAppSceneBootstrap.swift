@@ -8,6 +8,7 @@ enum RoutinaAppSceneBootstrap {
         PersistenceController.runPostOpenMigrations(in: persistence.container)
         RoutinaUserPreferencesStore.startDefaultsMirror()
         RoutinaUITestSeeder.seedIfRequested(in: persistence.container.mainContext)
+        RoutinaScreenshotDataSeeder.seedIfRequested(in: persistence.container.mainContext)
         scheduleDuplicateIDCleanup(using: persistence)
         return persistence
     }

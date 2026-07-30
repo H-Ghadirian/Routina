@@ -774,6 +774,11 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func defaultSettingsKeepDevelopmentBadgeVisible() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingMacDevelopmentBadgeVisible] == .some(true))
+    }
+
+    @Test
     func defaultSettingsKeepTagTaskKindSubsectionsOff() {
         #expect(AppSettingsDefaults.boolValues[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] == .some(false))
         #expect(!RoutinaUserPreferences().separateTodosAndRoutinesInTagTaskListSections)

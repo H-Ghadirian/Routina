@@ -411,6 +411,25 @@ Given Mac Home search has triggered a toolbar search update
 When the user moves focus into a task comment, note, or other text editor before the delayed search-focus repair completes
 Then typing stays in that editor instead of jumping back to the toolbar search field
 
+### Mac Development Screenshot Preparation Is Safe
+
+Area: Settings / Home / Planner / Timeline / Stats
+
+Decision links: [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md)
+
+Automated coverage:
+
+- `Tests/Shared/RoutinaScreenshotDataSeederTests.swift`
+- `Tests/Shared/SettingsFeatureTests.swift`
+
+Given the Mac development app is running
+When the user opens Settings -> Appearance
+Then `Show development badge` is available and defaults on
+And turning it off hides only the orange Home toolbar development badge
+And `Generate Screenshot Data` adds representative date-relative content without deleting unrelated data
+And generating the data again does not duplicate seeded records
+But the production app does not expose or honor these screenshot preparation controls
+
 ### Mac Toolbar Search Expands as One Visible Pill
 
 Area: Other

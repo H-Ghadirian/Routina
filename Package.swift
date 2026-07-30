@@ -130,6 +130,7 @@ let package = Package(
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
                 "SharedCore/App/RoutinaAppIntents.swift",
+                "SharedCore/App/RoutinaScreenshotDataSeeder.swift",
                 "SharedCore/App/RoutinaUITestSeeder.swift",
                 "SharedCore/AI",
                 "SharedCore/Models",

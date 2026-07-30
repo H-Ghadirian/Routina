@@ -241,6 +241,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var showsDoneCountInToolbar = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacDevelopmentBadgeVisible.rawValue,
+        store: SharedDefaults.app
+    ) var showsDevelopmentBadgeInToolbar = true
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingSeparateTodosAndRoutinesInTagTaskListSections.rawValue,
         store: SharedDefaults.app
     ) var separatesTodosAndRoutinesInTagTaskListSections = false

@@ -94,7 +94,7 @@ extension HomeTCAView {
             mode: homeToolbarMode,
             doneCount: store.doneStats.totalCount,
             showsDoneCount: showsDoneCountInToolbar,
-            isDevelopmentAppVariant: isDevelopmentAppVariant,
+            isDevelopmentAppVariant: isDevelopmentAppVariant && showsDevelopmentBadgeInToolbar,
             showsProgressModePicker: showsProgressModePickerInToolbar,
             showsPlaces: isPlacesEnabled,
             showsSearch: showsHomeToolbarSearch,
@@ -432,7 +432,7 @@ extension HomeTCAView {
     }
 
     private var isDevelopmentAppVariant: Bool {
-        Bundle.main.object(forInfoDictionaryKey: "RoutinaSandboxDataMode") as? Bool == true
+        AppEnvironment.isDevelopmentAppVariant
     }
 
     private func toggleMacBoardTicketInspector() {

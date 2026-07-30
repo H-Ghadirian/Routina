@@ -26,6 +26,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0313](../decisions/0313-disable-mac-app-widgets-in-app-targets.md)
 - [0374](../decisions/0374-move-unlimited-task-override-to-beta-experiments.md)
 - [0464](../decisions/0464-host-mac-settings-in-a-standard-window.md)
+- [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md)
 
 ## Current Contract
 
@@ -49,3 +50,4 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Home and Stats Query sections are hidden in filter panels until enabled from Support & About -> Beta Experiments.
 - Mac app widget source remains in the repository, but the Mac app targets do not build, embed, or register widget extensions, so Routina widgets are not exposed on macOS.
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.
+- The Mac development app exposes screenshot preparation in Settings -> Appearance. Its development badge remains visible by default but can be hidden with `Show development badge`; `Generate Screenshot Data` adds an idempotent, non-destructive set of representative tasks, history, planner blocks, focus, goals, notes, events, emotions, sleep, and Away records. Production hides these controls and ignores the screenshot seed launch trigger.
