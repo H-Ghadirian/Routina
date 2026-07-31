@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0467](0467-declare-exempt-encryption-in-production-bundles.md) refines [0466](0466-harden-app-store-release-surfaces.md) for upload compliance:** The iOS and macOS production bundles declare that Routina does not use non-exempt encryption, while any future custom or third-party cryptography requires the release classification to be reassessed.
+
 - **[0466](0466-harden-app-store-release-surfaces.md) refines [0290](0290-limit-free-active-tasks-behind-subscription.md), [0293](0293-add-settings-unlimited-task-override-while-products-unavailable.md), [0374](0374-move-unlimited-task-override-to-beta-experiments.md), and [0417](0417-route-feature-data-loading-through-reducers.md) for release safety:** Production ignores the temporary unlimited-task override, purchase surfaces expose legal and renewal disclosure, and Outlook calendar import appears only when Microsoft Graph is configured; development builds retain their testing override.
 
 - **[0464](0464-host-mac-settings-in-a-standard-window.md) supersedes [0461](superseded/0461-use-standard-window-controls-for-mac-settings.md) for actual Mac Settings window capability:** Routina hosts Settings in a launch-suppressed standard single-instance Window so minimize, resize/zoom, and native full screen are real host capabilities, while a replacement app-settings command preserves Settings… and Command-comma routing.
@@ -407,6 +409,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0467](0467-declare-exempt-encryption-in-production-bundles.md) | Declare Exempt Encryption in Production Bundles | Accepted | 2026-08-01 |
 | [0466](0466-harden-app-store-release-surfaces.md) | Harden App Store Release Surfaces | Accepted | 2026-07-31 |
 | [0465](0465-prepare-mac-development-app-for-screenshots.md) | Prepare the Mac Development App for Screenshots | Accepted | 2026-07-29 |
 | [0464](0464-host-mac-settings-in-a-standard-window.md) | Host Mac Settings in a Standard Window | Accepted | 2026-07-29 |

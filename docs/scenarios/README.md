@@ -29,6 +29,23 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Production Uploads Carry Export-Compliance Metadata
+
+Area: Other
+Decision links: [0467](../decisions/0467-declare-exempt-encryption-in-production-bundles.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
+
+Given the current release uses only exempt Apple platform encryption and SHA-256 for OAuth PKCE
+When an iOS or macOS production bundle is built and uploaded
+Then its Info.plist declares `ITSAppUsesNonExemptEncryption` as false
+And App Store Connect can reuse that answer instead of marking each new build `Missing Compliance`
+
+Given Routina adds custom or third-party cryptography, encrypted communications, or VPN functionality
+When the next production release is prepared
+Then the export classification must be reassessed before relying on the existing declaration
+
 ### Mac Linked-Task Actions Stay Distinct
 
 Area: Tasks

@@ -114,3 +114,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0070 — Do not use standalone dividers as Form rows](0070-do-not-use-standalone-dividers-as-form-rows.md)
 - [0071 — Centralize cross-platform action eligibility](0071-centralize-cross-platform-action-eligibility.md)
 - [0072 — Choose a window host that supports required capabilities](0072-choose-a-window-host-that-supports-required-capabilities.md)
+- [0073 — Declare export compliance in production plists](0073-declare-export-compliance-in-production-plists.md)

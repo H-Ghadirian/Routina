@@ -28,6 +28,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0464](../decisions/0464-host-mac-settings-in-a-standard-window.md)
 - [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md)
 - [0466](../decisions/0466-harden-app-store-release-surfaces.md)
+- [0467](../decisions/0467-declare-exempt-encryption-in-production-bundles.md)
 
 ## Current Contract
 
@@ -35,6 +36,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - The standalone Mac Settings surface uses a launch-suppressed, single-instance standard window. It retains the system Settings command and Command-comma routing while supporting minimize, free resizing and zoom above its 640 by 560 minimum, and native full screen.
 - Purchase entitlement is resolved from StoreKit rather than backed up in user data. Weekly, monthly, annual, and lifetime products unlock unlimited active tasks. The paywall shows renewal disclosure plus Privacy Policy and Terms of Use links, and Support & About exposes the same legal links. Settings -> Support & About -> Beta Experiments includes the temporary unlimited-task override only in development apps; production ignores persisted and configured testing overrides.
 - Calendar task import always supports Apple Calendar. Outlook appears only when the app bundle has a nonempty Microsoft Graph client ID, so unconfigured release builds do not advertise a nonfunctional sign-in path.
+- The iOS and macOS production bundles declare `ITSAppUsesNonExemptEncryption` as false so App Store Connect can reuse Routina's current exempt-encryption answer. The declaration must be reassessed before shipping custom cryptography, encrypted communications or VPN functionality, or a cryptography-providing dependency.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
