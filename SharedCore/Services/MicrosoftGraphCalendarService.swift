@@ -33,6 +33,10 @@ final class MicrosoftGraphCalendarService: NSObject, ASWebAuthenticationPresenta
     private let redirectURI = "\(AppEnvironment.deepLinkURLScheme)://auth/microsoft"
     private var authSession: ASWebAuthenticationSession?
 
+    static var isConfigured: Bool {
+        !configuredClientID().isEmpty
+    }
+
     func signIn() async throws -> MicrosoftGraphSignInResult {
         let clientID = Self.configuredClientID()
         guard !clientID.isEmpty else {

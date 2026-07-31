@@ -204,7 +204,7 @@ SettingsMacDetailShell(
         }
         .buttonStyle(.borderedProminent)
 
-        Text("Review Apple Calendar or Outlook events one by one before adding them as tasks.")
+        Text("Review calendar events one by one before adding them as tasks.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }

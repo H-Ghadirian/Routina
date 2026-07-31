@@ -58,11 +58,12 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md)
 - [0456](../decisions/0456-show-resolved-automatic-paths-in-edit-task.md)
 - [0457](../decisions/0457-confirm-successful-mac-task-creation.md)
+- [0466](../decisions/0466-harden-app-store-release-surfaces.md)
 
 ## Current Contract
 
 - Todos and routines share the task model while keeping their distinct timing semantics. If an internal `record`-shaped development row is encountered, every product surface treats it as a routine.
-- Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks. Settings -> Support & About -> Beta Experiments can temporarily unlock unlimited task creation while StoreKit products are unavailable; production defaults this override off.
+- Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks. Development apps can temporarily unlock unlimited task creation from Settings while StoreKit products are unavailable. Production apps ignore this testing override and require a StoreKit entitlement.
 - Active-task counting includes todos and routines that are not paused, snoozed, archived, done, or canceled; internal record-shaped rows count as routines.
 - Full task create and edit forms offer `One-time` / `Repeating` without a separate third task type. New repeating tasks are routines. Repeating routines can use `Repeat type: None` when they are reusable but have no known cadence; they remain immediately available after completion and preserve every completion in history without cadence-derived occurrences, overdue pressure, nudges, or daily classification.
 - On Mac, a successful full Add Task save closes the form, returns to the task list, selects and opens the new task's details, and shows a transient confirmation containing the task name. Canceling, a failed save, or a subscription-gated save does not show that success confirmation.

@@ -21,6 +21,16 @@ List {
         }
     }
 
+    Section("Legal") {
+        Link(destination: RoutinaPublicLinks.privacyPolicy) {
+            Label("Privacy Policy", systemImage: "hand.raised")
+        }
+
+        Link(destination: RoutinaPublicLinks.termsOfUse) {
+            Label("Terms of Use", systemImage: "doc.text")
+        }
+    }
+
     Section("App") {
         HStack {
             Text("Version")
@@ -95,10 +105,12 @@ private struct SettingsBetaExperimentsSection: View {
 
     var body: some View {
         Section("Beta Experiments") {
-            Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
+            if AppEnvironment.isDevelopmentAppVariant {
+                Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
 
-            Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
-                .foregroundStyle(.secondary)
+                Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
+                    .foregroundStyle(.secondary)
+            }
 
             Toggle("Enable Git features", isOn: gitFeaturesBinding)
 

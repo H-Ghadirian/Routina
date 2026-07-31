@@ -13,6 +13,7 @@ struct SubscriptionPaywallView: View {
                     paywallHeader
                     planSection
                     purchaseSupportSection
+                    legalSection
                 }
                 .padding(.horizontal, pageHorizontalPadding)
                 .padding(.vertical, 22)
@@ -209,6 +210,46 @@ struct SubscriptionPaywallView: View {
                 statusBanner(statusMessage)
             }
         }
+    }
+
+    private var legalSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(
+                "Payment is charged to your Apple Account after confirmation. "
+                    + "Subscriptions renew automatically unless canceled at least 24 hours before the end of the current billing period. "
+                    + "You can manage or cancel subscriptions in your App Store account settings."
+            )
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 16) {
+                    privacyPolicyLink
+                    termsOfUseLink
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    privacyPolicyLink
+                    termsOfUseLink
+                }
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var privacyPolicyLink: some View {
+        Link(destination: RoutinaPublicLinks.privacyPolicy) {
+            Label("Privacy Policy", systemImage: "hand.raised")
+        }
+        .font(.footnote.weight(.semibold))
+    }
+
+    private var termsOfUseLink: some View {
+        Link(destination: RoutinaPublicLinks.termsOfUse) {
+            Label("Terms of Use", systemImage: "doc.text")
+        }
+        .font(.footnote.weight(.semibold))
     }
 
     private func planButton(_ product: RoutinaSubscriptionProduct) -> some View {

@@ -76,18 +76,20 @@ struct CalendarTaskImportSheet: View {
 
     private var sourcePicker: some View {
         VStack(alignment: .leading, spacing: 12) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Source",
-                options: CalendarTaskImportViewModel.ImportSource.allCases,
-                selection: $viewModel.selectedSource,
-                fillsAvailableWidth: true
-            ) { source in
-                Text(source.title)
-            }
-            .onChange(of: viewModel.selectedSource) { _, source in
-                guard source == .outlook, viewModel.canRefreshOutlook else { return }
-                Task {
-                    await viewModel.refreshOutlookSuggestions(existingTasks: existingTasks, calendar: calendar)
+            if viewModel.availableImportSources.count > 1 {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Source",
+                    options: viewModel.availableImportSources,
+                    selection: $viewModel.selectedSource,
+                    fillsAvailableWidth: true
+                ) { source in
+                    Text(source.title)
+                }
+                .onChange(of: viewModel.selectedSource) { _, source in
+                    guard source == .outlook, viewModel.canRefreshOutlook else { return }
+                    Task {
+                        await viewModel.refreshOutlookSuggestions(existingTasks: existingTasks, calendar: calendar)
+                    }
                 }
             }
 
@@ -379,6 +381,10 @@ final class CalendarTaskImportViewModel: ObservableObject {
             case .outlook: return "Outlook"
             }
         }
+
+        static func availableSources(isOutlookConfigured: Bool) -> [Self] {
+            isOutlookConfigured ? allCases : [.appleCalendar]
+        }
     }
 
     enum Phase: Equatable {
@@ -434,6 +440,10 @@ final class CalendarTaskImportViewModel: ObservableObject {
     private let service = CalendarTaskImportService()
     private let outlookService = MicrosoftGraphCalendarService()
     private var outlookAccessToken: String?
+
+    var availableImportSources: [ImportSource] {
+        ImportSource.availableSources(isOutlookConfigured: MicrosoftGraphCalendarService.isConfigured)
+    }
 
     var canRefreshOutlook: Bool {
         outlookAccessToken != nil

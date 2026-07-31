@@ -291,7 +291,7 @@ List {
             Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
         }
 
-        Text("Review Apple Calendar or Outlook events one by one before adding them as tasks.")
+        Text("Review calendar events one by one before adding them as tasks.")
             .foregroundStyle(.secondary)
     }
 

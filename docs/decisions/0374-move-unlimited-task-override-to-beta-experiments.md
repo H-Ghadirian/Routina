@@ -6,6 +6,8 @@ Date: 2026-07-12
 
 Refines: [0293 Add Settings Unlimited Task Override While Products Are Unavailable](0293-add-settings-unlimited-task-override-while-products-unavailable.md)
 
+Refined by: [0466 Harden App Store Release Surfaces](0466-harden-app-store-release-surfaces.md)
+
 ## Context
 
 The temporary unlimited-task override exists only while StoreKit products are unavailable, and it is meant for manual testing rather than a normal purchase workflow. Keeping it in a standalone Purchases section made the Support & About page look like it had production purchase controls even though the control is a temporary escape hatch.

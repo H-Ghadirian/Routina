@@ -66,10 +66,6 @@ enum AppEnvironment {
     }()
 
     static let defaultUnlocksAllTasks: Bool = {
-        if let value = boolValue(from: processEnvironment["ROUTINA_UNLOCK_ALL_TASKS"]) {
-            return value
-        }
-
         if let infoValue = infoDictionary["RoutinaUnlockAllTasks"] as? Bool {
             return infoValue
         }
@@ -83,15 +79,26 @@ enum AppEnvironment {
     }()
 
     static var unlocksAllTasks: Bool {
-        if let value = boolValue(from: processEnvironment["ROUTINA_UNLOCK_ALL_TASKS"]) {
-            return value
-        }
-
         let key = UserDefaultBoolValueKey.appSettingUnlockUnlimitedTasks.rawValue
-        guard SharedDefaults.app.object(forKey: key) != nil else {
-            return defaultUnlocksAllTasks
-        }
-        return SharedDefaults.app[.appSettingUnlockUnlimitedTasks]
+        let storedOverride: Bool? = SharedDefaults.app.object(forKey: key) == nil
+            ? nil
+            : SharedDefaults.app[.appSettingUnlockUnlimitedTasks]
+        return resolvedUnlocksAllTasks(
+            isDevelopmentAppVariant: isDevelopmentAppVariant,
+            processOverride: boolValue(from: processEnvironment["ROUTINA_UNLOCK_ALL_TASKS"]),
+            configuredDefault: defaultUnlocksAllTasks,
+            storedOverride: storedOverride
+        )
+    }
+
+    static func resolvedUnlocksAllTasks(
+        isDevelopmentAppVariant: Bool,
+        processOverride: Bool?,
+        configuredDefault: Bool,
+        storedOverride: Bool?
+    ) -> Bool {
+        guard isDevelopmentAppVariant else { return false }
+        return processOverride ?? storedOverride ?? configuredDefault
     }
 
     static let isSandboxDataMode: Bool = {
@@ -241,6 +248,12 @@ enum AppEnvironment {
     static func cleanedURLScheme(_ rawValue: String) -> String {
         rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
+}
+
+enum RoutinaPublicLinks {
+    static let support = URL(string: "https://h-ghadirian.github.io/")!
+    static let privacyPolicy = URL(string: "https://h-ghadirian.github.io/#privacy")!
+    static let termsOfUse = URL(string: "https://h-ghadirian.github.io/#terms")!
 }
 
 private extension AppEnvironment {

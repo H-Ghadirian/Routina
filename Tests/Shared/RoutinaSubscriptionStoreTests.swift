@@ -8,25 +8,69 @@ import Testing
 @testable @preconcurrency import Routina
 #endif
 
-@Suite(.serialized)
 struct RoutinaSubscriptionStoreTests {
     @Test
-    func currentEntitlement_usesSettingsUnlockOverride() async {
-        let defaults = SharedDefaults.app
-        let key = UserDefaultBoolValueKey.appSettingUnlockUnlimitedTasks.rawValue
-        let previousValue = defaults.object(forKey: key)
-        defer {
-            if let previousValue {
-                defaults.set(previousValue, forKey: key)
-            } else {
-                defaults.removeObject(forKey: key)
-            }
-        }
+    func unlimitedTaskOverride_isIgnoredByProductionApps() {
+        #expect(
+            AppEnvironment.resolvedUnlocksAllTasks(
+                isDevelopmentAppVariant: false,
+                processOverride: true,
+                configuredDefault: true,
+                storedOverride: true
+            ) == false
+        )
+    }
 
-        defaults[.appSettingUnlockUnlimitedTasks] = true
+    @Test
+    func unlimitedTaskOverride_remainsAvailableToDevelopmentApps() {
+        #expect(AppEnvironment.resolvedUnlocksAllTasks(
+            isDevelopmentAppVariant: true,
+            processOverride: nil,
+            configuredDefault: false,
+            storedOverride: true
+        ))
+        #expect(AppEnvironment.resolvedUnlocksAllTasks(
+            isDevelopmentAppVariant: true,
+            processOverride: true,
+            configuredDefault: false,
+            storedOverride: nil
+        ))
+    }
 
-        let entitlement = await RoutinaSubscriptionStore.currentEntitlement()
+    @Test
+    func publicPurchaseLinksUsePublishedRoutinaPageAnchors() {
+        #expect(RoutinaPublicLinks.support.absoluteString == "https://h-ghadirian.github.io/")
+        #expect(RoutinaPublicLinks.privacyPolicy.absoluteString == "https://h-ghadirian.github.io/#privacy")
+        #expect(RoutinaPublicLinks.termsOfUse.absoluteString == "https://h-ghadirian.github.io/#terms")
+    }
 
-        #expect(entitlement.hasUnlimitedTasks)
+    @Test
+    func releasePurchaseSurfacesKeepLegalDisclosureAndDevelopmentOnlyOverride() throws {
+        let paywallSource = try Self.sourceFile("SharedCore/Views/SubscriptionPaywallView.swift")
+        let iosSettingsSource = try Self.sourceFile("iOS/Screens/Settings/SettingsDataSupportDetailViews.swift")
+        let macSettingsSource = try Self.sourceFile("RoutinaMacApp/Screens/Settings/SettingsMacDataSupportDetailViews.swift")
+        let calendarImportSource = try Self.sourceFile("SharedCore/Views/CalendarTaskImportSheet.swift")
+
+        #expect(paywallSource.contains("RoutinaPublicLinks.privacyPolicy"))
+        #expect(paywallSource.contains("RoutinaPublicLinks.termsOfUse"))
+        #expect(paywallSource.contains("Subscriptions renew automatically"))
+        #expect(iosSettingsSource.contains(
+            "if AppEnvironment.isDevelopmentAppVariant {\n                Toggle(\"Unlock unlimited tasks\""
+        ))
+        #expect(macSettingsSource.contains(
+            "if AppEnvironment.isDevelopmentAppVariant {\n                Toggle(\"Unlock unlimited tasks\""
+        ))
+        #expect(calendarImportSource.contains("options: viewModel.availableImportSources"))
+    }
+
+    private static func sourceFile(_ relativePath: String) throws -> String {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return try String(
+            contentsOf: projectRoot.appendingPathComponent(relativePath),
+            encoding: .utf8
+        )
     }
 }

@@ -9,6 +9,18 @@ import Testing
 #endif
 
 struct CalendarTaskImportSupportTests {
+    @Test @MainActor
+    func importSourcesHideOutlookUntilMicrosoftGraphIsConfigured() {
+        #expect(
+            CalendarTaskImportViewModel.ImportSource.availableSources(isOutlookConfigured: false)
+                == [.appleCalendar]
+        )
+        #expect(
+            CalendarTaskImportViewModel.ImportSource.availableSources(isOutlookConfigured: true)
+                == [.appleCalendar, .outlook]
+        )
+    }
+
     @Test
     func displayNotes_hidesCalendarEventIdentifier() {
         let notes = """

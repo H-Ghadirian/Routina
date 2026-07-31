@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0466](0466-harden-app-store-release-surfaces.md) refines [0290](0290-limit-free-active-tasks-behind-subscription.md), [0293](0293-add-settings-unlimited-task-override-while-products-unavailable.md), [0374](0374-move-unlimited-task-override-to-beta-experiments.md), and [0417](0417-route-feature-data-loading-through-reducers.md) for release safety:** Production ignores the temporary unlimited-task override, purchase surfaces expose legal and renewal disclosure, and Outlook calendar import appears only when Microsoft Graph is configured; development builds retain their testing override.
+
 - **[0464](0464-host-mac-settings-in-a-standard-window.md) supersedes [0461](superseded/0461-use-standard-window-controls-for-mac-settings.md) for actual Mac Settings window capability:** Routina hosts Settings in a launch-suppressed standard single-instance Window so minimize, resize/zoom, and native full screen are real host capabilities, while a replacement app-settings command preserves Settings… and Command-comma routing.
 
 - **[0463](0463-limit-ongoing-entry-to-multiday-routines.md) refines [0199](0199-support-multiday-routine-start-flow.md) and [0246](0246-show-multiday-ongoing-range.md) for cross-platform lifecycle parity:** Task Detail offers Start/Stop ongoing entry only to multi-day routines; one-day Gentle and checklist-driven routines do not show the iOS-only secondary `Start ongoing` action, while legacy ongoing state remains finishable.
@@ -405,6 +407,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0466](0466-harden-app-store-release-surfaces.md) | Harden App Store Release Surfaces | Accepted | 2026-07-31 |
 | [0465](0465-prepare-mac-development-app-for-screenshots.md) | Prepare the Mac Development App for Screenshots | Accepted | 2026-07-29 |
 | [0464](0464-host-mac-settings-in-a-standard-window.md) | Host Mac Settings in a Standard Window | Accepted | 2026-07-29 |
 | [0463](0463-limit-ongoing-entry-to-multiday-routines.md) | Limit Ongoing Entry to Multi-Day Routines | Accepted | 2026-07-29 |

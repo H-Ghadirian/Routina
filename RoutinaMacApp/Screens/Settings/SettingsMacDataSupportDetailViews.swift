@@ -418,6 +418,16 @@ SettingsMacDetailShell(
             .foregroundStyle(.secondary)
     }
 
+    SettingsMacDetailCard(title: "Legal") {
+        Link(destination: RoutinaPublicLinks.privacyPolicy) {
+            Label("Privacy Policy", systemImage: "hand.raised")
+        }
+
+        Link(destination: RoutinaPublicLinks.termsOfUse) {
+            Label("Terms of Use", systemImage: "doc.text")
+        }
+    }
+
     SettingsMacDetailCard(title: "App") {
         settingsInfoRow(title: "Version", value: store.diagnostics.appVersion)
             .contentShape(Rectangle())
@@ -515,12 +525,14 @@ private struct SettingsMacBetaExperimentsCard: View {
 
     var body: some View {
         SettingsMacDetailCard(title: "Beta Experiments") {
-            Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
-                .toggleStyle(.switch)
+            if AppEnvironment.isDevelopmentAppVariant {
+                Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
+                    .toggleStyle(.switch)
 
-            Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
 
             Toggle("Enable Git features", isOn: gitFeaturesBinding)
                 .toggleStyle(.switch)
