@@ -771,6 +771,10 @@ struct TaskDetailTCAView: View {
             actions.append(inlineEditSectionAction(title: "Places", section: .places))
         }
 
+        if !store.task.hasTaskDescription && !isInlineEditSectionRevealed(.taskDescription) {
+            actions.append(inlineEditSectionAction(title: "Description", section: .taskDescription))
+        }
+
         if isNotesEnabled && !store.task.hasNotes && !isInlineEditSectionRevealed(.notes) {
             actions.append(inlineEditSectionAction(title: "Notes", section: .notes))
         }
@@ -905,7 +909,8 @@ struct TaskDetailTCAView: View {
     }
 
     private var hasTaskExtras: Bool {
-        (isNotesEnabled && store.task.hasNotes)
+        store.task.hasTaskDescription
+            || (isNotesEnabled && store.task.hasNotes)
             || store.task.hasImage
             || (isNotesEnabled && store.task.hasVoiceNote)
             || !store.taskAttachments.isEmpty
@@ -1298,6 +1303,7 @@ struct TaskDetailTCAView: View {
             imageData: store.task.imageData,
             voiceNote: isNotesEnabled ? store.task.voiceNote : nil,
             attachments: store.taskAttachments,
+            taskDescription: store.task.taskDescription,
             notes: isNotesEnabled ? CalendarTaskImportSupport.displayNotes(from: store.task.notes) : nil,
             links: [],
             background: routineLogsBackground,

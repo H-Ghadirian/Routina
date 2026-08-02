@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0469](0469-store-task-descriptions-separately-from-notes.md) refines [0058](0058-use-progressive-task-forms.md), [0098](0098-support-markdown-text-editing-controls.md), [0100](0100-reveal-task-form-details-by-section.md), [0277](0277-hide-notes-and-away-behind-beta-toggles.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), and [0462](0462-use-a-compact-progressive-ios-task-editor.md) for stable task context:** Tasks store an optional Description independently from experimental Notes; create, edit, details, targeted Add More, drafts, search, copying, sync, sharing, and backup preserve it regardless of the Notes beta preference.
+
 - **[0468](0468-model-task-thinking-needed-separately.md) refines [0058](0058-use-progressive-task-forms.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), [0391](0391-filter-task-list-by-duration-estimates.md), [0424](0424-make-task-detail-priority-optional.md), and [0462](0462-use-a-compact-progressive-ios-task-editor.md) for cognitive task metadata:** Tasks store `None` / `Low` / `Medium` / `High` Thinking needed independently from duration, pressure, importance, urgency, and priority; create, edit, details, exact Home filtering, copying, sync, sharing, and backup preserve it without changing scheduling or ordering.
 
 - **[0467](0467-declare-exempt-encryption-in-production-bundles.md) refines [0466](0466-harden-app-store-release-surfaces.md) for upload compliance:** The iOS and macOS production bundles declare that Routina does not use non-exempt encryption, while any future custom or third-party cryptography requires the release classification to be reassessed.
@@ -411,6 +413,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0469](0469-store-task-descriptions-separately-from-notes.md) | Store Task Descriptions Separately From Notes | Accepted | 2026-08-02 |
 | [0468](0468-model-task-thinking-needed-separately.md) | Model Task Thinking Needed Separately | Accepted | 2026-08-02 |
 | [0467](0467-declare-exempt-encryption-in-production-bundles.md) | Declare Exempt Encryption in Production Bundles | Accepted | 2026-08-01 |
 | [0466](0466-harden-app-store-release-surfaces.md) | Harden App Store Release Surfaces | Accepted | 2026-07-31 |

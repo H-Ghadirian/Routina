@@ -32,6 +32,11 @@ struct TaskFormContent: View {
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
 
+    init(model: TaskFormModel) {
+        self.model = model
+        _revealedSections = State(initialValue: model.initiallyRevealedCompactSections)
+    }
+
     var body: some View {
         ScrollViewReader { proxy in
             Form {
@@ -210,6 +215,8 @@ struct TaskFormContent: View {
             nameSection
         case .taskType:
             taskTypeSection
+        case .taskDescription:
+            taskDescriptionSection
         case .emoji:
             emojiSection
         case .color:
@@ -301,6 +308,10 @@ struct TaskFormContent: View {
 
     private var taskTypeSection: some View {
         TaskFormIOSTaskTypeSection(model: model, presentation: presentation)
+    }
+
+    private var taskDescriptionSection: some View {
+        TaskFormIOSDescriptionSection(model: model)
     }
 
     private var emojiSection: some View {
@@ -445,6 +456,7 @@ private extension TaskFormCompactSection {
         switch self {
         case .name: return "Name"
         case .taskType: return "Task type"
+        case .taskDescription: return "Description"
         case .emoji: return "Emoji"
         case .color: return "Color"
         case .notes: return "Notes"
@@ -476,6 +488,7 @@ private extension TaskFormCompactSection {
         switch self {
         case .name: return "text.cursor"
         case .taskType: return "repeat"
+        case .taskDescription: return "text.alignleft"
         case .emoji: return "face.smiling"
         case .color: return "paintpalette"
         case .notes: return "note.text"

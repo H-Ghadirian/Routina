@@ -248,6 +248,16 @@ enum CloudKitDirectPullTaskRecordParser {
             in: record,
             keys: ["pressureUpdatedAt", "PRESSUREUPDATEDAT", "zpressureupdatedat", "ZPRESSUREUPDATEDAT", "cd_pressureupdatedat"]
         )
+        let taskDescriptionValue = stringValue(
+            in: record,
+            keys: [
+                "taskDescription",
+                "TASKDESCRIPTION",
+                "ztaskdescription",
+                "ZTASKDESCRIPTION",
+                "cd_taskdescription"
+            ]
+        )
         let thinkingNeededValue = stringValue(
             in: record,
             keys: [
@@ -263,6 +273,7 @@ enum CloudKitDirectPullTaskRecordParser {
             intervalValue != nil
                 || nameValue != nil
                 || emojiValue != nil
+                || taskDescriptionValue != nil
                 || notesValue != nil
                 || commentsStorageValue != nil
                 || linkValue != nil
@@ -331,6 +342,7 @@ enum CloudKitDirectPullTaskRecordParser {
             id: id,
             name: nameValue,
             emoji: emojiValue,
+            taskDescription: taskDescriptionValue,
             notes: notesValue,
             link: linkValue,
             links: linksStorageValue.map(RoutineTaskLinkStorage.deserialize),

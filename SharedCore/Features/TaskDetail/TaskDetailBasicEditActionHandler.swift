@@ -17,6 +17,11 @@ struct TaskDetailBasicEditActionHandler {
         return .none
     }
 
+    func editTaskDescriptionChanged(_ description: String, state: inout State) -> Effect<Action> {
+        draftMutationHandler.setTaskDescription(description, state: &state)
+        return .none
+    }
+
     func editRoutineNotesChanged(_ notes: String, state: inout State) -> Effect<Action> {
         draftMutationHandler.setNotes(notes, state: &state)
         return .none

@@ -5,6 +5,7 @@ struct TaskDetailEditRoutineContent: View {
     let store: StoreOf<TaskDetailFeature>
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
+    var initiallyRevealedSection: TaskFormCompactSection? = nil
     @Environment(\.calendar) private var calendar
 
     var body: some View {
@@ -39,6 +40,10 @@ struct TaskDetailEditRoutineContent: View {
             ),
             emojiOptions: emojiOptions,
             isEmojiPickerPresented: $isEditEmojiPickerPresented,
+            taskDescription: Binding(
+                get: { store.editTaskDescription },
+                set: { store.send(.editTaskDescriptionChanged($0)) }
+            ),
             notes: Binding(
                 get: { store.editRoutineNotes },
                 set: { store.send(.editRoutineNotesChanged($0)) }
@@ -206,6 +211,7 @@ struct TaskDetailEditRoutineContent: View {
                 set: { store.send(.editColorChanged($0)) }
             ),
             visibilityMode: .progressiveEdit,
+            initiallyRevealedCompactSections: Set(initiallyRevealedSection.map { [$0] } ?? []),
             autofocusName: false,
             onDelete: { store.send(.setDeleteConfirmation(true)) }
         )

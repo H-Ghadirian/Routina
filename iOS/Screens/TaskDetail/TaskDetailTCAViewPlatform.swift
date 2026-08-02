@@ -9,6 +9,7 @@ extension View {
         store: StoreOf<TaskDetailFeature>,
         isEditEmojiPickerPresented: Binding<Bool>,
         emojiOptions: [String],
+        initiallyRevealedSection: TaskFormCompactSection?,
         canSaveCurrentEdit: Bool
     ) -> some View {
         sheet(isPresented: isPresented) {
@@ -16,7 +17,8 @@ extension View {
                 TaskDetailEditRoutineContent(
                     store: store,
                     isEditEmojiPickerPresented: isEditEmojiPickerPresented,
-                    emojiOptions: emojiOptions
+                    emojiOptions: emojiOptions,
+                    initiallyRevealedSection: initiallyRevealedSection
                 )
                 .navigationTitle("Edit Task")
                 .routinaInlineTitleDisplayMode()

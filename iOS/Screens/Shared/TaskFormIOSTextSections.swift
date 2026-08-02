@@ -1,5 +1,19 @@
 import SwiftUI
 
+struct TaskFormIOSDescriptionSection: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        Section(header: Text("Description")) {
+            RoutinaFormattedTextEditor(
+                text: model.taskDescription,
+                placeholder: "Describe this task",
+                minHeight: 110
+            )
+        }
+    }
+}
+
 struct TaskFormIOSNotesSection: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation

@@ -18,6 +18,7 @@ struct TaskDetailEditSaveTests {
         let selectedSectionID = UUID()
         let task = RoutineTask(
             name: "Buy AirPods",
+            taskDescription: "Compare models",
             customTaskSectionID: originalSectionID
         )
         var state = TaskDetailFeature.State(task: task)
@@ -29,6 +30,7 @@ struct TaskDetailEditSaveTests {
             feature.syncEditFormFromTask(&state)
         }
         state.editCustomTaskSectionID = selectedSectionID
+        state.editTaskDescription = "Compare models and prices"
         state.editThinkingNeeded = .high
 
         let request = try #require(
@@ -46,6 +48,7 @@ struct TaskDetailEditSaveTests {
         )
 
         #expect(request.customTaskSectionID == selectedSectionID)
+        #expect(request.taskDescription == "Compare models and prices")
         #expect(request.thinkingNeeded == .high)
         withDependencies {
             setTestDateDependencies(&$0)
@@ -53,6 +56,7 @@ struct TaskDetailEditSaveTests {
             feature.applyEditSaveRequest(request, to: &state)
         }
         #expect(state.task.customTaskSectionID == selectedSectionID)
+        #expect(state.task.taskDescription == "Compare models and prices")
         #expect(state.task.thinkingNeeded == .high)
     }
 

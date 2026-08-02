@@ -45,6 +45,7 @@ enum HomeAddRoutineSupport {
         let task = RoutineTask(
             name: name,
             emoji: request.emoji,
+            taskDescription: request.taskDescription,
             notes: request.notes,
             link: request.link,
             links: request.links,

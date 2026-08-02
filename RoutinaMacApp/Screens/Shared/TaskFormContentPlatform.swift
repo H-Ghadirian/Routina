@@ -291,6 +291,7 @@ struct TaskFormContent: View {
     private func formSectionView(for section: FormSection) -> some View {
         switch section {
         case .identity:           EmptyView() // identityCard is rendered separately above the ScrollView
+        case .taskDescription:    taskDescriptionCard
         case .emoji:              emojiCard
         case .color:              colorCard
         case .behavior:           behaviorCard
@@ -545,6 +546,13 @@ struct TaskFormContent: View {
     private var linkURLCard: some View {
         TaskFormMacLinkCard(model: model, presentation: presentation)
         .id(FormSection.linkURL)
+    }
+
+    // MARK: Description
+
+    private var taskDescriptionCard: some View {
+        TaskFormMacDescriptionCard(model: model)
+            .id(FormSection.taskDescription)
     }
 
     // MARK: Notes

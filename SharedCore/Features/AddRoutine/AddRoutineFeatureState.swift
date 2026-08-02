@@ -4,6 +4,7 @@ import Foundation
 struct AddRoutineBasicsState: Equatable {
     var routineName: String = ""
     var routineEmoji: String = "✨"
+    var taskDescription: String = ""
     var routineNotes: String = ""
     var routineLink: String = ""
     var deadline: Date?

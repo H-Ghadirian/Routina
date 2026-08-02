@@ -291,6 +291,7 @@ struct SettingsRoutineDataPersistenceTests {
         let attachmentData = Data([0x04, 0x05, 0x06])
         let task = RoutineTask(
             name: "File insurance",
+            taskDescription: "Submit the signed form with proof of purchase.",
             pressure: .high,
             thinkingNeeded: .high,
             imageData: imageData,
@@ -327,6 +328,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(summary.tasks == 1)
         #expect(summary.attachments == 1)
         let restoredTask = try #require(restoreContext.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(restoredTask.taskDescription == "Submit the signed form with proof of purchase.")
         #expect(restoredTask.imageData == imageData)
         #expect(restoredTask.voiceNoteData == voiceData)
         #expect(restoredTask.voiceNoteDurationSeconds == 3.5)

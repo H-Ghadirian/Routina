@@ -577,6 +577,9 @@ struct TaskFormPresentationTests {
     @Test
     func compactSectionOrderKeepsVoiceNoteDiscoverableNearNotes() throws {
         let order = TaskFormCompactSection.defaultOrder
+        let taskTypeIndex = try #require(order.firstIndex(of: .taskType))
+        let descriptionIndex = try #require(order.firstIndex(of: .taskDescription))
+        let emojiIndex = try #require(order.firstIndex(of: .emoji))
         let notesIndex = try #require(order.firstIndex(of: .notes))
         let voiceNoteIndex = try #require(order.firstIndex(of: .voiceNote))
         let deadlineIndex = try #require(order.firstIndex(of: .deadline))
@@ -587,6 +590,8 @@ struct TaskFormPresentationTests {
         let stepsIndex = try #require(order.firstIndex(of: .steps))
         let checklistIndex = try #require(order.firstIndex(of: .checklist))
 
+        #expect(descriptionIndex == order.index(after: taskTypeIndex))
+        #expect(emojiIndex == order.index(after: descriptionIndex))
         #expect(voiceNoteIndex == order.index(after: notesIndex))
         #expect(voiceNoteIndex < deadlineIndex)
         #expect(voiceNoteIndex < imageIndex)

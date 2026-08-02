@@ -4,6 +4,7 @@ protocol HomeTaskListDisplay {
     var taskID: UUID { get }
     var name: String { get }
     var emoji: String { get }
+    var taskDescription: String? { get }
     var notes: String? { get }
     var hasImage: Bool { get }
     var hasFileAttachment: Bool { get }
@@ -51,6 +52,10 @@ protocol HomeTaskListDisplay {
 }
 
 extension HomeTaskListDisplay {
+    var taskDescription: String? {
+        nil
+    }
+
     var hasMissedExactTimedOccurrence: Bool {
         false
     }

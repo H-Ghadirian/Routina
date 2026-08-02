@@ -593,6 +593,7 @@ struct RoutineAdvancedRecurrenceTests {
         let state = AddRoutineFeature.State(
             basics: AddRoutineBasicsState(
                 routineName: "Medicine",
+                taskDescription: "Take with a full glass of water.",
                 thinkingNeeded: .high
             ),
             schedule: AddRoutineScheduleState(
@@ -608,6 +609,7 @@ struct RoutineAdvancedRecurrenceTests {
 
         #expect(restored.schedule.recurrenceEditorMode == .advanced)
         #expect(restored.schedule.advancedRecurrenceRule == advanced.normalized(calendar: .current))
+        #expect(restored.basics.taskDescription == "Take with a full glass of water.")
         #expect(restored.basics.thinkingNeeded == .high)
 
         var legacyObject = try #require(
@@ -615,12 +617,15 @@ struct RoutineAdvancedRecurrenceTests {
         )
         legacyObject.removeValue(forKey: "recurrenceEditorMode")
         legacyObject.removeValue(forKey: "advancedRecurrenceRule")
+        legacyObject.removeValue(forKey: "taskDescription")
         legacyObject.removeValue(forKey: "thinkingNeeded")
         let legacyData = try JSONSerialization.data(withJSONObject: legacyObject)
         let legacy = try JSONDecoder().decode(AddRoutineDraftSnapshot.self, from: legacyData)
         #expect(legacy.recurrenceEditorMode == nil)
         #expect(legacy.advancedRecurrenceRule == nil)
+        #expect(legacy.taskDescription == nil)
         #expect(legacy.thinkingNeeded == nil)
+        #expect(legacy.applied(to: AddRoutineFeature.State()).basics.taskDescription.isEmpty)
         #expect(legacy.applied(to: AddRoutineFeature.State()).basics.thinkingNeeded == .none)
     }
 }

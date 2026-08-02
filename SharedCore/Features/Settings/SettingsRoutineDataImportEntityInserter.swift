@@ -264,6 +264,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 id: task.id,
                 name: task.name,
                 emoji: task.emoji,
+                taskDescription: task.taskDescription,
                 notes: task.notes,
                 link: task.link,
                 links: task.links ?? task.link.map { [$0] } ?? [],

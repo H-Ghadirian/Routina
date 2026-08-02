@@ -85,6 +85,7 @@ private extension HomeFeature.RoutineDisplay {
             taskID: core.taskID,
             name: core.name,
             emoji: core.emoji,
+            taskDescription: core.taskDescription,
             notes: core.notes,
             hasImage: core.hasImage,
             hasFileAttachment: core.hasFileAttachment,

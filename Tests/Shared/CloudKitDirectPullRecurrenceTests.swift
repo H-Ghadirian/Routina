@@ -25,6 +25,7 @@ struct CloudKitDirectPullRecurrenceTests {
             recordID: CKRecord.ID(recordName: taskID.uuidString)
         )
         remoteTask["name"] = "Breakfast" as CKRecordValue
+        remoteTask["taskDescription"] = "Prepare oats and fresh fruit." as CKRecordValue
         remoteTask["interval"] = NSNumber(value: 1)
         remoteTask["scheduleModeRawValue"] = RoutineScheduleMode.fixedInterval.rawValue as CKRecordValue
         remoteTask["recurrenceStorageVersion"] = NSNumber(value: 1)
@@ -50,6 +51,7 @@ struct CloudKitDirectPullRecurrenceTests {
             ).first
         )
         #expect(task.recurrenceRule == .daily(in: timeRange))
+        #expect(task.taskDescription == "Prepare oats and fresh fruit.")
         #expect(task.recurrenceTimeRangeRole == .scheduledBlock)
         #expect(task.recurrenceStorageVersion == 1)
         #expect(task.recurrenceRuleStorage.isEmpty)

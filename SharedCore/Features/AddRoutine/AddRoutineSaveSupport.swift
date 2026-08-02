@@ -83,6 +83,7 @@ struct AddRoutineSaveRequest: Equatable {
     let frequencyInDays: Int
     let recurrenceRule: RoutineRecurrenceRule
     let emoji: String
+    let taskDescription: String?
     let notes: String?
     let link: String?
     let links: [String]
@@ -128,6 +129,7 @@ struct AddRoutineSaveRequest: Equatable {
         frequencyInDays: Int,
         recurrenceRule: RoutineRecurrenceRule,
         emoji: String,
+        taskDescription: String? = nil,
         notes: String? = nil,
         link: String? = nil,
         links: [String] = [],
@@ -173,6 +175,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.frequencyInDays = frequencyInDays
         self.recurrenceRule = recurrenceRule
         self.emoji = emoji
+        self.taskDescription = RoutineTask.sanitizedDescription(taskDescription)
         self.notes = notes
         let sanitizedLinkItems = RoutineTaskLinkStorage.sanitizedItems(linkItems.isEmpty
             ? (links.isEmpty ? link.map { [RoutineTaskLink(title: nil, url: $0)] } ?? [] : links.map { RoutineTaskLink(title: nil, url: $0) })
@@ -296,6 +299,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.frequencyInDays = frequencyInDays
         self.recurrenceRule = recurrenceRule
         self.emoji = basics.routineEmoji
+        self.taskDescription = RoutineTask.sanitizedDescription(basics.taskDescription)
         self.notes = RoutineTask.sanitizedNotes(basics.routineNotes)
         let sanitizedLinks = RoutineTask.sanitizedLinkItems(fromEditorText: basics.routineLink)
         self.link = sanitizedLinks.first?.url

@@ -45,6 +45,7 @@ struct TaskDetailFeature: Reducer {
         var editRoutineName: String = ""
         var editCustomTaskSectionID: UUID?
         var editRoutineEmoji: String = "✨"
+        var editTaskDescription: String = ""
         var editRoutineNotes: String = ""
         var detailCommentDraft: String = ""
         var editingDetailCommentID: UUID?
@@ -338,6 +339,7 @@ struct TaskDetailFeature: Reducer {
         case editRoutineNameChanged(String)
         case editCustomTaskSectionChanged(UUID?)
         case editRoutineEmojiChanged(String)
+        case editTaskDescriptionChanged(String)
         case editRoutineNotesChanged(String)
         case detailCommentDraftChanged(String)
         case detailCommentAddTapped
@@ -1225,6 +1227,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .editRoutineEmojiChanged(emoji):
             return basicEditActionHandler().editRoutineEmojiChanged(emoji, state: &state)
+
+        case let .editTaskDescriptionChanged(description):
+            return basicEditActionHandler().editTaskDescriptionChanged(description, state: &state)
 
         case let .editRoutineNotesChanged(notes):
             return basicEditActionHandler().editRoutineNotesChanged(notes, state: &state)

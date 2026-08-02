@@ -51,6 +51,26 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(!source.contains("isShowingMoreDetails.toggle()"))
     }
 
+    @Test
+    func descriptionIsIndependentFromExperimentalNotesAndSupportsTargetedReveal() throws {
+        let formSource = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormContentPlatform.swift"
+        )
+        let textSource = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSTextSections.swift"
+        )
+        let detailSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+
+        #expect(textSource.contains("struct TaskFormIOSDescriptionSection"))
+        #expect(formSource.contains("case .taskDescription:\n            taskDescriptionSection"))
+        #expect(formSource.contains("_revealedSections = State(initialValue: model.initiallyRevealedCompactSections)"))
+        #expect(formSource.contains("case .notes, .voiceNote:\n                return isNotesEnabled"))
+        #expect(detailSource.contains("requestedEditSection = .taskDescription"))
+        #expect(detailSource.contains("taskDescription: store.task.taskDescription"))
+    }
+
     private static func sourceSection(
         startingAt startMarker: String,
         endingAt endMarker: String,

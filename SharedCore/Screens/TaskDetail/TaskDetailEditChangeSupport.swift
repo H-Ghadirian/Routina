@@ -4,6 +4,7 @@ struct TaskDetailEditChangeRequest {
     let name: String
     let customTaskSectionID: UUID?
     let emoji: String
+    let taskDescription: String
     let notes: String
     let link: String
     let estimatedDurationMinutes: Int?
@@ -67,6 +68,7 @@ struct TaskDetailEditChangeRequest {
         self.name = state.editRoutineName
         self.customTaskSectionID = state.editCustomTaskSectionID
         self.emoji = state.editRoutineEmoji
+        self.taskDescription = state.editTaskDescription
         self.notes = state.editRoutineNotes
         self.link = state.editRoutineLink
         self.estimatedDurationMinutes = state.editEstimatedDurationMinutes
@@ -136,6 +138,7 @@ enum TaskDetailEditChangeDetector {
         let task = request.task
         let currentName = (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let currentEmoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
+        let currentDescription = task.taskDescription ?? ""
         let currentNotes = CalendarTaskImportSupport.displayNotes(from: task.notes) ?? ""
         let currentLink = RoutineTask.linkEditorText(for: task.linkItems)
         let currentTags = RoutineTag.deduplicated(task.tags)
@@ -177,6 +180,7 @@ enum TaskDetailEditChangeDetector {
         return trimmedName != currentName
             || request.customTaskSectionID != task.customTaskSectionID
             || request.emoji != currentEmoji
+            || request.taskDescription != currentDescription
             || request.notes != currentNotes
             || RoutineTask.linkEditorText(for: RoutineTask.sanitizedLinkItems(fromEditorText: request.link)) != currentLink
             || request.estimatedDurationMinutes != task.estimatedDurationMinutes

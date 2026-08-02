@@ -15,6 +15,13 @@ enum AddRoutineBasicsEditor {
         basics.routineNotes = notes
     }
 
+    static func setTaskDescription(
+        _ description: String,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.taskDescription = description
+    }
+
     static func setLink(
         _ link: String,
         basics: inout AddRoutineBasicsState

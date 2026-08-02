@@ -1,5 +1,21 @@
 import SwiftUI
 
+struct TaskFormMacDescriptionCard: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        TaskFormMacSectionCard(title: "Description") {
+            RoutinaFormattedTextEditor(
+                text: model.taskDescription,
+                placeholder: "Describe this task",
+                minHeight: 120,
+                backgroundColor: Color(nsColor: .textBackgroundColor),
+                strokeColor: Color.gray.opacity(0.18)
+            )
+        }
+    }
+}
+
 struct TaskFormMacLinkCard: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation

@@ -10,6 +10,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             task.name = RoutineTask.trimmedName(payload.name)
         }
         task.emoji = payload.emoji
+        task.taskDescription = RoutineTask.sanitizedDescription(payload.taskDescription)
         task.notes = RoutineTask.sanitizedNotes(payload.notes)
         task.linkItems = payload.linkItems
             ?? payload.links?.map { RoutineTaskLink(title: nil, url: $0) }
@@ -120,6 +121,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             id: payload.id,
             name: RoutineTask.trimmedName(payload.name),
             emoji: payload.emoji,
+            taskDescription: payload.taskDescription,
             notes: payload.notes,
             link: payload.link,
             links: payload.links ?? payload.link.map { [$0] } ?? [],

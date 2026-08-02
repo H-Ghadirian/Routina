@@ -264,6 +264,7 @@ enum TaskFormRecurrenceConstraints {
 enum TaskFormCompactSection: Hashable, Sendable {
     case name
     case taskType
+    case taskDescription
     case emoji
     case color
     case notes
@@ -292,6 +293,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
     static let defaultOrder: [TaskFormCompactSection] = [
         .name,
         .taskType,
+        .taskDescription,
         .emoji,
         .color,
         .notes,

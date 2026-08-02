@@ -4,6 +4,7 @@ struct HomeRoutineDisplayCore: Equatable {
     let taskID: UUID
     var name: String
     var emoji: String
+    var taskDescription: String?
     var notes: String?
     var hasImage: Bool
     var hasFileAttachment: Bool

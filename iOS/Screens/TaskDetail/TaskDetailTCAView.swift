@@ -20,6 +20,7 @@ struct TaskDetailTCAView: View {
     @State private var isThinkingNeededControlRevealed = false
     @State private var isPriorityControlRevealed = false
     @State private var isChecklistSectionRevealed = false
+    @State private var requestedEditSection: TaskFormCompactSection?
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
@@ -90,6 +91,7 @@ detailBody
     store: store,
     isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
     emojiOptions: emojiOptions,
+    initiallyRevealedSection: requestedEditSection,
     canSaveCurrentEdit: canSaveCurrentEdit
 )
 .sheet(isPresented: $isEditEmojiPickerPresented) {
@@ -460,6 +462,13 @@ detailBody
             })
         }
 
+        if !store.task.hasTaskDescription {
+            actions.append(TaskDetailOptionalAction(title: "Description", systemImage: "text.alignleft") {
+                requestedEditSection = .taskDescription
+                store.send(.setEditSheet(true))
+            })
+        }
+
         if !hasTaskExtras {
             actions.append(TaskDetailOptionalAction(title: "Details", systemImage: "square.and.pencil") {
                 store.send(.setEditSheet(true))
@@ -550,7 +559,8 @@ detailBody
     }
 
     private var hasTaskExtras: Bool {
-        (isNotesEnabled && store.task.hasNotes)
+        store.task.hasTaskDescription
+            || (isNotesEnabled && store.task.hasNotes)
             || store.task.hasImage
             || (isNotesEnabled && store.task.hasVoiceNote)
             || !store.taskAttachments.isEmpty
@@ -863,6 +873,7 @@ detailBody
             imageData: store.task.imageData,
             voiceNote: isNotesEnabled ? store.task.voiceNote : nil,
             attachments: store.taskAttachments,
+            taskDescription: store.task.taskDescription,
             notes: isNotesEnabled ? CalendarTaskImportSupport.displayNotes(from: store.task.notes) : nil,
             links: store.task.resolvedLinkURLs,
             background: routineLogsBackground,

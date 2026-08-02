@@ -600,6 +600,7 @@ extension TaskDetailFeature {
             name: request.name,
             customTaskSectionID: request.customTaskSectionID,
             emoji: request.emoji,
+            taskDescription: request.taskDescription,
             notes: request.notes,
             link: request.link,
             links: request.links,
@@ -647,6 +648,7 @@ extension TaskDetailFeature {
         name: String,
         customTaskSectionID: UUID?,
         emoji: String,
+        taskDescription: String?,
         notes: String?,
         link: String?,
         links: [String],
@@ -714,6 +716,7 @@ extension TaskDetailFeature {
                 task.name = name
                 task.customTaskSectionID = customTaskSectionID
                 task.emoji = emoji
+                task.taskDescription = RoutineTask.sanitizedDescription(taskDescription)
                 task.notes = CalendarTaskImportSupport.notesPreservingCalendarMarkers(
                     visibleNotes: notes,
                     existingNotes: task.notes

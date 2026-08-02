@@ -72,6 +72,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
         guard !trimmedSearch.isEmpty else { return true }
         return task.name.localizedCaseInsensitiveContains(trimmedSearch)
             || task.emoji.localizedCaseInsensitiveContains(trimmedSearch)
+            || (task.taskDescription?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || (task.notes?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || (task.placeName?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)

@@ -4,6 +4,7 @@ struct TaskDetailExtrasSectionView: View {
     let imageData: Data?
     let voiceNote: RoutineVoiceNote?
     let attachments: [AttachmentItem]
+    let taskDescription: String?
     let notes: String?
     let links: [RoutineTaskResolvedLink]
     let background: Color
@@ -33,12 +34,12 @@ struct TaskDetailExtrasSectionView: View {
                 )
             }
 
+            if let taskDescription {
+                formattedTextBlock(title: "Description", text: taskDescription)
+            }
+
             if let notes {
-                RoutinaFormattedText(notes)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .taskDetailCopyableText(notes)
+                formattedTextBlock(title: "Notes", text: notes)
             }
 
             ForEach(links) { link in
@@ -64,6 +65,19 @@ struct TaskDetailExtrasSectionView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(stroke, lineWidth: 1)
         )
+    }
+
+    private func formattedTextBlock(title: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            RoutinaFormattedText(text)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .taskDetailCopyableText(text)
+        }
     }
 
     @ViewBuilder

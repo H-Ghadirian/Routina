@@ -12,6 +12,10 @@ struct TaskDetailEditDraftMutationHandler {
         state.editRoutineEmoji = RoutineTask.sanitizedEmoji(emoji, fallback: state.editRoutineEmoji)
     }
 
+    func setTaskDescription(_ description: String, state: inout TaskDetailFeature.State) {
+        state.editTaskDescription = description
+    }
+
     func setNotes(_ notes: String, state: inout TaskDetailFeature.State) {
         state.editRoutineNotes = notes
     }

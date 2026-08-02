@@ -5,6 +5,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var id: UUID { taskID }
     var name: String
     var emoji: String
+    var taskDescription: String? = nil
     var notes: String?
     var hasImage: Bool
     var hasFileAttachment: Bool = false

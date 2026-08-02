@@ -39,6 +39,19 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func searchMatchesTaskDescription() {
+        let tasks = [
+            TestTaskDisplay(name: "Call supplier", taskDescription: "Ask about the replacement shipment"),
+            TestTaskDisplay(name: "Call dentist", taskDescription: "Book a cleaning")
+        ]
+
+        let result = makeFiltering(searchText: "replacement shipment")
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Call supplier"])
+    }
+
+    @Test
     func placeFilterMatchesAnyLinkedPlace() {
         let homeID = UUID()
         let gymID = UUID()
@@ -2656,6 +2669,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var taskID: UUID = UUID()
     var name: String
     var emoji: String = "✅"
+    var taskDescription: String?
     var notes: String?
     var hasImage: Bool = false
     var hasFileAttachment: Bool = false

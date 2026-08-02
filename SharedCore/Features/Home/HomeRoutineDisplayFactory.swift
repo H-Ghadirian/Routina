@@ -92,6 +92,7 @@ struct HomeRoutineDisplayFactory {
             taskID: task.id,
             name: task.name ?? "Unnamed task",
             emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨",
+            taskDescription: task.taskDescription,
             notes: CalendarTaskImportSupport.displayNotes(from: task.notes),
             hasImage: task.hasImage,
             hasFileAttachment: fileAttachmentTaskIDs.contains(task.id),

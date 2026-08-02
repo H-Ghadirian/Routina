@@ -6,6 +6,7 @@ extension CloudKitDirectPullService {
         var id: UUID
         var name: String?
         var emoji: String?
+        var taskDescription: String?
         var notes: String?
         var link: String?
         var links: [String]?

@@ -53,6 +53,10 @@ struct AddRoutineTaskFormModelFactory {
             emoji: binding(get: { store.basics.routineEmoji }, send: AddRoutineFeature.Action.routineEmojiChanged),
             emojiOptions: emojiOptions,
             isEmojiPickerPresented: isEmojiPickerPresented,
+            taskDescription: binding(
+                get: { store.basics.taskDescription },
+                send: AddRoutineFeature.Action.taskDescriptionChanged
+            ),
             notes: binding(get: { store.basics.routineNotes }, send: AddRoutineFeature.Action.routineNotesChanged),
             link: binding(get: { store.basics.routineLink }, send: AddRoutineFeature.Action.routineLinkChanged),
             deadlineEnabled: binding(get: { store.hasDeadline }, send: AddRoutineFeature.Action.deadlineEnabledChanged),

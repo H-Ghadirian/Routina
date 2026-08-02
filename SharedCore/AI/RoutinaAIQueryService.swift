@@ -51,6 +51,7 @@ public struct RoutinaAITaskSummary: Codable, Equatable, Identifiable, Sendable {
     public var overdueDays: Int
     public var lastDone: Date?
     public var createdAt: Date?
+    public var taskDescription: String?
     public var notes: String?
     public var link: String?
     public var links: [String]
@@ -202,6 +203,7 @@ private extension RoutinaAIQueryService {
             overdueDays: overdueDays,
             lastDone: task.lastDone,
             createdAt: task.createdAt,
+            taskDescription: task.taskDescription,
             notes: task.notes,
             link: task.link,
             links: task.links,
@@ -320,6 +322,7 @@ private extension RoutinaAIQueryService {
 
         let haystack = [
             summary.name,
+            summary.taskDescription ?? "",
             summary.notes ?? "",
             summary.link ?? "",
             summary.links.joined(separator: " "),

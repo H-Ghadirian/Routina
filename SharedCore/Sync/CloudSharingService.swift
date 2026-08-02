@@ -17,6 +17,7 @@ enum CloudSharingService {
         var id: UUID
         var name: String?
         var emoji: String?
+        var taskDescription: String?
         var notes: String?
         var link: String?
         var links: [String]?
@@ -276,6 +277,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.id = task.id
         self.name = task.name
         self.emoji = task.emoji
+        self.taskDescription = task.taskDescription
         self.notes = task.notes
         self.link = task.link
         self.links = task.links.isEmpty ? nil : task.links
@@ -413,6 +415,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
         task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+        task.taskDescription = RoutineTask.sanitizedDescription(taskDescription)
         if let thinkingNeeded {
             task.thinkingNeeded = thinkingNeeded
         }
@@ -431,6 +434,7 @@ private extension RoutineTask {
             id: payload.id,
             name: RoutineTask.trimmedName(payload.name),
             emoji: payload.emoji,
+            taskDescription: payload.taskDescription,
             notes: payload.notes,
             link: payload.link,
             links: payload.links ?? payload.link.map { [$0] } ?? [],

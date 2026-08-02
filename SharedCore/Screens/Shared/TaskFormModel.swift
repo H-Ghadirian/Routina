@@ -28,7 +28,8 @@ struct TaskFormModel {
     var emojiOptions: [String]
     var isEmojiPickerPresented: Binding<Bool>
 
-    // MARK: Notes & Link
+    // MARK: Description, Notes & Link
+    var taskDescription: Binding<String> = .constant("")
     var notes: Binding<String>
     var link: Binding<String>
 
@@ -163,6 +164,7 @@ struct TaskFormModel {
     var nameFocus: FocusState<Bool>.Binding? = nil
     var nameFocusRequestID: Int = 0
     var visibilityMode: TaskFormVisibilityMode = .full
+    var initiallyRevealedCompactSections: Set<TaskFormCompactSection> = []
     var onCancel: (() -> Void)? = nil
     var onSave: (() -> Void)? = nil
     var isSaveDisabled = false
@@ -614,6 +616,9 @@ extension TaskFormModel {
 
         if color.wrappedValue != .none {
             sections.insert(.color)
+        }
+        if hasText(taskDescription.wrappedValue) {
+            sections.insert(.taskDescription)
         }
         if hasText(notes.wrappedValue) {
             sections.insert(.notes)

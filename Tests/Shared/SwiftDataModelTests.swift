@@ -915,6 +915,16 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_sanitizesAndCopiesTaskDescription() {
+        let task = RoutineTask(taskDescription: "  Bring the signed forms.  ")
+
+        #expect(task.taskDescription == "Bring the signed forms.")
+        #expect(task.hasTaskDescription)
+        #expect(task.detachedCopy().taskDescription == "Bring the signed forms.")
+        #expect(RoutineTask(taskDescription: "  \n ").taskDescription == nil)
+    }
+
+    @Test
     func routineTask_sanitizesLinksAndBuildsResolvedURL() {
         let task = RoutineTask(link: " example.com/docs ")
         let invalid = RoutineTask(link: "not a valid url")

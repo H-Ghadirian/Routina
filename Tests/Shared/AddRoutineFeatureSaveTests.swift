@@ -19,6 +19,7 @@ struct AddRoutineFeatureSaveTests {
             initialState: makeState(
                 basics: AddRoutineBasicsState(
                     routineName: "Buy AirPods",
+                    taskDescription: "  Compare the current models.  ",
                     thinkingNeeded: .high
                 ),
                 organization: AddRoutineOrganizationState(
@@ -42,6 +43,7 @@ struct AddRoutineFeatureSaveTests {
 
         let request = try #require(capturedRequest.value)
         #expect(request.customTaskSectionID == sectionID)
+        #expect(request.taskDescription == "Compare the current models.")
         #expect(request.thinkingNeeded == .high)
         let task = HomeAddRoutineSupport.makeRoutine(
             from: request,
@@ -50,6 +52,7 @@ struct AddRoutineFeatureSaveTests {
             scheduleAnchor: makeDate("2026-03-20T10:00:00Z")
         )
         #expect(task.customTaskSectionID == sectionID)
+        #expect(task.taskDescription == "Compare the current models.")
         #expect(task.thinkingNeeded == .high)
     }
 

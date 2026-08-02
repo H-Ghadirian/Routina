@@ -5,6 +5,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var name: String
     var customTaskSectionID: UUID?
     var emoji: String
+    var taskDescription: String?
     var notes: String?
     var link: String?
     var links: [String]
@@ -123,6 +124,7 @@ struct TaskDetailEditSaveRequestBuilder {
             name: trimmedName,
             customTaskSectionID: state.editCustomTaskSectionID,
             emoji: state.editRoutineEmoji,
+            taskDescription: RoutineTask.sanitizedDescription(state.editTaskDescription),
             notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
             link: sanitizedLinks.first?.url,
             links: sanitizedLinks.map(\.url),
@@ -263,6 +265,7 @@ extension TaskDetailFeature {
         updatedTask.name = request.name
         updatedTask.customTaskSectionID = request.customTaskSectionID
         updatedTask.emoji = request.emoji
+        updatedTask.taskDescription = request.taskDescription
         updatedTask.notes = CalendarTaskImportSupport.notesPreservingCalendarMarkers(
             visibleNotes: request.notes,
             existingNotes: updatedTask.notes

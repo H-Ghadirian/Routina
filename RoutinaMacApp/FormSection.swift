@@ -10,6 +10,7 @@ import Foundation
 /// saved section order. Use `title` for display copy.
 enum FormSection: String, CaseIterable, Hashable, Codable {
     case identity           = "Identity"
+    case taskDescription    = "Description"
     case emoji              = "Emoji"
     case color              = "Color"
     case behavior           = "Behavior"
@@ -56,6 +57,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
 
     var icon: String {
         switch self {
+        case .taskDescription:  return "text.alignleft"
         case .identity:          return "person.fill"
         case .emoji:             return "face.smiling.fill"
         case .color:             return "paintpalette.fill"
@@ -94,7 +96,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         includesDangerZone: Bool
     ) -> [FormSection] {
         var sections: [FormSection] = includesIdentity ? [.identity] : []
-        sections += [.emoji, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
+        sections += [.taskDescription, .emoji, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }
@@ -141,6 +143,9 @@ extension TaskFormModel {
     var populatedMacFormSections: Set<FormSection> {
         var sections = Set<FormSection>()
 
+        if hasText(taskDescription.wrappedValue) {
+            sections.insert(.taskDescription)
+        }
         if emoji.wrappedValue != "✨" {
             sections.insert(.emoji)
         }
@@ -216,6 +221,9 @@ extension AddRoutineFeature.State {
     var populatedMacFormSections: Set<FormSection> {
         var sections = Set<FormSection>()
 
+        if hasText(basics.taskDescription) {
+            sections.insert(.taskDescription)
+        }
         if basics.routineEmoji != "✨" {
             sections.insert(.emoji)
         }
@@ -301,6 +309,9 @@ extension TaskDetailFeature.State {
     var populatedMacFormSections: Set<FormSection> {
         var sections = Set<FormSection>()
 
+        if hasText(editTaskDescription) {
+            sections.insert(.taskDescription)
+        }
         if editRoutineEmoji != "✨" {
             sections.insert(.emoji)
         }

@@ -6,6 +6,7 @@ extension TaskDetailFeature {
         state.editRoutineName = state.task.name ?? ""
         state.editCustomTaskSectionID = state.task.customTaskSectionID
         state.editRoutineEmoji = CalendarTaskImportSupport.displayEmoji(for: state.task.emoji) ?? "✨"
+        state.editTaskDescription = state.task.taskDescription ?? ""
         state.editRoutineNotes = CalendarTaskImportSupport.displayNotes(from: state.task.notes) ?? ""
         state.editRoutineLink = RoutineTask.linkEditorText(for: state.task.linkItems)
         state.editDeadline = state.task.deadline

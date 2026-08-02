@@ -149,6 +149,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var id: UUID
         var name: String?
         var emoji: String?
+        var taskDescription: String?
         var notes: String?
         var link: String?
         var linksStorage: String
@@ -204,6 +205,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             id = task.id
             name = task.name
             emoji = task.emoji
+            taskDescription = task.taskDescription
             notes = task.notes
             link = task.link
             linksStorage = task.linksStorage

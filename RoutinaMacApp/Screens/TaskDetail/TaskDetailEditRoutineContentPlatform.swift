@@ -55,6 +55,10 @@ struct TaskDetailEditRoutineContent: View {
             ),
             emojiOptions: emojiOptions,
             isEmojiPickerPresented: $isEditEmojiPickerPresented,
+            taskDescription: Binding(
+                get: { store.editTaskDescription },
+                set: { store.send(.editTaskDescriptionChanged($0)) }
+            ),
             notes: Binding(
                 get: { store.editRoutineNotes },
                 set: { store.send(.editRoutineNotesChanged($0)) }

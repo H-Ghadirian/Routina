@@ -41,6 +41,7 @@ struct SettingsRoutineDataBackupMappingTests {
         let task = RoutineTask(
             id: taskID,
             name: "Archive receipt",
+            taskDescription: "Keep the original and a scanned copy.",
             deadline: deadline,
             customTaskSectionID: customSectionID,
             isAllDay: true,
@@ -75,6 +76,7 @@ struct SettingsRoutineDataBackupMappingTests {
         )
 
         #expect(inline.id == taskID)
+        #expect(inline.taskDescription == "Keep the original and a scanned copy.")
         #expect(inline.imageData == imageData)
         #expect(inline.imageAttachmentID == nil)
         #expect(inline.deadline == deadline)
@@ -92,6 +94,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.pressure == .high)
         #expect(inline.thinkingNeeded == .medium)
         #expect(packaged.imageData == nil)
+        #expect(packaged.taskDescription == "Keep the original and a scanned copy.")
         #expect(packaged.imageAttachmentID == attachmentID)
         #expect(packaged.voiceNoteData == nil)
         #expect(packaged.voiceNoteAttachmentID == voiceAttachmentID)

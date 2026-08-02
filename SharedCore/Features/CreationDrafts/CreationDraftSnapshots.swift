@@ -44,6 +44,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var routineName = ""
     var customTaskSectionID: UUID?
     var routineEmoji = "✨"
+    var taskDescription: String?
     var routineNotes = ""
     var routineLink = ""
     var deadline: Date?
@@ -108,6 +109,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         routineName = basics.routineName
         customTaskSectionID = organization.customTaskSectionID
         routineEmoji = basics.routineEmoji
+        taskDescription = basics.taskDescription
         routineNotes = basics.routineNotes
         routineLink = basics.routineLink
         deadline = basics.deadline
@@ -175,6 +177,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         hasText(routineName)
             || customTaskSectionID != nil
             || routineEmoji != "✨"
+            || hasText(taskDescription ?? "")
             || hasText(routineNotes)
             || hasText(routineLink)
             || deadline != nil
@@ -240,6 +243,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     func apply(to state: inout AddRoutineFeature.State) {
         state.basics.routineName = routineName
         state.basics.routineEmoji = RoutineTask.sanitizedEmoji(routineEmoji, fallback: state.basics.routineEmoji)
+        state.basics.taskDescription = taskDescription ?? ""
         state.basics.routineNotes = routineNotes
         state.basics.routineLink = routineLink
         state.basics.deadline = deadline

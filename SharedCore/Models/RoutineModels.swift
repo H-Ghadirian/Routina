@@ -6,6 +6,7 @@ final class RoutineTask {
     var id: UUID = UUID()
     var name: String?
     var emoji: String?
+    var taskDescription: String?
     var notes: String?
     var link: String?
     var linksStorage: String = ""
@@ -84,6 +85,10 @@ final class RoutineTask {
 
     var hasNotes: Bool {
         RoutineTask.sanitizedNotes(notes) != nil
+    }
+
+    var hasTaskDescription: Bool {
+        RoutineTask.sanitizedDescription(taskDescription) != nil
     }
 
     var hasImage: Bool {
@@ -397,6 +402,7 @@ final class RoutineTask {
         id: UUID = UUID(),
         name: String? = nil,
         emoji: String? = nil,
+        taskDescription: String? = nil,
         notes: String? = nil,
         link: String? = nil,
         links: [String] = [],
@@ -477,6 +483,7 @@ final class RoutineTask {
         self.id = id
         self.name = name
         self.emoji = emoji
+        self.taskDescription = Self.sanitizedDescription(taskDescription)
         self.notes = Self.sanitizedNotes(notes)
         let sanitizedLinks = RoutineTaskLinkStorage.sanitizedItems(links.isEmpty
             ? link.map { [RoutineTaskLink(title: nil, url: $0)] } ?? []
@@ -681,6 +688,10 @@ final class RoutineTask {
         RoutineModelValueSanitizer.sanitizedNotes(notes)
     }
 
+    static func sanitizedDescription(_ description: String?) -> String? {
+        RoutineModelValueSanitizer.sanitizedDescription(description)
+    }
+
     static func sanitizedLink(_ link: String?) -> String? {
         RoutineModelValueSanitizer.sanitizedLink(link)
     }
@@ -827,6 +838,7 @@ final class RoutineTask {
             id: id,
             name: name,
             emoji: emoji,
+            taskDescription: taskDescription,
             notes: notes,
             link: link,
             links: links,

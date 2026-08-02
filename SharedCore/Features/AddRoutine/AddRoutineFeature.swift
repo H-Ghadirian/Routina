@@ -9,6 +9,7 @@ struct AddRoutineFeature: Reducer {
     enum Action: Equatable {
         case routineNameChanged(String)
         case routineEmojiChanged(String)
+        case taskDescriptionChanged(String)
         case routineNotesChanged(String)
         case routineLinkChanged(String)
         case deadlineEnabledChanged(Bool)
@@ -184,6 +185,13 @@ struct AddRoutineFeature: Reducer {
         case let .routineEmojiChanged(emoji):
             AddRoutineBasicsEditor.setEmoji(
                 emoji,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .taskDescriptionChanged(description):
+            AddRoutineBasicsEditor.setTaskDescription(
+                description,
                 basics: &state.basics
             )
             return .none

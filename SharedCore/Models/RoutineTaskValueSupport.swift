@@ -20,6 +20,14 @@ struct RoutineModelValueSanitizer {
         return trimmed
     }
 
+    static func sanitizedDescription(_ description: String?) -> String? {
+        guard let trimmed = description?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
+    }
+
     static func sanitizedLink(_ link: String?) -> String? {
         guard var trimmed = link?.trimmingCharacters(in: .whitespacesAndNewlines),
               !trimmed.isEmpty else {
