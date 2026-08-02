@@ -53,6 +53,7 @@ extension CloudKitDirectPullService {
         var storyPoints: Int?
         var pressure: RoutineTaskPressure?
         var pressureUpdatedAt: Date?
+        var thinkingNeeded: RoutineTaskThinkingNeeded?
         var comments: [RoutineTaskComment]?
     }
 

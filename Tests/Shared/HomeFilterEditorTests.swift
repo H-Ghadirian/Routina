@@ -163,6 +163,7 @@ struct HomeFilterEditorTests {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level3),
             selectedTodoStateFilter: .blocked,
             selectedPressureFilter: .high,
+            selectedThinkingNeededFilter: .medium,
             selectedGoalFilter: .withGoal,
             selectedEstimationFilter: .withoutEstimate,
             hideAssumedDoneTasks: false,
@@ -189,6 +190,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedImportanceUrgencyFilter == nil)
         #expect(taskFilters.selectedTodoStateFilter == nil)
         #expect(taskFilters.selectedPressureFilter == nil)
+        #expect(taskFilters.selectedThinkingNeededFilter == nil)
         #expect(taskFilters.selectedGoalFilter == .all)
         #expect(taskFilters.selectedEstimationFilter == .all)
         #expect(!taskFilters.hideAssumedDoneTasks)
@@ -266,6 +268,7 @@ struct HomeFilterEditorTests {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level4),
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
+            selectedThinkingNeededFilter: .high,
             selectedGoalFilter: .withoutGoal,
             selectedEstimationFilter: .withoutEstimate,
             hideAssumedDoneTasks: false,
@@ -284,6 +287,7 @@ struct HomeFilterEditorTests {
                     selectedManualPlaceFilterID: nil,
                     selectedTodoStateFilter: .ready,
                     selectedPressureFilter: RoutineTaskPressure.none,
+                    selectedThinkingNeededFilter: .low,
                     selectedGoalFilter: .withGoal,
                     selectedEstimationFilter: .withEstimate,
                     hideAssumedDoneTasks: true,
@@ -312,6 +316,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.excludeTagMatchMode == .any)
         #expect(taskFilters.selectedTodoStateFilter == .ready)
         #expect(taskFilters.selectedPressureFilter == RoutineTaskPressure.none)
+        #expect(taskFilters.selectedThinkingNeededFilter == .low)
         #expect(taskFilters.selectedGoalFilter == .withGoal)
         #expect(taskFilters.selectedEstimationFilter == .withEstimate)
         #expect(!taskFilters.hideAssumedDoneTasks)
@@ -330,6 +335,7 @@ struct HomeFilterEditorTests {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level4),
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
+            selectedThinkingNeededFilter: .high,
             selectedGoalFilter: .withoutGoal,
             selectedEstimationFilter: .withoutEstimate,
             hideAssumedDoneTasks: false,

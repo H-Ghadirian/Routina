@@ -16,6 +16,7 @@ extension HomeTCAView {
             selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             selectedImportanceUrgencyFilterLabel: homeFilterPresentation.selectedImportanceUrgencyFilterLabel,
             selectedPressureFilter: store.selectedPressureFilter,
+            selectedThinkingNeededFilter: store.selectedThinkingNeededFilter,
             selectedGoalFilter: store.selectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
             selectedEstimationFilter: store.selectedEstimationFilter,
@@ -42,6 +43,9 @@ extension HomeTCAView {
             },
             onClearPressure: {
                 store.send(.selectedPressureFilterChanged(nil))
+            },
+            onClearThinkingNeeded: {
+                store.send(.selectedThinkingNeededFilterChanged(nil))
             },
             onClearGoal: {
                 store.send(.selectedGoalFilterChanged(.all))
@@ -77,6 +81,7 @@ extension HomeTCAView {
             hasSelectedPlaceFilter: isPlacesEnabled && store.selectedManualPlaceFilterID != nil,
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             selectedPressureFilter: store.selectedPressureFilter,
+            selectedThinkingNeededFilter: store.selectedThinkingNeededFilter,
             selectedGoalFilter: store.selectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
             selectedEstimationFilter: store.selectedEstimationFilter,
@@ -158,6 +163,10 @@ extension HomeTCAView {
             selectedPressureFilter: Binding(
                 get: { store.selectedPressureFilter },
                 set: { store.send(.selectedPressureFilterChanged($0)) }
+            ),
+            selectedThinkingNeededFilter: Binding(
+                get: { store.selectedThinkingNeededFilter },
+                set: { store.send(.selectedThinkingNeededFilterChanged($0)) }
             ),
             selectedGoalFilter: Binding(
                 get: { store.selectedGoalFilter },

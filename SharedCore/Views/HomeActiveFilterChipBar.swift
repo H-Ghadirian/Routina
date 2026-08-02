@@ -10,6 +10,7 @@ struct HomeActiveFilterChipBar: View {
     let selectedPlaceName: String?
     let selectedImportanceUrgencyFilterLabel: String?
     let selectedPressureFilter: RoutineTaskPressure?
+    let selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
     let selectedGoalFilter: HomeTaskGoalFilter
     let selectedMediaFilter: TaskMediaFilter
     let selectedEstimationFilter: TaskEstimationFilter
@@ -25,6 +26,7 @@ struct HomeActiveFilterChipBar: View {
     let onClearPlace: () -> Void
     let onClearImportanceUrgency: () -> Void
     let onClearPressure: () -> Void
+    let onClearThinkingNeeded: () -> Void
     let onClearGoal: () -> Void
     let onClearMedia: () -> Void
     let onClearEstimation: () -> Void
@@ -105,6 +107,14 @@ struct HomeActiveFilterChipBar: View {
                         title: "Pressure \(selectedPressureFilter.title)",
                         systemImage: "brain",
                         action: onClearPressure
+                    )
+                }
+
+                if let selectedThinkingNeededFilter {
+                    HomeActiveFilterChip(
+                        title: "Thinking \(selectedThinkingNeededFilter.title)",
+                        systemImage: "lightbulb",
+                        action: onClearThinkingNeeded
                     )
                 }
 

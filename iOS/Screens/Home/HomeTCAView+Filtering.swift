@@ -13,6 +13,7 @@ extension HomeTCAView {
                 selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: store.selectedTodoStateFilter,
                 selectedPressureFilter: store.selectedPressureFilter,
+                selectedThinkingNeededFilter: store.selectedThinkingNeededFilter,
                 selectedGoalFilter: store.selectedGoalFilter,
                 selectedMediaFilter: store.selectedMediaFilter,
                 selectedEstimationFilter: store.selectedEstimationFilter,

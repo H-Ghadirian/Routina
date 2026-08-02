@@ -81,6 +81,29 @@ struct TaskDetailPressureSegmentedPicker: View {
     }
 }
 
+struct TaskDetailThinkingNeededSegmentedPicker: View {
+    let store: StoreOf<TaskDetailFeature>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("THINKING NEEDED")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 2)
+            TaskDetailColoredSegmentedControl(
+                options: RoutineTaskThinkingNeeded.allCases,
+                selection: store.task.thinkingNeeded,
+                title: { $0.title },
+                tint: { $0 == .none ? Color.secondary : Color.indigo },
+                selectedForeground: { _ in Color.white },
+                action: { store.send(.thinkingNeededChanged($0)) }
+            )
+        }
+        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        .detailHeaderBoxStyle()
+    }
+}
+
 struct TaskDetailTodoStateSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
     let timingSummary: TodoStateTimingSummary?

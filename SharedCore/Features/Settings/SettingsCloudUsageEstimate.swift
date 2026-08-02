@@ -198,6 +198,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var estimatedDurationMinutes: Int?
         var actualDurationMinutes: Int?
         var storyPoints: Int?
+        var thinkingNeededRawValue: String
 
         init(task: RoutineTask) {
             id = task.id
@@ -252,6 +253,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             estimatedDurationMinutes = task.estimatedDurationMinutes
             actualDurationMinutes = task.actualDurationMinutes
             storyPoints = task.storyPoints
+            thinkingNeededRawValue = task.thinkingNeededRawValue
         }
     }
 

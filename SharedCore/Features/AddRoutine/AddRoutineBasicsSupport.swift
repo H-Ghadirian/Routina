@@ -104,6 +104,13 @@ enum AddRoutineBasicsEditor {
         basics.pressure = pressure
     }
 
+    static func setThinkingNeeded(
+        _ thinkingNeeded: RoutineTaskThinkingNeeded,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.thinkingNeeded = thinkingNeeded
+    }
+
     static func setImage(
         _ data: Data?,
         basics: inout AddRoutineBasicsState

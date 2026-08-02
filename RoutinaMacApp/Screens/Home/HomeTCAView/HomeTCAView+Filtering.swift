@@ -18,6 +18,7 @@ extension HomeTCAView {
                 selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: store.selectedTodoStateFilter,
                 selectedPressureFilter: store.selectedPressureFilter,
+                selectedThinkingNeededFilter: store.selectedThinkingNeededFilter,
                 selectedGoalFilter: effectiveSelectedGoalFilter,
                 selectedMediaFilter: store.selectedMediaFilter,
                 selectedEstimationFilter: store.selectedEstimationFilter,
@@ -87,6 +88,7 @@ extension HomeTCAView {
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: store.selectedTodoStateFilter,
             selectedPressureFilter: store.selectedPressureFilter,
+            selectedThinkingNeededFilter: store.selectedThinkingNeededFilter,
             selectedGoalFilter: effectiveSelectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
             selectedEstimationFilter: store.selectedEstimationFilter,
@@ -293,6 +295,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let selectedTodoStateFilter: TodoState?
     let selectedPressureFilter: RoutineTaskPressure?
+    let selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
     let selectedGoalFilter: HomeTaskGoalFilter
     let selectedMediaFilter: TaskMediaFilter
     let selectedEstimationFilter: TaskEstimationFilter
@@ -333,6 +336,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
         selectedTodoStateFilter: TodoState?,
         selectedPressureFilter: RoutineTaskPressure?,
+        selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?,
         selectedGoalFilter: HomeTaskGoalFilter,
         selectedMediaFilter: TaskMediaFilter,
         selectedEstimationFilter: TaskEstimationFilter,
@@ -377,6 +381,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
         self.selectedTodoStateFilter = selectedTodoStateFilter
         self.selectedPressureFilter = selectedPressureFilter
+        self.selectedThinkingNeededFilter = selectedThinkingNeededFilter
         self.selectedGoalFilter = selectedGoalFilter
         self.selectedMediaFilter = selectedMediaFilter
         self.selectedEstimationFilter = selectedEstimationFilter

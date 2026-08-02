@@ -128,6 +128,7 @@ struct HomeRoutineDisplayFactory {
             importance: task.importance,
             urgency: task.urgency,
             pressure: task.pressure,
+            thinkingNeeded: task.thinkingNeeded,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
             snoozedUntil: task.snoozedUntil,

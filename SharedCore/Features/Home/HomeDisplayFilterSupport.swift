@@ -96,6 +96,14 @@ enum HomeDisplayFilterSupport {
         return pressure == filter
     }
 
+    static func matchesThinkingNeededFilter(
+        _ filter: RoutineTaskThinkingNeeded?,
+        thinkingNeeded: RoutineTaskThinkingNeeded
+    ) -> Bool {
+        guard let filter else { return true }
+        return thinkingNeeded == filter
+    }
+
     static func matchesGoalFilter(
         _ filter: HomeTaskGoalFilter,
         goalTitles: [String]

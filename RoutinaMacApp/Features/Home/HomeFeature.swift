@@ -140,6 +140,7 @@ struct HomeFeature {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
             selectedPressureFilter: RoutineTaskPressure? = nil,
+            selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
             selectedGoalFilter: HomeTaskGoalFilter = .all,
             selectedMediaFilter: TaskMediaFilter = .all,
             selectedEstimationFilter: TaskEstimationFilter = .all,
@@ -219,6 +220,7 @@ struct HomeFeature {
                 selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: selectedTodoStateFilter,
                 selectedPressureFilter: selectedPressureFilter,
+                selectedThinkingNeededFilter: selectedThinkingNeededFilter,
                 selectedGoalFilter: selectedGoalFilter,
                 selectedMediaFilter: selectedMediaFilter,
                 selectedEstimationFilter: selectedEstimationFilter,
@@ -369,6 +371,11 @@ struct HomeFeature {
         var selectedPressureFilter: RoutineTaskPressure? {
             get { taskFilters.selectedPressureFilter }
             set { taskFilters.selectedPressureFilter = newValue }
+        }
+
+        var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? {
+            get { taskFilters.selectedThinkingNeededFilter }
+            set { taskFilters.selectedThinkingNeededFilter = newValue }
         }
 
         var selectedGoalFilter: HomeTaskGoalFilter {
@@ -634,6 +641,7 @@ struct HomeFeature {
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case selectedTodoStateFilterChanged(TodoState?)
         case selectedPressureFilterChanged(RoutineTaskPressure?)
+        case selectedThinkingNeededFilterChanged(RoutineTaskThinkingNeeded?)
         case selectedGoalFilterChanged(HomeTaskGoalFilter)
         case selectedMediaFilterChanged(TaskMediaFilter)
         case selectedEstimationFilterChanged(TaskEstimationFilter)
@@ -1231,6 +1239,9 @@ struct HomeFeature {
 
             case let .selectedPressureFilterChanged(filter):
                 return filterMutationHandler().applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
+
+            case let .selectedThinkingNeededFilterChanged(filter):
+                return filterMutationHandler().applyTaskFilterMutation(.selectedThinkingNeededFilter(filter), state: &state)
 
             case let .selectedGoalFilterChanged(filter):
                 return filterMutationHandler().applyTaskFilterMutation(.selectedGoalFilter(filter), state: &state)

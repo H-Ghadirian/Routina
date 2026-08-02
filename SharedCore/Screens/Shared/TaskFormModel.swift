@@ -51,6 +51,7 @@ struct TaskFormModel {
     var importance: Binding<RoutineTaskImportance>
     var urgency: Binding<RoutineTaskUrgency>
     var pressure: Binding<RoutineTaskPressure>
+    var thinkingNeeded: Binding<RoutineTaskThinkingNeeded> = .constant(.none)
 
     // MARK: Estimation
     var estimatedDurationMinutes: Binding<Int?>
@@ -631,6 +632,9 @@ extension TaskFormModel {
         }
         if pressure.wrappedValue != .none {
             sections.insert(.pressure)
+        }
+        if thinkingNeeded.wrappedValue != .none {
+            sections.insert(.thinkingNeeded)
         }
         if estimatedDurationMinutes.wrappedValue != nil
             || actualDurationMinutes?.wrappedValue != nil

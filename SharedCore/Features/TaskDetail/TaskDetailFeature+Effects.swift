@@ -615,6 +615,7 @@ extension TaskDetailFeature {
             importance: request.importance,
             urgency: request.urgency,
             pressure: request.pressure,
+            thinkingNeeded: request.thinkingNeeded,
             imageData: request.imageData,
             voiceNote: request.voiceNote,
             attachments: request.attachments,
@@ -661,6 +662,7 @@ extension TaskDetailFeature {
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
         pressure: RoutineTaskPressure,
+        thinkingNeeded: RoutineTaskThinkingNeeded,
         imageData: Data?,
         voiceNote: RoutineVoiceNote?,
         attachments: [AttachmentItem],
@@ -724,6 +726,7 @@ extension TaskDetailFeature {
                 task.importance = importance
                 task.urgency = urgency
                 task.pressure = pressure
+                task.thinkingNeeded = thinkingNeeded
                 task.color = color
                 task.imageData = imageData
                 task.voiceNote = voiceNote
@@ -1437,6 +1440,31 @@ extension TaskDetailFeature {
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error updating pressure: \(error)")
+            }
+        }
+    }
+
+    func handleThinkingNeededChanged(
+        taskID: UUID,
+        thinkingNeeded: RoutineTaskThinkingNeeded
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                task.thinkingNeeded = thinkingNeeded
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Updated thinking needed",
+                    in: context
+                )
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating thinking needed: \(error)")
             }
         }
     }

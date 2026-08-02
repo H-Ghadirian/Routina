@@ -295,6 +295,7 @@ struct TaskFormContent: View {
         case .color:              colorCard
         case .behavior:           behaviorCard
         case .pressure:           pressureCard
+        case .thinkingNeeded:     thinkingNeededCard
         case .estimation:         estimationCard
         case .places:
             if isPlacesEnabled {
@@ -414,6 +415,29 @@ struct TaskFormContent: View {
             }
         }
         .id(FormSection.pressure)
+    }
+
+    private var thinkingNeededCard: some View {
+        macSectionCard(
+            title: "Thinking needed"
+        ) {
+            macControlBlock(
+                title: "Complexity level",
+                caption: "How much understanding, concentration, or decision-making the task requires."
+            ) {
+                HStack(spacing: 0) {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Thinking needed",
+                        options: RoutineTaskThinkingNeeded.allCases,
+                        selection: model.thinkingNeeded
+                    ) { level in
+                        Text(level.title)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .id(FormSection.thinkingNeeded)
     }
 
     private var estimationCard: some View {

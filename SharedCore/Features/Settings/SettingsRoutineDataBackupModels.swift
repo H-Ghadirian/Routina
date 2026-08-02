@@ -110,6 +110,7 @@ extension SettingsRoutineDataPersistence {
             var trackingNudgesEnabled: Bool?
             var pressure: RoutineTaskPressure?
             var pressureUpdatedAt: Date?
+            var thinkingNeeded: RoutineTaskThinkingNeeded?
             var comments: [RoutineTaskComment]? = nil
         }
 

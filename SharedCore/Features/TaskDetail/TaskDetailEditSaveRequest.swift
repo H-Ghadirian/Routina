@@ -20,6 +20,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var importance: RoutineTaskImportance
     var urgency: RoutineTaskUrgency
     var pressure: RoutineTaskPressure
+    var thinkingNeeded: RoutineTaskThinkingNeeded
     var imageData: Data?
     var voiceNote: RoutineVoiceNote?
     var attachments: [AttachmentItem]
@@ -150,6 +151,7 @@ struct TaskDetailEditSaveRequestBuilder {
             importance: state.editImportance,
             urgency: state.editUrgency,
             pressure: state.editPressure,
+            thinkingNeeded: state.editThinkingNeeded,
             imageData: state.editImageData,
             voiceNote: state.editVoiceNote,
             attachments: state.editAttachments,
@@ -277,6 +279,7 @@ extension TaskDetailFeature {
         updatedTask.importance = request.importance
         updatedTask.urgency = request.urgency
         updatedTask.pressure = request.pressure
+        updatedTask.thinkingNeeded = request.thinkingNeeded
         updatedTask.color = request.color
         updatedTask.imageData = request.imageData
         updatedTask.voiceNote = request.voiceNote

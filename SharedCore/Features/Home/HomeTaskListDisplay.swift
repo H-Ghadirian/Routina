@@ -28,6 +28,7 @@ protocol HomeTaskListDisplay {
     var importance: RoutineTaskImportance { get }
     var urgency: RoutineTaskUrgency { get }
     var pressure: RoutineTaskPressure { get }
+    var thinkingNeeded: RoutineTaskThinkingNeeded { get }
     var scheduleAnchor: Date? { get }
     var pausedAt: Date? { get }
     var pinnedAt: Date? { get }
@@ -68,6 +69,10 @@ extension HomeTaskListDisplay {
 
     var estimatedDurationMinutes: Int? {
         nil
+    }
+
+    var thinkingNeeded: RoutineTaskThinkingNeeded {
+        .none
     }
 
     var lastSatisfiedScheduledOccurrenceAt: Date? {
@@ -221,6 +226,7 @@ struct HomeTaskListFilteringConfiguration {
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     var selectedTodoStateFilter: TodoState?
     var selectedPressureFilter: RoutineTaskPressure?
+    var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
     var selectedGoalFilter: HomeTaskGoalFilter
     var selectedMediaFilter: TaskMediaFilter
     var selectedEstimationFilter: TaskEstimationFilter

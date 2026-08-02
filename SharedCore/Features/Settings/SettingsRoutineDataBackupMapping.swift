@@ -103,6 +103,7 @@ enum SettingsRoutineDataBackupMapping {
             trackingNudgesEnabled: task.trackingNudgesEnabled,
             pressure: includesPressure ? task.pressure : nil,
             pressureUpdatedAt: includesPressure ? task.pressureUpdatedAt : nil,
+            thinkingNeeded: task.thinkingNeeded,
             comments: task.comments
         )
     }

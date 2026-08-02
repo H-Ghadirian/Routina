@@ -248,6 +248,16 @@ enum CloudKitDirectPullTaskRecordParser {
             in: record,
             keys: ["pressureUpdatedAt", "PRESSUREUPDATEDAT", "zpressureupdatedat", "ZPRESSUREUPDATEDAT", "cd_pressureupdatedat"]
         )
+        let thinkingNeededValue = stringValue(
+            in: record,
+            keys: [
+                "thinkingNeededRawValue",
+                "THINKINGNEEDEDRAWVALUE",
+                "zthinkingneededrawvalue",
+                "ZTHINKINGNEEDEDRAWVALUE",
+                "cd_thinkingneededrawvalue"
+            ]
+        ).flatMap(RoutineTaskThinkingNeeded.init(rawValue:))
 
         guard
             intervalValue != nil
@@ -289,6 +299,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || ongoingSinceValue != nil
                 || pressureValue != nil
                 || pressureUpdatedAtValue != nil
+                || thinkingNeededValue != nil
                 || estimatedDurationMinutesValue != nil
                 || actualDurationMinutesValue != nil
                 || storyPointsValue != nil
@@ -367,6 +378,7 @@ enum CloudKitDirectPullTaskRecordParser {
             storyPoints: storyPointsValue,
             pressure: pressureValue,
             pressureUpdatedAt: pressureUpdatedAtValue,
+            thinkingNeeded: thinkingNeededValue,
             comments: commentsStorageValue.map(RoutineTaskCommentStorage.deserialize)
         )
     }

@@ -279,6 +279,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 reminderAt: task.reminderAt,
                 pressure: task.pressure ?? .none,
                 pressureUpdatedAt: task.pressureUpdatedAt,
+                thinkingNeeded: task.thinkingNeeded ?? .none,
                 imageData: imageData,
                 voiceNoteData: voiceNoteData,
                 voiceNoteDurationSeconds: task.voiceNoteDurationSeconds,

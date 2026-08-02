@@ -60,6 +60,7 @@ enum HomeAddRoutineSupport {
             importance: request.importance,
             urgency: request.urgency,
             pressure: request.pressure,
+            thinkingNeeded: request.thinkingNeeded,
             imageData: request.imageData,
             voiceNoteData: request.voiceNote?.data,
             voiceNoteDurationSeconds: request.voiceNote?.durationSeconds,

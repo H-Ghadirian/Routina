@@ -114,6 +114,7 @@ private extension HomeFeature.RoutineDisplay {
             importance: core.importance,
             urgency: core.urgency,
             pressure: core.pressure,
+            thinkingNeeded: core.thinkingNeeded,
             scheduleAnchor: core.scheduleAnchor,
             pausedAt: core.pausedAt,
             snoozedUntil: core.snoozedUntil,

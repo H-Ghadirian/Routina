@@ -61,6 +61,7 @@ struct TaskDetailFeature: Reducer {
         var editImportance: RoutineTaskImportance = .level2
         var editUrgency: RoutineTaskUrgency = .level2
         var editPressure: RoutineTaskPressure = .none
+        var editThinkingNeeded: RoutineTaskThinkingNeeded = .none
         var editImageData: Data?
         var editVoiceNote: RoutineVoiceNote?
         var taskAttachments: [AttachmentItem] = []
@@ -361,6 +362,7 @@ struct TaskDetailFeature: Reducer {
         case editImportanceChanged(RoutineTaskImportance)
         case editUrgencyChanged(RoutineTaskUrgency)
         case editPressureChanged(RoutineTaskPressure)
+        case editThinkingNeededChanged(RoutineTaskThinkingNeeded)
         case editImagePicked(Data?)
         case editRemoveImageTapped
         case editVoiceNoteChanged(RoutineVoiceNote?)
@@ -439,6 +441,7 @@ struct TaskDetailFeature: Reducer {
         case editColorChanged(RoutineTaskColor)
         case todoStateChanged(TodoState)
         case pressureChanged(RoutineTaskPressure)
+        case thinkingNeededChanged(RoutineTaskThinkingNeeded)
         case importanceChanged(RoutineTaskImportance)
         case urgencyChanged(RoutineTaskUrgency)
         case setBlockedStateConfirmation(Bool)
@@ -495,6 +498,12 @@ struct TaskDetailFeature: Reducer {
             },
             persistPressureChange: { mutation in
                 handlePressureChanged(taskID: mutation.taskID, pressure: mutation.pressure)
+            },
+            persistThinkingNeededChange: { mutation in
+                handleThinkingNeededChanged(
+                    taskID: mutation.taskID,
+                    thinkingNeeded: mutation.thinkingNeeded
+                )
             },
             persistMatrixPositionChange: { mutation in
                 handleMatrixPositionChanged(
@@ -1360,6 +1369,9 @@ struct TaskDetailFeature: Reducer {
         case let .editPressureChanged(pressure):
             return basicEditActionHandler().editPressureChanged(pressure, state: &state)
 
+        case let .editThinkingNeededChanged(thinkingNeeded):
+            return basicEditActionHandler().editThinkingNeededChanged(thinkingNeeded, state: &state)
+
         case let .editImagePicked(data):
             return basicEditActionHandler().editImagePicked(data, state: &state)
 
@@ -1691,6 +1703,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .pressureChanged(pressure):
             return statusActionHandler().pressureChanged(pressure, state: &state)
+
+        case let .thinkingNeededChanged(thinkingNeeded):
+            return statusActionHandler().thinkingNeededChanged(thinkingNeeded, state: &state)
 
         case let .importanceChanged(importance):
             return statusActionHandler().importanceChanged(importance, state: &state)

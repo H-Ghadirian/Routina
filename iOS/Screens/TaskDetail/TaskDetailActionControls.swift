@@ -5,6 +5,7 @@ struct TaskDetailTodoPrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
     let showsTodoStateControl: Bool
     let showsPressureControl: Bool
+    let showsThinkingNeededControl: Bool
     let stateTimingSummary: TodoStateTimingSummary?
     let showPersianDates: Bool
     @State private var isStateTimingExpanded = false
@@ -20,6 +21,9 @@ struct TaskDetailTodoPrimaryActionSection: View {
                         if showsPressureControl {
                             TaskDetailPressurePickerPill(store: store)
                         }
+                        if showsThinkingNeededControl {
+                            TaskDetailThinkingNeededPickerPill(store: store)
+                        }
                     }
                     VStack(alignment: .leading, spacing: 8) {
                         if showsTodoStateControl {
@@ -27,6 +31,9 @@ struct TaskDetailTodoPrimaryActionSection: View {
                         }
                         if showsPressureControl {
                             TaskDetailPressurePickerPill(store: store)
+                        }
+                        if showsThinkingNeededControl {
+                            TaskDetailThinkingNeededPickerPill(store: store)
                         }
                     }
                 }
@@ -60,7 +67,7 @@ struct TaskDetailTodoPrimaryActionSection: View {
     }
 
     private var shouldShowStatusControls: Bool {
-        showsTodoStateControl || showsPressureControl
+        showsTodoStateControl || showsPressureControl || showsThinkingNeededControl
     }
 
     @ViewBuilder
@@ -92,11 +99,15 @@ struct TaskDetailRoutinePrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
     let pauseArchivePresentation: RoutinePauseArchivePresentation
     let showsPressureControl: Bool
+    let showsThinkingNeededControl: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if showsPressureControl {
                 TaskDetailPressurePickerPill(store: store)
+            }
+            if showsThinkingNeededControl {
+                TaskDetailThinkingNeededPickerPill(store: store)
             }
             TaskDetailPrimaryActionButton(store: store)
 
@@ -252,6 +263,39 @@ struct TaskDetailPressurePickerPill: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Current: \(pressure.title)")
+        }
+    }
+}
+
+struct TaskDetailThinkingNeededPickerPill: View {
+    let store: StoreOf<TaskDetailFeature>
+    @State private var isPresented = false
+
+    var body: some View {
+        let level = store.task.thinkingNeeded
+
+        Button {
+            isPresented = true
+        } label: {
+            Label("Thinking: \(level.title)", systemImage: "lightbulb.fill")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.indigo)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.indigo.opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .confirmationDialog("Set Thinking Needed", isPresented: $isPresented) {
+            ForEach(RoutineTaskThinkingNeeded.allCases, id: \.self) { option in
+                if option != level {
+                    Button(option.title) {
+                        store.send(.thinkingNeededChanged(option))
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Current: \(level.title)")
         }
     }
 }

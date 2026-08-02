@@ -23,6 +23,11 @@ struct TaskDetailStatusMutationHandler {
         var pressure: RoutineTaskPressure
     }
 
+    struct ThinkingNeededMutation {
+        var taskID: UUID
+        var thinkingNeeded: RoutineTaskThinkingNeeded
+    }
+
     struct MatrixMutation {
         var taskID: UUID
         var importance: RoutineTaskImportance
@@ -96,6 +101,18 @@ struct TaskDetailStatusMutationHandler {
         refreshTaskView(&state)
         updateDerivedState(&state)
         return PressureMutation(taskID: state.task.id, pressure: pressure)
+    }
+
+    func applyThinkingNeededChange(
+        _ thinkingNeeded: RoutineTaskThinkingNeeded,
+        state: inout State
+    ) -> ThinkingNeededMutation? {
+        guard state.task.thinkingNeeded != thinkingNeeded else { return nil }
+        state.task.thinkingNeeded = thinkingNeeded
+        state.editThinkingNeeded = thinkingNeeded
+        refreshTaskView(&state)
+        updateDerivedState(&state)
+        return ThinkingNeededMutation(taskID: state.task.id, thinkingNeeded: thinkingNeeded)
     }
 
     func applyImportanceChange(

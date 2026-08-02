@@ -121,6 +121,26 @@ struct TaskFormIOSPressureSection: View {
     }
 }
 
+struct TaskFormIOSThinkingNeededSection: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        Section(header: Text("Thinking needed")) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Thinking needed",
+                options: RoutineTaskThinkingNeeded.allCases,
+                selection: model.thinkingNeeded,
+                fillsAvailableWidth: true
+            ) { level in
+                Text(level.title)
+            }
+            Text("How much understanding, concentration, or decision-making the task requires.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
 struct TaskFormIOSScheduleTypeSection: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation

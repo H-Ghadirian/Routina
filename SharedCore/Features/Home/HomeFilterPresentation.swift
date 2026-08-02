@@ -43,6 +43,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let hasSelectedPlaceFilter: Bool
     let selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let selectedPressureFilter: RoutineTaskPressure?
+    let selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
     let selectedGoalFilter: HomeTaskGoalFilter
     let selectedMediaFilter: TaskMediaFilter
     let selectedEstimationFilter: TaskEstimationFilter
@@ -68,6 +69,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         hasSelectedPlaceFilter: Bool = false,
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         selectedPressureFilter: RoutineTaskPressure? = nil,
+        selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
         selectedGoalFilter: HomeTaskGoalFilter = .all,
         selectedMediaFilter: TaskMediaFilter = .all,
         selectedEstimationFilter: TaskEstimationFilter = .all,
@@ -92,6 +94,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.hasSelectedPlaceFilter = hasSelectedPlaceFilter
         self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
         self.selectedPressureFilter = selectedPressureFilter
+        self.selectedThinkingNeededFilter = selectedThinkingNeededFilter
         self.selectedGoalFilter = selectedGoalFilter
         self.selectedMediaFilter = selectedMediaFilter
         self.selectedEstimationFilter = selectedEstimationFilter
@@ -111,6 +114,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if normalizedImportanceUrgencyFilter != nil { count += 1 }
         if selectedTodoStateFilter != nil { count += 1 }
         if selectedPressureFilter != nil { count += 1 }
+        if selectedThinkingNeededFilter != nil { count += 1 }
         if selectedGoalFilter != .all { count += 1 }
         if selectedMediaFilter != .all { count += 1 }
         if selectedEstimationFilter != .all { count += 1 }
@@ -173,6 +177,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if let selectedPressureFilter {
             labels.append("Pressure \(selectedPressureFilter.title)")
+        }
+
+        if let selectedThinkingNeededFilter {
+            labels.append("Thinking \(selectedThinkingNeededFilter.title)")
         }
 
         if selectedGoalFilter != .all {

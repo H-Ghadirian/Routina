@@ -292,6 +292,7 @@ struct SettingsRoutineDataPersistenceTests {
         let task = RoutineTask(
             name: "File insurance",
             pressure: .high,
+            thinkingNeeded: .high,
             imageData: imageData,
             voiceNoteData: voiceData,
             voiceNoteDurationSeconds: 3.5,
@@ -331,6 +332,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredTask.voiceNoteDurationSeconds == 3.5)
         #expect(restoredTask.voiceNoteCreatedAt == voiceCreatedAt)
         #expect(restoredTask.pressure == .high)
+        #expect(restoredTask.thinkingNeeded == .high)
         #expect(restoredTask.showsTaskDetailHeatmap)
         #expect(restoredTask.showsTaskDetailHistory)
         #expect(restoredTask.showsTaskDetailPriority)

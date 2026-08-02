@@ -60,6 +60,7 @@ struct TaskDetailEditChangeRequest {
     let trackingCadenceEnabled: Bool
     let trackingNudgesEnabled: Bool
     let pressure: RoutineTaskPressure
+    let thinkingNeeded: RoutineTaskThinkingNeeded
     let task: RoutineTask
 
     init(state: TaskDetailFeature.State) {
@@ -122,6 +123,7 @@ struct TaskDetailEditChangeRequest {
         self.trackingCadenceEnabled = state.editTrackingCadenceEnabled
         self.trackingNudgesEnabled = state.editTrackingNudgesEnabled
         self.pressure = state.editPressure
+        self.thinkingNeeded = state.editThinkingNeeded
         self.task = state.task
     }
 }
@@ -214,6 +216,7 @@ enum TaskDetailEditChangeDetector {
             || request.trackingCadenceEnabled != task.trackingCadenceEnabled
             || request.trackingNudgesEnabled != task.trackingNudgesEnabled
             || request.pressure != task.pressure
+            || request.thinkingNeeded != task.thinkingNeeded
     }
 
     private static func normalizedRoutineDurationMode(

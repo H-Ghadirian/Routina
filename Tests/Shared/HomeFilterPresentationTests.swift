@@ -20,12 +20,13 @@ struct HomeFilterPresentationTests {
             hasSelectedPlaceFilter: true,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
             selectedPressureFilter: .medium,
+            selectedThinkingNeededFilter: .high,
             selectedGoalFilter: .withGoal,
             selectedEstimationFilter: .withoutEstimate,
             hideUnavailableRoutines: true
         )
 
-        #expect(presentation.activeOptionalFilterCount == 12)
+        #expect(presentation.activeOptionalFilterCount == 13)
         #expect(presentation.hasActiveOptionalFilters)
     }
 
@@ -43,6 +44,7 @@ struct HomeFilterPresentationTests {
             selectedPlaceName: "Office",
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level3),
             selectedPressureFilter: .high,
+            selectedThinkingNeededFilter: .medium,
             selectedGoalFilter: .withoutGoal,
             selectedEstimationFilter: .withoutEstimate,
             hideUnavailableRoutines: true
@@ -53,6 +55,7 @@ struct HomeFilterPresentationTests {
             "Don't show blocked tasks",
             "Blocked",
             "Pressure High",
+            "Thinking Medium",
             "No Goal",
             "No Estimate",
             "Query tag:work",
@@ -62,7 +65,7 @@ struct HomeFilterPresentationTests {
             "L4/L3+",
             "Away hidden"
         ])
-        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Blocked • Pressure High +8 • 12 results")
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Blocked • Pressure High +9 • 12 results")
     }
 
     @Test

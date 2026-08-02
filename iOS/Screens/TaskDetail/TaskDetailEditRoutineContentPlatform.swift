@@ -70,6 +70,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editPressure },
                 set: { store.send(.editPressureChanged($0)) }
             ),
+            thinkingNeeded: Binding(
+                get: { store.editThinkingNeeded },
+                set: { store.send(.editThinkingNeededChanged($0)) }
+            ),
             estimatedDurationMinutes: Binding(
                 get: { store.editEstimatedDurationMinutes },
                 set: { store.send(.editEstimatedDurationChanged($0)) }

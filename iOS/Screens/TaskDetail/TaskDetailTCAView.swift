@@ -17,6 +17,7 @@ struct TaskDetailTCAView: View {
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
+    @State private var isThinkingNeededControlRevealed = false
     @State private var isPriorityControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var timeEditing = TaskDetailTimeEditingState()
@@ -192,6 +193,11 @@ detailBody
         isPressureControlRevealed = false
     }
 }
+.onChange(of: store.task.thinkingNeeded) { oldValue, newValue in
+    if oldValue != newValue {
+        isThinkingNeededControlRevealed = false
+    }
+}
 .onChange(of: store.task.todoStateRawValue) { _, newValue in
     if newValue != nil {
         isTodoStateControlRevealed = false
@@ -247,6 +253,7 @@ detailBody
                     store: store,
                     showsTodoStateControl: shouldShowTodoStateControl,
                     showsPressureControl: shouldShowPressureControl,
+                    showsThinkingNeededControl: shouldShowThinkingNeededControl,
                     stateTimingSummary: todoStateTimingSummary,
                     showPersianDates: showPersianDates
                 )
@@ -292,7 +299,8 @@ detailBody
                 TaskDetailRoutinePrimaryActionSection(
                     store: store,
                     pauseArchivePresentation: pauseArchivePresentation,
-                    showsPressureControl: shouldShowPressureControl
+                    showsPressureControl: shouldShowPressureControl,
+                    showsThinkingNeededControl: shouldShowThinkingNeededControl
                 )
                 calendarSection
                 if store.task.focusModeEnabled {
@@ -426,6 +434,14 @@ detailBody
             })
         }
 
+        if shouldShowThinkingNeededAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Thinking needed", systemImage: "lightbulb") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isThinkingNeededControlRevealed = true
+                }
+            })
+        }
+
         if shouldShowPriorityAddAction {
             actions.append(TaskDetailOptionalAction(title: "Priority", systemImage: "flag") {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -485,6 +501,11 @@ detailBody
         isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
     }
 
+    private var shouldShowThinkingNeededControl: Bool {
+        isThinkingNeededControlRevealed
+            || TaskDetailOptionalControlVisibility.showsThinkingNeeded(for: store.task)
+    }
+
     private var shouldShowPriorityControl: Bool {
         isPriorityControlRevealed || TaskDetailOptionalControlVisibility.showsPriority(for: store.task)
     }
@@ -499,6 +520,10 @@ detailBody
 
     private var shouldShowPressureAddAction: Bool {
         !shouldShowPressureControl
+    }
+
+    private var shouldShowThinkingNeededAddAction: Bool {
+        !shouldShowThinkingNeededControl
     }
 
     private var shouldShowPriorityAddAction: Bool {
@@ -536,6 +561,7 @@ detailBody
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
+        isThinkingNeededControlRevealed = false
         isPriorityControlRevealed = false
         isChecklistSectionRevealed = false
     }

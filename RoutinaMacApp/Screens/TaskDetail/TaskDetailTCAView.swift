@@ -55,6 +55,7 @@ struct TaskDetailTCAView: View {
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
+    @State private var isThinkingNeededControlRevealed = false
     @State private var isPriorityControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var inlineEditSections: [FormSection] = []
@@ -393,6 +394,10 @@ struct TaskDetailTCAView: View {
                             TaskDetailPressureSegmentedPicker(store: store)
                                 .frame(minWidth: 300)
                         }
+                        if shouldShowThinkingNeededControl {
+                            TaskDetailThinkingNeededSegmentedPicker(store: store)
+                                .frame(minWidth: 300)
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -406,6 +411,9 @@ struct TaskDetailTCAView: View {
                         if shouldShowPressureControl {
                             TaskDetailPressureSegmentedPicker(store: store)
                         }
+                        if shouldShowThinkingNeededControl {
+                            TaskDetailThinkingNeededSegmentedPicker(store: store)
+                        }
                     }
                 }
             }
@@ -413,7 +421,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowTodoHeaderStatusControls: Bool {
-        shouldShowTodoStateControl || shouldShowPressureControl
+        shouldShowTodoStateControl || shouldShowPressureControl || shouldShowThinkingNeededControl
     }
 
     private var shouldShowTimeControl: Bool {
@@ -445,6 +453,11 @@ struct TaskDetailTCAView: View {
         isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
     }
 
+    private var shouldShowThinkingNeededControl: Bool {
+        isThinkingNeededControlRevealed
+            || TaskDetailOptionalControlVisibility.showsThinkingNeeded(for: store.task)
+    }
+
     private var shouldShowPriorityControl: Bool {
         isPriorityControlRevealed || TaskDetailOptionalControlVisibility.showsPriority(for: store.task)
     }
@@ -459,6 +472,10 @@ struct TaskDetailTCAView: View {
 
     private var shouldShowPressureAddAction: Bool {
         !shouldShowPressureControl
+    }
+
+    private var shouldShowThinkingNeededAddAction: Bool {
+        !shouldShowThinkingNeededControl
     }
 
     private var shouldShowPriorityAddAction: Bool {
@@ -521,6 +538,9 @@ struct TaskDetailTCAView: View {
             }
             if shouldShowPressureControl {
                 TaskDetailPressureSegmentedPicker(store: store)
+            }
+            if shouldShowThinkingNeededControl {
+                TaskDetailThinkingNeededSegmentedPicker(store: store)
             }
         }
     }
@@ -693,6 +713,15 @@ struct TaskDetailTCAView: View {
             actions.append(TaskDetailOptionalAction(title: "Pressure", systemImage: "gauge.with.dots.needle.50percent") {
                 withAnimation(.easeInOut(duration: 0.18)) {
                     isPressureControlRevealed = true
+                }
+            })
+        }
+
+
+        if shouldShowThinkingNeededAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Thinking needed", systemImage: "lightbulb") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isThinkingNeededControlRevealed = true
                 }
             })
         }
@@ -899,6 +928,7 @@ struct TaskDetailTCAView: View {
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
+        isThinkingNeededControlRevealed = false
         isPriorityControlRevealed = false
         isChecklistSectionRevealed = false
         inlineEditSections.removeAll()

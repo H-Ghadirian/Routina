@@ -162,6 +162,32 @@ enum RoutineTaskPressure: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 }
 
+enum RoutineTaskThinkingNeeded: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case none = "None"
+    case low = "Low"
+    case medium = "Medium"
+    case high = "High"
+
+    var title: String { rawValue }
+
+    var sortOrder: Int {
+        switch self {
+        case .none:
+            return 0
+        case .low:
+            return 1
+        case .medium:
+            return 2
+        case .high:
+            return 3
+        }
+    }
+
+    var metadataLabel: String? {
+        self == .none ? nil : "\(title) thinking"
+    }
+}
+
 struct ImportanceUrgencyFilterCell: Codable, Equatable, Hashable, Identifiable, Sendable {
     var importance: RoutineTaskImportance
     var urgency: RoutineTaskUrgency

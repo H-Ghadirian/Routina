@@ -34,6 +34,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var importance: RoutineTaskImportance
     var urgency: RoutineTaskUrgency
     var pressure: RoutineTaskPressure
+    var thinkingNeeded: RoutineTaskThinkingNeeded
     var scheduleAnchor: Date?
     var pausedAt: Date?
     var snoozedUntil: Date?

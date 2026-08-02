@@ -24,6 +24,7 @@ struct AddRoutineFeature: Reducer {
         case importanceChanged(RoutineTaskImportance)
         case urgencyChanged(RoutineTaskUrgency)
         case pressureChanged(RoutineTaskPressure)
+        case thinkingNeededChanged(RoutineTaskThinkingNeeded)
         case imagePicked(Data?)
         case removeImageTapped
         case voiceNoteChanged(RoutineVoiceNote?)
@@ -322,6 +323,13 @@ struct AddRoutineFeature: Reducer {
         case let .pressureChanged(pressure):
             AddRoutineBasicsEditor.setPressure(
                 pressure,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .thinkingNeededChanged(thinkingNeeded):
+            AddRoutineBasicsEditor.setThinkingNeeded(
+                thinkingNeeded,
                 basics: &state.basics
             )
             return .none

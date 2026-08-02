@@ -156,6 +156,24 @@ struct HomeFiltersPressureSection: View {
     }
 }
 
+struct HomeFiltersThinkingNeededSection: View {
+    @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
+
+    var body: some View {
+        Section("Thinking needed") {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Thinking needed",
+                options: [Optional<RoutineTaskThinkingNeeded>.none]
+                    + RoutineTaskThinkingNeeded.allCases.map(Optional.some),
+                selection: $selectedThinkingNeededFilter,
+                fillsAvailableWidth: true
+            ) { level in
+                Text(level?.title ?? "All")
+            }
+        }
+    }
+}
+
 struct HomeFiltersGoalSection: View {
     @Binding var selectedGoalFilter: HomeTaskGoalFilter
 

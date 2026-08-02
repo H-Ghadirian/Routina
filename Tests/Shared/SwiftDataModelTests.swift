@@ -899,6 +899,22 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_persistsThinkingNeededIndependentlyFromPressure() {
+        let task = RoutineTask(
+            pressure: .low,
+            thinkingNeeded: .high
+        )
+
+        #expect(task.pressure == .low)
+        #expect(task.thinkingNeeded == .high)
+
+        task.thinkingNeeded = .medium
+
+        #expect(task.pressure == .low)
+        #expect(task.thinkingNeeded == .medium)
+    }
+
+    @Test
     func routineTask_sanitizesLinksAndBuildsResolvedURL() {
         let task = RoutineTask(link: " example.com/docs ")
         let invalid = RoutineTask(link: "not a valid url")

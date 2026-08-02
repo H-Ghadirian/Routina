@@ -378,6 +378,7 @@ extension HomeFeature {
         state.selectedImportanceUrgencyFilter = nil
         state.selectedTodoStateFilter = nil
         state.selectedPressureFilter = nil
+        state.selectedThinkingNeededFilter = nil
         state.selectedGoalFilter = .all
         state.selectedMediaFilter = .all
         state.selectedEstimationFilter = .all

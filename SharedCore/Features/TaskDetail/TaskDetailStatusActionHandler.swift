@@ -9,6 +9,7 @@ struct TaskDetailStatusActionHandler {
     var markAsDone: (inout State) -> Effect<Action>
     var persistTodoStateChange: (TaskDetailStatusMutationHandler.TodoStatePersistenceRequest) -> Effect<Action>
     var persistPressureChange: (TaskDetailStatusMutationHandler.PressureMutation) -> Effect<Action>
+    var persistThinkingNeededChange: (TaskDetailStatusMutationHandler.ThinkingNeededMutation) -> Effect<Action>
     var persistMatrixPositionChange: (TaskDetailStatusMutationHandler.MatrixMutation) -> Effect<Action>
 
     func todoStateChanged(_ newState: TodoState, state: inout State) -> Effect<Action> {
@@ -29,6 +30,16 @@ struct TaskDetailStatusActionHandler {
             return .none
         }
         return persistPressureChange(mutation)
+    }
+
+    func thinkingNeededChanged(
+        _ thinkingNeeded: RoutineTaskThinkingNeeded,
+        state: inout State
+    ) -> Effect<Action> {
+        guard let mutation = mutationHandler.applyThinkingNeededChange(thinkingNeeded, state: &state) else {
+            return .none
+        }
+        return persistThinkingNeededChange(mutation)
     }
 
     func importanceChanged(

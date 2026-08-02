@@ -14,6 +14,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     case color              = "Color"
     case behavior           = "Behavior"
     case pressure           = "Pressure"
+    case thinkingNeeded     = "Thinking needed"
     case estimation         = "Estimation"
     case places             = "Places"
     case importanceUrgency  = "Importance & Urgency"
@@ -60,6 +61,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         case .color:             return "paintpalette.fill"
         case .behavior:          return "repeat"
         case .pressure:          return "brain"
+        case .thinkingNeeded:    return "lightbulb.fill"
         case .estimation:        return "clock.fill"
         case .places:            return "mappin.and.ellipse"
         case .importanceUrgency: return "flag.fill"
@@ -148,6 +150,9 @@ extension TaskFormModel {
         if pressure.wrappedValue != .none {
             sections.insert(.pressure)
         }
+        if thinkingNeeded.wrappedValue != .none {
+            sections.insert(.thinkingNeeded)
+        }
         if estimatedDurationMinutes.wrappedValue != nil
             || actualDurationMinutes?.wrappedValue != nil
             || storyPoints.wrappedValue != nil
@@ -219,6 +224,9 @@ extension AddRoutineFeature.State {
         }
         if basics.pressure != .none {
             sections.insert(.pressure)
+        }
+        if basics.thinkingNeeded != .none {
+            sections.insert(.thinkingNeeded)
         }
         if basics.estimatedDurationMinutes != nil || basics.storyPoints != nil || basics.focusModeEnabled {
             sections.insert(.estimation)
@@ -301,6 +309,9 @@ extension TaskDetailFeature.State {
         }
         if editPressure != .none {
             sections.insert(.pressure)
+        }
+        if editThinkingNeeded != .none {
+            sections.insert(.thinkingNeeded)
         }
         if editEstimatedDurationMinutes != nil
             || editActualDurationMinutes != nil

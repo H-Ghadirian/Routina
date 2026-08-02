@@ -29,6 +29,7 @@ struct TaskDetailEditSaveTests {
             feature.syncEditFormFromTask(&state)
         }
         state.editCustomTaskSectionID = selectedSectionID
+        state.editThinkingNeeded = .high
 
         let request = try #require(
             TaskDetailEditSaveRequestBuilder(
@@ -45,12 +46,14 @@ struct TaskDetailEditSaveTests {
         )
 
         #expect(request.customTaskSectionID == selectedSectionID)
+        #expect(request.thinkingNeeded == .high)
         withDependencies {
             setTestDateDependencies(&$0)
         } operation: {
             feature.applyEditSaveRequest(request, to: &state)
         }
         #expect(state.task.customTaskSectionID == selectedSectionID)
+        #expect(state.task.thinkingNeeded == .high)
     }
 
     @Test

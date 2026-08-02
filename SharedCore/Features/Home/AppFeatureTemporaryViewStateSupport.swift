@@ -57,6 +57,7 @@ enum AppFeatureTemporaryViewStateSupport {
         taskFilters.selectedImportanceUrgencyFilter = nil
         taskFilters.selectedTodoStateFilter = nil
         taskFilters.selectedPressureFilter = nil
+        taskFilters.selectedThinkingNeededFilter = nil
         taskFilters.selectedGoalFilter = .all
         taskFilters.selectedMediaFilter = .all
         taskFilters.selectedEstimationFilter = .all

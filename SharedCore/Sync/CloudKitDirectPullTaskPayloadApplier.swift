@@ -107,6 +107,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
             task.pressure = pressure
             task.pressureUpdatedAt = payload.pressureUpdatedAt
         }
+        if let thinkingNeeded = payload.thinkingNeeded {
+            task.thinkingNeeded = thinkingNeeded
+        }
         if let comments = payload.comments {
             task.comments = comments
         }
@@ -131,6 +134,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             reminderAt: payload.reminderAt,
             pressure: payload.pressure ?? .none,
             pressureUpdatedAt: payload.pressureUpdatedAt,
+            thinkingNeeded: payload.thinkingNeeded ?? .none,
             imageData: payload.imageData,
             voiceNoteData: payload.voiceNoteData,
             voiceNoteDurationSeconds: payload.voiceNoteDurationSeconds,

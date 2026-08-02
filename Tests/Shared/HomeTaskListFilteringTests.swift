@@ -106,6 +106,33 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func thinkingNeededFilterMatchesExactComplexityLevel() {
+        let tasks = [
+            TestTaskDisplay(name: "Easy cleaning", thinkingNeeded: .low),
+            TestTaskDisplay(name: "Call lawyer", thinkingNeeded: .high),
+            TestTaskDisplay(name: "Unclassified task", thinkingNeeded: .none)
+        ]
+
+        let result = makeFiltering(selectedThinkingNeededFilter: .high)
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Call lawyer"])
+    }
+
+    @Test
+    func thinkingNeededNoneFilterShowsUnclassifiedTasks() {
+        let tasks = [
+            TestTaskDisplay(name: "Low thinking", thinkingNeeded: .low),
+            TestTaskDisplay(name: "Unclassified task", thinkingNeeded: .none)
+        ]
+
+        let result = makeFiltering(selectedThinkingNeededFilter: RoutineTaskThinkingNeeded.none)
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Unclassified task"])
+    }
+
+    @Test
     func goalFilterShowsTasksWithLinkedGoals() {
         let tasks = [
             TestTaskDisplay(name: "No goal"),
@@ -2572,6 +2599,7 @@ private func makeFiltering(
     selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
     selectedTodoStateFilter: TodoState? = nil,
     selectedPressureFilter: RoutineTaskPressure? = nil,
+    selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
     selectedGoalFilter: HomeTaskGoalFilter = .all,
     selectedMediaFilter: TaskMediaFilter = .all,
     selectedEstimationFilter: TaskEstimationFilter = .all,
@@ -2601,6 +2629,7 @@ private func makeFiltering(
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,
             selectedPressureFilter: selectedPressureFilter,
+            selectedThinkingNeededFilter: selectedThinkingNeededFilter,
             selectedGoalFilter: selectedGoalFilter,
             selectedMediaFilter: selectedMediaFilter,
             selectedEstimationFilter: selectedEstimationFilter,
@@ -2653,6 +2682,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var importance: RoutineTaskImportance = .level2
     var urgency: RoutineTaskUrgency = .level2
     var pressure: RoutineTaskPressure = .none
+    var thinkingNeeded: RoutineTaskThinkingNeeded = .none
     var scheduleAnchor: Date?
     var pausedAt: Date?
     var pinnedAt: Date?

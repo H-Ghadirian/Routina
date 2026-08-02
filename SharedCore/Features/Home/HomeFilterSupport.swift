@@ -108,6 +108,7 @@ enum HomeTaskFilterMutation: Equatable {
     case selectedImportanceUrgencyFilter(ImportanceUrgencyFilterCell?)
     case selectedTodoStateFilter(TodoState?)
     case selectedPressureFilter(RoutineTaskPressure?)
+    case selectedThinkingNeededFilter(RoutineTaskThinkingNeeded?)
     case selectedGoalFilter(HomeTaskGoalFilter)
     case selectedMediaFilter(TaskMediaFilter)
     case selectedEstimationFilter(TaskEstimationFilter)
@@ -186,6 +187,7 @@ enum HomeFilterEditor {
         taskFilters.selectedImportanceUrgencyFilter = nil
         taskFilters.selectedTodoStateFilter = nil
         taskFilters.selectedPressureFilter = nil
+        taskFilters.selectedThinkingNeededFilter = nil
         taskFilters.selectedGoalFilter = .all
         taskFilters.selectedMediaFilter = .all
         taskFilters.selectedEstimationFilter = .all
@@ -263,6 +265,9 @@ enum HomeFilterEditor {
 
         case let .selectedPressureFilter(filter):
             taskFilters.selectedPressureFilter = filter
+
+        case let .selectedThinkingNeededFilter(filter):
+            taskFilters.selectedThinkingNeededFilter = filter
 
         case let .selectedGoalFilter(filter):
             taskFilters.selectedGoalFilter = filter

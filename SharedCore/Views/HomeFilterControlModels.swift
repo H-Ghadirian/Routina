@@ -12,6 +12,7 @@ struct HomeFilterBindings {
     let selectedTodoStateFilter: Binding<TodoState?>
     let selectedImportanceUrgencyFilter: Binding<ImportanceUrgencyFilterCell?>
     let selectedPressureFilter: Binding<RoutineTaskPressure?>
+    let selectedThinkingNeededFilter: Binding<RoutineTaskThinkingNeeded?>
     let selectedGoalFilter: Binding<HomeTaskGoalFilter>
     let selectedMediaFilter: Binding<TaskMediaFilter>
     let selectedEstimationFilter: Binding<TaskEstimationFilter>

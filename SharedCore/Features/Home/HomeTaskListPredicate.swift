@@ -14,6 +14,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesManualPlaceFilter(task)
             && matchesTodoStateFilter(task)
             && matchesPressureFilter(task)
+            && matchesThinkingNeededFilter(task)
             && matchesGoalFilter(task)
             && matchesMediaFilter(task)
             && matchesEstimationFilter(task)
@@ -33,6 +34,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesManualPlaceFilter(task)
             && matchesTodoStateFilter(task)
             && matchesPressureFilter(task)
+            && matchesThinkingNeededFilter(task)
             && matchesGoalFilter(task)
             && matchesMediaFilter(task)
             && matchesEstimationFilter(task)
@@ -54,6 +56,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesManualPlaceFilter(task)
             && matchesTodoStateFilter(task)
             && matchesPressureFilter(task)
+            && matchesThinkingNeededFilter(task)
             && matchesGoalFilter(task)
             && matchesMediaFilter(task)
             && matchesEstimationFilter(task)
@@ -111,6 +114,13 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
         HomeDisplayFilterSupport.matchesPressureFilter(
             configuration.selectedPressureFilter,
             pressure: task.pressure
+        )
+    }
+
+    func matchesThinkingNeededFilter(_ task: Display) -> Bool {
+        HomeDisplayFilterSupport.matchesThinkingNeededFilter(
+            configuration.selectedThinkingNeededFilter,
+            thinkingNeeded: task.thinkingNeeded
         )
     }
 

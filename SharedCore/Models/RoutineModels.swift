@@ -22,6 +22,7 @@ final class RoutineTask {
     var urgencyRawValue: String = RoutineTaskUrgency.level2.rawValue
     var pressureRawValue: String = RoutineTaskPressure.none.rawValue
     var pressureUpdatedAt: Date?
+    var thinkingNeededRawValue: String = RoutineTaskThinkingNeeded.none.rawValue
     @Attribute(.externalStorage) var imageData: Data?
     @Attribute(.externalStorage) var voiceNoteData: Data?
     var voiceNoteDurationSeconds: Double?
@@ -129,6 +130,11 @@ final class RoutineTask {
             pressureRawValue = newValue.rawValue
             pressureUpdatedAt = newValue == .none ? nil : Date()
         }
+    }
+
+    var thinkingNeeded: RoutineTaskThinkingNeeded {
+        get { RoutineTaskThinkingNeeded(rawValue: thinkingNeededRawValue) ?? .none }
+        set { thinkingNeededRawValue = newValue.rawValue }
     }
 
     var color: RoutineTaskColor {
@@ -407,6 +413,7 @@ final class RoutineTask {
         urgency: RoutineTaskUrgency = .level2,
         pressure: RoutineTaskPressure = .none,
         pressureUpdatedAt: Date? = nil,
+        thinkingNeeded: RoutineTaskThinkingNeeded = .none,
         imageData: Data? = nil,
         voiceNoteData: Data? = nil,
         voiceNoteDurationSeconds: Double? = nil,
@@ -497,6 +504,7 @@ final class RoutineTask {
         self.urgencyRawValue = urgency.rawValue
         self.pressureRawValue = pressure.rawValue
         self.pressureUpdatedAt = pressure == .none ? nil : pressureUpdatedAt
+        self.thinkingNeededRawValue = thinkingNeeded.rawValue
         self.imageData = imageData
         let sanitizedVoiceNote = RoutineVoiceNote(
             data: voiceNoteData,
@@ -835,6 +843,7 @@ final class RoutineTask {
             urgency: urgency,
             pressure: pressure,
             pressureUpdatedAt: pressureUpdatedAt,
+            thinkingNeeded: thinkingNeeded,
             imageData: imageData,
             voiceNoteData: voiceNoteData,
             voiceNoteDurationSeconds: voiceNoteDurationSeconds,

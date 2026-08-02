@@ -127,6 +127,10 @@ enum TaskDetailOptionalControlVisibility {
         task.pressure != .none
     }
 
+    static func showsThinkingNeeded(for task: RoutineTask) -> Bool {
+        task.thinkingNeeded != .none
+    }
+
     static func showsTimeSpent(
         for task: RoutineTask,
         hasActiveFocus: Bool = false,

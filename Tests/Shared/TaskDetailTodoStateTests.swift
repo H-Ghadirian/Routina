@@ -179,6 +179,34 @@ struct TodoStateFeatureTests {
     }
 
     @Test
+    func thinkingNeededChanged_updatesComplexityAndPersists() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(
+            name: "Call lawyer",
+            thinkingNeeded: .low,
+            scheduleMode: .oneOff
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            setTestDateDependencies(&$0)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.thinkingNeededChanged(.high))
+
+        #expect(store.state.task.thinkingNeeded == .high)
+        #expect(store.state.editThinkingNeeded == .high)
+        #expect(store.state.taskRefreshID == 1)
+        let saved = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(saved.thinkingNeeded == .high)
+    }
+
+    @Test
     func todoStateChanged_toInProgress_updatesRawValueAndPersists() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-18T10:00:00Z")

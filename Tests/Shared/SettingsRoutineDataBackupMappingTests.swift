@@ -45,6 +45,7 @@ struct SettingsRoutineDataBackupMappingTests {
             customTaskSectionID: customSectionID,
             isAllDay: true,
             pressure: .high,
+            thinkingNeeded: .medium,
             imageData: imageData,
             voiceNoteData: voiceData,
             voiceNoteDurationSeconds: 2.5,
@@ -89,6 +90,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.showsTaskDetailHistory == true)
         #expect(inline.showsTaskDetailPriority == true)
         #expect(inline.pressure == .high)
+        #expect(inline.thinkingNeeded == .medium)
         #expect(packaged.imageData == nil)
         #expect(packaged.imageAttachmentID == attachmentID)
         #expect(packaged.voiceNoteData == nil)
@@ -97,6 +99,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(packaged.showsTaskDetailHistory == true)
         #expect(packaged.showsTaskDetailPriority == true)
         #expect(packaged.pressure == .high)
+        #expect(packaged.thinkingNeeded == .medium)
     }
 
     @Test

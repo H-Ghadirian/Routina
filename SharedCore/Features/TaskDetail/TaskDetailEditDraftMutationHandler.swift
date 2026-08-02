@@ -38,6 +38,10 @@ struct TaskDetailEditDraftMutationHandler {
         state.editPressure = pressure
     }
 
+    func setThinkingNeeded(_ thinkingNeeded: RoutineTaskThinkingNeeded, state: inout TaskDetailFeature.State) {
+        state.editThinkingNeeded = thinkingNeeded
+    }
+
     func setImage(_ data: Data?, state: inout TaskDetailFeature.State) {
         state.editImageData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
     }

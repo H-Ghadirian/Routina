@@ -82,6 +82,10 @@ struct AddRoutineTaskFormModelFactory {
             importance: binding(get: { store.basics.importance }, send: AddRoutineFeature.Action.importanceChanged),
             urgency: binding(get: { store.basics.urgency }, send: AddRoutineFeature.Action.urgencyChanged),
             pressure: binding(get: { store.basics.pressure }, send: AddRoutineFeature.Action.pressureChanged),
+            thinkingNeeded: binding(
+                get: { store.basics.thinkingNeeded },
+                send: AddRoutineFeature.Action.thinkingNeededChanged
+            ),
             estimatedDurationMinutes: binding(
                 get: { store.basics.estimatedDurationMinutes },
                 send: AddRoutineFeature.Action.estimatedDurationChanged

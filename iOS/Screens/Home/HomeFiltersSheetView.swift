@@ -47,6 +47,9 @@ struct HomeFiltersSheetView: View {
                 HomeFiltersPressureSection(
                     selectedPressureFilter: bindings.selectedPressureFilter
                 )
+                HomeFiltersThinkingNeededSection(
+                    selectedThinkingNeededFilter: bindings.selectedThinkingNeededFilter
+                )
                 HomeFiltersGoalSection(
                     selectedGoalFilter: bindings.selectedGoalFilter
                 )

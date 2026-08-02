@@ -12,6 +12,7 @@ struct HomeTaskFiltersState: Equatable {
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var selectedTodoStateFilter: TodoState? = nil
     var selectedPressureFilter: RoutineTaskPressure? = nil
+    var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
     var selectedGoalFilter: HomeTaskGoalFilter = .all
     var selectedMediaFilter: TaskMediaFilter = .all
     var selectedEstimationFilter: TaskEstimationFilter = .all
@@ -36,6 +37,7 @@ struct HomeTaskFiltersState: Equatable {
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,
             selectedPressureFilter: selectedPressureFilter,
+            selectedThinkingNeededFilter: selectedThinkingNeededFilter,
             selectedGoalFilter: selectedGoalFilter,
             selectedMediaFilter: selectedMediaFilter,
             selectedEstimationFilter: selectedEstimationFilter,
@@ -74,6 +76,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(snapshot.selectedImportanceUrgencyFilter)
         selectedTodoStateFilter = snapshot.selectedTodoStateFilter
         selectedPressureFilter = snapshot.selectedPressureFilter
+        selectedThinkingNeededFilter = snapshot.selectedThinkingNeededFilter
         selectedGoalFilter = snapshot.selectedGoalFilter
         selectedMediaFilter = snapshot.selectedMediaFilter
         selectedEstimationFilter = snapshot.selectedEstimationFilter
@@ -164,6 +167,7 @@ enum HomeTemporaryViewStateMapper {
             ),
             selectedTodoStateFilter: persistedState.homeSelectedTodoStateFilter,
             selectedPressureFilter: persistedState.homeSelectedPressureFilter,
+            selectedThinkingNeededFilter: persistedState.homeSelectedThinkingNeededFilter,
             selectedGoalFilter: persistedState.homeSelectedGoalFilter,
             selectedMediaFilter: persistedState.homeSelectedMediaFilter,
             selectedEstimationFilter: persistedState.homeSelectedEstimationFilter,
@@ -238,6 +242,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedImportanceUrgencyFilter: taskFilters.selectedImportanceUrgencyFilter,
             homeSelectedTodoStateFilter: taskFilters.selectedTodoStateFilter,
             homeSelectedPressureFilter: taskFilters.selectedPressureFilter,
+            homeSelectedThinkingNeededFilter: taskFilters.selectedThinkingNeededFilter,
             homeSelectedGoalFilter: taskFilters.selectedGoalFilter,
             homeSelectedMediaFilter: taskFilters.selectedMediaFilter,
             homeSelectedEstimationFilter: taskFilters.selectedEstimationFilter,

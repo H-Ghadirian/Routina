@@ -57,6 +57,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var importance: RoutineTaskImportance = .level2
     var urgency: RoutineTaskUrgency = .level2
     var pressure: RoutineTaskPressure = .none
+    var thinkingNeeded: RoutineTaskThinkingNeeded? = RoutineTaskThinkingNeeded.none
     var imageData: Data?
     var voiceNote: RoutineVoiceNote?
     var attachments: [AttachmentItem] = []
@@ -125,6 +126,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         importance = basics.importance
         urgency = basics.urgency
         pressure = basics.pressure
+        thinkingNeeded = basics.thinkingNeeded
         imageData = basics.imageData
         voiceNote = basics.voiceNote
         attachments = basics.attachments
@@ -186,6 +188,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             || importance != .level2
             || urgency != .level2
             || pressure != .none
+            || (thinkingNeeded ?? .none) != .none
             || imageData?.isEmpty == false
             || voiceNote != nil
             || !attachments.isEmpty
@@ -252,6 +255,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         state.basics.importance = importance
         state.basics.urgency = urgency
         state.basics.pressure = pressure
+        state.basics.thinkingNeeded = thinkingNeeded ?? .none
         state.basics.imageData = imageData
         state.basics.voiceNote = voiceNote
         state.basics.attachments = attachments

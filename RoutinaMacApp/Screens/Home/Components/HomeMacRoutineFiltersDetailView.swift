@@ -20,6 +20,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var showArchivedTasks: Bool
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
+    @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
     @Binding var selectedGoalFilter: HomeTaskGoalFilter
     @Binding var selectedMediaFilter: TaskMediaFilter
     @Binding var selectedEstimationFilter: TaskEstimationFilter
@@ -187,6 +188,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     pressurePicker
                 }
 
+                filterControlSection("Thinking needed") {
+                    thinkingNeededPicker
+                }
+
                 if showsGoalFilter {
                     filterControlSection("Goal") {
                         goalPicker
@@ -304,6 +309,19 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
         }
     }
 
+    private var thinkingNeededPicker: some View {
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Thinking needed",
+            options: thinkingNeededOptions,
+            selection: $selectedThinkingNeededFilter,
+            minimumSegmentWidth: 92,
+            fillsAvailableWidth: true,
+            maximumSegmentsPerRow: 2
+        ) { level in
+            Text(level?.title ?? "All")
+        }
+    }
+
     private var goalPicker: some View {
         RoutinaGlassSegmentedControl(
             accessibilityLabel: "Goal",
@@ -374,6 +392,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     private var pressureOptions: [RoutineTaskPressure?] {
         [nil] + RoutineTaskPressure.allCases.map(Optional.some)
+    }
+
+    private var thinkingNeededOptions: [RoutineTaskThinkingNeeded?] {
+        [nil] + RoutineTaskThinkingNeeded.allCases.map(Optional.some)
     }
 
     private var todoStateOptions: [TodoState?] {

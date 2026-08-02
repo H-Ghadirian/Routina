@@ -33,6 +33,7 @@ enum CloudSharingService {
         var urgency: RoutineTaskUrgency
         var pressure: RoutineTaskPressure
         var pressureUpdatedAt: Date?
+        var thinkingNeeded: RoutineTaskThinkingNeeded?
         var imageData: Data?
         var voiceNoteData: Data?
         var voiceNoteDurationSeconds: Double?
@@ -296,6 +297,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.urgency = task.urgency
         self.pressure = task.pressure
         self.pressureUpdatedAt = task.pressureUpdatedAt
+        self.thinkingNeeded = task.thinkingNeeded
         self.imageData = task.imageData
         self.voiceNoteData = task.voiceNoteData
         self.voiceNoteDurationSeconds = task.voiceNoteDurationSeconds
@@ -411,6 +413,9 @@ extension CloudSharingService.SharedTaskPayload {
         task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
         task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+        if let thinkingNeeded {
+            task.thinkingNeeded = thinkingNeeded
+        }
         task.focusModeEnabled = focusModeEnabled
         task.trackingCadenceEnabled = scheduleMode.taskType == .todo ? true : (trackingCadenceEnabled ?? true)
         task.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
@@ -443,6 +448,7 @@ private extension RoutineTask {
             urgency: payload.urgency,
             pressure: payload.pressure,
             pressureUpdatedAt: payload.pressureUpdatedAt,
+            thinkingNeeded: payload.thinkingNeeded ?? .none,
             imageData: payload.imageData,
             voiceNoteData: payload.voiceNoteData,
             voiceNoteDurationSeconds: payload.voiceNoteDurationSeconds,

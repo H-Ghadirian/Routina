@@ -591,7 +591,10 @@ struct RoutineAdvancedRecurrenceTests {
             calendar: calendar
         )
         let state = AddRoutineFeature.State(
-            basics: AddRoutineBasicsState(routineName: "Medicine"),
+            basics: AddRoutineBasicsState(
+                routineName: "Medicine",
+                thinkingNeeded: .high
+            ),
             schedule: AddRoutineScheduleState(
                 scheduleMode: .fixedInterval,
                 recurrenceEditorMode: .advanced,
@@ -605,15 +608,19 @@ struct RoutineAdvancedRecurrenceTests {
 
         #expect(restored.schedule.recurrenceEditorMode == .advanced)
         #expect(restored.schedule.advancedRecurrenceRule == advanced.normalized(calendar: .current))
+        #expect(restored.basics.thinkingNeeded == .high)
 
         var legacyObject = try #require(
             JSONSerialization.jsonObject(with: encoded) as? [String: Any]
         )
         legacyObject.removeValue(forKey: "recurrenceEditorMode")
         legacyObject.removeValue(forKey: "advancedRecurrenceRule")
+        legacyObject.removeValue(forKey: "thinkingNeeded")
         let legacyData = try JSONSerialization.data(withJSONObject: legacyObject)
         let legacy = try JSONDecoder().decode(AddRoutineDraftSnapshot.self, from: legacyData)
         #expect(legacy.recurrenceEditorMode == nil)
         #expect(legacy.advancedRecurrenceRule == nil)
+        #expect(legacy.thinkingNeeded == nil)
+        #expect(legacy.applied(to: AddRoutineFeature.State()).basics.thinkingNeeded == .none)
     }
 }

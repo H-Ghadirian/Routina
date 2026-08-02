@@ -160,6 +160,7 @@ struct TabFilterStateManager {
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var selectedTodoStateFilter: TodoState? = nil
         var selectedPressureFilter: RoutineTaskPressure? = nil
+        var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
         var selectedGoalFilter: HomeTaskGoalFilter = .all
         var selectedMediaFilter: TaskMediaFilter = .all
         var selectedEstimationFilter: TaskEstimationFilter = .all
@@ -182,6 +183,7 @@ struct TabFilterStateManager {
                 selectedImportanceUrgencyFilter: nil,
                 selectedTodoStateFilter: nil,
                 selectedPressureFilter: nil,
+                selectedThinkingNeededFilter: nil,
                 selectedGoalFilter: .all,
                 selectedMediaFilter: .all,
                 selectedEstimationFilter: .all,
@@ -205,6 +207,7 @@ struct TabFilterStateManager {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
             selectedPressureFilter: RoutineTaskPressure? = nil,
+            selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
             selectedGoalFilter: HomeTaskGoalFilter = .all,
             selectedMediaFilter: TaskMediaFilter = .all,
             selectedEstimationFilter: TaskEstimationFilter = .all,
@@ -225,6 +228,7 @@ struct TabFilterStateManager {
             self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
             self.selectedTodoStateFilter = selectedTodoStateFilter
             self.selectedPressureFilter = selectedPressureFilter
+            self.selectedThinkingNeededFilter = selectedThinkingNeededFilter
             self.selectedGoalFilter = selectedGoalFilter
             self.selectedMediaFilter = selectedMediaFilter
             self.selectedEstimationFilter = selectedEstimationFilter
@@ -247,6 +251,7 @@ struct TabFilterStateManager {
             case selectedImportanceUrgencyFilter
             case selectedTodoStateFilter
             case selectedPressureFilter
+            case selectedThinkingNeededFilter
             case selectedGoalFilter
             case selectedMediaFilter
             case selectedEstimationFilter
@@ -271,6 +276,10 @@ struct TabFilterStateManager {
             selectedImportanceUrgencyFilter = try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .selectedImportanceUrgencyFilter)
             selectedTodoStateFilter = try container.decodeIfPresent(TodoState.self, forKey: .selectedTodoStateFilter)
             selectedPressureFilter = try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .selectedPressureFilter)
+            selectedThinkingNeededFilter = try container.decodeIfPresent(
+                RoutineTaskThinkingNeeded.self,
+                forKey: .selectedThinkingNeededFilter
+            )
             selectedGoalFilter = try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .selectedGoalFilter) ?? .all
             selectedMediaFilter = try container.decodeIfPresent(TaskMediaFilter.self, forKey: .selectedMediaFilter) ?? .all
             selectedEstimationFilter = try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .selectedEstimationFilter) ?? .all
@@ -314,6 +323,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var homeSelectedTodoStateFilter: TodoState? = nil
     var homeSelectedPressureFilter: RoutineTaskPressure? = nil
+    var homeSelectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
     var homeSelectedGoalFilter: HomeTaskGoalFilter = .all
     var homeSelectedMediaFilter: TaskMediaFilter = .all
     var homeSelectedEstimationFilter: TaskEstimationFilter = .all
@@ -368,6 +378,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         homeSelectedTodoStateFilter: TodoState? = nil,
         homeSelectedPressureFilter: RoutineTaskPressure? = nil,
+        homeSelectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
         homeSelectedGoalFilter: HomeTaskGoalFilter = .all,
         homeSelectedMediaFilter: TaskMediaFilter = .all,
         homeSelectedEstimationFilter: TaskEstimationFilter = .all,
@@ -421,6 +432,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedImportanceUrgencyFilter = homeSelectedImportanceUrgencyFilter
         self.homeSelectedTodoStateFilter = homeSelectedTodoStateFilter
         self.homeSelectedPressureFilter = homeSelectedPressureFilter
+        self.homeSelectedThinkingNeededFilter = homeSelectedThinkingNeededFilter
         self.homeSelectedGoalFilter = homeSelectedGoalFilter
         self.homeSelectedMediaFilter = homeSelectedMediaFilter
         self.homeSelectedEstimationFilter = homeSelectedEstimationFilter
@@ -476,6 +488,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedImportanceUrgencyFilter
         case homeSelectedTodoStateFilter
         case homeSelectedPressureFilter
+        case homeSelectedThinkingNeededFilter
         case homeSelectedGoalFilter
         case homeSelectedMediaFilter
         case homeSelectedEstimationFilter
@@ -533,6 +546,10 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .homeSelectedImportanceUrgencyFilter),
             homeSelectedTodoStateFilter: try container.decodeIfPresent(TodoState.self, forKey: .homeSelectedTodoStateFilter),
             homeSelectedPressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedPressureFilter),
+            homeSelectedThinkingNeededFilter: try container.decodeIfPresent(
+                RoutineTaskThinkingNeeded.self,
+                forKey: .homeSelectedThinkingNeededFilter
+            ),
             homeSelectedGoalFilter: try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .homeSelectedGoalFilter) ?? .all,
             homeSelectedMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedMediaFilter) ?? .all,
             homeSelectedEstimationFilter: try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .homeSelectedEstimationFilter) ?? .all,
@@ -589,6 +606,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedImportanceUrgencyFilter: nil,
         homeSelectedTodoStateFilter: nil,
         homeSelectedPressureFilter: nil,
+        homeSelectedThinkingNeededFilter: nil,
         homeSelectedGoalFilter: .all,
         homeSelectedMediaFilter: .all,
         homeSelectedEstimationFilter: .all,

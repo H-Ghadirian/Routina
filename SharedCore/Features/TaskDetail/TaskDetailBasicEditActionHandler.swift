@@ -47,6 +47,14 @@ struct TaskDetailBasicEditActionHandler {
         return .none
     }
 
+    func editThinkingNeededChanged(
+        _ thinkingNeeded: RoutineTaskThinkingNeeded,
+        state: inout State
+    ) -> Effect<Action> {
+        draftMutationHandler.setThinkingNeeded(thinkingNeeded, state: &state)
+        return .none
+    }
+
     func editImagePicked(_ data: Data?, state: inout State) -> Effect<Action> {
         draftMutationHandler.setImage(data, state: &state)
         return .none
