@@ -894,6 +894,15 @@ enum RoutinaTextFormattingCommand: String, CaseIterable, Identifiable {
 }
 
 struct RoutinaFormattedText: View {
+    enum Block: Equatable {
+        case paragraph(String)
+        case heading(level: Int, text: String)
+        case bullet(text: String, indentation: Int)
+        case checklist(text: String, isCompleted: Bool, indentation: Int)
+        case quote(String)
+        case blank
+    }
+
     let text: String
 
     init(_ text: String) {
@@ -901,34 +910,171 @@ struct RoutinaFormattedText: View {
     }
 
     var body: some View {
-        Text(Self.attributedText(from: text))
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(Self.blocks(from: text).enumerated()), id: \.offset) { entry in
+                blockView(entry.element)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     static func attributedText(from text: String) -> AttributedString {
-        let normalizedText = text
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
-        let lines = normalizedText.components(separatedBy: "\n")
-        guard lines.count > 1 else {
-            return markdownAttributedText(from: normalizedText)
-        }
-
-        return lines.enumerated().reduce(into: AttributedString()) { result, entry in
+        blocks(from: text).enumerated().reduce(into: AttributedString()) { result, entry in
             if entry.offset > 0 {
                 result += AttributedString("\n")
             }
-            guard !entry.element.isEmpty else { return }
-            result += markdownAttributedText(from: entry.element)
+
+            switch entry.element {
+            case let .paragraph(text), let .heading(_, text):
+                result += inlineAttributedText(from: text)
+            case let .bullet(text, _):
+                result += AttributedString("• ")
+                result += inlineAttributedText(from: text)
+            case let .checklist(text, isCompleted, _):
+                result += AttributedString(isCompleted ? "☑ " : "☐ ")
+                result += inlineAttributedText(from: text)
+            case let .quote(text):
+                result += AttributedString("│ ")
+                result += inlineAttributedText(from: text)
+            case .blank:
+                break
+            }
         }
     }
 
-    private static func markdownAttributedText(from text: String) -> AttributedString {
+    static func blocks(from text: String) -> [Block] {
+        let normalizedText = text
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+
+        return normalizedText
+            .components(separatedBy: "\n")
+            .map(block(from:))
+    }
+
+    @ViewBuilder
+    private func blockView(_ block: Block) -> some View {
+        switch block {
+        case let .paragraph(text):
+            Text(Self.inlineAttributedText(from: text))
+        case let .heading(level, text):
+            Text(Self.inlineAttributedText(from: text))
+                .font(Self.headingFont(for: level))
+        case let .bullet(text, indentation):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("•")
+                    .accessibilityHidden(true)
+                Text(Self.inlineAttributedText(from: text))
+            }
+            .padding(.leading, Self.indentationWidth(for: indentation))
+        case let .checklist(text, isCompleted, indentation):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: isCompleted ? "checkmark.square.fill" : "square")
+                    .accessibilityLabel(isCompleted ? "Completed checklist item" : "Incomplete checklist item")
+                Text(Self.inlineAttributedText(from: text))
+            }
+            .padding(.leading, Self.indentationWidth(for: indentation))
+        case let .quote(text):
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("│")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+                Text(Self.inlineAttributedText(from: text))
+                    .italic()
+                    .foregroundStyle(.secondary)
+            }
+        case .blank:
+            Text(" ")
+                .hidden()
+                .accessibilityHidden(true)
+        }
+    }
+
+    private static func block(from line: String) -> Block {
+        guard !line.isEmpty else { return .blank }
+
+        let leadingWhitespace = line.prefix(while: { $0 == " " || $0 == "\t" })
+        let content = String(line.dropFirst(leadingWhitespace.count))
+        let indentation = leadingWhitespace.reduce(into: 0) { width, character in
+            width += character == "\t" ? 4 : 1
+        }
+
+        let headingMarker = content.prefix(while: { $0 == "#" })
+        if (1...6).contains(headingMarker.count),
+           content.dropFirst(headingMarker.count).first == " " {
+            return .heading(
+                level: headingMarker.count,
+                text: String(content.dropFirst(headingMarker.count + 1))
+            )
+        }
+
+        if content == ">" {
+            return .quote("")
+        }
+        if content.hasPrefix("> ") {
+            return .quote(String(content.dropFirst(2)))
+        }
+
+        guard let marker = content.first,
+              marker == "-" || marker == "*" || marker == "+",
+              content.dropFirst().first == " " else {
+            return .paragraph(line)
+        }
+
+        let itemText = String(content.dropFirst(2))
+        if let checklist = checklistItem(from: itemText) {
+            return .checklist(
+                text: checklist.text,
+                isCompleted: checklist.isCompleted,
+                indentation: indentation
+            )
+        }
+
+        return .bullet(text: itemText, indentation: indentation)
+    }
+
+    private static func checklistItem(from text: String) -> (text: String, isCompleted: Bool)? {
+        guard text.count >= 3 else { return nil }
+
+        let marker = String(text.prefix(3))
+        let isCompleted: Bool
+        switch marker {
+        case "[ ]":
+            isCompleted = false
+        case "[x]", "[X]":
+            isCompleted = true
+        default:
+            return nil
+        }
+
+        let remainder = text.dropFirst(3)
+        guard remainder.isEmpty || remainder.first?.isWhitespace == true else { return nil }
+        return (String(remainder.drop(while: \.isWhitespace)), isCompleted)
+    }
+
+    private static func inlineAttributedText(from text: String) -> AttributedString {
         (
             try? AttributedString(
                 markdown: text,
-                options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .full)
+                options: AttributedString.MarkdownParsingOptions(
+                    interpretedSyntax: .inlineOnlyPreservingWhitespace
+                )
             )
         ) ?? AttributedString(text)
+    }
+
+    private static func headingFont(for level: Int) -> Font {
+        switch level {
+        case 1: return .title2.weight(.bold)
+        case 2: return .title3.weight(.bold)
+        case 3: return .headline.weight(.bold)
+        default: return .subheadline.weight(.semibold)
+        }
+    }
+
+    private static func indentationWidth(for indentation: Int) -> CGFloat {
+        CGFloat(min(indentation, 12)) * 4
     }
 }
 

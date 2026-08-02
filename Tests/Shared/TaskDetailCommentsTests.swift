@@ -47,6 +47,40 @@ struct TaskDetailCommentsTests {
     }
 
     @Test
+    func formattedTextPresentsMarkdownBlockControlsSemantically() {
+        let body = """
+        ## Heading
+        - Bullet with **bold** text
+        - [ ] Pending item
+        - [x] Completed item
+        > Quoted text
+        """
+
+        #expect(RoutinaFormattedText.blocks(from: body) == [
+            .heading(level: 2, text: "Heading"),
+            .bullet(text: "Bullet with **bold** text", indentation: 0),
+            .checklist(text: "Pending item", isCompleted: false, indentation: 0),
+            .checklist(text: "Completed item", isCompleted: true, indentation: 0),
+            .quote("Quoted text")
+        ])
+        #expect(
+            String(RoutinaFormattedText.attributedText(from: body).characters)
+                == "Heading\n• Bullet with bold text\n☐ Pending item\n☑ Completed item\n│ Quoted text"
+        )
+    }
+
+    @Test
+    func formattedTextLeavesNonBlockMarkdownCharactersUntouched() {
+        let body = "Use - inside a sentence\n[ ] is not a checklist without a list marker"
+
+        #expect(RoutinaFormattedText.blocks(from: body) == [
+            .paragraph("Use - inside a sentence"),
+            .paragraph("[ ] is not a checklist without a list marker")
+        ])
+        #expect(String(RoutinaFormattedText.attributedText(from: body).characters) == body)
+    }
+
+    @Test
     func commentPresentationShowsNewestCreatedCommentFirst() {
         let olderDate = makeDate("2026-04-02T08:15:00Z")
         let newerDate = makeDate("2026-04-02T09:30:00Z")
