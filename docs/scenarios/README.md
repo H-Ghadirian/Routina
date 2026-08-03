@@ -29,6 +29,25 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Production Experiment Lockdown Matches Signed Capabilities
+
+Area: Settings / Other
+Decision links: [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
+
+Given an experimental preference was enabled in a previous build or restored from durable preferences
+When Routina runs as an iOS or macOS production app
+Then the preference resolves to disabled and cannot be written back as enabled
+And Support & About does not expose the Beta Experiments panel
+And existing experimental user content remains stored for compatibility
+
+Given the Mac production app does not expose Places, voice notes, or browser automation
+When its Debug or Release production configuration is signed
+Then the bundle omits location, audio-input, and Apple Events entitlements
+And development builds retain those capabilities for experiment testing
+
 ### Production Uploads Carry Export-Compliance Metadata
 
 Area: Other

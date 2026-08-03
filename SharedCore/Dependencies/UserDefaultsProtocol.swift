@@ -5,10 +5,19 @@ extension UserDefaults: @retroactive @unchecked Sendable {}
 extension UserDefaults: UserDefaultsProtocol {
     public subscript(key: UserDefaultBoolValueKey) -> Bool {
         get {
-            return object(forKey: key.rawValue) as? Bool ?? false
+            RoutinaExperimentalFeaturePolicy.resolvedValue(
+                for: key,
+                storedValue: object(forKey: key.rawValue) as? Bool ?? false
+            )
         }
         set {
-            self.set(newValue, forKey: key.rawValue)
+            self.set(
+                RoutinaExperimentalFeaturePolicy.resolvedValue(
+                    for: key,
+                    storedValue: newValue
+                ),
+                forKey: key.rawValue
+            )
         }
     }
 
@@ -36,12 +45,16 @@ protocol SharedDefaultsProtocol {
 
 enum SharedDefaults: SharedDefaultsProtocol {
     static let app: UserDefaults = {
+        let defaults: UserDefaults
         if let suiteDefaults = UserDefaults(suiteName: AppEnvironment.userDefaultsSuiteName) {
-            return suiteDefaults
+            defaults = suiteDefaults
+        } else {
+            NSLog("Invalid UserDefaults suite '\(AppEnvironment.userDefaultsSuiteName)'. Falling back to standard defaults.")
+            defaults = .standard
         }
 
-        NSLog("Invalid UserDefaults suite '\(AppEnvironment.userDefaultsSuiteName)'. Falling back to standard defaults.")
-        return .standard
+        RoutinaExperimentalFeaturePolicy.enforceReleaseState(in: defaults)
+        return defaults
     }()
 }
 
@@ -50,6 +63,7 @@ enum AppSettingsDefaults {
         .appSettingNotificationsEnabled: false,
         .appSettingHideUnavailableRoutines: false,
         .appSettingAppLockEnabled: false,
+        .appSettingGitFeaturesEnabled: false,
         .appSettingTaskSharingEnabled: false,
         .appSettingTaskRelationshipVisualizerEnabled: false,
         .appSettingPlacesEnabled: false,
@@ -194,6 +208,62 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingMacFutureTasksSectionCollapsed
     case appSettingArchivedRoutinesSectionCollapsed
     case requestNotificationPermission
+}
+
+enum RoutinaExperimentalFeaturePolicy {
+    static let preferenceKeys: Set<UserDefaultBoolValueKey> = [
+        .appSettingGitFeaturesEnabled,
+        .appSettingTaskSharingEnabled,
+        .appSettingTaskRelationshipVisualizerEnabled,
+        .appSettingPlacesEnabled,
+        .appSettingNotesEnabled,
+        .appSettingAwayEnabled,
+        .appSettingFilterQuerySectionsEnabled,
+        .appSettingUnlockUnlimitedTasks,
+        .appSettingGoalsTabEnabled,
+        .appSettingAdventureMapEnabled,
+        .appSettingBoardScreenEnabled,
+        .appSettingStatsWinsEnabled,
+        .appSettingStatsSleepTabEnabled,
+        .appSettingStatsAchievementsEnabled,
+        .appSettingMacStatsDashboardControlsEnabled,
+        .appSettingHomeTaskListModeTabsVisible,
+        .appSettingMacHomeSectionFocusTimersEnabled,
+        .appSettingMacTimelineQuickFiltersVisible,
+        .appSettingMacStatusComposerEnabled,
+        .appSettingSettingsDevicesSectionEnabled,
+        .appSettingRelatedTagRulesEnabled,
+        .appSettingMacEventEmotionActionsEnabled,
+        .appSettingMacWebsiteBlockingEnabled
+    ]
+
+    static var isAvailableInCurrentProcess: Bool {
+#if SWIFT_PACKAGE
+        true
+#else
+        AppEnvironment.isDevelopmentAppVariant || AppEnvironment.isAutomatedTestMode
+#endif
+    }
+
+    static func resolvedValue(
+        for key: UserDefaultBoolValueKey,
+        storedValue: Bool,
+        isDevelopmentAppVariant: Bool = isAvailableInCurrentProcess
+    ) -> Bool {
+        guard preferenceKeys.contains(key) else { return storedValue }
+        return isDevelopmentAppVariant && storedValue
+    }
+
+    static func enforceReleaseState(
+        in defaults: UserDefaults,
+        isDevelopmentAppVariant: Bool = isAvailableInCurrentProcess
+    ) {
+        guard !isDevelopmentAppVariant else { return }
+
+        for key in preferenceKeys {
+            defaults.set(false, forKey: key.rawValue)
+        }
+    }
 }
 
 public enum UserDefaultStringValueKey: String, Sendable {

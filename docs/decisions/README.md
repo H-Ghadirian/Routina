@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0470](0470-keep-beta-experiments-out-of-production.md) refines all Beta Experiment visibility decisions for release availability:** Production iOS and macOS builds do not expose the Beta Experiments panel and resolve every experimental preference to disabled, while development variants retain the controls; production Mac signing omits the location, audio-input, and Apple Events entitlements used only by those experiments.
+
 - **[0469](0469-store-task-descriptions-separately-from-notes.md) refines [0058](0058-use-progressive-task-forms.md), [0098](0098-support-markdown-text-editing-controls.md), [0100](0100-reveal-task-form-details-by-section.md), [0277](0277-hide-notes-and-away-behind-beta-toggles.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), and [0462](0462-use-a-compact-progressive-ios-task-editor.md) for stable task context:** Tasks store an optional Description independently from experimental Notes; create, edit, details, targeted Add More, drafts, search, copying, sync, sharing, and backup preserve it regardless of the Notes beta preference.
 
 - **[0468](0468-model-task-thinking-needed-separately.md) refines [0058](0058-use-progressive-task-forms.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), [0391](0391-filter-task-list-by-duration-estimates.md), [0424](0424-make-task-detail-priority-optional.md), and [0462](0462-use-a-compact-progressive-ios-task-editor.md) for cognitive task metadata:** Tasks store `None` / `Low` / `Medium` / `High` Thinking needed independently from duration, pressure, importance, urgency, and priority; create, edit, details, exact Home filtering, copying, sync, sharing, and backup preserve it without changing scheduling or ordering.
@@ -413,6 +415,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0470](0470-keep-beta-experiments-out-of-production.md) | Keep Beta Experiments Out of Production | Accepted | 2026-08-03 |
 | [0469](0469-store-task-descriptions-separately-from-notes.md) | Store Task Descriptions Separately From Notes | Accepted | 2026-08-02 |
 | [0468](0468-model-task-thinking-needed-separately.md) | Model Task Thinking Needed Separately | Accepted | 2026-08-02 |
 | [0467](0467-declare-exempt-encryption-in-production-bundles.md) | Declare Exempt Encryption in Production Bundles | Accepted | 2026-08-01 |

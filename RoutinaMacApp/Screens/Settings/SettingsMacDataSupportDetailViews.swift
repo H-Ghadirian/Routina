@@ -437,7 +437,9 @@ SettingsMacDetailShell(
     }
 
     if store.diagnostics.isDebugSectionVisible {
-        SettingsMacBetaExperimentsCard(store: store)
+        if AppEnvironment.isDevelopmentAppVariant {
+            SettingsMacBetaExperimentsCard(store: store)
+        }
 
         SettingsMacDetailCard(title: "Diagnostics") {
             settingsInfoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)

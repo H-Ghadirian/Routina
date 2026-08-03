@@ -29,6 +29,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md)
 - [0466](../decisions/0466-harden-app-store-release-surfaces.md)
 - [0467](../decisions/0467-declare-exempt-encryption-in-production-bundles.md)
+- [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
 
 ## Current Contract
 
@@ -37,6 +38,8 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Purchase entitlement is resolved from StoreKit rather than backed up in user data. Weekly, monthly, annual, and lifetime products unlock unlimited active tasks. The paywall shows renewal disclosure plus Privacy Policy and Terms of Use links, and Support & About exposes the same legal links. Settings -> Support & About -> Beta Experiments includes the temporary unlimited-task override only in development apps; production ignores persisted and configured testing overrides.
 - Calendar task import always supports Apple Calendar. Outlook appears only when the app bundle has a nonempty Microsoft Graph client ID, so unconfigured release builds do not advertise a nonfunctional sign-in path.
 - The iOS and macOS production bundles declare `ITSAppUsesNonExemptEncryption` as false so App Store Connect can reuse Routina's current exempt-encryption answer. The declaration must be reassessed before shipping custom cryptography, encrypted communications or VPN functionality, or a cryptography-providing dependency.
+- Beta Experiments are available only in development app variants. Production does not render the Beta Experiments panel after the hidden diagnostics gesture, resolves every experimental preference to disabled, and forces attempted experimental writes off, including values restored from older releases.
+- The Mac production entitlement set omits location, audio input, and Apple Events automation because their Places, voice-note, and browser-automation entry points are experimental. Development builds retain those capabilities. Apple Calendar access remains a production feature and retains its calendar entitlement and purpose strings.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
@@ -45,13 +48,9 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Destructive data reset requires a successful local backup export from the last 24 hours and fresh App Lock authentication.
 - Settings reset requires App Lock to already be enabled and a fresh successful device-owner authentication. User content remains untouched.
 - Turning App Lock off requires fresh device-owner authentication.
-- Settings hides Devices by default behind the beta toggle.
-- Settings hides Places by default behind Support & About -> Beta Experiments -> `Show Places`.
-- Settings hides Notes and Away by default behind Support & About -> Beta Experiments; while Away is off, Blocking exposes only Focus mode controls and Stats hides Sleep-specific surfaces.
-- iOS Beta Experiments gates Event and Emotion creation, Goal navigation and New-sheet creation, and Sleep scope plus New-sheet entry. The separate Shortcuts preference can further hide Going to sleep from New but cannot enable it while Away or the nested Sleep experiment is off.
-- Task sharing is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
-- The linked-task Visualize button is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
-- Home and Stats Query sections are hidden in filter panels until enabled from Support & About -> Beta Experiments.
+- Production hides Devices, Places, Notes, Away, task sharing, the linked-task visualizer, Goals, Adventure, Board, advanced Query sections, Wins, Achievements, Sleep scope, and the other Beta Experiment surfaces. Previously stored experimental content remains in persistence, sync, and backups.
+- Development builds expose the experiment controls in Support & About after revealing diagnostics. Their toggles continue to drive the implemented experimental surfaces for internal testing.
+- While Away is unavailable, Blocking exposes only Focus mode controls and Stats hides Sleep-specific surfaces.
 - Mac app widget source remains in the repository, but the Mac app targets do not build, embed, or register widget extensions, so Routina widgets are not exposed on macOS.
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.
 - The Mac development app exposes screenshot preparation in Settings -> Appearance. Its development badge remains visible by default but can be hidden with `Show development badge`; `Generate Screenshot Data` adds an idempotent, non-destructive set of representative tasks, history, planner blocks, focus, goals, notes, events, emotions, sleep, and Away records. Production hides these controls and ignores the screenshot seed launch trigger.

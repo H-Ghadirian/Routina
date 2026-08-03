@@ -45,7 +45,9 @@ List {
     }
 
     if store.diagnostics.isDebugSectionVisible {
-        SettingsBetaExperimentsSection(store: store)
+        if AppEnvironment.isDevelopmentAppVariant {
+            SettingsBetaExperimentsSection(store: store)
+        }
 
         Section("Diagnostics") {
             SettingsInfoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)

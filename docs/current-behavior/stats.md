@@ -30,6 +30,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0415](../decisions/0415-support-custom-stats-date-ranges.md)
 - [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
 - [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+- [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
 
 ## Current Contract
 
@@ -44,10 +45,10 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Place reports and place achievements follow the Places beta setting.
 - macOS Event and Emotion reports follow the Mac Event/Emotion beta setting.
 - macOS Focus vs completed work and Estimated vs Actual time reports remain addable but start hidden by default.
-- macOS Summary view and Edit toolbar controls are hidden by default behind Support & About -> Beta Experiments -> `Show Stats dashboard controls`; saved dashboard customization state remains intact while the controls are hidden.
+- macOS Summary view and Edit toolbar controls are unavailable in production. Development builds can enable them through Support & About -> Beta Experiments -> `Show Stats dashboard controls`; saved dashboard customization state remains intact while the controls are hidden.
 - macOS Stats and Adventure hide the shared Home toolbar search pill while keeping the top toolbar row, mode strip, and Stats/Adventure progress picker available.
-- Wins, Achievements, Sleep scope, Goals UI, and Adventure surfaces remain implemented but are hidden by default behind their related settings; Sleep-specific Stats and Adventure surfaces also stay hidden while `Show Away` is off.
-- Stats filter Query sections are hidden by default behind Support & About -> Beta Experiments -> `Show filter query sections`; existing advanced query state remains compatible and still appears in active filter summaries when nonempty.
+- Wins, Achievements, Sleep scope, Goals UI, and Adventure surfaces remain implemented but are unavailable in production. Development builds can enable them through their related experiment settings; Sleep-specific Stats and Adventure surfaces also stay hidden while `Show Away` is off.
+- Stats filter Query sections are unavailable in production. Development builds can enable them through Support & About -> Beta Experiments -> `Show filter query sections`; existing advanced query state remains compatible.
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
 - Stats summary cards show assumed-done daily Gentle-routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
 - Stats task-type filtering offers only `All`, `Routines`, and `Todos`. Stats has no Tracking count, Tracking time, or Tracking dashboard item; internal record-shaped data is counted and filtered with routines.

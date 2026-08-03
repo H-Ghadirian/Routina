@@ -116,3 +116,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0072 — Choose a window host that supports required capabilities](0072-choose-a-window-host-that-supports-required-capabilities.md)
 - [0073 — Declare export compliance in production plists](0073-declare-export-compliance-in-production-plists.md)
 - [0074 — Render Markdown blocks as visible structure](0074-render-markdown-blocks-as-visible-structure.md)
+- [0075 — Enforce hidden features at the preference boundary](0075-enforce-hidden-features-at-the-preference-boundary.md)
