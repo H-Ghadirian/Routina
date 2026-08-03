@@ -213,7 +213,8 @@ private struct GoalDetailView: View {
                 .toolbar {
                     GoalsEditorToolbarContent(store: store)
                 }
-        } else if let goal = store.goals.first(where: { $0.id == goalID }) {
+        } else if let goal = store.goalDisplaysByID[goalID]
+            ?? store.goals.first(where: { $0.id == goalID }) {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 12) {
@@ -401,7 +402,7 @@ private struct GoalTaskSuggestionRow: View {
         HStack(alignment: .top, spacing: 12) {
             Text(suggestion.task.displayEmoji)
                 .frame(width: 28, height: 28)
-                .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
+                .routinaScrollingPillFill(tint: .secondary, tintOpacity: 0.12)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(suggestion.task.displayName)
@@ -493,7 +494,7 @@ private struct GoalTaskInlineRow: View {
         HStack(spacing: 12) {
             Text(task.displayEmoji)
                 .frame(width: 28, height: 28)
-                .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
+                .routinaScrollingPillFill(tint: .secondary, tintOpacity: 0.12)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(task.displayName)

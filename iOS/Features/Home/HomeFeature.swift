@@ -28,6 +28,8 @@ struct HomeFeature {
         var routineDisplays: [RoutineDisplay] = []
         var awayRoutineDisplays: [RoutineDisplay] = []
         var archivedRoutineDisplays: [RoutineDisplay] = []
+        var taskNamesByID: [UUID: String] = [:]
+        var taskListPresentationRevision: UInt = 0
         var doneStats: DoneStats = DoneStats()
         var isLoading = false
         var hasLoadedTaskSnapshot = false
@@ -56,6 +58,8 @@ struct HomeFeature {
             routineDisplays: [RoutineDisplay] = [],
             awayRoutineDisplays: [RoutineDisplay] = [],
             archivedRoutineDisplays: [RoutineDisplay] = [],
+            taskNamesByID: [UUID: String] = [:],
+            taskListPresentationRevision: UInt = 0,
             doneStats: DoneStats = DoneStats(),
             isLoading: Bool = false,
             hasLoadedTaskSnapshot: Bool = false,
@@ -121,6 +125,8 @@ struct HomeFeature {
             self.routineDisplays = routineDisplays
             self.awayRoutineDisplays = awayRoutineDisplays
             self.archivedRoutineDisplays = archivedRoutineDisplays
+            self.taskNamesByID = taskNamesByID
+            self.taskListPresentationRevision = taskListPresentationRevision
             self.doneStats = doneStats
             self.isLoading = isLoading
             self.hasLoadedTaskSnapshot = hasLoadedTaskSnapshot

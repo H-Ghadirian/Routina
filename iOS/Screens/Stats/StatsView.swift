@@ -141,11 +141,11 @@ struct StatsView: View {
     }
 
     private var showsTaskTypeFilter: Bool {
-        tasks.contains(where: \.isOneOffTask)
+        store.hasOneOffTasks
     }
 
     private var availableExcludeTags: [String] {
-        filterPresentation.availableExcludeTags(from: store.tasks)
+        store.availableExcludeTags
     }
 
     private var tagRuleBindings: HomeTagRuleBindings {
@@ -699,7 +699,11 @@ struct StatsView: View {
             }
         case .unassignedFocus:
             editableDashboardSection(.unassignedFocus) {
-                UnassignedFocusSessionsCard(focusSessions: focusSessions)
+                UnassignedFocusSessionsCard(
+                    focusSessions: store.unassignedFocusSessions,
+                    assignableTasks: store.assignableFocusTasks,
+                    activeSprints: store.activeFocusSprints
+                )
             }
         case .completionChart:
             editableDashboardSection(.completionChart) {

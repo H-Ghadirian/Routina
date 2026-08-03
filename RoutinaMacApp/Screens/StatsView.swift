@@ -383,7 +383,11 @@ struct StatsView: View {
             }
         case .unassignedFocus:
             editableDashboardSection(.unassignedFocus) {
-                UnassignedFocusSessionsCard(focusSessions: store.focusSessions)
+                UnassignedFocusSessionsCard(
+                    focusSessions: store.unassignedFocusSessions,
+                    assignableTasks: store.assignableFocusTasks,
+                    activeSprints: store.activeFocusSprints
+                )
             }
         case .createdTasksChart:
             editableDashboardSection(.createdTasksChart) {

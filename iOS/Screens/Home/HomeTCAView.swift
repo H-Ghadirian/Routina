@@ -2,11 +2,21 @@ import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
+private struct HomeTaskListPresentationRefreshToken: Equatable {
+    let displayRevision: UInt
+    let filters: HomeTaskFiltersState
+    let taskListMode: HomeTaskListMode
+    let hideUnavailableRoutines: Bool
+    let searchText: String
+    let sectioningMode: RoutineListSectioningMode
+    let referenceDay: Date
+}
+
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
-    @Query private var fileAttachments: [RoutineAttachment]
+    @Environment(\.modelContext) private var modelContext
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app
@@ -42,6 +52,11 @@ struct HomeTCAView: View {
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var planningDateTaskID: UUID?
     @State var planningDateDraft = Date()
+    @State var taskListPresentation = HomeTaskListPresentation<HomeFeature.RoutineDisplay>(
+        sections: [],
+        hiddenUnavailableTaskCount: 0,
+        emptyState: nil
+    )
 
     init(
         store: StoreOf<HomeFeature>,
@@ -80,20 +95,48 @@ homeContent
                     )
                 }
                 .task {
-                    syncFileAttachmentTaskIDs()
+                    refreshFileAttachmentTaskIDs()
                 }
-                .onChange(of: fileAttachmentChangeToken) { _, _ in
-                    syncFileAttachmentTaskIDs()
+                .task(id: taskListPresentationRefreshToken) {
+                    refreshTaskListPresentation()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                    refreshFileAttachmentTaskIDs()
                 }
         )
     }
 
-    private var fileAttachmentChangeToken: [String] {
-        fileAttachments.map { "\($0.id.uuidString):\($0.taskID.uuidString)" }.sorted()
+    private var taskListPresentationRefreshToken: HomeTaskListPresentationRefreshToken {
+        HomeTaskListPresentationRefreshToken(
+            displayRevision: store.taskListPresentationRevision,
+            filters: store.taskFilters,
+            taskListMode: store.taskListMode,
+            hideUnavailableRoutines: store.hideUnavailableRoutines,
+            searchText: searchTextBinding.wrappedValue,
+            sectioningMode: routineListSectioningMode,
+            referenceDay: calendar.startOfDay(for: Date())
+        )
     }
 
-    private func syncFileAttachmentTaskIDs() {
-        store.send(.fileAttachmentTaskIDsChanged(Set(fileAttachments.map(\.taskID))))
+    private func refreshTaskListPresentation() {
+        taskListPresentation = HomeTaskListPresentation.iOS(
+            filtering: taskListFiltering(),
+            routineDisplays: store.routineDisplays,
+            awayRoutineDisplays: store.awayRoutineDisplays,
+            archivedRoutineDisplays: store.archivedRoutineDisplays,
+            hideUnavailableRoutines: store.hideUnavailableRoutines,
+            showArchivedTasks: store.showArchivedTasks,
+            taskListKind: store.taskListMode.filterTaskListKind
+        )
+    }
+
+    private func refreshFileAttachmentTaskIDs() {
+        do {
+            let attachments = try modelContext.fetch(FetchDescriptor<RoutineAttachment>())
+            store.send(.fileAttachmentTaskIDsChanged(Set(attachments.map(\.taskID))))
+        } catch {
+            assertionFailure("Unable to refresh Home attachment data: \(error)")
+        }
     }
 
     @ViewBuilder

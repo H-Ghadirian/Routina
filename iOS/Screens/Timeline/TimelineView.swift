@@ -72,13 +72,13 @@ struct TimelineView: View {
             .onChange(of: store.filterType) { _, _ in
                 validateTimelineFilterVisibility()
             }
-            .onChange(of: visibleTimelineEntryIDs) { _, _ in resolveTimelineRouting() }
+            .onChange(of: store.presentationRevision) { _, _ in resolveTimelineRouting() }
             .onChange(of: store.deepLinkedNoteID) { _, _ in routePendingDeepLinkedNote() }
             .onChange(of: store.deepLinkedEventID) { _, _ in routePendingDeepLinkedEvent() }
     }
 
     private var timelineRootWithSheets: some View {
-        AnyView(timelineRoot)
+        timelineRoot
             .sheet(isPresented: filterSheetBinding, content: filterSheetContent)
             .sheet(item: deepLinkedNotePresentationBinding, content: deepLinkedNoteSheet)
             .sheet(item: deepLinkedEventPresentationBinding, content: deepLinkedEventSheet)
@@ -114,10 +114,6 @@ struct TimelineView: View {
 
     private var usesSidebarLayout: Bool {
         UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
-    }
-
-    private var visibleTimelineEntryIDs: [UUID] {
-        groupedByDay.flatMap { $0.entries.map(\.id) }
     }
 
     private var tasks: [RoutineTask] { dataSnapshot.tasks }
@@ -185,9 +181,7 @@ struct TimelineView: View {
     }
 
     private var selectedTimelineEntry: TimelineEntry? {
-        groupedByDay
-            .flatMap(\.entries)
-            .first { $0.id == selectedTimelineEntryID }
+        selectedTimelineEntryID.flatMap { store.visibleEntriesByID[$0] }
     }
 
     private var deepLinkedNotePresentationBinding: Binding<TimelineNoteDeepLinkPresentation?> {
@@ -254,14 +248,14 @@ struct TimelineView: View {
     private func ensureTimelineSelection() {
         selectedTimelineEntryID = TimelineSelectionSupport.resolvedSelection(
             currentSelection: selectedTimelineEntryID,
-            visibleEntryIDs: visibleTimelineEntryIDs,
+            visibleEntryIDs: store.visibleEntryIDs,
             usesSidebarLayout: usesSidebarLayout
         )
     }
 
     private func selectInitialTimelineEntry() {
         guard usesSidebarLayout else { return }
-        guard let entryID = visibleTimelineEntryIDs.first else { return }
+        guard let entryID = store.visibleEntryIDs.first else { return }
         if selectedTimelineEntryID != entryID {
             selectedTimelineEntryID = entryID
         }
@@ -273,14 +267,14 @@ struct TimelineView: View {
             store.send(.noteDeepLinkPresentationDismissed(noteID))
             return
         }
-        guard visibleTimelineEntryIDs.contains(noteID) else { return }
+        guard store.visibleEntryIDSet.contains(noteID) else { return }
         selectedTimelineEntryID = noteID
         store.send(.noteDeepLinkPresentationDismissed(noteID))
     }
 
     private func routePendingDeepLinkedEvent() {
         guard usesSidebarLayout, let eventID = store.deepLinkedEventID else { return }
-        guard visibleTimelineEntryIDs.contains(eventID) else { return }
+        guard store.visibleEntryIDSet.contains(eventID) else { return }
         selectedTimelineEntryID = eventID
         store.send(.eventDeepLinkPresentationDismissed(eventID))
     }
@@ -364,34 +358,7 @@ struct TimelineView: View {
     }
 
     private var availableExcludeTags: [String] {
-        let baseEntries = TimelineLogic.filteredEntries(
-            logs: store.logs,
-            tasks: store.tasks,
-            events: store.events,
-            emotionLogs: store.emotionLogs,
-            notes: store.notes,
-            focusSessions: store.focusSessions,
-            sprintFocusSessions: store.sprintFocusSessions,
-            boardSprints: store.boardSprints,
-            sleepSessions: store.sleepSessions,
-            placeCheckInSessions: isPlacesEnabled ? store.placeCheckInSessions : [],
-            awaySessions: store.awaySessions,
-            fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
-            noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
-            range: store.selectedRange,
-            filterType: store.filterType,
-            mediaFilter: store.mediaFilter,
-            now: Date(),
-            calendar: calendar
-        ).filter { entry in
-            HomeFeature.matchesImportanceUrgencyFilter(
-                store.selectedImportanceUrgencyFilter,
-                importance: entry.importance,
-                urgency: entry.urgency
-            )
-        }
-
-        return filterPresentation.availableExcludeTags(from: baseEntries)
+        store.availableExcludeTags
     }
 
     private var tagRuleBindings: HomeTagRuleBindings {
@@ -459,16 +426,7 @@ struct TimelineView: View {
     }
 
     private var hasAnyTimelineRecords: Bool {
-        !logs.isEmpty
-            || tasks.contains { $0.lastDone != nil }
-            || !events.isEmpty
-            || !emotionLogs.isEmpty
-            || (isNotesEnabled && !notes.isEmpty)
-            || !focusSessions.isEmpty
-            || !sprintFocusSessions.isEmpty
-            || (isAwayEnabled && !awaySessions.isEmpty)
-            || !sleepSessions.isEmpty
-            || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
+        store.hasAnyTimelineRecords
     }
 
     private var timelineEmptyDescription: String {
@@ -903,7 +861,11 @@ struct TimelineView: View {
                 Text(entry.taskEmoji)
                     .font(.title2)
                     .frame(width: 36, height: 36)
-                    .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
+                    .routinaScrollingRoundedFill(
+                        cornerRadius: 8,
+                        tint: .secondary,
+                        tintOpacity: 0.06
+                    )
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -925,7 +887,10 @@ struct TimelineView: View {
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .routinaGlassPill(tint: timelineKindColor(for: entry), tintOpacity: 0.15)
+                    .routinaScrollingPillFill(
+                        tint: timelineKindColor(for: entry),
+                        tintOpacity: 0.15
+                    )
                     .foregroundStyle(timelineKindColor(for: entry))
             }
         }
@@ -1030,35 +995,33 @@ struct TimelineView: View {
     }
 
     private func note(for entry: TimelineEntry) -> RoutineNote? {
-        notes.first { $0.id == entry.id }
+        dataSnapshot.notesByID[entry.id]
     }
 
     private func event(for entry: TimelineEntry) -> RoutineEvent? {
-        events.first { $0.id == entry.id }
+        dataSnapshot.eventsByID[entry.id]
     }
 
     private func emotionLog(for entry: TimelineEntry) -> EmotionLog? {
-        emotionLogs.first { $0.id == entry.id }
+        dataSnapshot.emotionLogsByID[entry.id]
     }
 
     private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {
         guard isPlacesEnabled else { return nil }
-        return placeCheckInSessions.first { $0.id == entry.id }
+        return dataSnapshot.placeCheckInSessionsByID[entry.id]
     }
 
     private func awaySession(for entry: TimelineEntry) -> AwaySession? {
-        awaySessions.first { $0.id == entry.id }
+        dataSnapshot.awaySessionsByID[entry.id]
     }
 
     private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
-        noteAttachments
-            .filter { $0.noteID == note.id }
-            .sorted { $0.createdAt < $1.createdAt }
+        dataSnapshot.noteAttachmentsByNoteID[note.id] ?? []
     }
 
     @ViewBuilder
     private func deepLinkedNoteDetail(noteID: UUID) -> some View {
-        if let note = notes.first(where: { $0.id == noteID }) {
+        if let note = dataSnapshot.notesByID[noteID] {
             RoutineNoteDetailView(
                 note: note,
                 attachments: noteAttachments(for: note),
@@ -1076,7 +1039,7 @@ struct TimelineView: View {
 
     @ViewBuilder
     private func deepLinkedEventDetail(eventID: UUID) -> some View {
-        if let event = events.first(where: { $0.id == eventID }) {
+        if let event = dataSnapshot.eventsByID[eventID] {
             RoutineEventDetailView(event: event)
         } else {
             ContentUnavailableView(
@@ -1090,7 +1053,7 @@ struct TimelineView: View {
 
     @ViewBuilder
     private func timelineDetailDestination(taskID: UUID) -> some View {
-        if let task = tasks.first(where: { $0.id == taskID }) {
+        if let task = dataSnapshot.tasksByID[taskID] {
             TaskDetailTCAView(
                 store: Store(
                     initialState: makeTaskDetailState(for: task)

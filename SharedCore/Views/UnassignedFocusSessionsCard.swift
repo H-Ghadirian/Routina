@@ -3,13 +3,13 @@ import SwiftUI
 
 struct UnassignedFocusSessionsCard: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var tasks: [RoutineTask]
-    @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) private var sprintRecords: [BoardSprintRecord]
 
     let focusSessions: [FocusSession]
+    let assignableTasks: [RoutineTask]
+    let activeSprints: [BoardSprintRecord]
 
     var body: some View {
-        let sessions = FocusSessionSupport.unassignedCompletedSessions(from: focusSessions)
+        let sessions = focusSessions
 
         if !sessions.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
@@ -106,26 +106,6 @@ struct UnassignedFocusSessionsCard: View {
                 }
             }
         }
-    }
-
-    private var assignableTasks: [RoutineTask] {
-        tasks
-            .filter { task in
-                !task.isArchived()
-                    && !task.isCompletedOneOff
-                    && !task.isCanceledOneOff
-            }
-            .sorted {
-                taskTitle($0).localizedCaseInsensitiveCompare(taskTitle($1)) == .orderedAscending
-            }
-    }
-
-    private var activeSprints: [BoardSprintRecord] {
-        sprintRecords
-            .filter { $0.statusRawValue == SprintStatus.active.rawValue }
-            .sorted {
-                sprintTitle($0).localizedCaseInsensitiveCompare(sprintTitle($1)) == .orderedAscending
-            }
     }
 
     private func assign(_ session: FocusSession, toTask task: RoutineTask) {

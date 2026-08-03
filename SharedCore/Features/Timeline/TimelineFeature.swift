@@ -16,10 +16,17 @@ struct TimelineDataSnapshot {
     var sleepSessions: [SleepSession] = []
     var awaySessions: [AwaySession] = []
     var placeCheckInSessions: [PlaceCheckInSession] = []
+    var tasksByID: [UUID: RoutineTask] = [:]
+    var eventsByID: [UUID: RoutineEvent] = [:]
+    var emotionLogsByID: [UUID: EmotionLog] = [:]
+    var notesByID: [UUID: RoutineNote] = [:]
+    var noteAttachmentsByNoteID: [UUID: [RoutineNoteAttachment]] = [:]
+    var awaySessionsByID: [UUID: AwaySession] = [:]
+    var placeCheckInSessionsByID: [UUID: PlaceCheckInSession] = [:]
 
     @MainActor
     static func fetch(from context: ModelContext) throws -> Self {
-        Self(
+        var snapshot = Self(
             tasks: try context.fetch(FetchDescriptor<RoutineTask>()),
             logs: try context.fetch(FetchDescriptor<RoutineLog>(
                 sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
@@ -54,6 +61,23 @@ struct TimelineDataSnapshot {
                 sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
             ))
         )
+        snapshot.rebuildLookups()
+        return snapshot
+    }
+
+    private mutating func rebuildLookups() {
+        tasksByID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
+        eventsByID = Dictionary(uniqueKeysWithValues: events.map { ($0.id, $0) })
+        emotionLogsByID = Dictionary(uniqueKeysWithValues: emotionLogs.map { ($0.id, $0) })
+        notesByID = Dictionary(uniqueKeysWithValues: notes.map { ($0.id, $0) })
+        awaySessionsByID = Dictionary(uniqueKeysWithValues: awaySessions.map { ($0.id, $0) })
+        placeCheckInSessionsByID = Dictionary(
+            uniqueKeysWithValues: placeCheckInSessions.map { ($0.id, $0) }
+        )
+        noteAttachmentsByNoteID = Dictionary(grouping: noteAttachments, by: \.noteID)
+            .mapValues { attachments in
+                attachments.sorted { $0.createdAt < $1.createdAt }
+            }
     }
 }
 
@@ -92,8 +116,14 @@ struct TimelineFeature {
         var mediaFilter: TaskMediaFilter = .all
         var isFilterSheetPresented: Bool = false
         var availableTags: [String] = []
+        var availableExcludeTags: [String] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var groupedEntries: [TimelineSection] = []
+        var visibleEntryIDs: [UUID] = []
+        var visibleEntryIDSet: Set<UUID> = []
+        var visibleEntriesByID: [UUID: TimelineEntry] = [:]
+        var presentationRevision: UInt = 0
+        var hasAnyTimelineRecords = false
         var deepLinkedNoteID: UUID?
         var deepLinkedEventID: UUID?
 
@@ -176,6 +206,16 @@ struct TimelineFeature {
                 state.awaySessions = awaySessions
                 state.fileAttachmentTaskIDs = fileAttachmentTaskIDs
                 state.noteAttachmentNoteIDs = noteAttachmentNoteIDs
+                state.hasAnyTimelineRecords = !logs.isEmpty
+                    || tasks.contains { $0.lastDone != nil }
+                    || !events.isEmpty
+                    || !emotionLogs.isEmpty
+                    || !notes.isEmpty
+                    || !focusSessions.isEmpty
+                    || !sprintFocusSessions.isEmpty
+                    || !awaySessions.isEmpty
+                    || !sleepSessions.isEmpty
+                    || !placeCheckInSessions.isEmpty
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
@@ -320,10 +360,16 @@ struct TimelineFeature {
         }
         state.availableTags = TimelineLogic.availableTags(from: importanceUrgencyFilteredEntries)
         state.setSelectedTags(state.effectiveSelectedTags.filter { RoutineTag.contains($0, in: state.availableTags) })
-        let availableExcludeTags = state.availableTags.filter { tag in
-            !state.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+        state.availableExcludeTags = TimelineFilterPresentation(
+            selectedTags: state.effectiveSelectedTags,
+            excludedTags: state.excludedTags,
+            includeTagMatchMode: state.includeTagMatchMode,
+            availableTags: state.availableTags,
+            relatedTagRules: state.relatedTagRules
+        ).availableExcludeTags(from: importanceUrgencyFilteredEntries)
+        state.excludedTags = state.excludedTags.filter {
+            RoutineTag.contains($0, in: state.availableExcludeTags)
         }
-        state.excludedTags = state.excludedTags.filter { RoutineTag.contains($0, in: availableExcludeTags) }
 
         let entries = importanceUrgencyFilteredEntries.filter { entry in
             HomeDisplayFilterSupport.matchesSelectedTags(
@@ -337,7 +383,14 @@ struct TimelineFeature {
                     in: entry.tags
                 )
         }
-        state.groupedEntries = TimelineLogic.groupedByDay(entries: entries, calendar: calendar)
+        let groupedEntries = TimelineLogic.groupedByDay(entries: entries, calendar: calendar)
             .map { TimelineSection(date: $0.date, entries: $0.entries) }
+        state.groupedEntries = groupedEntries
+        state.visibleEntryIDs = groupedEntries.flatMap { $0.entries.map(\.id) }
+        state.visibleEntryIDSet = Set(state.visibleEntryIDs)
+        state.visibleEntriesByID = Dictionary(
+            uniqueKeysWithValues: entries.map { ($0.id, $0) }
+        )
+        state.presentationRevision &+= 1
     }
 }

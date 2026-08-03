@@ -85,6 +85,8 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
     let colorHex: String?
     let moveContext: HomeTaskListMoveContext?
     let taskGroups: [HomeTaskListPresentationTaskGroup<Display>]
+    let tasks: [Display]
+    private let taskIndicesByID: [UUID: Int]
 
     init(
         kind: HomeTaskListPresentationSectionKind,
@@ -104,7 +106,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
         self.includeMarkDone = includeMarkDone
         self.colorHex = colorHex
         self.moveContext = moveContext
-        self.taskGroups = Self.deduplicatedTaskGroups(taskGroups ?? [
+        let resolvedTaskGroups = Self.deduplicatedTaskGroups(taskGroups ?? [
             HomeTaskListPresentationTaskGroup(
                 kind: kind,
                 title: nil,
@@ -113,18 +115,24 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                 isCollapsible: false
             )
         ])
+        let resolvedTasks = resolvedTaskGroups.flatMap(\.tasks)
+        self.taskGroups = resolvedTaskGroups
+        self.tasks = resolvedTasks
+        self.taskIndicesByID = Dictionary(
+            uniqueKeysWithValues: resolvedTasks.enumerated().map { ($0.element.taskID, $0.offset) }
+        )
     }
 
     var id: String {
         "\(kind.rawValue):\(identityKey)"
     }
 
-    var tasks: [Display] {
-        taskGroups.flatMap(\.tasks)
-    }
-
     func rowNumber(forTaskAt index: Int) -> Int {
         rowNumberOffset + index + 1
+    }
+
+    func taskIndex(for taskID: UUID) -> Int? {
+        taskIndicesByID[taskID]
     }
 
     func replacingRowNumberOffset(_ rowNumberOffset: Int) -> Self {

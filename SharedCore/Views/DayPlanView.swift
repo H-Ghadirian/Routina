@@ -152,14 +152,6 @@ struct DayPlanSidebarView: View {
 
     var body: some View {
         taskPanel
-            .dayPlanLifecycle(
-                planner: planner,
-                tasks: tasks,
-                sleepSessions: sleepSessions,
-                awaySessions: visibleAwaySessions,
-                focusSessions: focusSessions,
-                calendar: calendar
-            )
     }
 
     private var visibleAwaySessions: [AwaySession] {
@@ -2924,6 +2916,7 @@ private struct DayPlanTimelinePanelContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .dayPlanLifecycle(
             planner: planner,
+            dataRevision: dataSnapshotID,
             tasks: currentTasks,
             sleepSessions: currentSleepSessions,
             awaySessions: currentAwaySessions,
@@ -7356,6 +7349,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var planner: DayPlanPlannerState
+    var dataRevision: UUID
     var tasks: [RoutineTask]
     var sleepSessions: [SleepSession]
     var awaySessions: [AwaySession]
@@ -7383,21 +7377,11 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 )
                 showExactTimedTasks()
             }
-            .onChange(of: taskChangeToken) { _, _ in
-                planner.loadBlocks(calendar: calendar, context: modelContext)
-                showExactTimedTasks()
-                planner.selectDefaultTaskIfNeeded(from: tasks)
-            }
-            .onChange(of: sleepSessionChangeToken) { _, _ in
-                showExactTimedTasks()
-            }
-            .onChange(of: awaySessionChangeToken) { _, _ in
-                showExactTimedTasks()
-            }
-            .onChange(of: focusSessionChangeToken) { _, _ in
+            .onChange(of: dataRevision) { _, _ in
                 reconcileCountUpFocusSegments()
                 planner.loadBlocks(calendar: calendar, context: modelContext)
                 showExactTimedTasks()
+                planner.selectDefaultTaskIfNeeded(from: tasks)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
@@ -7415,71 +7399,6 @@ private struct DayPlanLifecycleModifier: ViewModifier {
             calendar: calendar,
             context: modelContext
         )
-    }
-
-    private var focusSessionChangeToken: [String] {
-        DayPlanFocusSessionChangeToken.tokens(from: focusSessions)
-    }
-
-    private var taskChangeToken: [String] {
-        tasks.map { task in
-            [
-                task.id.uuidString,
-                task.scheduleModeRawValue,
-                task.isAllDay.description,
-                task.deadline?.timeIntervalSinceReferenceDate.description ?? "",
-                task.availabilityStartDate?.timeIntervalSinceReferenceDate.description ?? "",
-                task.availabilityEndDate?.timeIntervalSinceReferenceDate.description ?? "",
-                task.recurrenceStorageVersion.description,
-                task.recurrenceKindRawValue,
-                task.recurrenceTimeOfDayHour?.description ?? "",
-                task.recurrenceTimeOfDayMinute?.description ?? "",
-                task.recurrenceTimeRangeStartHour?.description ?? "",
-                task.recurrenceTimeRangeStartMinute?.description ?? "",
-                task.recurrenceTimeRangeEndHour?.description ?? "",
-                task.recurrenceTimeRangeEndMinute?.description ?? "",
-                task.recurrenceWeekday?.description ?? "",
-                task.recurrenceDayOfMonth?.description ?? "",
-                task.recurrenceRuleStorage,
-                task.interval.description,
-                task.lastDone?.timeIntervalSinceReferenceDate.description ?? "",
-                task.canceledAt?.timeIntervalSinceReferenceDate.description ?? "",
-                task.scheduleAnchor?.timeIntervalSinceReferenceDate.description ?? "",
-                task.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                task.snoozedUntil?.timeIntervalSinceReferenceDate.description ?? "",
-                task.estimatedDurationMinutes?.description ?? "",
-                task.autoAssumeDailyDone.description,
-                task.autoAssumeDoneTimeOfDayHour?.description ?? "",
-                task.autoAssumeDoneTimeOfDayMinute?.description ?? "",
-                task.trackingCadenceEnabled.description,
-            ].joined(separator: ":")
-        }
-        .sorted()
-    }
-
-    private var sleepSessionChangeToken: [String] {
-        sleepSessions.map { session in
-            [
-                session.id.uuidString,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var awaySessionChangeToken: [String] {
-        awaySessions.map { session in
-            [
-                session.id.uuidString,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.plannedDurationSeconds.description,
-                session.plannedEndAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.linkedTaskID?.uuidString ?? "",
-                session.title,
-                session.presetRawValue,
-            ].joined(separator: ":")
-        }
     }
 
     private func showExactTimedTasks() {
@@ -7512,6 +7431,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
 private extension View {
     func dayPlanLifecycle(
         planner: DayPlanPlannerState,
+        dataRevision: UUID,
         tasks: [RoutineTask],
         sleepSessions: [SleepSession],
         awaySessions: [AwaySession],
@@ -7521,6 +7441,7 @@ private extension View {
         modifier(
             DayPlanLifecycleModifier(
                 planner: planner,
+                dataRevision: dataRevision,
                 tasks: tasks,
                 sleepSessions: sleepSessions,
                 awaySessions: awaySessions,
@@ -7528,26 +7449,6 @@ private extension View {
                 calendar: calendar
             )
         )
-    }
-}
-
-enum DayPlanFocusSessionChangeToken {
-    static func tokens(from sessions: [FocusSession]) -> [String] {
-        sessions
-            .map { session in
-                [
-                    session.id.uuidString,
-                    session.taskID.uuidString,
-                    session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                    session.completedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                    session.abandonedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                    session.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                    session.accumulatedPausedSeconds.description,
-                    session.plannedDurationSeconds.description,
-                    session.focusTagName ?? "",
-                ].joined(separator: ":")
-            }
-            .sorted()
     }
 }
 

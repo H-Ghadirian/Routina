@@ -59,6 +59,11 @@ extension HomeFeature {
         state.routineDisplays = active
         state.awayRoutineDisplays = away
         state.archivedRoutineDisplays = archived
+        state.taskNamesByID = Dictionary(
+            state.routineTasks.map { ($0.id, RoutineTask.trimmedName($0.name) ?? "Untitled task") },
+            uniquingKeysWith: { first, _ in first }
+        )
+        state.taskListPresentationRevision &+= 1
     }
 
     func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {

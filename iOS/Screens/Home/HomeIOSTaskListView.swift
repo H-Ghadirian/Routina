@@ -69,14 +69,20 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
     }
 
     private var taskList: some View {
-        List(selection: selectedTaskID) {
+        let visibleOffsets = visibleRowNumberOffsets
+
+        return List(selection: selectedTaskID) {
             ForEach(presentation.sections) { section in
                 Section {
                     if isSectionExpanded(section) {
-                        ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                        ForEach(section.tasks, id: \.taskID) { task in
                             rowContent(
                                 task,
-                                visibleRowNumber(for: section, taskIndex: index),
+                                visibleRowNumber(
+                                    for: task,
+                                    in: section,
+                                    visibleOffsets: visibleOffsets
+                                ),
                                 section.includeMarkDone,
                                 section.moveContext
                             )
@@ -165,20 +171,26 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         }
     }
 
-    private func visibleRowNumber(
-        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
-        taskIndex: Int
-    ) -> Int {
+    private var visibleRowNumberOffsets: [String: Int] {
+        var offsets: [String: Int] = [:]
         var offset = 0
-        for currentSection in presentation.sections {
-            if currentSection.id == section.id {
-                return offset + taskIndex + 1
-            }
-            if isSectionExpanded(currentSection) {
-                offset += currentSection.tasks.count
+        for section in presentation.sections {
+            offsets[section.id] = offset
+            if isSectionExpanded(section) {
+                offset += section.tasks.count
             }
         }
-        return taskIndex + 1
+        return offsets
+    }
+
+    private func visibleRowNumber(
+        for task: HomeFeature.RoutineDisplay,
+        in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        visibleOffsets: [String: Int]
+    ) -> Int {
+        let sectionOffset = visibleOffsets[section.id] ?? 0
+        let taskIndex = section.taskIndex(for: task.taskID) ?? 0
+        return sectionOffset + taskIndex + 1
     }
 
     private var collapsedTagTaskListSectionIDs: Set<String> {

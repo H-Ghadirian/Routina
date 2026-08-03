@@ -248,18 +248,8 @@ detailContent
         awayRoutineDisplays: [HomeFeature.RoutineDisplay],
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
     ) -> some View {
-        let presentation = HomeTaskListPresentation.iOS(
-            filtering: taskListFiltering(),
-            routineDisplays: routineDisplays,
-            awayRoutineDisplays: awayRoutineDisplays,
-            archivedRoutineDisplays: archivedRoutineDisplays,
-            hideUnavailableRoutines: store.hideUnavailableRoutines,
-            showArchivedTasks: store.showArchivedTasks,
-            taskListKind: store.taskListMode.filterTaskListKind
-        )
-
         HomeIOSTaskListView(
-            presentation: presentation,
+            presentation: taskListPresentation,
             selectedTaskID: selectedTaskBinding,
             isCompactHeaderHidden: isCompactHeaderHidden,
             hasActiveOptionalFilters: hasActiveOptionalFilters
@@ -401,7 +391,7 @@ detailContent
             homeToolbarContent
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            HomePinnedFocusTimerBanner { deepLink in
+            HomePinnedFocusTimerBanner(taskNamesByID: store.taskNamesByID) { deepLink in
                 switch deepLink {
                 case let .task(taskID):
                     openTask(taskID)
@@ -434,10 +424,22 @@ struct HomeIOSView: View {
 }
 
 private struct HomePinnedFocusTimerBanner: View {
-    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
-    @Query private var tasks: [RoutineTask]
-    @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query(
+        filter: #Predicate<FocusSession> { session in
+            session.completedAt == nil && session.abandonedAt == nil
+        },
+        sort: \FocusSession.startedAt,
+        order: .reverse
+    ) private var focusSessions: [FocusSession]
+    @Query(
+        filter: #Predicate<SprintFocusSessionRecord> { session in
+            session.stoppedAt == nil
+        },
+        sort: \SprintFocusSessionRecord.startedAt,
+        order: .reverse
+    ) private var sprintFocusSessions: [SprintFocusSessionRecord]
     @Query private var sprints: [BoardSprintRecord]
+    let taskNamesByID: [UUID: String]
     let onOpen: (RoutinaDeepLink) -> Void
 
     var body: some View {
@@ -507,7 +509,7 @@ private struct HomePinnedFocusTimerBanner: View {
             return nil
         }
 
-        let taskTitle = session.isTaskFocus ? tasks.first { $0.id == session.taskID }?.name : nil
+        let taskTitle = session.isTaskFocus ? taskNamesByID[session.taskID] : nil
         let kind: HomePinnedFocusTimerStatus.Kind
         let title: String
         let targetID: UUID?

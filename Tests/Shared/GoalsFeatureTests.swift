@@ -56,6 +56,7 @@ struct GoalsFeatureTests {
         }
         await store.receive(.goalsLoaded(expectedGoals, [], [], .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.refreshGoalPresentation()
             $0.availableTags = []
             $0.isLoading = false
             $0.selectedGoalID = goal.id
@@ -92,6 +93,7 @@ struct GoalsFeatureTests {
         }
         await store.receive(.goalsLoaded(expectedGoals, [], [], .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.refreshGoalPresentation()
             $0.availableTags = []
             $0.isLoading = false
             $0.selectedGoalID = parent.id
@@ -210,6 +212,7 @@ struct GoalsFeatureTests {
         ]
         await store.receive(.goalsLoaded(expectedGoals, expectedTagSummaries, [], .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.refreshGoalPresentation()
             $0.availableTagSummaries = expectedTagSummaries
             $0.availableTags = ["Fitness"]
             $0.isLoading = false
@@ -281,6 +284,7 @@ struct GoalsFeatureTests {
         ]
         await store.receive(.goalsLoaded(expectedGoals, expectedTagSummaries, [], .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.refreshGoalPresentation()
             $0.availableTagSummaries = expectedTagSummaries
             $0.availableTags = ["Fitness"]
             $0.isLoading = false
@@ -343,6 +347,7 @@ struct GoalsFeatureTests {
         ]
         await store.receive(.goalsLoaded(expectedGoals, expectedTagSummaries, [], .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.refreshGoalPresentation()
             $0.availableTagSummaries = expectedTagSummaries
             $0.availableTags = ["Fitness"]
             $0.isLoading = false
@@ -413,6 +418,7 @@ struct GoalsFeatureTests {
         ]
         await store.receive(.goalsLoaded(expectedGoals, expectedTagSummaries, [], .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.refreshGoalPresentation()
             $0.availableTagSummaries = expectedTagSummaries
             $0.availableTags = ["Fitness"]
             $0.isLoading = false
@@ -489,6 +495,7 @@ struct GoalsFeatureTests {
         ]
         await store.receive(.goalsLoaded(expectedGoals, expectedTagSummaries, expectedRelatedTagRules, .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.refreshGoalPresentation()
             $0.availableTagSummaries = expectedTagSummaries
             $0.availableTags = ["Health", "Work"]
             $0.relatedTagRules = expectedRelatedTagRules
@@ -626,6 +633,7 @@ struct GoalsFeatureTests {
         )
         await store.receive(.goalsLoaded(expectedGoals, [], [], .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.refreshGoalPresentation()
             $0.availableTags = []
             $0.selectedGoalID = child.id
         }
@@ -730,6 +738,7 @@ struct GoalsFeatureTests {
         )
         await store.receive(.goalsLoaded(remainingGoalDisplays, [], [], .defaultValue, [:])) {
             $0.goals = remainingGoalDisplays
+            $0.refreshGoalPresentation()
             $0.availableTags = []
             $0.isLoading = false
             $0.selectedGoalID = childGoal.id

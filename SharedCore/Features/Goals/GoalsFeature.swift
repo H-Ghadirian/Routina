@@ -20,22 +20,31 @@ struct GoalsFeature {
         var validationMessage: String?
         var pendingDeleteGoalID: UUID?
         var isLoading = false
+        var filteredGoalSnapshot: [GoalDisplay] = []
+        var activeGoalSnapshot: [GoalDisplay] = []
+        var archivedGoalSnapshot: [GoalDisplay] = []
+        var goalDisplaysByID: [UUID: GoalDisplay] = [:]
+        var hasBuiltGoalPresentation = false
 
         var filteredGoals: [GoalDisplay] {
-            Self.filtered(goals, by: searchText)
+            hasBuiltGoalPresentation ? filteredGoalSnapshot : Self.filtered(goals, by: searchText)
         }
 
         var activeGoals: [GoalDisplay] {
-            filteredGoals.filter { $0.status == .active }
+            hasBuiltGoalPresentation
+                ? activeGoalSnapshot
+                : filteredGoals.filter { $0.status == .active }
         }
 
         var archivedGoals: [GoalDisplay] {
-            filteredGoals.filter { $0.status == .archived }
+            hasBuiltGoalPresentation
+                ? archivedGoalSnapshot
+                : filteredGoals.filter { $0.status == .archived }
         }
 
         var selectedGoal: GoalDisplay? {
             guard let selectedGoalID else { return nil }
-            return goals.first { $0.id == selectedGoalID }
+            return goalDisplaysByID[selectedGoalID] ?? goals.first { $0.id == selectedGoalID }
         }
 
         var isAddingGoal: Bool {
@@ -67,6 +76,31 @@ struct GoalsFeature {
                 goal.searchableText.contains(normalizedQuery)
             }
         }
+
+        mutating func refreshGoalPresentation() {
+            let filteredGoals = Self.filtered(goals, by: searchText)
+            filteredGoalSnapshot = filteredGoals
+            activeGoalSnapshot = filteredGoals.filter { $0.status == .active }
+            archivedGoalSnapshot = filteredGoals.filter { $0.status == .archived }
+            goalDisplaysByID = Dictionary(uniqueKeysWithValues: goals.map { ($0.id, $0) })
+            hasBuiltGoalPresentation = true
+        }
+    }
+
+    struct GoalTaskSummary: Equatable, Hashable {
+        var routineCount: Int
+        var todoCount: Int
+        var openTaskCount: Int
+        var completedTodoCount: Int
+        var nextDueDate: Date?
+
+        init(linkedTasks: [GoalTaskDisplay]) {
+            routineCount = linkedTasks.count { $0.taskType == .routine }
+            todoCount = linkedTasks.count(where: \.isOneOffTask)
+            openTaskCount = linkedTasks.count { !$0.isCompletedOneOff && !$0.isCanceledOneOff }
+            completedTodoCount = linkedTasks.count(where: \.isCompletedOneOff)
+            nextDueDate = linkedTasks.compactMap(\.dueDate).min()
+        }
     }
 
     struct GoalDisplay: Identifiable, Equatable, Hashable {
@@ -85,6 +119,8 @@ struct GoalsFeature {
         var sortOrder: Int
         var linkedTasks: [GoalTaskDisplay]
         var taskSuggestions: [GoalTaskSuggestionDisplay]
+        var taskSummary: GoalTaskSummary?
+        var normalizedSearchText: String?
 
         var displayEmoji: String {
             emoji.flatMap(RoutineGoal.cleanedEmoji) ?? "\u{1F3AF}"
@@ -95,19 +131,20 @@ struct GoalsFeature {
         }
 
         var routineCount: Int {
-            linkedTasks.filter { $0.taskType == .routine }.count
+            taskSummary?.routineCount ?? linkedTasks.count { $0.taskType == .routine }
         }
 
         var todoCount: Int {
-            linkedTasks.filter(\.isOneOffTask).count
+            taskSummary?.todoCount ?? linkedTasks.count(where: \.isOneOffTask)
         }
 
         var openTaskCount: Int {
-            linkedTasks.filter { !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count
+            taskSummary?.openTaskCount
+                ?? linkedTasks.count { !$0.isCompletedOneOff && !$0.isCanceledOneOff }
         }
 
         var completedTodoCount: Int {
-            linkedTasks.filter(\.isCompletedOneOff).count
+            taskSummary?.completedTodoCount ?? linkedTasks.count(where: \.isCompletedOneOff)
         }
 
         var childGoalCount: Int {
@@ -115,10 +152,14 @@ struct GoalsFeature {
         }
 
         var nextDueDate: Date? {
-            linkedTasks.compactMap(\.dueDate).min()
+            taskSummary?.nextDueDate ?? linkedTasks.compactMap(\.dueDate).min()
         }
 
         var searchableText: String {
+            normalizedSearchText ?? makeSearchableText()
+        }
+
+        private func makeSearchableText() -> String {
             (
                 [displayTitle, notes ?? "", parentGoal?.displayTitle ?? ""]
                     + tags
@@ -174,7 +215,7 @@ struct GoalsFeature {
             return goals
                 .map { goal in
                     let parentGoalID = validParentGoalIDsByGoalID[goal.id]
-                    return GoalDisplay(
+                    var display = GoalDisplay(
                         id: goal.id,
                         title: goal.displayTitle,
                         emoji: goal.emoji,
@@ -189,8 +230,13 @@ struct GoalsFeature {
                         createdAt: goal.createdAt,
                         sortOrder: goal.sortOrder,
                         linkedTasks: (tasksByGoalID[goal.id] ?? []).sorted(),
-                        taskSuggestions: taskSuggestions(for: goal, from: taskDisplays)
+                        taskSuggestions: taskSuggestions(for: goal, from: taskDisplays),
+                        taskSummary: nil,
+                        normalizedSearchText: nil
                     )
+                    display.taskSummary = GoalTaskSummary(linkedTasks: display.linkedTasks)
+                    display.normalizedSearchText = display.makeSearchableText()
+                    return display
                 }
                 .sorted()
         }
@@ -478,6 +524,7 @@ struct GoalsFeature {
 
             case let .goalsLoaded(goals, tagSummaries, relatedTagRules, tagCounterDisplayMode, tagColors):
                 state.goals = goals
+                state.refreshGoalPresentation()
                 state.availableTagSummaries = tagSummaries
                 state.availableTags = tagSummaries.map(\.name)
                 state.editorDraft.tags = RoutineTag.deduplicated(
@@ -510,6 +557,7 @@ struct GoalsFeature {
 
             case let .searchTextChanged(searchText):
                 state.searchText = searchText
+                state.refreshGoalPresentation()
                 return .none
 
             case let .selectGoal(goalID):
@@ -518,6 +566,7 @@ struct GoalsFeature {
 
             case let .openGoalDeepLink(goalID):
                 state.searchText = ""
+                state.refreshGoalPresentation()
                 state.isEditorPresented = false
                 state.selectedGoalID = goalID
                 state.deepLinkedGoalNavigationID = goalID
@@ -659,6 +708,9 @@ struct GoalsFeature {
                 state.isEditorPresented = false
                 state.validationMessage = nil
                 state.searchText = ""
+                if state.hasBuiltGoalPresentation {
+                    state.refreshGoalPresentation()
+                }
                 state.selectedGoalID = goalID
                 return loadGoalsEffect()
 

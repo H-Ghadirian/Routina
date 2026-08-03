@@ -11,7 +11,13 @@ struct AppView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
+    @Query(
+        filter: #Predicate<SleepSession> { session in
+            session.endedAt == nil
+        },
+        sort: \SleepSession.startedAt,
+        order: .reverse
+    ) private var activeSleepSessions: [SleepSession]
     @State private var searchText = ""
     @State private var moreDestination: AppMoreDestination?
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
@@ -200,7 +206,7 @@ Group {
         isAwayEnabled
             && isSleepExperimentEnabled
             && isSleepNewSheetEnabled
-            && sleepSessions.first(where: { $0.endedAt == nil }) == nil
+            && activeSleepSessions.isEmpty
     }
 
     private var availableNewTabActions: [NewTabAction] {

@@ -57,7 +57,7 @@ struct HomeIOSRoutineRowView: View {
                     .font(.caption2)
                     .foregroundStyle(.primary)
                     .padding(4)
-                    .routinaGlassPill()
+                    .routinaScrollingPillFill(tint: .secondary, tintOpacity: 0.14)
             }
         }
         .padding(2)
@@ -69,7 +69,7 @@ struct HomeIOSRoutineRowView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
-            .routinaGlassPill()
+            .routinaScrollingPillFill(tint: .secondary, tintOpacity: 0.14)
             .overlay(
                 Capsule()
                     .stroke(Color.white.opacity(0.08), lineWidth: 1)

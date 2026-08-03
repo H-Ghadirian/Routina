@@ -284,9 +284,14 @@ struct StatsFeature {
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var advancedQuery: String = ""
         var availableTags: [String] = []
+        var availableExcludeTags: [String] = []
         var tagColors: [String: String] = [:]
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var filteredTaskCount: Int = 0
+        var hasOneOffTasks = false
+        var unassignedFocusSessions: [FocusSession] = []
+        var assignableFocusTasks: [RoutineTask] = []
+        var activeFocusSprints: [BoardSprintRecord] = []
         var metrics = Metrics()
         var achievementSnapshot = StatsAchievementPresentationSnapshot()
         var gitHubConnection = GitHubConnectionStatus.disconnected
@@ -394,6 +399,28 @@ struct StatsFeature {
                 state.goals = goals
                 state.places = places
                 state.placeCheckInSessions = placeCheckInSessions
+                state.hasOneOffTasks = tasks.contains(where: \.isOneOffTask)
+                state.unassignedFocusSessions = focusSessions
+                    .filter { $0.isUnassigned && $0.state == .completed }
+                    .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
+                state.assignableFocusTasks = tasks
+                    .filter { task in
+                        !task.isArchived(referenceDate: now, calendar: calendar)
+                            && !task.isCompletedOneOff
+                            && !task.isCanceledOneOff
+                    }
+                    .sorted { lhs, rhs in
+                        let lhsTitle = RoutineTask.trimmedName(lhs.name) ?? "Untitled task"
+                        let rhsTitle = RoutineTask.trimmedName(rhs.name) ?? "Untitled task"
+                        return lhsTitle.localizedCaseInsensitiveCompare(rhsTitle) == .orderedAscending
+                    }
+                state.activeFocusSprints = boardSprints
+                    .filter { $0.statusRawValue == SprintStatus.active.rawValue }
+                    .sorted { lhs, rhs in
+                        let lhsTitle = lhs.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let rhsTitle = rhs.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                        return lhsTitle.localizedCaseInsensitiveCompare(rhsTitle) == .orderedAscending
+                    }
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
@@ -805,6 +832,7 @@ struct StatsFeature {
             calendar: calendar
         )
         state.availableTags = derivedState.availableTags
+        state.availableExcludeTags = derivedState.availableExcludeTags
         state.setSelectedTags(derivedState.selectedTags)
         state.excludedTags = derivedState.excludedTags
         state.filteredTaskCount = derivedState.filteredTaskCount
