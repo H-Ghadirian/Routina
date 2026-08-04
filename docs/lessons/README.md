@@ -118,3 +118,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0074 — Render Markdown blocks as visible structure](0074-render-markdown-blocks-as-visible-structure.md)
 - [0075 — Enforce hidden features at the preference boundary](0075-enforce-hidden-features-at-the-preference-boundary.md)
 - [0076 — Cache iOS main-screen presentations](0076-cache-ios-main-screen-presentations.md)
+- [0077 — Avoid Liquid Glass multiplication in scrolling forms](0077-avoid-liquid-glass-multiplication-in-scrolling-forms.md)

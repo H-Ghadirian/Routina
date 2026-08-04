@@ -202,7 +202,7 @@ private struct TaskFormIOSScheduleBehaviorPreviewBadge: View {
             .foregroundStyle(tint)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .routinaGlassPill(tint: tint, tintOpacity: tintOpacity)
+            .routinaScrollingPillFill(tint: tint, tintOpacity: tintOpacity)
     }
 
     private var tint: Color {

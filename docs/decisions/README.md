@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md) refines [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md) and [0462](0462-use-a-compact-progressive-ios-task-editor.md) for iOS form performance:** Add Task and Edit Task inherit lightweight tinted segmented surfaces and preview badges inside their scrolling Form, while other bounded segmented controls retain Liquid Glass; each form body shares one visible/hidden section presentation.
+
 - **[0470](0470-keep-beta-experiments-out-of-production.md) refines all Beta Experiment visibility decisions for release availability:** Production iOS and macOS builds do not expose the Beta Experiments panel and resolve every experimental preference to disabled, while development variants retain the controls; production Mac signing omits the location, audio-input, and Apple Events entitlements used only by those experiments.
 
 - **[0469](0469-store-task-descriptions-separately-from-notes.md) refines [0058](0058-use-progressive-task-forms.md), [0098](0098-support-markdown-text-editing-controls.md), [0100](0100-reveal-task-form-details-by-section.md), [0277](0277-hide-notes-and-away-behind-beta-toggles.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), and [0462](0462-use-a-compact-progressive-ios-task-editor.md) for stable task context:** Tasks store an optional Description independently from experimental Notes; create, edit, details, targeted Add More, drafts, search, copying, sync, sharing, and backup preserve it regardless of the Notes beta preference.
@@ -415,6 +417,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md) | Use Lightweight Segmented Surfaces in Scrolling Task Forms | Accepted | 2026-08-04 |
 | [0470](0470-keep-beta-experiments-out-of-production.md) | Keep Beta Experiments Out of Production | Accepted | 2026-08-03 |
 | [0469](0469-store-task-descriptions-separately-from-notes.md) | Store Task Descriptions Separately From Notes | Accepted | 2026-08-02 |
 | [0468](0468-model-task-thinking-needed-separately.md) | Model Task Thinking Needed Separately | Accepted | 2026-08-02 |

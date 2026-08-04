@@ -1,5 +1,21 @@
 import SwiftUI
 
+enum RoutinaSegmentedControlSurfaceStyle: Equatable, Sendable {
+    case glass
+    case scrolling
+}
+
+private struct RoutinaSegmentedControlSurfaceStyleKey: EnvironmentKey {
+    static let defaultValue = RoutinaSegmentedControlSurfaceStyle.glass
+}
+
+extension EnvironmentValues {
+    var routinaSegmentedControlSurfaceStyle: RoutinaSegmentedControlSurfaceStyle {
+        get { self[RoutinaSegmentedControlSurfaceStyleKey.self] }
+        set { self[RoutinaSegmentedControlSurfaceStyleKey.self] = newValue }
+    }
+}
+
 struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
     let accessibilityLabel: String
     let options: [Option]
@@ -13,6 +29,7 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
     let tint: (Option) -> Color
     let foregroundColor: (Option, Bool) -> Color
     @ViewBuilder let label: (Option) -> Label
+    @Environment(\.routinaSegmentedControlSurfaceStyle) private var surfaceStyle
     @Namespace private var glassNamespace
 
     init(
@@ -88,11 +105,27 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
     }
 
     private var segmentedSurface: some View {
-        GlassEffectContainer(spacing: 4) {
-            segmentedContent
-                .padding(4)
-                .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 13))
+        Group {
+            if surfaceStyle == .scrolling {
+                segmentedContent
+                    .padding(4)
+                    .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
+                    .background(
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                    )
+            } else {
+                GlassEffectContainer(spacing: 4) {
+                    segmentedContent
+                        .padding(4)
+                        .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
+                        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 13))
+                }
+            }
         }
         .padding(.vertical, 1)
         .accessibilityElement(children: .contain)
@@ -142,7 +175,7 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.86)
                 .allowsTightening(true)
-                .foregroundStyle(foregroundColor(option, isSelected))
+                .foregroundStyle(resolvedForegroundColor(for: option, isSelected: isSelected))
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, verticalPadding)
                 .frame(minWidth: minimumSegmentWidth, maxWidth: fillsAvailableWidth ? .infinity : nil)
@@ -151,16 +184,32 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
         .buttonStyle(.plain)
         .background {
             if isSelected {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .glassEffect(
-                        .regular.tint(tint(option).opacity(0.30)).interactive(),
-                        in: .rect(cornerRadius: 9)
-                    )
-                    .glassEffectID(glassID, in: glassNamespace)
+                if surfaceStyle == .scrolling {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(tint(option).opacity(0.18))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .stroke(tint(option).opacity(0.45), lineWidth: 1)
+                        )
+                } else {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .glassEffect(
+                            .regular.tint(tint(option).opacity(0.30)).interactive(),
+                            in: .rect(cornerRadius: 9)
+                        )
+                        .glassEffectID(glassID, in: glassNamespace)
+                }
             }
         }
         .accessibilityValue(isSelected ? "Selected" : "")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func resolvedForegroundColor(for option: Option, isSelected: Bool) -> Color {
+        guard surfaceStyle == .scrolling else {
+            return foregroundColor(option, isSelected)
+        }
+        return isSelected ? tint(option) : .secondary
     }
 
     private struct IndexedOption: Hashable {
@@ -170,6 +219,12 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
 }
 
 extension View {
+    func routinaSegmentedControlSurfaceStyle(
+        _ style: RoutinaSegmentedControlSurfaceStyle
+    ) -> some View {
+        environment(\.routinaSegmentedControlSurfaceStyle, style)
+    }
+
     @ViewBuilder
     func routinaIf<Content: View>(
         _ condition: Bool,

@@ -38,10 +38,12 @@ struct TaskFormContent: View {
     }
 
     var body: some View {
+        let sectionPresentation = compactSectionPresentation
+
         ScrollViewReader { proxy in
             Form {
                 ForEach(
-                    visibleCompactSections.filter { $0 != .delete },
+                    sectionPresentation.visibleSections.filter { $0 != .delete },
                     id: \.self
                 ) { section in
                     compactSection(section)
@@ -49,14 +51,14 @@ struct TaskFormContent: View {
                 }
 
                 if model.visibilityMode.usesProgressiveDisclosure,
-                   !hiddenOptionalSections.isEmpty {
+                   !sectionPresentation.hiddenOptionalSections.isEmpty {
                     addDetailsSection(
-                        hiddenOptionalSections,
+                        sectionPresentation.hiddenOptionalSections,
                         proxy: proxy
                     )
                 }
 
-                if visibleCompactSections.contains(.delete) {
+                if sectionPresentation.visibleSections.contains(.delete) {
                     compactSection(.delete)
                         .id(TaskFormCompactSection.delete)
                 }
@@ -65,6 +67,7 @@ struct TaskFormContent: View {
             .listSectionSpacing(20)
             .contentMargins(.top, 10, for: .scrollContent)
             .scrollDismissesKeyboard(.interactively)
+            .routinaSegmentedControlSurfaceStyle(.scrolling)
         }
         .sheet(isPresented: $isTagManagerPresented) {
             SettingsTagManagerPresentationView(store: tagManagerStore)
@@ -148,25 +151,29 @@ struct TaskFormContent: View {
         )
     }
 
-    private var visibleCompactSections: [TaskFormCompactSection] {
+    private var compactSectionPresentation: CompactSectionPresentation {
         let availableSections = filteredCompactSections(showingAllDetails: true)
         guard model.visibilityMode.usesProgressiveDisclosure else {
-            return availableSections
+            return CompactSectionPresentation(
+                visibleSections: availableSections,
+                hiddenOptionalSections: []
+            )
         }
 
         let defaultSections = Set(filteredCompactSections(showingAllDetails: false))
-        return availableSections.filter {
+        let visibleSections = availableSections.filter {
             defaultSections.contains($0)
                 || revealedSections.contains($0)
                 || $0 == .delete
         }
-    }
-
-    private var hiddenOptionalSections: [TaskFormCompactSection] {
-        let visibleSections = Set(visibleCompactSections)
-        return filteredCompactSections(showingAllDetails: true).filter {
-            !visibleSections.contains($0) && $0 != .delete
+        let visibleSectionSet = Set(visibleSections)
+        let hiddenOptionalSections = availableSections.filter {
+            !visibleSectionSet.contains($0) && $0 != .delete
         }
+        return CompactSectionPresentation(
+            visibleSections: visibleSections,
+            hiddenOptionalSections: hiddenOptionalSections
+        )
     }
 
     private func filteredCompactSections(
@@ -447,6 +454,11 @@ struct TaskFormContent: View {
         } footer: {
             Text("This action cannot be undone.")
         }
+    }
+
+    private struct CompactSectionPresentation {
+        let visibleSections: [TaskFormCompactSection]
+        let hiddenOptionalSections: [TaskFormCompactSection]
     }
 
 }

@@ -56,6 +56,21 @@ struct IOSScrollingPerformanceRegressionTests {
         #expect(!planner.contains("awaySessionChangeToken"))
     }
 
+    @Test
+    func taskFormsAvoidLiquidGlassAndDuplicateSectionDerivationWhileScrolling() throws {
+        let form = try Self.sourceFile("iOS/Screens/Shared/TaskFormContentPlatform.swift")
+        let formSections = try Self.sourceFile("iOS/Screens/Shared/TaskFormIOSSections.swift")
+        let segmentedControl = try Self.sourceFile("SharedCore/Views/RoutinaLiquidGlass.swift")
+
+        #expect(form.contains("let sectionPresentation = compactSectionPresentation"))
+        #expect(form.contains(".routinaSegmentedControlSurfaceStyle(.scrolling)"))
+        #expect(!form.contains("private var visibleCompactSections"))
+        #expect(segmentedControl.contains("if surfaceStyle == .scrolling"))
+        #expect(segmentedControl.contains("RoutinaSegmentedControlSurfaceStyle.glass"))
+        #expect(formSections.contains(".routinaScrollingPillFill("))
+        #expect(!formSections.contains(".routinaGlassPill(tint: tint, tintOpacity: tintOpacity)"))
+    }
+
     private static func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
