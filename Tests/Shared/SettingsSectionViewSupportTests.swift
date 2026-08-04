@@ -123,6 +123,18 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func aiConnectionsSectionIsAvailableOnlyOnMac() {
+        let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
+        #if os(macOS)
+        #expect(sections.contains(.aiConnections))
+        #expect(SettingsSectionID.aiConnections.title == "AI Connections")
+        #expect(SettingsSectionID.aiConnections.rowPresentation(in: SettingsFeatureState()).subtitle == "Read-only access for local AI clients")
+        #else
+        #expect(!sections.contains(.aiConnections))
+        #endif
+    }
+
+    @Test
     func compactSectionsIncludeBlocking() {
         let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
 

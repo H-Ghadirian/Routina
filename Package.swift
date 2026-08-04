@@ -81,6 +81,7 @@ let package = Package(
                 "RoutinaWatchExtension",
                 "Tests",
                 "mac+watch+ios",
+                "script/embed_mcp_helper.sh",
                 // Files that live in SharedCore but cannot yet be compiled as
                 // part of the RoutinaAppSupport package target. Each needs a
                 // dedicated migration step before it can move in.
@@ -533,6 +534,7 @@ let package = Package(
                 "Utilities/PlatformSupport+AppKit.swift",
                 "Utilities/PlatformSupportBase.swift",
                 "Utilities/RemoteNotificationMacDelegate.swift",
+                "Utilities/RoutinaMacAIReadOnlySnapshotScheduler.swift",
                 "Utilities/RoutinaMacGlobalHotKey.swift",
             ],
             sources: [
@@ -547,7 +549,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "RoutinaAIMCPServer",
-            dependencies: ["RoutinaAppSupport"],
+            dependencies: [],
             path: "Tools/RoutinaAIMCPServer",
             exclude: ["smoke-test.jsonl"]
         ),

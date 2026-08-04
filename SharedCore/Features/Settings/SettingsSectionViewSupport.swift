@@ -15,6 +15,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     case backup
     case quickAdd
     case shortcuts
+    case aiConnections
     case support
     case about
 
@@ -54,7 +55,8 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 .iCloud,
                 .git,
                 .quickAdd,
-                .shortcuts
+                .shortcuts,
+                .aiConnections
             ],
             [
                 .about
@@ -91,7 +93,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             return false
         }
         #if !os(macOS)
-        if section == .sections {
+        if section == .sections || section == .aiConnections {
             return false
         }
         #endif
@@ -132,6 +134,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .backup:        return "Data Backup"
         case .quickAdd:      return "Quick Add"
         case .shortcuts:     return "Shortcuts"
+        case .aiConnections: return "AI Connections"
         case .support:       return "Support"
         case .about:         return "Support & About"
         }
@@ -153,6 +156,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .backup:        return "externaldrive.fill"
         case .quickAdd:      return "text.badge.plus"
         case .shortcuts:     return "keyboard.fill"
+        case .aiConnections: return "sparkles"
         case .support:       return "envelope.fill"
         case .about:         return "info.circle.fill"
         }
@@ -242,6 +246,13 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
         case .shortcuts:
             return SettingsSectionRowPresentation(subtitle: "Keyboard, Siri, and Apple Shortcuts")
+
+        case .aiConnections:
+            let isEnabled = SharedDefaults.app[.appSettingMacLocalAIAccessEnabled]
+            return SettingsSectionRowPresentation(
+                subtitle: "Read-only access for local AI clients",
+                value: isEnabled ? "On" : "Off"
+            )
 
         case .support:
             return SettingsSectionRowPresentation(subtitle: aboutAndSupportSubtitle(in: state))

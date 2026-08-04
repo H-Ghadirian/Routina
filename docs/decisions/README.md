@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md) defines the local AI data boundary:** The Mac app exports an opt-in, versioned, read-only task snapshot to its App Group; the embedded MCP helper reads only that snapshot and never opens SwiftData, while future write tools require an app-owned approval broker.
+
 - **[0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md) refines [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md) and [0462](0462-use-a-compact-progressive-ios-task-editor.md) for iOS form performance:** Add Task and Edit Task inherit lightweight tinted segmented surfaces and preview badges inside their scrolling Form, while other bounded segmented controls retain Liquid Glass; each form body shares one visible/hidden section presentation.
 
 - **[0470](0470-keep-beta-experiments-out-of-production.md) refines all Beta Experiment visibility decisions for release availability:** Production iOS and macOS builds do not expose the Beta Experiments panel and resolve every experimental preference to disabled, while development variants retain the controls; production Mac signing omits the location, audio-input, and Apple Events entitlements used only by those experiments.
@@ -417,6 +419,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md) | Broker Local AI Access Through an App-Owned Snapshot | Accepted | 2026-08-04 |
 | [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md) | Use Lightweight Segmented Surfaces in Scrolling Task Forms | Accepted | 2026-08-04 |
 | [0470](0470-keep-beta-experiments-out-of-production.md) | Keep Beta Experiments Out of Production | Accepted | 2026-08-03 |
 | [0469](0469-store-task-descriptions-separately-from-notes.md) | Store Task Descriptions Separately From Notes | Accepted | 2026-08-02 |

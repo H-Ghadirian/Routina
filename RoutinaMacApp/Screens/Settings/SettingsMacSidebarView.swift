@@ -5,6 +5,10 @@ import SwiftUI
 struct SettingsMacSidebarRow: View {
     let section: SettingsMacSection
     let store: StoreOf<SettingsFeature>
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacLocalAIAccessEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isLocalAIAccessEnabled = false
 
     var body: some View {
 HStack(spacing: 12) {
@@ -34,7 +38,13 @@ HStack(spacing: 12) {
     }
 
     private var presentation: SettingsSectionRowPresentation {
-        section.rowPresentation(in: store.state)
+        if section == .aiConnections {
+            return SettingsSectionRowPresentation(
+                subtitle: "Read-only access for local AI clients",
+                value: isLocalAIAccessEnabled ? "On" : "Off"
+            )
+        }
+        return section.rowPresentation(in: store.state)
     }
 }
 

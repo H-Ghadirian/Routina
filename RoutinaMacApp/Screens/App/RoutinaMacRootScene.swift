@@ -8,6 +8,7 @@ struct RoutinaMacRootScene: Scene {
     private let settingsRoot: AnyView
     private let focusTimerStatusStore: RoutinaMacFocusTimerStatusStore
     private let widgetRefreshScheduler: RoutinaMacWidgetRefreshScheduler
+    private let aiSnapshotScheduler: RoutinaMacAIReadOnlySnapshotScheduler
 
     @MainActor
     init() {
@@ -19,6 +20,7 @@ struct RoutinaMacRootScene: Scene {
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
         self.focusTimerStatusStore = focusTimerStatusStore
         self.widgetRefreshScheduler = RoutinaMacWidgetRefreshScheduler(persistence: persistence)
+        self.aiSnapshotScheduler = RoutinaMacAIReadOnlySnapshotScheduler(persistence: persistence)
         RoutinaMacSelectedTaskSidebarShortcutMonitor.installIfNeeded()
         RoutinaMacFocusTimerStatusBarController.shared.configure(store: focusTimerStatusStore)
         if !AppEnvironment.isAutomatedTestMode {
@@ -49,14 +51,20 @@ struct RoutinaMacRootScene: Scene {
                         MacMenuCleanup.removeUnneededMenus()
                     }
                     widgetRefreshScheduler.scheduleLaunchRefresh()
+                    aiSnapshotScheduler.scheduleLaunchRefresh()
                     focusTimerStatusStore.refresh()
                     activateHomeWindow()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
                     focusTimerStatusStore.scheduleRefresh()
+                    aiSnapshotScheduler.scheduleRefresh()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
                     focusTimerStatusStore.refresh()
+                    aiSnapshotScheduler.scheduleRefresh()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    aiSnapshotScheduler.scheduleRefresh()
                 }
         }
         .defaultSize(

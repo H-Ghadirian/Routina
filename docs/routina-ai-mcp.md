@@ -1,69 +1,94 @@
 # Routina AI MCP
 
-This is the local read-only MCP bridge for Routina. It lets MCP clients ask for task data through tools without embedding a chat UI inside the app.
+Routina's Mac app includes a local read-only MCP bridge. It lets MCP-compatible
+AI clients search tasks, list overdue work, and retrieve a task by UUID without a
+Routina backend and without giving the helper direct database access.
 
-## Build
+## User Setup
+
+1. Open Routina for Mac.
+2. Open **Settings > AI Connections**.
+3. Enable **Allow read-only task access**.
+4. Click **Copy setup command**, paste it into Terminal, and press Return.
+5. Start a new task in ChatGPT or Codex and ask, `What Routina tasks are overdue?`
+
+The copied command uses the full path to the CLI bundled by the installed AI
+desktop app when available, so the user does not need a separate `codex` command
+on `PATH`. It also uses the MCP helper embedded in the current Routina app bundle.
+
+For a normally installed production build, the equivalent command is:
+
+```bash
+'/Applications/Codex.app/Contents/Resources/codex' mcp add routina -- '/Applications/Routinam.app/Contents/Helpers/RoutinaAIMCPServer' --production
+```
+
+Some desktop releases bundle the same CLI inside ChatGPT instead. The AI
+Connections screen detects that path automatically when it creates the copied
+command.
+
+## Data and Privacy Boundary
+
+Local AI Access is off by default. When enabled, the Routina app writes a
+versioned JSON snapshot to its private App Group and refreshes it after launch,
+activation, and model saves. The snapshot can include task names, schedules,
+dates, tags, descriptions, notes, links, goals, places, and progress. Turning the
+setting off deletes the snapshot.
+
+Production and development builds use different snapshot filenames. The
+`--production` and `--sandbox` helper modes select the corresponding export, so
+development data cannot replace production answers.
+
+The MCP helper reads only this snapshot. It does not open SwiftData, migrate the
+database, or start CloudKit. The user's AI client may send the task details needed
+for an answer to that client's AI provider; Routina does not proxy the request
+through its own backend.
+
+## Tools
+
+- `search_tasks`: Search routines and todos by name, description, notes, tags,
+  place, schedule, status, goal, link, or next step.
+- `list_overdue_tasks`: Return overdue active tasks.
+- `get_task`: Return one task by UUID.
+
+All tools are read-only, non-destructive, and idempotent. Create, update, and
+delete tools are intentionally deferred until Routina has an app-owned approval
+broker.
+
+## Development
+
+Build the lightweight helper:
 
 ```bash
 swift build --product RoutinaAIMCPServer
 ```
 
-## Smoke Test
-
-This runs the server against an empty in-memory store and exercises initialize, tool discovery, and one tool call.
+Run the protocol smoke test against an empty in-memory catalog:
 
 ```bash
 .build/arm64-apple-macosx/debug/RoutinaAIMCPServer --in-memory < Tools/RoutinaAIMCPServer/smoke-test.jsonl
 ```
 
-The response should include the `search_tasks`, `list_overdue_tasks`, and `get_task` tools.
+The Mac Xcode targets build a release helper, copy it to
+`Contents/Helpers/RoutinaAIMCPServer`, and sign it before the application bundle
+is signed.
+
+For a test fixture, pass `--snapshot-file <path>`. `--sandbox` selects the Routina
+development app if the helper needs to launch Routina because a snapshot is
+missing; `--production` selects the production app and is the default.
 
 ## Claude Desktop
 
-Anthropic currently recommends Desktop Extensions for polished local MCP installs, but local development can still use a JSON config style like their documented examples for Claude Desktop MCP servers.
-
-Add this server under the `mcpServers` key in Claude Desktop's MCP config:
+Claude Desktop can use the embedded helper through its MCP configuration:
 
 ```json
 {
   "mcpServers": {
     "routina": {
-      "command": "/Users/ghadirianh/Routina/.build/arm64-apple-macosx/debug/RoutinaAIMCPServer",
-      "args": []
-    }
-  }
-}
-```
-
-For production data instead of the default app environment, pass:
-
-```json
-{
-  "mcpServers": {
-    "routina": {
-      "command": "/Users/ghadirianh/Routina/.build/arm64-apple-macosx/debug/RoutinaAIMCPServer",
+      "command": "/Applications/Routinam.app/Contents/Helpers/RoutinaAIMCPServer",
       "args": ["--production"]
     }
   }
 }
 ```
 
-Restart Claude Desktop after changing the config. In Claude Desktop, check the connected tools list and ask something like:
-
-```text
-What Routina tasks are overdue?
-```
-
-## Tools
-
-- `search_tasks`: Search routines and todos by name, notes, tags, place, schedule, status, or next step.
-- `list_overdue_tasks`: Return overdue active tasks.
-- `get_task`: Return one task by UUID.
-
-All current tools are read-only. They include MCP annotations with `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, and `openWorldHint: false`.
-
-## Notes
-
-- The server opens a local-only SwiftData container, so it does not start CloudKit sync work itself.
-- The app's existing iCloud sync can keep the local store fresh before the MCP client reads it.
-- Write tools should be added later with explicit confirmation in the host client or a Routina-side approval flow.
+Restart the client after changing its configuration.

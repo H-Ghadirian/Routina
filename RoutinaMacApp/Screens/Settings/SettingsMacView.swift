@@ -111,6 +111,8 @@ struct SettingsMacDetailView: View {
             SettingsMacQuickAddDetailView()
         case .shortcuts:
             SettingsMacShortcutsDetailView()
+        case .aiConnections:
+            SettingsMacAIConnectionsDetailView()
         case .support, .about:
             SettingsMacAboutDetailView(store: store)
         }

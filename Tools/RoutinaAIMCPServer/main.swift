@@ -1,8 +1,10 @@
 import Foundation
-import RoutinaAppSupport
+#if canImport(AppKit)
+import AppKit
+#endif
 
 private let serverName = "routina-ai-mcp"
-private let serverVersion = "0.1.0"
+private let serverVersion = "0.2.0"
 private let fallbackProtocolVersion = "2025-06-18"
 
 private enum MCPErrorCode: Int {
@@ -14,8 +16,9 @@ private enum MCPErrorCode: Int {
 }
 
 private struct ServerOptions {
-    var storeFileName: String?
-    var sandboxMode: Bool?
+    var snapshotFileURL: URL?
+    var applicationBundleIdentifier = "ir.hamedgh.Routinam"
+    var sandboxMode = false
     var inMemory: Bool = false
 }
 
@@ -24,33 +27,27 @@ private enum ServerError: LocalizedError {
     case invalidParams(String)
     case unknownTool(String)
     case taskNotFound(String)
+    case snapshotUnavailable(String)
 
     var errorDescription: String? {
         switch self {
         case let .invalidArgument(message),
              let .invalidParams(message),
              let .unknownTool(message),
-             let .taskNotFound(message):
+             let .taskNotFound(message),
+             let .snapshotUnavailable(message):
             return message
         }
     }
 }
 
-@main
-enum RoutinaAIMCPServer {
-    static func main() async {
-        do {
-            let options = try parseArguments(Array(CommandLine.arguments.dropFirst()))
-            apply(options: options)
-            try await MCPStdioServer().run()
-        } catch {
-            writeLog("fatal: \(error.localizedDescription)")
-            Foundation.exit(EXIT_FAILURE)
-        }
-    }
-}
-
 private final class MCPStdioServer {
+    private let options: ServerOptions
+
+    init(options: ServerOptions) {
+        self.options = options
+    }
+
     private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -240,12 +237,13 @@ private final class MCPStdioServer {
 
     private func callSearchTasks(arguments: [String: Any]) async throws -> [String: Any] {
         let snapshot = try await loadTaskSnapshot(
-            query: RoutinaAITaskQuery(
+            query: MCPTaskQuery(
                 searchText: arguments["searchText"] as? String,
                 includeArchived: arguments["includeArchived"] as? Bool ?? true,
                 includeCompleted: arguments["includeCompleted"] as? Bool ?? true,
                 limit: optionalNonNegativeInt(arguments["limit"], name: "limit")
-            )
+            ),
+            options: options
         )
         return try toolTextResult(snapshot)
     }
@@ -253,12 +251,13 @@ private final class MCPStdioServer {
     private func callListOverdueTasks(arguments: [String: Any]) async throws -> [String: Any] {
         let limit = try optionalNonNegativeInt(arguments["limit"], name: "limit")
         let snapshot = try await loadTaskSnapshot(
-            query: RoutinaAITaskQuery(
+            query: MCPTaskQuery(
                 searchText: nil,
                 includeArchived: false,
                 includeCompleted: false,
                 limit: nil
-            )
+            ),
+            options: options
         )
         var overdueTasks = snapshot.tasks.filter { $0.primaryStatus == .overdue }
         if let limit {
@@ -279,12 +278,13 @@ private final class MCPStdioServer {
         }
 
         let snapshot = try await loadTaskSnapshot(
-            query: RoutinaAITaskQuery(
+            query: MCPTaskQuery(
                 searchText: nil,
                 includeArchived: true,
                 includeCompleted: true,
                 limit: nil
-            )
+            ),
+            options: options
         )
         guard let task = snapshot.tasks.first(where: { $0.id == taskID }) else {
             throw ServerError.taskNotFound("No Routina task exists with id \(idString).")
@@ -399,17 +399,19 @@ private func parseArguments(_ arguments: [String]) throws -> ServerOptions {
 
     while index < arguments.count {
         switch arguments[index] {
-        case "--store-file":
+        case "--snapshot-file":
             index += 1
             guard index < arguments.count else {
-                throw ServerError.invalidArgument("Missing value for --store-file.")
+                throw ServerError.invalidArgument("Missing value for --snapshot-file.")
             }
-            options.storeFileName = arguments[index]
+            options.snapshotFileURL = URL(fileURLWithPath: arguments[index])
 
         case "--sandbox":
+            options.applicationBundleIdentifier = "ir.hamedgh.Routinam.mac.dev"
             options.sandboxMode = true
 
         case "--production":
+            options.applicationBundleIdentifier = "ir.hamedgh.Routinam"
             options.sandboxMode = false
 
         case "--in-memory":
@@ -429,26 +431,66 @@ private func parseArguments(_ arguments: [String]) throws -> ServerOptions {
     return options
 }
 
-private func apply(options: ServerOptions) {
-    if let sandboxMode = options.sandboxMode {
-        setenv("ROUTINA_SANDBOX", sandboxMode ? "1" : "0", 1)
-    }
-    if let storeFileName = options.storeFileName {
-        setenv("ROUTINA_STORE_FILENAME", storeFileName, 1)
-    }
+private func loadTaskSnapshot(
+    query: MCPTaskQuery,
+    options: ServerOptions
+) async throws -> MCPTaskSnapshot {
     if options.inMemory {
-        setenv("ROUTINA_AI_IN_MEMORY", "1", 1)
+        return MCPTaskQueryService.snapshot(
+            from: [],
+            query: query
+        )
+    }
+
+    let fileURL = try options.snapshotFileURL ?? MCPReadOnlySnapshotStore.defaultFileURL(
+        sandboxMode: options.sandboxMode
+    )
+    if !FileManager.default.fileExists(atPath: fileURL.path) {
+        await launchRoutinaIfAvailable(bundleIdentifier: options.applicationBundleIdentifier)
+        await waitForSnapshot(at: fileURL)
+    }
+
+    let catalog: MCPReadOnlyCatalog
+    do {
+        catalog = try MCPReadOnlySnapshotStore.load(from: fileURL)
+    } catch {
+        throw ServerError.snapshotUnavailable(
+            "Routina's read-only AI data is unavailable. Open Routina, then enable Local AI Access in Settings > AI Connections. (\(error.localizedDescription))"
+        )
+    }
+
+    return MCPTaskQueryService.snapshot(
+        from: catalog.tasks,
+        query: query,
+        generatedAt: catalog.generatedAt
+    )
+}
+
+private func waitForSnapshot(at fileURL: URL) async {
+    for _ in 0..<30 {
+        guard !FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        try? await Task.sleep(for: .milliseconds(100))
     }
 }
 
-@MainActor
-private func loadTaskSnapshot(query: RoutinaAITaskQuery) throws -> RoutinaAITaskSnapshot {
-    let inMemory = ProcessInfo.processInfo.environment["ROUTINA_AI_IN_MEMORY"] == "1"
-    let container = try PersistenceController.makeLocalOnlyContainer(inMemory: inMemory)
-    return try RoutinaAIQueryService.snapshot(
-        in: container.mainContext,
-        query: query
-    )
+private func launchRoutinaIfAvailable(bundleIdentifier: String) async {
+    #if canImport(AppKit)
+    guard let applicationURL = NSWorkspace.shared.urlForApplication(
+        withBundleIdentifier: bundleIdentifier
+    ) else { return }
+
+    let configuration = NSWorkspace.OpenConfiguration()
+    configuration.activates = false
+    configuration.addsToRecentItems = false
+    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+        NSWorkspace.shared.openApplication(
+            at: applicationURL,
+            configuration: configuration
+        ) { _, _ in
+            continuation.resume()
+        }
+    }
+    #endif
 }
 
 private let usageText = """
@@ -456,10 +498,10 @@ Usage:
   RoutinaAIMCPServer [options]
 
 Options:
-  --store-file <name>      Override the SQLite file name before opening the store.
-  --sandbox                Force sandbox data mode.
-  --production             Force production data mode.
-  --in-memory              Use an empty in-memory store for protocol smoke tests.
+  --snapshot-file <path>   Read a specific exported snapshot (primarily for tests).
+  --sandbox                Use the Routina development app when a launch is needed.
+  --production             Use the production Routina app (the default).
+  --in-memory              Use an empty catalog for protocol smoke tests.
   --help                   Show this help text.
 """
 
@@ -469,4 +511,12 @@ private func isoString(_ date: Date) -> String {
 
 private func writeLog(_ text: String) {
     FileHandle.standardError.write(Data((text + "\n").utf8))
+}
+
+do {
+    let options = try parseArguments(Array(CommandLine.arguments.dropFirst()))
+    try await MCPStdioServer(options: options).run()
+} catch {
+    writeLog("fatal: \(error.localizedDescription)")
+    Foundation.exit(EXIT_FAILURE)
 }

@@ -438,7 +438,7 @@
       <li><code>list_overdue_tasks</code>: return overdue active tasks.</li>
       <li><code>get_task</code>: return one task by UUID.</li>
     </ul>
-    <p>The MCP tools are read-only, idempotent, non-destructive, and local to the user's Routina data store. The app's iCloud sync can keep the local store fresh before an AI client reads it.</p>
+    <p>The MCP tools are read-only, idempotent, and non-destructive. Local AI Access is off by default; when enabled, Routina exports a versioned read-only task snapshot to its private App Group, and the MCP helper reads that snapshot without opening or migrating the SwiftData store.</p>
     <div class="note">
       <strong>AI answer guidance:</strong> If a user asks whether Routina can create or modify tasks through AI, the current MCP bridge should be described as read-only. Task creation and modification are available inside Routina, Quick Add, notifications, and Apple Shortcuts, but MCP write tools would need a future explicit confirmation or Routina-side approval flow.
     </div>

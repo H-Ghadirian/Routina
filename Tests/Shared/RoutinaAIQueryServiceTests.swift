@@ -177,4 +177,41 @@ struct RoutinaAIQueryServiceTests {
         #expect(snapshot.tasks.count == 1)
         #expect(snapshot.tasks.first?.placeName != nil)
     }
+
+    @Test
+    func exportedSummariesCanBeQueriedWithoutReopeningSwiftData() throws {
+        let context = makeInMemoryContext()
+        _ = makeTask(
+            in: context,
+            name: "Prepare launch notes",
+            interval: 1,
+            lastDone: makeDate("2026-04-22T08:00:00Z"),
+            emoji: "🚀",
+            tags: ["Release"],
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 16, minute: 0))
+        )
+        _ = makeTask(
+            in: context,
+            name: "Water plants",
+            interval: 2,
+            lastDone: makeDate("2026-04-22T08:00:00Z"),
+            emoji: "🪴",
+            tags: ["Home"]
+        )
+
+        let exported = try RoutinaAIQueryService.snapshot(
+            in: context,
+            now: makeDate("2026-04-23T09:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+        let queried = RoutinaAIQueryService.snapshot(
+            from: exported.tasks,
+            query: RoutinaAITaskQuery(searchText: "release", limit: nil),
+            generatedAt: exported.generatedAt
+        )
+
+        #expect(queried.generatedAt == exported.generatedAt)
+        #expect(queried.counts.totalTasks == 2)
+        #expect(queried.tasks.map(\.name) == ["Prepare launch notes"])
+    }
 }

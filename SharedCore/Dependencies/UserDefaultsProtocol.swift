@@ -77,6 +77,7 @@ enum AppSettingsDefaults {
         .appSettingMacStatusComposerEnabled: false,
         .appSettingMacShowDoneCountInToolbar: false,
         .appSettingMacDevelopmentBadgeVisible: true,
+        .appSettingMacLocalAIAccessEnabled: false,
         .appSettingSettingsDevicesSectionEnabled: false,
         .appSettingMacEventEmotionActionsEnabled: false,
         .appSettingRelatedTagRulesEnabled: false,
@@ -186,6 +187,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingMacStatusComposerEnabled
     case appSettingMacShowDoneCountInToolbar
     case appSettingMacDevelopmentBadgeVisible
+    case appSettingMacLocalAIAccessEnabled
     case appSettingSettingsDevicesSectionEnabled
     case appSettingRelatedTagRulesEnabled
     case appSettingMacEventEmotionActionsEnabled

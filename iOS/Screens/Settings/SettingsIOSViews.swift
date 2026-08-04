@@ -145,6 +145,8 @@ struct SettingsIOSDetailView: View {
             SettingsQuickAddDetailView()
         case .shortcuts:
             SettingsIOSShortcutsDetailView()
+        case .aiConnections:
+            SettingsAIConnectionsUnavailableView()
         case .support, .about:
             SettingsAboutDetailView(store: store)
         }
@@ -160,6 +162,18 @@ private struct SettingsTaskSectionsUnavailableView: View {
             }
         }
         .navigationTitle("Sections")
+    }
+}
+
+private struct SettingsAIConnectionsUnavailableView: View {
+    var body: some View {
+        List {
+            Section("AI Connections") {
+                Text("Local AI connections are available in Routina for Mac.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("AI Connections")
     }
 }
 

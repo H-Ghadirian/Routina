@@ -265,6 +265,7 @@
 				2C0000052E60000100000001 /* Sources */,
 				2C0000032E60000100000001 /* Frameworks */,
 				2C0000042E60000100000001 /* Resources */,
+				7D00000130A0000100000001 /* Embed Routina AI MCP Helper */,
 			);
 			buildRules = (
 			);
@@ -294,6 +295,7 @@
 				4E0000052E80000100000001 /* Sources */,
 				4E0000032E80000100000001 /* Frameworks */,
 				4E0000042E80000100000001 /* Resources */,
+				7D00000230A0000100000001 /* Embed Routina AI MCP Helper */,
 			);
 			buildRules = (
 			);
@@ -460,6 +462,59 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		7D00000130A0000100000001 /* Embed Routina AI MCP Helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/embed_mcp_helper.sh",
+				"$(SRCROOT)/Package.swift",
+				"$(SRCROOT)/Package.resolved",
+				"$(SRCROOT)/Tools/RoutinaAIMCPServer/main.swift",
+				"$(SRCROOT)/Tools/RoutinaAIMCPServer/ReadOnlySnapshotModels.swift",
+			);
+			name = "Embed Routina AI MCP Helper";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/RoutinaAIMCPHelper",
+				"$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/RoutinaAIMCPServer",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/embed_mcp_helper.sh\"\n";
+		};
+		7D00000230A0000100000001 /* Embed Routina AI MCP Helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/embed_mcp_helper.sh",
+				"$(SRCROOT)/Package.swift",
+				"$(SRCROOT)/Package.resolved",
+				"$(SRCROOT)/Tools/RoutinaAIMCPServer/main.swift",
+				"$(SRCROOT)/Tools/RoutinaAIMCPServer/ReadOnlySnapshotModels.swift",
+			);
+			name = "Embed Routina AI MCP Helper";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/RoutinaAIMCPHelper",
+				"$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/RoutinaAIMCPServer",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/embed_mcp_helper.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2A5DD6382F965A91009F0331 /* Sources */ = {
@@ -722,6 +777,7 @@
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
@@ -776,6 +832,7 @@
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
@@ -827,6 +884,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/macOS/RoutinaMacOSDev-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -861,6 +919,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/macOS/RoutinaMacOSDev-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -120,6 +120,19 @@ public enum RoutinaAIQueryService {
                 calendar: calendar
             )
         }
+
+        return snapshot(
+            from: allSummaries,
+            query: query,
+            generatedAt: now
+        )
+    }
+
+    public static func snapshot(
+        from allSummaries: [RoutinaAITaskSummary],
+        query: RoutinaAITaskQuery = RoutinaAITaskQuery(),
+        generatedAt: Date = Date()
+    ) -> RoutinaAITaskSnapshot {
         let matchingSummaries = allSummaries
             .filter { matchesQuery($0, query: query) }
             .sorted(by: compareSummaries)
@@ -132,7 +145,7 @@ public enum RoutinaAIQueryService {
         }
 
         return RoutinaAITaskSnapshot(
-            generatedAt: now,
+            generatedAt: generatedAt,
             query: query,
             counts: RoutinaAITaskSnapshotCounts(
                 totalTasks: allSummaries.count,

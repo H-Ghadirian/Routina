@@ -29,6 +29,8 @@ extension SettingsSectionID {
             return .mint
         case .shortcuts:
             return .teal
+        case .aiConnections:
+            return .purple
         case .support, .about:
             return .green
         }
