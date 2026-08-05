@@ -6,9 +6,10 @@ struct MissingTaskMetadataView: View {
 
     var body: some View {
         Group {
-            if store.isLoading {
+            if store.isLoading || (store.isSaving && store.currentTask == nil) {
                 ProgressView("Loading tasks…")
-            } else if let errorMessage = store.errorMessage, !store.hasLoadedTasks {
+            } else if let errorMessage = store.errorMessage,
+                      !store.hasLoadedTasks || (store.currentTask == nil && !store.taskIDs.isEmpty) {
                 loadFailureCard(errorMessage)
             } else if let task = store.currentTask {
                 taskCard(task)
@@ -83,7 +84,7 @@ struct MissingTaskMetadataView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.bordered)
-                    .disabled(store.isSaving || store.tasks.count < 2)
+                    .disabled(store.isSaving || store.taskIDs.count < 2)
 
                     Button {
                         store.send(.taskDetailsTapped(taskID: task.id))

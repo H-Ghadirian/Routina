@@ -5,6 +5,8 @@ protocol HomeFeatureSelectionRoutingState {
     var routineTasks: [RoutineTask] { get set }
     var routinePlaces: [RoutinePlace] { get set }
     var routineGoals: [RoutineGoal] { get set }
+    var doneStats: HomeDoneStats { get set }
+    var relatedTagRules: [RoutineRelatedTagRule] { get set }
     var selection: HomeSelectionState { get set }
     var presentation: HomePresentationState { get set }
 }
@@ -106,6 +108,8 @@ struct HomeFeatureSelectionRouter<State: HomeFeatureSelectionRoutingState, Actio
             tasks: state.routineTasks,
             places: state.routinePlaces,
             goals: state.routineGoals,
+            doneStats: state.doneStats,
+            relatedTagRules: state.relatedTagRules,
             now: now,
             calendar: calendar
         )

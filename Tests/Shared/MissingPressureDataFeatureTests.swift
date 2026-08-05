@@ -83,34 +83,25 @@ struct MissingPressureDataFeatureTests {
             $0.isLoading = true
         }
         await store.receive(
-            .tasksLoaded([
-                MissingPressureDataFeature.State.Task(task: firstTask),
-                MissingPressureDataFeature.State.Task(task: completedRepeatingTask),
-                MissingPressureDataFeature.State.Task(task: openOneOffTask),
-                MissingPressureDataFeature.State.Task(task: laterTask),
-            ])
+            .tasksLoaded(
+                taskIDs: [firstTask.id, completedRepeatingTask.id, openOneOffTask.id, laterTask.id],
+                currentTask: MissingPressureDataFeature.State.Task(task: firstTask)
+            )
         ) {
-            $0.tasks = [
-                MissingPressureDataFeature.State.Task(task: firstTask),
-                MissingPressureDataFeature.State.Task(task: completedRepeatingTask),
-                MissingPressureDataFeature.State.Task(task: openOneOffTask),
-                MissingPressureDataFeature.State.Task(task: laterTask),
-            ]
+            $0.taskIDs = [firstTask.id, completedRepeatingTask.id, openOneOffTask.id, laterTask.id]
+            $0.currentTask = MissingPressureDataFeature.State.Task(task: firstTask)
             $0.totalTaskCount = 4
             $0.hasLoadedTasks = true
             $0.isLoading = false
         }
 
         #expect(
-            store.state.tasks.map(\.id)
+            store.state.taskIDs
                 == [firstTask.id, completedRepeatingTask.id, openOneOffTask.id, laterTask.id]
         )
-        #expect(
-            store.state.tasks.map(\.title)
-                == ["Buy coffee", "Finished repeating", "Open one-off", "Write update"]
-        )
-        #expect(!store.state.tasks.contains(where: { $0.id == completedOneOffTask.id }))
-        #expect(!store.state.tasks.contains(where: { $0.id == canceledOneOffTask.id }))
+        #expect(store.state.currentTask?.title == "Buy coffee")
+        #expect(!store.state.taskIDs.contains(completedOneOffTask.id))
+        #expect(!store.state.taskIDs.contains(canceledOneOffTask.id))
         #expect(store.state.totalTaskCount == 4)
         #expect(store.state.currentTaskNumber == 1)
     }
@@ -159,8 +150,9 @@ struct MissingPressureDataFeatureTests {
         await store.send(.onAppear) {
             $0.isLoading = true
         }
-        await store.receive(.tasksLoaded([expectedTask])) {
-            $0.tasks = [expectedTask]
+        await store.receive(.tasksLoaded(taskIDs: [task.id], currentTask: expectedTask)) {
+            $0.taskIDs = [task.id]
+            $0.currentTask = expectedTask
             $0.totalTaskCount = 1
             $0.hasLoadedTasks = true
             $0.isLoading = false
@@ -195,22 +187,29 @@ struct MissingPressureDataFeatureTests {
 
         let store = TestStore(
             initialState: MissingPressureDataFeature.State(
-                tasks: [firstDisplay, secondDisplay],
+                taskIDs: [firstTask.id, secondTask.id],
+                currentTask: firstDisplay,
                 totalTaskCount: 2
             )
         ) {
             MissingPressureDataFeature()
         } withDependencies: {
             $0.modelContext = { context }
+            $0.date.now = Date(timeIntervalSince1970: 0)
+            $0.calendar = Calendar(identifier: .gregorian)
         }
 
         await store.send(.pressureSelected(taskID: firstTask.id, pressure: .high)) {
             $0.isSaving = true
         }
         await store.receive(.pressureSaved(taskID: firstTask.id)) {
-            $0.tasks = [secondDisplay]
+            $0.taskIDs = [secondTask.id]
+            $0.currentTask = nil
             $0.completedTaskCount = 1
             $0.currentTaskIndex = 1
+        }
+        await store.receive(.currentTaskLoaded(taskID: secondTask.id, task: secondDisplay)) {
+            $0.currentTask = secondDisplay
             $0.isSaving = false
         }
 
@@ -245,17 +244,24 @@ struct MissingPressureDataFeatureTests {
         )
         let display = MissingPressureDataFeature.State.Task(task: task)
         let store = TestStore(
-            initialState: MissingPressureDataFeature.State(tasks: [display], totalTaskCount: 1)
+            initialState: MissingPressureDataFeature.State(
+                taskIDs: [task.id],
+                currentTask: display,
+                totalTaskCount: 1
+            )
         ) {
             MissingPressureDataFeature()
         } withDependencies: {
             $0.modelContext = { context }
+            $0.date.now = Date(timeIntervalSince1970: 0)
+            $0.calendar = Calendar(identifier: .gregorian)
         }
 
         await store.send(.pressureSelected(taskID: task.id, pressure: .none))
 
         #expect(task.pressure == .none)
-        #expect(store.state.tasks == [display])
+        #expect(store.state.taskIDs == [task.id])
+        #expect(store.state.currentTask == display)
         #expect(!store.state.isSaving)
     }
 
@@ -280,16 +286,26 @@ struct MissingPressureDataFeatureTests {
         let secondDisplay = MissingPressureDataFeature.State.Task(task: secondTask)
         let store = TestStore(
             initialState: MissingPressureDataFeature.State(
-                tasks: [firstDisplay, secondDisplay],
+                taskIDs: [firstTask.id, secondTask.id],
+                currentTask: firstDisplay,
                 totalTaskCount: 2
             )
         ) {
             MissingPressureDataFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = Date(timeIntervalSince1970: 0)
+            $0.calendar = Calendar(identifier: .gregorian)
         }
 
         await store.send(.skipTask(taskID: firstTask.id)) {
-            $0.tasks = [secondDisplay, firstDisplay]
+            $0.taskIDs = [secondTask.id, firstTask.id]
             $0.currentTaskIndex = 1
+            $0.isSaving = true
+        }
+        await store.receive(.currentTaskLoaded(taskID: secondTask.id, task: secondDisplay)) {
+            $0.currentTask = secondDisplay
+            $0.isSaving = false
         }
 
         #expect(firstTask.pressure == .none)
@@ -310,7 +326,11 @@ struct MissingPressureDataFeatureTests {
         )
         let display = MissingPressureDataFeature.State.Task(task: task)
         let store = TestStore(
-            initialState: MissingPressureDataFeature.State(tasks: [display], totalTaskCount: 1)
+            initialState: MissingPressureDataFeature.State(
+                taskIDs: [task.id],
+                currentTask: display,
+                totalTaskCount: 1
+            )
         ) {
             MissingPressureDataFeature()
         }
@@ -333,6 +353,19 @@ struct MissingPressureDataFeatureTests {
         #expect(!source.contains("modelContext.save()"))
         #expect(!source.contains("ScrollView"))
         #expect(!source.contains("DragGesture"))
+    }
+
+    @Test
+    func guidedProcedureLoadersKeepOnlyTheVisibleCardPresentationInState() throws {
+        let pressureSource = try Self.sourceFile("SharedCore/Features/MissingData/MissingPressureDataFeature.swift")
+        let metadataSource = try Self.sourceFile("SharedCore/Features/MissingData/MissingTaskMetadataFeature.swift")
+
+        for source in [pressureSource, metadataSource] {
+            #expect(source.contains("var taskIDs: [UUID] = []"))
+            #expect(source.contains("var currentTask: Task?"))
+            #expect(source.contains("let currentTask = tasks.first.map"))
+            #expect(!source.contains(".map { task in\n                    State.Task("))
+        }
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

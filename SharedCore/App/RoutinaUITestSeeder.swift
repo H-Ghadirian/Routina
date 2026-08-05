@@ -12,6 +12,8 @@ enum RoutinaUITestSeeder {
                 try seedPerformanceProfile(in: context)
             case "stats-performance":
                 try seedStatsPerformanceProfile(in: context)
+            case "guided-review-performance":
+                try seedGuidedReviewPerformanceProfile(in: context)
             case "timeline-e2e":
                 try seedTimelineE2EProfile(in: context)
             default:
@@ -76,6 +78,49 @@ enum RoutinaUITestSeeder {
             )
         }
 
+        try context.save()
+    }
+
+    @MainActor
+    private static func seedGuidedReviewPerformanceProfile(in context: ModelContext) throws {
+        var descriptor = FetchDescriptor<RoutineTask>()
+        descriptor.fetchLimit = 1
+        guard try context.fetch(descriptor).isEmpty else { return }
+
+        let referenceDate = Date()
+        let tasks = (1...300).map { index in
+            RoutineTask(
+                name: String(format: "Guided Review Task %03d", index),
+                emoji: index.isMultiple(of: 3) ? "square.and.pencil" : "checklist",
+                notes: "Seeded guided-review performance task \(index)",
+                tags: tags(for: index),
+                scheduleMode: index.isMultiple(of: 5) ? .oneOff : .fixedInterval,
+                interval: Int16((index % 5) + 1),
+                createdAt: referenceDate.addingTimeInterval(TimeInterval(-index * 300)),
+                todoStateRawValue: index.isMultiple(of: 5) ? TodoState.ready.rawValue : nil,
+                estimatedDurationMinutes: 15 + (index % 6) * 10,
+                storyPoints: (index % 8) + 1
+            )
+        }
+        tasks.forEach(context.insert)
+
+        for index in 0..<9_000 {
+            let task = tasks[index % tasks.count]
+            let dayOffset = index % 365
+            let timestamp = Calendar.current.date(
+                byAdding: .day,
+                value: -dayOffset,
+                to: referenceDate
+            ) ?? referenceDate.addingTimeInterval(TimeInterval(-dayOffset * 86_400))
+            context.insert(
+                RoutineLog(
+                    timestamp: timestamp,
+                    taskID: task.id,
+                    kind: .completed,
+                    actualDurationMinutes: 5 + (index % 120)
+                )
+            )
+        }
         try context.save()
     }
 

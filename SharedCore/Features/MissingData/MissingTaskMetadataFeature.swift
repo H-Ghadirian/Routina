@@ -135,7 +135,9 @@ struct MissingTaskMetadataFeature {
         typealias Task = MissingPressureDataFeature.State.Task
 
         let field: GuidedTaskMetadataField
-        var tasks: [Task] = []
+        /// Ordered ids keep Skip deterministic without retaining presentation data for every card.
+        var taskIDs: [UUID] = []
+        var currentTask: Task?
         var totalTaskCount = 0
         var completedTaskCount = 0
         var currentTaskIndex = 0
@@ -146,10 +148,6 @@ struct MissingTaskMetadataFeature {
 
         init(field: GuidedTaskMetadataField) {
             self.field = field
-        }
-
-        var currentTask: Task? {
-            tasks.first
         }
 
         var currentTaskNumber: Int {
@@ -166,8 +164,11 @@ struct MissingTaskMetadataFeature {
     @CasePathable
     enum Action: Equatable {
         case onAppear
-        case tasksLoaded([State.Task])
+        case tasksLoaded(taskIDs: [UUID], currentTask: State.Task?)
         case tasksLoadFailed
+        case currentTaskLoaded(taskID: UUID, task: State.Task?)
+        case currentTaskUnavailable(UUID)
+        case currentTaskLoadFailed
         case valueSelected(taskID: UUID, value: GuidedTaskMetadataValue)
         case valueSaved(taskID: UUID)
         case valueSaveFailed
@@ -198,9 +199,10 @@ struct MissingTaskMetadataFeature {
                 state.errorMessage = nil
                 return loadTasks()
 
-            case let .tasksLoaded(tasks):
-                state.tasks = tasks
-                state.totalTaskCount = tasks.count
+            case let .tasksLoaded(taskIDs, currentTask):
+                state.taskIDs = taskIDs
+                state.currentTask = currentTask
+                state.totalTaskCount = taskIDs.count
                 state.completedTaskCount = 0
                 state.currentTaskIndex = 0
                 state.hasLoadedTasks = true
@@ -215,6 +217,31 @@ struct MissingTaskMetadataFeature {
                 state.errorMessage = "Couldn’t load tasks. Try again."
                 return .none
 
+            case let .currentTaskLoaded(taskID, task):
+                guard state.taskIDs.first == taskID else { return .none }
+                state.currentTask = task
+                state.isSaving = false
+                state.errorMessage = nil
+                return .none
+
+            case let .currentTaskUnavailable(taskID):
+                guard state.taskIDs.first == taskID else { return .none }
+                state.taskIDs.removeFirst()
+                state.currentTask = nil
+                state.completedTaskCount += 1
+                if state.taskIDs.isEmpty {
+                    state.currentTaskIndex = 0
+                    state.isSaving = false
+                    return .none
+                }
+                state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
+                return loadCurrentTask(taskID: state.taskIDs[0])
+
+            case .currentTaskLoadFailed:
+                state.isSaving = false
+                state.errorMessage = "Couldn’t load the next task. Try again."
+                return .none
+
             case let .valueSelected(taskID, value):
                 guard value.field == field,
                       !state.isSaving,
@@ -227,18 +254,20 @@ struct MissingTaskMetadataFeature {
                 return save(value, for: taskID)
 
             case let .valueSaved(taskID):
-                guard state.tasks.contains(where: { $0.id == taskID }) else {
+                guard state.taskIDs.first == taskID else {
                     state.isSaving = false
                     return .none
                 }
-                state.tasks.removeAll { $0.id == taskID }
+                state.taskIDs.removeFirst()
+                state.currentTask = nil
                 state.completedTaskCount += 1
-                if state.tasks.isEmpty {
+                if state.taskIDs.isEmpty {
                     state.currentTaskIndex = 0
+                    state.isSaving = false
                 } else {
                     state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
+                    return loadCurrentTask(taskID: state.taskIDs[0])
                 }
-                state.isSaving = false
                 return .none
 
             case .valueSaveFailed:
@@ -248,16 +277,17 @@ struct MissingTaskMetadataFeature {
 
             case let .skipTask(taskID):
                 guard !state.isSaving,
-                      state.tasks.count > 1,
+                      state.taskIDs.count > 1,
                       state.currentTask?.id == taskID
                 else {
                     return .none
                 }
-                let skippedTask = state.tasks.removeFirst()
-                state.tasks.append(skippedTask)
+                let skippedTaskID = state.taskIDs.removeFirst()
+                state.taskIDs.append(skippedTaskID)
                 state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
                 state.errorMessage = nil
-                return .none
+                state.isSaving = true
+                return loadCurrentTask(taskID: state.taskIDs[0])
 
             case let .taskDetailsTapped(taskID):
                 guard !state.isSaving, state.currentTask?.id == taskID else { return .none }
@@ -272,30 +302,95 @@ struct MissingTaskMetadataFeature {
     private func loadTasks() -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let oneOffScheduleModeRawValue = RoutineScheduleMode.oneOff.rawValue
-                let descriptor = FetchDescriptor<RoutineTask>(
-                    predicate: #Predicate { task in
-                        task.scheduleModeRawValue != oneOffScheduleModeRawValue
-                            || (task.lastDone == nil && task.canceledAt == nil)
-                    },
-                    sortBy: [SortDescriptor(\RoutineTask.name)]
-                )
-                let customTaskSections = appSettingsClient.customTaskSections()
-                let referenceDate = now
-                let tasks = try modelContext().fetch(descriptor)
-                    .filter(isEligible)
-                    .map { task in
-                        State.Task(
-                            task: task,
-                            customTaskSections: customTaskSections,
-                            referenceDate: referenceDate,
-                            calendar: calendar
-                        )
-                    }
-                send(.tasksLoaded(tasks))
+                let tasks = try modelContext().fetch(taskDescriptor())
+                let taskIDs = tasks.map(\.id)
+                let currentTask = tasks.first.map {
+                    makePresentationTask(for: $0)
+                }
+                send(.tasksLoaded(taskIDs: taskIDs, currentTask: currentTask))
             } catch {
                 send(.tasksLoadFailed)
             }
+        }
+    }
+
+    private func loadCurrentTask(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                var descriptor = TaskDetailFetchDescriptors.task(for: taskID)
+                descriptor.fetchLimit = 1
+                guard let task = try modelContext().fetch(descriptor).first else {
+                    send(.currentTaskUnavailable(taskID))
+                    return
+                }
+                guard isEligible(task) else {
+                    send(.currentTaskUnavailable(taskID))
+                    return
+                }
+                send(.currentTaskLoaded(taskID: taskID, task: makePresentationTask(for: task)))
+            } catch {
+                send(.currentTaskLoadFailed)
+            }
+        }
+    }
+
+    private func makePresentationTask(for task: RoutineTask) -> State.Task {
+        State.Task(
+            task: task,
+            customTaskSections: appSettingsClient.customTaskSections(),
+            referenceDate: now,
+            calendar: calendar
+        )
+    }
+
+    private func taskDescriptor() -> FetchDescriptor<RoutineTask> {
+        let oneOffScheduleModeRawValue = RoutineScheduleMode.oneOff.rawValue
+        let mediumImportanceRawValue = RoutineTaskImportance.level2.rawValue
+        let mediumUrgencyRawValue = RoutineTaskUrgency.level2.rawValue
+        let noPriorityRawValue = RoutineTaskPriority.none.rawValue
+        let mediumPriorityRawValue = RoutineTaskPriority.medium.rawValue
+
+        switch field {
+        case .importance:
+            return FetchDescriptor<RoutineTask>(
+                predicate: #Predicate { task in
+                    task.importanceRawValue == mediumImportanceRawValue
+                        && !task.hasExplicitImportance
+                        && (
+                            task.hasExplicitUrgency
+                                || (
+                                    !task.showsTaskDetailPriority
+                                        && (task.priorityRawValue == noPriorityRawValue
+                                            || task.priorityRawValue == mediumPriorityRawValue)
+                                )
+                        )
+                        && (
+                            task.scheduleModeRawValue != oneOffScheduleModeRawValue
+                                || (task.lastDone == nil && task.canceledAt == nil)
+                        )
+                },
+                sortBy: [SortDescriptor(\RoutineTask.name)]
+            )
+        case .urgency:
+            return FetchDescriptor<RoutineTask>(
+                predicate: #Predicate { task in
+                    task.urgencyRawValue == mediumUrgencyRawValue
+                        && !task.hasExplicitUrgency
+                        && (
+                            task.hasExplicitImportance
+                                || (
+                                    !task.showsTaskDetailPriority
+                                        && (task.priorityRawValue == noPriorityRawValue
+                                            || task.priorityRawValue == mediumPriorityRawValue)
+                                )
+                        )
+                        && (
+                            task.scheduleModeRawValue != oneOffScheduleModeRawValue
+                                || (task.lastDone == nil && task.canceledAt == nil)
+                        )
+                },
+                sortBy: [SortDescriptor(\RoutineTask.name)]
+            )
         }
     }
 

@@ -35,7 +35,9 @@ struct MissingPressureDataFeature {
             }
         }
 
-        var tasks: [Task] = []
+        /// Ordered ids keep Skip deterministic without retaining presentation data for every card.
+        var taskIDs: [UUID] = []
+        var currentTask: Task?
         var totalTaskCount = 0
         var completedTaskCount = 0
         var currentTaskIndex = 0
@@ -43,10 +45,6 @@ struct MissingPressureDataFeature {
         var isLoading = false
         var isSaving = false
         var errorMessage: String?
-
-        var currentTask: Task? {
-            tasks.first
-        }
 
         var currentTaskNumber: Int {
             guard currentTask != nil else { return 0 }
@@ -62,8 +60,11 @@ struct MissingPressureDataFeature {
     @CasePathable
     enum Action: Equatable {
         case onAppear
-        case tasksLoaded([State.Task])
+        case tasksLoaded(taskIDs: [UUID], currentTask: State.Task?)
         case tasksLoadFailed
+        case currentTaskLoaded(taskID: UUID, task: State.Task?)
+        case currentTaskUnavailable(UUID)
+        case currentTaskLoadFailed
         case pressureSelected(taskID: UUID, pressure: RoutineTaskPressure)
         case pressureSaved(taskID: UUID)
         case pressureSaveFailed
@@ -92,9 +93,10 @@ struct MissingPressureDataFeature {
                 state.errorMessage = nil
                 return loadTasks()
 
-            case let .tasksLoaded(tasks):
-                state.tasks = tasks
-                state.totalTaskCount = tasks.count
+            case let .tasksLoaded(taskIDs, currentTask):
+                state.taskIDs = taskIDs
+                state.currentTask = currentTask
+                state.totalTaskCount = taskIDs.count
                 state.completedTaskCount = 0
                 state.currentTaskIndex = 0
                 state.hasLoadedTasks = true
@@ -109,6 +111,31 @@ struct MissingPressureDataFeature {
                 state.errorMessage = "Couldn’t load tasks. Try again."
                 return .none
 
+            case let .currentTaskLoaded(taskID, task):
+                guard state.taskIDs.first == taskID else { return .none }
+                state.currentTask = task
+                state.isSaving = false
+                state.errorMessage = nil
+                return .none
+
+            case let .currentTaskUnavailable(taskID):
+                guard state.taskIDs.first == taskID else { return .none }
+                state.taskIDs.removeFirst()
+                state.currentTask = nil
+                state.completedTaskCount += 1
+                if state.taskIDs.isEmpty {
+                    state.currentTaskIndex = 0
+                    state.isSaving = false
+                    return .none
+                }
+                state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
+                return loadCurrentTask(taskID: state.taskIDs[0])
+
+            case .currentTaskLoadFailed:
+                state.isSaving = false
+                state.errorMessage = "Couldn’t load the next task. Try again."
+                return .none
+
             case let .pressureSelected(taskID, pressure):
                 guard pressure != .none,
                       !state.isSaving,
@@ -120,18 +147,20 @@ struct MissingPressureDataFeature {
                 return savePressure(pressure, for: taskID)
 
             case let .pressureSaved(taskID):
-                guard state.tasks.contains(where: { $0.id == taskID }) else {
+                guard state.taskIDs.first == taskID else {
                     state.isSaving = false
                     return .none
                 }
-                state.tasks.removeAll { $0.id == taskID }
+                state.taskIDs.removeFirst()
+                state.currentTask = nil
                 state.completedTaskCount += 1
-                if state.tasks.isEmpty {
+                if state.taskIDs.isEmpty {
                     state.currentTaskIndex = 0
+                    state.isSaving = false
                 } else {
                     state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
+                    return loadCurrentTask(taskID: state.taskIDs[0])
                 }
-                state.isSaving = false
                 return .none
 
             case .pressureSaveFailed:
@@ -141,16 +170,17 @@ struct MissingPressureDataFeature {
 
             case let .skipTask(taskID):
                 guard !state.isSaving,
-                      state.tasks.count > 1,
+                      state.taskIDs.count > 1,
                       state.currentTask?.id == taskID
                 else {
                     return .none
                 }
-                let skippedTask = state.tasks.removeFirst()
-                state.tasks.append(skippedTask)
+                let skippedTaskID = state.taskIDs.removeFirst()
+                state.taskIDs.append(skippedTaskID)
                 state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
                 state.errorMessage = nil
-                return .none
+                state.isSaving = true
+                return loadCurrentTask(taskID: state.taskIDs[0])
 
             case let .taskDetailsTapped(taskID):
                 guard !state.isSaving, state.currentTask?.id == taskID else {
@@ -179,21 +209,45 @@ struct MissingPressureDataFeature {
                     },
                     sortBy: [SortDescriptor(\RoutineTask.name)]
                 )
-                let customTaskSections = appSettingsClient.customTaskSections()
-                let referenceDate = now
-                let tasks = try modelContext().fetch(descriptor).map { task in
-                    State.Task(
-                        task: task,
-                        customTaskSections: customTaskSections,
-                        referenceDate: referenceDate,
-                        calendar: calendar
-                    )
+                let tasks = try modelContext().fetch(descriptor)
+                let taskIDs = tasks.map(\.id)
+                let currentTask = tasks.first.map {
+                    makePresentationTask(for: $0)
                 }
-                send(.tasksLoaded(tasks))
+                send(.tasksLoaded(taskIDs: taskIDs, currentTask: currentTask))
             } catch {
                 send(.tasksLoadFailed)
             }
         }
+    }
+
+    private func loadCurrentTask(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                var descriptor = TaskDetailFetchDescriptors.task(for: taskID)
+                descriptor.fetchLimit = 1
+                guard let task = try modelContext().fetch(descriptor).first else {
+                    send(.currentTaskUnavailable(taskID))
+                    return
+                }
+                guard isEligible(task) else {
+                    send(.currentTaskUnavailable(taskID))
+                    return
+                }
+                send(.currentTaskLoaded(taskID: taskID, task: makePresentationTask(for: task)))
+            } catch {
+                send(.currentTaskLoadFailed)
+            }
+        }
+    }
+
+    private func makePresentationTask(for task: RoutineTask) -> State.Task {
+        State.Task(
+            task: task,
+            customTaskSections: appSettingsClient.customTaskSections(),
+            referenceDate: now,
+            calendar: calendar
+        )
     }
 
     private func savePressure(

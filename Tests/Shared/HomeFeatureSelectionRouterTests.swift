@@ -93,6 +93,7 @@ struct HomeFeatureSelectionRouterTests {
         let detailState = try #require(state.selection.taskDetailState)
         #expect(Set(detailState.availableRelationshipTasks.map(\.id)) == [directRelationshipID, inverseRelationshipID])
         #expect(!detailState.availableRelationshipTasks.contains(where: { $0.id == unrelatedID }))
+        #expect(detailState.hasPreloadedEditContext)
         #expect(detailState.availablePlaces == [
             RoutinePlaceSummary(id: placeID, name: "Desk", radiusMeters: 150, linkedRoutineCount: 1),
             RoutinePlaceSummary(id: unlinkedPlaceID, name: "Library", radiusMeters: 150, linkedRoutineCount: 0)
@@ -193,6 +194,8 @@ private struct TestSelectionRoutingState: HomeFeatureSelectionRoutingState, Equa
     var routineTasks: [RoutineTask] = []
     var routinePlaces: [RoutinePlace] = []
     var routineGoals: [RoutineGoal] = []
+    var doneStats = HomeDoneStats()
+    var relatedTagRules: [RoutineRelatedTagRule] = []
     var selection = HomeSelectionState()
     var presentation = HomePresentationState()
 }

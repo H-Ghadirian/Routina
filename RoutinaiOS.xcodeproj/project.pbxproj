@@ -19,6 +19,12 @@
 		3D1000022E70000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		3D1000032E70000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
 		3D1000052E70000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
+		C10000012F50000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = C10001012F50000100000001 /* Perception */; };
+		C10000022F50000100000001 /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = C10001022F50000100000001 /* SwiftUINavigation */; };
+		C10000032F50000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = C10001012F50000100000001 /* Perception */; };
+		C10000042F50000100000001 /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = C10001022F50000100000001 /* SwiftUINavigation */; };
+		C10000052F50000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = C10001032F50000100000001 /* PerceptionCore */; };
+		C10000062F50000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = C10001032F50000100000001 /* PerceptionCore */; };
 		5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5F1000072E90000100000001 /* RoutinaWatchApp.app */; };
 		5F1000022E90000100000001 /* RoutinaWatchExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */; };
 		B70000012F40000100000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B70000092F40000100000001 /* WidgetKit.framework */; };
@@ -41,8 +47,8 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 2A5A74BC2D7B92F600E91075;
-			remoteInfo = RoutinaiOSProd;
+			remoteGlobalIDString = 3D1000402E70000100000001;
+			remoteInfo = RoutinaiOSDev;
 		};
 		5F1000032E90000100000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -270,6 +276,9 @@
 				2B1000012E5F000100000001 /* Dependencies in Frameworks */,
 				2B1000022E5F000100000001 /* CasePaths in Frameworks */,
 				2B1000072E5F000100000001 /* ConcurrencyExtras in Frameworks */,
+				C10000012F50000100000001 /* Perception in Frameworks */,
+				C10000022F50000100000001 /* SwiftUINavigation in Frameworks */,
+				C10000052F50000100000001 /* PerceptionCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -299,6 +308,9 @@
 				3D1000022E70000100000001 /* Dependencies in Frameworks */,
 				3D1000032E70000100000001 /* CasePaths in Frameworks */,
 				3D1000052E70000100000001 /* ConcurrencyExtras in Frameworks */,
+				C10000032F50000100000001 /* Perception in Frameworks */,
+				C10000042F50000100000001 /* SwiftUINavigation in Frameworks */,
+				C10000062F50000100000001 /* PerceptionCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -422,6 +434,9 @@
 				2B1001012E5F000100000001 /* Dependencies */,
 				2B1001022E5F000100000001 /* CasePaths */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				C10001012F50000100000001 /* Perception */,
+				C10001022F50000100000001 /* SwiftUINavigation */,
+				C10001032F50000100000001 /* PerceptionCore */,
 			);
 			productName = RoutinaiOSProd;
 			productReference = 2A5A74BD2D7B92F600E91075 /* Routinam.app */;
@@ -501,6 +516,9 @@
 				2B1001012E5F000100000001 /* Dependencies */,
 				2B1001022E5F000100000001 /* CasePaths */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				C10001012F50000100000001 /* Perception */,
+				C10001022F50000100000001 /* SwiftUINavigation */,
+				C10001032F50000100000001 /* PerceptionCore */,
 			);
 			productName = RoutinaiOSDev;
 			productReference = 3D1000102E70000100000001 /* RoutinaiOSDev.app */;
@@ -613,7 +631,7 @@
 					};
 					2A5A74D62D7B92F900E91075 = {
 						CreatedOnToolsVersion = 16.2;
-						TestTargetID = 2A5A74BC2D7B92F600E91075;
+						TestTargetID = 3D1000402E70000100000001;
 					};
 					3D1000402E70000100000001 = {
 						CreatedOnToolsVersion = 16.2;
@@ -647,6 +665,8 @@
 				2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 				2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */,
 				2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */,
+				C10002012F50000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */,
+				C10002022F50000100000001 /* XCRemoteSwiftPackageReference "swift-navigation" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2A5A74BE2D7B92F600E91075 /* Products */;
@@ -791,7 +811,7 @@
 		};
 		2A5A74D92D7B92F900E91075 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2A5A74BC2D7B92F600E91075 /* RoutinaiOSProd */;
+			target = 3D1000402E70000100000001 /* RoutinaiOSDev */;
 			targetProxy = 2A5A74D82D7B92F900E91075 /* PBXContainerItemProxy */;
 		};
 		5F1000192E90000100000001 /* PBXTargetDependency */ = {
@@ -1574,6 +1594,22 @@
 				minimumVersion = 1.3.2;
 			};
 		};
+		C10002012F50000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-perception";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.0;
+			};
+		};
+		C10002022F50000100000001 /* XCRemoteSwiftPackageReference "swift-navigation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-navigation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.8.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1616,6 +1652,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
 			productName = ConcurrencyExtras;
+		};
+		C10001012F50000100000001 /* Perception */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C10002012F50000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
+			productName = Perception;
+		};
+		C10001022F50000100000001 /* SwiftUINavigation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C10002022F50000100000001 /* XCRemoteSwiftPackageReference "swift-navigation" */;
+			productName = SwiftUINavigation;
+		};
+		C10001032F50000100000001 /* PerceptionCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C10002012F50000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
+			productName = PerceptionCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

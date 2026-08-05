@@ -95,6 +95,26 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         }
     }
 
+    func testSeededGuidedReviewTaskDetailRoundTripPerformance() {
+        let app = makeApp(seedProfile: "guided-review-performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+        XCTAssertTrue(
+            seedTask(named: "Guided Review Task 020", in: app).waitForExistence(timeout: 90),
+            "The large seeded review store did not finish loading"
+        )
+
+        openImportanceReview(in: app)
+        openGuidedReviewTaskDetails(in: app)
+        returnToGuidedReview(in: app)
+
+        measureInteraction {
+            openImportanceReview(in: app)
+            openGuidedReviewTaskDetails(in: app)
+            returnToGuidedReview(in: app)
+        }
+    }
+
     func testAddTaskSheetPresentationPerformance() {
         let app = makeApp()
         app.launch()
@@ -259,6 +279,31 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         XCTAssertTrue(homeBackButton.waitForExistence(timeout: 10))
         homeBackButton.tap()
         XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+    }
+
+    private func openImportanceReview(in app: XCUIApplication) {
+        tapTab("More", in: app)
+
+        let reviewButton = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS %@", "Review Importance")
+        ).firstMatch
+        XCTAssertTrue(reviewButton.waitForExistence(timeout: 10), "Missing Review Importance")
+        reviewButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Review Importance"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Guided Review Task 001"].waitForExistence(timeout: 10))
+    }
+
+    private func openGuidedReviewTaskDetails(in app: XCUIApplication) {
+        let detailsButton = app.buttons["Check task details"].firstMatch
+        XCTAssertTrue(detailsButton.waitForExistence(timeout: 10))
+        detailsButton.tap()
+        XCTAssertTrue(taskDetailLoaded(in: app))
+    }
+
+    private func returnToGuidedReview(in app: XCUIApplication) {
+        tapTab("More", in: app)
+        XCTAssertTrue(app.navigationBars["Review Importance"].waitForExistence(timeout: 10))
     }
 
     private func openAndCloseAddTaskSheet(in app: XCUIApplication) {

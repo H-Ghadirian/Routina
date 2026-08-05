@@ -41,6 +41,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - [0439](../decisions/0439-keep-cadence-dependent-controls-after-repeat.md)
 - [0457](../decisions/0457-confirm-successful-mac-task-creation.md)
 - [0459](../decisions/0459-route-single-ios-new-action-directly.md)
+- [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md)
 - [0473](../decisions/0473-use-guided-ios-missing-metadata-procedures.md)
 
 ## Current Contract

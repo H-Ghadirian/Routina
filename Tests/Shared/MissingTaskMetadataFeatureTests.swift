@@ -67,29 +67,32 @@ struct MissingTaskMetadataFeatureTests {
             $0.calendar = Calendar(identifier: .gregorian)
         }
 
-        let expectedTasks = [
-            MissingTaskMetadataFeature.State.Task(task: firstTask),
-            MissingTaskMetadataFeature.State.Task(task: completedRepeatingTask),
-            MissingTaskMetadataFeature.State.Task(task: openOneOffTask),
-            MissingTaskMetadataFeature.State.Task(task: urgencyOnlyTask),
-            MissingTaskMetadataFeature.State.Task(task: laterTask),
+        let expectedTaskIDs = [
+            firstTask.id,
+            completedRepeatingTask.id,
+            openOneOffTask.id,
+            urgencyOnlyTask.id,
+            laterTask.id,
         ]
+        let expectedCurrentTask = MissingTaskMetadataFeature.State.Task(task: firstTask)
 
         await store.send(.onAppear) {
             $0.isLoading = true
         }
-        await store.receive(.tasksLoaded(expectedTasks)) {
-            $0.tasks = expectedTasks
-            $0.totalTaskCount = expectedTasks.count
+        await store.receive(.tasksLoaded(taskIDs: expectedTaskIDs, currentTask: expectedCurrentTask)) {
+            $0.taskIDs = expectedTaskIDs
+            $0.currentTask = expectedCurrentTask
+            $0.totalTaskCount = expectedTaskIDs.count
             $0.hasLoadedTasks = true
             $0.isLoading = false
         }
 
-        #expect(store.state.tasks.map(\.id) == expectedTasks.map(\.id))
-        #expect(!store.state.tasks.contains(where: { $0.id == explicitImportanceTask.id }))
-        #expect(!store.state.tasks.contains(where: { $0.id == legacyPriorityTask.id }))
-        #expect(!store.state.tasks.contains(where: { $0.id == completedOneOffTask.id }))
-        #expect(!store.state.tasks.contains(where: { $0.id == canceledOneOffTask.id }))
+        #expect(store.state.taskIDs == expectedTaskIDs)
+        #expect(store.state.currentTask == expectedCurrentTask)
+        #expect(!store.state.taskIDs.contains(explicitImportanceTask.id))
+        #expect(!store.state.taskIDs.contains(legacyPriorityTask.id))
+        #expect(!store.state.taskIDs.contains(completedOneOffTask.id))
+        #expect(!store.state.taskIDs.contains(canceledOneOffTask.id))
     }
 
     @Test
@@ -98,7 +101,8 @@ struct MissingTaskMetadataFeatureTests {
         let task = makeTask(in: context, name: "Book dentist", interval: 1, lastDone: nil, emoji: nil)
         let display = MissingTaskMetadataFeature.State.Task(task: task)
         var initialState = MissingTaskMetadataFeature.State(field: .importance)
-        initialState.tasks = [display]
+        initialState.taskIDs = [task.id]
+        initialState.currentTask = display
         initialState.totalTaskCount = 1
         let store = TestStore(initialState: initialState) {
             MissingTaskMetadataFeature(field: .importance)
@@ -110,7 +114,8 @@ struct MissingTaskMetadataFeatureTests {
             $0.isSaving = true
         }
         await store.receive(.valueSaved(taskID: task.id)) {
-            $0.tasks = []
+            $0.taskIDs = []
+            $0.currentTask = nil
             $0.completedTaskCount = 1
             $0.currentTaskIndex = 0
             $0.isSaving = false
@@ -143,7 +148,8 @@ struct MissingTaskMetadataFeatureTests {
         let task = makeTask(in: context, name: "Reply to email", interval: 1, lastDone: nil, emoji: nil)
         let display = MissingTaskMetadataFeature.State.Task(task: task)
         var initialState = MissingTaskMetadataFeature.State(field: .urgency)
-        initialState.tasks = [display]
+        initialState.taskIDs = [task.id]
+        initialState.currentTask = display
         initialState.totalTaskCount = 1
         let store = TestStore(initialState: initialState) {
             MissingTaskMetadataFeature(field: .urgency)
@@ -155,7 +161,8 @@ struct MissingTaskMetadataFeatureTests {
             $0.isSaving = true
         }
         await store.receive(.valueSaved(taskID: task.id)) {
-            $0.tasks = []
+            $0.taskIDs = []
+            $0.currentTask = nil
             $0.completedTaskCount = 1
             $0.currentTaskIndex = 0
             $0.isSaving = false
@@ -176,7 +183,8 @@ struct MissingTaskMetadataFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Plan trip", interval: 1, lastDone: nil, emoji: nil)
         var initialState = MissingTaskMetadataFeature.State(field: .urgency)
-        initialState.tasks = [MissingTaskMetadataFeature.State.Task(task: task)]
+        initialState.taskIDs = [task.id]
+        initialState.currentTask = MissingTaskMetadataFeature.State.Task(task: task)
         initialState.totalTaskCount = 1
         let store = TestStore(initialState: initialState) {
             MissingTaskMetadataFeature(field: .urgency)

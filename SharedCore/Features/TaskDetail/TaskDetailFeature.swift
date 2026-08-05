@@ -88,6 +88,9 @@ struct TaskDetailFeature: Reducer {
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var editAvailableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
+        /// Home provides this context from its loaded task snapshot before selecting a detail.
+        /// Standalone detail presentations leave this `false` and load their own context.
+        var hasPreloadedEditContext = false
         var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
         var editSelectedPlaceID: UUID?
         var editSelectedPlaceIDs: [UUID] = []
@@ -1751,7 +1754,9 @@ struct TaskDetailFeature: Reducer {
             }
             updateDerivedState(&state)
             return .concatenate(
-                loadEditContext(excluding: state.task.id),
+                state.hasPreloadedEditContext
+                    ? .none
+                    : loadEditContext(excluding: state.task.id),
                 handleOnAppear(taskID: state.task.id)
             )
             .cancellable(id: CancelID.loadContext, cancelInFlight: true)

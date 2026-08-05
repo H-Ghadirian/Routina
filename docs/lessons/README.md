@@ -122,3 +122,5 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0078 — Do not resolve sandboxed app data from external processes](0078-do-not-resolve-sandboxed-app-data-from-external-processes.md)
 - [0079 — Keep guided metadata procedures reducer-owned](0079-keep-guided-metadata-procedures-reducer-owned.md)
 - [0080 — Exclude finished one-off tasks from metadata procedures](0080-exclude-finished-one-off-tasks-from-metadata-procedures.md)
+- [0081 — Bound guided review and detail loading](0081-bound-guided-review-and-detail-loading.md)
+- [0082 — Keep Simulator UI-test host and runtime links aligned](0082-keep-simulator-ui-test-host-and-runtime-links-aligned.md)

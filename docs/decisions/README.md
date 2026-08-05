@@ -31,6 +31,10 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0477](0477-keep-ios-ui-benchmarks-dev-hosted-and-explicitly-linked.md) keeps iOS UI benchmarks runnable:** Simulator UI tests consistently host the Dev app through a dedicated performance scheme, and both iOS app targets directly link their required observation and navigation runtime products.
+
+- **[0476](0476-keep-guided-review-card-and-detail-work-bounded.md) bounds guided-review work:** iOS keeps compact candidate IDs and only the visible card presentation, while Home-selected Task Details reuse Home's loaded context instead of repeating global persistence fetches during card/detail round trips.
+
 - **[0475](0475-separate-guided-importance-and-urgency-reviews.md) separates guided metadata reviews:** Compact iOS More offers independent full-height Importance and Urgency cards with all values visible immediately; field-specific explicitness preserves a deliberate legacy `Medium` choice until the later `None`-default migration.
 
 - **[0473](0473-use-guided-ios-missing-metadata-procedures.md) defines the first guided missing-data flow:** Compact iOS More offers a full-height, one-card-at-a-time Pressure procedure that loads only `None` values and persists each non-`None` answer through a reducer effect; the MVP has no macOS entry point.
@@ -423,6 +427,9 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0477](0477-keep-ios-ui-benchmarks-dev-hosted-and-explicitly-linked.md) | Keep iOS UI Benchmarks Dev-Hosted and Explicitly Linked | Accepted | 2026-08-05 |
+| [0476](0476-keep-guided-review-card-and-detail-work-bounded.md) | Keep Guided Review Card and Detail Work Bounded | Accepted | 2026-08-05 |
+| [0475](0475-separate-guided-importance-and-urgency-reviews.md) | Separate Guided Importance and Urgency Reviews | Accepted | 2026-08-05 |
 | [0473](0473-use-guided-ios-missing-metadata-procedures.md) | Use Guided iOS Missing-Metadata Procedures | Accepted | 2026-08-05 |
 | [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md) | Broker Local AI Access Through an App-Owned Snapshot | Accepted | 2026-08-04 |
 | [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md) | Use Lightweight Segmented Surfaces in Scrolling Task Forms | Accepted | 2026-08-04 |

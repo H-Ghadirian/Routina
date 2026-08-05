@@ -1598,10 +1598,12 @@ And bursts of semantic updates are coalesced before Stats reloads its snapshot
 ### iOS Missing Pressure Procedure Stays Focused And Complete
 
 Area: Tasks / UI
-Decision links: [0473](../decisions/0473-use-guided-ios-missing-metadata-procedures.md), [0417](../decisions/0417-route-feature-data-loading-through-reducers.md)
+Decision links: [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0473](../decisions/0473-use-guided-ios-missing-metadata-procedures.md), [0417](../decisions/0417-route-feature-data-loading-through-reducers.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/MissingPressureDataFeatureTests.swift`
+- `Tests/Shared/HomeFeatureSelectionRouterTests.swift`
+- `Tests/iOSUI/RoutinaUIPerformanceTests.swift`
 
 Given repeating tasks and one-off tasks with Pressure set to `None`, and tasks
 already set to Low, Medium, or High
@@ -1640,13 +1642,22 @@ When it loads or saves task data
 Then the reducer's injected model-context dependency owns the SwiftData work
 And the SwiftUI view contains no direct query or persistence mutation
 
+Given more than 250 eligible guided-review tasks and a large task-log history
+When the user advances cards, opens the selected task's details, and returns
+to the procedure repeatedly
+Then the procedure retains presentation data for only the visible card
+And each next card is loaded through a focused task query
+And Home-selected Task Details reuse Home's loaded edit context instead of
+refetching every task, place, goal, and log on each round trip
+
 ### iOS Importance And Urgency Reviews Stay Independent
 
 Area: Tasks / UI
-Decision links: [0475](../decisions/0475-separate-guided-importance-and-urgency-reviews.md), [0424](../decisions/0424-make-task-detail-priority-optional.md)
+Decision links: [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0475](../decisions/0475-separate-guided-importance-and-urgency-reviews.md), [0424](../decisions/0424-make-task-detail-priority-optional.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/MissingTaskMetadataFeatureTests.swift`
+- `Tests/iOSUI/RoutinaUIPerformanceTests.swift`
 - `Tests/iOS/AppFeatureTests.swift`
 
 Given repeating tasks and unfinished one-off tasks whose own Importance or

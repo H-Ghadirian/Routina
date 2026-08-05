@@ -250,13 +250,20 @@ enum HomeTaskSupport {
         tasks: [RoutineTask],
         places: [RoutinePlace],
         goals: [RoutineGoal],
+        doneStats: HomeDoneStats,
+        relatedTagRules: [RoutineRelatedTagRule],
         now: Date,
         calendar: Calendar
     ) {
         guard !detailState.isEditSheetPresented else { return }
 
         let task = detailState.task
-        detailState.availableGoals = RoutineGoalSummary.summaries(from: goals)
+        let availableGoals = RoutineGoalSummary.summaries(from: goals)
+        let availablePlaces = RoutinePlace.summaries(from: places, linkedTo: tasks)
+        let availableTagSummaries = RoutineTag.summaries(
+            from: tasks,
+            countsByTaskID: doneStats.countsByTaskID
+        )
         let directRelationshipTargetIDs = Set(task.relationships.map(\.targetTaskID))
         let relatedTasks = tasks.filter { candidate in
             guard candidate.id != task.id else { return false }
@@ -269,10 +276,52 @@ enum HomeTaskSupport {
             relatedTasks,
             excluding: task.id,
             referenceDate: now,
-            calendar: calendar
+                calendar: calendar
         )
 
-        detailState.availablePlaces = RoutinePlace.summaries(from: places, linkedTo: tasks)
+        let allRelationshipTasks = RoutineTaskRelationshipCandidate.from(
+            tasks,
+            excluding: task.id,
+            referenceDate: now,
+            calendar: calendar
+        )
+        detailState.availableGoals = availableGoals
+        detailState.editRoutineGoals = RoutineGoalSummary.summaries(
+            for: task.goalIDs,
+            in: availableGoals
+        )
+        detailState.availablePlaces = availablePlaces
+        let availablePlaceIDs = Set(availablePlaces.map(\.id))
+        let selectedPlaceIDs = detailState.editSelectedPlaceIDs.isEmpty
+            ? detailState.editSelectedPlaceID.map { [$0] } ?? []
+            : detailState.editSelectedPlaceIDs
+        detailState.editSelectedPlaceIDs = selectedPlaceIDs.filter(availablePlaceIDs.contains)
+        detailState.editSelectedPlaceID = detailState.editSelectedPlaceIDs.first
+        detailState.availableTagSummaries = availableTagSummaries
+        detailState.availableTags = availableTagSummaries.map(\.name)
+        detailState.editRoutineTags = RoutineTag.deduplicated(
+            detailState.editRoutineTags,
+            preferredTags: detailState.availableTags
+        )
+        detailState.relatedTagRules = RoutineTagRelations.sanitized(
+            relatedTagRules
+        )
+        let editableRelationshipTasks = detailState.editAvailableRelationshipTasks.isEmpty
+            ? allRelationshipTasks
+            : detailState.editAvailableRelationshipTasks
+        detailState.editAvailableRelationshipTasks = editableRelationshipTasks
+        let graphRelationships = RoutineTask.editableRelationships(
+            for: task,
+            within: editableRelationshipTasks
+        )
+        let editableRelationshipTaskIDs = Set(editableRelationshipTasks.map(\.id))
+        detailState.editRelationships = RoutineTaskRelationship.sanitized(
+            (graphRelationships + detailState.editRelationships).filter {
+                editableRelationshipTaskIDs.contains($0.targetTaskID)
+            },
+            ownerID: task.id
+        )
+        detailState.hasPreloadedEditContext = true
     }
 
     static func availableTags(from tasks: [RoutineTask]) -> [String] {
