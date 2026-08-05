@@ -663,6 +663,7 @@ private enum AppMoreDestination: Hashable {
     case goals
     case stats
     case settings
+    case missingPressureData
 }
 
 private struct AppMoreNavigationView: View {
@@ -686,6 +687,9 @@ private struct AppMoreNavigationView: View {
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.settings)) {
                     destinationView(for: .settings)
+                }
+                .navigationDestination(isPresented: isDestinationPresented(.missingPressureData)) {
+                    destinationView(for: .missingPressureData)
             }
         }
         .onAppear {
@@ -704,6 +708,17 @@ private struct AppMoreNavigationView: View {
 
     private var moreList: some View {
         List {
+            Section {
+                moreButton(destination: .missingPressureData) {
+                    SettingsNavigationRow(
+                        icon: "exclamationmark.circle",
+                        tint: .orange,
+                        title: "Add missing Pressure data",
+                        subtitle: "Fill in pressure for tasks"
+                    )
+                }
+            }
+
             Section {
                 if showGoalsTab {
                     moreButton(destination: .goals) {
@@ -788,6 +803,8 @@ private struct AppMoreNavigationView: View {
             .onAppear {
                 selectTabAfterNavigationGesture(.settings)
             }
+        case .missingPressureData:
+            MissingPressureDataView()
         }
     }
 
