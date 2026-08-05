@@ -32,6 +32,9 @@ enum CloudSharingService {
         var priority: RoutineTaskPriority
         var importance: RoutineTaskImportance
         var urgency: RoutineTaskUrgency
+        var showsTaskDetailPriority: Bool?
+        var hasExplicitImportance: Bool?
+        var hasExplicitUrgency: Bool?
         var pressure: RoutineTaskPressure
         var pressureUpdatedAt: Date?
         var thinkingNeeded: RoutineTaskThinkingNeeded?
@@ -297,6 +300,9 @@ extension CloudSharingService.SharedTaskPayload {
         self.priority = task.priority
         self.importance = task.importance
         self.urgency = task.urgency
+        self.showsTaskDetailPriority = task.showsTaskDetailPriority
+        self.hasExplicitImportance = task.hasExplicitImportance
+        self.hasExplicitUrgency = task.hasExplicitUrgency
         self.pressure = task.pressure
         self.pressureUpdatedAt = task.pressureUpdatedAt
         self.thinkingNeeded = task.thinkingNeeded
@@ -377,6 +383,15 @@ extension CloudSharingService.SharedTaskPayload {
         task.priority = priority
         task.importance = importance
         task.urgency = urgency
+        if let showsTaskDetailPriority {
+            task.showsTaskDetailPriority = showsTaskDetailPriority
+        }
+        if let hasExplicitImportance {
+            task.hasExplicitImportance = hasExplicitImportance
+        }
+        if let hasExplicitUrgency {
+            task.hasExplicitUrgency = hasExplicitUrgency
+        }
         task.pressure = pressure
         task.pressureUpdatedAt = pressure == .none ? nil : pressureUpdatedAt
         task.imageData = imageData
@@ -497,5 +512,8 @@ private extension RoutineTask {
             ?? payload.links?.map { RoutineTaskLink(title: nil, url: $0) }
             ?? payload.link.map { [RoutineTaskLink(title: nil, url: $0)] }
             ?? []
+        self.showsTaskDetailPriority = payload.showsTaskDetailPriority ?? false
+        self.hasExplicitImportance = payload.hasExplicitImportance ?? false
+        self.hasExplicitUrgency = payload.hasExplicitUrgency ?? false
     }
 }

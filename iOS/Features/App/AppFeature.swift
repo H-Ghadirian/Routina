@@ -16,7 +16,8 @@ struct AppFeature {
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
         var missingPressureData = MissingPressureDataFeature.State()
-        var missingPriorityData = MissingPriorityDataFeature.State()
+        var missingImportanceData = MissingTaskMetadataFeature.State(field: .importance)
+        var missingUrgencyData = MissingTaskMetadataFeature.State(field: .urgency)
     }
 
     @CasePathable
@@ -29,7 +30,8 @@ struct AppFeature {
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
         case missingPressureData(MissingPressureDataFeature.Action)
-        case missingPriorityData(MissingPriorityDataFeature.Action)
+        case missingImportanceData(MissingTaskMetadataFeature.Action)
+        case missingUrgencyData(MissingTaskMetadataFeature.Action)
         case onAppear
         case cloudSettingsChanged
         case openDeepLink(RoutinaDeepLink)
@@ -56,8 +58,11 @@ struct AppFeature {
         Scope(state: \.missingPressureData, action: \.missingPressureData) {
             MissingPressureDataFeature()
         }
-        Scope(state: \.missingPriorityData, action: \.missingPriorityData) {
-            MissingPriorityDataFeature()
+        Scope(state: \.missingImportanceData, action: \.missingImportanceData) {
+            MissingTaskMetadataFeature(field: .importance)
+        }
+        Scope(state: \.missingUrgencyData, action: \.missingUrgencyData) {
+            MissingTaskMetadataFeature(field: .urgency)
         }
         Reduce { state, action in
             switch action {
@@ -73,7 +78,8 @@ struct AppFeature {
                 return handleDeepLink(deepLink, state: &state)
             case let .missingPressureData(.delegate(.taskDetailsRequested(taskID))):
                 return openTaskDetails(taskID, state: &state)
-            case let .missingPriorityData(.delegate(.taskDetailsRequested(taskID))):
+            case let .missingImportanceData(.delegate(.taskDetailsRequested(taskID))),
+                 let .missingUrgencyData(.delegate(.taskDetailsRequested(taskID))):
                 return openTaskDetails(taskID, state: &state)
             case let .home(.tasksLoadedSuccessfully(tasks, _, _, _, _)):
                 guard let taskID = state.pendingDeepLinkedTaskID,

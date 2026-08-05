@@ -80,6 +80,8 @@ final class RoutineTask {
     var showsTaskDetailHeatmap: Bool = false
     var showsTaskDetailHistory: Bool = false
     var showsTaskDetailPriority: Bool = false
+    var hasExplicitImportance: Bool = false
+    var hasExplicitUrgency: Bool = false
     var commentsStorage: String = ""
     var changeLogStorage: String = ""
 
@@ -461,6 +463,8 @@ final class RoutineTask {
         showsTaskDetailHeatmap: Bool = false,
         showsTaskDetailHistory: Bool = false,
         showsTaskDetailPriority: Bool = false,
+        hasExplicitImportance: Bool = false,
+        hasExplicitUrgency: Bool = false,
         comments: [RoutineTaskComment] = []
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
@@ -566,6 +570,8 @@ final class RoutineTask {
         self.showsTaskDetailHeatmap = showsTaskDetailHeatmap
         self.showsTaskDetailHistory = showsTaskDetailHistory
         self.showsTaskDetailPriority = showsTaskDetailPriority
+        self.hasExplicitImportance = hasExplicitImportance
+        self.hasExplicitUrgency = hasExplicitUrgency
         self.commentsStorage = RoutineTaskCommentStorage.serialize(comments)
         var initialChanges = [
             RoutineTaskChangeLogEntry(
@@ -897,6 +903,8 @@ final class RoutineTask {
             showsTaskDetailHeatmap: showsTaskDetailHeatmap,
             showsTaskDetailHistory: showsTaskDetailHistory,
             showsTaskDetailPriority: showsTaskDetailPriority,
+            hasExplicitImportance: hasExplicitImportance,
+            hasExplicitUrgency: hasExplicitUrgency,
             comments: comments
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage

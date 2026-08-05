@@ -100,6 +100,8 @@ enum SettingsRoutineDataBackupMapping {
             showsTaskDetailHeatmap: task.showsTaskDetailHeatmap,
             showsTaskDetailHistory: task.showsTaskDetailHistory,
             showsTaskDetailPriority: task.showsTaskDetailPriority,
+            hasExplicitImportance: task.hasExplicitImportance,
+            hasExplicitUrgency: task.hasExplicitUrgency,
             trackingCadenceEnabled: task.trackingCadenceEnabled,
             trackingNudgesEnabled: task.trackingNudgesEnabled,
             pressure: includesPressure ? task.pressure : nil,

@@ -1,0 +1,218 @@
+import ComposableArchitecture
+import Foundation
+import SwiftData
+import Testing
+#if SWIFT_PACKAGE
+@testable @preconcurrency import RoutinaAppSupport
+#elseif os(macOS)
+@testable @preconcurrency import RoutinaMacOSDev
+#else
+@testable @preconcurrency import Routina
+#endif
+
+@MainActor
+struct MissingTaskMetadataFeatureTests {
+    @Test
+    func importanceReviewLoadsOnlyTasksWithoutExplicitImportanceInTitleOrder() async throws {
+        let context = makeInMemoryContext()
+        let laterTask = makeTask(in: context, name: "Write update", interval: 1, lastDone: nil, emoji: nil)
+        let firstTask = makeTask(in: context, name: "Buy coffee", interval: 1, lastDone: nil, emoji: nil)
+        let urgencyOnlyTask = makeTask(in: context, name: "Urgency set", interval: 1, lastDone: nil, emoji: nil)
+        urgencyOnlyTask.urgency = .level4
+        urgencyOnlyTask.hasExplicitUrgency = true
+        urgencyOnlyTask.priority = urgencyOnlyTask.derivedPriorityFromMatrix
+        let explicitImportanceTask = makeTask(in: context, name: "Importance set", interval: 1, lastDone: nil, emoji: nil)
+        explicitImportanceTask.hasExplicitImportance = true
+        let legacyPriorityTask = makeTask(in: context, name: "Legacy priority", interval: 1, lastDone: nil, emoji: nil)
+        legacyPriorityTask.showsTaskDetailPriority = true
+        let completedRepeatingTask = makeTask(
+            in: context,
+            name: "Finished repeating",
+            interval: 1,
+            lastDone: Date(timeIntervalSince1970: 1),
+            emoji: nil
+        )
+        let openOneOffTask = makeTask(
+            in: context,
+            name: "Open one-off",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        let completedOneOffTask = makeTask(
+            in: context,
+            name: "Completed one-off",
+            interval: 1,
+            lastDone: Date(timeIntervalSince1970: 1),
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        let canceledOneOffTask = makeTask(
+            in: context,
+            name: "Canceled one-off",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        canceledOneOffTask.canceledAt = Date(timeIntervalSince1970: 1)
+        try context.save()
+
+        let store = TestStore(initialState: MissingTaskMetadataFeature.State(field: .importance)) {
+            MissingTaskMetadataFeature(field: .importance)
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = Date(timeIntervalSince1970: 0)
+            $0.calendar = Calendar(identifier: .gregorian)
+        }
+
+        let expectedTasks = [
+            MissingTaskMetadataFeature.State.Task(task: firstTask),
+            MissingTaskMetadataFeature.State.Task(task: completedRepeatingTask),
+            MissingTaskMetadataFeature.State.Task(task: openOneOffTask),
+            MissingTaskMetadataFeature.State.Task(task: urgencyOnlyTask),
+            MissingTaskMetadataFeature.State.Task(task: laterTask),
+        ]
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+        await store.receive(.tasksLoaded(expectedTasks)) {
+            $0.tasks = expectedTasks
+            $0.totalTaskCount = expectedTasks.count
+            $0.hasLoadedTasks = true
+            $0.isLoading = false
+        }
+
+        #expect(store.state.tasks.map(\.id) == expectedTasks.map(\.id))
+        #expect(!store.state.tasks.contains(where: { $0.id == explicitImportanceTask.id }))
+        #expect(!store.state.tasks.contains(where: { $0.id == legacyPriorityTask.id }))
+        #expect(!store.state.tasks.contains(where: { $0.id == completedOneOffTask.id }))
+        #expect(!store.state.tasks.contains(where: { $0.id == canceledOneOffTask.id }))
+    }
+
+    @Test
+    func savingImportanceLeavesUrgencyEligibleAndAdvances() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Book dentist", interval: 1, lastDone: nil, emoji: nil)
+        let display = MissingTaskMetadataFeature.State.Task(task: task)
+        var initialState = MissingTaskMetadataFeature.State(field: .importance)
+        initialState.tasks = [display]
+        initialState.totalTaskCount = 1
+        let store = TestStore(initialState: initialState) {
+            MissingTaskMetadataFeature(field: .importance)
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.valueSelected(taskID: task.id, value: .importance(.level3))) {
+            $0.isSaving = true
+        }
+        await store.receive(.valueSaved(taskID: task.id)) {
+            $0.tasks = []
+            $0.completedTaskCount = 1
+            $0.currentTaskIndex = 0
+            $0.isSaving = false
+        }
+
+        let persistedTask = try #require(
+            try context.fetch(TaskDetailFetchDescriptors.task(for: task.id)).first
+        )
+        #expect(persistedTask.importance == .level3)
+        #expect(persistedTask.urgency == .level2)
+        #expect(persistedTask.hasExplicitImportance)
+        #expect(!persistedTask.hasExplicitUrgency)
+        #expect(TaskDetailOptionalControlVisibility.showsImportance(for: persistedTask))
+        #expect(!TaskDetailOptionalControlVisibility.showsUrgency(for: persistedTask))
+        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: persistedTask))
+        let activityLogs = try context.fetch(FetchDescriptor<RoutinaDeviceActionLog>())
+        #expect(
+            activityLogs.contains {
+                $0.action == .updated
+                    && $0.entity == .task
+                    && $0.entityID == task.id.uuidString
+                    && $0.details == "Reviewed importance"
+            }
+        )
+    }
+
+    @Test
+    func savingUrgencyAtTheLegacyDefaultMakesOnlyUrgencyExplicit() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Reply to email", interval: 1, lastDone: nil, emoji: nil)
+        let display = MissingTaskMetadataFeature.State.Task(task: task)
+        var initialState = MissingTaskMetadataFeature.State(field: .urgency)
+        initialState.tasks = [display]
+        initialState.totalTaskCount = 1
+        let store = TestStore(initialState: initialState) {
+            MissingTaskMetadataFeature(field: .urgency)
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.valueSelected(taskID: task.id, value: .urgency(.level2))) {
+            $0.isSaving = true
+        }
+        await store.receive(.valueSaved(taskID: task.id)) {
+            $0.tasks = []
+            $0.completedTaskCount = 1
+            $0.currentTaskIndex = 0
+            $0.isSaving = false
+        }
+
+        let persistedTask = try #require(
+            try context.fetch(TaskDetailFetchDescriptors.task(for: task.id)).first
+        )
+        #expect(persistedTask.urgency == .level2)
+        #expect(!persistedTask.hasExplicitImportance)
+        #expect(persistedTask.hasExplicitUrgency)
+        #expect(!TaskDetailOptionalControlVisibility.showsImportance(for: persistedTask))
+        #expect(TaskDetailOptionalControlVisibility.showsUrgency(for: persistedTask))
+    }
+
+    @Test
+    func checkingTaskDetailsRequestsTheCurrentTaskDetail() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Plan trip", interval: 1, lastDone: nil, emoji: nil)
+        var initialState = MissingTaskMetadataFeature.State(field: .urgency)
+        initialState.tasks = [MissingTaskMetadataFeature.State.Task(task: task)]
+        initialState.totalTaskCount = 1
+        let store = TestStore(initialState: initialState) {
+            MissingTaskMetadataFeature(field: .urgency)
+        }
+
+        await store.send(.taskDetailsTapped(taskID: task.id))
+        await store.receive(.delegate(.taskDetailsRequested(task.id)))
+    }
+
+    @Test
+    func iOSProcedureViewUsesAlwaysVisibleChoicesAndKeepsSwiftDataWorkInTheReducer() throws {
+        let source = try Self.sourceFile("iOS/Screens/More/MissingTaskMetadataView.swift")
+
+        #expect(source.contains("let store: StoreOf<MissingTaskMetadataFeature>"))
+        #expect(source.contains("RoutinaGlassSegmentedControl"))
+        #expect(source.contains("maximumSegmentsPerRow: 2"))
+        #expect(source.contains("minHeight: 620"))
+        #expect(source.contains("store.send(.valueSelected"))
+        #expect(source.contains("store.send(.skipTask"))
+        #expect(source.contains("store.send(.taskDetailsTapped"))
+        #expect(!source.contains("Menu"))
+        #expect(!source.contains("@Query"))
+        #expect(!source.contains("@Environment(\\.modelContext)"))
+        #expect(!source.contains("modelContext.save()"))
+        #expect(!source.contains("ScrollView"))
+        #expect(!source.contains("DragGesture"))
+    }
+
+    private static func sourceFile(_ relativePath: String) throws -> String {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return try String(
+            contentsOf: projectRoot.appendingPathComponent(relativePath),
+            encoding: .utf8
+        )
+    }
+}

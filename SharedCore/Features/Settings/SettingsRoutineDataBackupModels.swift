@@ -107,6 +107,8 @@ extension SettingsRoutineDataPersistence {
             var showsTaskDetailHeatmap: Bool?
             var showsTaskDetailHistory: Bool?
             var showsTaskDetailPriority: Bool?
+            var hasExplicitImportance: Bool?
+            var hasExplicitUrgency: Bool?
             var trackingCadenceEnabled: Bool?
             var trackingNudgesEnabled: Bool?
             var pressure: RoutineTaskPressure?

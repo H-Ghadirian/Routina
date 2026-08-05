@@ -512,7 +512,9 @@ struct TaskDetailFeature: Reducer {
                     taskID: mutation.taskID,
                     importance: mutation.importance,
                     urgency: mutation.urgency,
-                    priority: mutation.priority
+                    priority: mutation.priority,
+                    hasExplicitImportance: mutation.hasExplicitImportance,
+                    hasExplicitUrgency: mutation.hasExplicitUrgency
                 )
             }
         )
@@ -1127,6 +1129,8 @@ struct TaskDetailFeature: Reducer {
         case .revealPriorityInTaskDetail:
             guard !state.task.showsTaskDetailPriority else { return .none }
             state.task.showsTaskDetailPriority = true
+            state.task.hasExplicitImportance = true
+            state.task.hasExplicitUrgency = true
             refreshTaskView(&state)
             return handleTaskDetailPriorityRevealed(taskID: state.task.id)
 

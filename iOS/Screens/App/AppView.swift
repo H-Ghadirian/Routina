@@ -87,9 +87,13 @@ let tabView = TabView(
                     state: \.missingPressureData,
                     action: \.missingPressureData
                 ),
-                missingPriorityDataStore: store.scope(
-                    state: \.missingPriorityData,
-                    action: \.missingPriorityData
+                missingImportanceDataStore: store.scope(
+                    state: \.missingImportanceData,
+                    action: \.missingImportanceData
+                ),
+                missingUrgencyDataStore: store.scope(
+                    state: \.missingUrgencyData,
+                    action: \.missingUrgencyData
                 ),
                 showGoalsTab: isGoalsTabEnabled,
                 showPlaces: isPlacesEnabled,
@@ -672,7 +676,8 @@ private enum AppMoreDestination: Hashable {
     case stats
     case settings
     case missingPressureData
-    case missingPriorityData
+    case missingImportanceData
+    case missingUrgencyData
 }
 
 private struct AppMoreNavigationView: View {
@@ -682,7 +687,8 @@ private struct AppMoreNavigationView: View {
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
     let missingPressureDataStore: StoreOf<MissingPressureDataFeature>
-    let missingPriorityDataStore: StoreOf<MissingPriorityDataFeature>
+    let missingImportanceDataStore: StoreOf<MissingTaskMetadataFeature>
+    let missingUrgencyDataStore: StoreOf<MissingTaskMetadataFeature>
     let showGoalsTab: Bool
     let showPlaces: Bool
     let onSelectTab: (Tab) -> Void
@@ -702,8 +708,11 @@ private struct AppMoreNavigationView: View {
                 .navigationDestination(isPresented: isDestinationPresented(.missingPressureData)) {
                     destinationView(for: .missingPressureData)
                 }
-                .navigationDestination(isPresented: isDestinationPresented(.missingPriorityData)) {
-                    destinationView(for: .missingPriorityData)
+                .navigationDestination(isPresented: isDestinationPresented(.missingImportanceData)) {
+                    destinationView(for: .missingImportanceData)
+                }
+                .navigationDestination(isPresented: isDestinationPresented(.missingUrgencyData)) {
+                    destinationView(for: .missingUrgencyData)
                 }
         }
         .onAppear {
@@ -732,12 +741,21 @@ private struct AppMoreNavigationView: View {
                     )
                 }
 
-                moreButton(destination: .missingPriorityData) {
+                moreButton(destination: .missingImportanceData) {
                     SettingsNavigationRow(
-                        icon: "square.grid.2x2",
+                        icon: "arrow.up.circle",
                         tint: .purple,
-                        title: "Review Importance & Urgency",
-                        subtitle: "Make the priority matrix explicit"
+                        title: "Review Importance",
+                        subtitle: "Set importance for tasks"
+                    )
+                }
+
+                moreButton(destination: .missingUrgencyData) {
+                    SettingsNavigationRow(
+                        icon: "arrow.right.circle",
+                        tint: .pink,
+                        title: "Review Urgency",
+                        subtitle: "Set urgency for tasks"
                     )
                 }
             }
@@ -830,8 +848,10 @@ private struct AppMoreNavigationView: View {
             }
         case .missingPressureData:
             MissingPressureDataView(store: missingPressureDataStore)
-        case .missingPriorityData:
-            MissingPriorityDataView(store: missingPriorityDataStore)
+        case .missingImportanceData:
+            MissingTaskMetadataView(store: missingImportanceDataStore)
+        case .missingUrgencyData:
+            MissingTaskMetadataView(store: missingUrgencyDataStore)
         }
     }
 

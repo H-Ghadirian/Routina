@@ -442,6 +442,8 @@ extension TaskDetailFeature {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.showsTaskDetailPriority = true
+                task.hasExplicitImportance = true
+                task.hasExplicitUrgency = true
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
@@ -1476,7 +1478,9 @@ extension TaskDetailFeature {
         taskID: UUID,
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
-        priority: RoutineTaskPriority
+        priority: RoutineTaskPriority,
+        hasExplicitImportance: Bool,
+        hasExplicitUrgency: Bool
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
@@ -1485,6 +1489,8 @@ extension TaskDetailFeature {
                 task.importance = importance
                 task.urgency = urgency
                 task.priority = priority
+                task.hasExplicitImportance = hasExplicitImportance
+                task.hasExplicitUrgency = hasExplicitUrgency
                 DeviceActivityRecorder.recordAction(
                     .updated,
                     entity: .task,

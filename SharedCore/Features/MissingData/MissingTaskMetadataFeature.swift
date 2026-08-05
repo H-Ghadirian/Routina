@@ -2,22 +2,151 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 
+enum GuidedTaskMetadataField: String, Equatable, Sendable {
+    case importance
+    case urgency
+
+    var navigationTitle: String {
+        switch self {
+        case .importance:
+            return "Review Importance"
+        case .urgency:
+            return "Review Urgency"
+        }
+    }
+
+    var question: String {
+        switch self {
+        case .importance:
+            return "How important is this task?"
+        case .urgency:
+            return "How urgent is this task?"
+        }
+    }
+
+    var instruction: String {
+        switch self {
+        case .importance:
+            return "Choose one value to save it and continue."
+        case .urgency:
+            return "Choose one value to save it and continue."
+        }
+    }
+
+    var completionMessage: String {
+        switch self {
+        case .importance:
+            return "Every eligible task has an explicit importance value."
+        case .urgency:
+            return "Every eligible task has an explicit urgency value."
+        }
+    }
+
+    var saveFailureMessage: String {
+        switch self {
+        case .importance:
+            return "Couldn’t save importance. Try again."
+        case .urgency:
+            return "Couldn’t save urgency. Try again."
+        }
+    }
+
+    var activityDetails: String {
+        switch self {
+        case .importance:
+            return "Reviewed importance"
+        case .urgency:
+            return "Reviewed urgency"
+        }
+    }
+
+    var defaultValue: GuidedTaskMetadataValue {
+        switch self {
+        case .importance:
+            return .importance(.level2)
+        case .urgency:
+            return .urgency(.level2)
+        }
+    }
+
+    var values: [GuidedTaskMetadataValue] {
+        switch self {
+        case .importance:
+            return RoutineTaskImportance.allCases.map(GuidedTaskMetadataValue.importance)
+        case .urgency:
+            return RoutineTaskUrgency.allCases.map(GuidedTaskMetadataValue.urgency)
+        }
+    }
+
+    func isExplicit(for task: RoutineTask) -> Bool {
+        switch self {
+        case .importance:
+            return TaskDetailOptionalControlVisibility.showsImportance(for: task)
+        case .urgency:
+            return TaskDetailOptionalControlVisibility.showsUrgency(for: task)
+        }
+    }
+
+    func apply(_ value: GuidedTaskMetadataValue, to task: RoutineTask) -> Bool {
+        switch (self, value) {
+        case let (.importance, .importance(importance)):
+            task.importance = importance
+            task.hasExplicitImportance = true
+            task.priority = task.derivedPriorityFromMatrix
+            return true
+        case let (.urgency, .urgency(urgency)):
+            task.urgency = urgency
+            task.hasExplicitUrgency = true
+            task.priority = task.derivedPriorityFromMatrix
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+enum GuidedTaskMetadataValue: Hashable, Sendable {
+    case importance(RoutineTaskImportance)
+    case urgency(RoutineTaskUrgency)
+
+    var field: GuidedTaskMetadataField {
+        switch self {
+        case .importance:
+            return .importance
+        case .urgency:
+            return .urgency
+        }
+    }
+
+    var title: String {
+        switch self {
+        case let .importance(importance):
+            return importance.title
+        case let .urgency(urgency):
+            return urgency.title
+        }
+    }
+}
+
 @Reducer
-struct MissingPriorityDataFeature {
+struct MissingTaskMetadataFeature {
     @ObservableState
     struct State: Equatable {
         typealias Task = MissingPressureDataFeature.State.Task
 
+        let field: GuidedTaskMetadataField
         var tasks: [Task] = []
         var totalTaskCount = 0
         var completedTaskCount = 0
         var currentTaskIndex = 0
-        var selectedImportance: RoutineTaskImportance = .level2
-        var selectedUrgency: RoutineTaskUrgency = .level2
         var hasLoadedTasks = false
         var isLoading = false
         var isSaving = false
         var errorMessage: String?
+
+        init(field: GuidedTaskMetadataField) {
+            self.field = field
+        }
 
         var currentTask: Task? {
             tasks.first
@@ -32,11 +161,6 @@ struct MissingPriorityDataFeature {
             guard totalTaskCount > 0 else { return 0 }
             return Double(completedTaskCount) / Double(totalTaskCount)
         }
-
-        mutating func resetSelections() {
-            selectedImportance = .level2
-            selectedUrgency = .level2
-        }
     }
 
     @CasePathable
@@ -44,11 +168,9 @@ struct MissingPriorityDataFeature {
         case onAppear
         case tasksLoaded([State.Task])
         case tasksLoadFailed
-        case importanceSelected(RoutineTaskImportance)
-        case urgencySelected(RoutineTaskUrgency)
-        case saveSelected(taskID: UUID)
-        case valuesSaved(taskID: UUID)
-        case valuesSaveFailed
+        case valueSelected(taskID: UUID, value: GuidedTaskMetadataValue)
+        case valueSaved(taskID: UUID)
+        case valueSaveFailed
         case skipTask(taskID: UUID)
         case taskDetailsTapped(taskID: UUID)
         case delegate(Delegate)
@@ -58,6 +180,8 @@ struct MissingPriorityDataFeature {
             case taskDetailsRequested(UUID)
         }
     }
+
+    let field: GuidedTaskMetadataField
 
     @Dependency(\.modelContext) private var modelContext
     @Dependency(\.appSettingsClient) private var appSettingsClient
@@ -79,7 +203,6 @@ struct MissingPriorityDataFeature {
                 state.totalTaskCount = tasks.count
                 state.completedTaskCount = 0
                 state.currentTaskIndex = 0
-                state.resetSelections()
                 state.hasLoadedTasks = true
                 state.isLoading = false
                 state.isSaving = false
@@ -92,27 +215,18 @@ struct MissingPriorityDataFeature {
                 state.errorMessage = "Couldn’t load tasks. Try again."
                 return .none
 
-            case let .importanceSelected(importance):
-                guard !state.isSaving, state.currentTask != nil else { return .none }
-                state.selectedImportance = importance
-                return .none
-
-            case let .urgencySelected(urgency):
-                guard !state.isSaving, state.currentTask != nil else { return .none }
-                state.selectedUrgency = urgency
-                return .none
-
-            case let .saveSelected(taskID):
-                guard !state.isSaving, state.currentTask?.id == taskID else { return .none }
+            case let .valueSelected(taskID, value):
+                guard value.field == field,
+                      !state.isSaving,
+                      state.currentTask?.id == taskID
+                else {
+                    return .none
+                }
                 state.isSaving = true
                 state.errorMessage = nil
-                return savePriority(
-                    importance: state.selectedImportance,
-                    urgency: state.selectedUrgency,
-                    for: taskID
-                )
+                return save(value, for: taskID)
 
-            case let .valuesSaved(taskID):
+            case let .valueSaved(taskID):
                 guard state.tasks.contains(where: { $0.id == taskID }) else {
                     state.isSaving = false
                     return .none
@@ -124,13 +238,12 @@ struct MissingPriorityDataFeature {
                 } else {
                     state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
                 }
-                state.resetSelections()
                 state.isSaving = false
                 return .none
 
-            case .valuesSaveFailed:
+            case .valueSaveFailed:
                 state.isSaving = false
-                state.errorMessage = "Couldn’t save priority. Try again."
+                state.errorMessage = field.saveFailureMessage
                 return .none
 
             case let .skipTask(taskID):
@@ -143,7 +256,6 @@ struct MissingPriorityDataFeature {
                 let skippedTask = state.tasks.removeFirst()
                 state.tasks.append(skippedTask)
                 state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
-                state.resetSelections()
                 state.errorMessage = nil
                 return .none
 
@@ -187,44 +299,37 @@ struct MissingPriorityDataFeature {
         }
     }
 
-    private func savePriority(
-        importance: RoutineTaskImportance,
-        urgency: RoutineTaskUrgency,
-        for taskID: UUID
-    ) -> Effect<Action> {
+    private func save(_ value: GuidedTaskMetadataValue, for taskID: UUID) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first,
-                      isEligible(task)
+                      isEligible(task),
+                      field.apply(value, to: task)
                 else {
-                    send(.valuesSaved(taskID: taskID))
+                    send(.valueSaved(taskID: taskID))
                     return
                 }
 
-                task.importance = importance
-                task.urgency = urgency
-                task.priority = task.derivedPriorityFromMatrix
-                task.showsTaskDetailPriority = true
                 DeviceActivityRecorder.recordAction(
                     .updated,
                     entity: .task,
                     entityID: taskID,
                     entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: "Reviewed importance and urgency",
+                    details: field.activityDetails,
                     in: context
                 )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
-                send(.valuesSaved(taskID: taskID))
+                send(.valueSaved(taskID: taskID))
             } catch {
-                send(.valuesSaveFailed)
+                send(.valueSaveFailed)
             }
         }
     }
 
     private func isEligible(_ task: RoutineTask) -> Bool {
-        !TaskDetailOptionalControlVisibility.showsPriority(for: task)
+        !field.isExplicit(for: task)
             && (!task.isOneOffTask || (task.lastDone == nil && task.canceledAt == nil))
     }
 }

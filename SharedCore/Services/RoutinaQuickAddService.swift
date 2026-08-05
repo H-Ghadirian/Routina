@@ -106,6 +106,8 @@ enum RoutinaQuickAddService {
             scheduleAnchor: referenceDate
         )
         task.showsTaskDetailPriority = draft.hasExplicitPriority
+        task.hasExplicitImportance = draft.hasExplicitPriority
+        task.hasExplicitUrgency = draft.hasExplicitPriority
 
         context.insert(task)
         for attachment in HomeAddRoutineSupport.makeAttachments(from: request, taskID: task.id) {

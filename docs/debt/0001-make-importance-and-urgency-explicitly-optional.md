@@ -5,9 +5,9 @@ Status: Deferred
 ## Current State
 
 `RoutineTaskImportance` and `RoutineTaskUrgency` have legacy `Medium` defaults.
-The iOS review procedure therefore uses the existing Task Details Priority
-visibility rule to distinguish untouched defaults from values the person has
-made explicit.
+The iOS review procedures therefore persist independent
+`hasExplicitImportance` and `hasExplicitUrgency` markers to distinguish
+untouched defaults from values the person has made explicit.
 
 ## Target State
 
@@ -21,11 +21,12 @@ form or guided procedure should persist that chosen value.
   import compatibility work; never infer that a legacy `Medium` was deliberate.
 - Update task creation, quick-add, editing, filters, task details, derived
   Priority, and all cross-platform presentations to handle `None`.
-- Replace the guided-review eligibility rule with direct selection of tasks
-  whose Importance or Urgency is `None`.
+- Replace the marker-based guided-review eligibility rule with direct selection
+  of tasks whose Importance or Urgency is `None`, then retire markers only when
+  migration compatibility no longer needs them.
 - Add regression coverage for new defaults, an explicit Medium selection, and
   legacy tasks that retain Medium after the migration.
 
 ## Decision Link
 
-[0474 Use Task Detail Priority Visibility for Guided Metadata Review](../decisions/0474-use-task-detail-priority-visibility-for-guided-metadata-review.md)
+[0475 Separate Guided Importance and Urgency Reviews](../decisions/0475-separate-guided-importance-and-urgency-reviews.md)

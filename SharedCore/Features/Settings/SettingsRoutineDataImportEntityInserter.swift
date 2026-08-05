@@ -319,6 +319,8 @@ enum SettingsRoutineDataImportEntityInserter {
                 showsTaskDetailHeatmap: task.showsTaskDetailHeatmap ?? false,
                 showsTaskDetailHistory: task.showsTaskDetailHistory ?? false,
                 showsTaskDetailPriority: task.showsTaskDetailPriority ?? false,
+                hasExplicitImportance: task.hasExplicitImportance ?? false,
+                hasExplicitUrgency: task.hasExplicitUrgency ?? false,
                 comments: task.comments ?? []
             )
             if let linkItems = task.linkItems {

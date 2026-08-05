@@ -33,6 +33,8 @@ struct TaskDetailStatusMutationHandler {
         var importance: RoutineTaskImportance
         var urgency: RoutineTaskUrgency
         var priority: RoutineTaskPriority
+        var hasExplicitImportance: Bool
+        var hasExplicitUrgency: Bool
     }
 
     var now: () -> Date
@@ -119,8 +121,9 @@ struct TaskDetailStatusMutationHandler {
         _ importance: RoutineTaskImportance,
         state: inout State
     ) -> MatrixMutation? {
-        guard state.task.importance != importance else { return nil }
+        guard state.task.importance != importance || !state.task.hasExplicitImportance else { return nil }
         state.task.importance = importance
+        state.task.hasExplicitImportance = true
         state.editImportance = importance
         let newPriority = matrixPriority(importance, state.task.urgency)
         state.task.priority = newPriority
@@ -131,7 +134,9 @@ struct TaskDetailStatusMutationHandler {
             taskID: state.task.id,
             importance: importance,
             urgency: state.task.urgency,
-            priority: newPriority
+            priority: newPriority,
+            hasExplicitImportance: true,
+            hasExplicitUrgency: state.task.hasExplicitUrgency
         )
     }
 
@@ -139,8 +144,9 @@ struct TaskDetailStatusMutationHandler {
         _ urgency: RoutineTaskUrgency,
         state: inout State
     ) -> MatrixMutation? {
-        guard state.task.urgency != urgency else { return nil }
+        guard state.task.urgency != urgency || !state.task.hasExplicitUrgency else { return nil }
         state.task.urgency = urgency
+        state.task.hasExplicitUrgency = true
         state.editUrgency = urgency
         let newPriority = matrixPriority(state.task.importance, urgency)
         state.task.priority = newPriority
@@ -151,7 +157,9 @@ struct TaskDetailStatusMutationHandler {
             taskID: state.task.id,
             importance: state.task.importance,
             urgency: urgency,
-            priority: newPriority
+            priority: newPriority,
+            hasExplicitImportance: state.task.hasExplicitImportance,
+            hasExplicitUrgency: true
         )
     }
 }

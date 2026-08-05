@@ -91,11 +91,15 @@ struct TodoStateFeatureTests {
 
         await store.send(.revealPriorityInTaskDetail) {
             $0.task.showsTaskDetailPriority = true
+            $0.task.hasExplicitImportance = true
+            $0.task.hasExplicitUrgency = true
             $0.taskRefreshID = 1
         }
 
         let saved = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(saved.showsTaskDetailPriority)
+        #expect(saved.hasExplicitImportance)
+        #expect(saved.hasExplicitUrgency)
         #expect(saved.priority == .medium)
         #expect(TaskDetailOptionalControlVisibility.showsPriority(for: saved))
     }

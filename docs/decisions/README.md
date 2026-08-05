@@ -31,7 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
-- **[0474](0474-use-task-detail-priority-visibility-for-guided-metadata-review.md) extends guided metadata review to the existing Priority matrix:** Compact iOS More offers one card at a time for Importance and Urgency only while the Task Details Priority section is hidden; saving makes the matrix explicit, while the later `None`-default migration is tracked as debt.
+- **[0475](0475-separate-guided-importance-and-urgency-reviews.md) separates guided metadata reviews:** Compact iOS More offers independent full-height Importance and Urgency cards with all values visible immediately; field-specific explicitness preserves a deliberate legacy `Medium` choice until the later `None`-default migration.
 
 - **[0473](0473-use-guided-ios-missing-metadata-procedures.md) defines the first guided missing-data flow:** Compact iOS More offers a full-height, one-card-at-a-time Pressure procedure that loads only `None` values and persists each non-`None` answer through a reducer effect; the MVP has no macOS entry point.
 

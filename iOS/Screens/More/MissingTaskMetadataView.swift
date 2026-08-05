@@ -1,8 +1,8 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct MissingPriorityDataView: View {
-    let store: StoreOf<MissingPriorityDataFeature>
+struct MissingTaskMetadataView: View {
+    let store: StoreOf<MissingTaskMetadataFeature>
 
     var body: some View {
         Group {
@@ -18,14 +18,14 @@ struct MissingPriorityDataView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle("Review Importance & Urgency")
+        .navigationTitle(store.field.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             store.send(.onAppear)
         }
     }
 
-    private func taskCard(_ task: MissingPriorityDataFeature.State.Task) -> some View {
+    private func taskCard(_ task: MissingTaskMetadataFeature.State.Task) -> some View {
         VStack(spacing: 24) {
             VStack(spacing: 8) {
                 Text("\(store.currentTaskNumber) of \(store.totalTaskCount)")
@@ -34,9 +34,9 @@ struct MissingPriorityDataView: View {
                 ProgressView(value: store.progressValue)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            VStack(spacing: 18) {
+            VStack(spacing: 22) {
                 Text(task.title)
                     .font(.largeTitle.weight(.semibold))
                     .multilineTextAlignment(.center)
@@ -44,28 +44,35 @@ struct MissingPriorityDataView: View {
 
                 taskContext(task)
 
-                Text("How should this task be prioritized?")
+                Text(store.field.question)
                     .font(.headline)
+                    .multilineTextAlignment(.center)
 
-                HStack(spacing: 12) {
-                    importanceMenu
-                    urgencyMenu
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: store.field.navigationTitle,
+                    options: store.field.values,
+                    selection: store.field.defaultValue,
+                    onSelect: { value in
+                        store.send(.valueSelected(taskID: task.id, value: value))
+                    },
+                    minimumSegmentWidth: 118,
+                    horizontalPadding: 12,
+                    verticalPadding: 13,
+                    fillsAvailableWidth: true,
+                    maximumSegmentsPerRow: 2,
+                    tint: tint(for:),
+                    foregroundColor: { _, isSelected in
+                        isSelected ? .primary : .secondary
+                    }
+                ) { value in
+                    Text(value.title)
                 }
+                .disabled(store.isSaving)
 
-                Text("Choose both values to make this task's priority explicit.")
+                Text(store.field.instruction)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-
-                Button {
-                    store.send(.saveSelected(taskID: task.id))
-                } label: {
-                    Label("Save & next", systemImage: "checkmark")
-                        .frame(maxWidth: .infinity)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(store.isSaving)
 
                 HStack(spacing: 12) {
                     Button {
@@ -90,7 +97,7 @@ struct MissingPriorityDataView: View {
                 }
             }
             .padding(24)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 620)
             .routinaGlassCard(
                 cornerRadius: 24,
                 tint: .accentColor,
@@ -105,58 +112,14 @@ struct MissingPriorityDataView: View {
                     .multilineTextAlignment(.center)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
         }
         .padding(24)
         .animation(.snappy, value: task.id)
     }
 
-    private var importanceMenu: some View {
-        Menu {
-            ForEach(RoutineTaskImportance.allCases, id: \.self) { importance in
-                Button(importance.title) {
-                    store.send(.importanceSelected(importance))
-                }
-            }
-        } label: {
-            VStack(spacing: 2) {
-                Label("Importance", systemImage: "arrow.up")
-                    .font(.caption.weight(.semibold))
-                Text(store.selectedImportance.title)
-                    .font(.subheadline.weight(.semibold))
-            }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.bordered)
-        .disabled(store.isSaving)
-        .accessibilityLabel("Importance: \(store.selectedImportance.title)")
-    }
-
-    private var urgencyMenu: some View {
-        Menu {
-            ForEach(RoutineTaskUrgency.allCases, id: \.self) { urgency in
-                Button(urgency.title) {
-                    store.send(.urgencySelected(urgency))
-                }
-            }
-        } label: {
-            VStack(spacing: 2) {
-                Label("Urgency", systemImage: "arrow.right")
-                    .font(.caption.weight(.semibold))
-                Text(store.selectedUrgency.title)
-                    .font(.subheadline.weight(.semibold))
-            }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.bordered)
-        .disabled(store.isSaving)
-        .accessibilityLabel("Urgency: \(store.selectedUrgency.title)")
-    }
-
     @ViewBuilder
-    private func taskContext(_ task: MissingPriorityDataFeature.State.Task) -> some View {
+    private func taskContext(_ task: MissingTaskMetadataFeature.State.Task) -> some View {
         if !task.path.isEmpty || !task.labels.isEmpty || !task.tags.isEmpty {
             VStack(spacing: 8) {
                 if !task.path.isEmpty {
@@ -205,6 +168,15 @@ struct MissingPriorityDataView: View {
         }
     }
 
+    private func tint(for value: GuidedTaskMetadataValue) -> Color {
+        switch value {
+        case let .importance(importance):
+            return TaskDetailPriorityPresentation.importanceTint(for: importance)
+        case let .urgency(urgency):
+            return TaskDetailPriorityPresentation.urgencyTint(for: urgency)
+        }
+    }
+
     private var completionCard: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
@@ -214,7 +186,7 @@ struct MissingPriorityDataView: View {
             Text("All set")
                 .font(.title2.weight(.semibold))
 
-            Text("Every eligible task has explicit importance and urgency.")
+            Text(store.field.completionMessage)
                 .foregroundStyle(.secondary)
 
             if let errorMessage = store.errorMessage {

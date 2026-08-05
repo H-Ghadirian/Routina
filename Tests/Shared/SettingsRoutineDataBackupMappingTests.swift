@@ -55,7 +55,9 @@ struct SettingsRoutineDataBackupMappingTests {
             interval: 0,
             showsTaskDetailHeatmap: true,
             showsTaskDetailHistory: true,
-            showsTaskDetailPriority: true
+            showsTaskDetailPriority: true,
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
         )
 
         let inline = SettingsRoutineDataBackupMapping.task(
@@ -91,6 +93,8 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.showsTaskDetailHeatmap == true)
         #expect(inline.showsTaskDetailHistory == true)
         #expect(inline.showsTaskDetailPriority == true)
+        #expect(inline.hasExplicitImportance == true)
+        #expect(inline.hasExplicitUrgency == true)
         #expect(inline.pressure == .high)
         #expect(inline.thinkingNeeded == .medium)
         #expect(packaged.imageData == nil)
@@ -101,6 +105,8 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(packaged.showsTaskDetailHeatmap == true)
         #expect(packaged.showsTaskDetailHistory == true)
         #expect(packaged.showsTaskDetailPriority == true)
+        #expect(packaged.hasExplicitImportance == true)
+        #expect(packaged.hasExplicitUrgency == true)
         #expect(packaged.pressure == .high)
         #expect(packaged.thinkingNeeded == .medium)
     }

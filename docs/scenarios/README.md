@@ -1640,26 +1640,24 @@ When it loads or saves task data
 Then the reducer's injected model-context dependency owns the SwiftData work
 And the SwiftUI view contains no direct query or persistence mutation
 
-### iOS Importance And Urgency Review Matches Task Details
+### iOS Importance And Urgency Reviews Stay Independent
 
 Area: Tasks / UI
-Decision links: [0474](../decisions/0474-use-task-detail-priority-visibility-for-guided-metadata-review.md), [0424](../decisions/0424-make-task-detail-priority-optional.md)
+Decision links: [0475](../decisions/0475-separate-guided-importance-and-urgency-reviews.md), [0424](../decisions/0424-make-task-detail-priority-optional.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
-- `Tests/Shared/MissingPriorityDataFeatureTests.swift`
+- `Tests/Shared/MissingTaskMetadataFeatureTests.swift`
 - `Tests/iOS/AppFeatureTests.swift`
 
-Given repeating tasks and unfinished one-off tasks whose Task Details Priority
-section is hidden because their matrix is still neutral and not explicitly
-revealed
-When the user opens More -> `Review Importance & Urgency` on compact iOS
-Then only those tasks are loaded in title order
+Given repeating tasks and unfinished one-off tasks whose own Importance or
+Urgency field is still legacy-default and not explicitly reviewed
+When the user opens More -> `Review Importance` or `Review Urgency` on compact iOS
+Then only tasks missing that selected field are loaded in title order
 And completed or canceled one-off tasks do not appear
-And a task with visible Priority, including an explicit Medium/Medium choice,
-does not appear
+And a task reviewed for Importance can still appear in Urgency, and vice versa
 
 Given the current review card is shown
-When the user chooses Importance and Urgency and saves
-Then both values and the derived Priority persist
-And Task Details treats Priority as explicitly visible
+When the user chooses one of the four always-visible values
+Then that field, its explicitness marker, and the derived Priority persist
+And Task Details treats Priority as visible
 And the procedure advances without showing that task again
