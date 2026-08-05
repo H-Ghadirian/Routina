@@ -169,6 +169,28 @@ struct AppFeatureTests {
     }
 
     @Test
+    func missingPriorityTaskDetailsRequest_opensTheTaskFromHome() async {
+        let taskID = UUID()
+        let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .more,
+                home: HomeFeature.State(routineTasks: [task])
+            )
+        ) {
+            AppFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .missingPriorityData(.delegate(.taskDetailsRequested(taskID)))
+        ) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .home
+        }
+    }
+
+    @Test
     func openDeepLink_goalSelectsGoalsTabAndGoal() async {
         let goalID = UUID()
         let goal = makeGoalDisplay(id: goalID, title: "Health")

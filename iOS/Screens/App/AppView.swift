@@ -87,6 +87,10 @@ let tabView = TabView(
                     state: \.missingPressureData,
                     action: \.missingPressureData
                 ),
+                missingPriorityDataStore: store.scope(
+                    state: \.missingPriorityData,
+                    action: \.missingPriorityData
+                ),
                 showGoalsTab: isGoalsTabEnabled,
                 showPlaces: isPlacesEnabled,
                 onSelectTab: { store.send(.tabSelected($0)) }
@@ -668,6 +672,7 @@ private enum AppMoreDestination: Hashable {
     case stats
     case settings
     case missingPressureData
+    case missingPriorityData
 }
 
 private struct AppMoreNavigationView: View {
@@ -677,6 +682,7 @@ private struct AppMoreNavigationView: View {
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
     let missingPressureDataStore: StoreOf<MissingPressureDataFeature>
+    let missingPriorityDataStore: StoreOf<MissingPriorityDataFeature>
     let showGoalsTab: Bool
     let showPlaces: Bool
     let onSelectTab: (Tab) -> Void
@@ -695,7 +701,10 @@ private struct AppMoreNavigationView: View {
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.missingPressureData)) {
                     destinationView(for: .missingPressureData)
-            }
+                }
+                .navigationDestination(isPresented: isDestinationPresented(.missingPriorityData)) {
+                    destinationView(for: .missingPriorityData)
+                }
         }
         .onAppear {
             restoreSelectedMoreDestinationIfNeeded()
@@ -720,6 +729,15 @@ private struct AppMoreNavigationView: View {
                         tint: .orange,
                         title: "Add missing Pressure data",
                         subtitle: "Fill in pressure for tasks"
+                    )
+                }
+
+                moreButton(destination: .missingPriorityData) {
+                    SettingsNavigationRow(
+                        icon: "square.grid.2x2",
+                        tint: .purple,
+                        title: "Review Importance & Urgency",
+                        subtitle: "Make the priority matrix explicit"
                     )
                 }
             }
@@ -812,6 +830,8 @@ private struct AppMoreNavigationView: View {
             }
         case .missingPressureData:
             MissingPressureDataView(store: missingPressureDataStore)
+        case .missingPriorityData:
+            MissingPriorityDataView(store: missingPriorityDataStore)
         }
     }
 

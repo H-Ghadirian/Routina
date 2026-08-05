@@ -16,6 +16,7 @@ struct AppFeature {
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
         var missingPressureData = MissingPressureDataFeature.State()
+        var missingPriorityData = MissingPriorityDataFeature.State()
     }
 
     @CasePathable
@@ -28,6 +29,7 @@ struct AppFeature {
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
         case missingPressureData(MissingPressureDataFeature.Action)
+        case missingPriorityData(MissingPriorityDataFeature.Action)
         case onAppear
         case cloudSettingsChanged
         case openDeepLink(RoutinaDeepLink)
@@ -54,6 +56,9 @@ struct AppFeature {
         Scope(state: \.missingPressureData, action: \.missingPressureData) {
             MissingPressureDataFeature()
         }
+        Scope(state: \.missingPriorityData, action: \.missingPriorityData) {
+            MissingPriorityDataFeature()
+        }
         Reduce { state, action in
             switch action {
             case .tabSelected(let tab):
@@ -67,6 +72,8 @@ struct AppFeature {
             case let .openDeepLink(deepLink):
                 return handleDeepLink(deepLink, state: &state)
             case let .missingPressureData(.delegate(.taskDetailsRequested(taskID))):
+                return openTaskDetails(taskID, state: &state)
+            case let .missingPriorityData(.delegate(.taskDetailsRequested(taskID))):
                 return openTaskDetails(taskID, state: &state)
             case let .home(.tasksLoadedSuccessfully(tasks, _, _, _, _)):
                 guard let taskID = state.pendingDeepLinkedTaskID,

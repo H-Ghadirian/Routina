@@ -202,6 +202,7 @@ let package = Package(
                 "SharedCore/Features/AddRoutine/TaskFormPresentation.swift",
                 "SharedCore/Features/CreationDrafts/CreationDraftSnapshots.swift",
                 "SharedCore/Features/Goals/GoalsFeature.swift",
+                "SharedCore/Features/MissingData/MissingPriorityDataFeature.swift",
                 "SharedCore/Features/MissingData/MissingPressureDataFeature.swift",
                 "SharedCore/Features/MissingData/MissingPressureDataTaskPresentation.swift",
                 "SharedCore/Features/Home/AppFeatureTemporaryViewStateSupport.swift",

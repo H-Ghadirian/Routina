@@ -1639,3 +1639,27 @@ Given the procedure screen is rendered
 When it loads or saves task data
 Then the reducer's injected model-context dependency owns the SwiftData work
 And the SwiftUI view contains no direct query or persistence mutation
+
+### iOS Importance And Urgency Review Matches Task Details
+
+Area: Tasks / UI
+Decision links: [0474](../decisions/0474-use-task-detail-priority-visibility-for-guided-metadata-review.md), [0424](../decisions/0424-make-task-detail-priority-optional.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/MissingPriorityDataFeatureTests.swift`
+- `Tests/iOS/AppFeatureTests.swift`
+
+Given repeating tasks and unfinished one-off tasks whose Task Details Priority
+section is hidden because their matrix is still neutral and not explicitly
+revealed
+When the user opens More -> `Review Importance & Urgency` on compact iOS
+Then only those tasks are loaded in title order
+And completed or canceled one-off tasks do not appear
+And a task with visible Priority, including an explicit Medium/Medium choice,
+does not appear
+
+Given the current review card is shown
+When the user chooses Importance and Urgency and saves
+Then both values and the derived Priority persist
+And Task Details treats Priority as explicitly visible
+And the procedure advances without showing that task again

@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0474](0474-use-task-detail-priority-visibility-for-guided-metadata-review.md) extends guided metadata review to the existing Priority matrix:** Compact iOS More offers one card at a time for Importance and Urgency only while the Task Details Priority section is hidden; saving makes the matrix explicit, while the later `None`-default migration is tracked as debt.
+
 - **[0473](0473-use-guided-ios-missing-metadata-procedures.md) defines the first guided missing-data flow:** Compact iOS More offers a full-height, one-card-at-a-time Pressure procedure that loads only `None` values and persists each non-`None` answer through a reducer effect; the MVP has no macOS entry point.
 
 - **[0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md) defines the local AI data boundary:** The Mac app exports an opt-in, versioned, read-only task snapshot to its App Group; the embedded MCP helper reads only that snapshot and never opens SwiftData, while future write tools require an app-owned approval broker.
