@@ -13,7 +13,7 @@ import Testing
 @MainActor
 struct MissingPressureDataFeatureTests {
     @Test
-    func onAppear_loadsOnlyTasksWithMissingPressureInTitleOrder() async throws {
+    func onAppear_loadsRepeatingAndUnfinishedOneOffTasksWithMissingPressureInTitleOrder() async throws {
         let context = makeInMemoryContext()
         let laterTask = makeTask(
             in: context,
@@ -37,6 +37,38 @@ struct MissingPressureDataFeatureTests {
             emoji: nil
         )
         completedTask.pressure = .high
+        let completedRepeatingTask = makeTask(
+            in: context,
+            name: "Finished repeating",
+            interval: 1,
+            lastDone: Date(timeIntervalSince1970: 1),
+            emoji: nil
+        )
+        let openOneOffTask = makeTask(
+            in: context,
+            name: "Open one-off",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        let completedOneOffTask = makeTask(
+            in: context,
+            name: "Completed one-off",
+            interval: 1,
+            lastDone: Date(timeIntervalSince1970: 1),
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        let canceledOneOffTask = makeTask(
+            in: context,
+            name: "Canceled one-off",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        canceledOneOffTask.canceledAt = Date(timeIntervalSince1970: 1)
         try context.save()
 
         let store = TestStore(initialState: MissingPressureDataFeature.State()) {
@@ -53,21 +85,33 @@ struct MissingPressureDataFeatureTests {
         await store.receive(
             .tasksLoaded([
                 MissingPressureDataFeature.State.Task(task: firstTask),
+                MissingPressureDataFeature.State.Task(task: completedRepeatingTask),
+                MissingPressureDataFeature.State.Task(task: openOneOffTask),
                 MissingPressureDataFeature.State.Task(task: laterTask),
             ])
         ) {
             $0.tasks = [
                 MissingPressureDataFeature.State.Task(task: firstTask),
+                MissingPressureDataFeature.State.Task(task: completedRepeatingTask),
+                MissingPressureDataFeature.State.Task(task: openOneOffTask),
                 MissingPressureDataFeature.State.Task(task: laterTask),
             ]
-            $0.totalTaskCount = 2
+            $0.totalTaskCount = 4
             $0.hasLoadedTasks = true
             $0.isLoading = false
         }
 
-        #expect(store.state.tasks.map(\.id) == [firstTask.id, laterTask.id])
-        #expect(store.state.tasks.map(\.title) == ["Buy coffee", "Write update"])
-        #expect(store.state.totalTaskCount == 2)
+        #expect(
+            store.state.tasks.map(\.id)
+                == [firstTask.id, completedRepeatingTask.id, openOneOffTask.id, laterTask.id]
+        )
+        #expect(
+            store.state.tasks.map(\.title)
+                == ["Buy coffee", "Finished repeating", "Open one-off", "Write update"]
+        )
+        #expect(!store.state.tasks.contains(where: { $0.id == completedOneOffTask.id }))
+        #expect(!store.state.tasks.contains(where: { $0.id == canceledOneOffTask.id }))
+        #expect(store.state.totalTaskCount == 4)
         #expect(store.state.currentTaskNumber == 1)
     }
 

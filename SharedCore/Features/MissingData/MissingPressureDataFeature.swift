@@ -168,9 +168,14 @@ struct MissingPressureDataFeature {
         .run { @MainActor send in
             do {
                 let pressureRawValue = RoutineTaskPressure.none.rawValue
+                let oneOffScheduleModeRawValue = RoutineScheduleMode.oneOff.rawValue
                 let descriptor = FetchDescriptor<RoutineTask>(
                     predicate: #Predicate { task in
                         task.pressureRawValue == pressureRawValue
+                            && (
+                                task.scheduleModeRawValue != oneOffScheduleModeRawValue
+                                    || (task.lastDone == nil && task.canceledAt == nil)
+                            )
                     },
                     sortBy: [SortDescriptor(\RoutineTask.name)]
                 )
@@ -199,7 +204,7 @@ struct MissingPressureDataFeature {
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first,
-                      task.pressure == .none
+                      isEligible(task)
                 else {
                     send(.pressureSaved(taskID: taskID))
                     return
@@ -221,5 +226,10 @@ struct MissingPressureDataFeature {
                 send(.pressureSaveFailed)
             }
         }
+    }
+
+    private func isEligible(_ task: RoutineTask) -> Bool {
+        task.pressure == .none
+            && (!task.isOneOffTask || (task.lastDone == nil && task.canceledAt == nil))
     }
 }

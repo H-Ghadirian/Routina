@@ -167,7 +167,7 @@ struct MissingPressureDataView: View {
             Text("All set")
                 .font(.title2.weight(.semibold))
 
-            Text("Every task has pressure data.")
+            Text("Every eligible task has pressure data.")
                 .foregroundStyle(.secondary)
 
             if let errorMessage = store.errorMessage {

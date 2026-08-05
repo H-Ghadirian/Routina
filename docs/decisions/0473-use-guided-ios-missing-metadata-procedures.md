@@ -34,9 +34,12 @@ it after the remaining cards, and `Check task details`, which uses the existing
 Home task-detail route. When no eligible tasks remain, it presents a simple
 completion state.
 
-Eligibility is exact: only tasks whose typed pressure value is `None` are
-loaded. The reducer owns the SwiftData fetch and pressure mutation through the
-injected model-context dependency, records the normal task-update activity,
+Eligibility is exact: the procedure loads repeating tasks whose typed pressure
+value is `None`, plus one-off tasks only while neither completed nor canceled
+(`lastDone == nil` and `canceledAt == nil`). Completed and canceled one-offs do
+not need retroactive metadata and never appear as procedure cards. The reducer
+owns the SwiftData fetch and pressure mutation through the injected
+model-context dependency, records the normal task-update activity,
 and posts the semantic task-update notification after saving. The SwiftUI view
 only renders reducer state and sends actions. Task-detail requests travel back
 to the app reducer, which selects the existing Home detail rather than creating

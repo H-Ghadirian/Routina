@@ -1603,10 +1603,12 @@ Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/MissingPressureDataFeatureTests.swift`
 
-Given tasks with Pressure set to `None` and tasks already set to Low, Medium,
-or High
+Given repeating tasks and one-off tasks with Pressure set to `None`, and tasks
+already set to Low, Medium, or High
 When the user opens More -> `Add missing Pressure data` on compact iOS
-Then only the `None` tasks are loaded in title order
+Then the repeating `None` tasks and unfinished, uncanceled one-off `None` tasks
+are loaded in title order
+And completed or canceled one-off tasks do not appear
 And the user sees one full-height card at a time with no scrolling list
 And the available choices are Low, Medium, and High rather than `None`
 
@@ -1630,8 +1632,8 @@ Given the current procedure card receives a non-`None` pressure choice
 When the save succeeds
 Then the task records that pressure and its normal update activity
 And the procedure advances to the next remaining missing-pressure task
-And after the final save, the completion state reports that every task has
-pressure data
+And after the final save, the completion state reports that every eligible task
+has pressure data
 
 Given the procedure screen is rendered
 When it loads or saves task data
