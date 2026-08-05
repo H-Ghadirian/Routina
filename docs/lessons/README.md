@@ -120,3 +120,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0076 — Cache iOS main-screen presentations](0076-cache-ios-main-screen-presentations.md)
 - [0077 — Avoid Liquid Glass multiplication in scrolling forms](0077-avoid-liquid-glass-multiplication-in-scrolling-forms.md)
 - [0078 — Do not resolve sandboxed app data from external processes](0078-do-not-resolve-sandboxed-app-data-from-external-processes.md)
+- [0079 — Keep guided metadata procedures reducer-owned](0079-keep-guided-metadata-procedures-reducer-owned.md)

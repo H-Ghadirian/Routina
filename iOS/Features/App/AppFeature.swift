@@ -15,6 +15,7 @@ struct AppFeature {
         var timeline = TimelineFeature.State()
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
+        var missingPressureData = MissingPressureDataFeature.State()
     }
 
     @CasePathable
@@ -26,6 +27,7 @@ struct AppFeature {
         case timeline(TimelineFeature.Action)
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
+        case missingPressureData(MissingPressureDataFeature.Action)
         case onAppear
         case cloudSettingsChanged
         case openDeepLink(RoutinaDeepLink)
@@ -49,6 +51,9 @@ struct AppFeature {
         Scope(state: \.settings, action: \.settings) {
             SettingsFeature()
         }
+        Scope(state: \.missingPressureData, action: \.missingPressureData) {
+            MissingPressureDataFeature()
+        }
         Reduce { state, action in
             switch action {
             case .tabSelected(let tab):
@@ -61,6 +66,8 @@ struct AppFeature {
                 return .send(.home(.applyFastTagFilter(tag)))
             case let .openDeepLink(deepLink):
                 return handleDeepLink(deepLink, state: &state)
+            case let .missingPressureData(.delegate(.taskDetailsRequested(taskID))):
+                return openTaskDetails(taskID, state: &state)
             case let .home(.tasksLoadedSuccessfully(tasks, _, _, _, _)):
                 guard let taskID = state.pendingDeepLinkedTaskID,
                       tasks.contains(where: { $0.id == taskID }) else {
@@ -213,16 +220,7 @@ struct AppFeature {
 
         switch deepLink {
         case let .task(taskID):
-            state.selectedTab = .home
-            persistTemporaryViewState(state)
-
-            guard state.home.routineTasks.contains(where: { $0.id == taskID }) else {
-                state.pendingDeepLinkedTaskID = taskID
-                return .send(.home(.onAppear))
-            }
-
-            state.pendingDeepLinkedTaskID = nil
-            return .send(.home(.setSelectedTask(taskID)))
+            return openTaskDetails(taskID, state: &state)
         case let .goal(goalID):
             state.selectedTab = .goals
             state.pendingDeepLinkedTaskID = nil
@@ -250,6 +248,20 @@ struct AppFeature {
             persistTemporaryViewState(state)
             return .send(.home(.onAppear))
         }
+    }
+
+    private func openTaskDetails(_ taskID: UUID, state: inout State) -> Effect<Action> {
+        state.hasRestoredTemporaryViewState = true
+        state.selectedTab = .home
+        persistTemporaryViewState(state)
+
+        guard state.home.routineTasks.contains(where: { $0.id == taskID }) else {
+            state.pendingDeepLinkedTaskID = taskID
+            return .send(.home(.onAppear))
+        }
+
+        state.pendingDeepLinkedTaskID = nil
+        return .send(.home(.setSelectedTask(taskID)))
     }
 }
 

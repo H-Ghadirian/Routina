@@ -83,6 +83,10 @@ let tabView = TabView(
                 goalsStore: store.scope(state: \.goals, action: \.goals),
                 statsStore: store.scope(state: \.stats, action: \.stats),
                 settingsStore: store.scope(state: \.settings, action: \.settings),
+                missingPressureDataStore: store.scope(
+                    state: \.missingPressureData,
+                    action: \.missingPressureData
+                ),
                 showGoalsTab: isGoalsTabEnabled,
                 showPlaces: isPlacesEnabled,
                 onSelectTab: { store.send(.tabSelected($0)) }
@@ -672,6 +676,7 @@ private struct AppMoreNavigationView: View {
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
+    let missingPressureDataStore: StoreOf<MissingPressureDataFeature>
     let showGoalsTab: Bool
     let showPlaces: Bool
     let onSelectTab: (Tab) -> Void
@@ -775,6 +780,8 @@ private struct AppMoreNavigationView: View {
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -804,7 +811,7 @@ private struct AppMoreNavigationView: View {
                 selectTabAfterNavigationGesture(.settings)
             }
         case .missingPressureData:
-            MissingPressureDataView()
+            MissingPressureDataView(store: missingPressureDataStore)
         }
     }
 

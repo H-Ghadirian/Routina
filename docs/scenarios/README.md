@@ -1594,3 +1594,46 @@ And Achievements and Recent Wins render a reducer-owned presentation snapshot
 instead of walking whole history from a scrolling section builder
 And raw persistence saves do not duplicate semantic refresh notifications
 And bursts of semantic updates are coalesced before Stats reloads its snapshot
+
+### iOS Missing Pressure Procedure Stays Focused And Complete
+
+Area: Tasks / UI
+Decision links: [0473](../decisions/0473-use-guided-ios-missing-metadata-procedures.md), [0417](../decisions/0417-route-feature-data-loading-through-reducers.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/MissingPressureDataFeatureTests.swift`
+
+Given tasks with Pressure set to `None` and tasks already set to Low, Medium,
+or High
+When the user opens More -> `Add missing Pressure data` on compact iOS
+Then only the `None` tasks are loaded in title order
+And the user sees one full-height card at a time with no scrolling list
+And the available choices are Low, Medium, and High rather than `None`
+
+Given a missing-pressure task has a custom-section path, tags, and scheduling
+or state context
+When its procedure card is shown
+Then it shows the custom-section path, up to three tags, and up to three
+labels such as `Planned today`, `Due tomorrow`, or `Blocked`
+And the card does not require scrolling to reach the pressure choices
+
+Given the current procedure card has another missing-pressure task after it
+When the user chooses `Skip`
+Then the current task remains missing and moves after the remaining cards
+And the next task is shown without marking the skipped task complete
+
+Given the current procedure card is shown
+When the user chooses `Check task details`
+Then Routina selects that task through the existing Home task-detail route
+
+Given the current procedure card receives a non-`None` pressure choice
+When the save succeeds
+Then the task records that pressure and its normal update activity
+And the procedure advances to the next remaining missing-pressure task
+And after the final save, the completion state reports that every task has
+pressure data
+
+Given the procedure screen is rendered
+When it loads or saves task data
+Then the reducer's injected model-context dependency owns the SwiftData work
+And the SwiftUI view contains no direct query or persistence mutation

@@ -365,6 +365,7 @@ struct AppSettingsClient: Sendable {
     var setLastRoutineDataBackupDate: @Sendable (Date?) -> Void
     var selectedAppIcon: @Sendable () -> AppIconOption
     var hiddenDayPlanTimelineActivityIDs: @Sendable () -> String?
+    var customTaskSections: @Sendable () -> [HomeCustomTaskSection] = { [] }
     var temporaryViewState: @Sendable () -> TemporaryViewState?
     var setTemporaryViewState: @Sendable (TemporaryViewState?) -> Void
     var resetTemporaryViewState: @Sendable () -> Void
@@ -755,6 +756,11 @@ extension AppSettingsClient {
         },
         hiddenDayPlanTimelineActivityIDs: {
             SharedDefaults.app[.appSettingHiddenDayPlanTimelineActivityIDs]
+        },
+        customTaskSections: {
+            HomeCustomTaskSectionStorage.decoded(
+                from: SharedDefaults.app[.appSettingCustomTaskSections]
+            )
         },
         temporaryViewState: {
             guard let rawValue = SharedDefaults.app[.appSettingTemporaryViewState],

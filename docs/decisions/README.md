@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0473](0473-use-guided-ios-missing-metadata-procedures.md) defines the first guided missing-data flow:** Compact iOS More offers a full-height, one-card-at-a-time Pressure procedure that loads only `None` values and persists each non-`None` answer through a reducer effect; the MVP has no macOS entry point.
+
 - **[0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md) defines the local AI data boundary:** The Mac app exports an opt-in, versioned, read-only task snapshot to its App Group; the embedded MCP helper reads only that snapshot and never opens SwiftData, while future write tools require an app-owned approval broker.
 
 - **[0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md) refines [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md) and [0462](0462-use-a-compact-progressive-ios-task-editor.md) for iOS form performance:** Add Task and Edit Task inherit lightweight tinted segmented surfaces and preview badges inside their scrolling Form, while other bounded segmented controls retain Liquid Glass; each form body shares one visible/hidden section presentation.
@@ -419,6 +421,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0473](0473-use-guided-ios-missing-metadata-procedures.md) | Use Guided iOS Missing-Metadata Procedures | Accepted | 2026-08-05 |
 | [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md) | Broker Local AI Access Through an App-Owned Snapshot | Accepted | 2026-08-04 |
 | [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md) | Use Lightweight Segmented Surfaces in Scrolling Task Forms | Accepted | 2026-08-04 |
 | [0470](0470-keep-beta-experiments-out-of-production.md) | Keep Beta Experiments Out of Production | Accepted | 2026-08-03 |
