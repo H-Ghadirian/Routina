@@ -15,7 +15,8 @@ struct AppFeature {
         var timeline = TimelineFeature.State()
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
-        var missingPressureData = MissingPressureDataFeature.State()
+        var missingPressureData = MissingTaskDataFeature.State(field: .pressure)
+        var missingThinkingNeededData = MissingTaskDataFeature.State(field: .thinkingNeeded)
         var missingImportanceData = MissingTaskMetadataFeature.State(field: .importance)
         var missingUrgencyData = MissingTaskMetadataFeature.State(field: .urgency)
     }
@@ -29,7 +30,8 @@ struct AppFeature {
         case timeline(TimelineFeature.Action)
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
-        case missingPressureData(MissingPressureDataFeature.Action)
+        case missingPressureData(MissingTaskDataFeature.Action)
+        case missingThinkingNeededData(MissingTaskDataFeature.Action)
         case missingImportanceData(MissingTaskMetadataFeature.Action)
         case missingUrgencyData(MissingTaskMetadataFeature.Action)
         case onAppear
@@ -56,7 +58,10 @@ struct AppFeature {
             SettingsFeature()
         }
         Scope(state: \.missingPressureData, action: \.missingPressureData) {
-            MissingPressureDataFeature()
+            MissingTaskDataFeature(field: .pressure)
+        }
+        Scope(state: \.missingThinkingNeededData, action: \.missingThinkingNeededData) {
+            MissingTaskDataFeature(field: .thinkingNeeded)
         }
         Scope(state: \.missingImportanceData, action: \.missingImportanceData) {
             MissingTaskMetadataFeature(field: .importance)
@@ -76,7 +81,8 @@ struct AppFeature {
                 return .send(.home(.applyFastTagFilter(tag)))
             case let .openDeepLink(deepLink):
                 return handleDeepLink(deepLink, state: &state)
-            case let .missingPressureData(.delegate(.taskDetailsRequested(taskID))):
+            case let .missingPressureData(.delegate(.taskDetailsRequested(taskID))),
+                 let .missingThinkingNeededData(.delegate(.taskDetailsRequested(taskID))):
                 return openTaskDetails(taskID, state: &state)
             case let .missingImportanceData(.delegate(.taskDetailsRequested(taskID))),
                  let .missingUrgencyData(.delegate(.taskDetailsRequested(taskID))):

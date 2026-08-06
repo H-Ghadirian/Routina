@@ -199,10 +199,10 @@ struct MissingPressureDataFeatureTests {
             $0.calendar = Calendar(identifier: .gregorian)
         }
 
-        await store.send(.pressureSelected(taskID: firstTask.id, pressure: .high)) {
+        await store.send(.valueSelected(taskID: firstTask.id, value: .pressure(.high))) {
             $0.isSaving = true
         }
-        await store.receive(.pressureSaved(taskID: firstTask.id)) {
+        await store.receive(.valueSaved(taskID: firstTask.id)) {
             $0.taskIDs = [secondTask.id]
             $0.currentTask = nil
             $0.completedTaskCount = 1
@@ -257,7 +257,7 @@ struct MissingPressureDataFeatureTests {
             $0.calendar = Calendar(identifier: .gregorian)
         }
 
-        await store.send(.pressureSelected(taskID: task.id, pressure: .none))
+        await store.send(.valueSelected(taskID: task.id, value: .pressure(.none)))
 
         #expect(task.pressure == .none)
         #expect(store.state.taskIDs == [task.id])
@@ -343,8 +343,9 @@ struct MissingPressureDataFeatureTests {
     func iOSProcedureViewKeepsSwiftDataWorkInTheReducer() throws {
         let source = try Self.sourceFile("iOS/Screens/More/MissingPressureDataView.swift")
 
-        #expect(source.contains("let store: StoreOf<MissingPressureDataFeature>"))
-        #expect(source.contains("store.send(.pressureSelected"))
+        #expect(source.contains("let store: StoreOf<MissingTaskDataFeature>"))
+        #expect(source.contains("store.send(.valueSelected"))
+        #expect(source.contains("options: store.field.values"))
         #expect(source.contains("store.send(.skipTask"))
         #expect(source.contains("store.send(.taskDetailsTapped"))
         #expect(source.contains("taskContext(task)"))

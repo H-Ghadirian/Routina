@@ -87,6 +87,10 @@ let tabView = TabView(
                     state: \.missingPressureData,
                     action: \.missingPressureData
                 ),
+                missingThinkingNeededDataStore: store.scope(
+                    state: \.missingThinkingNeededData,
+                    action: \.missingThinkingNeededData
+                ),
                 missingImportanceDataStore: store.scope(
                     state: \.missingImportanceData,
                     action: \.missingImportanceData
@@ -676,6 +680,7 @@ private enum AppMoreDestination: Hashable {
     case stats
     case settings
     case missingPressureData
+    case missingThinkingNeededData
     case missingImportanceData
     case missingUrgencyData
 }
@@ -686,7 +691,8 @@ private struct AppMoreNavigationView: View {
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
-    let missingPressureDataStore: StoreOf<MissingPressureDataFeature>
+    let missingPressureDataStore: StoreOf<MissingTaskDataFeature>
+    let missingThinkingNeededDataStore: StoreOf<MissingTaskDataFeature>
     let missingImportanceDataStore: StoreOf<MissingTaskMetadataFeature>
     let missingUrgencyDataStore: StoreOf<MissingTaskMetadataFeature>
     let showGoalsTab: Bool
@@ -707,6 +713,9 @@ private struct AppMoreNavigationView: View {
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.missingPressureData)) {
                     destinationView(for: .missingPressureData)
+                }
+                .navigationDestination(isPresented: isDestinationPresented(.missingThinkingNeededData)) {
+                    destinationView(for: .missingThinkingNeededData)
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.missingImportanceData)) {
                     destinationView(for: .missingImportanceData)
@@ -738,6 +747,15 @@ private struct AppMoreNavigationView: View {
                         tint: .orange,
                         title: "Add missing Pressure data",
                         subtitle: "Fill in pressure for tasks"
+                    )
+                }
+
+                moreButton(destination: .missingThinkingNeededData) {
+                    SettingsNavigationRow(
+                        icon: "lightbulb",
+                        tint: .yellow,
+                        title: "Add missing Thinking needed data",
+                        subtitle: "Fill in thinking needed for tasks"
                     )
                 }
 
@@ -847,7 +865,9 @@ private struct AppMoreNavigationView: View {
                 selectTabAfterNavigationGesture(.settings)
             }
         case .missingPressureData:
-            MissingPressureDataView(store: missingPressureDataStore)
+            MissingTaskDataView(store: missingPressureDataStore)
+        case .missingThinkingNeededData:
+            MissingTaskDataView(store: missingThinkingNeededDataStore)
         case .missingImportanceData:
             MissingTaskMetadataView(store: missingImportanceDataStore)
         case .missingUrgencyData:

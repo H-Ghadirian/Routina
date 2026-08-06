@@ -125,3 +125,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0081 — Bound guided review and detail loading](0081-bound-guided-review-and-detail-loading.md)
 - [0082 — Keep Simulator UI-test host and runtime links aligned](0082-keep-simulator-ui-test-host-and-runtime-links-aligned.md)
 - [0083 — Keep guided-review progress clear of navigation titles](0083-keep-guided-review-progress-clear-of-navigation-titles.md)
+- [0084 — Reject neutral values in shared guided reviews](0084-reject-neutral-values-in-shared-guided-reviews.md)

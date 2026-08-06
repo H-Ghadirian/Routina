@@ -132,7 +132,7 @@ enum GuidedTaskMetadataValue: Hashable, Sendable {
 struct MissingTaskMetadataFeature {
     @ObservableState
     struct State: Equatable {
-        typealias Task = MissingPressureDataFeature.State.Task
+        typealias Task = MissingTaskDataFeature.State.Task
 
         let field: GuidedTaskMetadataField
         /// Ordered ids keep Skip deterministic without retaining presentation data for every card.

@@ -2,8 +2,147 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 
+enum GuidedMissingTaskDataField: Equatable, Sendable {
+    case pressure
+    case thinkingNeeded
+
+    var navigationTitle: String {
+        switch self {
+        case .pressure:
+            return "Add missing Pressure"
+        case .thinkingNeeded:
+            return "Add missing Thinking needed"
+        }
+    }
+
+    var question: String {
+        switch self {
+        case .pressure:
+            return "How much pressure does this task create?"
+        case .thinkingNeeded:
+            return "How much thinking does this task need?"
+        }
+    }
+
+    var instruction: String {
+        switch self {
+        case .pressure:
+            return "Pressure is how much a task stays on your mind, even when it is not the most urgent."
+        case .thinkingNeeded:
+            return "Thinking needed is the concentration, understanding, or decision-making this task requires."
+        }
+    }
+
+    var completionMessage: String {
+        switch self {
+        case .pressure:
+            return "Every eligible task has pressure data."
+        case .thinkingNeeded:
+            return "Every eligible task has thinking needed data."
+        }
+    }
+
+    var saveFailureMessage: String {
+        switch self {
+        case .pressure:
+            return "Couldn’t save pressure. Try again."
+        case .thinkingNeeded:
+            return "Couldn’t save thinking needed. Try again."
+        }
+    }
+
+    var activityDetails: String {
+        switch self {
+        case .pressure:
+            return "Updated pressure"
+        case .thinkingNeeded:
+            return "Updated thinking needed"
+        }
+    }
+
+    var values: [GuidedMissingTaskDataValue] {
+        switch self {
+        case .pressure:
+            return RoutineTaskPressure.allCases
+                .filter { $0 != .none }
+                .map(GuidedMissingTaskDataValue.pressure)
+        case .thinkingNeeded:
+            return RoutineTaskThinkingNeeded.allCases
+                .filter { $0 != .none }
+                .map(GuidedMissingTaskDataValue.thinkingNeeded)
+        }
+    }
+
+    var missingValue: GuidedMissingTaskDataValue {
+        switch self {
+        case .pressure:
+            return .pressure(.none)
+        case .thinkingNeeded:
+            return .thinkingNeeded(.none)
+        }
+    }
+
+    func isEligible(_ task: RoutineTask) -> Bool {
+        let hasMissingValue: Bool
+        switch self {
+        case .pressure:
+            hasMissingValue = task.pressure == .none
+        case .thinkingNeeded:
+            hasMissingValue = task.thinkingNeeded == .none
+        }
+
+        return hasMissingValue
+            && (!task.isOneOffTask || (task.lastDone == nil && task.canceledAt == nil))
+    }
+
+    func apply(_ value: GuidedMissingTaskDataValue, to task: RoutineTask) -> Bool {
+        switch (self, value) {
+        case let (.pressure, .pressure(pressure)) where pressure != .none:
+            task.pressure = pressure
+            return true
+        case let (.thinkingNeeded, .thinkingNeeded(thinkingNeeded)) where thinkingNeeded != .none:
+            task.thinkingNeeded = thinkingNeeded
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+enum GuidedMissingTaskDataValue: Hashable, Sendable {
+    case pressure(RoutineTaskPressure)
+    case thinkingNeeded(RoutineTaskThinkingNeeded)
+
+    var field: GuidedMissingTaskDataField {
+        switch self {
+        case .pressure:
+            return .pressure
+        case .thinkingNeeded:
+            return .thinkingNeeded
+        }
+    }
+
+    var title: String {
+        switch self {
+        case let .pressure(pressure):
+            return pressure.title
+        case let .thinkingNeeded(thinkingNeeded):
+            return thinkingNeeded.title
+        }
+    }
+
+    var isMissing: Bool {
+        switch self {
+        case let .pressure(pressure):
+            return pressure == .none
+        case let .thinkingNeeded(thinkingNeeded):
+            return thinkingNeeded == .none
+        }
+    }
+}
+
 @Reducer
-struct MissingPressureDataFeature {
+struct MissingTaskDataFeature {
     @ObservableState
     struct State: Equatable {
         struct Task: Identifiable, Equatable {
@@ -35,6 +174,7 @@ struct MissingPressureDataFeature {
             }
         }
 
+        var field: GuidedMissingTaskDataField = .pressure
         /// Ordered ids keep Skip deterministic without retaining presentation data for every card.
         var taskIDs: [UUID] = []
         var currentTask: Task?
@@ -65,9 +205,9 @@ struct MissingPressureDataFeature {
         case currentTaskLoaded(taskID: UUID, task: State.Task?)
         case currentTaskUnavailable(UUID)
         case currentTaskLoadFailed
-        case pressureSelected(taskID: UUID, pressure: RoutineTaskPressure)
-        case pressureSaved(taskID: UUID)
-        case pressureSaveFailed
+        case valueSelected(taskID: UUID, value: GuidedMissingTaskDataValue)
+        case valueSaved(taskID: UUID)
+        case valueSaveFailed
         case skipTask(taskID: UUID)
         case taskDetailsTapped(taskID: UUID)
         case delegate(Delegate)
@@ -82,6 +222,12 @@ struct MissingPressureDataFeature {
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Dependency(\.date.now) private var now
     @Dependency(\.calendar) private var calendar
+
+    let field: GuidedMissingTaskDataField
+
+    init(field: GuidedMissingTaskDataField = .pressure) {
+        self.field = field
+    }
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -136,17 +282,18 @@ struct MissingPressureDataFeature {
                 state.errorMessage = "Couldn’t load the next task. Try again."
                 return .none
 
-            case let .pressureSelected(taskID, pressure):
-                guard pressure != .none,
+            case let .valueSelected(taskID, value):
+                guard value.field == field,
+                      !value.isMissing,
                       !state.isSaving,
                       state.currentTask?.id == taskID else {
                     return .none
                 }
                 state.isSaving = true
                 state.errorMessage = nil
-                return savePressure(pressure, for: taskID)
+                return save(value, for: taskID)
 
-            case let .pressureSaved(taskID):
+            case let .valueSaved(taskID):
                 guard state.taskIDs.first == taskID else {
                     state.isSaving = false
                     return .none
@@ -163,9 +310,9 @@ struct MissingPressureDataFeature {
                 }
                 return .none
 
-            case .pressureSaveFailed:
+            case .valueSaveFailed:
                 state.isSaving = false
-                state.errorMessage = "Couldn’t save pressure. Try again."
+                state.errorMessage = field.saveFailureMessage
                 return .none
 
             case let .skipTask(taskID):
@@ -197,19 +344,7 @@ struct MissingPressureDataFeature {
     private func loadTasks() -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let pressureRawValue = RoutineTaskPressure.none.rawValue
-                let oneOffScheduleModeRawValue = RoutineScheduleMode.oneOff.rawValue
-                let descriptor = FetchDescriptor<RoutineTask>(
-                    predicate: #Predicate { task in
-                        task.pressureRawValue == pressureRawValue
-                            && (
-                                task.scheduleModeRawValue != oneOffScheduleModeRawValue
-                                    || (task.lastDone == nil && task.canceledAt == nil)
-                            )
-                    },
-                    sortBy: [SortDescriptor(\RoutineTask.name)]
-                )
-                let tasks = try modelContext().fetch(descriptor)
+                let tasks = try modelContext().fetch(taskDescriptor())
                 let taskIDs = tasks.map(\.id)
                 let currentTask = tasks.first.map {
                     makePresentationTask(for: $0)
@@ -250,40 +385,73 @@ struct MissingPressureDataFeature {
         )
     }
 
-    private func savePressure(
-        _ pressure: RoutineTaskPressure,
+    private func taskDescriptor() -> FetchDescriptor<RoutineTask> {
+        let oneOffScheduleModeRawValue = RoutineScheduleMode.oneOff.rawValue
+
+        switch field {
+        case .pressure:
+            let missingRawValue = RoutineTaskPressure.none.rawValue
+            return FetchDescriptor<RoutineTask>(
+                predicate: #Predicate { task in
+                    task.pressureRawValue == missingRawValue
+                        && (
+                            task.scheduleModeRawValue != oneOffScheduleModeRawValue
+                                || (task.lastDone == nil && task.canceledAt == nil)
+                        )
+                },
+                sortBy: [SortDescriptor(\RoutineTask.name)]
+            )
+        case .thinkingNeeded:
+            let missingRawValue = RoutineTaskThinkingNeeded.none.rawValue
+            return FetchDescriptor<RoutineTask>(
+                predicate: #Predicate { task in
+                    task.thinkingNeededRawValue == missingRawValue
+                        && (
+                            task.scheduleModeRawValue != oneOffScheduleModeRawValue
+                                || (task.lastDone == nil && task.canceledAt == nil)
+                        )
+                },
+                sortBy: [SortDescriptor(\RoutineTask.name)]
+            )
+        }
+    }
+
+    private func save(
+        _ value: GuidedMissingTaskDataValue,
         for taskID: UUID
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first,
-                      isEligible(task)
+                      field.isEligible(task),
+                      field.apply(value, to: task)
                 else {
-                    send(.pressureSaved(taskID: taskID))
+                    send(.valueSaved(taskID: taskID))
                     return
                 }
 
-                task.pressure = pressure
                 DeviceActivityRecorder.recordAction(
                     .updated,
                     entity: .task,
                     entityID: taskID,
                     entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: "Updated pressure",
+                    details: field.activityDetails,
                     in: context
                 )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
-                send(.pressureSaved(taskID: taskID))
+                send(.valueSaved(taskID: taskID))
             } catch {
-                send(.pressureSaveFailed)
+                send(.valueSaveFailed)
             }
         }
     }
 
     private func isEligible(_ task: RoutineTask) -> Bool {
-        task.pressure == .none
-            && (!task.isOneOffTask || (task.lastDone == nil && task.canceledAt == nil))
+        field.isEligible(task)
     }
 }
+
+typealias MissingPressureDataFeature = MissingTaskDataFeature
+typealias MissingThinkingNeededDataFeature = MissingTaskDataFeature

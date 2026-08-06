@@ -1,10 +1,8 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct MissingPressureDataView: View {
-    let store: StoreOf<MissingPressureDataFeature>
-
-    private let pressureOptions = RoutineTaskPressure.allCases.filter { $0 != .none }
+struct MissingTaskDataView: View {
+    let store: StoreOf<MissingTaskDataFeature>
 
     /// The inline navigation bar overlays a non-scrolling full-height view.
     /// Keep its title area distinct from the procedure's progress information.
@@ -25,14 +23,14 @@ struct MissingPressureDataView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle("Add missing Pressure")
+        .navigationTitle(store.field.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             store.send(.onAppear)
         }
     }
 
-    private func taskCard(_ task: MissingPressureDataFeature.State.Task) -> some View {
+    private func taskCard(_ task: MissingTaskDataFeature.State.Task) -> some View {
         VStack(spacing: 16) {
             GuidedReviewProgressHeader(
                 currentTaskNumber: store.currentTaskNumber,
@@ -48,20 +46,20 @@ struct MissingPressureDataView: View {
 
                 taskContext(task)
 
-                Text("How much pressure does this task create?")
+                Text(store.field.question)
                     .font(.headline)
 
                 RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Pressure",
-                    options: pressureOptions,
-                    selection: pressureBinding(for: task),
+                    accessibilityLabel: store.field.navigationTitle,
+                    options: store.field.values,
+                    selection: valueBinding(for: task),
                     fillsAvailableWidth: true
-                ) { pressure in
-                    Text(pressure.title)
+                ) { value in
+                    Text(value.title)
                 }
                 .disabled(store.isSaving)
 
-                Text("Pressure is how much a task stays on your mind, even when it is not the most urgent.")
+                Text(store.field.instruction)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -115,7 +113,7 @@ struct MissingPressureDataView: View {
     }
 
     @ViewBuilder
-    private func taskContext(_ task: MissingPressureDataFeature.State.Task) -> some View {
+    private func taskContext(_ task: MissingTaskDataFeature.State.Task) -> some View {
         if !task.path.isEmpty || !task.labels.isEmpty || !task.tags.isEmpty {
             VStack(spacing: 8) {
                 if !task.path.isEmpty {
@@ -173,7 +171,7 @@ struct MissingPressureDataView: View {
             Text("All set")
                 .font(.title2.weight(.semibold))
 
-            Text("Every eligible task has pressure data.")
+            Text(store.field.completionMessage)
                 .foregroundStyle(.secondary)
 
             if let errorMessage = store.errorMessage {
@@ -198,12 +196,12 @@ struct MissingPressureDataView: View {
         }
     }
 
-    private func pressureBinding(
-        for task: MissingPressureDataFeature.State.Task
-    ) -> Binding<RoutineTaskPressure> {
+    private func valueBinding(
+        for task: MissingTaskDataFeature.State.Task
+    ) -> Binding<GuidedMissingTaskDataValue> {
         Binding(
-            get: { .none },
-            set: { store.send(.pressureSelected(taskID: task.id, pressure: $0)) }
+            get: { store.field.missingValue },
+            set: { store.send(.valueSelected(taskID: task.id, value: $0)) }
         )
     }
 }

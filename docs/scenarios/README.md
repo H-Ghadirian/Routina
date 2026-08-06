@@ -1655,6 +1655,46 @@ And each next card is loaded through a focused task query
 And Home-selected Task Details reuse Home's loaded edit context instead of
 refetching every task, place, goal, and log on each round trip
 
+### iOS Missing Thinking Needed Procedure Stays Focused And Independent
+
+Area: Tasks / UI
+Decision links: [0478](../decisions/0478-add-guided-ios-thinking-needed-review.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/MissingThinkingNeededDataFeatureTests.swift`
+- `Tests/iOS/AppFeatureTests.swift`
+
+Given repeating tasks and one-off tasks with Thinking needed set to `None`, and
+tasks already set to Low, Medium, or High
+When the user opens More -> `Add missing Thinking needed data` on compact iOS
+Then the repeating `None` tasks and unfinished, uncanceled one-off `None` tasks
+are loaded in title order
+And completed or canceled one-off tasks do not appear
+And the user sees one full-height card at a time with no scrolling list
+And the available choices are Low, Medium, and High rather than `None`
+
+Given a missing-thinking-needed task is shown
+When the user chooses Low, Medium, or High
+Then only Thinking needed and the normal task-update activity are saved
+And pressure, importance, urgency, priority, duration, and scheduling are unchanged
+And the procedure advances to the next remaining task
+
+Given the current Thinking needed procedure card is shown
+When the user chooses `Skip` or `Check task details`
+Then Skip keeps the task missing and moves it after the remaining cards
+And Check task details selects that task through the existing Home route
+
+Given the shared None-valued guided-review reducer receives a neutral `None`
+or a value for another metadata field
+When it processes the selection
+Then it performs no save and does not advance the procedure
+
+Given more than 250 eligible Thinking needed tasks and a large task-log history
+When the user advances cards, opens the selected task's details, and returns
+to the procedure repeatedly
+Then the procedure retains presentation data for only the visible card
+And each next card is loaded through a focused task query
+
 ### iOS Importance And Urgency Reviews Stay Independent
 
 Area: Tasks / UI
