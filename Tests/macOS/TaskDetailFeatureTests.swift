@@ -316,6 +316,51 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func pauseAndResumeOneOff_preservesItsOneOffScheduleState() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Archive paperwork",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📄",
+            scheduleMode: .oneOff
+        )
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.pauseTapped) {
+            $0.task.pausedAt = now
+            $0.taskRefreshID = 1
+        }
+
+        #expect(store.state.task.scheduleAnchor == nil)
+        let archivedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(archivedTask.pausedAt == now)
+        #expect(archivedTask.scheduleAnchor == nil)
+
+        await store.send(.resumeTapped) {
+            $0.task.pausedAt = nil
+            $0.taskRefreshID = 2
+        }
+
+        let restoredTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(restoredTask.pausedAt == nil)
+        #expect(restoredTask.scheduleAnchor == nil)
+    }
+
+    @Test
     func resumeTapped_restoresRoutineAndSchedulesNotification() async throws {
         let context = makeInMemoryContext()
         let pauseDate = makeDate("2026-03-10T10:00:00Z")

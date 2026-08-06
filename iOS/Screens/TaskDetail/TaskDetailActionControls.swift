@@ -128,18 +128,26 @@ struct TaskDetailRoutinePrimaryActionSection: View {
         .detailCardStyle()
     }
 
+    @ViewBuilder
     private var secondaryActionControls: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 10) {
-                pauseResumeButton
-                notTodayButton
-            }
+        if showsPauseResumeControl {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    pauseResumeButton
+                    notTodayButton
+                }
 
-            VStack(alignment: .leading, spacing: 10) {
-                pauseResumeButton
-                notTodayButton
+                VStack(alignment: .leading, spacing: 10) {
+                    pauseResumeButton
+                    notTodayButton
+                }
             }
         }
+    }
+
+    private var showsPauseResumeControl: Bool {
+        !store.task.isOneOffTask
+            || (!store.task.isCompletedOneOff && !store.task.isCanceledOneOff)
     }
 
     private var pauseResumeButton: some View {
@@ -148,7 +156,7 @@ struct TaskDetailRoutinePrimaryActionSection: View {
         } label: {
             Label(
                 pauseArchivePresentation.actionTitle,
-                systemImage: store.task.isArchived() ? "play.circle" : "pause.circle"
+                systemImage: pauseResumeSystemImage
             )
             .frame(maxWidth: .infinity)
         }
@@ -156,6 +164,13 @@ struct TaskDetailRoutinePrimaryActionSection: View {
         .tint(store.task.isArchived() ? .teal : .orange)
         .routinaPlatformSecondaryActionControlSize()
         .frame(maxWidth: .infinity)
+    }
+
+    private var pauseResumeSystemImage: String {
+        if store.task.isOneOffTask {
+            return store.task.isArchived() ? "arrow.uturn.backward.circle" : "archivebox"
+        }
+        return store.task.isArchived() ? "play.circle" : "pause.circle"
     }
 
     @ViewBuilder

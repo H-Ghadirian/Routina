@@ -493,14 +493,25 @@ struct TaskChoiceFeature {
                         calendar: calendar
                     )
                 }
-                let missingData = TaskChoiceCandidateRanking.missingData(for: selectableTasks)
+                let relationshipCandidates = RoutineTaskRelationshipCandidate.from(
+                    tasks,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
+                let unblockedTasks = selectableTasks.filter {
+                    !RoutineTaskRelationshipResolution.hasActiveBlocker(
+                        for: $0,
+                        within: relationshipCandidates
+                    )
+                }
+                let missingData = TaskChoiceCandidateRanking.missingData(for: unblockedTasks)
                 guard missingData.isEmpty else {
-                    send(.tasksLoaded(.needsData(missingData, candidateCount: selectableTasks.count)))
+                    send(.tasksLoaded(.needsData(missingData, candidateCount: unblockedTasks.count)))
                     return
                 }
 
                 let ranked = TaskChoiceCandidateRanking.ranked(
-                    tasks: selectableTasks,
+                    tasks: unblockedTasks,
                     condition: condition
                 )
                 guard let recommendedTask = ranked.first else {
@@ -508,7 +519,7 @@ struct TaskChoiceFeature {
                     return
                 }
                 if let pair = TaskChoiceCandidateRanking.nextComparisonPair(
-                    tasks: selectableTasks,
+                    tasks: unblockedTasks,
                     condition: condition
                 ) {
                     send(.tasksLoaded(.comparison(pair.0, pair.1, candidateCount: ranked.count)))

@@ -485,9 +485,10 @@ extension TaskDetailFeature.State {
 
     /// True when at least one `.blockedBy` relationship target is not yet done/canceled.
     var hasActiveRelationshipBlocker: Bool {
-        blockingRelationships.contains { rel in
-            rel.status != .doneToday && rel.status != .completedOneOff && rel.status != .canceledOneOff
-        }
+        RoutineTaskRelationshipResolution.hasActiveBlocker(
+            for: task,
+            within: availableRelationshipTasks
+        )
     }
 
     var blockerSummaryText: String {

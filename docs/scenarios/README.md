@@ -88,6 +88,90 @@ Then the existing-task picker opens directly
 And no second Linked Tasks editor or second `Link a Task` button is inserted below the section
 And choosing a task persists that relationship without requiring a second Save action
 
+### Task Relationship Suggestions Require Confirmation
+
+Area: Tasks / AI
+Decision links: [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0488](../decisions/0488-prioritize-grounded-task-relationship-analysis.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailEditSaveTests.swift`
+- `Tests/Shared/TaskRelationshipReviewFeatureTests.swift`
+
+Given a task is open in iOS or Mac Task Details
+When the person requests relationship suggestions
+Then Routina sends a bounded set of active, unlinked task summaries to the
+on-device model
+And those summaries include bounded task paths, descriptions, deadlines,
+planned and availability dates, scheduling context, steps, and checklist items
+And a large catalog sends only the at-most-eight candidates with shared tags, path
+components, or specific work words, while generic and common work words never fill
+the request with arbitrary tasks
+And a shared path alone never proves a relationship
+And it accepts only known task IDs with `Blocked by`, `Blocks`, or `Related` types
+and reasons that cite a concrete task detail
+And no task relationship changes from a suggestion alone
+
+Given a validated relationship suggestion is visible
+When the person changes its type and confirms it
+Then Routina persists the edited type through the existing relationship mutation
+And dismissing a suggestion instead leaves both tasks unchanged
+
+Given Apple Intelligence is unavailable or no useful relationship is found
+When the suggestion request finishes
+Then Task Details explains the outcome
+And the existing manual relationship actions remain available
+
+Given the Mac app is active
+When the person chooses `Review Task Relationships…` from the Routinam menu
+Then a dedicated relationship-review window opens with the active task catalog
+And it distinguishes durable reviewed tasks from new or changed tasks
+And it shows each resolved custom-section path where available
+And opening the window does not automatically submit every task for analysis
+
+Given a task is selected in the Mac relationship-review window
+When the person asks to find possible relationships
+Then only a bounded relevant candidate set is analyzed
+And each proposal can be changed to `Blocked by`, `Blocks`, or `Related`
+And Confirm persists through the same app-owned relationship mutation as Task Details
+And Dismiss leaves task data unchanged and does not repeat that pair in the session
+
+Given the Mac relationship-review window contains multiple active tasks
+When the person explicitly chooses `Reanalyze all tasks`
+Then Routina builds one immutable bounded-summary catalog and checks every active
+source task sequentially
+And the window shows the current task, checked-task count, and proposal count
+And stopping the run preserves proposals already found
+And the collected review queue keeps one proposal per task pair
+And every relationship still requires an individual Confirm action
+And opening the window alone never starts the all-task analysis
+
+Given some active tasks have a matching persisted relationship-review fingerprint
+and another task is newly added or changes its relationship-relevant summary
+When the person chooses `Analyze new & changed`
+Then only the new or changed source tasks are submitted to the model
+And every existing task still participates in bounded candidate selection
+And `Blocks` can represent an unchanged existing task depending on the new source
+And priority, ranking, or completion-history-only changes do not trigger analysis
+
+Given analysis finds no proposal or the person resolves every proposal for a task
+When review progress is saved
+Then the current versioned fingerprint is stored locally for that task
+And reopening the review window treats the unchanged task as current
+And failed tasks, unresolved proposals, deleted progress entries, and tasks whose
+relationship-relevant fingerprint changed remain eligible or are pruned as appropriate
+
+Given the person wants to reconsider unchanged tasks
+When they choose `Reanalyze all tasks` from `More`
+Then every active task is processed using the same cancellable bounded batch path
+
+Given one source task causes a recoverable model or guardrail error during an
+all-task analysis
+When Routina records that source-task failure
+Then the failed task remains unchecked and is marked as needing retry
+And analysis continues with every later active task
+And only unavailable Apple Intelligence, cancellation, or a catalog failure stops
+the complete batch
+
 ### Cadence-Free Repeating Tasks Stay Reusable
 
 Area: Tasks
@@ -1247,6 +1331,19 @@ Given a task has a persisted planner block
 When the user deletes that task from edit task
 Then matching planner blocks are removed from Planner storage and unrelated planner blocks remain
 
+### Planner Ignores Duplicate Persisted Block IDs
+
+Area: Planner / Storage
+Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanStorageTests.swift`
+
+Given older data contains multiple planner records with the same block ID for one day
+When Planner loads that day
+Then it keeps only the most recently updated block and the Calendar can render without an identity collision
+And the next planner save removes the stale duplicate record
+
 ### Planner Slot Actions Hide Away and Sleep When Away Is Off
 
 Area: Planner
@@ -1595,10 +1692,37 @@ instead of walking whole history from a scrolling section builder
 And raw persistence saves do not duplicate semantic refresh notifications
 And bursts of semantic updates are coalesced before Stats reloads its snapshot
 
+### One-Off Task Archiving Keeps It Out of Suggestions
+
+Area: Tasks / Lifecycle
+Decision links: [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/macOS/TaskDetailFeatureTests.swift`
+- `Tests/Shared/HomeTaskRowActionPresentationTests.swift`
+- `Tests/Shared/MissingPressureDataFeatureTests.swift`
+- `Tests/Shared/MissingThinkingNeededDataFeatureTests.swift`
+- `Tests/Shared/MissingEstimatedDurationDataFeatureTests.swift`
+- `Tests/Shared/MissingTaskMetadataFeatureTests.swift`
+- `Tests/Shared/TaskChoiceFeatureTests.swift`
+- `Tests/Shared/TaskRelationshipReviewFeatureTests.swift`
+
+Given an unfinished one-off task is active
+When the person chooses `Archive` from its Mac Task Detail toolbar or Home row context menu
+Then Routina moves it to Archived, cancels its notification, and keeps its task data intact
+And every guided `Add missing…` review excludes the task
+And Help me choose excludes the task before metadata readiness, comparison, and ranking
+And task-relationship review excludes the task as both a review source and a suggestion candidate
+
+Given an archived one-off task
+When the person chooses `Restore`
+Then it returns to active task placement and guided-review, Help me choose, and task-relationship-review eligibility
+And Routina clears only its archived state without creating or shifting recurrence data
+
 ### iOS Task Choice Learns Condition-Relevant Tie-Breaks
 
 Area: Tasks / UI
-Decision links: [0485](../decisions/0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md), [0481](../decisions/0481-learn-task-choice-tie-breaks-after-metadata-readiness.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
+Decision links: [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0485](../decisions/0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md), [0481](../decisions/0481-learn-task-choice-tie-breaks-after-metadata-readiness.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/TaskChoiceFeatureTests.swift`
@@ -1609,9 +1733,16 @@ When they select available time, energy, and an immediate intent
 Then Routina finds currently selectable recurring tasks and unfinished,
 uncanceled one-off tasks
 And it excludes canceled, paused, snoozed, and current-period-complete tasks
+And it excludes tasks with a confirmed `Blocked by` relationship whose
+prerequisite is unresolved
 And it checks that every eligible task has explicit Importance and Urgency,
 Pressure, Thinking needed, and a time estimate
 And no visible task metadata is changed while readiness is checked
+
+Given a prerequisite is complete for its current occurrence, completed as a
+one-off task, or canceled as a one-off task
+When Help me choose loads the dependent task
+Then that resolved relationship no longer excludes the dependent task
 
 Given one or more eligible tasks are missing required task-choice data
 When the person asks Routina to find the right task

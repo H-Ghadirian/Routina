@@ -13,6 +13,210 @@ import Testing
 @MainActor
 struct TaskDetailEditSaveTests {
     @Test
+    func relationshipSuggestionResponseAcceptsOnlyKnownTasksAndSafeKinds() {
+        let sourceID = UUID()
+        let candidateID = UUID()
+        let blockingCandidateID = UUID()
+        let unknownID = UUID()
+        let request = TaskRelationshipSuggestionRequest(
+            source: TaskRelationshipSuggestionTask(
+                id: sourceID,
+                title: "Book flight",
+                emoji: "✈️",
+                taskDescription: nil,
+                tags: ["Travel"]
+            ),
+            candidates: [
+                TaskRelationshipSuggestionTask(
+                    id: candidateID,
+                    title: "Renew passport",
+                    emoji: "🛂",
+                    taskDescription: nil,
+                    tags: ["Travel"]
+                ),
+                TaskRelationshipSuggestionTask(
+                    id: blockingCandidateID,
+                    title: "Submit visa application",
+                    emoji: "📄",
+                    taskDescription: nil,
+                    tags: ["Travel"]
+                )
+            ]
+        )
+
+        let suggestions = request.validatedSuggestions(
+            from: """
+            \(candidateID.uuidString)|blockedBy|A valid passport is required first.
+            \(blockingCandidateID.uuidString)|blocks|Booking must happen before this application.
+            \(unknownID.uuidString)|blockedBy|Unknown task.
+            \(candidateID.uuidString)|completes|Unsafe relationship kind.
+            """
+        )
+
+        #expect(suggestions == [
+            TaskRelationshipSuggestion(
+                targetTaskID: candidateID,
+                targetTaskTitle: "Renew passport",
+                targetTaskEmoji: "🛂",
+                kind: .blockedBy,
+                reason: "A valid passport is required first."
+            ),
+            TaskRelationshipSuggestion(
+                targetTaskID: blockingCandidateID,
+                targetTaskTitle: "Submit visa application",
+                targetTaskEmoji: "📄",
+                kind: .blocks,
+                reason: "Booking must happen before this application."
+            )
+        ])
+    }
+
+    @Test
+    func relationshipSuggestionResponseRequiresAConcreteTaskDetailInItsReason() {
+        let sourceID = UUID()
+        let candidateID = UUID()
+        let request = TaskRelationshipSuggestionRequest(
+            source: TaskRelationshipSuggestionTask(
+                id: sourceID,
+                title: "Book flight",
+                emoji: "✈️",
+                taskDescription: "Travel to the Berlin conference",
+                tags: []
+            ),
+            candidates: [
+                TaskRelationshipSuggestionTask(
+                    id: candidateID,
+                    title: "Renew passport",
+                    emoji: "🛂",
+                    taskDescription: nil,
+                    tags: []
+                )
+            ]
+        )
+
+        let suggestions = request.validatedSuggestions(
+            from: """
+            \(candidateID.uuidString)|related|These tasks are related.
+            \(candidateID.uuidString)|blockedBy|The passport must be current before the Berlin flight.
+            """
+        )
+
+        #expect(suggestions == [
+            TaskRelationshipSuggestion(
+                targetTaskID: candidateID,
+                targetTaskTitle: "Renew passport",
+                targetTaskEmoji: "🛂",
+                kind: .blockedBy,
+                reason: "The passport must be current before the Berlin flight."
+            )
+        ])
+    }
+
+    @Test
+    func relationshipSuggestionRequestIncludesBoundedWorkAndPathContext() throws {
+        let calendar = makeTestCalendar()
+        let rootSection = HomeCustomTaskSection(title: "Work")
+        let childSection = HomeCustomTaskSection(
+            parentSectionID: rootSection.id,
+            title: "Launch"
+        )
+        let source = RoutineTask(
+            name: "Prepare product launch",
+            taskDescription: "Coordinate the final release",
+            deadline: makeDate("2026-08-20T16:30:00Z"),
+            plannedDate: makeDate("2026-08-13T09:00:00Z"),
+            customTaskSectionID: childSection.id,
+            availabilityStartDate: makeDate("2026-08-12T00:00:00Z"),
+            availabilityEndDate: makeDate("2026-08-14T00:00:00Z"),
+            tags: ["Release"],
+            steps: [RoutineStep(title: "Approve launch copy")],
+            checklistItems: [RoutineChecklistItem(title: "Store screenshots", intervalDays: 1)],
+            scheduleMode: .oneOff
+        )
+        let samePathCandidate = RoutineTask(
+            name: "Collect press quotes",
+            customTaskSectionID: childSection.id,
+            scheduleMode: .oneOff
+        )
+        let sharedTitleCandidate = RoutineTask(
+            name: "Prepare dinner",
+            scheduleMode: .oneOff
+        )
+
+        let request = TaskRelationshipSuggestionRequest.make(
+            source: source,
+            from: [source, sharedTitleCandidate, samePathCandidate],
+            referenceDate: makeDate("2026-08-06T10:00:00Z"),
+            calendar: calendar,
+            customTaskSections: [rootSection, childSection]
+        )
+
+        #expect(request.source.taskPath == ["Work", "Launch"])
+        #expect(request.source.deadline == "2026-08-20 16:30")
+        #expect(request.source.plannedDate == "2026-08-12")
+        #expect(request.source.availabilityWindow == "2026-08-12 through 2026-08-14")
+        #expect(request.source.scheduleContext == "One-time task")
+        #expect(request.source.steps == ["Approve launch copy"])
+        #expect(request.source.checklistItems == ["Store screenshots"])
+        #expect(request.candidates.first?.id == samePathCandidate.id)
+    }
+
+    @Test
+    func relationshipSuggestionRequestRejectsGenericMatchesInLargeCatalogs() throws {
+        let calendar = makeTestCalendar()
+        let source = RoutineTask(name: "Prepare product launch", scheduleMode: .oneOff)
+        let genericMatch = RoutineTask(name: "Prepare dinner", scheduleMode: .oneOff)
+        let groundedMatch = RoutineTask(name: "Approve launch copy", scheduleMode: .oneOff)
+        let unrelatedTasks = (1...8).map {
+            RoutineTask(name: "Unrelated task \($0)", scheduleMode: .oneOff)
+        }
+
+        let request = TaskRelationshipSuggestionRequest.make(
+            source: source,
+            from: [source, genericMatch, groundedMatch] + unrelatedTasks,
+            referenceDate: makeDate("2026-08-06T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(request.candidates.map(\.id) == [groundedMatch.id])
+    }
+
+    @Test
+    func relationshipReviewFingerprintChangesOnlyWithRelationshipRelevantSummary() throws {
+        let calendar = makeTestCalendar()
+        let sectionID = UUID()
+        let originalSection = HomeCustomTaskSection(id: sectionID, title: "Work")
+        let renamedSection = HomeCustomTaskSection(id: sectionID, title: "Career")
+        let task = RoutineTask(
+            name: "Prepare launch",
+            taskDescription: "Coordinate release",
+            customTaskSectionID: sectionID,
+            tags: ["Release"],
+            steps: [RoutineStep(title: "Approve copy")]
+        )
+
+        func fingerprint(sections: [HomeCustomTaskSection]) throws -> String {
+            let catalog = TaskRelationshipSuggestionCatalog(
+                tasks: [task],
+                referenceDate: makeDate("2026-08-06T10:00:00Z"),
+                calendar: calendar,
+                customTaskSections: sections
+            )
+            return try #require(catalog.fingerprint(for: task.id))
+        }
+
+        let originalFingerprint = try fingerprint(sections: [originalSection])
+        task.priority = .high
+        #expect(try fingerprint(sections: [originalSection]) == originalFingerprint)
+
+        task.taskDescription = "Coordinate release and press"
+        let updatedFingerprint = try fingerprint(sections: [originalSection])
+        let renamedPathFingerprint = try fingerprint(sections: [renamedSection])
+        #expect(updatedFingerprint != originalFingerprint)
+        #expect(renamedPathFingerprint != updatedFingerprint)
+    }
+
+    @Test
     func editSaveRequestMovesTaskToSelectedSidebarPath() throws {
         let originalSectionID = UUID()
         let selectedSectionID = UUID()
@@ -231,6 +435,83 @@ struct TaskDetailEditSaveTests {
                     }
                 )
             ).first
+        )
+        #expect(persistedTask.relationships == [
+            RoutineTaskRelationship(targetTaskID: linkedTask.id, kind: .related)
+        ])
+    }
+
+    @Test
+    func suggestedRelationshipCanBeEditedThenConfirmed() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Book flight",
+            interval: 7,
+            lastDone: nil,
+            emoji: "✈️"
+        )
+        let linkedTask = makeTask(
+            in: context,
+            name: "Renew passport",
+            interval: 365,
+            lastDone: nil,
+            emoji: "🛂"
+        )
+        try context.save()
+        let candidate = try #require(
+            RoutineTaskRelationshipCandidate.from(
+                [linkedTask],
+                excluding: task.id,
+                referenceDate: now,
+                calendar: calendar
+            ).first
+        )
+        let suggestion = TaskRelationshipSuggestion(
+            targetTaskID: linkedTask.id,
+            targetTaskTitle: "Renew passport",
+            targetTaskEmoji: "🛂",
+            kind: .blockedBy,
+            reason: "A valid passport is needed before booking this trip."
+        )
+        var initialState = TaskDetailFeature.State(task: task.detachedCopy())
+        initialState.availableRelationshipTasks = [candidate]
+        let taskID = task.id
+
+        let store = TestStore(initialState: initialState) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.taskRelationshipSuggestionClient = TaskRelationshipSuggestionClient { request in
+                #expect(request.source.id == taskID)
+                return [suggestion]
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.relationshipSuggestionsRequested) {
+            $0.isLoadingRelationshipSuggestions = true
+        }
+        await store.receive(.relationshipSuggestionsLoaded(taskID, [suggestion])) {
+            $0.isLoadingRelationshipSuggestions = false
+            $0.relationshipSuggestions = [suggestion]
+        }
+        await store.send(.relationshipSuggestionKindChanged(linkedTask.id, .related)) {
+            $0.relationshipSuggestions[0].kind = .related
+        }
+        await store.send(.acceptRelationshipSuggestion(linkedTask.id)) {
+            $0.relationshipSuggestions = []
+        }
+        await store.receive(.detailLinkExistingTask(linkedTask.id, .related))
+
+        #expect(store.state.task.relationships == [
+            RoutineTaskRelationship(targetTaskID: linkedTask.id, kind: .related)
+        ])
+        let persistedTask = try #require(
+            try context.fetch(TaskDetailFetchDescriptors.task(for: task.id)).first
         )
         #expect(persistedTask.relationships == [
             RoutineTaskRelationship(targetTaskID: linkedTask.id, kind: .related)

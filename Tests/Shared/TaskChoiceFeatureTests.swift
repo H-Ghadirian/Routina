@@ -76,6 +76,106 @@ struct TaskChoiceFeatureTests {
     }
 
     @Test
+    func archivedOneOffIsNeverSelectableForTaskChoice() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let archivedOneOff = RoutineTask(
+            name: "Archive paperwork",
+            scheduleMode: .oneOff,
+            pausedAt: now
+        )
+
+        #expect(!TaskChoiceCandidateRanking.isCurrentlySelectable(
+            archivedOneOff,
+            referenceDate: now,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func unresolvedRequiredTaskIsSkippedBeforeReadinessAndRanking() async throws {
+        let context = makeInMemoryContext()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let prerequisite = makeReadyTask(name: "Renew passport")
+        let blockedTask = RoutineTask(
+            name: "Book flight",
+            relationships: [
+                RoutineTaskRelationship(
+                    targetTaskID: prerequisite.id,
+                    kind: .blockedBy
+                )
+            ]
+        )
+        context.insert(prerequisite)
+        context.insert(blockedTask)
+        try context.save()
+
+        let prerequisiteCandidate = TaskChoiceCandidate(task: prerequisite)
+        let store = TestStore(initialState: TaskChoiceFeature.State()) {
+            TaskChoiceFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+            $0.calendar = calendar
+        }
+
+        await store.send(.findTasksTapped) {
+            $0.phase = .loading
+        }
+        await store.receive(.tasksLoaded(.recommendation(prerequisiteCandidate, candidateCount: 1))) {
+            $0.phase = .recommendation
+            $0.recommendedTask = prerequisiteCandidate
+            $0.candidateCount = 1
+        }
+    }
+
+    @Test
+    func completedRequirementAllowsDependentTaskIntoRanking() async throws {
+        let context = makeInMemoryContext()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let prerequisite = RoutineTask(
+            name: "Renew passport",
+            scheduleMode: .oneOff,
+            lastDone: Date(timeIntervalSince1970: 1)
+        )
+        let dependent = makeReadyTask(name: "Book flight")
+        dependent.replaceRelationships([
+            RoutineTaskRelationship(
+                targetTaskID: prerequisite.id,
+                kind: .blockedBy
+            )
+        ])
+        context.insert(prerequisite)
+        context.insert(dependent)
+        try context.save()
+
+        let dependentCandidate = TaskChoiceCandidate(task: dependent)
+        let store = TestStore(initialState: TaskChoiceFeature.State()) {
+            TaskChoiceFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+            $0.calendar = calendar
+        }
+
+        await store.send(.findTasksTapped) {
+            $0.phase = .loading
+        }
+        await store.receive(.tasksLoaded(.recommendation(dependentCandidate, candidateCount: 1))) {
+            $0.phase = .recommendation
+            $0.recommendedTask = dependentCandidate
+            $0.candidateCount = 1
+        }
+    }
+
+    @Test
     func savesComparisonsAndOnlyRecommendsAfterAllTiesAreResolved() async throws {
         let context = makeInMemoryContext()
         let now = Date(timeIntervalSince1970: 1_700_000_000)

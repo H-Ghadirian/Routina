@@ -343,26 +343,46 @@ enum DayPlanStorage {
     }
 
     private static func sanitized(_ blocks: [DayPlanBlock], dayKey: String) -> [DayPlanBlock] {
-        blocks
-            .map { block in
-                DayPlanBlock(
-                    id: block.id,
-                    taskID: block.taskID,
-                    dayKey: dayKey,
-                    startMinute: block.startMinute,
-                    durationMinutes: block.durationMinutes,
-                    titleSnapshot: block.titleSnapshot,
-                    emojiSnapshot: block.emojiSnapshot,
-                    createdAt: block.createdAt,
-                    updatedAt: block.updatedAt,
-                    minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-                )
+        var blocksByID: [UUID: DayPlanBlock] = [:]
+
+        for block in blocks {
+            let sanitizedBlock = DayPlanBlock(
+                id: block.id,
+                taskID: block.taskID,
+                dayKey: dayKey,
+                startMinute: block.startMinute,
+                durationMinutes: block.durationMinutes,
+                titleSnapshot: block.titleSnapshot,
+                emojiSnapshot: block.emojiSnapshot,
+                createdAt: block.createdAt,
+                updatedAt: block.updatedAt,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
+            guard let existingBlock = blocksByID[sanitizedBlock.id] else {
+                blocksByID[sanitizedBlock.id] = sanitizedBlock
+                continue
             }
-            .sorted {
-                if $0.startMinute != $1.startMinute {
-                    return $0.startMinute < $1.startMinute
-                }
-                return $0.createdAt < $1.createdAt
+
+            if shouldKeep(sanitizedBlock, over: existingBlock) {
+                blocksByID[sanitizedBlock.id] = sanitizedBlock
             }
+        }
+
+        return blocksByID.values.sorted {
+            if $0.startMinute != $1.startMinute {
+                return $0.startMinute < $1.startMinute
+            }
+            return $0.createdAt < $1.createdAt
+        }
+    }
+
+    private static func shouldKeep(_ candidate: DayPlanBlock, over existing: DayPlanBlock) -> Bool {
+        if candidate.updatedAt != existing.updatedAt {
+            return candidate.updatedAt > existing.updatedAt
+        }
+        if candidate.createdAt != existing.createdAt {
+            return candidate.createdAt > existing.createdAt
+        }
+        return candidate.durationMinutes > existing.durationMinutes
     }
 }

@@ -302,7 +302,7 @@ struct MissingTaskMetadataFeature {
     private func loadTasks() -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let tasks = try modelContext().fetch(taskDescriptor())
+                let tasks = try modelContext().fetch(taskDescriptor()).filter(isEligible)
                 let taskIDs = tasks.map(\.id)
                 let currentTask = tasks.first.map {
                     makePresentationTask(for: $0)
@@ -424,7 +424,8 @@ struct MissingTaskMetadataFeature {
     }
 
     private func isEligible(_ task: RoutineTask) -> Bool {
-        !field.isExplicit(for: task)
+        task.pausedAt == nil
+            && !field.isExplicit(for: task)
             && (!task.isOneOffTask || (task.lastDone == nil && task.canceledAt == nil))
     }
 }

@@ -51,6 +51,15 @@ struct MissingEstimatedDurationDataFeatureTests {
             scheduleMode: .oneOff
         )
         canceledOneOffTask.canceledAt = Date(timeIntervalSince1970: 1)
+        let archivedTask = makeTask(
+            in: context,
+            name: "Archived estimate task",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        archivedTask.pausedAt = Date(timeIntervalSince1970: 1)
         try context.save()
 
         let store = TestStore(
@@ -85,6 +94,7 @@ struct MissingEstimatedDurationDataFeatureTests {
         #expect(!store.state.taskIDs.contains(estimatedTask.id))
         #expect(!store.state.taskIDs.contains(completedOneOffTask.id))
         #expect(!store.state.taskIDs.contains(canceledOneOffTask.id))
+        #expect(!store.state.taskIDs.contains(archivedTask.id))
     }
 
     @Test

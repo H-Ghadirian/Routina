@@ -17,10 +17,12 @@ struct TaskDetailRoutineLifecycleActionHandler {
     var persistFinishOngoing: (UUID, Date) -> Effect<Action>
 
     func pauseTapped(state: inout State) -> Effect<Action> {
-        guard !state.task.isOneOffTask else { return .none }
+        if state.task.isOneOffTask {
+            guard !state.task.isCompletedOneOff, !state.task.isCanceledOneOff else { return .none }
+        }
         guard !state.task.isArchived(referenceDate: now(), calendar: calendar) else { return .none }
         let pauseDate = now()
-        if state.task.scheduleAnchor == nil {
+        if !state.task.isOneOffTask, state.task.scheduleAnchor == nil {
             state.task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(
                 for: state.task,
                 referenceDate: pauseDate
@@ -47,16 +49,17 @@ struct TaskDetailRoutineLifecycleActionHandler {
     }
 
     func resumeTapped(state: inout State) -> Effect<Action> {
-        guard !state.task.isOneOffTask else { return .none }
         guard state.task.isArchived(referenceDate: now(), calendar: calendar) else { return .none }
         let resumeDate = now()
-        if let pausedAt = state.task.pausedAt, state.task.isChecklistDriven {
-            state.task.shiftChecklistItems(by: max(resumeDate.timeIntervalSince(pausedAt), 0))
+        if !state.task.isOneOffTask {
+            if let pausedAt = state.task.pausedAt, state.task.isChecklistDriven {
+                state.task.shiftChecklistItems(by: max(resumeDate.timeIntervalSince(pausedAt), 0))
+            }
+            state.task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
+                for: state.task,
+                resumedAt: resumeDate
+            )
         }
-        state.task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
-            for: state.task,
-            resumedAt: resumeDate
-        )
         state.task.pausedAt = nil
         state.task.snoozedUntil = nil
         refreshTaskView(&state)

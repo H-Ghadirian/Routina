@@ -33,9 +33,11 @@ struct TaskDetailEditRoutineContent: View {
     private func makeTaskFormModel() -> TaskFormModel {
         let pausePresentation = RoutinePauseArchivePresentation.make(
             isPaused: store.task.isArchived(),
+            isOneOffTask: store.task.isOneOffTask,
             context: .editSheet
         )
         let showsPauseResume = !store.task.isOneOffTask
+            || (!store.task.isCompletedOneOff && !store.task.isCanceledOneOff)
 
         return TaskFormModel(
             name: Binding(

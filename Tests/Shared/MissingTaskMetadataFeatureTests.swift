@@ -57,6 +57,15 @@ struct MissingTaskMetadataFeatureTests {
             scheduleMode: .oneOff
         )
         canceledOneOffTask.canceledAt = Date(timeIntervalSince1970: 1)
+        let archivedTask = makeTask(
+            in: context,
+            name: "Archived metadata task",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        archivedTask.pausedAt = Date(timeIntervalSince1970: 1)
         try context.save()
 
         let store = TestStore(initialState: MissingTaskMetadataFeature.State(field: .importance)) {
@@ -93,6 +102,7 @@ struct MissingTaskMetadataFeatureTests {
         #expect(!store.state.taskIDs.contains(legacyPriorityTask.id))
         #expect(!store.state.taskIDs.contains(completedOneOffTask.id))
         #expect(!store.state.taskIDs.contains(canceledOneOffTask.id))
+        #expect(!store.state.taskIDs.contains(archivedTask.id))
     }
 
     @Test

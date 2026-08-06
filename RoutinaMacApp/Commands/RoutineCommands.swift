@@ -4,6 +4,7 @@ import SwiftUI
 enum RoutinaMacSceneID {
     static let home = "routina-home"
     static let settings = "routina-settings"
+    static let taskRelationshipReview = "routina-task-relationship-review"
 }
 
 extension Notification.Name {
@@ -127,6 +128,10 @@ struct RoutineCommands: Commands {
                 )
             }
             .keyboardShortcut("l", modifiers: [.command, .shift])
+
+            Button("Review Task Relationships…") {
+                openWindow(id: RoutinaMacSceneID.taskRelationshipReview)
+            }
 
             Divider()
 

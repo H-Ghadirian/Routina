@@ -144,6 +144,23 @@ struct RoutineTaskRelationshipResolution {
         return RoutineTaskRelationship.sanitized(relationships, ownerID: task.id)
     }
 
+    /// A task is unavailable while any confirmed Blocked by relationship has
+    /// a target that is neither completed nor canceled for its current state.
+    static func hasActiveBlocker(
+        for task: RoutineTask,
+        within candidates: [RoutineTaskRelationshipCandidate]
+    ) -> Bool {
+        resolvedRelationships(for: task, within: candidates).contains { relationship in
+            guard relationship.kind == .blockedBy else { return false }
+            switch relationship.status {
+            case .doneToday, .completedOneOff, .canceledOneOff:
+                return false
+            case .paused, .pendingTodo, .overdue, .dueToday, .onTrack:
+                return true
+            }
+        }
+    }
+
     static func removeRelationships(
         targeting deletedTaskIDs: Set<UUID>,
         from tasks: [RoutineTask]

@@ -69,6 +69,15 @@ struct MissingPressureDataFeatureTests {
             scheduleMode: .oneOff
         )
         canceledOneOffTask.canceledAt = Date(timeIntervalSince1970: 1)
+        let archivedTask = makeTask(
+            in: context,
+            name: "Archived pressure task",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        archivedTask.pausedAt = Date(timeIntervalSince1970: 1)
         try context.save()
 
         let store = TestStore(initialState: MissingPressureDataFeature.State()) {
@@ -102,6 +111,7 @@ struct MissingPressureDataFeatureTests {
         #expect(store.state.currentTask?.title == "Buy coffee")
         #expect(!store.state.taskIDs.contains(completedOneOffTask.id))
         #expect(!store.state.taskIDs.contains(canceledOneOffTask.id))
+        #expect(!store.state.taskIDs.contains(archivedTask.id))
         #expect(store.state.totalTaskCount == 4)
         #expect(store.state.currentTaskNumber == 1)
     }

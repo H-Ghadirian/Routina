@@ -113,15 +113,19 @@ struct HomeTaskRowCommandHandler {
 
 enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
     case resume
+    case restore
     case markDone(title: String, isDisabled: Bool)
     case markMissed
     case markCanceled
     case pause
+    case archive
 
     var id: String {
         switch self {
         case .resume:
             return "resume"
+        case .restore:
+            return "restore"
         case .markDone:
             return "markDone"
         case .markMissed:
@@ -130,6 +134,8 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "markCanceled"
         case .pause:
             return "pause"
+        case .archive:
+            return "archive"
         }
     }
 
@@ -137,6 +143,8 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
         switch self {
         case .resume:
             return "Resume"
+        case .restore:
+            return "Restore"
         case let .markDone(title, _):
             return title
         case .markMissed:
@@ -145,6 +153,8 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "Canceled"
         case .pause:
             return "Pause"
+        case .archive:
+            return "Archive"
         }
     }
 
@@ -152,6 +162,8 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
         switch self {
         case .resume:
             return "play.circle"
+        case .restore:
+            return "arrow.uturn.backward.circle"
         case .markDone:
             return "checkmark.circle"
         case .markMissed:
@@ -160,6 +172,8 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "xmark.circle"
         case .pause:
             return "pause.circle"
+        case .archive:
+            return "archivebox"
         }
     }
 
@@ -170,7 +184,7 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
 
     func command(taskID: UUID) -> HomeTaskRowCommand {
         switch self {
-        case .resume:
+        case .resume, .restore:
             return .resume(taskID)
         case .markDone:
             return .markDone(taskID)
@@ -178,7 +192,7 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return .markMissed(taskID)
         case .markCanceled:
             return .markCanceled(taskID)
-        case .pause:
+        case .pause, .archive:
             return .pause(taskID)
         }
     }
@@ -263,7 +277,7 @@ struct HomeTaskRowActionPresentation: Equatable {
         referenceDate: Date
     ) -> [HomeTaskRowLifecycleAction] {
         if task.isPaused {
-            return [.resume]
+            return [task.isOneOffTask ? .restore : .resume]
         }
         if task.isCompletedOneOff || task.isCanceledOneOff {
             return []
@@ -293,9 +307,7 @@ struct HomeTaskRowActionPresentation: Equatable {
             return actions
         }
 
-        if !task.isOneOffTask {
-            actions.append(.pause)
-        }
+        actions.append(task.isOneOffTask ? .archive : .pause)
 
         return actions
     }

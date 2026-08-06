@@ -423,10 +423,12 @@ enum HomeTaskLifecycleSupport {
         tasks: inout [RoutineTask]
     ) -> HomePauseTaskUpdate? {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return nil }
-        guard !tasks[index].isOneOffTask else { return nil }
+        guard !tasks[index].isOneOffTask
+            || (!tasks[index].isCompletedOneOff && !tasks[index].isCanceledOneOff)
+        else { return nil }
         guard !tasks[index].isArchived(referenceDate: pauseDate, calendar: calendar) else { return nil }
 
-        if tasks[index].scheduleAnchor == nil {
+        if !tasks[index].isOneOffTask, tasks[index].scheduleAnchor == nil {
             tasks[index].scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(
                 for: tasks[index],
                 referenceDate: pauseDate
@@ -443,13 +445,14 @@ enum HomeTaskLifecycleSupport {
         tasks: inout [RoutineTask]
     ) -> HomeResumeTaskUpdate? {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return nil }
-        guard !tasks[index].isOneOffTask else { return nil }
         guard tasks[index].isArchived(referenceDate: resumeDate, calendar: calendar) else { return nil }
 
-        tasks[index].scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
-            for: tasks[index],
-            resumedAt: resumeDate
-        )
+        if !tasks[index].isOneOffTask {
+            tasks[index].scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
+                for: tasks[index],
+                resumedAt: resumeDate
+            )
+        }
         tasks[index].pausedAt = nil
         tasks[index].snoozedUntil = nil
         return HomeResumeTaskUpdate(taskID: taskID, resumeDate: resumeDate)

@@ -3,6 +3,36 @@ import Foundation
 import SwiftData
 
 extension TaskDetailFeature {
+    func loadRelationshipSuggestions(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = modelContext()
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                guard let sourceTask = tasks.first(where: { $0.id == taskID }) else {
+                    send(.relationshipSuggestionsFailed(taskID, "This task is no longer available."))
+                    return
+                }
+                let request = TaskRelationshipSuggestionRequest.make(
+                    source: sourceTask,
+                    from: tasks,
+                    referenceDate: now,
+                    calendar: calendar,
+                    customTaskSections: appSettingsClient.customTaskSections()
+                )
+                guard !request.candidates.isEmpty else {
+                    send(.relationshipSuggestionsLoaded(taskID, []))
+                    return
+                }
+                let suggestions = try await taskRelationshipSuggestionClient.suggest(request)
+                send(.relationshipSuggestionsLoaded(taskID, suggestions))
+            } catch {
+                let message = (error as? LocalizedError)?.errorDescription
+                    ?? "Couldn’t analyze task relationships. Try again."
+                send(.relationshipSuggestionsFailed(taskID, message))
+            }
+        }
+    }
+
     func handleOnAppear(taskID: UUID) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -500,49 +530,14 @@ extension TaskDetailFeature {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = modelContext()
-                let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                guard let task = allTasks.first(where: { $0.id == taskID }),
-                      targetTaskID != taskID,
-                      allTasks.contains(where: { $0.id == targetTaskID }) else {
-                    return
-                }
-                let candidates = RoutineTaskRelationshipCandidate.from(
-                    allTasks,
-                    excluding: taskID,
-                    referenceDate: now,
-                    calendar: calendar
+                try RoutineTaskRelationshipMutationSupport.link(
+                    sourceTaskID: taskID,
+                    targetTaskID: targetTaskID,
+                    kind: kind,
+                    timestamp: now,
+                    calendar: calendar,
+                    context: modelContext()
                 )
-                let previousRelationships = RoutineTask.editableRelationships(
-                    for: task,
-                    within: candidates
-                )
-                let updatedRelationships = RoutineTaskRelationship.sanitized(
-                    previousRelationships + [
-                        RoutineTaskRelationship(targetTaskID: targetTaskID, kind: kind)
-                    ],
-                    ownerID: taskID
-                )
-                guard updatedRelationships != previousRelationships else { return }
-
-                task.replaceRelationships(updatedRelationships)
-                RoutineTask.removeInverseRelationships(targeting: taskID, from: allTasks)
-                appendRelationshipChangeEntries(
-                    to: task,
-                    previousRelationships: previousRelationships,
-                    updatedRelationships: updatedRelationships
-                )
-                DeviceActivityRecorder.recordAction(
-                    .updated,
-                    entity: .task,
-                    entityID: taskID,
-                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: "Linked an existing task",
-                    in: context
-                )
-                try context.save()
-                WidgetStatsService.refreshAndReload(using: context)
-                NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error linking existing task from Task Detail: \(error)")
             }
@@ -1076,7 +1071,8 @@ extension TaskDetailFeature {
             do {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
-                if task.scheduleAnchor == nil {
+                guard !task.isOneOffTask || (!task.isCompletedOneOff && !task.isCanceledOneOff) else { return }
+                if !task.isOneOffTask, task.scheduleAnchor == nil {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: pausedAt)
                 }
                 task.pausedAt = pausedAt
@@ -1142,10 +1138,12 @@ extension TaskDetailFeature {
             do {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
-                if let pausedAt = task.pausedAt, task.isChecklistDriven {
-                    task.shiftChecklistItems(by: max(resumedAt.timeIntervalSince(pausedAt), 0))
+                if !task.isOneOffTask {
+                    if let pausedAt = task.pausedAt, task.isChecklistDriven {
+                        task.shiftChecklistItems(by: max(resumedAt.timeIntervalSince(pausedAt), 0))
+                    }
+                    task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumedAt)
                 }
-                task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumedAt)
                 task.pausedAt = nil
                 task.snoozedUntil = nil
                 DeviceActivityRecorder.recordAction(

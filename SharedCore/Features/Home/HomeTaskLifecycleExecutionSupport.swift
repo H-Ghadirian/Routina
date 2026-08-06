@@ -272,7 +272,10 @@ enum HomeTaskLifecycleExecutionSupport {
                 guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: update.taskID)).first else {
                     return
                 }
-                if task.scheduleAnchor == nil {
+                guard !task.isOneOffTask || (!task.isCompletedOneOff && !task.isCanceledOneOff) else {
+                    return
+                }
+                if !task.isOneOffTask, task.scheduleAnchor == nil {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(
                         for: task,
                         referenceDate: update.pauseDate
@@ -309,10 +312,12 @@ enum HomeTaskLifecycleExecutionSupport {
                 guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: update.taskID)).first else {
                     return
                 }
-                task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
-                    for: task,
-                    resumedAt: update.resumeDate
-                )
+                if !task.isOneOffTask {
+                    task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
+                        for: task,
+                        resumedAt: update.resumeDate
+                    )
+                }
                 task.pausedAt = nil
                 task.snoozedUntil = nil
                 DeviceActivityRecorder.recordAction(

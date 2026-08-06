@@ -120,7 +120,8 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             hasMissingValue = task.estimatedDurationMinutes == nil
         }
 
-        return hasMissingValue
+        return task.pausedAt == nil
+            && hasMissingValue
             && (!task.isOneOffTask || (task.lastDone == nil && task.canceledAt == nil))
     }
 

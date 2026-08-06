@@ -413,28 +413,26 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
 
             timeSpentButton()
 
-            if !isOneOffTask {
-                Button(pauseArchivePresentation.actionTitle, action: onPauseResume)
+            Button(pauseArchivePresentation.actionTitle, action: onPauseResume)
+                .buttonStyle(.bordered)
+                .tint(isArchived ? .teal : .orange)
+                .routinaPlatformSecondaryActionControlSize()
+                .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
+
+            if !isOneOffTask, let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
+                Button(secondaryActionTitle, action: onNotToday)
                     .buttonStyle(.bordered)
-                    .tint(isArchived ? .teal : .orange)
+                    .tint(.indigo)
                     .routinaPlatformSecondaryActionControlSize()
                     .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
+            }
 
-                if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
-                    Button(secondaryActionTitle, action: onNotToday)
-                        .buttonStyle(.bordered)
-                        .tint(.indigo)
-                        .routinaPlatformSecondaryActionControlSize()
-                        .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
-                }
-
-                if shouldShowBulkConfirmAssumedDays {
-                    Button(bulkConfirmAssumedDaysTitle, action: onConfirmAssumedPastDays)
-                        .buttonStyle(.bordered)
-                        .tint(.mint)
-                        .routinaPlatformSecondaryActionControlSize()
-                        .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
-                }
+            if !isOneOffTask, shouldShowBulkConfirmAssumedDays {
+                Button(bulkConfirmAssumedDaysTitle, action: onConfirmAssumedPastDays)
+                    .buttonStyle(.bordered)
+                    .tint(.mint)
+                    .routinaPlatformSecondaryActionControlSize()
+                    .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
             }
 
             helperMessages
@@ -443,11 +441,14 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
 
     @ViewBuilder
     private var helperMessages: some View {
-        if isStepRoutineOffToday {
+        if !isOneOffTask, isStepRoutineOffToday {
             helperText("Step-based routines can only be progressed for today.")
         }
 
-        if isChecklistCompletionRoutine && !canUndoSelectedDate && !isSelectedDateAssumedDone {
+        if !isOneOffTask,
+           isChecklistCompletionRoutine,
+           !canUndoSelectedDate,
+           !isSelectedDateAssumedDone {
             helperText("Complete checklist items below to finish this routine.")
         }
 

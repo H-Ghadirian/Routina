@@ -88,6 +88,9 @@ struct TaskDetailFeature: Reducer {
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var editAvailableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
+        var relationshipSuggestions: [TaskRelationshipSuggestion] = []
+        var isLoadingRelationshipSuggestions = false
+        var relationshipSuggestionMessage: String?
         /// Home provides this context from its loaded task snapshot before selecting a detail.
         /// Standalone detail presentations leave this `false` and load their own context.
         var hasPreloadedEditContext = false
@@ -352,6 +355,12 @@ struct TaskDetailFeature: Reducer {
         case detailCommentEditSaveTapped(UUID)
         case detailCommentDeleteTapped(UUID)
         case detailLinkExistingTask(UUID, RoutineTaskRelationshipKind)
+        case relationshipSuggestionsRequested
+        case relationshipSuggestionsLoaded(UUID, [TaskRelationshipSuggestion])
+        case relationshipSuggestionsFailed(UUID, String)
+        case relationshipSuggestionKindChanged(UUID, RoutineTaskRelationshipKind)
+        case acceptRelationshipSuggestion(UUID)
+        case dismissRelationshipSuggestion(UUID)
         case editRoutineLinkChanged(String)
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
@@ -462,6 +471,7 @@ struct TaskDetailFeature: Reducer {
     @Dependency(\.date.now) var now
     @Dependency(\.appSettingsClient) var appSettingsClient
     @Dependency(\.urlOpenerClient) var urlOpenerClient
+    @Dependency(\.taskRelationshipSuggestionClient) var taskRelationshipSuggestionClient
 
     private func statusMutationHandler() -> TaskDetailStatusMutationHandler {
         TaskDetailStatusMutationHandler(
@@ -1326,6 +1336,53 @@ struct TaskDetailFeature: Reducer {
                 targetTaskID: targetTaskID,
                 kind: kind
             )
+
+        case .relationshipSuggestionsRequested:
+            guard !state.isLoadingRelationshipSuggestions else { return .none }
+            state.isLoadingRelationshipSuggestions = true
+            state.relationshipSuggestionMessage = nil
+            return loadRelationshipSuggestions(taskID: state.task.id)
+
+        case let .relationshipSuggestionsLoaded(sourceTaskID, suggestions):
+            guard state.task.id == sourceTaskID else { return .none }
+            state.isLoadingRelationshipSuggestions = false
+            let linkedTaskIDs = Set(state.resolvedRelationships.map(\.taskID))
+            state.relationshipSuggestions = suggestions.filter {
+                !linkedTaskIDs.contains($0.targetTaskID)
+            }
+            state.relationshipSuggestionMessage = state.relationshipSuggestions.isEmpty
+                ? "No clear relationships found. You can still link a task manually."
+                : nil
+            return .none
+
+        case let .relationshipSuggestionsFailed(sourceTaskID, message):
+            guard state.task.id == sourceTaskID else { return .none }
+            state.isLoadingRelationshipSuggestions = false
+            state.relationshipSuggestions = []
+            state.relationshipSuggestionMessage = message
+            return .none
+
+        case let .relationshipSuggestionKindChanged(targetTaskID, kind):
+            guard let index = state.relationshipSuggestions.firstIndex(where: {
+                $0.targetTaskID == targetTaskID
+            }) else {
+                return .none
+            }
+            state.relationshipSuggestions[index].kind = kind
+            return .none
+
+        case let .acceptRelationshipSuggestion(targetTaskID):
+            guard let suggestion = state.relationshipSuggestions.first(where: {
+                $0.targetTaskID == targetTaskID
+            }) else {
+                return .none
+            }
+            state.relationshipSuggestions.removeAll { $0.targetTaskID == targetTaskID }
+            return .send(.detailLinkExistingTask(suggestion.targetTaskID, suggestion.kind))
+
+        case let .dismissRelationshipSuggestion(targetTaskID):
+            state.relationshipSuggestions.removeAll { $0.targetTaskID == targetTaskID }
+            return .none
 
         case let .editRoutineLinkChanged(link):
             return basicEditActionHandler().editRoutineLinkChanged(link, state: &state)

@@ -31,6 +31,12 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0488](0488-prioritize-grounded-task-relationship-analysis.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** Task-relationship review prioritizes grounded candidate evidence and concrete reasons over suggestion volume; its updated analysis fingerprint makes existing reviews eligible for one improved pass.
+
+- **[0487](0487-allow-archiving-one-off-tasks.md) refines [0290](0290-limit-free-active-tasks-behind-subscription.md) and [0486](0486-suggest-confirmed-task-relationships-on-device.md):** One-off tasks can be archived and restored without changing their scheduling data; they leave active surfaces, notifications, guided `Add missing…` reviews, Help me choose, and task-relationship review while archived.
+
+- **[0486](0486-suggest-confirmed-task-relationships-on-device.md) refines [0409](0409-add-manual-can-complete-task-links.md), [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md), and [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md):** Task Details and a Mac application-menu review window use bounded on-device AI to propose validated relationships, persist nothing before user confirmation, and exclude confirmed unresolved prerequisites from Help me choose before readiness and ranking.
+
 - **[0485](0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md) supersedes [0483](superseded/0483-progressively-suggest-ios-task-choice-tags.md) and [0482](superseded/0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md):** Routina removes manual tag-preference setup, prompts, persistence, and task-choice ranking while automatic tag intelligence is designed separately.
 
 - **[0484](0484-confirm-conservative-mac-tag-normalization.md) adds confirmation-based tag cleanup:** Mac Settings proposes only conservative tag word-form variants and reuses the global rename transaction after explicit confirmation.
@@ -437,6 +443,9 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0488](0488-prioritize-grounded-task-relationship-analysis.md) | Prioritize Grounded Task Relationship Analysis | Accepted | 2026-08-06 |
+| [0487](0487-allow-archiving-one-off-tasks.md) | Allow Archiving One-Off Tasks | Accepted | 2026-08-06 |
+| [0486](0486-suggest-confirmed-task-relationships-on-device.md) | Suggest Confirmed Task Relationships On Device | Accepted | 2026-08-06 |
 | [0485](0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md) | Remove Opt-In Tag Preferences Pending Automatic Tag Intelligence | Accepted | 2026-08-06 |
 | [0484](0484-confirm-conservative-mac-tag-normalization.md) | Confirm Conservative Mac Tag Normalization | Accepted | 2026-08-06 |
 | [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md) | Learn Task-Choice Tie-Breaks After Metadata Readiness | Accepted | 2026-08-06 |

@@ -127,3 +127,5 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0083 — Keep guided-review progress clear of navigation titles](0083-keep-guided-review-progress-clear-of-navigation-titles.md)
 - [0084 — Reject neutral values in shared guided reviews](0084-reject-neutral-values-in-shared-guided-reviews.md)
 - [0085 — Keep one-off completion permanent](0085-keep-one-off-completion-permanent.md)
+- [0086 — Keep batch AI failures task-scoped](0086-keep-batch-ai-failures-task-scoped.md)
+- [0087 — Deduplicate planner block records before rendering](0087-deduplicate-planner-block-records-before-rendering.md)

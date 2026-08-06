@@ -51,6 +51,15 @@ struct MissingThinkingNeededDataFeatureTests {
             scheduleMode: .oneOff
         )
         canceledOneOffTask.canceledAt = Date(timeIntervalSince1970: 1)
+        let archivedTask = makeTask(
+            in: context,
+            name: "Archived thinking task",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .oneOff
+        )
+        archivedTask.pausedAt = Date(timeIntervalSince1970: 1)
         try context.save()
 
         let store = TestStore(
@@ -85,6 +94,7 @@ struct MissingThinkingNeededDataFeatureTests {
         #expect(!store.state.taskIDs.contains(assignedTask.id))
         #expect(!store.state.taskIDs.contains(completedOneOffTask.id))
         #expect(!store.state.taskIDs.contains(canceledOneOffTask.id))
+        #expect(!store.state.taskIDs.contains(archivedTask.id))
     }
 
     @Test

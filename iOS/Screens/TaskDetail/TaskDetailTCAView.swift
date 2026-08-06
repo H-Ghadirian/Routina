@@ -291,6 +291,7 @@ detailBody
         let _ = store.taskRefreshID
         let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
             isPaused: store.task.isArchived(),
+            isOneOffTask: store.task.isOneOffTask,
             context: .detail
         )
 
@@ -486,7 +487,7 @@ detailBody
     }
 
     private var shouldShowRelationshipsSection: Bool {
-        !store.groupedResolvedRelationships.isEmpty
+        true
     }
 
     private var shouldShowLinkedEventsSection: Bool {
@@ -1045,6 +1046,10 @@ detailBody
     private var relationshipsSection: some View {
         TaskDetailRelationshipsSectionView(
             groups: store.groupedResolvedRelationships,
+            suggestions: store.relationshipSuggestions,
+            hasSuggestionCandidates: !store.availableRelationshipTasks.isEmpty,
+            isLoadingSuggestions: store.isLoadingRelationshipSuggestions,
+            suggestionMessage: store.relationshipSuggestionMessage,
             selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
             showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
@@ -1052,7 +1057,13 @@ detailBody
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onVisualize: { isRelationshipGraphPresented = true },
             onOpenTask: { store.send(.openLinkedTask($0)) },
-            onOpenAddLinkedTask: { store.send(.openAddLinkedTask) }
+            onOpenAddLinkedTask: { store.send(.openAddLinkedTask) },
+            onFindSuggestions: { store.send(.relationshipSuggestionsRequested) },
+            onChangeSuggestionKind: {
+                store.send(.relationshipSuggestionKindChanged($0, $1))
+            },
+            onAcceptSuggestion: { store.send(.acceptRelationshipSuggestion($0)) },
+            onDismissSuggestion: { store.send(.dismissRelationshipSuggestion($0)) }
         )
     }
 

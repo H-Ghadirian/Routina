@@ -60,6 +60,31 @@ struct HomeTaskRowActionPresentationTests {
     }
 
     @Test
+    func oneOffTaskUsesArchiveAndRestoreLifecycleActions() {
+        let taskID = UUID()
+        let activePresentation = HomeTaskRowActionPresentation.make(
+            for: TestTaskRowDisplay(taskID: taskID, isOneOffTask: true),
+            includeMarkDone: true,
+            allowsPinning: false,
+            referenceDate: Date(timeIntervalSince1970: 0)
+        )
+        let archivedPresentation = HomeTaskRowActionPresentation.make(
+            for: TestTaskRowDisplay(taskID: taskID, isOneOffTask: true, isPaused: true),
+            includeMarkDone: true,
+            allowsPinning: false,
+            referenceDate: Date(timeIntervalSince1970: 0)
+        )
+
+        #expect(activePresentation.lifecycleActions == [
+            .markDone(title: "Mark Done", isDisabled: false),
+            .archive
+        ])
+        #expect(activePresentation.notTodayCommand == nil)
+        #expect(archivedPresentation.lifecycleActions == [.restore])
+        #expect(archivedPresentation.lifecycleActions.first?.command(taskID: taskID) == .resume(taskID))
+    }
+
+    @Test
     func completedOneOffSuppressesLifecycleActions() {
         let presentation = HomeTaskRowActionPresentation.make(
             for: TestTaskRowDisplay(isOneOffTask: true, isCompletedOneOff: true),

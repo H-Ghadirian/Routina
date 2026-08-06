@@ -901,7 +901,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowRelationshipsSection: Bool {
-        !store.groupedResolvedRelationships.isEmpty
+        true
     }
 
     private var shouldShowLinkedEventsSection: Bool {
@@ -1538,6 +1538,10 @@ struct TaskDetailTCAView: View {
     private var relationshipsSection: some View {
         TaskDetailRelationshipsSectionView(
             groups: store.groupedResolvedRelationships,
+            suggestions: store.relationshipSuggestions,
+            hasSuggestionCandidates: !store.availableRelationshipTasks.isEmpty,
+            isLoadingSuggestions: store.isLoadingRelationshipSuggestions,
+            suggestionMessage: store.relationshipSuggestionMessage,
             selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
             showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
@@ -1546,6 +1550,12 @@ struct TaskDetailTCAView: View {
             onVisualize: { isRelationshipGraphPresented = true },
             onOpenTask: { store.send(.openLinkedTask($0)) },
             onOpenAddLinkedTask: openCreateLinkedTask,
+            onFindSuggestions: { store.send(.relationshipSuggestionsRequested) },
+            onChangeSuggestionKind: {
+                store.send(.relationshipSuggestionKindChanged($0, $1))
+            },
+            onAcceptSuggestion: { store.send(.acceptRelationshipSuggestion($0)) },
+            onDismissSuggestion: { store.send(.dismissRelationshipSuggestion($0)) },
             onLinkExistingTask: openExistingTaskLinker
         )
     }

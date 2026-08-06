@@ -117,7 +117,7 @@ struct TaskDetailActionClusterView: View {
         .help(store.completionButtonTitle)
         .accessibilityLabel(store.completionButtonTitle)
 
-        if showsFullDetailActions && !store.task.isOneOffTask {
+        if showsFullDetailActions && showsPauseResumeButton {
             Button {
                 store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
             } label: {
@@ -260,6 +260,10 @@ struct TaskDetailActionClusterView: View {
         store.task.isOneOffTask && !store.task.isCompletedOneOff && !store.task.isCanceledOneOff
     }
 
+    private var showsPauseResumeButton: Bool {
+        !store.task.isOneOffTask || showsCancelTodoButton
+    }
+
     private var completionTint: Color {
         if store.task.isMultiDayRoutine && store.task.isOngoing {
             return Color.orange
@@ -268,11 +272,17 @@ struct TaskDetailActionClusterView: View {
     }
 
     private var pauseActionTitle: String {
-        store.task.isArchived() ? "Resume" : "Pause"
+        if store.task.isOneOffTask {
+            return store.task.isArchived() ? "Restore" : "Archive"
+        }
+        return store.task.isArchived() ? "Resume" : "Pause"
     }
 
     private var pauseSystemImage: String {
-        store.task.isArchived() ? "play.fill" : "pause.fill"
+        if store.task.isOneOffTask {
+            return store.task.isArchived() ? "arrow.uturn.backward" : "archivebox"
+        }
+        return store.task.isArchived() ? "play.fill" : "pause.fill"
     }
 
     private var pauseTint: Color {
