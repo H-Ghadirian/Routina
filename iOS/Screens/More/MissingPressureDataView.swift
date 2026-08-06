@@ -6,6 +6,10 @@ struct MissingPressureDataView: View {
 
     private let pressureOptions = RoutineTaskPressure.allCases.filter { $0 != .none }
 
+    /// The inline navigation bar overlays a non-scrolling full-height view.
+    /// Keep its title area distinct from the procedure's progress information.
+    private let navigationTitleClearance: CGFloat = 56
+
     var body: some View {
         Group {
             if store.isLoading || (store.isSaving && store.currentTask == nil) {
@@ -29,15 +33,12 @@ struct MissingPressureDataView: View {
     }
 
     private func taskCard(_ task: MissingPressureDataFeature.State.Task) -> some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 8) {
-                Text("\(store.currentTaskNumber) of \(store.totalTaskCount)")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                ProgressView(value: store.progressValue)
-            }
-
-            Spacer()
+        VStack(spacing: 16) {
+            GuidedReviewProgressHeader(
+                currentTaskNumber: store.currentTaskNumber,
+                totalTaskCount: store.totalTaskCount,
+                progressValue: store.progressValue
+            )
 
             VStack(spacing: 20) {
                 Text(task.title)
@@ -65,6 +66,8 @@ struct MissingPressureDataView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
+                Spacer(minLength: 0)
+
                 HStack(spacing: 12) {
                     Button {
                         store.send(.skipTask(taskID: task.id))
@@ -88,7 +91,7 @@ struct MissingPressureDataView: View {
                 }
             }
             .padding(24)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 580, alignment: .top)
             .routinaGlassCard(
                 cornerRadius: 24,
                 tint: .accentColor,
@@ -103,9 +106,11 @@ struct MissingPressureDataView: View {
                     .multilineTextAlignment(.center)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .padding(24)
+        .padding(.horizontal, 24)
+        .padding(.top, navigationTitleClearance)
+        .padding(.bottom, 24)
         .animation(.snappy, value: task.id)
     }
 

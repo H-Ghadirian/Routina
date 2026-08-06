@@ -1614,6 +1614,11 @@ And completed or canceled one-off tasks do not appear
 And the user sees one full-height card at a time with no scrolling list
 And the available choices are Low, Medium, and High rather than `None`
 
+Given a procedure card is shown beneath an inline navigation title
+When the task counter and progress bar render
+Then they have dedicated clearance below the destination title
+And the card title begins at the top of its card rather than being vertically centered
+
 Given a missing-pressure task has a custom-section path, tags, and scheduling
 or state context
 When its procedure card is shown
@@ -1666,6 +1671,11 @@ When the user opens More -> `Review Importance` or `Review Urgency` on compact i
 Then only tasks missing that selected field are loaded in title order
 And completed or canceled one-off tasks do not appear
 And a task reviewed for Importance can still appear in Urgency, and vice versa
+
+Given an Importance or Urgency review card is shown beneath an inline navigation title
+When the task counter and progress bar render
+Then they have dedicated clearance below the destination title
+And the card title begins at the top of its card while its actions remain reachable
 
 Given the current review card is shown
 When the user chooses one of the four always-visible values
