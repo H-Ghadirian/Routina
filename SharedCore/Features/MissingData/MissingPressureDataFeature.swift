@@ -5,6 +5,7 @@ import SwiftData
 enum GuidedMissingTaskDataField: Equatable, Sendable {
     case pressure
     case thinkingNeeded
+    case estimatedDuration
 
     var navigationTitle: String {
         switch self {
@@ -12,6 +13,8 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             return "Add missing Pressure"
         case .thinkingNeeded:
             return "Add missing Thinking needed"
+        case .estimatedDuration:
+            return "Add missing time estimates"
         }
     }
 
@@ -21,6 +24,8 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             return "How much pressure does this task create?"
         case .thinkingNeeded:
             return "How much thinking does this task need?"
+        case .estimatedDuration:
+            return "How long will this task take?"
         }
     }
 
@@ -30,6 +35,8 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             return "Pressure is how much a task stays on your mind, even when it is not the most urgent."
         case .thinkingNeeded:
             return "Thinking needed is the concentration, understanding, or decision-making this task requires."
+        case .estimatedDuration:
+            return "Choose the closest estimate. You can fine-tune it in task details."
         }
     }
 
@@ -39,6 +46,8 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             return "Every eligible task has pressure data."
         case .thinkingNeeded:
             return "Every eligible task has thinking needed data."
+        case .estimatedDuration:
+            return "Every eligible task has a time estimate."
         }
     }
 
@@ -48,6 +57,8 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             return "Couldn’t save pressure. Try again."
         case .thinkingNeeded:
             return "Couldn’t save thinking needed. Try again."
+        case .estimatedDuration:
+            return "Couldn’t save the time estimate. Try again."
         }
     }
 
@@ -57,6 +68,8 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             return "Updated pressure"
         case .thinkingNeeded:
             return "Updated thinking needed"
+        case .estimatedDuration:
+            return "Updated time estimate"
         }
     }
 
@@ -70,6 +83,9 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             return RoutineTaskThinkingNeeded.allCases
                 .filter { $0 != .none }
                 .map(GuidedMissingTaskDataValue.thinkingNeeded)
+        case .estimatedDuration:
+            return [15, 30, 60, 120, 240, 480, 1_200]
+                .map(GuidedMissingTaskDataValue.estimatedDuration)
         }
     }
 
@@ -79,6 +95,17 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             return .pressure(.none)
         case .thinkingNeeded:
             return .thinkingNeeded(.none)
+        case .estimatedDuration:
+            return .estimatedDuration(0)
+        }
+    }
+
+    var maximumSegmentsPerRow: Int? {
+        switch self {
+        case .estimatedDuration:
+            return 4
+        case .pressure, .thinkingNeeded:
+            return nil
         }
     }
 
@@ -89,6 +116,8 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
             hasMissingValue = task.pressure == .none
         case .thinkingNeeded:
             hasMissingValue = task.thinkingNeeded == .none
+        case .estimatedDuration:
+            hasMissingValue = task.estimatedDurationMinutes == nil
         }
 
         return hasMissingValue
@@ -103,6 +132,12 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
         case let (.thinkingNeeded, .thinkingNeeded(thinkingNeeded)) where thinkingNeeded != .none:
             task.thinkingNeeded = thinkingNeeded
             return true
+        case let (.estimatedDuration, .estimatedDuration(minutes)):
+            guard let sanitizedMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(minutes) else {
+                return false
+            }
+            task.estimatedDurationMinutes = sanitizedMinutes
+            return true
         default:
             return false
         }
@@ -112,6 +147,7 @@ enum GuidedMissingTaskDataField: Equatable, Sendable {
 enum GuidedMissingTaskDataValue: Hashable, Sendable {
     case pressure(RoutineTaskPressure)
     case thinkingNeeded(RoutineTaskThinkingNeeded)
+    case estimatedDuration(Int)
 
     var field: GuidedMissingTaskDataField {
         switch self {
@@ -119,6 +155,8 @@ enum GuidedMissingTaskDataValue: Hashable, Sendable {
             return .pressure
         case .thinkingNeeded:
             return .thinkingNeeded
+        case .estimatedDuration:
+            return .estimatedDuration
         }
     }
 
@@ -128,6 +166,8 @@ enum GuidedMissingTaskDataValue: Hashable, Sendable {
             return pressure.title
         case let .thinkingNeeded(thinkingNeeded):
             return thinkingNeeded.title
+        case let .estimatedDuration(minutes):
+            return estimatedDurationTitle(for: minutes)
         }
     }
 
@@ -137,6 +177,21 @@ enum GuidedMissingTaskDataValue: Hashable, Sendable {
             return pressure == .none
         case let .thinkingNeeded(thinkingNeeded):
             return thinkingNeeded == .none
+        case let .estimatedDuration(minutes):
+            return minutes <= 0
+        }
+    }
+
+    private func estimatedDurationTitle(for minutes: Int) -> String {
+        switch minutes {
+        case 15: return "15m"
+        case 30: return "30m"
+        case 60: return "1h"
+        case 120: return "2h"
+        case 240: return "4h"
+        case 480: return "8h"
+        case 1_200: return "20h"
+        default: return "\(minutes)m"
         }
     }
 }
@@ -145,6 +200,37 @@ enum GuidedMissingTaskDataValue: Hashable, Sendable {
 struct MissingTaskDataFeature {
     @ObservableState
     struct State: Equatable {
+        enum TimeEstimateSelection: Equatable {
+            case preset(Int)
+            case custom(hours: String, minutes: String)
+
+            var minutes: Int? {
+                switch self {
+                case let .preset(minutes):
+                    return (5...10_080).contains(minutes) ? minutes : nil
+                case let .custom(hours, minutes):
+                    guard !hours.isEmpty || !minutes.isEmpty,
+                          let hours = Int(hours.isEmpty ? "0" : hours), hours >= 0,
+                          let minutes = Int(minutes.isEmpty ? "0" : minutes), (0...59).contains(minutes)
+                    else {
+                        return nil
+                    }
+                    let totalMinutes = (hours * 60) + minutes
+                    return (5...10_080).contains(totalMinutes) ? totalMinutes : nil
+                }
+            }
+
+            var customHours: String {
+                guard case let .custom(hours, _) = self else { return "" }
+                return hours
+            }
+
+            var customMinutes: String {
+                guard case let .custom(_, minutes) = self else { return "" }
+                return minutes
+            }
+        }
+
         struct Task: Identifiable, Equatable {
             let id: UUID
             let title: String
@@ -185,6 +271,8 @@ struct MissingTaskDataFeature {
         var isLoading = false
         var isSaving = false
         var errorMessage: String?
+        /// A duration draft is intentionally separate from persisted task data until Save & next is tapped.
+        var timeEstimateSelection: TimeEstimateSelection?
 
         var currentTaskNumber: Int {
             guard currentTask != nil else { return 0 }
@@ -194,6 +282,52 @@ struct MissingTaskDataFeature {
         var progressValue: Double {
             guard totalTaskCount > 0 else { return 0 }
             return Double(completedTaskCount) / Double(totalTaskCount)
+        }
+
+        var selectedTimeEstimateMinutes: Int? {
+            timeEstimateSelection?.minutes
+        }
+
+        var selectedTimeEstimateTitle: String? {
+            selectedTimeEstimateMinutes.map(Self.estimatedDurationTitle)
+        }
+
+        var selectedTimeEstimateValue: GuidedMissingTaskDataValue {
+            guard let selectedTimeEstimateMinutes else {
+                return .estimatedDuration(0)
+            }
+            return .estimatedDuration(selectedTimeEstimateMinutes)
+        }
+
+        var customTimeEstimateHours: String {
+            timeEstimateSelection?.customHours ?? ""
+        }
+
+        var customTimeEstimateMinutes: String {
+            timeEstimateSelection?.customMinutes ?? ""
+        }
+
+        var timeEstimateValidationMessage: String? {
+            guard case let .custom(hours, minutes) = timeEstimateSelection,
+                  !hours.isEmpty || !minutes.isEmpty,
+                  selectedTimeEstimateMinutes == nil
+            else {
+                return nil
+            }
+            return "Enter 5 minutes to 7 days. Minutes must be 0–59."
+        }
+
+        private static func estimatedDurationTitle(for minutes: Int) -> String {
+            let hours = minutes / 60
+            let remainder = minutes % 60
+            switch (hours, remainder) {
+            case (0, let remainder):
+                return "\(remainder) min"
+            case (let hours, 0):
+                return hours == 1 ? "1 hour" : "\(hours) hours"
+            default:
+                return "\(hours)h \(remainder)m"
+            }
         }
     }
 
@@ -206,6 +340,8 @@ struct MissingTaskDataFeature {
         case currentTaskUnavailable(UUID)
         case currentTaskLoadFailed
         case valueSelected(taskID: UUID, value: GuidedMissingTaskDataValue)
+        case customTimeEstimateChanged(hours: String, minutes: String)
+        case saveSelectedTimeEstimate(taskID: UUID)
         case valueSaved(taskID: UUID)
         case valueSaveFailed
         case skipTask(taskID: UUID)
@@ -237,6 +373,7 @@ struct MissingTaskDataFeature {
                 state.isLoading = true
                 state.isSaving = false
                 state.errorMessage = nil
+                state.timeEstimateSelection = nil
                 return loadTasks()
 
             case let .tasksLoaded(taskIDs, currentTask):
@@ -249,6 +386,7 @@ struct MissingTaskDataFeature {
                 state.isLoading = false
                 state.isSaving = false
                 state.errorMessage = nil
+                state.timeEstimateSelection = nil
                 return .none
 
             case .tasksLoadFailed:
@@ -269,6 +407,7 @@ struct MissingTaskDataFeature {
                 state.taskIDs.removeFirst()
                 state.currentTask = nil
                 state.completedTaskCount += 1
+                state.timeEstimateSelection = nil
                 if state.taskIDs.isEmpty {
                     state.currentTaskIndex = 0
                     state.isSaving = false
@@ -289,9 +428,42 @@ struct MissingTaskDataFeature {
                       state.currentTask?.id == taskID else {
                     return .none
                 }
+
+                if field == .estimatedDuration {
+                    guard case let .estimatedDuration(minutes) = value else { return .none }
+                    state.timeEstimateSelection = .preset(minutes)
+                    state.errorMessage = nil
+                    return .none
+                }
+
                 state.isSaving = true
                 state.errorMessage = nil
                 return save(value, for: taskID)
+
+            case let .customTimeEstimateChanged(hours, minutes):
+                guard field == .estimatedDuration,
+                      !state.isSaving,
+                      state.currentTask != nil else {
+                    return .none
+                }
+                state.timeEstimateSelection = .custom(
+                    hours: Self.sanitizedTimeEstimateText(hours, maximumLength: 3),
+                    minutes: Self.sanitizedTimeEstimateText(minutes, maximumLength: 2)
+                )
+                state.errorMessage = nil
+                return .none
+
+            case let .saveSelectedTimeEstimate(taskID):
+                guard field == .estimatedDuration,
+                      !state.isSaving,
+                      state.currentTask?.id == taskID,
+                      let minutes = state.selectedTimeEstimateMinutes
+                else {
+                    return .none
+                }
+                state.isSaving = true
+                state.errorMessage = nil
+                return save(.estimatedDuration(minutes), for: taskID)
 
             case let .valueSaved(taskID):
                 guard state.taskIDs.first == taskID else {
@@ -301,6 +473,7 @@ struct MissingTaskDataFeature {
                 state.taskIDs.removeFirst()
                 state.currentTask = nil
                 state.completedTaskCount += 1
+                state.timeEstimateSelection = nil
                 if state.taskIDs.isEmpty {
                     state.currentTaskIndex = 0
                     state.isSaving = false
@@ -327,6 +500,7 @@ struct MissingTaskDataFeature {
                 state.currentTaskIndex = (state.currentTaskIndex + 1) % state.totalTaskCount
                 state.errorMessage = nil
                 state.isSaving = true
+                state.timeEstimateSelection = nil
                 return loadCurrentTask(taskID: state.taskIDs[0])
 
             case let .taskDetailsTapped(taskID):
@@ -344,7 +518,7 @@ struct MissingTaskDataFeature {
     private func loadTasks() -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let tasks = try modelContext().fetch(taskDescriptor())
+                let tasks = try modelContext().fetch(taskDescriptor()).filter(isEligible)
                 let taskIDs = tasks.map(\.id)
                 let currentTask = tasks.first.map {
                     makePresentationTask(for: $0)
@@ -413,6 +587,14 @@ struct MissingTaskDataFeature {
                 },
                 sortBy: [SortDescriptor(\RoutineTask.name)]
             )
+        case .estimatedDuration:
+            return FetchDescriptor<RoutineTask>(
+                predicate: #Predicate { task in
+                    task.scheduleModeRawValue != oneOffScheduleModeRawValue
+                        || (task.lastDone == nil && task.canceledAt == nil)
+                },
+                sortBy: [SortDescriptor(\RoutineTask.name)]
+            )
         }
     }
 
@@ -451,7 +633,12 @@ struct MissingTaskDataFeature {
     private func isEligible(_ task: RoutineTask) -> Bool {
         field.isEligible(task)
     }
+
+    private static func sanitizedTimeEstimateText(_ value: String, maximumLength: Int) -> String {
+        String(value.filter(\.isNumber).prefix(maximumLength))
+    }
 }
 
 typealias MissingPressureDataFeature = MissingTaskDataFeature
 typealias MissingThinkingNeededDataFeature = MissingTaskDataFeature
+typealias MissingEstimatedDurationDataFeature = MissingTaskDataFeature

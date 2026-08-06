@@ -19,12 +19,6 @@
 		3D1000022E70000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		3D1000032E70000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
 		3D1000052E70000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
-		C10000012F50000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = C10001012F50000100000001 /* Perception */; };
-		C10000022F50000100000001 /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = C10001022F50000100000001 /* SwiftUINavigation */; };
-		C10000032F50000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = C10001012F50000100000001 /* Perception */; };
-		C10000042F50000100000001 /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = C10001022F50000100000001 /* SwiftUINavigation */; };
-		C10000052F50000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = C10001032F50000100000001 /* PerceptionCore */; };
-		C10000062F50000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = C10001032F50000100000001 /* PerceptionCore */; };
 		5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5F1000072E90000100000001 /* RoutinaWatchApp.app */; };
 		5F1000022E90000100000001 /* RoutinaWatchExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */; };
 		B70000012F40000100000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B70000092F40000100000001 /* WidgetKit.framework */; };
@@ -33,6 +27,12 @@
 		B70000042F40000100000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B700000A2F40000100000001 /* SwiftUI.framework */; };
 		B70000052F40000100000001 /* RoutinaWidgetDevExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B700000B2F40000100000001 /* RoutinaWidgetDevExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B70000062F40000100000001 /* RoutinaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B700000C2F40000100000001 /* RoutinaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C10000012F50000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = C10001012F50000100000001 /* Perception */; };
+		C10000022F50000100000001 /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = C10001022F50000100000001 /* SwiftUINavigation */; };
+		C10000032F50000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = C10001012F50000100000001 /* Perception */; };
+		C10000042F50000100000001 /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = C10001022F50000100000001 /* SwiftUINavigation */; };
+		C10000052F50000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = C10001032F50000100000001 /* PerceptionCore */; };
+		C10000062F50000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = C10001032F50000100000001 /* PerceptionCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */

@@ -11,6 +11,8 @@ struct TaskChoiceView: View {
                 setup
             case .loading:
                 ProgressView("Finding relevant tasks…")
+            case .needsData:
+                needsData
             case .comparing:
                 comparison
             case .recommendation:
@@ -39,7 +41,7 @@ struct TaskChoiceView: View {
                 Text("Choose the right next task")
                     .font(.title2.weight(.semibold))
 
-                Text("Set your current condition, then compare a few similar tasks head to head.")
+                Text("Set your current condition. Routina first checks that active tasks have enough detail, then learns only the priority ties you need to resolve.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -84,13 +86,13 @@ struct TaskChoiceView: View {
             Button {
                 store.send(.findTasksTapped)
             } label: {
-                Label("Compare tasks", systemImage: "arrow.left.arrow.right")
+                Label("Find the right task", systemImage: "arrow.left.arrow.right")
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderedProminent)
 
-            Text("Your comparisons are temporary and never change task metadata.")
+            Text("Comparisons keep a separate learned tie-break. They never change Importance, Urgency, Pressure, Thinking needed, or your time estimate.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -135,29 +137,29 @@ struct TaskChoiceView: View {
     private var comparison: some View {
         VStack(spacing: 18) {
             VStack(spacing: 8) {
-                Text("Comparison \(store.comparisonNumber) of \(store.comparisonCount)")
+                Text("Priority tie-break \(store.comparisonNumber)")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                ProgressView(
-                    value: Double(store.comparisonNumber),
-                    total: Double(max(store.comparisonCount, 1))
-                )
-                .tint(.accentColor)
+                Text("Across \(store.candidateCount) ready tasks")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
-            Text("Which task is higher priority right now?")
+            Text("Which task should come first?")
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
 
-            if let currentWinner = store.currentWinner,
-               let challenger = store.currentChallenger {
+            if let firstCandidate = store.firstCandidate,
+               let secondCandidate = store.secondCandidate {
                 HStack(alignment: .top, spacing: 12) {
-                    candidateChoice(currentWinner)
-                    candidateChoice(challenger)
+                    candidateChoice(firstCandidate)
+                    candidateChoice(secondCandidate)
                 }
+            } else {
+                ProgressView("Saving your choice…")
             }
 
-            Text("Tap the task you would rather do next. Comparable metadata is shown to make the tie-break clear.")
+            Text("These tasks are equally relevant for the condition you chose. Tap the one you would rather do next.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -199,6 +201,7 @@ struct TaskChoiceView: View {
             .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .buttonStyle(.plain)
+        .disabled(store.isSavingSelection)
         .routinaGlassCard(
             cornerRadius: 22,
             tint: .accentColor,
@@ -218,6 +221,13 @@ struct TaskChoiceView: View {
             if let estimatedDurationMinutes = candidate.estimatedDurationMinutes {
                 Label("Estimate: \(estimatedDurationMinutes) min", systemImage: "clock")
             }
+
+            if !candidate.tags.isEmpty {
+                Label(
+                    "Tags: \(candidate.tags.prefix(3).joined(separator: ", "))",
+                    systemImage: "tag"
+                )
+            }
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -229,7 +239,7 @@ struct TaskChoiceView: View {
         VStack(spacing: 20) {
             Spacer(minLength: 0)
 
-            if let recommendedTask = store.currentWinner {
+            if let recommendedTask = store.recommendedTask {
                 VStack(spacing: 16) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 52))
@@ -242,7 +252,7 @@ struct TaskChoiceView: View {
                         .font(.title.weight(.bold))
                         .multilineTextAlignment(.center)
 
-                    Text("It won your \(store.condition.summary.lowercased()) comparison.")
+                    Text("All matching priority ties are resolved for \(store.condition.summary.lowercased()).")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -289,6 +299,47 @@ struct TaskChoiceView: View {
             Button("Change conditions") {
                 store.send(.startAgainTapped)
             }
+        }
+    }
+
+    private var needsData: some View {
+        ContentUnavailableView {
+            Label("Add task details first", systemImage: "checklist")
+        } description: {
+            Text("Routina can suggest a task only after every active task has the details needed for a fair comparison.")
+        } actions: {
+            if let missingData = store.missingData {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(missingData.items) { item in
+                        Label("\(item.title): \(item.count) task\(item.count == 1 ? "" : "s")", systemImage: "circle")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: 360, alignment: .leading)
+                .routinaGlassCard(
+                    cornerRadius: 18,
+                    tint: .accentColor,
+                    tintOpacity: 0.08,
+                    interactive: false
+                )
+            }
+
+            Text("Complete the matching review procedures in More, then come back here.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Check again") {
+                store.send(.findTasksTapped)
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button("Change conditions") {
+                store.send(.startAgainTapped)
+            }
+            .buttonStyle(.bordered)
         }
     }
 

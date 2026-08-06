@@ -25,6 +25,5 @@ current-period completion calculations.
 
 ## Regression Safeguard
 
-`TaskChoiceFeatureTests.loadsBoundedEligibleCandidatesAndUsesPairwiseWinnerSelection`
-includes a completed one-off from an earlier day and asserts that it is absent
-from the shortlist.
+`TaskChoiceFeatureTests.completedOneOffIsNeverSelectableForTaskChoice` checks
+that a one-off completed on an earlier day remains excluded from task choice.

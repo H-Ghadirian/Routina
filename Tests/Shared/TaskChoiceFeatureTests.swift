@@ -13,163 +13,209 @@ import Testing
 @MainActor
 struct TaskChoiceFeatureTests {
     @Test
-    func shortlist_prefersComparableTasksForTheFirstPair() {
-        let seed = makeCandidate(
-            name: "Critical proposal",
-            importance: .level4,
-            urgency: .level4,
-            pressure: .high,
-            thinkingNeeded: .medium,
-            estimatedDurationMinutes: 30
-        )
-        let comparableTask = makeCandidate(
-            name: "Comparable proposal",
-            importance: .level4,
-            urgency: .level4,
-            pressure: .high,
-            thinkingNeeded: .medium,
-            estimatedDurationMinutes: 60
-        )
-        let higherScoredButDifferentTask = makeCandidate(
-            name: "Different task",
-            importance: .level4,
-            urgency: .level4,
-            pressure: .high,
-            thinkingNeeded: .high,
-            estimatedDurationMinutes: 15
+    func learnedTieBreakOrdersOtherwiseEqualCandidates() {
+        let first = makeReadyTask(name: "Alpha")
+        let second = makeReadyTask(name: "Beta")
+        first.taskChoiceTieBreakScore = 0.2
+        second.taskChoiceTieBreakScore = 0.1
+
+        let ranked = TaskChoiceCandidateRanking.ranked(
+            tasks: [second, first],
+            condition: TaskChoiceCondition()
         )
 
-        let shortlist = TaskChoiceCandidateRanking.shortlist(
-            tasks: [seed, comparableTask, higherScoredButDifferentTask],
-            condition: TaskChoiceCondition(
-                availableTime: .thirtyMinutes,
-                energy: .medium,
-                intent: .makeProgress
-            )
-        )
-
-        #expect(shortlist.map(\.id) == [seed.id, comparableTask.id, higherScoredButDifferentTask.id])
+        #expect(ranked.map(\.id) == [first.id, second.id])
     }
 
     @Test
-    func lowEnergyAndShortTimePenalizeHighThinkingAndLongTasks() {
-        let suitableTask = TaskChoiceCandidate(task: makeCandidate(
-            name: "Quick admin",
-            importance: .level2,
-            urgency: .level2,
-            pressure: .low,
-            thinkingNeeded: .low,
-            estimatedDurationMinutes: 15
-        ))
-        let unsuitableTask = TaskChoiceCandidate(task: makeCandidate(
-            name: "Complex strategy",
-            importance: .level2,
-            urgency: .level2,
-            pressure: .low,
-            thinkingNeeded: .high,
-            estimatedDurationMinutes: 90
-        ))
-        let condition = TaskChoiceCondition(
-            availableTime: .fifteenMinutes,
-            energy: .low,
-            intent: .makeProgress
+    func enabledTagPreferenceBreaksAnOtherwiseEqualMetadataTie() {
+        let travelTask = makeReadyTask(name: "Travel task", tags: ["Travel"])
+        let adminTask = makeReadyTask(name: "Admin task", tags: ["Admin"])
+        let preferences = [
+            TaskChoiceTagPreference(tag: "Travel", score: 0.2, comparisonCount: 2),
+            TaskChoiceTagPreference(tag: "Admin", score: 0, comparisonCount: 2)
+        ]
+
+        let ranked = TaskChoiceCandidateRanking.ranked(
+            tasks: [adminTask, travelTask],
+            condition: TaskChoiceCondition(),
+            tagPreferences: preferences
         )
 
-        #expect(
-            TaskChoiceCandidateRanking.score(suitableTask, for: condition)
-                > TaskChoiceCandidateRanking.score(unsuitableTask, for: condition)
-        )
+        #expect(ranked.map(\.id) == [travelTask.id, adminTask.id])
+        #expect(TaskChoiceCandidateRanking.nextComparisonPair(
+            tasks: [travelTask, adminTask],
+            condition: TaskChoiceCondition(),
+            tagPreferences: preferences
+        ) == nil)
     }
 
     @Test
-    func loadsBoundedEligibleCandidatesAndUsesPairwiseWinnerSelection() async throws {
+    func comparisonUpdatesOnlyDistinctEnabledTagPreferences() {
+        let preferences = [
+            TaskChoiceTagPreference(tag: "Travel"),
+            TaskChoiceTagPreference(tag: "Admin")
+        ]
+
+        let updated = TaskChoiceTagPreferences.updating(
+            preferences,
+            preferredTaskTags: ["Travel", "Shared"],
+            otherTaskTags: ["Admin", "Shared"]
+        )
+
+        #expect(updated.first(where: { $0.tag == "Travel" })?.score == 0.1)
+        #expect(updated.first(where: { $0.tag == "Travel" })?.comparisonCount == 1)
+        #expect(updated.first(where: { $0.tag == "Admin" })?.score == 0)
+        #expect(updated.first(where: { $0.tag == "Admin" })?.comparisonCount == 1)
+    }
+
+    @Test
+    func nextComparisonUsesTheRemainingEqualTieBreak() throws {
+        let alpha = makeReadyTask(name: "Alpha")
+        let beta = makeReadyTask(name: "Beta")
+        let gamma = makeReadyTask(name: "Gamma")
+        alpha.taskChoiceTieBreakScore = 0.1
+        gamma.taskChoiceTieBreakScore = 0.1
+
+        let pair = try #require(TaskChoiceCandidateRanking.nextComparisonPair(
+            tasks: [alpha, beta, gamma],
+            condition: TaskChoiceCondition()
+        ))
+
+        #expect(Set([pair.0.id, pair.1.id]) == Set([alpha.id, gamma.id]))
+    }
+
+    @Test
+    func missingDataCountsEveryRequiredTaskField() {
+        let readyTask = makeReadyTask(name: "Ready")
+        let missingTask = RoutineTask(name: "Missing")
+
+        let missingData = TaskChoiceCandidateRanking.missingData(for: [readyTask, missingTask])
+
+        #expect(missingData.importanceCount == 1)
+        #expect(missingData.urgencyCount == 1)
+        #expect(missingData.pressureCount == 1)
+        #expect(missingData.thinkingNeededCount == 1)
+        #expect(missingData.estimatedDurationCount == 1)
+    }
+
+    @Test
+    func completedOneOffIsNeverSelectableForTaskChoice() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let completedOneOff = RoutineTask(
+            name: "Completed once",
+            scheduleMode: .oneOff,
+            lastDone: Date(timeIntervalSince1970: 1)
+        )
+
+        #expect(!TaskChoiceCandidateRanking.isCurrentlySelectable(
+            completedOneOff,
+            referenceDate: now,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func savesComparisonsAndOnlyRecommendsAfterAllTiesAreResolved() async throws {
         let context = makeInMemoryContext()
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-        let firstTask = makeTask(in: context, name: "Alpha", interval: 1, lastDone: nil, emoji: nil)
-        let secondTask = makeTask(in: context, name: "Beta", interval: 1, lastDone: nil, emoji: nil)
-        let thirdTask = makeTask(in: context, name: "Gamma", interval: 1, lastDone: nil, emoji: nil)
-        let completedOneOff = makeTask(
-            in: context,
-            name: "Completed todo",
-            interval: 1,
-            lastDone: Date(timeIntervalSince1970: 1),
-            emoji: nil,
-            scheduleMode: .oneOff
-        )
-        let completedRoutine = makeTask(
-            in: context,
-            name: "Completed routine",
-            interval: 1,
-            lastDone: now,
-            emoji: nil
-        )
-        let canceledTask = makeTask(in: context, name: "Canceled", interval: 1, lastDone: nil, emoji: nil)
-        canceledTask.canceledAt = Date(timeIntervalSince1970: 1)
-        let pausedTask = makeTask(
-            in: context,
-            name: "Paused",
-            interval: 1,
-            lastDone: nil,
-            emoji: nil,
-            pausedAt: now
-        )
+        let alpha = makeReadyTask(name: "Alpha")
+        let beta = makeReadyTask(name: "Beta")
+        let gamma = makeReadyTask(name: "Gamma")
+        context.insert(alpha)
+        context.insert(beta)
+        context.insert(gamma)
         try context.save()
 
-        let condition = TaskChoiceCondition()
-        let expectedCandidates = TaskChoiceCandidateRanking.shortlist(
-            tasks: [firstTask, secondTask, thirdTask],
-            condition: condition
-        )
+        let alphaCandidate = TaskChoiceCandidate(task: alpha)
+        let betaCandidate = TaskChoiceCandidate(task: beta)
+        let gammaCandidate = TaskChoiceCandidate(task: gamma)
         let store = TestStore(initialState: TaskChoiceFeature.State()) {
             TaskChoiceFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.date.now = now
             $0.calendar = calendar
+            $0.appSettingsClient = .noop
         }
 
         await store.send(.findTasksTapped) {
             $0.phase = .loading
         }
-        await store.receive(.candidatesLoaded(expectedCandidates)) {
-            $0.candidates = expectedCandidates
-            $0.currentWinner = expectedCandidates.first
+        await store.receive(.tasksLoaded(.comparison(alphaCandidate, betaCandidate, candidateCount: 3))) {
             $0.phase = .comparing
+            $0.firstCandidate = alphaCandidate
+            $0.secondCandidate = betaCandidate
+            $0.candidateCount = 3
         }
 
-        #expect(!store.state.candidates.contains(where: { $0.id == completedOneOff.id }))
-        #expect(!store.state.candidates.contains(where: { $0.id == completedRoutine.id }))
-        #expect(!store.state.candidates.contains(where: { $0.id == canceledTask.id }))
-        #expect(!store.state.candidates.contains(where: { $0.id == pausedTask.id }))
-        #expect(store.state.candidates.count <= TaskChoiceCandidateRanking.maximumCandidateCount)
-
-        let challenger = try #require(store.state.currentChallenger)
-        let firstWinner = try #require(store.state.currentWinner)
-        await store.send(.preferredTaskSelected(challenger.id)) {
-            $0.currentWinner = challenger
-            $0.nextCandidateIndex = 2
-            $0.alternatives = [firstWinner]
+        await store.send(.preferredTaskSelected(alpha.id)) {
+            $0.isSavingSelection = true
+        }
+        await store.receive(\.comparisonSaved) {
+            $0.firstCandidate = TaskChoiceCandidate(task: alpha)
+            $0.secondCandidate = nil
+            $0.completedComparisonCount = 1
+            $0.isSavingSelection = false
+        }
+        let savedAlpha = TaskChoiceCandidate(task: alpha)
+        let comparedBeta = TaskChoiceCandidate(task: beta)
+        await store.receive(.tasksLoaded(.comparison(gammaCandidate, comparedBeta, candidateCount: 3))) {
+            $0.firstCandidate = gammaCandidate
+            $0.secondCandidate = comparedBeta
         }
 
-        let finalChallenger = try #require(store.state.currentChallenger)
-        await store.send(.preferredTaskSelected(challenger.id)) {
-            $0.nextCandidateIndex = 3
-            $0.alternatives = [firstWinner, finalChallenger]
+        await store.send(.preferredTaskSelected(gamma.id)) {
+            $0.isSavingSelection = true
+        }
+        await store.receive(\.comparisonSaved) {
+            $0.firstCandidate = TaskChoiceCandidate(task: gamma)
+            $0.secondCandidate = nil
+            $0.completedComparisonCount = 2
+            $0.isSavingSelection = false
+        }
+        let savedGamma = TaskChoiceCandidate(task: gamma)
+        await store.receive(.tasksLoaded(.comparison(savedAlpha, savedGamma, candidateCount: 3))) {
+            $0.firstCandidate = savedAlpha
+            $0.secondCandidate = savedGamma
+        }
+
+        await store.send(.preferredTaskSelected(alpha.id)) {
+            $0.isSavingSelection = true
+        }
+        await store.receive(\.comparisonSaved) {
+            $0.firstCandidate = TaskChoiceCandidate(task: alpha)
+            $0.secondCandidate = nil
+            $0.completedComparisonCount = 3
+            $0.isSavingSelection = false
+        }
+        let resolvedAlpha = TaskChoiceCandidate(task: alpha)
+        await store.receive(.tasksLoaded(.recommendation(resolvedAlpha, candidateCount: 3))) {
             $0.phase = .recommendation
+            $0.recommendedTask = resolvedAlpha
         }
+
+        #expect(alpha.taskChoiceTieBreakScore == 0.2)
+        #expect(beta.taskChoiceTieBreakScore == 0)
+        #expect(gamma.taskChoiceTieBreakScore == 0.1)
+        #expect(alpha.taskChoiceComparisonCount == 2)
+        #expect(beta.taskChoiceComparisonCount == 2)
+        #expect(gamma.taskChoiceComparisonCount == 2)
     }
 
     @Test
     func detailsRequestAndRestartAreReducerOwned() async {
         let taskID = UUID()
-        let task = TaskChoiceCandidate(task: makeCandidate(name: "Compare me"))
+        let task = TaskChoiceCandidate(task: makeReadyTask(name: "Compare me"))
         let store = TestStore(
             initialState: TaskChoiceFeature.State(
                 phase: .recommendation,
-                candidates: [task],
-                currentWinner: task
+                recommendedTask: task,
+                candidateCount: 1
             )
         ) {
             TaskChoiceFeature()
@@ -180,9 +226,8 @@ struct TaskChoiceFeatureTests {
 
         await store.send(.startAgainTapped) {
             $0.phase = .setup
-            $0.candidates = []
-            $0.currentWinner = nil
-            $0.nextCandidateIndex = 1
+            $0.recommendedTask = nil
+            $0.candidateCount = 0
         }
     }
 
@@ -192,8 +237,9 @@ struct TaskChoiceFeatureTests {
         let viewSource = try Self.sourceFile("iOS/Screens/More/TaskChoiceView.swift")
         let appSource = try Self.sourceFile("iOS/Screens/App/AppView.swift")
 
-        #expect(featureSource.contains("maximumCandidateCount = 6"))
-        #expect(featureSource.contains("TaskChoiceCandidateRanking.shortlist"))
+        #expect(featureSource.contains("TaskChoiceCandidateRanking.nextComparisonPair"))
+        #expect(featureSource.contains("TaskChoiceCandidateRanking.missingData"))
+        #expect(featureSource.contains("taskChoiceTieBreakScore"))
         #expect(featureSource.contains("isCurrentlySelectable"))
         #expect(viewSource.contains("let store: StoreOf<TaskChoiceFeature>"))
         #expect(viewSource.contains("store.send(.preferredTaskSelected"))
@@ -205,20 +251,18 @@ struct TaskChoiceFeatureTests {
         #expect(appSource.contains("TaskChoiceView(store: taskChoiceStore)"))
     }
 
-    private func makeCandidate(
-        name: String,
-        importance: RoutineTaskImportance = .level2,
-        urgency: RoutineTaskUrgency = .level2,
-        pressure: RoutineTaskPressure = .none,
-        thinkingNeeded: RoutineTaskThinkingNeeded = .none,
-        estimatedDurationMinutes: Int? = nil
-    ) -> RoutineTask {
-        let task = RoutineTask(name: name, estimatedDurationMinutes: estimatedDurationMinutes)
-        task.importance = importance
-        task.urgency = urgency
-        task.pressure = pressure
-        task.thinkingNeeded = thinkingNeeded
-        return task
+    private func makeReadyTask(name: String, tags: [String] = []) -> RoutineTask {
+        RoutineTask(
+            name: name,
+            importance: .level2,
+            urgency: .level2,
+            pressure: .medium,
+            thinkingNeeded: .medium,
+            tags: tags,
+            estimatedDurationMinutes: 30,
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
+        )
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

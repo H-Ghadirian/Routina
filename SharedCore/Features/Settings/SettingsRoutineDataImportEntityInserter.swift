@@ -314,6 +314,8 @@ enum SettingsRoutineDataImportEntityInserter {
                 estimatedDurationMinutes: task.estimatedDurationMinutes,
                 actualDurationMinutes: task.actualDurationMinutes,
                 storyPoints: task.storyPoints,
+                taskChoiceTieBreakScore: task.taskChoiceTieBreakScore ?? 0,
+                taskChoiceComparisonCount: task.taskChoiceComparisonCount ?? 0,
                 trackingCadenceEnabled: task.trackingCadenceEnabled ?? true,
                 trackingNudgesEnabled: task.trackingNudgesEnabled ?? true,
                 showsTaskDetailHeatmap: task.showsTaskDetailHeatmap ?? false,
@@ -1070,6 +1072,7 @@ enum SettingsRoutineDataImportEntityInserter {
             backupPreferences.dayPlanCalendarListRowHiddenFields
         preferences.relatedTagRules = backupPreferences.relatedTagRules
         preferences.tagColors = backupPreferences.tagColors
+        preferences.taskChoiceTagPreferences = backupPreferences.taskChoiceTagPreferences
         preferences.fastFilterTags = backupPreferences.fastFilterTags
         preferences.iOSStatsDashboardHiddenItemIDs = backupPreferences.iOSStatsDashboardHiddenItemIDs
         preferences.iOSStatsDashboardItemOrderIDs = backupPreferences.iOSStatsDashboardItemOrderIDs

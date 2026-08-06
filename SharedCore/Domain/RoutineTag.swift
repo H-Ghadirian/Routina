@@ -97,6 +97,164 @@ struct RoutineRelatedTagRule: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+/// A user-selected tag that may resolve otherwise equal task-choice candidates.
+/// This is deliberately separate from a task's descriptive metadata and priority.
+struct TaskChoiceTagPreference: Codable, Equatable, Identifiable, Sendable {
+    var tag: String
+    var score: Double = 0
+    var comparisonCount = 0
+
+    var id: String {
+        RoutineTag.normalized(tag) ?? tag
+    }
+}
+
+enum TaskChoiceTagPreferences {
+    static let scoreIncrement = 0.1
+
+    static func sanitized(_ preferences: [TaskChoiceTagPreference]) -> [TaskChoiceTagPreference] {
+        var byTag: [String: TaskChoiceTagPreference] = [:]
+
+        for preference in preferences {
+            guard let cleanedTag = RoutineTag.cleaned(preference.tag),
+                  let normalizedTag = RoutineTag.normalized(cleanedTag) else {
+                continue
+            }
+            let normalizedScore = preference.score.isFinite ? max(preference.score, 0) : 0
+            let normalizedCount = max(preference.comparisonCount, 0)
+            let normalizedPreference = TaskChoiceTagPreference(
+                tag: cleanedTag,
+                score: normalizedScore,
+                comparisonCount: normalizedCount
+            )
+
+            guard let existing = byTag[normalizedTag] else {
+                byTag[normalizedTag] = normalizedPreference
+                continue
+            }
+            byTag[normalizedTag] = TaskChoiceTagPreference(
+                tag: existing.tag,
+                score: max(existing.score, normalizedPreference.score),
+                comparisonCount: max(existing.comparisonCount, normalizedPreference.comparisonCount)
+            )
+        }
+
+        return byTag.values.sorted {
+            $0.tag.localizedCaseInsensitiveCompare($1.tag) == .orderedAscending
+        }
+    }
+
+    static func matchingPreferences(
+        for taskTags: [String],
+        in preferences: [TaskChoiceTagPreference]
+    ) -> [TaskChoiceTagPreference] {
+        let preferencesByTag = Dictionary(
+            uniqueKeysWithValues: sanitized(preferences).map { ($0.id, $0) }
+        )
+        let uniqueTaskTagIDs = Set(taskTags.compactMap(RoutineTag.normalized))
+        return uniqueTaskTagIDs.compactMap { preferencesByTag[$0] }.sorted {
+            $0.tag.localizedCaseInsensitiveCompare($1.tag) == .orderedAscending
+        }
+    }
+
+    static func score(
+        for taskTags: [String],
+        in preferences: [TaskChoiceTagPreference]
+    ) -> Double {
+        let matches = matchingPreferences(for: taskTags, in: preferences)
+        guard !matches.isEmpty else { return 0 }
+        return matches.map(\.score).reduce(0, +) / Double(matches.count)
+    }
+
+    static func updating(
+        _ preferences: [TaskChoiceTagPreference],
+        preferredTaskTags: [String],
+        otherTaskTags: [String]
+    ) -> [TaskChoiceTagPreference] {
+        var updated = sanitized(preferences)
+        let preferredMatches = matchingPreferences(for: preferredTaskTags, in: updated)
+        let otherMatches = matchingPreferences(for: otherTaskTags, in: updated)
+        let preferredIDs = Set(preferredMatches.map(\.id))
+        let otherIDs = Set(otherMatches.map(\.id))
+        let distinctPreferredIDs = preferredIDs.subtracting(otherIDs)
+        let distinctOtherIDs = otherIDs.subtracting(preferredIDs)
+
+        guard !distinctPreferredIDs.isEmpty else { return updated }
+
+        let comparedScores = preferredMatches
+            .filter { distinctPreferredIDs.contains($0.id) }
+            .map(\.score)
+            + otherMatches
+            .filter { distinctOtherIDs.contains($0.id) }
+            .map(\.score)
+        let advancedScore = ((comparedScores.max() ?? 0) + scoreIncrement) * 10
+        let nextScore = advancedScore.rounded() / 10
+
+        updated = updated.map { preference in
+            guard distinctPreferredIDs.contains(preference.id) || distinctOtherIDs.contains(preference.id) else {
+                return preference
+            }
+            var updatedPreference = preference
+            updatedPreference.comparisonCount += 1
+            if distinctPreferredIDs.contains(preference.id) {
+                updatedPreference.score = max(updatedPreference.score, nextScore)
+            }
+            return updatedPreference
+        }
+        return sanitized(updated)
+    }
+
+    static func toggling(
+        tag: String,
+        isEnabled: Bool,
+        in preferences: [TaskChoiceTagPreference]
+    ) -> [TaskChoiceTagPreference] {
+        guard let cleanedTag = RoutineTag.cleaned(tag),
+              let normalizedTag = RoutineTag.normalized(cleanedTag) else {
+            return sanitized(preferences)
+        }
+
+        let withoutTag = sanitized(preferences).filter { $0.id != normalizedTag }
+        return isEnabled
+            ? sanitized(withoutTag + [TaskChoiceTagPreference(tag: cleanedTag)])
+            : withoutTag
+    }
+
+    static func replacing(
+        _ tag: String,
+        with replacement: String,
+        in preferences: [TaskChoiceTagPreference]
+    ) -> [TaskChoiceTagPreference] {
+        guard let normalizedTag = RoutineTag.normalized(tag),
+              let cleanedReplacement = RoutineTag.cleaned(replacement) else {
+            return sanitized(preferences)
+        }
+
+        return sanitized(preferences.map { preference in
+            guard preference.id == normalizedTag else { return preference }
+            var updatedPreference = preference
+            updatedPreference.tag = cleanedReplacement
+            return updatedPreference
+        })
+    }
+
+    static func removing(
+        _ tag: String,
+        from preferences: [TaskChoiceTagPreference]
+    ) -> [TaskChoiceTagPreference] {
+        guard let normalizedTag = RoutineTag.normalized(tag) else {
+            return sanitized(preferences)
+        }
+        return sanitized(preferences).filter { $0.id != normalizedTag }
+    }
+
+    static func resettingScores(in preferences: [TaskChoiceTagPreference]) -> [TaskChoiceTagPreference] {
+        sanitized(preferences).map {
+            TaskChoiceTagPreference(tag: $0.tag)
+        }
+    }
+}
+
 enum RoutineTag {
     static func cleaned(_ value: String) -> String? {
         let collapsed = value

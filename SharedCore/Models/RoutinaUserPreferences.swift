@@ -17,6 +17,7 @@ final class RoutinaUserPreferences {
     var dayPlanCalendarListRowHiddenFields: String?
     var relatedTagRules: String?
     var tagColors: String?
+    var taskChoiceTagPreferences: String?
     var fastFilterTags: String?
     var iOSStatsDashboardHiddenItemIDs: String?
     var iOSStatsDashboardItemOrderIDs: String?
@@ -171,6 +172,7 @@ enum RoutinaUserPreferencesStore {
         ]
         preferences.relatedTagRules = defaults[.appSettingRelatedTagRules]
         preferences.tagColors = defaults[.appSettingTagColors]
+        preferences.taskChoiceTagPreferences = defaults[.appSettingTaskChoiceTagPreferences]
         preferences.fastFilterTags = defaults[.appSettingFastFilterTags]
         preferences.iOSStatsDashboardHiddenItemIDs = defaults[.appSettingIOSStatsDashboardHiddenItemIDs]
         preferences.iOSStatsDashboardItemOrderIDs = defaults[.appSettingIOSStatsDashboardItemOrderIDs]
@@ -238,6 +240,7 @@ enum RoutinaUserPreferencesStore {
             preferences.dayPlanCalendarListRowHiddenFields
         defaults[.appSettingRelatedTagRules] = preferences.relatedTagRules
         defaults[.appSettingTagColors] = preferences.tagColors
+        defaults[.appSettingTaskChoiceTagPreferences] = preferences.taskChoiceTagPreferences
         defaults[.appSettingFastFilterTags] = preferences.fastFilterTags
         defaults[.appSettingIOSStatsDashboardHiddenItemIDs] = preferences.iOSStatsDashboardHiddenItemIDs
         defaults[.appSettingIOSStatsDashboardItemOrderIDs] = preferences.iOSStatsDashboardItemOrderIDs

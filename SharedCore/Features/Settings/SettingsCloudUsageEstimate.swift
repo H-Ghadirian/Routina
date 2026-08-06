@@ -199,6 +199,8 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var estimatedDurationMinutes: Int?
         var actualDurationMinutes: Int?
         var storyPoints: Int?
+        var taskChoiceTieBreakScore: Double
+        var taskChoiceComparisonCount: Int16
         var thinkingNeededRawValue: String
 
         init(task: RoutineTask) {
@@ -255,6 +257,8 @@ struct CloudUsageEstimate: Equatable, Sendable {
             estimatedDurationMinutes = task.estimatedDurationMinutes
             actualDurationMinutes = task.actualDurationMinutes
             storyPoints = task.storyPoints
+            taskChoiceTieBreakScore = task.taskChoiceTieBreakScore
+            taskChoiceComparisonCount = task.taskChoiceComparisonCount
             thinkingNeededRawValue = task.thinkingNeededRawValue
         }
     }

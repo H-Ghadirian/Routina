@@ -206,6 +206,7 @@ let package = Package(
                 "SharedCore/Features/MissingData/MissingPressureDataFeature.swift",
                 "SharedCore/Features/MissingData/MissingPressureDataTaskPresentation.swift",
                 "SharedCore/Features/TaskChoice/TaskChoiceFeature.swift",
+                "SharedCore/Features/TaskChoice/TaskChoiceTagPreferencesFeature.swift",
                 "SharedCore/Features/Home/AppFeatureTemporaryViewStateSupport.swift",
                 "SharedCore/Features/Home/HomeBoardMutationSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureAddRoutineActionHandler.swift",

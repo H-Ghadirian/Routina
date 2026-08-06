@@ -31,7 +31,11 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
-- **[0479](0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md) adds contextual task choice:** Compact iOS More asks for available time, energy, and intent, then compares a bounded, metadata-similar shortlist head-to-head to recommend a next task without changing durable task metadata.
+- **[0482](0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md) refines [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md):** iOS users opt selected tags into a backed-up learned preference layer that resolves metadata ties without changing task fields.
+
+- **[0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md) supersedes [0479](0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md):** iOS Task Choice requires complete metadata, stores a separate learned tie-break, resolves only condition-relevant ties, and then makes a durable contextual suggestion.
+
+- **[0480](0480-add-guided-ios-time-estimates.md) adds guided time-estimate cleanup:** Compact iOS More presents every existing duration preset directly on a bounded full-height card for tasks whose optional estimate is missing.
 
 - **[0478](0478-add-guided-ios-thinking-needed-review.md) adds Thinking needed cleanup:** Compact iOS More offers a one-card-at-a-time Thinking needed procedure that loads only `None` values, persists a direct Low/Medium/High choice, and shares the bounded Pressure review architecture without changing task priority or scheduling.
 
@@ -431,6 +435,9 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0482](0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md) | Use Opt-In Tag Preferences to Refine iOS Task Choice | Accepted | 2026-08-06 |
+| [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md) | Learn Task-Choice Tie-Breaks After Metadata Readiness | Accepted | 2026-08-06 |
+| [0480](0480-add-guided-ios-time-estimates.md) | Add Guided iOS Time Estimates | Accepted | 2026-08-06 |
 | [0479](0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md) | Use Bounded Pairwise Comparisons for iOS Task Choice | Accepted | 2026-08-06 |
 | [0478](0478-add-guided-ios-thinking-needed-review.md) | Add Guided iOS Thinking Needed Review | Accepted | 2026-08-06 |
 | [0477](0477-keep-ios-ui-benchmarks-dev-hosted-and-explicitly-linked.md) | Keep iOS UI Benchmarks Dev-Hosted and Explicitly Linked | Accepted | 2026-08-05 |

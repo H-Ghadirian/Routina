@@ -84,6 +84,10 @@ let tabView = TabView(
                 statsStore: store.scope(state: \.stats, action: \.stats),
                 settingsStore: store.scope(state: \.settings, action: \.settings),
                 taskChoiceStore: store.scope(state: \.taskChoice, action: \.taskChoice),
+                taskChoiceTagPreferencesStore: store.scope(
+                    state: \.taskChoiceTagPreferences,
+                    action: \.taskChoiceTagPreferences
+                ),
                 missingPressureDataStore: store.scope(
                     state: \.missingPressureData,
                     action: \.missingPressureData
@@ -91,6 +95,10 @@ let tabView = TabView(
                 missingThinkingNeededDataStore: store.scope(
                     state: \.missingThinkingNeededData,
                     action: \.missingThinkingNeededData
+                ),
+                missingEstimatedDurationDataStore: store.scope(
+                    state: \.missingEstimatedDurationData,
+                    action: \.missingEstimatedDurationData
                 ),
                 missingImportanceDataStore: store.scope(
                     state: \.missingImportanceData,
@@ -681,8 +689,10 @@ private enum AppMoreDestination: Hashable {
     case stats
     case settings
     case taskChoice
+    case taskChoiceTagPreferences
     case missingPressureData
     case missingThinkingNeededData
+    case missingEstimatedDurationData
     case missingImportanceData
     case missingUrgencyData
 }
@@ -694,8 +704,10 @@ private struct AppMoreNavigationView: View {
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
     let taskChoiceStore: StoreOf<TaskChoiceFeature>
+    let taskChoiceTagPreferencesStore: StoreOf<TaskChoiceTagPreferencesFeature>
     let missingPressureDataStore: StoreOf<MissingTaskDataFeature>
     let missingThinkingNeededDataStore: StoreOf<MissingTaskDataFeature>
+    let missingEstimatedDurationDataStore: StoreOf<MissingTaskDataFeature>
     let missingImportanceDataStore: StoreOf<MissingTaskMetadataFeature>
     let missingUrgencyDataStore: StoreOf<MissingTaskMetadataFeature>
     let showGoalsTab: Bool
@@ -717,11 +729,17 @@ private struct AppMoreNavigationView: View {
                 .navigationDestination(isPresented: isDestinationPresented(.taskChoice)) {
                     destinationView(for: .taskChoice)
                 }
+                .navigationDestination(isPresented: isDestinationPresented(.taskChoiceTagPreferences)) {
+                    destinationView(for: .taskChoiceTagPreferences)
+                }
                 .navigationDestination(isPresented: isDestinationPresented(.missingPressureData)) {
                     destinationView(for: .missingPressureData)
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.missingThinkingNeededData)) {
                     destinationView(for: .missingThinkingNeededData)
+                }
+                .navigationDestination(isPresented: isDestinationPresented(.missingEstimatedDurationData)) {
+                    destinationView(for: .missingEstimatedDurationData)
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.missingImportanceData)) {
                     destinationView(for: .missingImportanceData)
@@ -752,7 +770,16 @@ private struct AppMoreNavigationView: View {
                         icon: "sparkles",
                         tint: .blue,
                         title: "Help me choose",
-                        subtitle: "Compare tasks for your current conditions"
+                        subtitle: "Learn the priority ties for your conditions"
+                    )
+                }
+
+                moreButton(destination: .taskChoiceTagPreferences) {
+                    SettingsNavigationRow(
+                        icon: "tag",
+                        tint: .mint,
+                        title: "Tag preferences",
+                        subtitle: "Use meaningful tags to refine suggestions"
                     )
                 }
 
@@ -771,6 +798,15 @@ private struct AppMoreNavigationView: View {
                         tint: .yellow,
                         title: "Add missing Thinking needed data",
                         subtitle: "Fill in thinking needed for tasks"
+                    )
+                }
+
+                moreButton(destination: .missingEstimatedDurationData) {
+                    SettingsNavigationRow(
+                        icon: "clock",
+                        tint: .teal,
+                        title: "Add missing time estimates",
+                        subtitle: "Estimate how long tasks will take"
                     )
                 }
 
@@ -881,10 +917,14 @@ private struct AppMoreNavigationView: View {
                 }
         case .taskChoice:
             TaskChoiceView(store: taskChoiceStore)
+        case .taskChoiceTagPreferences:
+            TaskChoiceTagPreferencesView(store: taskChoiceTagPreferencesStore)
         case .missingPressureData:
             MissingTaskDataView(store: missingPressureDataStore)
         case .missingThinkingNeededData:
             MissingTaskDataView(store: missingThinkingNeededDataStore)
+        case .missingEstimatedDurationData:
+            MissingTaskDataView(store: missingEstimatedDurationDataStore)
         case .missingImportanceData:
             MissingTaskMetadataView(store: missingImportanceDataStore)
         case .missingUrgencyData:

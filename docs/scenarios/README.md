@@ -1595,10 +1595,10 @@ instead of walking whole history from a scrolling section builder
 And raw persistence saves do not duplicate semantic refresh notifications
 And bursts of semantic updates are coalesced before Stats reloads its snapshot
 
-### iOS Task Choice Uses Bounded Pairwise Comparisons
+### iOS Task Choice Learns Condition-Relevant Tie-Breaks
 
 Area: Tasks / UI
-Decision links: [0479](../decisions/0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
+Decision links: [0482](../decisions/0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md), [0481](../decisions/0481-learn-task-choice-tie-breaks-after-metadata-readiness.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/TaskChoiceFeatureTests.swift`
@@ -1609,31 +1609,82 @@ When they select available time, energy, and an immediate intent
 Then Routina finds currently selectable recurring tasks and unfinished,
 uncanceled one-off tasks
 And it excludes canceled, paused, snoozed, and current-period-complete tasks
-And it derives a deterministic shortlist with at most six candidates
-And no task metadata is changed while the shortlist is built
+And it checks that every eligible task has explicit Importance and Urgency,
+Pressure, Thinking needed, and a time estimate
+And no visible task metadata is changed while readiness is checked
 
-Given the task-choice shortlist contains comparable and non-comparable tasks
-When the first pair is prepared
-Then tasks sharing Importance, Urgency, Pressure, and Thinking needed metadata
-are preferred for that initial tie-breaking comparison
+Given one or more eligible tasks are missing required task-choice data
+When the person asks Routina to find the right task
+Then it shows the missing-field counts
+And it does not make a recommendation until the matching More reviews are complete
 
-Given a person chooses one task from a pair
-When another candidate remains
-Then the preferred task faces the next candidate in a bounded tournament
-And no more than five comparisons are required for a six-task shortlist
-And the final winner is presented as a temporary recommendation
+Given all eligible tasks have the required data and two have the same
+condition-aware score and learned tie-break
+When the comparison is prepared
+Then Routina asks which task should come first
+
+Given a person chooses one task from a tie-breaking pair
+When that choice is saved
+Then the preferred task receives a separate learned score one tenth above the
+higher score in the pair
+And both tasks record that they participated in a comparison
+And Routina next asks only another unresolved condition-relevant tie
+
+Given no condition-relevant ties remain
+When the current condition is ranked
+Then the highest-ranked task is presented as a durable recommendation
+
+Given a person enables `Travel` but not `Admin` in More -> `Tag preferences`
+When two tasks are equal on their condition-aware metadata and the Travel task
+has a higher learned selected-tag score
+Then the Travel task ranks ahead of the Admin task
+And tags do not override a different metadata score
+
+Given a preferred task has a selected tag that the other task does not share
+When the person saves the comparison
+Then Routina advances only that selected tag's learned score
+And shared or unselected tags do not gain a preference
 
 Given a recommendation is shown
 When the person opens `Check task details`
 Then Routina uses the existing Home task-detail route
-And the temporary pairwise choices do not change Importance, Urgency, Pressure,
-Thinking needed, Priority, duration, scheduling, planning, task order, or logs
+And learned tie-breaks do not change Importance, Urgency, Pressure, Thinking
+needed, Priority, duration, scheduling, planning, task order, or logs
 
 Given the task-choice screen is rendered
 When it loads candidates or processes a comparison
 Then the reducer owns SwiftData work and the view contains no direct query or
 persistence mutation
-And the session retains only its bounded candidate presentation set
+And the view retains only the visible pair or final recommendation
+
+### iOS Missing Time Estimate Procedure Uses Direct Presets
+
+Area: Tasks / UI
+Decision links: [0480](../decisions/0480-add-guided-ios-time-estimates.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/MissingEstimatedDurationDataFeatureTests.swift`
+- `Tests/iOS/AppFeatureTests.swift`
+
+Given a person opens More -> `Add missing time estimates` on compact iOS
+When the procedure loads
+Then Routina includes repeating tasks with no estimated duration and unfinished,
+uncanceled one-off tasks with no estimate
+And completed or canceled one-off tasks and tasks with an estimate do not appear
+
+Given a task is shown
+When the person chooses 15m, 30m, 1h, 2h, 4h, 8h, or 20h, or enters custom
+Hours and Minutes
+Then Routina keeps that value visibly selected as a temporary draft
+When the person taps `Save & next`
+Then Routina saves that positive value as `estimatedDurationMinutes` and advances
+And it changes neither actual time spent, priority metadata, planning,
+scheduling, nor task order
+
+Given the time-estimate card is rendered
+Then all seven presets are visible over two wrapped rows without a scrolling
+choice list
+And Skip and Check task details retain the shared guided-review behavior
 
 ### iOS Missing Pressure Procedure Stays Focused And Complete
 

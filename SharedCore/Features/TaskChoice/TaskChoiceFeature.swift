@@ -78,6 +78,9 @@ struct TaskChoiceCandidate: Identifiable, Equatable {
     let pressure: RoutineTaskPressure
     let thinkingNeeded: RoutineTaskThinkingNeeded
     let estimatedDurationMinutes: Int?
+    let tags: [String]
+    let learnedTieBreakScore: Double
+    let comparisonCount: Int16
 
     init(task: RoutineTask) {
         id = task.id
@@ -87,11 +90,47 @@ struct TaskChoiceCandidate: Identifiable, Equatable {
         pressure = task.pressure
         thinkingNeeded = task.thinkingNeeded
         estimatedDurationMinutes = task.estimatedDurationMinutes
+        tags = task.tags
+        learnedTieBreakScore = task.taskChoiceTieBreakScore
+        comparisonCount = task.taskChoiceComparisonCount
+    }
+}
+
+struct TaskChoiceMissingData: Equatable {
+    struct Item: Identifiable, Equatable {
+        let title: String
+        let count: Int
+
+        var id: String { title }
+    }
+
+    var importanceCount = 0
+    var urgencyCount = 0
+    var pressureCount = 0
+    var thinkingNeededCount = 0
+    var estimatedDurationCount = 0
+
+    var isEmpty: Bool {
+        importanceCount == 0
+            && urgencyCount == 0
+            && pressureCount == 0
+            && thinkingNeededCount == 0
+            && estimatedDurationCount == 0
+    }
+
+    var items: [Item] {
+        [
+            Item(title: "Importance", count: importanceCount),
+            Item(title: "Urgency", count: urgencyCount),
+            Item(title: "Pressure", count: pressureCount),
+            Item(title: "Thinking needed", count: thinkingNeededCount),
+            Item(title: "Time estimate", count: estimatedDurationCount)
+        ].filter { $0.count > 0 }
     }
 }
 
 enum TaskChoiceCandidateRanking {
-    static let maximumCandidateCount = 6
+    static let tieBreakIncrement = 0.1
 
     static func isCurrentlySelectable(
         _ task: RoutineTask,
@@ -131,11 +170,12 @@ enum TaskChoiceCandidateRanking {
         )
     }
 
-    static func shortlist(
+    static func ranked(
         tasks: [RoutineTask],
-        condition: TaskChoiceCondition
+        condition: TaskChoiceCondition,
+        tagPreferences: [TaskChoiceTagPreference] = []
     ) -> [TaskChoiceCandidate] {
-        let ranked = tasks
+        tasks
             .map(TaskChoiceCandidate.init)
             .sorted { lhs, rhs in
                 let lhsScore = score(lhs, for: condition)
@@ -143,34 +183,58 @@ enum TaskChoiceCandidateRanking {
                 if lhsScore != rhsScore {
                     return lhsScore > rhsScore
                 }
+                let lhsTagScore = TaskChoiceTagPreferences.score(for: lhs.tags, in: tagPreferences)
+                let rhsTagScore = TaskChoiceTagPreferences.score(for: rhs.tags, in: tagPreferences)
+                if lhsTagScore != rhsTagScore {
+                    return lhsTagScore > rhsTagScore
+                }
+                if lhs.learnedTieBreakScore != rhs.learnedTieBreakScore {
+                    return lhs.learnedTieBreakScore > rhs.learnedTieBreakScore
+                }
                 let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
                 if titleComparison != .orderedSame {
                     return titleComparison == .orderedAscending
                 }
                 return lhs.id.uuidString < rhs.id.uuidString
             }
+    }
 
-        guard let firstCandidate = ranked.first else { return [] }
-        let comparisons = ranked.dropFirst().sorted { lhs, rhs in
-            let lhsSimilarity = metadataSimilarity(lhs, firstCandidate)
-            let rhsSimilarity = metadataSimilarity(rhs, firstCandidate)
-            if lhsSimilarity != rhsSimilarity {
-                return lhsSimilarity > rhsSimilarity
-            }
+    /// A comparison is needed only when task metadata makes two candidates equally relevant
+    /// for the current condition and their persisted learned tie-break is also equal.
+    static func nextComparisonPair(
+        tasks: [RoutineTask],
+        condition: TaskChoiceCondition,
+        tagPreferences: [TaskChoiceTagPreference] = []
+    ) -> (TaskChoiceCandidate, TaskChoiceCandidate)? {
+        let candidates = tasks.map(TaskChoiceCandidate.init)
+        let scoreGroups = Dictionary(grouping: candidates) { score($0, for: condition) }
 
-            let lhsScore = score(lhs, for: condition)
-            let rhsScore = score(rhs, for: condition)
-            if lhsScore != rhsScore {
-                return lhsScore > rhsScore
+        for score in scoreGroups.keys.sorted(by: >) {
+            guard let scoreGroup = scoreGroups[score] else { continue }
+            let tagScoreGroups = Dictionary(grouping: scoreGroup) {
+                tagPreferenceBucket(TaskChoiceTagPreferences.score(for: $0.tags, in: tagPreferences))
             }
-            let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
-            if titleComparison != .orderedSame {
-                return titleComparison == .orderedAscending
+            for tagScore in tagScoreGroups.keys.sorted(by: >) {
+                guard let tagScoreGroup = tagScoreGroups[tagScore] else { continue }
+                let tieGroups = Dictionary(grouping: tagScoreGroup) { tieBreakBucket($0.learnedTieBreakScore) }
+                for tieBreak in tieGroups.keys.sorted(by: >) {
+                    guard let tieGroup = tieGroups[tieBreak], tieGroup.count > 1 else { continue }
+                    let orderedTie = tieGroup.sorted { lhs, rhs in
+                        if lhs.comparisonCount != rhs.comparisonCount {
+                            return lhs.comparisonCount < rhs.comparisonCount
+                        }
+                        let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
+                        if titleComparison != .orderedSame {
+                            return titleComparison == .orderedAscending
+                        }
+                        return lhs.id.uuidString < rhs.id.uuidString
+                    }
+                    return (orderedTie[0], orderedTie[1])
+                }
             }
-            return lhs.id.uuidString < rhs.id.uuidString
         }
 
-        return [firstCandidate] + Array(comparisons.prefix(maximumCandidateCount - 1))
+        return nil
     }
 
     static func score(
@@ -193,16 +257,27 @@ enum TaskChoiceCandidateRanking {
         return score
     }
 
-    static func metadataSimilarity(
-        _ lhs: TaskChoiceCandidate,
-        _ rhs: TaskChoiceCandidate
-    ) -> Int {
-        var similarity = 0
-        if lhs.importance == rhs.importance { similarity += 1 }
-        if lhs.urgency == rhs.urgency { similarity += 1 }
-        if lhs.pressure == rhs.pressure { similarity += 1 }
-        if lhs.thinkingNeeded == rhs.thinkingNeeded { similarity += 1 }
-        return similarity
+    static func nextTieBreakScore(winner: TaskChoiceCandidate, loser: TaskChoiceCandidate) -> Double {
+        let rawValue = max(winner.learnedTieBreakScore, loser.learnedTieBreakScore) + tieBreakIncrement
+        return (rawValue * 10).rounded() / 10
+    }
+
+    static func missingData(for tasks: [RoutineTask]) -> TaskChoiceMissingData {
+        tasks.reduce(into: TaskChoiceMissingData()) { result, task in
+            if !task.hasExplicitImportance { result.importanceCount += 1 }
+            if !task.hasExplicitUrgency { result.urgencyCount += 1 }
+            if task.pressure == .none { result.pressureCount += 1 }
+            if task.thinkingNeeded == .none { result.thinkingNeededCount += 1 }
+            if task.estimatedDurationMinutes == nil { result.estimatedDurationCount += 1 }
+        }
+    }
+
+    private static func tieBreakBucket(_ score: Double) -> Int {
+        Int((score * 10).rounded())
+    }
+
+    private static func tagPreferenceBucket(_ score: Double) -> Int {
+        Int((score * 10).rounded())
     }
 
     private static func energyScore(
@@ -256,6 +331,7 @@ struct TaskChoiceFeature {
         enum Phase: Equatable {
             case setup
             case loading
+            case needsData
             case comparing
             case recommendation
             case empty
@@ -264,25 +340,26 @@ struct TaskChoiceFeature {
 
         var condition = TaskChoiceCondition()
         var phase: Phase = .setup
-        /// The short list is intentionally capped, so a pairwise session never retains a full task collection.
-        var candidates: [TaskChoiceCandidate] = []
-        var currentWinner: TaskChoiceCandidate?
-        var nextCandidateIndex = 1
-        var alternatives: [TaskChoiceCandidate] = []
+        /// The view retains only the visible pair or recommendation; the reducer fetches and ranks tasks off the render path.
+        var firstCandidate: TaskChoiceCandidate?
+        var secondCandidate: TaskChoiceCandidate?
+        var recommendedTask: TaskChoiceCandidate?
+        var missingData: TaskChoiceMissingData?
+        var candidateCount = 0
+        var completedComparisonCount = 0
+        var isSavingSelection = false
         var errorMessage: String?
 
-        var currentChallenger: TaskChoiceCandidate? {
-            guard candidates.indices.contains(nextCandidateIndex) else { return nil }
-            return candidates[nextCandidateIndex]
-        }
-
         var comparisonNumber: Int {
-            min(nextCandidateIndex, max(candidates.count - 1, 0))
+            completedComparisonCount + 1
         }
+    }
 
-        var comparisonCount: Int {
-            max(candidates.count - 1, 0)
-        }
+    enum LoadResult: Equatable {
+        case empty
+        case needsData(TaskChoiceMissingData, candidateCount: Int)
+        case comparison(TaskChoiceCandidate, TaskChoiceCandidate, candidateCount: Int)
+        case recommendation(TaskChoiceCandidate, candidateCount: Int)
     }
 
     @CasePathable
@@ -291,9 +368,11 @@ struct TaskChoiceFeature {
         case energyChanged(TaskChoiceEnergy)
         case intentChanged(TaskChoiceIntent)
         case findTasksTapped
-        case candidatesLoaded([TaskChoiceCandidate])
-        case candidatesLoadFailed
+        case tasksLoaded(LoadResult)
+        case tasksLoadFailed
         case preferredTaskSelected(UUID)
+        case comparisonSaved(TaskChoiceCandidate)
+        case comparisonSaveFailed
         case taskDetailsTapped(UUID)
         case startAgainTapped
         case delegate(Delegate)
@@ -305,6 +384,7 @@ struct TaskChoiceFeature {
     }
 
     @Dependency(\.modelContext) private var modelContext
+    @Dependency(\.appSettingsClient) private var appSettingsClient
     @Dependency(\.date.now) private var now
     @Dependency(\.calendar) private var calendar
 
@@ -325,50 +405,71 @@ struct TaskChoiceFeature {
 
             case .findTasksTapped:
                 state.phase = .loading
-                state.candidates = []
-                state.currentWinner = nil
-                state.nextCandidateIndex = 1
-                state.alternatives = []
+                state.firstCandidate = nil
+                state.secondCandidate = nil
+                state.recommendedTask = nil
+                state.missingData = nil
+                state.candidateCount = 0
+                state.completedComparisonCount = 0
+                state.isSavingSelection = false
                 state.errorMessage = nil
                 return loadCandidates(for: state.condition)
 
-            case let .candidatesLoaded(candidates):
-                state.candidates = candidates
-                state.currentWinner = candidates.first
-                state.nextCandidateIndex = 1
-                state.alternatives = []
+            case let .tasksLoaded(result):
                 state.errorMessage = nil
-                switch candidates.count {
-                case 0:
+                state.isSavingSelection = false
+                switch result {
+                case .empty:
                     state.phase = .empty
-                case 1:
-                    state.phase = .recommendation
-                default:
+                    state.candidateCount = 0
+                case let .needsData(missingData, candidateCount):
+                    state.phase = .needsData
+                    state.missingData = missingData
+                    state.candidateCount = candidateCount
+                case let .comparison(firstCandidate, secondCandidate, candidateCount):
                     state.phase = .comparing
+                    state.firstCandidate = firstCandidate
+                    state.secondCandidate = secondCandidate
+                    state.candidateCount = candidateCount
+                case let .recommendation(recommendedTask, candidateCount):
+                    state.phase = .recommendation
+                    state.recommendedTask = recommendedTask
+                    state.candidateCount = candidateCount
                 }
                 return .none
 
-            case .candidatesLoadFailed:
+            case .tasksLoadFailed:
                 state.phase = .failure
                 state.errorMessage = "Couldn’t load tasks. Try again."
                 return .none
 
             case let .preferredTaskSelected(taskID):
                 guard state.phase == .comparing,
-                      let currentWinner = state.currentWinner,
-                      let challenger = state.currentChallenger,
-                      taskID == currentWinner.id || taskID == challenger.id
+                      !state.isSavingSelection,
+                      let firstCandidate = state.firstCandidate,
+                      let secondCandidate = state.secondCandidate,
+                      taskID == firstCandidate.id || taskID == secondCandidate.id
                 else {
                     return .none
                 }
 
-                let losingTask = taskID == currentWinner.id ? challenger : currentWinner
-                state.currentWinner = taskID == currentWinner.id ? currentWinner : challenger
-                state.alternatives.append(losingTask)
-                state.nextCandidateIndex += 1
-                if state.currentChallenger == nil {
-                    state.phase = .recommendation
-                }
+                let winner = taskID == firstCandidate.id ? firstCandidate : secondCandidate
+                let loser = taskID == firstCandidate.id ? secondCandidate : firstCandidate
+                state.isSavingSelection = true
+                state.errorMessage = nil
+                return saveComparison(winner: winner, loser: loser)
+
+            case let .comparisonSaved(winner):
+                state.completedComparisonCount += 1
+                state.firstCandidate = winner
+                state.secondCandidate = nil
+                state.isSavingSelection = false
+                return loadCandidates(for: state.condition)
+
+            case .comparisonSaveFailed:
+                state.isSavingSelection = false
+                state.phase = .failure
+                state.errorMessage = "Couldn’t save that comparison. Try again."
                 return .none
 
             case let .taskDetailsTapped(taskID):
@@ -376,10 +477,13 @@ struct TaskChoiceFeature {
 
             case .startAgainTapped:
                 state.phase = .setup
-                state.candidates = []
-                state.currentWinner = nil
-                state.nextCandidateIndex = 1
-                state.alternatives = []
+                state.firstCandidate = nil
+                state.secondCandidate = nil
+                state.recommendedTask = nil
+                state.missingData = nil
+                state.candidateCount = 0
+                state.completedComparisonCount = 0
+                state.isSavingSelection = false
                 state.errorMessage = nil
                 return .none
 
@@ -407,12 +511,74 @@ struct TaskChoiceFeature {
                         calendar: calendar
                     )
                 }
-                send(.candidatesLoaded(
-                    TaskChoiceCandidateRanking.shortlist(tasks: selectableTasks, condition: condition)
-                ))
+                let missingData = TaskChoiceCandidateRanking.missingData(for: selectableTasks)
+                guard missingData.isEmpty else {
+                    send(.tasksLoaded(.needsData(missingData, candidateCount: selectableTasks.count)))
+                    return
+                }
+
+                let tagPreferences = appSettingsClient.taskChoiceTagPreferences()
+                let ranked = TaskChoiceCandidateRanking.ranked(
+                    tasks: selectableTasks,
+                    condition: condition,
+                    tagPreferences: tagPreferences
+                )
+                guard let recommendedTask = ranked.first else {
+                    send(.tasksLoaded(.empty))
+                    return
+                }
+                if let pair = TaskChoiceCandidateRanking.nextComparisonPair(
+                    tasks: selectableTasks,
+                    condition: condition,
+                    tagPreferences: tagPreferences
+                ) {
+                    send(.tasksLoaded(.comparison(pair.0, pair.1, candidateCount: ranked.count)))
+                } else {
+                    send(.tasksLoaded(.recommendation(recommendedTask, candidateCount: ranked.count)))
+                }
             } catch {
-                send(.candidatesLoadFailed)
+                send(.tasksLoadFailed)
             }
         }
+    }
+
+    private func saveComparison(
+        winner: TaskChoiceCandidate,
+        loser: TaskChoiceCandidate
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = modelContext()
+                guard let winnerTask = try context.fetch(TaskDetailFetchDescriptors.task(for: winner.id)).first,
+                      let loserTask = try context.fetch(TaskDetailFetchDescriptors.task(for: loser.id)).first
+                else {
+                    send(.comparisonSaveFailed)
+                    return
+                }
+
+                winnerTask.taskChoiceTieBreakScore = TaskChoiceCandidateRanking.nextTieBreakScore(
+                    winner: winner,
+                    loser: loser
+                )
+                winnerTask.taskChoiceComparisonCount = incrementComparisonCount(winnerTask.taskChoiceComparisonCount)
+                loserTask.taskChoiceComparisonCount = incrementComparisonCount(loserTask.taskChoiceComparisonCount)
+                try context.save()
+                appSettingsClient.setTaskChoiceTagPreferences(
+                    TaskChoiceTagPreferences.updating(
+                        appSettingsClient.taskChoiceTagPreferences(),
+                        preferredTaskTags: winnerTask.tags,
+                        otherTaskTags: loserTask.tags
+                    )
+                )
+                NotificationCenter.default.postRoutineDidUpdate()
+                send(.comparisonSaved(TaskChoiceCandidate(task: winnerTask)))
+            } catch {
+                send(.comparisonSaveFailed)
+            }
+        }
+    }
+
+    private func incrementComparisonCount(_ value: Int16) -> Int16 {
+        value == .max ? value : value + 1
     }
 }

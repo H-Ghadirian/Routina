@@ -16,8 +16,10 @@ struct AppFeature {
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
         var taskChoice = TaskChoiceFeature.State()
+        var taskChoiceTagPreferences = TaskChoiceTagPreferencesFeature.State()
         var missingPressureData = MissingTaskDataFeature.State(field: .pressure)
         var missingThinkingNeededData = MissingTaskDataFeature.State(field: .thinkingNeeded)
+        var missingEstimatedDurationData = MissingTaskDataFeature.State(field: .estimatedDuration)
         var missingImportanceData = MissingTaskMetadataFeature.State(field: .importance)
         var missingUrgencyData = MissingTaskMetadataFeature.State(field: .urgency)
     }
@@ -32,8 +34,10 @@ struct AppFeature {
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
         case taskChoice(TaskChoiceFeature.Action)
+        case taskChoiceTagPreferences(TaskChoiceTagPreferencesFeature.Action)
         case missingPressureData(MissingTaskDataFeature.Action)
         case missingThinkingNeededData(MissingTaskDataFeature.Action)
+        case missingEstimatedDurationData(MissingTaskDataFeature.Action)
         case missingImportanceData(MissingTaskMetadataFeature.Action)
         case missingUrgencyData(MissingTaskMetadataFeature.Action)
         case onAppear
@@ -62,11 +66,17 @@ struct AppFeature {
         Scope(state: \.taskChoice, action: \.taskChoice) {
             TaskChoiceFeature()
         }
+        Scope(state: \.taskChoiceTagPreferences, action: \.taskChoiceTagPreferences) {
+            TaskChoiceTagPreferencesFeature()
+        }
         Scope(state: \.missingPressureData, action: \.missingPressureData) {
             MissingTaskDataFeature(field: .pressure)
         }
         Scope(state: \.missingThinkingNeededData, action: \.missingThinkingNeededData) {
             MissingTaskDataFeature(field: .thinkingNeeded)
+        }
+        Scope(state: \.missingEstimatedDurationData, action: \.missingEstimatedDurationData) {
+            MissingTaskDataFeature(field: .estimatedDuration)
         }
         Scope(state: \.missingImportanceData, action: \.missingImportanceData) {
             MissingTaskMetadataFeature(field: .importance)
@@ -89,7 +99,8 @@ struct AppFeature {
             case let .taskChoice(.delegate(.taskDetailsRequested(taskID))):
                 return openTaskDetails(taskID, state: &state)
             case let .missingPressureData(.delegate(.taskDetailsRequested(taskID))),
-                 let .missingThinkingNeededData(.delegate(.taskDetailsRequested(taskID))):
+                 let .missingThinkingNeededData(.delegate(.taskDetailsRequested(taskID))),
+                 let .missingEstimatedDurationData(.delegate(.taskDetailsRequested(taskID))):
                 return openTaskDetails(taskID, state: &state)
             case let .missingImportanceData(.delegate(.taskDetailsRequested(taskID))),
                  let .missingUrgencyData(.delegate(.taskDetailsRequested(taskID))):

@@ -62,6 +62,13 @@ enum SettingsTagMutationActionHandler {
         appSettingsClient.setTagColors(updatedColors)
         SettingsTagEditor.loadedTagColors(updatedColors, state: &state)
 
+        let updatedTaskChoiceTagPreferences = TaskChoiceTagPreferences.replacing(
+            request.originalTagName,
+            with: request.cleanedName,
+            in: appSettingsClient.taskChoiceTagPreferences()
+        )
+        appSettingsClient.setTaskChoiceTagPreferences(updatedTaskChoiceTagPreferences)
+
         return SettingsTagExecution.rename(request, modelContext: modelContext)
     }
 
@@ -97,6 +104,12 @@ enum SettingsTagMutationActionHandler {
         )
         appSettingsClient.setTagColors(updatedColors)
         SettingsTagEditor.loadedTagColors(updatedColors, state: &state)
+
+        let updatedTaskChoiceTagPreferences = TaskChoiceTagPreferences.removing(
+            request.tagName,
+            from: appSettingsClient.taskChoiceTagPreferences()
+        )
+        appSettingsClient.setTaskChoiceTagPreferences(updatedTaskChoiceTagPreferences)
 
         return SettingsTagExecution.delete(request, modelContext: modelContext)
     }

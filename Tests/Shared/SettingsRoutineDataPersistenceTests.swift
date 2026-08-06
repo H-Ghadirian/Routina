@@ -123,6 +123,7 @@ struct SettingsRoutineDataPersistenceTests {
             UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue,
             UserDefaultStringValueKey.appSettingRelatedTagRules.rawValue,
             UserDefaultStringValueKey.appSettingTagColors.rawValue,
+            UserDefaultStringValueKey.appSettingTaskChoiceTagPreferences.rawValue,
             UserDefaultStringValueKey.appSettingFastFilterTags.rawValue,
             UserDefaultStringValueKey.appSettingIOSStatsDashboardHiddenItemIDs.rawValue,
             UserDefaultStringValueKey.appSettingMacStatsDashboardItemOrderIDs.rawValue,
@@ -166,6 +167,8 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingDayPlanCalendarListRowHiddenFields] = "icon,rowColor"
         defaults[.appSettingRelatedTagRules] = "[{\"tag\":\"Focus\",\"relatedTags\":[\"Deep Work\"]}]"
         defaults[.appSettingTagColors] = "{\"Focus\":\"#112233\"}"
+        let taskChoiceTagPreferencesRawValue = "[{\"tag\":\"Travel\",\"score\":0.2,\"comparisonCount\":3}]"
+        defaults[.appSettingTaskChoiceTagPreferences] = taskChoiceTagPreferencesRawValue
         defaults[.appSettingFastFilterTags] = "Focus,Health"
         defaults[.appSettingIOSStatsDashboardHiddenItemIDs] = "movement"
         defaults[.appSettingMacStatsDashboardItemOrderIDs] = "done,focus"
@@ -211,6 +214,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.selectedAppIcon == AppIconOption.teal.rawValue)
         #expect(backup.userPreferences?.dayPlanCalendarListRowHiddenFields == "icon,rowColor")
         #expect(backup.userPreferences?.tagColors == "{\"Focus\":\"#112233\"}")
+        #expect(backup.userPreferences?.taskChoiceTagPreferences == taskChoiceTagPreferencesRawValue)
         #expect(backup.userPreferences?.taskSharingEnabled == true)
         #expect(backup.userPreferences?.taskRelationshipVisualizerEnabled == true)
         #expect(backup.userPreferences?.placesEnabled == true)
@@ -238,6 +242,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.dayPlanCalendarListRowHiddenFields == "icon,rowColor")
         #expect(restored.relatedTagRules == "[{\"tag\":\"Focus\",\"relatedTags\":[\"Deep Work\"]}]")
         #expect(restored.tagColors == "{\"Focus\":\"#112233\"}")
+        #expect(restored.taskChoiceTagPreferences == taskChoiceTagPreferencesRawValue)
         #expect(restored.fastFilterTags == "Focus,Health")
         #expect(restored.customTaskSections == customTaskSectionsRawValue)
         #expect(restored.macHomeTaskListSectionOrder == macHomeTaskListSectionOrder)

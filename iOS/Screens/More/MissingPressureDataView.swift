@@ -49,15 +49,19 @@ struct MissingTaskDataView: View {
                 Text(store.field.question)
                     .font(.headline)
 
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: store.field.navigationTitle,
-                    options: store.field.values,
-                    selection: valueBinding(for: task),
-                    fillsAvailableWidth: true
-                ) { value in
-                    Text(value.title)
+                if store.field == .estimatedDuration {
+                    timeEstimateChoices(for: task)
+                } else {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: store.field.navigationTitle,
+                        options: store.field.values,
+                        selection: valueBinding(for: task),
+                        fillsAvailableWidth: true
+                    ) { value in
+                        Text(value.title)
+                    }
+                    .disabled(store.isSaving)
                 }
-                .disabled(store.isSaving)
 
                 Text(store.field.instruction)
                     .font(.footnote)
@@ -65,6 +69,28 @@ struct MissingTaskDataView: View {
                     .multilineTextAlignment(.center)
 
                 Spacer(minLength: 0)
+
+                if store.field == .estimatedDuration {
+                    if let validationMessage = store.timeEstimateValidationMessage {
+                        Text(validationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    Button {
+                        store.send(.saveSelectedTimeEstimate(taskID: task.id))
+                    } label: {
+                        Label(
+                            store.selectedTimeEstimateTitle.map { "Save \($0) & next" } ?? "Save & next",
+                            systemImage: "checkmark"
+                        )
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(store.isSaving || store.selectedTimeEstimateMinutes == nil)
+                }
 
                 HStack(spacing: 12) {
                     Button {
@@ -202,6 +228,113 @@ struct MissingTaskDataView: View {
         Binding(
             get: { store.field.missingValue },
             set: { store.send(.valueSelected(taskID: task.id, value: $0)) }
+        )
+    }
+
+    private func timeEstimateChoices(
+        for task: MissingTaskDataFeature.State.Task
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Quick picks")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Time estimate presets",
+                options: store.field.values,
+                selection: timeEstimateValueBinding(for: task),
+                minimumSegmentWidth: 58,
+                horizontalPadding: 6,
+                verticalPadding: 9,
+                fillsAvailableWidth: true,
+                maximumSegmentsPerRow: store.field.maximumSegmentsPerRow
+            ) { value in
+                Text(value.title)
+            }
+            .disabled(store.isSaving)
+
+            Text("Or enter a custom time")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                customTimeField(
+                    title: "Hours",
+                    placeholder: "0",
+                    text: customHoursBinding
+                )
+                customTimeField(
+                    title: "Minutes",
+                    placeholder: "0",
+                    text: customMinutesBinding
+                )
+            }
+            .disabled(store.isSaving)
+        }
+    }
+
+    private func customTimeField(
+        title: String,
+        placeholder: String,
+        text: Binding<String>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            TextField(placeholder, text: text)
+                .keyboardType(.numberPad)
+                .font(.title3.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.secondary.opacity(0.10))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                }
+                .accessibilityLabel(title)
+        }
+    }
+
+    private func timeEstimateValueBinding(
+        for task: MissingTaskDataFeature.State.Task
+    ) -> Binding<GuidedMissingTaskDataValue> {
+        Binding(
+            get: { store.selectedTimeEstimateValue },
+            set: { store.send(.valueSelected(taskID: task.id, value: $0)) }
+        )
+    }
+
+    private var customHoursBinding: Binding<String> {
+        Binding(
+            get: { store.customTimeEstimateHours },
+            set: {
+                store.send(
+                    .customTimeEstimateChanged(
+                        hours: $0,
+                        minutes: store.customTimeEstimateMinutes
+                    )
+                )
+            }
+        )
+    }
+
+    private var customMinutesBinding: Binding<String> {
+        Binding(
+            get: { store.customTimeEstimateMinutes },
+            set: {
+                store.send(
+                    .customTimeEstimateChanged(
+                        hours: store.customTimeEstimateHours,
+                        minutes: $0
+                    )
+                )
+            }
         )
     }
 }

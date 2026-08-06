@@ -74,6 +74,10 @@ final class RoutineTask {
     var estimatedDurationMinutes: Int?
     var actualDurationMinutes: Int?
     var storyPoints: Int?
+    /// A learned, task-choice-only tie-break. It never changes the visible task metadata.
+    var taskChoiceTieBreakScore: Double = 0
+    /// The number of persisted task-choice comparisons this task has participated in.
+    var taskChoiceComparisonCount: Int16 = 0
     var focusModeEnabled: Bool = false
     var trackingCadenceEnabled: Bool = true
     var trackingNudgesEnabled: Bool = true
@@ -457,6 +461,8 @@ final class RoutineTask {
         estimatedDurationMinutes: Int? = nil,
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
+        taskChoiceTieBreakScore: Double = 0,
+        taskChoiceComparisonCount: Int16 = 0,
         focusModeEnabled: Bool = false,
         trackingCadenceEnabled: Bool = true,
         trackingNudgesEnabled: Bool = true,
@@ -562,6 +568,10 @@ final class RoutineTask {
         self.estimatedDurationMinutes = Self.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
+        self.taskChoiceTieBreakScore = taskChoiceTieBreakScore.isFinite
+            ? max(taskChoiceTieBreakScore, 0)
+            : 0
+        self.taskChoiceComparisonCount = max(taskChoiceComparisonCount, 0)
         self.focusModeEnabled = focusModeEnabled
         self.trackingCadenceEnabled = resolvedTrackingCadenceEnabled
         self.trackingNudgesEnabled = resolvedScheduleMode.usesRoutineCadence
@@ -897,6 +907,8 @@ final class RoutineTask {
             estimatedDurationMinutes: estimatedDurationMinutes,
             actualDurationMinutes: actualDurationMinutes,
             storyPoints: storyPoints,
+            taskChoiceTieBreakScore: taskChoiceTieBreakScore,
+            taskChoiceComparisonCount: taskChoiceComparisonCount,
             focusModeEnabled: focusModeEnabled,
             trackingCadenceEnabled: trackingCadenceEnabled,
             trackingNudgesEnabled: trackingNudgesEnabled,

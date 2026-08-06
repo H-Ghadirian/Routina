@@ -104,6 +104,8 @@ extension SettingsRoutineDataPersistence {
             var estimatedDurationMinutes: Int?
             var actualDurationMinutes: Int?
             var storyPoints: Int?
+            var taskChoiceTieBreakScore: Double?
+            var taskChoiceComparisonCount: Int16?
             var showsTaskDetailHeatmap: Bool?
             var showsTaskDetailHistory: Bool?
             var showsTaskDetailPriority: Bool?
@@ -355,6 +357,7 @@ extension SettingsRoutineDataPersistence {
             var dayPlanCalendarListRowHiddenFields: String?
             var relatedTagRules: String?
             var tagColors: String?
+            var taskChoiceTagPreferences: String?
             var fastFilterTags: String?
             var iOSStatsDashboardHiddenItemIDs: String?
             var iOSStatsDashboardItemOrderIDs: String?
