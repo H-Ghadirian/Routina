@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0479](0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md) adds contextual task choice:** Compact iOS More asks for available time, energy, and intent, then compares a bounded, metadata-similar shortlist head-to-head to recommend a next task without changing durable task metadata.
+
 - **[0478](0478-add-guided-ios-thinking-needed-review.md) adds Thinking needed cleanup:** Compact iOS More offers a one-card-at-a-time Thinking needed procedure that loads only `None` values, persists a direct Low/Medium/High choice, and shares the bounded Pressure review architecture without changing task priority or scheduling.
 
 - **[0477](0477-keep-ios-ui-benchmarks-dev-hosted-and-explicitly-linked.md) keeps iOS UI benchmarks runnable:** Simulator UI tests consistently host the Dev app through a dedicated performance scheme, and both iOS app targets directly link their required observation and navigation runtime products.
@@ -429,6 +431,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0479](0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md) | Use Bounded Pairwise Comparisons for iOS Task Choice | Accepted | 2026-08-06 |
 | [0478](0478-add-guided-ios-thinking-needed-review.md) | Add Guided iOS Thinking Needed Review | Accepted | 2026-08-06 |
 | [0477](0477-keep-ios-ui-benchmarks-dev-hosted-and-explicitly-linked.md) | Keep iOS UI Benchmarks Dev-Hosted and Explicitly Linked | Accepted | 2026-08-05 |
 | [0476](0476-keep-guided-review-card-and-detail-work-bounded.md) | Keep Guided Review Card and Detail Work Bounded | Accepted | 2026-08-05 |

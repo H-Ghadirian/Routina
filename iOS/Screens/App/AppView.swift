@@ -83,6 +83,7 @@ let tabView = TabView(
                 goalsStore: store.scope(state: \.goals, action: \.goals),
                 statsStore: store.scope(state: \.stats, action: \.stats),
                 settingsStore: store.scope(state: \.settings, action: \.settings),
+                taskChoiceStore: store.scope(state: \.taskChoice, action: \.taskChoice),
                 missingPressureDataStore: store.scope(
                     state: \.missingPressureData,
                     action: \.missingPressureData
@@ -679,6 +680,7 @@ private enum AppMoreDestination: Hashable {
     case goals
     case stats
     case settings
+    case taskChoice
     case missingPressureData
     case missingThinkingNeededData
     case missingImportanceData
@@ -691,6 +693,7 @@ private struct AppMoreNavigationView: View {
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
+    let taskChoiceStore: StoreOf<TaskChoiceFeature>
     let missingPressureDataStore: StoreOf<MissingTaskDataFeature>
     let missingThinkingNeededDataStore: StoreOf<MissingTaskDataFeature>
     let missingImportanceDataStore: StoreOf<MissingTaskMetadataFeature>
@@ -710,6 +713,9 @@ private struct AppMoreNavigationView: View {
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.settings)) {
                     destinationView(for: .settings)
+                }
+                .navigationDestination(isPresented: isDestinationPresented(.taskChoice)) {
+                    destinationView(for: .taskChoice)
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.missingPressureData)) {
                     destinationView(for: .missingPressureData)
@@ -741,6 +747,15 @@ private struct AppMoreNavigationView: View {
     private var moreList: some View {
         List {
             Section {
+                moreButton(destination: .taskChoice) {
+                    SettingsNavigationRow(
+                        icon: "sparkles",
+                        tint: .blue,
+                        title: "Help me choose",
+                        subtitle: "Compare tasks for your current conditions"
+                    )
+                }
+
                 moreButton(destination: .missingPressureData) {
                     SettingsNavigationRow(
                         icon: "exclamationmark.circle",
@@ -861,9 +876,11 @@ private struct AppMoreNavigationView: View {
                 store: settingsStore,
                 ownsCompactNavigationStack: false
             )
-            .onAppear {
-                selectTabAfterNavigationGesture(.settings)
-            }
+                .onAppear {
+                    selectTabAfterNavigationGesture(.settings)
+                }
+        case .taskChoice:
+            TaskChoiceView(store: taskChoiceStore)
         case .missingPressureData:
             MissingTaskDataView(store: missingPressureDataStore)
         case .missingThinkingNeededData:

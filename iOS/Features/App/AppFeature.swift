@@ -15,6 +15,7 @@ struct AppFeature {
         var timeline = TimelineFeature.State()
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
+        var taskChoice = TaskChoiceFeature.State()
         var missingPressureData = MissingTaskDataFeature.State(field: .pressure)
         var missingThinkingNeededData = MissingTaskDataFeature.State(field: .thinkingNeeded)
         var missingImportanceData = MissingTaskMetadataFeature.State(field: .importance)
@@ -30,6 +31,7 @@ struct AppFeature {
         case timeline(TimelineFeature.Action)
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
+        case taskChoice(TaskChoiceFeature.Action)
         case missingPressureData(MissingTaskDataFeature.Action)
         case missingThinkingNeededData(MissingTaskDataFeature.Action)
         case missingImportanceData(MissingTaskMetadataFeature.Action)
@@ -57,6 +59,9 @@ struct AppFeature {
         Scope(state: \.settings, action: \.settings) {
             SettingsFeature()
         }
+        Scope(state: \.taskChoice, action: \.taskChoice) {
+            TaskChoiceFeature()
+        }
         Scope(state: \.missingPressureData, action: \.missingPressureData) {
             MissingTaskDataFeature(field: .pressure)
         }
@@ -81,6 +86,8 @@ struct AppFeature {
                 return .send(.home(.applyFastTagFilter(tag)))
             case let .openDeepLink(deepLink):
                 return handleDeepLink(deepLink, state: &state)
+            case let .taskChoice(.delegate(.taskDetailsRequested(taskID))):
+                return openTaskDetails(taskID, state: &state)
             case let .missingPressureData(.delegate(.taskDetailsRequested(taskID))),
                  let .missingThinkingNeededData(.delegate(.taskDetailsRequested(taskID))):
                 return openTaskDetails(taskID, state: &state)

@@ -1595,6 +1595,46 @@ instead of walking whole history from a scrolling section builder
 And raw persistence saves do not duplicate semantic refresh notifications
 And bursts of semantic updates are coalesced before Stats reloads its snapshot
 
+### iOS Task Choice Uses Bounded Pairwise Comparisons
+
+Area: Tasks / UI
+Decision links: [0479](../decisions/0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/TaskChoiceFeatureTests.swift`
+- `Tests/iOS/AppFeatureTests.swift`
+
+Given a person opens More -> `Help me choose` on compact iOS
+When they select available time, energy, and an immediate intent
+Then Routina finds currently selectable recurring tasks and unfinished,
+uncanceled one-off tasks
+And it excludes canceled, paused, snoozed, and current-period-complete tasks
+And it derives a deterministic shortlist with at most six candidates
+And no task metadata is changed while the shortlist is built
+
+Given the task-choice shortlist contains comparable and non-comparable tasks
+When the first pair is prepared
+Then tasks sharing Importance, Urgency, Pressure, and Thinking needed metadata
+are preferred for that initial tie-breaking comparison
+
+Given a person chooses one task from a pair
+When another candidate remains
+Then the preferred task faces the next candidate in a bounded tournament
+And no more than five comparisons are required for a six-task shortlist
+And the final winner is presented as a temporary recommendation
+
+Given a recommendation is shown
+When the person opens `Check task details`
+Then Routina uses the existing Home task-detail route
+And the temporary pairwise choices do not change Importance, Urgency, Pressure,
+Thinking needed, Priority, duration, scheduling, planning, task order, or logs
+
+Given the task-choice screen is rendered
+When it loads candidates or processes a comparison
+Then the reducer owns SwiftData work and the view contains no direct query or
+persistence mutation
+And the session retains only its bounded candidate presentation set
+
 ### iOS Missing Pressure Procedure Stays Focused And Complete
 
 Area: Tasks / UI

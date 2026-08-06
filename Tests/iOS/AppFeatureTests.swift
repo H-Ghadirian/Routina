@@ -191,6 +191,28 @@ struct AppFeatureTests {
     }
 
     @Test
+    func taskChoiceDetailsRequest_opensTheTaskFromHome() async {
+        let taskID = UUID()
+        let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .more,
+                home: HomeFeature.State(routineTasks: [task])
+            )
+        ) {
+            AppFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .taskChoice(.delegate(.taskDetailsRequested(taskID)))
+        ) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .home
+        }
+    }
+
+    @Test
     func missingTaskMetadataTaskDetailsRequests_openTheTaskFromHome() async {
         let taskID = UUID()
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
