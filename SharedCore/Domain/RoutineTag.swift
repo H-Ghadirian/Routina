@@ -13,6 +13,10 @@ struct RoutineTagSummary: Equatable, Identifiable, Sendable {
     var id: String {
         RoutineTag.normalized(name) ?? name
     }
+
+    var totalLinkedItemCount: Int {
+        linkedRoutineCount + linkedGoalCount + linkedNoteCount + linkedEventCount
+    }
 }
 
 enum RoutineTagColors {
@@ -97,161 +101,14 @@ struct RoutineRelatedTagRule: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-/// A user-selected tag that may resolve otherwise equal task-choice candidates.
-/// This is deliberately separate from a task's descriptive metadata and priority.
-struct TaskChoiceTagPreference: Codable, Equatable, Identifiable, Sendable {
-    var tag: String
-    var score: Double = 0
-    var comparisonCount = 0
+/// A conservative, human-confirmed proposal to merge two inflection variants.
+/// It never changes persisted tags by itself.
+struct RoutineTagNormalizationSuggestion: Equatable, Identifiable, Sendable {
+    let source: RoutineTagSummary
+    let replacement: RoutineTagSummary
 
     var id: String {
-        RoutineTag.normalized(tag) ?? tag
-    }
-}
-
-enum TaskChoiceTagPreferences {
-    static let scoreIncrement = 0.1
-
-    static func sanitized(_ preferences: [TaskChoiceTagPreference]) -> [TaskChoiceTagPreference] {
-        var byTag: [String: TaskChoiceTagPreference] = [:]
-
-        for preference in preferences {
-            guard let cleanedTag = RoutineTag.cleaned(preference.tag),
-                  let normalizedTag = RoutineTag.normalized(cleanedTag) else {
-                continue
-            }
-            let normalizedScore = preference.score.isFinite ? max(preference.score, 0) : 0
-            let normalizedCount = max(preference.comparisonCount, 0)
-            let normalizedPreference = TaskChoiceTagPreference(
-                tag: cleanedTag,
-                score: normalizedScore,
-                comparisonCount: normalizedCount
-            )
-
-            guard let existing = byTag[normalizedTag] else {
-                byTag[normalizedTag] = normalizedPreference
-                continue
-            }
-            byTag[normalizedTag] = TaskChoiceTagPreference(
-                tag: existing.tag,
-                score: max(existing.score, normalizedPreference.score),
-                comparisonCount: max(existing.comparisonCount, normalizedPreference.comparisonCount)
-            )
-        }
-
-        return byTag.values.sorted {
-            $0.tag.localizedCaseInsensitiveCompare($1.tag) == .orderedAscending
-        }
-    }
-
-    static func matchingPreferences(
-        for taskTags: [String],
-        in preferences: [TaskChoiceTagPreference]
-    ) -> [TaskChoiceTagPreference] {
-        let preferencesByTag = Dictionary(
-            uniqueKeysWithValues: sanitized(preferences).map { ($0.id, $0) }
-        )
-        let uniqueTaskTagIDs = Set(taskTags.compactMap(RoutineTag.normalized))
-        return uniqueTaskTagIDs.compactMap { preferencesByTag[$0] }.sorted {
-            $0.tag.localizedCaseInsensitiveCompare($1.tag) == .orderedAscending
-        }
-    }
-
-    static func score(
-        for taskTags: [String],
-        in preferences: [TaskChoiceTagPreference]
-    ) -> Double {
-        let matches = matchingPreferences(for: taskTags, in: preferences)
-        guard !matches.isEmpty else { return 0 }
-        return matches.map(\.score).reduce(0, +) / Double(matches.count)
-    }
-
-    static func updating(
-        _ preferences: [TaskChoiceTagPreference],
-        preferredTaskTags: [String],
-        otherTaskTags: [String]
-    ) -> [TaskChoiceTagPreference] {
-        var updated = sanitized(preferences)
-        let preferredMatches = matchingPreferences(for: preferredTaskTags, in: updated)
-        let otherMatches = matchingPreferences(for: otherTaskTags, in: updated)
-        let preferredIDs = Set(preferredMatches.map(\.id))
-        let otherIDs = Set(otherMatches.map(\.id))
-        let distinctPreferredIDs = preferredIDs.subtracting(otherIDs)
-        let distinctOtherIDs = otherIDs.subtracting(preferredIDs)
-
-        guard !distinctPreferredIDs.isEmpty else { return updated }
-
-        let comparedScores = preferredMatches
-            .filter { distinctPreferredIDs.contains($0.id) }
-            .map(\.score)
-            + otherMatches
-            .filter { distinctOtherIDs.contains($0.id) }
-            .map(\.score)
-        let advancedScore = ((comparedScores.max() ?? 0) + scoreIncrement) * 10
-        let nextScore = advancedScore.rounded() / 10
-
-        updated = updated.map { preference in
-            guard distinctPreferredIDs.contains(preference.id) || distinctOtherIDs.contains(preference.id) else {
-                return preference
-            }
-            var updatedPreference = preference
-            updatedPreference.comparisonCount += 1
-            if distinctPreferredIDs.contains(preference.id) {
-                updatedPreference.score = max(updatedPreference.score, nextScore)
-            }
-            return updatedPreference
-        }
-        return sanitized(updated)
-    }
-
-    static func toggling(
-        tag: String,
-        isEnabled: Bool,
-        in preferences: [TaskChoiceTagPreference]
-    ) -> [TaskChoiceTagPreference] {
-        guard let cleanedTag = RoutineTag.cleaned(tag),
-              let normalizedTag = RoutineTag.normalized(cleanedTag) else {
-            return sanitized(preferences)
-        }
-
-        let withoutTag = sanitized(preferences).filter { $0.id != normalizedTag }
-        return isEnabled
-            ? sanitized(withoutTag + [TaskChoiceTagPreference(tag: cleanedTag)])
-            : withoutTag
-    }
-
-    static func replacing(
-        _ tag: String,
-        with replacement: String,
-        in preferences: [TaskChoiceTagPreference]
-    ) -> [TaskChoiceTagPreference] {
-        guard let normalizedTag = RoutineTag.normalized(tag),
-              let cleanedReplacement = RoutineTag.cleaned(replacement) else {
-            return sanitized(preferences)
-        }
-
-        return sanitized(preferences.map { preference in
-            guard preference.id == normalizedTag else { return preference }
-            var updatedPreference = preference
-            updatedPreference.tag = cleanedReplacement
-            return updatedPreference
-        })
-    }
-
-    static func removing(
-        _ tag: String,
-        from preferences: [TaskChoiceTagPreference]
-    ) -> [TaskChoiceTagPreference] {
-        guard let normalizedTag = RoutineTag.normalized(tag) else {
-            return sanitized(preferences)
-        }
-        return sanitized(preferences).filter { $0.id != normalizedTag }
-    }
-
-    static func resettingScores(in preferences: [TaskChoiceTagPreference]) -> [TaskChoiceTagPreference] {
-        sanitized(preferences).map {
-            TaskChoiceTagPreference(tag: $0.tag)
-        }
+        "\(source.id)->\(replacement.id)"
     }
 }
 
@@ -269,6 +126,89 @@ enum RoutineTag {
     static func normalized(_ value: String) -> String? {
         guard let cleaned = cleaned(value) else { return nil }
         return cleaned.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+    }
+
+    /// Finds conservative English inflection variants such as `clean` and
+    /// `Cleaning`. Semantic matching is deliberately out of scope: a person
+    /// must first confirm every proposal before the global rename is performed.
+    static func normalizationSuggestions(
+        from summaries: [RoutineTagSummary]
+    ) -> [RoutineTagNormalizationSuggestion] {
+        let groups = Dictionary(grouping: summaries) { normalizationKey(for: $0.name) }
+
+        return groups.values.flatMap { group -> [RoutineTagNormalizationSuggestion] in
+            let validGroup = group.compactMap { summary -> RoutineTagSummary? in
+                normalizationKey(for: summary.name) == nil ? nil : summary
+            }
+            guard validGroup.count > 1 else { return [] }
+
+            let ordered = validGroup.sorted(by: normalizationPreference)
+            guard let replacement = ordered.first else { return [] }
+            return ordered.dropFirst().map {
+                RoutineTagNormalizationSuggestion(source: $0, replacement: replacement)
+            }
+        }
+        .sorted { lhs, rhs in
+            let sourceComparison = lhs.source.name.localizedCaseInsensitiveCompare(rhs.source.name)
+            if sourceComparison != .orderedSame {
+                return sourceComparison == .orderedAscending
+            }
+            return lhs.replacement.name.localizedCaseInsensitiveCompare(rhs.replacement.name) == .orderedAscending
+        }
+    }
+
+    private static func normalizationPreference(
+        _ lhs: RoutineTagSummary,
+        _ rhs: RoutineTagSummary
+    ) -> Bool {
+        if lhs.totalLinkedItemCount != rhs.totalLinkedItemCount {
+            return lhs.totalLinkedItemCount > rhs.totalLinkedItemCount
+        }
+        if lhs.name.count != rhs.name.count {
+            return lhs.name.count < rhs.name.count
+        }
+        return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+    }
+
+    private static func normalizationKey(for value: String) -> String? {
+        guard let cleaned = cleaned(value) else { return nil }
+        let words = cleaned
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .lowercased()
+            .split(separator: " ")
+        guard !words.isEmpty,
+              words.allSatisfy({ $0.allSatisfy(\.isLetter) }) else {
+            return nil
+        }
+        return words.map { inflectionStem(String($0)) }.joined(separator: " ")
+    }
+
+    private static func inflectionStem(_ word: String) -> String {
+        guard word.count > 3 else { return word }
+
+        if word.count > 5, word.hasSuffix("ies") {
+            return "\(word.dropLast(3))y"
+        }
+
+        if word.count > 5, word.hasSuffix("ing") {
+            var stem = String(word.dropLast(3))
+            let characters = Array(stem)
+            if characters.count >= 2, characters[characters.count - 1] == characters[characters.count - 2] {
+                stem.removeLast()
+            }
+            return stem
+        }
+
+        if word.count > 4,
+           (word.hasSuffix("xes") || word.hasSuffix("zes") || word.hasSuffix("ches") || word.hasSuffix("shes")) {
+            return String(word.dropLast(2))
+        }
+
+        if word.count > 3, word.hasSuffix("s"), !word.hasSuffix("ss") {
+            return String(word.dropLast())
+        }
+
+        return word
     }
 
     static func parseDraft(_ input: String) -> [String] {

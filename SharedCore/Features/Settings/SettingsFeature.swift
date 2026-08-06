@@ -65,6 +65,7 @@ struct SettingsFeature {
         case setDeletePlaceConfirmation(Bool)
         case setDeleteTagConfirmation(Bool)
         case setTagRenameSheet(Bool)
+        case setTagNormalizationConfirmation(Bool)
         case placesLoaded([RoutinePlaceSummary])
         case tagsLoaded([RoutineTagSummary])
         case fastFilterTagsLoaded([String])
@@ -88,6 +89,8 @@ struct SettingsFeature {
         case savePlaceTapped
         case renameTagTapped(String)
         case saveTagRenameTapped
+        case normalizeTagSuggestionTapped(sourceTagName: String, replacementTagName: String)
+        case normalizeTagSuggestionConfirmed
         case deletePlaceTapped(UUID)
         case deleteTagTapped(String)
         case deletePlaceConfirmed
@@ -574,6 +577,12 @@ struct SettingsFeature {
                     state: &state.tags
                 )
 
+            case let .setTagNormalizationConfirmation(isPresented):
+                return SettingsTagMutationActionHandler.setTagNormalizationConfirmation(
+                    isPresented,
+                    state: &state.tags
+                )
+
             case let .placesLoaded(places):
                 return SettingsPlaceActionHandler.placesLoaded(
                     places,
@@ -721,6 +730,20 @@ struct SettingsFeature {
 
             case .saveTagRenameTapped:
                 return SettingsTagMutationActionHandler.saveTagRenameTapped(
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient,
+                    modelContext: self.modelContext
+                )
+
+            case let .normalizeTagSuggestionTapped(sourceTagName, replacementTagName):
+                return SettingsTagMutationActionHandler.normalizeTagSuggestionTapped(
+                    sourceTagName: sourceTagName,
+                    replacementTagName: replacementTagName,
+                    state: &state.tags
+                )
+
+            case .normalizeTagSuggestionConfirmed:
+                return SettingsTagMutationActionHandler.normalizeTagSuggestionConfirmed(
                     state: &state.tags,
                     appSettingsClient: self.appSettingsClient,
                     modelContext: self.modelContext

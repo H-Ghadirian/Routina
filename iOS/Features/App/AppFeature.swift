@@ -16,7 +16,6 @@ struct AppFeature {
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
         var taskChoice = TaskChoiceFeature.State()
-        var taskChoiceTagPreferences = TaskChoiceTagPreferencesFeature.State()
         var missingPressureData = MissingTaskDataFeature.State(field: .pressure)
         var missingThinkingNeededData = MissingTaskDataFeature.State(field: .thinkingNeeded)
         var missingEstimatedDurationData = MissingTaskDataFeature.State(field: .estimatedDuration)
@@ -34,7 +33,6 @@ struct AppFeature {
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
         case taskChoice(TaskChoiceFeature.Action)
-        case taskChoiceTagPreferences(TaskChoiceTagPreferencesFeature.Action)
         case missingPressureData(MissingTaskDataFeature.Action)
         case missingThinkingNeededData(MissingTaskDataFeature.Action)
         case missingEstimatedDurationData(MissingTaskDataFeature.Action)
@@ -65,9 +63,6 @@ struct AppFeature {
         }
         Scope(state: \.taskChoice, action: \.taskChoice) {
             TaskChoiceFeature()
-        }
-        Scope(state: \.taskChoiceTagPreferences, action: \.taskChoiceTagPreferences) {
-            TaskChoiceTagPreferencesFeature()
         }
         Scope(state: \.missingPressureData, action: \.missingPressureData) {
             MissingTaskDataFeature(field: .pressure)

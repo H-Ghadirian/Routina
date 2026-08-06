@@ -31,7 +31,9 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
-- **[0482](0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md) refines [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md):** iOS users opt selected tags into a backed-up learned preference layer that resolves metadata ties without changing task fields.
+- **[0485](0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md) supersedes [0483](superseded/0483-progressively-suggest-ios-task-choice-tags.md) and [0482](superseded/0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md):** Routina removes manual tag-preference setup, prompts, persistence, and task-choice ranking while automatic tag intelligence is designed separately.
+
+- **[0484](0484-confirm-conservative-mac-tag-normalization.md) adds confirmation-based tag cleanup:** Mac Settings proposes only conservative tag word-form variants and reuses the global rename transaction after explicit confirmation.
 
 - **[0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md) supersedes [0479](0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md):** iOS Task Choice requires complete metadata, stores a separate learned tie-break, resolves only condition-relevant ties, and then makes a durable contextual suggestion.
 
@@ -435,7 +437,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
-| [0482](0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md) | Use Opt-In Tag Preferences to Refine iOS Task Choice | Accepted | 2026-08-06 |
+| [0485](0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md) | Remove Opt-In Tag Preferences Pending Automatic Tag Intelligence | Accepted | 2026-08-06 |
+| [0484](0484-confirm-conservative-mac-tag-normalization.md) | Confirm Conservative Mac Tag Normalization | Accepted | 2026-08-06 |
 | [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md) | Learn Task-Choice Tie-Breaks After Metadata Readiness | Accepted | 2026-08-06 |
 | [0480](0480-add-guided-ios-time-estimates.md) | Add Guided iOS Time Estimates | Accepted | 2026-08-06 |
 | [0479](0479-use-bounded-pairwise-comparisons-for-ios-task-choice.md) | Use Bounded Pairwise Comparisons for iOS Task Choice | Accepted | 2026-08-06 |

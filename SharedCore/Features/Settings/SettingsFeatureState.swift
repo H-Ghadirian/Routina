@@ -162,12 +162,20 @@ struct SettingsTagsState: Equatable {
     var relatedTagDrafts: [String: String] = [:]
     var tagPendingDeletion: RoutineTagSummary?
     var tagPendingRename: RoutineTagSummary?
+    var tagPendingNormalization: SettingsTagMergeRequest?
     var tagRenameDraft: String = ""
     var tagStatusMessage: String = ""
     var tagSearchQuery: String = ""
+    var normalizationSuggestions: [RoutineTagNormalizationSuggestion] = []
     var isTagOperationInProgress: Bool = false
     var isDeleteTagConfirmationPresented: Bool = false
     var isTagRenameSheetPresented: Bool = false
+    var isTagNormalizationConfirmationPresented: Bool = false
+}
+
+struct SettingsTagMergeRequest: Equatable {
+    var source: RoutineTagSummary
+    var replacement: RoutineTagSummary
 }
 
 extension SettingsTagsState {
@@ -176,6 +184,13 @@ extension SettingsTagsState {
         guard !trimmed.isEmpty else { return savedTags }
         let needle = trimmed.lowercased()
         return savedTags.filter { $0.name.lowercased().contains(needle) }
+    }
+
+    var normalizationConfirmationMessage: String {
+        guard let request = tagPendingNormalization else { return "" }
+        let itemCount = request.source.totalLinkedItemCount
+        let itemDescription = itemCount == 1 ? "1 tagged item" : "\(itemCount) tagged items"
+        return "Use #\(request.replacement.name) instead of #\(request.source.name) everywhere? This updates \(itemDescription) and merges any duplicate tags on the same item."
     }
 
     func suggestedRelatedTags(for tagName: String) -> [String] {

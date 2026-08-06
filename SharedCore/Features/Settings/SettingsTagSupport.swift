@@ -36,6 +36,9 @@ enum SettingsTagEditor {
         state: inout SettingsTagsState
     ) {
         state.savedTags = RoutineTagColors.applying(state.tagColors, to: tags)
+        state.normalizationSuggestions = RoutineTag.normalizationSuggestions(
+            from: state.savedTags
+        )
         syncRelatedTagDrafts(state: &state)
         if let pendingTag = state.tagPendingDeletion,
            let updatedTag = tagSummary(named: pendingTag.name, in: state.savedTags) {
@@ -280,6 +283,57 @@ enum SettingsTagEditor {
         return SettingsTagRenameRequest(
             originalTagName: pendingTag.name,
             cleanedName: cleanedName
+        )
+    }
+
+    static func setNormalizationConfirmation(
+        _ isPresented: Bool,
+        state: inout SettingsTagsState
+    ) {
+        state.isTagNormalizationConfirmationPresented = isPresented
+        if !isPresented {
+            state.tagPendingNormalization = nil
+        }
+    }
+
+    static func beginNormalization(
+        sourceTagName: String,
+        replacementTagName: String,
+        state: inout SettingsTagsState
+    ) -> Bool {
+        guard !state.isTagOperationInProgress,
+              let source = tagSummary(named: sourceTagName, in: state.savedTags),
+              let replacement = tagSummary(named: replacementTagName, in: state.savedTags),
+              state.normalizationSuggestions.contains(where: {
+                  $0.source.id == source.id && $0.replacement.id == replacement.id
+              }) else {
+            return false
+        }
+
+        state.tagPendingNormalization = SettingsTagMergeRequest(
+            source: source,
+            replacement: replacement
+        )
+        state.tagStatusMessage = ""
+        state.isTagNormalizationConfirmationPresented = true
+        return true
+    }
+
+    static func prepareNormalizationConfirmation(
+        state: inout SettingsTagsState
+    ) -> SettingsTagRenameRequest? {
+        guard !state.isTagOperationInProgress,
+              let request = state.tagPendingNormalization else {
+            return nil
+        }
+
+        state.isTagNormalizationConfirmationPresented = false
+        state.tagPendingNormalization = nil
+        state.isTagOperationInProgress = true
+        state.tagStatusMessage = ""
+        return SettingsTagRenameRequest(
+            originalTagName: request.source.name,
+            cleanedName: request.replacement.name
         )
     }
 

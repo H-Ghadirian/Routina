@@ -84,10 +84,6 @@ let tabView = TabView(
                 statsStore: store.scope(state: \.stats, action: \.stats),
                 settingsStore: store.scope(state: \.settings, action: \.settings),
                 taskChoiceStore: store.scope(state: \.taskChoice, action: \.taskChoice),
-                taskChoiceTagPreferencesStore: store.scope(
-                    state: \.taskChoiceTagPreferences,
-                    action: \.taskChoiceTagPreferences
-                ),
                 missingPressureDataStore: store.scope(
                     state: \.missingPressureData,
                     action: \.missingPressureData
@@ -689,7 +685,6 @@ private enum AppMoreDestination: Hashable {
     case stats
     case settings
     case taskChoice
-    case taskChoiceTagPreferences
     case missingPressureData
     case missingThinkingNeededData
     case missingEstimatedDurationData
@@ -704,7 +699,6 @@ private struct AppMoreNavigationView: View {
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
     let taskChoiceStore: StoreOf<TaskChoiceFeature>
-    let taskChoiceTagPreferencesStore: StoreOf<TaskChoiceTagPreferencesFeature>
     let missingPressureDataStore: StoreOf<MissingTaskDataFeature>
     let missingThinkingNeededDataStore: StoreOf<MissingTaskDataFeature>
     let missingEstimatedDurationDataStore: StoreOf<MissingTaskDataFeature>
@@ -728,9 +722,6 @@ private struct AppMoreNavigationView: View {
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.taskChoice)) {
                     destinationView(for: .taskChoice)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.taskChoiceTagPreferences)) {
-                    destinationView(for: .taskChoiceTagPreferences)
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.missingPressureData)) {
                     destinationView(for: .missingPressureData)
@@ -771,15 +762,6 @@ private struct AppMoreNavigationView: View {
                         tint: .blue,
                         title: "Help me choose",
                         subtitle: "Learn the priority ties for your conditions"
-                    )
-                }
-
-                moreButton(destination: .taskChoiceTagPreferences) {
-                    SettingsNavigationRow(
-                        icon: "tag",
-                        tint: .mint,
-                        title: "Tag preferences",
-                        subtitle: "Use meaningful tags to refine suggestions"
                     )
                 }
 
@@ -917,8 +899,6 @@ private struct AppMoreNavigationView: View {
                 }
         case .taskChoice:
             TaskChoiceView(store: taskChoiceStore)
-        case .taskChoiceTagPreferences:
-            TaskChoiceTagPreferencesView(store: taskChoiceTagPreferencesStore)
         case .missingPressureData:
             MissingTaskDataView(store: missingPressureDataStore)
         case .missingThinkingNeededData:

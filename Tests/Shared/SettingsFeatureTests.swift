@@ -1504,6 +1504,130 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func tagNormalizationSuggestsOnlyConservativeInflectionVariants() {
+        let clean = RoutineTagSummary(name: "clean", linkedRoutineCount: 1)
+        let cleaning = RoutineTagSummary(name: "Cleaning", linkedRoutineCount: 3)
+        let family = RoutineTagSummary(name: "Family", linkedRoutineCount: 4)
+        let buying = RoutineTagSummary(name: "Buying", linkedRoutineCount: 2)
+
+        let suggestions = RoutineTag.normalizationSuggestions(
+            from: [clean, cleaning, family, buying]
+        )
+
+        #expect(suggestions == [
+            RoutineTagNormalizationSuggestion(source: clean, replacement: cleaning)
+        ])
+    }
+
+    @Test
+    func normalizationMergeRequiresConfirmationThenUpdatesEveryMatchingTask() async throws {
+        let context = makeInMemoryContext()
+        let cleanTask = makeTask(
+            in: context,
+            name: "Clean kitchen",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🧽",
+            tags: ["clean"]
+        )
+        _ = makeTask(
+            in: context,
+            name: "Cleaning supplies",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🧹",
+            tags: ["Cleaning"]
+        )
+        _ = makeTask(
+            in: context,
+            name: "Bathroom cleaning",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🛁",
+            tags: ["Cleaning"]
+        )
+        try context.save()
+
+        let clean = RoutineTagSummary(name: "clean", linkedRoutineCount: 1)
+        let cleaning = RoutineTagSummary(name: "Cleaning", linkedRoutineCount: 2)
+        let suggestion = RoutineTagNormalizationSuggestion(source: clean, replacement: cleaning)
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                tags: .init(
+                    savedTags: [clean, cleaning],
+                    normalizationSuggestions: [suggestion]
+                )
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.normalizeTagSuggestionTapped(
+            sourceTagName: "clean",
+            replacementTagName: "Cleaning"
+        )) {
+            $0.tags.tagPendingNormalization = SettingsTagMergeRequest(
+                source: clean,
+                replacement: cleaning
+            )
+            $0.tags.isTagNormalizationConfirmationPresented = true
+        }
+
+        await store.send(.setTagNormalizationConfirmation(false)) {
+            $0.tags.tagPendingNormalization = nil
+            $0.tags.isTagNormalizationConfirmationPresented = false
+        }
+
+        await store.send(.normalizeTagSuggestionTapped(
+            sourceTagName: "clean",
+            replacementTagName: "Cleaning"
+        )) {
+            $0.tags.tagPendingNormalization = SettingsTagMergeRequest(
+                source: clean,
+                replacement: cleaning
+            )
+            $0.tags.isTagNormalizationConfirmationPresented = true
+        }
+
+        var loadedTags: [RoutineTagSummary] = []
+        var cloudEstimate = CloudUsageEstimate.zero
+        await store.send(.normalizeTagSuggestionConfirmed) {
+            $0.tags.tagPendingNormalization = nil
+            $0.tags.isTagNormalizationConfirmationPresented = false
+            $0.tags.isTagOperationInProgress = true
+            $0.tags.relatedTagDrafts = ["clean": "", "cleaning": ""]
+        }
+        await store.receive { action in
+            guard case let .tagsLoaded(tags) = action else { return false }
+            loadedTags = tags
+            #expect(tags == [RoutineTagSummary(name: "Cleaning", linkedRoutineCount: 3)])
+            return true
+        } assert: {
+            $0.tags.savedTags = loadedTags
+            $0.tags.normalizationSuggestions = []
+            $0.tags.relatedTagDrafts = ["cleaning": ""]
+        }
+        await store.receive { action in
+            guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
+            cloudEstimate = estimate
+            return true
+        } assert: {
+            $0.cloud.cloudUsageEstimate = cloudEstimate
+        }
+        await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Cleaning in 1 routine.")) {
+            $0.tags.isTagOperationInProgress = false
+            $0.tags.tagStatusMessage = "Updated tag to Cleaning in 1 routine."
+        }
+
+        let persistedTask = try #require(
+            context.fetch(FetchDescriptor<RoutineTask>()).first(where: { $0.id == cleanTask.id })
+        )
+        #expect(persistedTask.tags == ["Cleaning"])
+    }
+
+    @Test
     func saveTagRenameTapped_updatesAllMatchingRoutines() async throws {
         let context = makeInMemoryContext()
         let notesKey = UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue

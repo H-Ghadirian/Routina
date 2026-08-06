@@ -28,48 +28,6 @@ struct TaskChoiceFeatureTests {
     }
 
     @Test
-    func enabledTagPreferenceBreaksAnOtherwiseEqualMetadataTie() {
-        let travelTask = makeReadyTask(name: "Travel task", tags: ["Travel"])
-        let adminTask = makeReadyTask(name: "Admin task", tags: ["Admin"])
-        let preferences = [
-            TaskChoiceTagPreference(tag: "Travel", score: 0.2, comparisonCount: 2),
-            TaskChoiceTagPreference(tag: "Admin", score: 0, comparisonCount: 2)
-        ]
-
-        let ranked = TaskChoiceCandidateRanking.ranked(
-            tasks: [adminTask, travelTask],
-            condition: TaskChoiceCondition(),
-            tagPreferences: preferences
-        )
-
-        #expect(ranked.map(\.id) == [travelTask.id, adminTask.id])
-        #expect(TaskChoiceCandidateRanking.nextComparisonPair(
-            tasks: [travelTask, adminTask],
-            condition: TaskChoiceCondition(),
-            tagPreferences: preferences
-        ) == nil)
-    }
-
-    @Test
-    func comparisonUpdatesOnlyDistinctEnabledTagPreferences() {
-        let preferences = [
-            TaskChoiceTagPreference(tag: "Travel"),
-            TaskChoiceTagPreference(tag: "Admin")
-        ]
-
-        let updated = TaskChoiceTagPreferences.updating(
-            preferences,
-            preferredTaskTags: ["Travel", "Shared"],
-            otherTaskTags: ["Admin", "Shared"]
-        )
-
-        #expect(updated.first(where: { $0.tag == "Travel" })?.score == 0.1)
-        #expect(updated.first(where: { $0.tag == "Travel" })?.comparisonCount == 1)
-        #expect(updated.first(where: { $0.tag == "Admin" })?.score == 0)
-        #expect(updated.first(where: { $0.tag == "Admin" })?.comparisonCount == 1)
-    }
-
-    @Test
     func nextComparisonUsesTheRemainingEqualTieBreak() throws {
         let alpha = makeReadyTask(name: "Alpha")
         let beta = makeReadyTask(name: "Beta")
@@ -140,7 +98,6 @@ struct TaskChoiceFeatureTests {
             $0.modelContext = { context }
             $0.date.now = now
             $0.calendar = calendar
-            $0.appSettingsClient = .noop
         }
 
         await store.send(.findTasksTapped) {
@@ -240,6 +197,7 @@ struct TaskChoiceFeatureTests {
         #expect(featureSource.contains("TaskChoiceCandidateRanking.nextComparisonPair"))
         #expect(featureSource.contains("TaskChoiceCandidateRanking.missingData"))
         #expect(featureSource.contains("taskChoiceTieBreakScore"))
+        #expect(!featureSource.contains("TaskChoiceTagPreference"))
         #expect(featureSource.contains("isCurrentlySelectable"))
         #expect(viewSource.contains("let store: StoreOf<TaskChoiceFeature>"))
         #expect(viewSource.contains("store.send(.preferredTaskSelected"))
@@ -249,6 +207,7 @@ struct TaskChoiceFeatureTests {
         #expect(!viewSource.contains("modelContext.save()"))
         #expect(appSource.contains("title: \"Help me choose\""))
         #expect(appSource.contains("TaskChoiceView(store: taskChoiceStore)"))
+        #expect(!appSource.contains("Tag preferences"))
     }
 
     private func makeReadyTask(name: String, tags: [String] = []) -> RoutineTask {

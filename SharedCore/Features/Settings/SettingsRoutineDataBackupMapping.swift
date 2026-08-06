@@ -375,7 +375,6 @@ enum SettingsRoutineDataBackupMapping {
             dayPlanCalendarListRowHiddenFields: preferences.dayPlanCalendarListRowHiddenFields,
             relatedTagRules: preferences.relatedTagRules,
             tagColors: preferences.tagColors,
-            taskChoiceTagPreferences: preferences.taskChoiceTagPreferences,
             fastFilterTags: preferences.fastFilterTags,
             iOSStatsDashboardHiddenItemIDs: preferences.iOSStatsDashboardHiddenItemIDs,
             iOSStatsDashboardItemOrderIDs: preferences.iOSStatsDashboardItemOrderIDs,

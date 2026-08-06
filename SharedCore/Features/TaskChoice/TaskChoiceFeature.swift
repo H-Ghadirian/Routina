@@ -172,8 +172,7 @@ enum TaskChoiceCandidateRanking {
 
     static func ranked(
         tasks: [RoutineTask],
-        condition: TaskChoiceCondition,
-        tagPreferences: [TaskChoiceTagPreference] = []
+        condition: TaskChoiceCondition
     ) -> [TaskChoiceCandidate] {
         tasks
             .map(TaskChoiceCandidate.init)
@@ -182,11 +181,6 @@ enum TaskChoiceCandidateRanking {
                 let rhsScore = score(rhs, for: condition)
                 if lhsScore != rhsScore {
                     return lhsScore > rhsScore
-                }
-                let lhsTagScore = TaskChoiceTagPreferences.score(for: lhs.tags, in: tagPreferences)
-                let rhsTagScore = TaskChoiceTagPreferences.score(for: rhs.tags, in: tagPreferences)
-                if lhsTagScore != rhsTagScore {
-                    return lhsTagScore > rhsTagScore
                 }
                 if lhs.learnedTieBreakScore != rhs.learnedTieBreakScore {
                     return lhs.learnedTieBreakScore > rhs.learnedTieBreakScore
@@ -203,34 +197,27 @@ enum TaskChoiceCandidateRanking {
     /// for the current condition and their persisted learned tie-break is also equal.
     static func nextComparisonPair(
         tasks: [RoutineTask],
-        condition: TaskChoiceCondition,
-        tagPreferences: [TaskChoiceTagPreference] = []
+        condition: TaskChoiceCondition
     ) -> (TaskChoiceCandidate, TaskChoiceCandidate)? {
         let candidates = tasks.map(TaskChoiceCandidate.init)
         let scoreGroups = Dictionary(grouping: candidates) { score($0, for: condition) }
 
         for score in scoreGroups.keys.sorted(by: >) {
             guard let scoreGroup = scoreGroups[score] else { continue }
-            let tagScoreGroups = Dictionary(grouping: scoreGroup) {
-                tagPreferenceBucket(TaskChoiceTagPreferences.score(for: $0.tags, in: tagPreferences))
-            }
-            for tagScore in tagScoreGroups.keys.sorted(by: >) {
-                guard let tagScoreGroup = tagScoreGroups[tagScore] else { continue }
-                let tieGroups = Dictionary(grouping: tagScoreGroup) { tieBreakBucket($0.learnedTieBreakScore) }
-                for tieBreak in tieGroups.keys.sorted(by: >) {
-                    guard let tieGroup = tieGroups[tieBreak], tieGroup.count > 1 else { continue }
-                    let orderedTie = tieGroup.sorted { lhs, rhs in
-                        if lhs.comparisonCount != rhs.comparisonCount {
-                            return lhs.comparisonCount < rhs.comparisonCount
-                        }
-                        let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
-                        if titleComparison != .orderedSame {
-                            return titleComparison == .orderedAscending
-                        }
-                        return lhs.id.uuidString < rhs.id.uuidString
+            let tieGroups = Dictionary(grouping: scoreGroup) { tieBreakBucket($0.learnedTieBreakScore) }
+            for tieBreak in tieGroups.keys.sorted(by: >) {
+                guard let tieGroup = tieGroups[tieBreak], tieGroup.count > 1 else { continue }
+                let orderedTie = tieGroup.sorted { lhs, rhs in
+                    if lhs.comparisonCount != rhs.comparisonCount {
+                        return lhs.comparisonCount < rhs.comparisonCount
                     }
-                    return (orderedTie[0], orderedTie[1])
+                    let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
+                    if titleComparison != .orderedSame {
+                        return titleComparison == .orderedAscending
+                    }
+                    return lhs.id.uuidString < rhs.id.uuidString
                 }
+                return (orderedTie[0], orderedTie[1])
             }
         }
 
@@ -273,10 +260,6 @@ enum TaskChoiceCandidateRanking {
     }
 
     private static func tieBreakBucket(_ score: Double) -> Int {
-        Int((score * 10).rounded())
-    }
-
-    private static func tagPreferenceBucket(_ score: Double) -> Int {
         Int((score * 10).rounded())
     }
 
@@ -384,7 +367,6 @@ struct TaskChoiceFeature {
     }
 
     @Dependency(\.modelContext) private var modelContext
-    @Dependency(\.appSettingsClient) private var appSettingsClient
     @Dependency(\.date.now) private var now
     @Dependency(\.calendar) private var calendar
 
@@ -517,11 +499,9 @@ struct TaskChoiceFeature {
                     return
                 }
 
-                let tagPreferences = appSettingsClient.taskChoiceTagPreferences()
                 let ranked = TaskChoiceCandidateRanking.ranked(
                     tasks: selectableTasks,
-                    condition: condition,
-                    tagPreferences: tagPreferences
+                    condition: condition
                 )
                 guard let recommendedTask = ranked.first else {
                     send(.tasksLoaded(.empty))
@@ -529,8 +509,7 @@ struct TaskChoiceFeature {
                 }
                 if let pair = TaskChoiceCandidateRanking.nextComparisonPair(
                     tasks: selectableTasks,
-                    condition: condition,
-                    tagPreferences: tagPreferences
+                    condition: condition
                 ) {
                     send(.tasksLoaded(.comparison(pair.0, pair.1, candidateCount: ranked.count)))
                 } else {
@@ -563,13 +542,6 @@ struct TaskChoiceFeature {
                 winnerTask.taskChoiceComparisonCount = incrementComparisonCount(winnerTask.taskChoiceComparisonCount)
                 loserTask.taskChoiceComparisonCount = incrementComparisonCount(loserTask.taskChoiceComparisonCount)
                 try context.save()
-                appSettingsClient.setTaskChoiceTagPreferences(
-                    TaskChoiceTagPreferences.updating(
-                        appSettingsClient.taskChoiceTagPreferences(),
-                        preferredTaskTags: winnerTask.tags,
-                        otherTaskTags: loserTask.tags
-                    )
-                )
                 NotificationCenter.default.postRoutineDidUpdate()
                 send(.comparisonSaved(TaskChoiceCandidate(task: winnerTask)))
             } catch {

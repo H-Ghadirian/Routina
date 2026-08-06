@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0485 Remove Opt-In Tag Preferences Pending Automatic Tag Intelligence](../0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md).
 
 ## Date
 
@@ -10,7 +10,7 @@ Accepted
 
 ## Refines
 
-[0481 Learn Task-Choice Tie-Breaks After Metadata Readiness](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md)
+[0481 Learn Task-Choice Tie-Breaks After Metadata Readiness](../0481-learn-task-choice-tie-breaks-after-metadata-readiness.md)
 
 ## Context
 

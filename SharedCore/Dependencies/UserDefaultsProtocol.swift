@@ -134,7 +134,6 @@ enum AppSettingsDefaults {
         .appSettingTagCounterDisplayMode,
         .appSettingRelatedTagRules,
         .appSettingTagColors,
-        .appSettingTaskChoiceTagPreferences,
         .appSettingFastFilterTags,
         .appSettingIOSStatsDashboardHiddenItemIDs,
         .appSettingIOSStatsDashboardItemOrderIDs,
@@ -282,7 +281,6 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingDayPlanCalendarListRowHiddenFields
     case appSettingRelatedTagRules
     case appSettingTagColors
-    case appSettingTaskChoiceTagPreferences
     case appSettingFastFilterTags
     case appSettingIOSStatsDashboardHiddenItemIDs
     case appSettingIOSStatsDashboardItemOrderIDs
@@ -359,8 +357,6 @@ struct AppSettingsClient: Sendable {
     var setRelatedTagRules: @Sendable ([RoutineRelatedTagRule]) -> Void
     var tagColors: @Sendable () -> [String: String]
     var setTagColors: @Sendable ([String: String]) -> Void
-    var taskChoiceTagPreferences: @Sendable () -> [TaskChoiceTagPreference] = { [] }
-    var setTaskChoiceTagPreferences: @Sendable ([TaskChoiceTagPreference]) -> Void = { _ in }
     var fastFilterTags: @Sendable () -> [String]
     var setFastFilterTags: @Sendable ([String]) -> Void
     var notificationReminderTime: @Sendable () -> Date
@@ -384,7 +380,6 @@ enum CloudSettingsKeyValueSync {
         .selectedMacAppIcon,
         .appSettingRelatedTagRules,
         .appSettingTagColors,
-        .appSettingTaskChoiceTagPreferences,
         .appSettingFastFilterTags,
         .appSettingIOSStatsDashboardHiddenItemIDs,
         .appSettingIOSStatsDashboardItemOrderIDs,
@@ -726,28 +721,6 @@ extension AppSettingsClient {
             }
             CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingTagColors)
         },
-        taskChoiceTagPreferences: {
-            guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingTaskChoiceTagPreferences),
-                  let data = rawValue.data(using: .utf8),
-                  let decoded = try? JSONDecoder().decode([TaskChoiceTagPreference].self, from: data)
-            else {
-                return []
-            }
-            return TaskChoiceTagPreferences.sanitized(decoded)
-        },
-        setTaskChoiceTagPreferences: { preferences in
-            let sanitizedPreferences = TaskChoiceTagPreferences.sanitized(preferences)
-            guard !sanitizedPreferences.isEmpty else {
-                CloudSettingsKeyValueSync.setString(nil, for: .appSettingTaskChoiceTagPreferences)
-                return
-            }
-            guard let data = try? JSONEncoder().encode(sanitizedPreferences),
-                  let rawValue = String(data: data, encoding: .utf8)
-            else {
-                return
-            }
-            CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingTaskChoiceTagPreferences)
-        },
         fastFilterTags: {
             FastFilterTags.decoded(from: CloudSettingsKeyValueSync.string(for: .appSettingFastFilterTags))
         },
@@ -887,8 +860,6 @@ extension AppSettingsClient {
         setRelatedTagRules: { _ in },
         tagColors: { [:] },
         setTagColors: { _ in },
-        taskChoiceTagPreferences: { [] },
-        setTaskChoiceTagPreferences: { _ in },
         fastFilterTags: { [] },
         setFastFilterTags: { _ in },
         notificationReminderTime: { Date() },

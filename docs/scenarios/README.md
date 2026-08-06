@@ -1598,7 +1598,7 @@ And bursts of semantic updates are coalesced before Stats reloads its snapshot
 ### iOS Task Choice Learns Condition-Relevant Tie-Breaks
 
 Area: Tasks / UI
-Decision links: [0482](../decisions/0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md), [0481](../decisions/0481-learn-task-choice-tie-breaks-after-metadata-readiness.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
+Decision links: [0485](../decisions/0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md), [0481](../decisions/0481-learn-task-choice-tie-breaks-after-metadata-readiness.md), [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/TaskChoiceFeatureTests.swift`
@@ -1634,17 +1634,6 @@ Given no condition-relevant ties remain
 When the current condition is ranked
 Then the highest-ranked task is presented as a durable recommendation
 
-Given a person enables `Travel` but not `Admin` in More -> `Tag preferences`
-When two tasks are equal on their condition-aware metadata and the Travel task
-has a higher learned selected-tag score
-Then the Travel task ranks ahead of the Admin task
-And tags do not override a different metadata score
-
-Given a preferred task has a selected tag that the other task does not share
-When the person saves the comparison
-Then Routina advances only that selected tag's learned score
-And shared or unselected tags do not gain a preference
-
 Given a recommendation is shown
 When the person opens `Check task details`
 Then Routina uses the existing Home task-detail route
@@ -1656,6 +1645,28 @@ When it loads candidates or processes a comparison
 Then the reducer owns SwiftData work and the view contains no direct query or
 persistence mutation
 And the view retains only the visible pair or final recommendation
+
+### Mac Tag Normalization Requires Per-Merge Confirmation
+
+Area: Settings / Tags
+Decision links: [0484](../decisions/0484-confirm-conservative-mac-tag-normalization.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/SettingsFeatureTests.swift`
+
+Given Mac Settings -> Tags contains conservative word-form variants such as
+`clean` and `Cleaning`
+When the tag catalogue is loaded
+Then Routina offers a possible duplicate-tag merge without changing data
+
+Given the person selects a proposed merge
+When they cancel its confirmation
+Then neither tag nor any tagged item changes
+
+Given the person confirms the proposed merge
+Then the source tag is replaced everywhere it occurs in tasks, goals, enabled
+notes, and events
+And an item that already has the replacement tag keeps it only once
 
 ### iOS Missing Time Estimate Procedure Uses Direct Presets
 
