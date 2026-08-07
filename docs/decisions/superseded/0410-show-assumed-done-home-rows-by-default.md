@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded by
+
+[0495: Let Task-List Filters Hide Assumed-Done Rows](../0495-let-task-list-filters-hide-assumed-done-rows.md)
 
 ## Date
 
@@ -10,14 +14,14 @@ Accepted
 
 ## Supersedes
 
-- [0260: Hide Assumed-Done Tasks by Default](superseded/0260-hide-assumed-done-tasks-by-default.md)
-- [0262: Use Positive Assumed-Done Filter Copy](superseded/0262-use-positive-assumed-done-filter-copy.md)
+- [0260: Hide Assumed-Done Tasks by Default](0260-hide-assumed-done-tasks-by-default.md)
+- [0262: Use Positive Assumed-Done Filter Copy](0262-use-positive-assumed-done-filter-copy.md)
 
 ## Refines
 
-- [0252: Stabilize Home Task List Presentation Identity](0252-stabilize-home-task-list-presentation-identity.md)
-- [0259: Allow Daily Checklist Auto-Assumed Completion](0259-allow-daily-checklist-auto-assumed-completion.md)
-- [0398: Move Auto-Assume Done to Tracking](0398-move-auto-assume-done-to-tracking.md)
+- [0252: Stabilize Home Task List Presentation Identity](../0252-stabilize-home-task-list-presentation-identity.md)
+- [0259: Allow Daily Checklist Auto-Assumed Completion](../0259-allow-daily-checklist-auto-assumed-completion.md)
+- [0398: Move Auto-Assume Done to Tracking](../0398-move-auto-assume-done-to-tracking.md)
 
 ## Context
 

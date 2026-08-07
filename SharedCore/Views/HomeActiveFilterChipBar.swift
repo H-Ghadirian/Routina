@@ -14,6 +14,7 @@ struct HomeActiveFilterChipBar: View {
     let selectedGoalFilter: HomeTaskGoalFilter
     let selectedMediaFilter: TaskMediaFilter
     let selectedEstimationFilter: TaskEstimationFilter
+    let hideAssumedDoneTasks: Bool
     let hideUnavailableRoutines: Bool
     let showArchivedTasks: Bool
     let onClearAll: () -> Void
@@ -30,6 +31,7 @@ struct HomeActiveFilterChipBar: View {
     let onClearGoal: () -> Void
     let onClearMedia: () -> Void
     let onClearEstimation: () -> Void
+    let onShowAssumedDoneTasks: () -> Void
     let onShowUnavailableRoutines: () -> Void
     let onShowArchivedTasks: () -> Void
 
@@ -139,6 +141,14 @@ struct HomeActiveFilterChipBar: View {
                         title: selectedEstimationFilter.title,
                         systemImage: selectedEstimationFilter.systemImage,
                         action: onClearEstimation
+                    )
+                }
+
+                if hideAssumedDoneTasks {
+                    HomeActiveFilterChip(
+                        title: "Assumed done hidden",
+                        systemImage: "checkmark.circle",
+                        action: onShowAssumedDoneTasks
                     )
                 }
 

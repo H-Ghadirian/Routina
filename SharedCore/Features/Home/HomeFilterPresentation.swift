@@ -122,6 +122,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if taskListViewMode != .all { count += 1 }
         if taskListSortOrder != .smart { count += 1 }
         if createdDateFilter != .all { count += 1 }
+        if hideAssumedDoneTasks { count += 1 }
         if hideUnavailableRoutines { count += 1 }
         if !showArchivedTasks { count += 1 }
         return count
@@ -145,7 +146,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     }
 
     var showsAssumedDoneVisibilityFilter: Bool {
-        false
+        true
     }
 
     var filterLabels: [String] {
@@ -169,6 +170,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if createdDateFilter != .all {
             labels.append(createdDateFilter.title)
+        }
+
+        if hideAssumedDoneTasks {
+            labels.append("Assumed done hidden")
         }
 
         if let selectedTodoStateFilter {

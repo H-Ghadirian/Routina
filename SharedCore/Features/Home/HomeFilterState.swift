@@ -41,7 +41,7 @@ struct HomeTaskFiltersState: Equatable {
             selectedGoalFilter: selectedGoalFilter,
             selectedMediaFilter: selectedMediaFilter,
             selectedEstimationFilter: selectedEstimationFilter,
-            hideAssumedDoneTasks: false,
+            hideAssumedDoneTasks: hideAssumedDoneTasks,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
             createdDateFilter: createdDateFilter,
@@ -80,7 +80,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedGoalFilter = snapshot.selectedGoalFilter
         selectedMediaFilter = snapshot.selectedMediaFilter
         selectedEstimationFilter = snapshot.selectedEstimationFilter
-        hideAssumedDoneTasks = false
+        hideAssumedDoneTasks = snapshot.hideAssumedDoneTasks
         taskListViewMode = snapshot.taskListViewMode
         taskListSortOrder = snapshot.taskListSortOrder
         createdDateFilter = snapshot.createdDateFilter
@@ -171,7 +171,7 @@ enum HomeTemporaryViewStateMapper {
             selectedGoalFilter: persistedState.homeSelectedGoalFilter,
             selectedMediaFilter: persistedState.homeSelectedMediaFilter,
             selectedEstimationFilter: persistedState.homeSelectedEstimationFilter,
-            hideAssumedDoneTasks: false,
+            hideAssumedDoneTasks: persistedState.homeHideAssumedDoneTasks,
             taskListViewMode: persistedState.homeTaskListViewMode,
             taskListSortOrder: persistedState.homeTaskListSortOrder,
             createdDateFilter: persistedState.homeCreatedDateFilter,
@@ -246,7 +246,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedGoalFilter: taskFilters.selectedGoalFilter,
             homeSelectedMediaFilter: taskFilters.selectedMediaFilter,
             homeSelectedEstimationFilter: taskFilters.selectedEstimationFilter,
-            homeHideAssumedDoneTasks: false,
+            homeHideAssumedDoneTasks: taskFilters.hideAssumedDoneTasks,
             homeTaskListViewMode: taskFilters.taskListViewMode,
             homeTaskListSortOrder: taskFilters.taskListSortOrder,
             homeCreatedDateFilter: taskFilters.createdDateFilter,

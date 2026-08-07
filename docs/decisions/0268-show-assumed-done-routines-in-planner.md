@@ -39,9 +39,9 @@ normal planner block for that task and time. It does not move completion
 history or create a fake completion log. Confirming the assumed routine remains
 the Task Detail action that records history and stats.
 
-Home later changed to show assumed-done rows by default in
-[0410](0410-show-assumed-done-home-rows-by-default.md); this decision continues
-to define Planner's separate synthetic activity presentation.
+Home shows assumed-done rows by default and lets the task-list filter hide them
+in [0495](0495-let-task-list-filters-hide-assumed-done-rows.md); this decision
+continues to define Planner's separate synthetic activity presentation.
 
 ## Consequences
 

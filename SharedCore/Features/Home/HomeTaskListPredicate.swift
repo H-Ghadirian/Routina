@@ -147,8 +147,8 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
         )
     }
 
-    func matchesAssumedDoneFilter(_: Display) -> Bool {
-        true
+    func matchesAssumedDoneFilter(_ task: Display) -> Bool {
+        !configuration.hideAssumedDoneTasks || !task.isAssumedDoneToday
     }
 
     func matchesCreatedDateFilter(_ task: Display) -> Bool {

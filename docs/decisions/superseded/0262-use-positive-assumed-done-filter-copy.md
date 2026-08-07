@@ -6,7 +6,7 @@ Superseded
 
 ## Superseded by
 
-[0410: Show Assumed-Done Home Rows by Default](../0410-show-assumed-done-home-rows-by-default.md)
+[0410: Show Assumed-Done Home Rows by Default](0410-show-assumed-done-home-rows-by-default.md)
 
 ## Date
 

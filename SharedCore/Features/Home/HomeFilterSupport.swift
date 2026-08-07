@@ -278,8 +278,8 @@ enum HomeFilterEditor {
         case let .selectedEstimationFilter(filter):
             taskFilters.selectedEstimationFilter = filter
 
-        case .hideAssumedDoneTasks:
-            taskFilters.hideAssumedDoneTasks = false
+        case let .hideAssumedDoneTasks(hideAssumedDoneTasks):
+            taskFilters.hideAssumedDoneTasks = hideAssumedDoneTasks
 
         case let .taskListViewMode(mode):
             taskFilters.taskListViewMode = mode

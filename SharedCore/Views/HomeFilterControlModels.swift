@@ -16,6 +16,7 @@ struct HomeFilterBindings {
     let selectedGoalFilter: Binding<HomeTaskGoalFilter>
     let selectedMediaFilter: Binding<TaskMediaFilter>
     let selectedEstimationFilter: Binding<TaskEstimationFilter>
+    let hideAssumedDoneTasks: Binding<Bool>
     let includeTagMatchMode: Binding<RoutineTagMatchMode>
     let excludeTagMatchMode: Binding<RoutineTagMatchMode>
     let selectedPlaceID: Binding<UUID?>

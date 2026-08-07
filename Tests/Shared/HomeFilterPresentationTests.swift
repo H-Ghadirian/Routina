@@ -23,10 +23,11 @@ struct HomeFilterPresentationTests {
             selectedThinkingNeededFilter: .high,
             selectedGoalFilter: .withGoal,
             selectedEstimationFilter: .withoutEstimate,
+            hideAssumedDoneTasks: true,
             hideUnavailableRoutines: true
         )
 
-        #expect(presentation.activeOptionalFilterCount == 13)
+        #expect(presentation.activeOptionalFilterCount == 14)
         #expect(presentation.hasActiveOptionalFilters)
     }
 
@@ -47,12 +48,14 @@ struct HomeFilterPresentationTests {
             selectedThinkingNeededFilter: .medium,
             selectedGoalFilter: .withoutGoal,
             selectedEstimationFilter: .withoutEstimate,
+            hideAssumedDoneTasks: true,
             hideUnavailableRoutines: true
         )
 
         #expect(presentation.filterLabels == [
             "Due",
             "Don't show blocked tasks",
+            "Assumed done hidden",
             "Blocked",
             "Pressure High",
             "Thinking Medium",
@@ -65,7 +68,7 @@ struct HomeFilterPresentationTests {
             "L4/L3+",
             "Away hidden"
         ])
-        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Blocked • Pressure High +9 • 12 results")
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Assumed done hidden • Blocked +10 • 12 results")
     }
 
     @Test
@@ -83,41 +86,41 @@ struct HomeFilterPresentationTests {
     }
 
     @Test
-    func assumedDoneVisibilityNoLongerCountsAsAFilter() {
+    func assumedDoneVisibilityCountsAsAnActiveTaskListFilterWhenHidden() {
         let presentation = HomeFilterPresentation(
             taskListKind: .all,
-            hideAssumedDoneTasks: false
+            hideAssumedDoneTasks: true
         )
 
-        #expect(!presentation.showsAssumedDoneVisibilityFilter)
-        #expect(presentation.activeOptionalFilterCount == 0)
-        #expect(!presentation.hasActiveOptionalFilters)
-        #expect(presentation.filterLabels.isEmpty)
+        #expect(presentation.showsAssumedDoneVisibilityFilter)
+        #expect(presentation.activeOptionalFilterCount == 1)
+        #expect(presentation.hasActiveOptionalFilters)
+        #expect(presentation.filterLabels == ["Assumed done hidden"])
     }
 
     @Test
-    func staleAssumedDoneVisibilityDoesNotCountForTodos() {
+    func assumedDoneVisibilityCountsForTodos() {
         let presentation = HomeFilterPresentation(
             taskListKind: .todos,
-            hideAssumedDoneTasks: false
+            hideAssumedDoneTasks: true
         )
 
-        #expect(!presentation.showsAssumedDoneVisibilityFilter)
-        #expect(presentation.activeOptionalFilterCount == 0)
-        #expect(!presentation.hasActiveOptionalFilters)
-        #expect(presentation.filterLabels == ["Todos"])
+        #expect(presentation.showsAssumedDoneVisibilityFilter)
+        #expect(presentation.activeOptionalFilterCount == 1)
+        #expect(presentation.hasActiveOptionalFilters)
+        #expect(presentation.filterLabels == ["Todos", "Assumed done hidden"])
     }
 
     @Test
-    func staleAssumedDoneVisibilityDoesNotCountForRoutines() {
+    func assumedDoneVisibilityCountsForRoutines() {
         let routines = HomeFilterPresentation(
             taskListKind: .routines,
-            hideAssumedDoneTasks: false
+            hideAssumedDoneTasks: true
         )
 
-        #expect(!routines.showsAssumedDoneVisibilityFilter)
-        #expect(routines.activeOptionalFilterCount == 0)
-        #expect(routines.filterLabels == ["Routines"])
+        #expect(routines.showsAssumedDoneVisibilityFilter)
+        #expect(routines.activeOptionalFilterCount == 1)
+        #expect(routines.filterLabels == ["Routines", "Assumed done hidden"])
     }
 
     @Test

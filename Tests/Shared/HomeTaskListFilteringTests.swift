@@ -212,7 +212,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func assumedDoneRowsAreVisibleByDefaultAndLegacyHiddenFlagIsIgnored() {
+    func assumedDoneRowsAreVisibleByDefaultAndCanBeHidden() {
         let tasks = [
             TestTaskDisplay(name: "Morning pages", isAssumedDoneToday: true),
             TestTaskDisplay(name: "Read chapter")
@@ -220,11 +220,11 @@ struct HomeTaskListFilteringTests {
 
         let defaultResult = makeFiltering()
             .filteredTasks(tasks)
-        let legacyHiddenResult = makeFiltering(hideAssumedDoneTasks: true)
+        let hiddenResult = makeFiltering(hideAssumedDoneTasks: true)
             .filteredTasks(tasks)
 
         #expect(Set(defaultResult.map(\.name)) == ["Morning pages", "Read chapter"])
-        #expect(Set(legacyHiddenResult.map(\.name)) == ["Morning pages", "Read chapter"])
+        #expect(hiddenResult.map(\.name) == ["Read chapter"])
     }
 
     @Test

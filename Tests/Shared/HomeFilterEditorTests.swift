@@ -166,7 +166,7 @@ struct HomeFilterEditorTests {
             selectedThinkingNeededFilter: .medium,
             selectedGoalFilter: .withGoal,
             selectedEstimationFilter: .withoutEstimate,
-            hideAssumedDoneTasks: false,
+            hideAssumedDoneTasks: true,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdNewestFirst,
             createdDateFilter: .today
@@ -200,6 +200,47 @@ struct HomeFilterEditorTests {
         #expect(!hideUnavailableRoutines)
         #expect(result.didResetHideUnavailableRoutines)
         #expect(result.shouldPersistTemporaryViewState)
+    }
+
+    @Test
+    func taskFilterMutation_updatesAssumedDoneVisibility() {
+        var taskFilters = HomeTaskFiltersState()
+        var hideUnavailableRoutines = false
+
+        HomeFilterEditor.apply(
+            .hideAssumedDoneTasks(true),
+            taskFilters: &taskFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+
+        #expect(taskFilters.hideAssumedDoneTasks)
+        #expect(taskFilters.currentSnapshot.hideAssumedDoneTasks)
+    }
+
+    @Test
+    func temporaryViewStatePersistsAssumedDoneVisibility() {
+        let values = HomeTemporaryViewStateValues(
+            hideUnavailableRoutines: false,
+            taskListModeRawValue: "Routines",
+            taskFilters: HomeTaskFiltersState(hideAssumedDoneTasks: true),
+            timelineFilters: HomeTimelineFiltersState(),
+            statsFilters: HomeStatsFiltersState(),
+            macSidebarModeRawValue: nil,
+            macSelectedSettingsSectionRawValue: nil
+        )
+
+        let persistedState = HomeTemporaryViewStateMapper.makeTemporaryViewState(
+            existing: .default,
+            values: values
+        )
+        let restored = HomeTemporaryViewStateMapper.restore(
+            from: persistedState,
+            defaultHideUnavailableRoutines: false
+        )
+
+        #expect(persistedState.homeHideAssumedDoneTasks)
+        #expect(persistedState.homeTabFilterSnapshots["Routines"]?.hideAssumedDoneTasks == true)
+        #expect(restored.taskFilters.hideAssumedDoneTasks)
     }
 
     @Test
@@ -271,7 +312,7 @@ struct HomeFilterEditorTests {
             selectedThinkingNeededFilter: .high,
             selectedGoalFilter: .withoutGoal,
             selectedEstimationFilter: .withoutEstimate,
-            hideAssumedDoneTasks: false,
+            hideAssumedDoneTasks: true,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdOldestFirst,
             createdDateFilter: .last7Days,
@@ -319,7 +360,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedThinkingNeededFilter == .low)
         #expect(taskFilters.selectedGoalFilter == .withGoal)
         #expect(taskFilters.selectedEstimationFilter == .withEstimate)
-        #expect(!taskFilters.hideAssumedDoneTasks)
+        #expect(taskFilters.hideAssumedDoneTasks)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(taskFilters.taskListSortOrder == .createdNewestFirst)
         #expect(taskFilters.createdDateFilter == .today)
@@ -338,7 +379,7 @@ struct HomeFilterEditorTests {
             selectedThinkingNeededFilter: .high,
             selectedGoalFilter: .withoutGoal,
             selectedEstimationFilter: .withoutEstimate,
-            hideAssumedDoneTasks: false,
+            hideAssumedDoneTasks: true,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdOldestFirst,
             createdDateFilter: .last7Days
