@@ -2,18 +2,16 @@ import SwiftUI
 
 struct TaskDetailCommentsSectionView: View {
     let comments: [RoutineTaskComment]
-    let newCommentDraft: String
+    @Binding var newCommentDraft: String
     let canAddComment: Bool
     let editingCommentID: UUID?
-    let editingCommentDraft: String
+    @Binding var editingCommentDraft: String
     let canSaveEditedComment: Bool
     @Binding var isCommentComposerVisible: Bool
     let background: Color
     let stroke: Color
-    let onNewCommentDraftChanged: (String) -> Void
     let onAddComment: () -> Void
     let onEditComment: (UUID) -> Void
-    let onEditCommentDraftChanged: (String) -> Void
     let onCancelEditComment: () -> Void
     let onSaveEditComment: (UUID) -> Void
     let onDeleteComment: (UUID) -> Void
@@ -138,18 +136,17 @@ struct TaskDetailCommentsSectionView: View {
     private var commentComposerControl: some View {
         if shouldShowCommentComposer {
             commentEditor(
-                draft: newCommentDraft,
+                text: $newCommentDraft,
                 placeholder: "Add a comment...",
                 minHeight: 86,
-                accessibilityIdentifier: "task-detail-new-comment-editor",
-                onChanged: onNewCommentDraftChanged
+                accessibilityIdentifier: "task-detail-new-comment-editor"
             )
 
             HStack {
                 Spacer()
 
                 Button {
-                    onNewCommentDraftChanged("")
+                    newCommentDraft = ""
                     withAnimation(.easeInOut(duration: 0.16)) {
                         isCommentComposerVisible = false
                     }
@@ -231,11 +228,10 @@ struct TaskDetailCommentsSectionView: View {
         } else if editingCommentID == comment.id {
             VStack(alignment: .leading, spacing: 8) {
                 commentEditor(
-                    draft: editingCommentDraft,
+                    text: $editingCommentDraft,
                     placeholder: "Edit comment...",
                     minHeight: 74,
-                    accessibilityIdentifier: "task-detail-edit-comment-editor",
-                    onChanged: onEditCommentDraftChanged
+                    accessibilityIdentifier: "task-detail-edit-comment-editor"
                 )
 
                 HStack {
@@ -349,30 +345,17 @@ struct TaskDetailCommentsSectionView: View {
     }
 
     private func commentEditor(
-        draft: String,
+        text: Binding<String>,
         placeholder: String,
         minHeight: CGFloat,
-        accessibilityIdentifier: String,
-        onChanged: @escaping (String) -> Void
+        accessibilityIdentifier: String
     ) -> some View {
         RoutinaFormattedTextEditor(
-            text: draftBinding(draft: draft, onChanged: onChanged),
+            text: text,
             placeholder: placeholder,
             minHeight: minHeight,
             font: .subheadline,
             accessibilityIdentifier: accessibilityIdentifier
-        )
-    }
-
-    private func draftBinding(
-        draft: String,
-        onChanged: @escaping (String) -> Void
-    ) -> Binding<String> {
-        Binding(
-            get: { draft },
-            set: { newValue in
-                onChanged(newValue)
-            }
         )
     }
 

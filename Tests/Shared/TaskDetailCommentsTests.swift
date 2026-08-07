@@ -81,6 +81,17 @@ struct TaskDetailCommentsTests {
     }
 
     @Test
+    func commentEditorsUseLiveDraftBindings() throws {
+        let source = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailCommentsSectionView.swift")
+
+        #expect(source.contains("@Binding var newCommentDraft: String"))
+        #expect(source.contains("@Binding var editingCommentDraft: String"))
+        #expect(source.contains("text: $newCommentDraft"))
+        #expect(source.contains("text: $editingCommentDraft"))
+        #expect(!source.contains("private func draftBinding"))
+    }
+
+    @Test
     func commentPresentationShowsNewestCreatedCommentFirst() {
         let olderDate = makeDate("2026-04-02T08:15:00Z")
         let newerDate = makeDate("2026-04-02T09:30:00Z")
@@ -352,5 +363,15 @@ struct TaskDetailCommentsTests {
         #expect(persistedItem.title == "Oat milk")
         #expect(persistedItem.intervalDays == 14)
         #expect(persistedItem.lastPurchasedAt == lastPurchasedAt)
+    }
+
+    private static func sourceFile(_ relativePath: String) throws -> String {
+        let testsDirectory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let sourceURL = testsDirectory
+            .deletingLastPathComponent()
+            .appendingPathComponent(relativePath)
+        return try String(contentsOf: sourceURL, encoding: .utf8)
     }
 }

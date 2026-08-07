@@ -848,6 +848,19 @@ Given Planner rebuilds adaptive geometry
 When the visible block snapshot and base spacing are unchanged
 Then it reuses the cached axis without fetching or regrouping whole history
 
+### Task Detail Comment Editors Keep Their Insertion Point
+
+Area: Tasks
+Decision links: [0098](../decisions/0098-support-markdown-text-editing-controls.md), [0366](../decisions/0366-keep-mac-task-detail-add-more-inline.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/TaskDetailCommentsTests.swift`
+
+Given a person is adding or editing a task comment
+When they place the insertion point in the middle of the comment and type multiple characters
+Then every character is inserted at that moving insertion point
+And a task-detail draft refresh does not move the insertion point to the end of the comment
+
 ### New Routine Checklists Use Checklist Completion
 
 Area: Tasks

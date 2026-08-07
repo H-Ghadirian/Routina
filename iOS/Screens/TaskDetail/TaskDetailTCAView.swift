@@ -346,18 +346,22 @@ detailBody
     private var commentsSection: some View {
         TaskDetailCommentsSectionView(
             comments: store.task.comments,
-            newCommentDraft: store.detailCommentDraft,
+            newCommentDraft: Binding(
+                get: { store.detailCommentDraft },
+                set: { store.send(.detailCommentDraftChanged($0)) }
+            ),
             canAddComment: store.canAddDetailComment,
             editingCommentID: store.editingDetailCommentID,
-            editingCommentDraft: store.editingDetailCommentDraft,
+            editingCommentDraft: Binding(
+                get: { store.editingDetailCommentDraft },
+                set: { store.send(.detailCommentEditDraftChanged($0)) }
+            ),
             canSaveEditedComment: store.canSaveEditingDetailComment,
             isCommentComposerVisible: $isCommentComposerVisible,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
-            onNewCommentDraftChanged: { store.send(.detailCommentDraftChanged($0)) },
             onAddComment: { store.send(.detailCommentAddTapped) },
             onEditComment: { store.send(.detailCommentEditTapped($0)) },
-            onEditCommentDraftChanged: { store.send(.detailCommentEditDraftChanged($0)) },
             onCancelEditComment: { store.send(.detailCommentEditCancelTapped) },
             onSaveEditComment: { store.send(.detailCommentEditSaveTapped($0)) },
             onDeleteComment: { store.send(.detailCommentDeleteTapped($0)) }
@@ -740,7 +744,7 @@ detailBody
                 headerGoalsBox
             }
         } flagChip: { flag in
-            TaskDetailFlagChip(flag: flag)
+            AnyView(TaskDetailFlagChip(flag: flag))
         }
     }
 
@@ -769,7 +773,7 @@ detailBody
                 headerGoalsBox
             }
         } flagChip: { flag in
-            TaskDetailFlagChip(flag: flag)
+            AnyView(TaskDetailFlagChip(flag: flag))
         }
     }
 
