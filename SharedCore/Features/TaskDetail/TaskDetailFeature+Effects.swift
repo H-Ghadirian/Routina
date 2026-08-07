@@ -630,6 +630,7 @@ extension TaskDetailFeature {
             recurrenceTimeRangeRole: request.recurrenceTimeRangeRole,
             color: request.color,
             autoAssumeDailyDone: request.autoAssumeDailyDone,
+            hidesAssumedDoneCalendarBlock: request.hidesAssumedDoneCalendarBlock,
             autoAssumeDoneTimeOfDay: request.autoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: request.estimatedDurationMinutes,
             actualDurationMinutes: request.actualDurationMinutes,
@@ -678,6 +679,7 @@ extension TaskDetailFeature {
         recurrenceTimeRangeRole: RoutineTimeRangeRole,
         color: RoutineTaskColor,
         autoAssumeDailyDone: Bool,
+        hidesAssumedDoneCalendarBlock: Bool,
         autoAssumeDoneTimeOfDay: RoutineTimeOfDay?,
         estimatedDurationMinutes: Int?,
         actualDurationMinutes: Int?,
@@ -783,6 +785,8 @@ extension TaskDetailFeature {
                         hasSequentialSteps: !steps.isEmpty,
                         hasChecklistItems: !checklistItems.isEmpty
                     )
+                task.hidesAssumedDoneCalendarBlock = task.autoAssumeDailyDone
+                    && hidesAssumedDoneCalendarBlock
                 task.autoAssumeDoneTimeOfDay = task.autoAssumeDailyDone
                     ? (autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
                     : nil

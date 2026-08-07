@@ -1259,6 +1259,10 @@ private struct DayPlanTimelineTaskInfo {
             return false
         }
 
+        guard hasScheduledOccurrence(on: selectedDay, calendar: calendar) else {
+            return false
+        }
+
         if selectedDay == today, isArchived(referenceDate: referenceDate, calendar: calendar) {
             return false
         }
@@ -1302,6 +1306,14 @@ private struct DayPlanTimelineTaskInfo {
     }
 
     private func availableAt(on day: Date, calendar: Calendar) -> Date {
+        if recurrenceRule.advanced != nil,
+           let firstOccurrence = RoutineDateMath.scheduledOccurrences(
+                for: task,
+                on: day,
+                calendar: calendar
+           ).min() {
+            return firstOccurrence
+        }
         if let timeRange = recurrenceRule.timeRange {
             return timeRange.startDate(on: day, calendar: calendar)
         }
@@ -1309,6 +1321,29 @@ private struct DayPlanTimelineTaskInfo {
             return timeOfDay.date(on: day, calendar: calendar)
         }
         return calendar.startOfDay(for: day)
+    }
+
+    private func hasScheduledOccurrence(on day: Date, calendar: Calendar) -> Bool {
+        if recurrenceRule.advanced != nil {
+            return !RoutineDateMath.scheduledOccurrences(
+                for: task,
+                on: day,
+                calendar: calendar
+            ).isEmpty
+        }
+
+        switch recurrenceRule.kind {
+        case .intervalDays:
+            return recurrenceRule.isDaily
+        case .dailyTime:
+            return true
+        case .weekly, .monthlyDay:
+            return RoutineDateMath.isFixedCalendarOccurrence(
+                for: recurrenceRule,
+                on: day,
+                calendar: calendar
+            )
+        }
     }
 
     private func isArchived(referenceDate: Date, calendar: Calendar) -> Bool {

@@ -211,6 +211,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editAutoAssumeDailyDone },
                 set: { store.send(.editAutoAssumeDailyDoneChanged($0)) }
             ),
+            hidesAssumedDoneCalendarBlock: Binding(
+                get: { store.editHidesAssumedDoneCalendarBlock },
+                set: { store.send(.editHidesAssumedDoneCalendarBlockChanged($0)) }
+            ),
             autoAssumeDoneTimeOfDay: Binding(
                 get: { store.editAutoAssumeDoneTimeOfDay.date(on: Date()) },
                 set: { store.send(.editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay.from($0))) }

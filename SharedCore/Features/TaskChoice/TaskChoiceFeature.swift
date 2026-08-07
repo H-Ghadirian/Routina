@@ -135,7 +135,8 @@ enum TaskChoiceCandidateRanking {
     static func isCurrentlySelectable(
         _ task: RoutineTask,
         referenceDate: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        logs: [RoutineLog] = []
     ) -> Bool {
         guard task.canceledAt == nil,
               !task.isArchived(referenceDate: referenceDate, calendar: calendar)
@@ -152,6 +153,15 @@ enum TaskChoiceCandidateRanking {
             referenceDate: referenceDate,
             calendar: calendar
         )
+        guard !RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: currentOccurrenceDay,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        ) else {
+            return false
+        }
         let completedCurrentOccurrence = task.lastDone.flatMap {
             RoutineDateMath.completionDisplayDay(
                 for: task,
@@ -485,12 +495,15 @@ struct TaskChoiceFeature {
                     sortBy: [SortDescriptor(\RoutineTask.name)]
                 )
                 let tasks = try modelContext().fetch(descriptor)
+                let logs = try modelContext().fetch(FetchDescriptor<RoutineLog>())
+                let logsByTaskID = Dictionary(grouping: logs, by: \.taskID)
                 let referenceDate = now
                 let selectableTasks = tasks.filter {
                     TaskChoiceCandidateRanking.isCurrentlySelectable(
                         $0,
                         referenceDate: referenceDate,
-                        calendar: calendar
+                        calendar: calendar,
+                        logs: logsByTaskID[$0.id] ?? []
                     )
                 }
                 let relationshipCandidates = RoutineTaskRelationshipCandidate.from(

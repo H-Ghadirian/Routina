@@ -100,6 +100,7 @@ extension SettingsRoutineDataPersistence {
             var activityStateRawValue: String?
             var ongoingSince: Date?
             var autoAssumeDailyDone: Bool?
+            var hidesAssumedDoneCalendarBlock: Bool?
             var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
             var estimatedDurationMinutes: Int?
             var actualDurationMinutes: Int?

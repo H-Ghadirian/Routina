@@ -115,7 +115,6 @@ struct AddRoutineScheduleMutationHandler {
         AddRoutineScheduleEditor.setRecurrenceEditorMode(mode, schedule: &state.schedule)
         if mode == .advanced {
             state.basics.trackingCadenceEnabled = true
-            state.schedule.autoAssumeDailyDone = false
         }
         synchronizeRecurrenceDraft(state: &state)
         enforceAutoAssumeEligibility(state: &state)
@@ -286,6 +285,17 @@ struct AddRoutineScheduleMutationHandler {
         state: inout AddRoutineFeature.State
     ) {
         state.schedule.autoAssumeDailyDone = isEnabled && state.canAutoAssumeDailyDone
+        if !state.schedule.autoAssumeDailyDone {
+            state.schedule.hidesAssumedDoneCalendarBlock = false
+        }
+    }
+
+    func setHidesAssumedDoneCalendarBlock(
+        _ isEnabled: Bool,
+        state: inout AddRoutineFeature.State
+    ) {
+        state.schedule.hidesAssumedDoneCalendarBlock = isEnabled
+            && state.schedule.autoAssumeDailyDone
     }
 
     func setAutoAssumeDoneTimeOfDay(
@@ -298,6 +308,7 @@ struct AddRoutineScheduleMutationHandler {
     private func enforceAutoAssumeEligibility(state: inout AddRoutineFeature.State) {
         guard !state.canAutoAssumeDailyDone else { return }
         state.schedule.autoAssumeDailyDone = false
+        state.schedule.hidesAssumedDoneCalendarBlock = false
     }
 
     private func synchronizeRecurrenceDraft(state: inout AddRoutineFeature.State) {

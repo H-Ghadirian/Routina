@@ -451,7 +451,8 @@ struct DayPlanVisibleBlockContext {
             return false
         }
 
-        return RoutineAssumedCompletion.isAssumedDone(
+        return task.hidesAssumedDoneCalendarBlock
+            && RoutineAssumedCompletion.isAssumedDone(
             for: task,
             on: day,
             referenceDate: referenceDate,

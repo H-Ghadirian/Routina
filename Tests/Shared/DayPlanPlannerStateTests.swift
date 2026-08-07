@@ -1284,7 +1284,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func visiblePlannerBlocksHideAssumedDoneTasks() throws {
+    func visiblePlannerBlocksKeepAssumedDoneTasksByDefault() throws {
         let calendar = gregorianCalendar
         let blockDate = try #require(date("2026-05-07T12:00:00Z"))
         let referenceDate = try #require(date("2026-05-08T10:00:00Z"))
@@ -1298,6 +1298,37 @@ struct DayPlanPlannerStateTests {
             createdAt: createdAt,
             autoAssumeDailyDone: true,
             autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 0)
+        )
+        let blocks = [
+            plannerBlock(taskID: assumedTaskID, title: "Brush teeth", on: blockDate, calendar: calendar),
+        ]
+
+        let visibleBlocks = DayPlanVisibleBlocks.blocks(
+            blocks,
+            tasks: [assumedTask],
+            logs: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+
+        #expect(visibleBlocks.map(\.taskID) == [assumedTaskID])
+    }
+
+    @Test
+    func visiblePlannerBlocksHideAssumedDoneTasksWhenTaskPrefersIt() throws {
+        let calendar = gregorianCalendar
+        let blockDate = try #require(date("2026-05-07T12:00:00Z"))
+        let referenceDate = try #require(date("2026-05-08T10:00:00Z"))
+        let createdAt = try #require(date("2026-05-06T08:00:00Z"))
+        let assumedTaskID = UUID()
+        let assumedTask = RoutineTask(
+            id: assumedTaskID,
+            name: "Brush teeth",
+            scheduleMode: .record,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            hidesAssumedDoneCalendarBlock: true
         )
         let blocks = [
             plannerBlock(taskID: assumedTaskID, title: "Brush teeth", on: blockDate, calendar: calendar),

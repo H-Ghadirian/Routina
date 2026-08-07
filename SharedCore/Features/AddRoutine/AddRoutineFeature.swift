@@ -79,6 +79,7 @@ struct AddRoutineFeature: Reducer {
         case recurrenceDayOfMonthChanged(Int)
         case recurrenceDaysOfMonthChanged([Int])
         case autoAssumeDailyDoneChanged(Bool)
+        case hidesAssumedDoneCalendarBlockChanged(Bool)
         case autoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay)
         case existingRoutineNamesChanged([String])
         case availablePlacesChanged([RoutinePlaceSummary])
@@ -246,6 +247,7 @@ struct AddRoutineFeature: Reducer {
             state.synchronizeRecurrenceDraftFromLegacy()
             if !state.canAutoAssumeDailyDone {
                 state.schedule.autoAssumeDailyDone = false
+                state.schedule.hidesAssumedDoneCalendarBlock = false
             }
             return .none
 
@@ -619,6 +621,10 @@ struct AddRoutineFeature: Reducer {
             scheduleMutationHandler().setAutoAssumeDailyDone(isEnabled, state: &state)
             return .none
 
+        case let .hidesAssumedDoneCalendarBlockChanged(isEnabled):
+            scheduleMutationHandler().setHidesAssumedDoneCalendarBlock(isEnabled, state: &state)
+            return .none
+
         case let .autoAssumeDoneTimeOfDayChanged(timeOfDay):
             scheduleMutationHandler().setAutoAssumeDoneTimeOfDay(timeOfDay, state: &state)
             return .none
@@ -691,6 +697,7 @@ struct AddRoutineFeature: Reducer {
             state.synchronizeRecurrenceDraftFromLegacy()
             if !state.canAutoAssumeDailyDone {
                 state.schedule.autoAssumeDailyDone = false
+                state.schedule.hidesAssumedDoneCalendarBlock = false
             }
             return .none
 

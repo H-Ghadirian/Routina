@@ -190,6 +190,16 @@ enum CloudKitDirectPullTaskRecordParser {
                 "cd_autoassumedailydone"
             ]
         )
+        let hidesAssumedDoneCalendarBlockValue = boolValue(
+            in: record,
+            keys: [
+                "hidesAssumedDoneCalendarBlock",
+                "HIDESASSUMEDDONECALENDARBLOCK",
+                "zhidesassumeddonecalendarblock",
+                "ZHIDESASSUMEDDONECALENDARBLOCK",
+                "cd_hidesassumeddonecalendarblock"
+            ]
+        )
         let autoAssumeDoneTimeOfDayHourValue = intValue(
             in: record,
             keys: [
@@ -315,6 +325,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || actualDurationMinutesValue != nil
                 || storyPointsValue != nil
                 || autoAssumeDailyDoneValue != nil
+                || hidesAssumedDoneCalendarBlockValue != nil
                 || autoAssumeDoneTimeOfDayHourValue != nil
                 || autoAssumeDoneTimeOfDayMinuteValue != nil
                 || placeIDsStorageValue != nil
@@ -383,6 +394,7 @@ enum CloudKitDirectPullTaskRecordParser {
             activityStateRawValue: activityStateRawValueValue,
             ongoingSince: ongoingSinceValue,
             autoAssumeDailyDone: autoAssumeDailyDoneValue,
+            hidesAssumedDoneCalendarBlock: hidesAssumedDoneCalendarBlockValue,
             autoAssumeDoneTimeOfDayHour: autoAssumeDoneTimeOfDayHourValue,
             autoAssumeDoneTimeOfDayMinute: autoAssumeDoneTimeOfDayMinuteValue,
             estimatedDurationMinutes: estimatedDurationMinutesValue,

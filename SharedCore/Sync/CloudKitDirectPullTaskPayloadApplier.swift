@@ -88,6 +88,13 @@ enum CloudKitDirectPullTaskPayloadApplier {
         task.ongoingSince = payload.ongoingSince
         if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
             task.autoAssumeDailyDone = autoAssumeDailyDone
+            if !autoAssumeDailyDone {
+                task.hidesAssumedDoneCalendarBlock = false
+            }
+        }
+        if let hidesAssumedDoneCalendarBlock = payload.hidesAssumedDoneCalendarBlock {
+            task.hidesAssumedDoneCalendarBlock = hidesAssumedDoneCalendarBlock
+                && task.autoAssumeDailyDone
         }
         if payload.autoAssumeDoneTimeOfDayHour != nil || payload.autoAssumeDoneTimeOfDayMinute != nil {
             task.autoAssumeDoneTimeOfDay = RoutineTimeOfDay(
@@ -166,6 +173,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             activityStateRawValue: payload.activityStateRawValue,
             ongoingSince: payload.ongoingSince,
             autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false,
+            hidesAssumedDoneCalendarBlock: payload.hidesAssumedDoneCalendarBlock ?? false,
             autoAssumeDoneTimeOfDay: payload.autoAssumeDoneTimeOfDayHour != nil || payload.autoAssumeDoneTimeOfDayMinute != nil
                 ? RoutineTimeOfDay(
                     hour: payload.autoAssumeDoneTimeOfDayHour ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.hour,

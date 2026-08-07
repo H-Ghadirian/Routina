@@ -22,10 +22,9 @@ enum RoutineAssumedCompletion {
         hasChecklistItems: Bool
     ) -> Bool {
         guard scheduleMode.usesRoutineCadence,
-              scheduleMode.scheduleBehavior == .soft,
               trackingCadenceEnabled,
               !hasSequentialSteps,
-              recurrenceRule.isDaily
+              supportsAssumedCompletion(recurrenceRule)
         else {
             return false
         }
@@ -49,6 +48,10 @@ enum RoutineAssumedCompletion {
         let selectedDay = calendar.startOfDay(for: day)
         let today = calendar.startOfDay(for: referenceDate)
         guard selectedDay <= today else { return false }
+
+        guard hasScheduledOccurrence(for: task, on: selectedDay, calendar: calendar) else {
+            return false
+        }
 
         if let createdAt = task.createdAt {
             let createdDay = calendar.startOfDay(for: createdAt)
@@ -204,6 +207,14 @@ enum RoutineAssumedCompletion {
         on day: Date,
         calendar: Calendar
     ) -> Date {
+        if task.recurrenceRule.advanced != nil,
+           let firstOccurrence = RoutineDateMath.scheduledOccurrences(
+                for: task,
+                on: day,
+                calendar: calendar
+           ).min() {
+            return firstOccurrence
+        }
         if let timeRange = task.recurrenceRule.timeRange {
             return timeRange.startDate(on: day, calendar: calendar)
         }
@@ -215,6 +226,43 @@ enum RoutineAssumedCompletion {
             return calendar.startOfDay(for: day)
         case .intervalDays, .weekly, .monthlyDay:
             return calendar.startOfDay(for: day)
+        }
+    }
+
+    private static func supportsAssumedCompletion(
+        _ recurrenceRule: RoutineRecurrenceRule
+    ) -> Bool {
+        guard recurrenceRule.advanced?.occursMoreThanOncePerDay != true else {
+            return false
+        }
+        return recurrenceRule.isDaily || recurrenceRule.isFixedCalendar
+    }
+
+    private static func hasScheduledOccurrence(
+        for task: RoutineTask,
+        on day: Date,
+        calendar: Calendar
+    ) -> Bool {
+        let recurrenceRule = task.recurrenceRule
+        if recurrenceRule.advanced != nil {
+            return !RoutineDateMath.scheduledOccurrences(
+                for: task,
+                on: day,
+                calendar: calendar
+            ).isEmpty
+        }
+
+        switch recurrenceRule.kind {
+        case .intervalDays:
+            return recurrenceRule.isDaily
+        case .dailyTime:
+            return true
+        case .weekly, .monthlyDay:
+            return RoutineDateMath.isFixedCalendarOccurrence(
+                for: recurrenceRule,
+                on: day,
+                calendar: calendar
+            )
         }
     }
 

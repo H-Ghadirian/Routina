@@ -94,6 +94,108 @@ struct TaskChoiceFeatureTests {
     }
 
     @Test
+    func pausedRepeatingTaskIsNeverSelectableForTaskChoice() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let pausedRoutine = RoutineTask(
+            name: "Archive weekly review",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(on: 2, at: nil),
+            pausedAt: now
+        )
+
+        #expect(!TaskChoiceCandidateRanking.isCurrentlySelectable(
+            pausedRoutine,
+            referenceDate: now,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func assumedDoneRepeatingTaskIsNeverSelectableForTaskChoice() {
+        let now = Date(timeIntervalSince1970: 1_772_056_800)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let assumedDone = RoutineTask(
+            name: "Daily review",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            createdAt: Date(timeIntervalSince1970: 1_771_545_600),
+            autoAssumeDailyDone: true
+        )
+
+        #expect(!TaskChoiceCandidateRanking.isCurrentlySelectable(
+            assumedDone,
+            referenceDate: now,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func missedAssumedOccurrenceIsSelectableForTaskChoiceAgain() {
+        let now = Date(timeIntervalSince1970: 1_772_056_800)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let task = RoutineTask(
+            name: "Daily review",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            createdAt: Date(timeIntervalSince1970: 1_771_545_600),
+            autoAssumeDailyDone: true
+        )
+        let missedLog = RoutineLog(
+            timestamp: now,
+            taskID: task.id,
+            kind: .missed
+        )
+
+        #expect(TaskChoiceCandidateRanking.isCurrentlySelectable(
+            task,
+            referenceDate: now,
+            calendar: calendar,
+            logs: [missedLog]
+        ))
+    }
+
+    @Test
+    func assumedDoneTaskIsExcludedBeforeTaskChoiceReadinessAndRanking() async throws {
+        let context = makeInMemoryContext()
+        let now = Date(timeIntervalSince1970: 1_772_056_800)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let assumedDone = RoutineTask(
+            name: "Daily review",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            createdAt: Date(timeIntervalSince1970: 1_771_545_600),
+            autoAssumeDailyDone: true
+        )
+        let readyTask = makeReadyTask(name: "Write proposal")
+        context.insert(assumedDone)
+        context.insert(readyTask)
+        try context.save()
+
+        let readyCandidate = TaskChoiceCandidate(task: readyTask)
+        let store = TestStore(initialState: TaskChoiceFeature.State()) {
+            TaskChoiceFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+            $0.calendar = calendar
+        }
+
+        await store.send(.findTasksTapped) {
+            $0.phase = .loading
+        }
+        await store.receive(.tasksLoaded(.recommendation(readyCandidate, candidateCount: 1))) {
+            $0.phase = .recommendation
+            $0.recommendedTask = readyCandidate
+            $0.candidateCount = 1
+        }
+    }
+
+    @Test
     func unresolvedRequiredTaskIsSkippedBeforeReadinessAndRanking() async throws {
         let context = makeInMemoryContext()
         let now = Date(timeIntervalSince1970: 1_700_000_000)

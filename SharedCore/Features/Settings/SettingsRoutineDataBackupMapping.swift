@@ -93,6 +93,7 @@ enum SettingsRoutineDataBackupMapping {
             activityStateRawValue: task.activityStateRawValue,
             ongoingSince: task.ongoingSince,
             autoAssumeDailyDone: task.autoAssumeDailyDone,
+            hidesAssumedDoneCalendarBlock: task.hidesAssumedDoneCalendarBlock,
             autoAssumeDoneTimeOfDay: task.autoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: task.estimatedDurationMinutes,
             actualDurationMinutes: task.actualDurationMinutes,

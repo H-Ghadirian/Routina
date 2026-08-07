@@ -178,7 +178,6 @@ struct TaskDetailRecurrenceEditActionHandler {
         state.editRecurrenceEditorMode = mode
         if mode == .advanced {
             state.editTrackingCadenceEnabled = true
-            state.editAutoAssumeDailyDone = false
         }
         synchronizeRecurrenceDraft(state: &state)
         disableAutoAssumeIfNeeded(state: &state)
@@ -360,6 +359,17 @@ struct TaskDetailRecurrenceEditActionHandler {
 
     func editAutoAssumeDailyDoneChanged(_ isEnabled: Bool, state: inout State) -> Effect<Action> {
         state.editAutoAssumeDailyDone = isEnabled && state.canAutoAssumeDailyDone
+        if !state.editAutoAssumeDailyDone {
+            state.editHidesAssumedDoneCalendarBlock = false
+        }
+        return .none
+    }
+
+    func editHidesAssumedDoneCalendarBlockChanged(
+        _ isEnabled: Bool,
+        state: inout State
+    ) -> Effect<Action> {
+        state.editHidesAssumedDoneCalendarBlock = isEnabled && state.editAutoAssumeDailyDone
         return .none
     }
 
@@ -443,6 +453,7 @@ struct TaskDetailRecurrenceEditActionHandler {
     private func disableAutoAssumeIfNeeded(state: inout State) {
         if !state.canAutoAssumeDailyDone {
             state.editAutoAssumeDailyDone = false
+            state.editHidesAssumedDoneCalendarBlock = false
         }
     }
 

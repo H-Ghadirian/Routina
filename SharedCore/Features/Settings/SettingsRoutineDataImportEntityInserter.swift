@@ -310,6 +310,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 activityStateRawValue: task.activityStateRawValue,
                 ongoingSince: task.ongoingSince,
                 autoAssumeDailyDone: task.autoAssumeDailyDone ?? false,
+                hidesAssumedDoneCalendarBlock: task.hidesAssumedDoneCalendarBlock ?? false,
                 autoAssumeDoneTimeOfDay: task.autoAssumeDoneTimeOfDay,
                 estimatedDurationMinutes: task.estimatedDurationMinutes,
                 actualDurationMinutes: task.actualDurationMinutes,

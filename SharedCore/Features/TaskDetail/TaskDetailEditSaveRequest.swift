@@ -38,6 +38,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var recurrenceTimeRangeRole: RoutineTimeRangeRole
     var color: RoutineTaskColor
     var autoAssumeDailyDone: Bool
+    var hidesAssumedDoneCalendarBlock: Bool
     var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
     var estimatedDurationMinutes: Int?
     var actualDurationMinutes: Int?
@@ -174,6 +175,7 @@ struct TaskDetailEditSaveRequestBuilder {
                 : recurrenceDraft.timeRangeRole,
             color: state.editColor,
             autoAssumeDailyDone: state.editAutoAssumeDailyDone,
+            hidesAssumedDoneCalendarBlock: state.editHidesAssumedDoneCalendarBlock,
             autoAssumeDoneTimeOfDay: state.editAutoAssumeDailyDone
                 ? state.editAutoAssumeDoneTimeOfDay
                 : nil,
@@ -330,6 +332,8 @@ extension TaskDetailFeature {
                 hasSequentialSteps: !request.steps.isEmpty,
                 hasChecklistItems: !request.checklistItems.isEmpty
             )
+        updatedTask.hidesAssumedDoneCalendarBlock = updatedTask.autoAssumeDailyDone
+            && request.hidesAssumedDoneCalendarBlock
         updatedTask.autoAssumeDoneTimeOfDay = updatedTask.autoAssumeDailyDone
             ? (request.autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
             : nil

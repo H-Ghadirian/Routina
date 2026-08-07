@@ -115,6 +115,7 @@ struct AddRoutineSaveRequest: Equatable {
     let attachments: [AttachmentItem]
     let color: RoutineTaskColor
     let autoAssumeDailyDone: Bool
+    let hidesAssumedDoneCalendarBlock: Bool
     let autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
     let estimatedDurationMinutes: Int?
     let actualDurationMinutes: Int?
@@ -162,6 +163,7 @@ struct AddRoutineSaveRequest: Equatable {
         attachments: [AttachmentItem] = [],
         color: RoutineTaskColor,
         autoAssumeDailyDone: Bool = false,
+        hidesAssumedDoneCalendarBlock: Bool = false,
         autoAssumeDoneTimeOfDay: RoutineTimeOfDay? = nil,
         estimatedDurationMinutes: Int? = nil,
         actualDurationMinutes: Int? = nil,
@@ -248,6 +250,8 @@ struct AddRoutineSaveRequest: Equatable {
                 hasSequentialSteps: !self.steps.isEmpty,
                 hasChecklistItems: !self.checklistItems.isEmpty
             )
+        self.hidesAssumedDoneCalendarBlock = self.autoAssumeDailyDone
+            && hidesAssumedDoneCalendarBlock
         self.autoAssumeDoneTimeOfDay = self.autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         self.estimatedDurationMinutes = estimatedDurationMinutes
         self.actualDurationMinutes = scheduleMode.taskType == .record
@@ -383,6 +387,8 @@ struct AddRoutineSaveRequest: Equatable {
                 hasSequentialSteps: !self.steps.isEmpty,
                 hasChecklistItems: !self.checklistItems.isEmpty
             )
+        self.hidesAssumedDoneCalendarBlock = self.autoAssumeDailyDone
+            && schedule.hidesAssumedDoneCalendarBlock
         self.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? schedule.autoAssumeDoneTimeOfDay : nil
     }
 

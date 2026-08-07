@@ -91,6 +91,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var recurrenceWeekdays: [Int] = []
     var recurrenceDaysOfMonth: [Int] = []
     var autoAssumeDailyDone = false
+    var hidesAssumedDoneCalendarBlock = false
     var autoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
     var routineSteps: [RoutineStep] = []
     var stepDraft = ""
@@ -165,6 +166,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         recurrenceWeekdays = schedule.recurrenceWeekdays
         recurrenceDaysOfMonth = schedule.recurrenceDaysOfMonth
         autoAssumeDailyDone = schedule.autoAssumeDailyDone
+        hidesAssumedDoneCalendarBlock = schedule.hidesAssumedDoneCalendarBlock
         autoAssumeDoneTimeOfDay = schedule.autoAssumeDoneTimeOfDay
         routineSteps = checklist.routineSteps
         stepDraft = checklist.stepDraft
@@ -219,6 +221,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             || recurrenceTimeRangeStart != RoutineTimeRange.defaultValue.start
             || recurrenceTimeRangeEnd != RoutineTimeRange.defaultValue.end
             || autoAssumeDailyDone
+            || hidesAssumedDoneCalendarBlock
             || autoAssumeDoneTimeOfDay != RoutineAssumedCompletion.defaultDoneTimeOfDay
             || !routineSteps.isEmpty
             || hasText(stepDraft)
@@ -307,6 +310,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             state.schedule.recurrenceDaysOfMonth = [state.schedule.recurrenceDayOfMonth]
         }
         state.schedule.autoAssumeDailyDone = autoAssumeDailyDone
+        state.schedule.hidesAssumedDoneCalendarBlock = hidesAssumedDoneCalendarBlock
         state.schedule.autoAssumeDoneTimeOfDay = autoAssumeDoneTimeOfDay
         state.checklist.routineSteps = RoutineStep.sanitized(routineSteps)
         state.checklist.stepDraft = stepDraft

@@ -693,10 +693,10 @@ Given Task Details is editing a routine or task with checklist items
 When the user removes every checklist item and saves the edit
 Then the selected detail state and Home selected row drop the checklist immediately while persistence and reloads catch up
 
-### Daily Gentle Checklist Auto-Assume Uses Day-Level Completion
+### Repeating Task Auto-Assume Uses Day-Level Completion
 
 Area: Tasks
-Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
+Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineAssumedCompletionTests.swift`
@@ -717,10 +717,15 @@ Given the user starts checking checklist items for that daily occurrence
 When the app derives assumed completion state
 Then manual partial checklist progress suppresses assumed-done presentation until the routine is fully completed or progress is cleared
 
+Given a weekly time-block task has Auto-assume done enabled
+When its scheduled weekday and start time have passed
+Then that occurrence is presented as assumed done
+And days without a scheduled occurrence are not assumed done
+
 ### Planner Can Show Assumed Done Routines
 
 Area: Planner
-Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md), [0372](../decisions/0372-hide-completed-tasks-from-calendar-schedule.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md), [0372](../decisions/0372-hide-completed-tasks-from-calendar-schedule.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanCalendarFilterStateTests.swift`
@@ -733,6 +738,14 @@ Then the routine is available as synthetic completed planner activity without cr
 Given Planner Calendar filters are at their defaults
 When Calendar filters automatic activity for display
 Then synthetic assumed-done activity and automatic recorded-completion activity are hidden from the editable Schedule grid
+
+Given an assumed-done task has a task-backed time or all-day Calendar block
+When its Calendar visibility preference remains at the default
+Then the task-backed block stays visible in Calendar
+
+Given that same task enables `Hide assumed-done blocks from Calendar`
+When Calendar renders an assumed occurrence
+Then its task-backed block is hidden while its assumed-done review activity remains available
 
 Given Planner Calendar filters are at their defaults
 When the user opens the right-side day task list for an assumed-done day
@@ -1732,7 +1745,7 @@ Given a person opens More -> `Help me choose` on compact iOS
 When they select available time, energy, and an immediate intent
 Then Routina finds currently selectable recurring tasks and unfinished,
 uncanceled one-off tasks
-And it excludes canceled, paused, snoozed, and current-period-complete tasks
+And it excludes canceled, paused, snoozed, assumed-done, and current-period-complete tasks
 And it excludes tasks with a confirmed `Blocked by` relationship whose
 prerequisite is unresolved
 And it checks that every eligible task has explicit Importance and Urgency,

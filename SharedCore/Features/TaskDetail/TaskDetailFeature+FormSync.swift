@@ -80,6 +80,7 @@ extension TaskDetailFeature {
             ?? recurrenceRule.dayOfMonth
             ?? Calendar.current.component(.day, from: now)
         state.editAutoAssumeDailyDone = state.task.autoAssumeDailyDone
+        state.editHidesAssumedDoneCalendarBlock = state.task.hidesAssumedDoneCalendarBlock
         state.editAutoAssumeDoneTimeOfDay = state.task.autoAssumeDoneTimeOfDay
             ?? RoutineAssumedCompletion.defaultDoneTimeOfDay
         state.editEstimatedDurationMinutes = state.task.estimatedDurationMinutes

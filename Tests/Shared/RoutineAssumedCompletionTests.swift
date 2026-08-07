@@ -11,7 +11,7 @@ import Testing
 @MainActor
 struct RoutineAssumedCompletionTests {
     @Test
-    func eligibility_allowsDailyGentleStandardAndChecklistRoutinesWithOptIn() {
+    func eligibility_allowsEligibleRepeatingTasksWithOptIn() {
         let checklistItem = RoutineChecklistItem(title: "Breakfast", intervalDays: 1)
         let dueRoutine = RoutineTask(
             name: "Brush teeth",
@@ -93,7 +93,7 @@ struct RoutineAssumedCompletionTests {
             autoAssumeDailyDone: true
         )
 
-        #expect(!RoutineAssumedCompletion.isEligible(dueRoutine))
+        #expect(RoutineAssumedCompletion.isEligible(dueRoutine))
         #expect(RoutineAssumedCompletion.isEligible(gentleRoutine))
         #expect(RoutineAssumedCompletion.isEligible(gentleChecklistRoutine))
         #expect(RoutineAssumedCompletion.isEligible(standard))
@@ -101,10 +101,44 @@ struct RoutineAssumedCompletionTests {
         #expect(RoutineAssumedCompletion.isEligible(checklist))
         #expect(RoutineAssumedCompletion.isEligible(exactTimeChecklist))
         #expect(!RoutineAssumedCompletion.isEligible(noCadence))
-        #expect(!RoutineAssumedCompletion.isEligible(weekly))
+        #expect(RoutineAssumedCompletion.isEligible(weekly))
         #expect(!RoutineAssumedCompletion.isEligible(optionalChecklist))
         #expect(!RoutineAssumedCompletion.isEligible(runout))
         #expect(!RoutineAssumedCompletion.isEligible(withSteps))
+    }
+
+    @Test
+    func weeklyScheduledTaskIsAssumedOnlyOnScheduledWeekdaysAfterItsTime() {
+        let calendar = makeTestCalendar()
+        let mondayMorning = makeDate("2026-02-23T09:30:00Z")
+        let mondayAfternoon = makeDate("2026-02-23T10:30:00Z")
+        let tuesday = makeDate("2026-02-24T12:00:00Z")
+        let task = RoutineTask(
+            name: "Team check-in",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(on: 2, at: RoutineTimeOfDay(hour: 10, minute: 0)),
+            createdAt: makeDate("2026-02-16T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: mondayMorning,
+            referenceDate: mondayMorning,
+            calendar: calendar
+        ))
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: mondayAfternoon,
+            referenceDate: mondayAfternoon,
+            calendar: calendar
+        ))
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: tuesday,
+            referenceDate: tuesday,
+            calendar: calendar
+        ))
     }
 
     @Test

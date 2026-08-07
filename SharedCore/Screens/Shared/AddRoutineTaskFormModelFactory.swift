@@ -213,6 +213,10 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.schedule.autoAssumeDailyDone },
                 send: AddRoutineFeature.Action.autoAssumeDailyDoneChanged
             ),
+            hidesAssumedDoneCalendarBlock: binding(
+                get: { store.schedule.hidesAssumedDoneCalendarBlock },
+                send: AddRoutineFeature.Action.hidesAssumedDoneCalendarBlockChanged
+            ),
             autoAssumeDoneTimeOfDay: binding(
                 get: { store.schedule.autoAssumeDoneTimeOfDay.date(on: Date()) },
                 send: { .autoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay.from($0)) }

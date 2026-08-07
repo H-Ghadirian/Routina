@@ -150,6 +150,7 @@ struct TaskFormModel {
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
     var autoAssumeDailyDone: Binding<Bool> = .constant(false)
+    var hidesAssumedDoneCalendarBlock: Binding<Bool> = .constant(false)
     var autoAssumeDoneTimeOfDay: Binding<Date> = .constant(
         RoutineAssumedCompletion.defaultDoneTimeOfDay.date(on: Date())
     )

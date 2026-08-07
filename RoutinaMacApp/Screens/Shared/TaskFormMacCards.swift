@@ -1262,7 +1262,14 @@ struct TaskFormMacBehaviorCard: View {
             isOn: model.autoAssumeDailyDone,
             caption: presentation.autoAssumeDailyDoneHelpText,
             isDisabled: !model.canAutoAssumeDailyDone
-        ) {}
+        ) {
+            if model.autoAssumeDailyDone.wrappedValue {
+                Toggle(
+                    "Hide assumed-done blocks from Calendar",
+                    isOn: model.hidesAssumedDoneCalendarBlock
+                )
+            }
+        }
     }
 
     @ViewBuilder

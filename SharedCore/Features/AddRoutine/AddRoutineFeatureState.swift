@@ -73,6 +73,7 @@ struct AddRoutineScheduleState: Equatable {
     var recurrenceWeekdays: [Int] = []
     var recurrenceDaysOfMonth: [Int] = []
     var autoAssumeDailyDone: Bool = false
+    var hidesAssumedDoneCalendarBlock: Bool = false
     var autoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
 }
 

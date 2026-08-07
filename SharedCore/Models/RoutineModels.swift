@@ -69,6 +69,7 @@ final class RoutineTask {
     var activityStateRawValue: String = RoutineActivityState.idle.rawValue
     var ongoingSince: Date?
     var autoAssumeDailyDone: Bool = false
+    var hidesAssumedDoneCalendarBlock: Bool = false
     var autoAssumeDoneTimeOfDayHour: Int?
     var autoAssumeDoneTimeOfDayMinute: Int?
     var estimatedDurationMinutes: Int?
@@ -457,6 +458,7 @@ final class RoutineTask {
         activityStateRawValue: String? = nil,
         ongoingSince: Date? = nil,
         autoAssumeDailyDone: Bool = false,
+        hidesAssumedDoneCalendarBlock: Bool = false,
         autoAssumeDoneTimeOfDay: RoutineTimeOfDay? = nil,
         estimatedDurationMinutes: Int? = nil,
         actualDurationMinutes: Int? = nil,
@@ -564,6 +566,7 @@ final class RoutineTask {
         self.activityStateRawValue = RoutineActivityState(rawValue: activityStateRawValue ?? "")?.rawValue ?? RoutineActivityState.idle.rawValue
         self.ongoingSince = ongoingSince
         self.autoAssumeDailyDone = autoAssumeDailyDone
+        self.hidesAssumedDoneCalendarBlock = autoAssumeDailyDone && hidesAssumedDoneCalendarBlock
         self.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         self.estimatedDurationMinutes = Self.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
@@ -903,6 +906,7 @@ final class RoutineTask {
             activityStateRawValue: activityStateRawValue,
             ongoingSince: ongoingSince,
             autoAssumeDailyDone: autoAssumeDailyDone,
+            hidesAssumedDoneCalendarBlock: hidesAssumedDoneCalendarBlock,
             autoAssumeDoneTimeOfDay: autoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: estimatedDurationMinutes,
             actualDurationMinutes: actualDurationMinutes,

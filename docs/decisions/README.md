@@ -31,6 +31,10 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0490](0490-exclude-assumed-done-tasks-from-help-me-choose.md) refines [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md), [0486](0486-suggest-confirmed-task-relationships-on-device.md), and [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md):** Help me choose excludes a task with a currently assumed-done occurrence before relationship filtering, missing-metadata counts, comparisons, and ranking.
+
+- **[0489](0489-expand-auto-assume-done-to-scheduled-repeats.md) refines [0259](0259-allow-daily-checklist-auto-assumed-completion.md), [0387](0387-keep-completed-scheduled-blocks-visible.md), and [0398](0398-move-auto-assume-done-to-tracking.md):** Eligible repeating Tasks and Tracking entries can opt into synthetic assumed-done occurrences on their scheduled days; task-backed Calendar blocks remain visible unless that task opts to hide assumed-done blocks.
+
 - **[0488](0488-prioritize-grounded-task-relationship-analysis.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** Task-relationship review prioritizes grounded candidate evidence and concrete reasons over suggestion volume; its updated analysis fingerprint makes existing reviews eligible for one improved pass.
 
 - **[0487](0487-allow-archiving-one-off-tasks.md) refines [0290](0290-limit-free-active-tasks-behind-subscription.md) and [0486](0486-suggest-confirmed-task-relationships-on-device.md):** One-off tasks can be archived and restored without changing their scheduling data; they leave active surfaces, notifications, guided `Add missing…` reviews, Help me choose, and task-relationship review while archived.
@@ -443,6 +447,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0490](0490-exclude-assumed-done-tasks-from-help-me-choose.md) | Exclude Assumed-Done Tasks From Help Me Choose | Accepted | 2026-08-06 |
+| [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md) | Expand Auto-Assume Done to Scheduled Repeats | Accepted | 2026-08-06 |
 | [0488](0488-prioritize-grounded-task-relationship-analysis.md) | Prioritize Grounded Task Relationship Analysis | Accepted | 2026-08-06 |
 | [0487](0487-allow-archiving-one-off-tasks.md) | Allow Archiving One-Off Tasks | Accepted | 2026-08-06 |
 | [0486](0486-suggest-confirmed-task-relationships-on-device.md) | Suggest Confirmed Task Relationships On Device | Accepted | 2026-08-06 |

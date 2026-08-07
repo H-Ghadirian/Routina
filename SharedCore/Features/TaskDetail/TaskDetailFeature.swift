@@ -115,6 +115,7 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var editRecurrenceDaysOfMonth: [Int] = []
         var editAutoAssumeDailyDone: Bool = false
+        var editHidesAssumedDoneCalendarBlock: Bool = false
         var editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
         var editEstimatedDurationMinutes: Int?
         var editActualDurationMinutes: Int?
@@ -438,6 +439,7 @@ struct TaskDetailFeature: Reducer {
         case editRecurrenceDayOfMonthChanged(Int)
         case editRecurrenceDaysOfMonthChanged([Int])
         case editAutoAssumeDailyDoneChanged(Bool)
+        case editHidesAssumedDoneCalendarBlockChanged(Bool)
         case editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay)
         case editSaveTapped
         case editSaveRejected(RoutineTask)
@@ -1614,6 +1616,7 @@ struct TaskDetailFeature: Reducer {
             state.synchronizeRecurrenceDraftFromLegacy()
             if !state.canAutoAssumeDailyDone {
                 state.editAutoAssumeDailyDone = false
+                state.editHidesAssumedDoneCalendarBlock = false
             }
             return .none
 
@@ -1704,6 +1707,12 @@ struct TaskDetailFeature: Reducer {
 
         case let .editAutoAssumeDailyDoneChanged(isEnabled):
             return recurrenceEditActionHandler().editAutoAssumeDailyDoneChanged(
+                isEnabled,
+                state: &state
+            )
+
+        case let .editHidesAssumedDoneCalendarBlockChanged(isEnabled):
+            return recurrenceEditActionHandler().editHidesAssumedDoneCalendarBlockChanged(
                 isEnabled,
                 state: &state
             )

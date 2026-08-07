@@ -398,6 +398,12 @@ struct TaskFormIOSRepeatPatternSections: View {
             Text(presentation.autoAssumeDailyDoneHelpText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if model.autoAssumeDailyDone.wrappedValue {
+                Toggle(
+                    "Hide assumed-done blocks from Calendar",
+                    isOn: model.hidesAssumedDoneCalendarBlock
+                )
+            }
         }
     }
 }

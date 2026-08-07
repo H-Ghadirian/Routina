@@ -56,6 +56,7 @@ struct TaskDetailEditChangeRequest {
     let recurrenceDayOfMonth: Int
     let recurrenceDaysOfMonth: [Int]
     let autoAssumeDailyDone: Bool
+    let hidesAssumedDoneCalendarBlock: Bool
     let autoAssumeDoneTimeOfDay: RoutineTimeOfDay
     let focusModeEnabled: Bool
     let trackingCadenceEnabled: Bool
@@ -120,6 +121,7 @@ struct TaskDetailEditChangeRequest {
         self.recurrenceDayOfMonth = state.editRecurrenceDayOfMonth
         self.recurrenceDaysOfMonth = state.effectiveEditRecurrenceDaysOfMonth
         self.autoAssumeDailyDone = state.editAutoAssumeDailyDone
+        self.hidesAssumedDoneCalendarBlock = state.editHidesAssumedDoneCalendarBlock
         self.autoAssumeDoneTimeOfDay = state.editAutoAssumeDoneTimeOfDay
         self.focusModeEnabled = state.editFocusModeEnabled
         self.trackingCadenceEnabled = state.editTrackingCadenceEnabled
@@ -215,6 +217,7 @@ enum TaskDetailEditChangeDetector {
                 draft: request.recurrenceDraft
             ) != recurrenceTimeRangeRole(for: task)
             || request.autoAssumeDailyDone != task.autoAssumeDailyDone
+            || normalizedHidesAssumedDoneCalendarBlock(for: request) != task.hidesAssumedDoneCalendarBlock
             || normalizedAutoAssumeDoneTimeOfDay(for: request) != normalizedAutoAssumeDoneTimeOfDay(for: task)
             || request.focusModeEnabled != task.focusModeEnabled
             || request.trackingCadenceEnabled != task.trackingCadenceEnabled
@@ -237,6 +240,12 @@ enum TaskDetailEditChangeDetector {
         for request: TaskDetailEditChangeRequest
     ) -> RoutineTimeOfDay? {
         request.autoAssumeDailyDone ? request.autoAssumeDoneTimeOfDay : nil
+    }
+
+    private static func normalizedHidesAssumedDoneCalendarBlock(
+        for request: TaskDetailEditChangeRequest
+    ) -> Bool {
+        request.autoAssumeDailyDone && request.hidesAssumedDoneCalendarBlock
     }
 
     private static func normalizedAutoAssumeDoneTimeOfDay(

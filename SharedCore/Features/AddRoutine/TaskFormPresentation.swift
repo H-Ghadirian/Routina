@@ -483,9 +483,9 @@ struct TaskFormPresentation {
 
     var autoAssumeDailyDoneHelpText: String {
         if canAutoAssumeDailyDone {
-            return "Defaults this daily Gentle routine to done. You can still confirm it or mark it not done later."
+            return "Defaults scheduled occurrences to done. You can still confirm one or mark it not done later."
         }
-        return "Available only for daily Gentle routines without steps or optional checklist items, and daily Gentle Checklist routines."
+        return "Available for repeating tasks without steps or optional checklist items, and repeating checklist-completion tasks."
     }
 
     var weekdayOptions: [(id: Int, name: String)] {

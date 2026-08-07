@@ -42,6 +42,7 @@ struct SwiftDataModelTests {
         #expect(task.ongoingSince == nil)
         #expect(task.isAllDay == false)
         #expect(task.autoAssumeDailyDone == false)
+        #expect(task.hidesAssumedDoneCalendarBlock == false)
         #expect(task.autoAssumeDoneTimeOfDay == nil)
         #expect(task.estimatedDurationMinutes == nil)
         #expect(task.storyPoints == nil)
@@ -65,6 +66,23 @@ struct SwiftDataModelTests {
         #expect(task.autoAssumeDoneTimeOfDayHour == 21)
         #expect(task.autoAssumeDoneTimeOfDayMinute == 5)
         #expect(task.autoAssumeDoneTimeOfDay == RoutineTimeOfDay(hour: 21, minute: 5))
+    }
+
+    @Test
+    func routineTask_keepsAssumedDoneCalendarBlocksVisibleUnlessOptedOut() {
+        let visibleByDefault = RoutineTask(
+            name: "Team check-in",
+            autoAssumeDailyDone: true
+        )
+        let hiddenByPreference = RoutineTask(
+            name: "Team check-in",
+            autoAssumeDailyDone: true,
+            hidesAssumedDoneCalendarBlock: true
+        )
+
+        #expect(!visibleByDefault.hidesAssumedDoneCalendarBlock)
+        #expect(hiddenByPreference.hidesAssumedDoneCalendarBlock)
+        #expect(hiddenByPreference.detachedCopy().hidesAssumedDoneCalendarBlock)
     }
 
     @Test

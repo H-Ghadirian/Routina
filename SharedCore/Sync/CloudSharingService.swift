@@ -69,6 +69,7 @@ enum CloudSharingService {
         var activityStateRawValue: String?
         var ongoingSince: Date?
         var autoAssumeDailyDone: Bool
+        var hidesAssumedDoneCalendarBlock: Bool?
         var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
         var estimatedDurationMinutes: Int?
         var actualDurationMinutes: Int?
@@ -337,6 +338,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.activityStateRawValue = task.activityStateRawValue
         self.ongoingSince = task.ongoingSince
         self.autoAssumeDailyDone = task.autoAssumeDailyDone
+        self.hidesAssumedDoneCalendarBlock = task.hidesAssumedDoneCalendarBlock
         self.autoAssumeDoneTimeOfDay = task.autoAssumeDoneTimeOfDay
         self.estimatedDurationMinutes = task.estimatedDurationMinutes
         self.actualDurationMinutes = task.actualDurationMinutes
@@ -426,6 +428,8 @@ extension CloudSharingService.SharedTaskPayload {
         task.activityStateRawValue = RoutineActivityState(rawValue: activityStateRawValue ?? "")?.rawValue ?? RoutineActivityState.idle.rawValue
         task.ongoingSince = ongoingSince
         task.autoAssumeDailyDone = autoAssumeDailyDone
+        task.hidesAssumedDoneCalendarBlock = autoAssumeDailyDone
+            && (hidesAssumedDoneCalendarBlock ?? false)
         task.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
@@ -499,6 +503,7 @@ private extension RoutineTask {
             activityStateRawValue: payload.activityStateRawValue,
             ongoingSince: payload.ongoingSince,
             autoAssumeDailyDone: payload.autoAssumeDailyDone,
+            hidesAssumedDoneCalendarBlock: payload.hidesAssumedDoneCalendarBlock ?? false,
             autoAssumeDoneTimeOfDay: payload.autoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: payload.estimatedDurationMinutes,
             actualDurationMinutes: payload.actualDurationMinutes,
