@@ -73,6 +73,7 @@ Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
 - `Tests/Shared/TaskDetailEditSaveTests.swift`
 - `Tests/Shared/HomeFeatureTaskDetailActionRouterTests.swift`
+- `Tests/Shared/HomeFeatureSelectionRouterTests.swift`
 - `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
 
 Given a task is open in Mac Task Details or Edit Task
@@ -86,6 +87,7 @@ Given a task with existing relationships is open in Mac Task Details
 When the user clicks the visible section's `Link a Task` button once
 Then the existing-task picker opens directly
 And no second Linked Tasks editor or second `Link a Task` button is inserted below the section
+And the picker lists every other task in Home's loaded catalog except tasks already linked to the open task
 And choosing a task persists that relationship without requiring a second Save action
 
 ### Task Relationship Suggestions Require Confirmation

@@ -93,6 +93,11 @@ struct HomeFeatureSelectionRouterTests {
         let detailState = try #require(state.selection.taskDetailState)
         #expect(Set(detailState.availableRelationshipTasks.map(\.id)) == [directRelationshipID, inverseRelationshipID])
         #expect(!detailState.availableRelationshipTasks.contains(where: { $0.id == unrelatedID }))
+        #expect(Set(detailState.linkableRelationshipTasks.map(\.id)) == [
+            directRelationshipID,
+            inverseRelationshipID,
+            unrelatedID
+        ])
         #expect(detailState.hasPreloadedEditContext)
         #expect(detailState.availablePlaces == [
             RoutinePlaceSummary(id: placeID, name: "Desk", radiusMeters: 150, linkedRoutineCount: 1),

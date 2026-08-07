@@ -433,6 +433,16 @@ extension TaskDetailFeature.State {
         RoutineTask.resolvedRelationships(for: task, within: availableRelationshipTasks)
     }
 
+    /// The complete preloaded catalog used when a person chooses a new task to
+    /// link from Task Details. `availableRelationshipTasks` remains limited to
+    /// existing relationship neighbors so normal detail presentation stays
+    /// lightweight.
+    var linkableRelationshipTasks: [RoutineTaskRelationshipCandidate] {
+        editAvailableRelationshipTasks.isEmpty
+            ? availableRelationshipTasks
+            : editAvailableRelationshipTasks
+    }
+
     var groupedResolvedRelationships: [(kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])] {
         let grouped = Dictionary(grouping: resolvedRelationships, by: \.kind)
         return RoutineTaskRelationshipKind.allCases

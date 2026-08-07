@@ -1384,12 +1384,12 @@ struct TaskDetailFeature: Reducer {
 
         case let .detailLinkExistingTask(targetTaskID, kind):
             guard targetTaskID != state.task.id,
-                  state.availableRelationshipTasks.contains(where: { $0.id == targetTaskID }) else {
+                  state.linkableRelationshipTasks.contains(where: { $0.id == targetTaskID }) else {
                 return .none
             }
             let previousRelationships = RoutineTask.editableRelationships(
                 for: state.task,
-                within: state.availableRelationshipTasks
+                within: state.linkableRelationshipTasks
             )
             let updatedRelationships = RoutineTaskRelationship.sanitized(
                 previousRelationships + [

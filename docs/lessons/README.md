@@ -139,3 +139,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0095 — Validate Flag rules at selection time](0095-validate-flag-rules-at-selection-time.md)
 - [0096 — Validate renamed SwiftUI types](0096-validate-renamed-swiftui-types.md)
 - [0097 — Verify shared component references in platform forms](0097-verify-shared-component-references.md)
+- [0098 — Keep direct task linkers on the full preloaded catalog](0098-keep-direct-task-linkers-on-the-full-preloaded-catalog.md)

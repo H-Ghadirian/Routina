@@ -881,7 +881,7 @@ struct TaskDetailTCAView: View {
 
     private var existingTaskLinkerSheet: some View {
         TaskRelationshipPickerSheet(
-            candidates: store.availableRelationshipTasks,
+            candidates: store.linkableRelationshipTasks,
             linkedTaskIDs: Set(store.resolvedRelationships.map(\.taskID)),
             initialKind: store.addLinkedTaskRelationshipKind,
             onSelect: { taskID, kind in

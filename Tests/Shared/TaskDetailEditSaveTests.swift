@@ -442,6 +442,65 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func detailLinkExistingTask_usesTheFullPreloadedLinkCatalog() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let existingLinkedTask = makeTask(
+            in: context,
+            name: "Gather figures",
+            interval: 7,
+            lastDone: nil,
+            emoji: "📊"
+        )
+        let task = makeTask(
+            in: context,
+            name: "Prepare presentation",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🖥️"
+        )
+        task.replaceRelationships([
+            RoutineTaskRelationship(targetTaskID: existingLinkedTask.id, kind: .related)
+        ])
+        let newLinkedTask = makeTask(
+            in: context,
+            name: "Review slides",
+            interval: 7,
+            lastDone: nil,
+            emoji: "📝"
+        )
+        try context.save()
+
+        let candidates = RoutineTaskRelationshipCandidate.from(
+            [existingLinkedTask, newLinkedTask],
+            excluding: task.id,
+            referenceDate: now,
+            calendar: calendar
+        )
+        let existingCandidate = try #require(candidates.first { $0.id == existingLinkedTask.id })
+
+        var initialState = TaskDetailFeature.State(task: task.detachedCopy())
+        initialState.availableRelationshipTasks = [existingCandidate]
+        initialState.editAvailableRelationshipTasks = candidates
+
+        let store = TestStore(initialState: initialState) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.detailLinkExistingTask(newLinkedTask.id, .blocks))
+
+        #expect(store.state.task.relationships == [
+            RoutineTaskRelationship(targetTaskID: newLinkedTask.id, kind: .blocks),
+            RoutineTaskRelationship(targetTaskID: existingLinkedTask.id, kind: .related)
+        ])
+    }
+
+    @Test
     func suggestedRelationshipCanBeEditedThenConfirmed() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
