@@ -94,6 +94,7 @@ struct HomeFeature {
         var navigation = HomeMacNavigationState()
         var pendingSleepPlannerSessionID: UUID?
         var relatedTagRules: [RoutineRelatedTagRule] = []
+        var tagRules: [RoutineTagRule] = []
         var tagColors: [String: String] = [:]
         var statusComposerSaveCount = 0
         var statusComposerErrorMessage: String?
@@ -169,6 +170,7 @@ struct HomeFeature {
             selectedSettingsSection: SettingsMacSection? = .notifications,
             selectedBoardScope: BoardScope = .backlog,
             relatedTagRules: [RoutineRelatedTagRule] = [],
+            tagRules: [RoutineTagRule] = [],
             tagColors: [String: String] = [:]
         ) {
             self.routineTasks = routineTasks
@@ -255,6 +257,7 @@ struct HomeFeature {
                 selectedSettingsSection: selectedSettingsSection
             )
             self.relatedTagRules = relatedTagRules
+            self.tagRules = RoutineTagRules.sanitized(tagRules)
             self.tagColors = RoutineTagColors.sanitized(tagColors)
         }
 
@@ -746,6 +749,7 @@ struct HomeFeature {
     private func taskLoadHandler() -> HomeFeatureTaskLoadHandler<State, Action> {
         HomeFeatureTaskLoadHandler(
             relatedTagRules: { appSettingsClient.relatedTagRules() },
+            tagRules: { appSettingsClient.tagRules() },
             tagColors: { appSettingsClient.tagColors() },
             calendar: { calendar },
             refreshDisplays: { state in refreshDisplays(&state) },

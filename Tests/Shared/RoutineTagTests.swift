@@ -203,4 +203,22 @@ struct RoutineTagTests {
         let removed = RoutineTagColors.removing("Café", from: colors)
         #expect(removed["cafe"] == nil)
     }
+
+    @Test
+    func tagRules_deduplicateByTagAndRuleKindAndFollowTagRenameDelete() {
+        let rules = RoutineTagRules.sanitized([
+            RoutineTagRule(tag: " Tracking ", kind: .hideFromTaskLists),
+            RoutineTagRule(tag: "tracking", kind: .hideFromTaskLists)
+        ])
+
+        #expect(rules == [RoutineTagRule(tag: "tracking", kind: .hideFromTaskLists)])
+        #expect(RoutineTagRules.hidesFromTaskLists(tags: ["TRACKING"], rules: rules))
+        #expect(!RoutineTagRules.hidesFromTaskLists(tags: ["Planning"], rules: rules))
+
+        let renamed = RoutineTagRules.replacing("tracking", with: "Private", in: rules)
+        #expect(renamed == [RoutineTagRule(tag: "Private", kind: .hideFromTaskLists)])
+
+        let removed = RoutineTagRules.removing("private", from: renamed)
+        #expect(removed.isEmpty)
+    }
 }

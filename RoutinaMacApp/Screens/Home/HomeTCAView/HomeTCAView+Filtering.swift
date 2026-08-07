@@ -33,6 +33,7 @@ extension HomeTCAView {
                 searchText: searchTextBinding.wrappedValue,
                 routineListSectioningMode: routineListSectioningMode,
                 separateDeadlineStatusInTagSections: separatesDeadlineStatusInTagTaskListSections,
+                tagRules: store.tagRules,
                 routineTasks: store.routineTasks,
                 referenceDate: referenceDate,
                 calendar: calendar
@@ -102,6 +103,7 @@ extension HomeTCAView {
             excludeTagMatchMode: store.excludeTagMatchMode,
             searchText: searchTextBinding.wrappedValue,
             routineListSectioningMode: routineListSectioningMode,
+            tagRules: store.tagRules,
             calendar: calendar,
             referenceDate: referenceDate,
             routineTasks: store.routineTasks
@@ -123,7 +125,7 @@ extension HomeTCAView {
                 emptyState: emptyState
             )
 
-            return macSearchFallbackPresentationIfNeeded(
+            return macSearchFallbackAndTagRulePresentation(
                 presentation,
                 filtering: filtering,
                 routineDisplays: routineDisplays,
@@ -134,7 +136,7 @@ extension HomeTCAView {
         }
     }
 
-    private func macSearchFallbackPresentationIfNeeded(
+    private func macSearchFallbackAndTagRulePresentation(
         _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
         filtering: HomeTaskListFiltering<HomeFeature.RoutineDisplay>,
         routineDisplays: [HomeFeature.RoutineDisplay],
@@ -142,18 +144,24 @@ extension HomeTCAView {
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
         showArchivedTasks: Bool
     ) -> HomeTaskListPresentation<HomeFeature.RoutineDisplay> {
+        let sourceDisplays = macSearchFallbackSourceDisplays(
+            routineDisplays: routineDisplays,
+            awayRoutineDisplays: awayRoutineDisplays,
+            archivedRoutineDisplays: archivedRoutineDisplays,
+            showArchivedTasks: showArchivedTasks
+        )
+        let presentationWithTagRuleResults = presentation.appendingTagRuleRevealResults(
+            from: sourceDisplays,
+            filtering: filtering
+        )
+
         let trimmedSearchText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedSearchText.isEmpty, presentation.sections.isEmpty else {
-            return presentation
+        guard !trimmedSearchText.isEmpty else {
+            return presentationWithTagRuleResults
         }
 
-        return presentation.addingSearchFallbackResults(
-            from: macSearchFallbackSourceDisplays(
-                routineDisplays: routineDisplays,
-                awayRoutineDisplays: awayRoutineDisplays,
-                archivedRoutineDisplays: archivedRoutineDisplays,
-                showArchivedTasks: showArchivedTasks
-            ),
+        return presentationWithTagRuleResults.addingSearchFallbackResults(
+            from: sourceDisplays,
             filtering: filtering
         )
     }
@@ -309,6 +317,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let excludeTagMatchMode: RoutineTagMatchMode
     let searchText: String
     let routineListSectioningMode: RoutineListSectioningMode
+    let tagRules: [RoutineTagRule]
     let calendarIdentifier: Calendar.Identifier
     let calendarTimeZoneIdentifier: String
     let calendarFirstWeekday: Int
@@ -350,6 +359,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         excludeTagMatchMode: RoutineTagMatchMode,
         searchText: String,
         routineListSectioningMode: RoutineListSectioningMode,
+        tagRules: [RoutineTagRule],
         calendar: Calendar,
         referenceDate: Date,
         routineTasks: [RoutineTask]
@@ -395,6 +405,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.excludeTagMatchMode = excludeTagMatchMode
         self.searchText = searchText
         self.routineListSectioningMode = routineListSectioningMode
+        self.tagRules = RoutineTagRules.sanitized(tagRules)
         self.calendarIdentifier = calendar.identifier
         self.calendarTimeZoneIdentifier = calendar.timeZone.identifier
         self.calendarFirstWeekday = calendar.firstWeekday

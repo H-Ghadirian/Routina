@@ -133,6 +133,7 @@ enum AppSettingsDefaults {
         .appSettingAppColorScheme,
         .appSettingTagCounterDisplayMode,
         .appSettingRelatedTagRules,
+        .appSettingTagRules,
         .appSettingTagColors,
         .appSettingFastFilterTags,
         .appSettingIOSStatsDashboardHiddenItemIDs,
@@ -280,6 +281,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingHomeTimelineRowHiddenFields
     case appSettingDayPlanCalendarListRowHiddenFields
     case appSettingRelatedTagRules
+    case appSettingTagRules
     case appSettingTagColors
     case appSettingFastFilterTags
     case appSettingIOSStatsDashboardHiddenItemIDs
@@ -355,6 +357,8 @@ struct AppSettingsClient: Sendable {
     var setTimelineRowVisibility: @Sendable (HomeTimelineRowVisibility) -> Void
     var relatedTagRules: @Sendable () -> [RoutineRelatedTagRule]
     var setRelatedTagRules: @Sendable ([RoutineRelatedTagRule]) -> Void
+    var tagRules: @Sendable () -> [RoutineTagRule]
+    var setTagRules: @Sendable ([RoutineTagRule]) -> Void
     var tagColors: @Sendable () -> [String: String]
     var setTagColors: @Sendable ([String: String]) -> Void
     var fastFilterTags: @Sendable () -> [String]
@@ -379,6 +383,7 @@ enum CloudSettingsKeyValueSync {
     private static let syncedStringKeys: Set<UserDefaultStringValueKey> = [
         .selectedMacAppIcon,
         .appSettingRelatedTagRules,
+        .appSettingTagRules,
         .appSettingTagColors,
         .appSettingFastFilterTags,
         .appSettingIOSStatsDashboardHiddenItemIDs,
@@ -699,6 +704,28 @@ extension AppSettingsClient {
             }
             CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingRelatedTagRules)
         },
+        tagRules: {
+            guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingTagRules),
+                  let data = rawValue.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode([RoutineTagRule].self, from: data)
+            else {
+                return []
+            }
+            return RoutineTagRules.sanitized(decoded)
+        },
+        setTagRules: { rules in
+            let sanitizedRules = RoutineTagRules.sanitized(rules)
+            guard !sanitizedRules.isEmpty else {
+                CloudSettingsKeyValueSync.setString(nil, for: .appSettingTagRules)
+                return
+            }
+            guard let data = try? JSONEncoder().encode(sanitizedRules),
+                  let rawValue = String(data: data, encoding: .utf8)
+            else {
+                return
+            }
+            CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingTagRules)
+        },
         tagColors: {
             guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingTagColors),
                   let data = rawValue.data(using: .utf8),
@@ -858,6 +885,8 @@ extension AppSettingsClient {
         setTimelineRowVisibility: { _ in },
         relatedTagRules: { [] },
         setRelatedTagRules: { _ in },
+        tagRules: { [] },
+        setTagRules: { _ in },
         tagColors: { [:] },
         setTagColors: { _ in },
         fastFilterTags: { [] },

@@ -9,6 +9,7 @@ private struct HomeTaskListPresentationRefreshToken: Equatable {
     let hideUnavailableRoutines: Bool
     let searchText: String
     let sectioningMode: RoutineListSectioningMode
+    let tagRules: [RoutineTagRule]
     let referenceDay: Date
 }
 
@@ -114,12 +115,13 @@ homeContent
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             searchText: searchTextBinding.wrappedValue,
             sectioningMode: routineListSectioningMode,
+            tagRules: store.tagRules,
             referenceDay: calendar.startOfDay(for: Date())
         )
     }
 
     private func refreshTaskListPresentation() {
-        taskListPresentation = HomeTaskListPresentation.iOS(
+        let presentation = HomeTaskListPresentation.iOS(
             filtering: taskListFiltering(),
             routineDisplays: store.routineDisplays,
             awayRoutineDisplays: store.awayRoutineDisplays,
@@ -128,6 +130,17 @@ homeContent
             showArchivedTasks: store.showArchivedTasks,
             taskListKind: store.taskListMode.filterTaskListKind
         )
+        taskListPresentation = presentation.appendingTagRuleRevealResults(
+            from: taskListSearchSourceDisplays,
+            filtering: taskListFiltering()
+        )
+    }
+
+    private var taskListSearchSourceDisplays: [HomeFeature.RoutineDisplay] {
+        var seenTaskIDs: Set<UUID> = []
+        let archivedDisplays = store.showArchivedTasks ? store.archivedRoutineDisplays : []
+        return (store.routineDisplays + store.awayRoutineDisplays + archivedDisplays)
+            .filter { seenTaskIDs.insert($0.taskID).inserted }
     }
 
     private func refreshFileAttachmentTaskIDs() {

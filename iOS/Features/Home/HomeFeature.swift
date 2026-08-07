@@ -47,6 +47,7 @@ struct HomeFeature {
         var timelineFilters = HomeTimelineFiltersState()
         var statsFilters = HomeStatsFiltersState()
         var relatedTagRules: [RoutineRelatedTagRule] = []
+        var tagRules: [RoutineTagRule] = []
         var tagColors: [String: String] = [:]
 
         init(
@@ -115,6 +116,7 @@ struct HomeFeature {
             statsSelectedTags: Set<String> = [],
             statsIncludeTagMatchMode: RoutineTagMatchMode = .all,
             relatedTagRules: [RoutineRelatedTagRule] = [],
+            tagRules: [RoutineTagRule] = [],
             tagColors: [String: String] = [:]
         ) {
             self.routineTasks = routineTasks
@@ -187,6 +189,7 @@ struct HomeFeature {
                 includeTagMatchMode: statsIncludeTagMatchMode
             )
             self.relatedTagRules = relatedTagRules
+            self.tagRules = RoutineTagRules.sanitized(tagRules)
             self.tagColors = RoutineTagColors.sanitized(tagColors)
         }
 
@@ -550,6 +553,7 @@ struct HomeFeature {
     private func taskLoadHandler() -> HomeFeatureTaskLoadHandler<State, Action> {
         HomeFeatureTaskLoadHandler(
             relatedTagRules: { appSettingsClient.relatedTagRules() },
+            tagRules: { appSettingsClient.tagRules() },
             tagColors: { appSettingsClient.tagColors() },
             calendar: { calendar },
             refreshDisplays: { state in refreshDisplays(&state) },

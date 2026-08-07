@@ -7,6 +7,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
 
     func matchesVisibleTask(_ task: Display) -> Bool {
         matchesCurrentTaskListMode(task)
+            && matchesTaskListVisibilityRules(task)
             && matchesSearch(task)
             && matchesAdvancedQuery(task)
             && matchesFilter(task)
@@ -50,6 +51,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && !task.isCompletedOneOff
             && !task.isCanceledOneOff
             && (includePinned || !task.isPinned)
+            && matchesTaskListVisibilityRules(task)
             && matchesTaskListViewMode(task)
             && matchesSearch(task)
             && matchesAdvancedQuery(task)
@@ -77,6 +79,32 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             || (task.placeName?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)
             || task.goalTitles.contains { $0.localizedCaseInsensitiveContains(trimmedSearch) }
+    }
+
+    func matchesTaskListVisibilityRules(_ task: Display) -> Bool {
+        !RoutineTagRules.hidesFromTaskLists(
+            tags: task.tags,
+            rules: configuration.tagRules
+        )
+    }
+
+    func matchesTagRuleRevealTask(_ task: Display) -> Bool {
+        guard !matchesTaskListVisibilityRules(task),
+              matchesSearchFallbackTask(task) else {
+            return false
+        }
+
+        if !configuration.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+
+        return configuration.selectedTags.contains { selectedTag in
+            RoutineTagRules.contains(
+                .hideFromTaskLists,
+                for: selectedTag,
+                in: configuration.tagRules
+            ) && RoutineTag.contains(selectedTag, in: task.tags)
+        }
     }
 
     func matchesAdvancedQuery(_ task: Display) -> Bool {

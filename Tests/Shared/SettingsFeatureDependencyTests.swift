@@ -97,6 +97,8 @@ struct SettingsFeatureDependencyTests {
                 setTimelineRowVisibility: { _ in },
                 relatedTagRules: { [] },
                 setRelatedTagRules: { _ in },
+                tagRules: { [] },
+                setTagRules: { _ in },
                 tagColors: { [:] },
                 setTagColors: { _ in },
                 fastFilterTags: { [] },
@@ -193,6 +195,7 @@ struct SettingsFeatureDependencyTests {
         await store.receive(.fastFilterTagsLoaded([]))
         await store.receive(.tagColorsLoaded([:]))
         await store.receive(.relatedTagRulesLoaded([]))
+        await store.receive(.tagRulesLoaded([]))
         await store.receive(.learnedRelatedTagRulesLoaded([]))
         await store.receive(.locationSnapshotUpdated(snapshot)) {
             $0.places.locationAuthorizationStatus = .authorizedAlways

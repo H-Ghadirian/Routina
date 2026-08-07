@@ -71,6 +71,7 @@ struct SettingsFeature {
         case fastFilterTagsLoaded([String])
         case tagColorsLoaded([String: String])
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
+        case tagRulesLoaded([RoutineTagRule])
         case learnedRelatedTagRulesLoaded([RoutineRelatedTagRule])
         case locationSnapshotUpdated(LocationSnapshot)
         case placeDraftNameChanged(String)
@@ -80,6 +81,8 @@ struct SettingsFeature {
         case fastFilterTagToggled(String)
         case relatedTagDraftChanged(tagName: String, draft: String)
         case tagColorChanged(tagName: String, colorHex: String?)
+        case addTagRuleTapped(tagName: String, kind: RoutineTagRuleKind)
+        case removeTagRuleTapped(tagName: String, kind: RoutineTagRuleKind)
         case saveRelatedTagsTapped(String)
         case addRelatedTagDraftSubmitted(tagName: String, draft: String)
         case appendRelatedTagSuggestionTapped(tagName: String, suggestion: String)
@@ -615,6 +618,12 @@ struct SettingsFeature {
                     state: &state.tags
                 )
 
+            case let .tagRulesLoaded(rules):
+                return SettingsTagMetadataActionHandler.tagRulesLoaded(
+                    rules,
+                    state: &state.tags
+                )
+
             case let .learnedRelatedTagRulesLoaded(rules):
                 return SettingsTagMetadataActionHandler.learnedRelatedTagRulesLoaded(
                     rules,
@@ -669,6 +678,22 @@ struct SettingsFeature {
                 return SettingsTagMetadataActionHandler.tagColorChanged(
                     tagName: tagName,
                     colorHex: colorHex,
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .addTagRuleTapped(tagName, kind):
+                return SettingsTagMetadataActionHandler.addTagRuleTapped(
+                    tagName: tagName,
+                    kind: kind,
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .removeTagRuleTapped(tagName, kind):
+                return SettingsTagMetadataActionHandler.removeTagRuleTapped(
+                    tagName: tagName,
+                    kind: kind,
                     state: &state.tags,
                     appSettingsClient: self.appSettingsClient
                 )

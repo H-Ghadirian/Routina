@@ -246,6 +246,7 @@ struct HomeTaskListFilteringConfiguration {
     var searchText: String
     var routineListSectioningMode: RoutineListSectioningMode
     var separateDeadlineStatusInTagSections: Bool = false
+    var tagRules: [RoutineTagRule] = []
     var routineTasks: [RoutineTask]
     var referenceDate: Date
     var calendar: Calendar

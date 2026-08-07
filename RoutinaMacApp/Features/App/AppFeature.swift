@@ -83,7 +83,9 @@ struct AppFeature {
             case .cloudSettingsChanged:
                 let tagColors = appSettingsClient.tagColors()
                 let relatedTagRules = appSettingsClient.relatedTagRules()
+                let tagRules = appSettingsClient.tagRules()
                 state.home.tagColors = tagColors
+                state.home.tagRules = tagRules
                 state.home.relatedTagRules = RoutineTagRelations.sanitized(
                     relatedTagRules + RoutineTagRelations.learnedRules(from: state.home.routineTasks.map(\.tags))
                 )
@@ -103,6 +105,7 @@ struct AppFeature {
                 )
                 SettingsTagEditor.loadedTagColors(tagColors, state: &state.settings.tags)
                 SettingsTagEditor.loadedRelatedTagRules(relatedTagRules, state: &state.settings.tags)
+                SettingsTagEditor.loadedTagRules(tagRules, state: &state.settings.tags)
                 return .none
             case .settings(.resetTemporaryViewStateTapped):
                 let timelineTasks = state.timeline.tasks

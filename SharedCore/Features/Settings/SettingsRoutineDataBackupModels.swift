@@ -357,6 +357,7 @@ extension SettingsRoutineDataPersistence {
             var homeTaskRowHiddenFields: String?
             var dayPlanCalendarListRowHiddenFields: String?
             var relatedTagRules: String?
+            var tagRules: String?
             var tagColors: String?
             var fastFilterTags: String?
             var iOSStatsDashboardHiddenItemIDs: String?

@@ -108,6 +108,14 @@ enum SettingsTagMutationActionHandler {
         appSettingsClient.setRelatedTagRules(updatedRules)
         SettingsTagEditor.loadedRelatedTagRules(updatedRules, state: &state)
 
+        let updatedTagRules = RoutineTagRules.replacing(
+            request.originalTagName,
+            with: request.cleanedName,
+            in: appSettingsClient.tagRules()
+        )
+        appSettingsClient.setTagRules(updatedTagRules)
+        SettingsTagEditor.loadedTagRules(updatedTagRules, state: &state)
+
         let updatedColors = RoutineTagColors.replacing(
             request.originalTagName,
             with: request.cleanedName,
@@ -144,6 +152,13 @@ enum SettingsTagMutationActionHandler {
         )
         appSettingsClient.setRelatedTagRules(updatedRules)
         SettingsTagEditor.loadedRelatedTagRules(updatedRules, state: &state)
+
+        let updatedTagRules = RoutineTagRules.removing(
+            request.tagName,
+            from: appSettingsClient.tagRules()
+        )
+        appSettingsClient.setTagRules(updatedTagRules)
+        SettingsTagEditor.loadedTagRules(updatedTagRules, state: &state)
 
         let updatedColors = RoutineTagColors.removing(
             request.tagName,

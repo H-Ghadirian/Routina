@@ -1933,6 +1933,43 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func tagRuleActionsPersistAnExtensiblePerTagRuleWithoutDuplicates() async {
+        let persistedRules = LockIsolated<[RoutineTagRule]>([])
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                tags: .init(savedTags: [RoutineTagSummary(name: "Tracking", linkedRoutineCount: 1)])
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setTagRules = { persistedRules.setValue($0) }
+        }
+
+        await store.send(.addTagRuleTapped(
+            tagName: "Tracking",
+            kind: .hideFromTaskLists
+        )) {
+            $0.tags.tagRules = [
+                RoutineTagRule(tag: "Tracking", kind: .hideFromTaskLists)
+            ]
+            $0.tags.tagStatusMessage = "Added hide tasks from normal task lists for #Tracking."
+        }
+        #expect(persistedRules.value == [
+            RoutineTagRule(tag: "Tracking", kind: .hideFromTaskLists)
+        ])
+
+        await store.send(.removeTagRuleTapped(
+            tagName: "Tracking",
+            kind: .hideFromTaskLists
+        )) {
+            $0.tags.tagRules = []
+            $0.tags.tagStatusMessage = "Removed hide tasks from normal task lists for #Tracking."
+        }
+        #expect(persistedRules.value.isEmpty)
+    }
+
+    @Test
     func resetTemporaryViewStateTapped_clearsSavedTemporaryViewPreferences() async {
         let context = makeInMemoryContext()
         let resetCallCount = LockIsolated(0)

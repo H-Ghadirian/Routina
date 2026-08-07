@@ -27,6 +27,7 @@ extension HomeTCAView {
                 excludeTagMatchMode: store.excludeTagMatchMode,
                 searchText: searchTextBinding.wrappedValue,
                 routineListSectioningMode: routineListSectioningMode,
+                tagRules: store.tagRules,
                 routineTasks: store.routineTasks,
                 referenceDate: referenceDate,
                 calendar: calendar

@@ -43,6 +43,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0406](../decisions/0406-auto-plan-exact-date-todos.md)
 - [0409](../decisions/0409-add-manual-can-complete-task-links.md)
 - [0495](../decisions/0495-let-task-list-filters-hide-assumed-done-rows.md)
+- [0496](../decisions/0496-use-extensible-per-tag-task-list-rules.md)
 - [0411](../decisions/0411-manage-custom-task-sections-in-settings.md)
 - [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
 - [0421](../decisions/0421-support-cadence-free-repeating-routines.md)
@@ -79,6 +80,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - On Mac, a successful full Add Task save closes the form, returns to the task list, selects and opens the new task's details, and shows a transient confirmation containing the task name. Canceling, a failed save, or a subscription-gated save does not show that success confirmation.
 - Gentle repeating routines expose an independent `Nudges` preference. Turning it off preserves cadence and history while suppressing Ready and Gentle-nudge threshold badges. Due routines do not expose the preference, and cadence-free routines cannot nudge.
 - Home, Timeline, Stats, Settings, badges, search vocabulary, and sidebar sections do not expose a separate Tracking category. Transitional tracking-named storage fields remain internal implementation details only.
+- Tag Settings supports extensible per-tag rules. Its first rule, `Hide tasks from normal task lists`, removes tasks carrying that tag from ordinary Home task-list placement, including Pinned, Today/Tomorrow, custom sections, Future, tag groups, and Archived. It does not archive or pause the task, affect notifications, Planner, Stats, or active-task counting. Text search and an explicit filter for that tag show matching rows in a presentation-only `Hidden by tag` section without normal inline completion actions; that section can appear beside ordinary search results.
 - Mac Add Task and Edit Task tag sections always show the draft's selected tags and related suggestions. The remaining saved-tag chips default to the six most-used tags and expose `Show all` / `Show less`; autocomplete continues to search the full saved-tag catalog.
 - Mac Settings -> Tags separately lists possible duplicate names for conservative word-form variants such as `clean` and `Cleaning`. Each row states the source and replacement tag and opens a confirmation before the global merge updates any data. Confirming uses the existing rename path across tasks, goals, enabled notes, and events, and deduplicates the replacement tag when both occur on the same item; unrelated or semantically ambiguous tags are never merged automatically.
 - Todo availability has independent date and time axes. Date bounds, time windows, deadlines, reminders, and planned dates are separate concepts except that one-off todos with exact `At date` availability automatically use that same normalized day as their planned date.

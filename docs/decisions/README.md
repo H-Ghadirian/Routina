@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0496](0496-use-extensible-per-tag-task-list-rules.md) refines [0405](0405-show-hidden-scheduled-task-search-results.md) and [0449](0449-keep-custom-section-rules-tag-based.md):** Tag settings hold extensible typed rules; the first hides tasks from ordinary task-list placement while search and an explicit tag filter reveal them in a labelled presentation-only result section.
+
 - **[0495](0495-let-task-list-filters-hide-assumed-done-rows.md) supersedes [0410](superseded/0410-show-assumed-done-home-rows-by-default.md):** Home task lists show assumed-done rows by default but let people hide them deliberately through a persisted task-list-only filter; Planner Calendar and Task Detail remain unchanged.
 
 - **[0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md) refines [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md):** Eligible Standard multi-day `After done` routines assume each overdue day until one individual confirmation resets the rolling anchor; bulk confirmation is unavailable.

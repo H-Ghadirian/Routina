@@ -1072,6 +1072,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.dayPlanCalendarListRowHiddenFields =
             backupPreferences.dayPlanCalendarListRowHiddenFields
         preferences.relatedTagRules = backupPreferences.relatedTagRules
+        preferences.tagRules = backupPreferences.tagRules
         preferences.tagColors = backupPreferences.tagColors
         preferences.fastFilterTags = backupPreferences.fastFilterTags
         preferences.iOSStatsDashboardHiddenItemIDs = backupPreferences.iOSStatsDashboardHiddenItemIDs

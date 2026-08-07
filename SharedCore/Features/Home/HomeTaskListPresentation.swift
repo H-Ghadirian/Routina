@@ -400,9 +400,15 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         filtering: HomeTaskListFiltering<Display>,
         title: String = "Search Results"
     ) -> Self {
-        guard sections.isEmpty else { return self }
+        let onlyTagRuleResultsAreVisible = sections.allSatisfy {
+            $0.identityKey == "hiddenByTagRule"
+        }
+        guard sections.isEmpty || onlyTagRuleResultsAreVisible else { return self }
 
-        let fallbackTasks = filtering.searchFallbackTasks(from: sourceDisplays)
+        let presentedTaskIDs = Set(sections.flatMap(\.tasks).map(\.taskID))
+        let fallbackTasks = filtering.searchFallbackTasks(from: sourceDisplays).filter {
+            !presentedTaskIDs.contains($0.taskID)
+        }
         guard !fallbackTasks.isEmpty else { return self }
 
         let section = HomeTaskListPresentationSection(
@@ -410,15 +416,45 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             identityKey: "searchResults",
             title: title,
             tasks: fallbackTasks,
-            rowNumberOffset: 0,
+            rowNumberOffset: visibleTaskCount,
             includeMarkDone: false,
             moveContext: nil
         )
 
         return HomeTaskListPresentation(
-            sections: [section],
+            sections: sections + [section],
             hiddenUnavailableTaskCount: hiddenUnavailableTaskCount,
-            emptyState: nil
+            emptyState: nil,
+            datePlannedTodayTaskIDs: datePlannedTodayTaskIDs
+        )
+    }
+
+    func appendingTagRuleRevealResults(
+        from sourceDisplays: [Display],
+        filtering: HomeTaskListFiltering<Display>,
+        title: String = "Hidden by tag"
+    ) -> Self {
+        let presentedTaskIDs = Set(sections.flatMap(\.tasks).map(\.taskID))
+        let revealedTasks = filtering.tagRuleRevealTasks(from: sourceDisplays).filter {
+            !presentedTaskIDs.contains($0.taskID)
+        }
+        guard !revealedTasks.isEmpty else { return self }
+
+        let section = HomeTaskListPresentationSection(
+            kind: .regular,
+            identityKey: "hiddenByTagRule",
+            title: title,
+            tasks: revealedTasks,
+            rowNumberOffset: visibleTaskCount,
+            includeMarkDone: false,
+            moveContext: nil
+        )
+
+        return HomeTaskListPresentation(
+            sections: sections + [section],
+            hiddenUnavailableTaskCount: hiddenUnavailableTaskCount,
+            emptyState: nil,
+            datePlannedTodayTaskIDs: datePlannedTodayTaskIDs
         )
     }
 

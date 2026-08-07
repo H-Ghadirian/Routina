@@ -99,6 +99,7 @@ private struct SettingsTagRow: View {
             if isRelatedTagRulesEnabled {
                 relatedTagsEditor
             }
+            tagRulesEditor
             tagColorEditor
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -167,6 +168,57 @@ private struct SettingsTagRow: View {
             .disabled(store.tags.isTagOperationInProgress)
 
             Text("Separate related tags with commas.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var tagRulesEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Rules")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            if store.tags.hasTagRule(.hideFromTaskLists, for: tag.name) {
+                HStack(spacing: 8) {
+                    Label(
+                        RoutineTagRuleKind.hideFromTaskLists.title,
+                        systemImage: "eye.slash"
+                    )
+                    .font(.footnote)
+
+                    Spacer()
+
+                    Button("Remove") {
+                        store.send(.removeTagRuleTapped(
+                            tagName: tag.name,
+                            kind: .hideFromTaskLists
+                        ))
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(store.tags.isTagOperationInProgress)
+                }
+            }
+
+            let availableRules = RoutineTagRuleKind.allCases.filter {
+                !store.tags.hasTagRule($0, for: tag.name)
+            }
+            if !availableRules.isEmpty {
+                Menu {
+                    ForEach(availableRules) { rule in
+                        Button {
+                            store.send(.addTagRuleTapped(tagName: tag.name, kind: rule))
+                        } label: {
+                            Label(rule.title, systemImage: "eye.slash")
+                        }
+                    }
+                } label: {
+                    Label("Add rule", systemImage: "plus")
+                }
+                .disabled(store.tags.isTagOperationInProgress)
+            }
+
+            Text(RoutineTagRuleKind.hideFromTaskLists.detail)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }

@@ -18,6 +18,14 @@ enum SettingsTagMetadataActionHandler {
         return .none
     }
 
+    static func tagRulesLoaded(
+        _ rules: [RoutineTagRule],
+        state: inout SettingsTagsState
+    ) -> Effect<SettingsFeature.Action> {
+        SettingsTagEditor.loadedTagRules(rules, state: &state)
+        return .none
+    }
+
     static func learnedRelatedTagRulesLoaded(
         _ rules: [RoutineRelatedTagRule],
         state: inout SettingsTagsState
@@ -59,6 +67,30 @@ enum SettingsTagMetadataActionHandler {
             state: &state
         )
         appSettingsClient.setTagColors(colors)
+        return .none
+    }
+
+    static func addTagRuleTapped(
+        tagName: String,
+        kind: RoutineTagRuleKind,
+        state: inout SettingsTagsState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        let rules = SettingsTagEditor.addTagRule(kind, for: tagName, state: &state)
+        appSettingsClient.setTagRules(rules)
+        NotificationCenter.default.post(name: CloudSettingsKeyValueSync.didChangeNotification, object: nil)
+        return .none
+    }
+
+    static func removeTagRuleTapped(
+        tagName: String,
+        kind: RoutineTagRuleKind,
+        state: inout SettingsTagsState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        let rules = SettingsTagEditor.removeTagRule(kind, for: tagName, state: &state)
+        appSettingsClient.setTagRules(rules)
+        NotificationCenter.default.post(name: CloudSettingsKeyValueSync.didChangeNotification, object: nil)
         return .none
     }
 

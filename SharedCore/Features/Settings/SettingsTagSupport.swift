@@ -77,6 +77,40 @@ enum SettingsTagEditor {
         syncRelatedTagDrafts(state: &state)
     }
 
+    static func loadedTagRules(
+        _ rules: [RoutineTagRule],
+        state: inout SettingsTagsState
+    ) {
+        state.tagRules = RoutineTagRules.sanitized(rules)
+    }
+
+    static func addTagRule(
+        _ kind: RoutineTagRuleKind,
+        for tagName: String,
+        state: inout SettingsTagsState
+    ) -> [RoutineTagRule] {
+        let updatedRules = RoutineTagRules.adding(kind, for: tagName, in: state.tagRules)
+        guard updatedRules != state.tagRules else {
+            state.tagStatusMessage = "That rule is already active for #\(tagName)."
+            return state.tagRules
+        }
+        state.tagRules = updatedRules
+        state.tagStatusMessage = "Added \(kind.title.lowercased()) for #\(tagName)."
+        return updatedRules
+    }
+
+    static func removeTagRule(
+        _ kind: RoutineTagRuleKind,
+        for tagName: String,
+        state: inout SettingsTagsState
+    ) -> [RoutineTagRule] {
+        let updatedRules = RoutineTagRules.removing(kind, for: tagName, from: state.tagRules)
+        guard updatedRules != state.tagRules else { return state.tagRules }
+        state.tagRules = updatedRules
+        state.tagStatusMessage = "Removed \(kind.title.lowercased()) for #\(tagName)."
+        return updatedRules
+    }
+
     static func loadedLearnedRelatedTagRules(
         _ rules: [RoutineRelatedTagRule],
         state: inout SettingsTagsState

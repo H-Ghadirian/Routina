@@ -158,6 +158,7 @@ struct SettingsTagsState: Equatable {
     var fastFilterTags: [String] = []
     var tagColors: [String: String] = [:]
     var relatedTagRules: [RoutineRelatedTagRule] = []
+    var tagRules: [RoutineTagRule] = []
     var learnedRelatedTagRules: [RoutineRelatedTagRule] = []
     var relatedTagDrafts: [String: String] = [:]
     var tagPendingDeletion: RoutineTagSummary?
@@ -179,6 +180,10 @@ struct SettingsTagMergeRequest: Equatable {
 }
 
 extension SettingsTagsState {
+    func hasTagRule(_ kind: RoutineTagRuleKind, for tagName: String) -> Bool {
+        RoutineTagRules.contains(kind, for: tagName, in: tagRules)
+    }
+
     var filteredSavedTags: [RoutineTagSummary] {
         let trimmed = tagSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return savedTags }

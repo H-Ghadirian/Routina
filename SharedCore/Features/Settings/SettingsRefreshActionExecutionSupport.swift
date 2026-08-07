@@ -24,6 +24,7 @@ enum SettingsRefreshActionExecution {
             send(.fastFilterTagsLoaded(appSettingsClient.fastFilterTags()))
             send(.tagColorsLoaded(appSettingsClient.tagColors()))
             send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
+            send(.tagRulesLoaded(appSettingsClient.tagRules()))
             send(.learnedRelatedTagRulesLoaded(
                 RoutineTagRelations.learnedRules(from: result.taskTagCollections)
             ))

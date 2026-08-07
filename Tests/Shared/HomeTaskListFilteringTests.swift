@@ -228,6 +228,60 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func tagVisibilityRuleHidesOrdinaryPlacementAndSearchOrTagFilterRevealsIt() {
+        let trackingTask = TestTaskDisplay(name: "Log sleep", tags: ["Tracking"])
+        let ordinaryTask = TestTaskDisplay(name: "Write plan", tags: ["Planning"])
+        let rules = [RoutineTagRule(tag: "tracking", kind: .hideFromTaskLists)]
+
+        let ordinaryResult = makeFiltering(tagRules: rules)
+            .filteredTasks([trackingTask, ordinaryTask])
+        #expect(ordinaryResult.map(\.name) == ["Write plan"])
+
+        let searchedResult = makeFiltering(
+            searchText: "sleep",
+            tagRules: rules
+        ).tagRuleRevealTasks(from: [trackingTask, ordinaryTask])
+        #expect(searchedResult.map(\.name) == ["Log sleep"])
+
+        let tagFilteredResult = makeFiltering(
+            selectedTags: ["TRACKING"],
+            tagRules: rules
+        ).tagRuleRevealTasks(from: [trackingTask, ordinaryTask])
+        #expect(tagFilteredResult.map(\.name) == ["Log sleep"])
+    }
+
+    @Test
+    func tagVisibilityRuleAddsASeparateHiddenResultsSectionBesideNormalSearchResults() {
+        let trackingTask = TestTaskDisplay(name: "Log sleep", tags: ["Tracking"])
+        let ordinaryTask = TestTaskDisplay(name: "Sleep early")
+        let filtering = makeFiltering(
+            searchText: "sleep",
+            tagRules: [RoutineTagRule(tag: "Tracking", kind: .hideFromTaskLists)]
+        )
+        let normalSection = HomeTaskListPresentationSection(
+            kind: .regular,
+            title: "Future",
+            tasks: [ordinaryTask],
+            rowNumberOffset: 0,
+            includeMarkDone: true,
+            moveContext: nil
+        )
+
+        let presentation = HomeTaskListPresentation(
+            sections: [normalSection],
+            hiddenUnavailableTaskCount: 0,
+            emptyState: nil
+        ).appendingTagRuleRevealResults(
+            from: [trackingTask, ordinaryTask],
+            filtering: filtering
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Future", "Hidden by tag"])
+        #expect(presentation.sections[1].tasks.map(\.name) == ["Log sleep"])
+        #expect(presentation.sections[1].includeMarkDone == false)
+    }
+
+    @Test
     func sidebarPresentationShowsInternalRecordRowsAsRoutines() {
         let assumedID = UUID()
         let visibleID = UUID()
@@ -2628,6 +2682,7 @@ private func makeFiltering(
     searchText: String = "",
     routineListSectioningMode: RoutineListSectioningMode = .status,
     separateDeadlineStatusInTagSections: Bool = false,
+    tagRules: [RoutineTagRule] = [],
     routineTasks: [RoutineTask] = [],
     referenceDate: Date = Date(timeIntervalSince1970: 1_714_608_000)
 ) -> HomeTaskListFiltering<TestTaskDisplay> {
@@ -2657,6 +2712,7 @@ private func makeFiltering(
             searchText: searchText,
             routineListSectioningMode: routineListSectioningMode,
             separateDeadlineStatusInTagSections: separateDeadlineStatusInTagSections,
+            tagRules: tagRules,
             routineTasks: routineTasks,
             referenceDate: referenceDate,
             calendar: calendar
