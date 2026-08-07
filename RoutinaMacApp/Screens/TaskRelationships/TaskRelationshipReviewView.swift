@@ -4,6 +4,9 @@ import SwiftUI
 struct TaskRelationshipReviewView: View {
     let store: StoreOf<TaskRelationshipReviewFeature>
 
+    @State private var sidebarPresentation = SidebarPresentation()
+    @State private var isOtherTasksExpanded = false
+
     var body: some View {
         HSplitView {
             sidebar
@@ -14,10 +17,17 @@ struct TaskRelationshipReviewView: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
+            refreshSidebarPresentation()
             store.send(.onAppear)
         }
         .onDisappear {
             store.send(.onDisappear)
+        }
+        .onChange(of: store.tasks) { _, _ in
+            refreshSidebarPresentation()
+        }
+        .onChange(of: store.suggestionsByTaskID) { _, _ in
+            refreshSidebarPresentation()
         }
     }
 
@@ -65,8 +75,39 @@ struct TaskRelationshipReviewView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 4) {
-                        ForEach(store.tasks) { task in
-                            taskRow(task)
+                        if !sidebarPresentation.proposalTasks.isEmpty {
+                            Text("Possible relationships")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 10)
+                                .padding(.top, 4)
+
+                            ForEach(sidebarPresentation.proposalTasks) { task in
+                                taskRow(task)
+                            }
+                        }
+
+                        if !sidebarPresentation.otherTasks.isEmpty {
+                            DisclosureGroup(isExpanded: $isOtherTasksExpanded) {
+                                LazyVStack(spacing: 4) {
+                                    ForEach(sidebarPresentation.otherTasks) { task in
+                                        taskRow(task)
+                                    }
+                                }
+                                .padding(.top, 4)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text("Other tasks")
+                                        .font(.caption.weight(.semibold))
+                                    Text("\(sidebarPresentation.otherTasks.count)")
+                                        .font(.caption2.weight(.medium))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                            }
                         }
                     }
                     .padding(8)
@@ -78,7 +119,6 @@ struct TaskRelationshipReviewView: View {
 
     private func taskRow(_ task: TaskRelationshipReviewTask) -> some View {
         let isSelected = store.selectedTaskID == task.id
-        let isReviewed = store.reviewedTaskIDs.contains(task.id)
         let pendingSuggestionCount = store.suggestionsByTaskID[task.id]?.count ?? 0
         let batchFailureMessage = store.batchFailureMessagesByTaskID[task.id]
         let currentFingerprint = store.currentFingerprintsByTaskID[task.id]
@@ -129,10 +169,6 @@ struct TaskRelationshipReviewView: View {
                         .foregroundStyle(.orange)
                         .accessibilityLabel("Could not analyze this task")
                         .help(batchFailureMessage)
-                } else if isReviewed {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .accessibilityLabel("Reviewed and unchanged")
                 } else if currentFingerprint != reviewedFingerprint {
                     Text(changeLabel)
                         .font(.caption2.weight(.semibold))
@@ -153,6 +189,13 @@ struct TaskRelationshipReviewView: View {
         }
         .buttonStyle(.plain)
         .disabled(store.savingSuggestionTargetID != nil || store.isAnalyzingAll)
+    }
+
+    private func refreshSidebarPresentation() {
+        sidebarPresentation = SidebarPresentation(
+            tasks: store.tasks,
+            suggestionsByTaskID: store.suggestionsByTaskID
+        )
     }
 
     @ViewBuilder
@@ -523,5 +566,22 @@ struct TaskRelationshipReviewView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 36)
+    }
+}
+
+private struct SidebarPresentation: Equatable {
+    let proposalTasks: [TaskRelationshipReviewTask]
+    let otherTasks: [TaskRelationshipReviewTask]
+
+    init(
+        tasks: [TaskRelationshipReviewTask] = [],
+        suggestionsByTaskID: [UUID: [TaskRelationshipSuggestion]] = [:]
+    ) {
+        proposalTasks = tasks.filter { task in
+            suggestionsByTaskID[task.id]?.isEmpty == false
+        }
+        otherTasks = tasks.filter { task in
+            suggestionsByTaskID[task.id]?.isEmpty != false
+        }
     }
 }

@@ -35,6 +35,8 @@ These are ordered from newest resolver to oldest resolver.
 
 - **[0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md) refines [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md):** Eligible Standard multi-day `After done` routines assume each overdue day until one individual confirmation resets the rolling anchor; bulk confirmation is unavailable.
 
+- **[0493](0493-prioritize-actionable-relationship-proposals-in-mac-review.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** The Mac relationship-review sidebar shows pending proposals first and keeps the remaining audit catalog in an initially collapsed `Other tasks` group without green unchanged checks.
+
 - **[0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md) refines [0487](0487-allow-archiving-one-off-tasks.md) and [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md):** Eligible one-off tasks with one exact date and a scheduled Time block can opt into a synthetic assumed-done occurrence for that one date.
 
 - **[0491](0491-keep-dismissed-relationship-feedback-local-and-fingerprint-scoped.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0488](0488-prioritize-grounded-task-relationship-analysis.md):** Dismissing a relationship suggestion stores only device-local, fingerprint-scoped pair feedback; unchanged dismissed pairs are removed before candidate selection, while any task change expires the feedback and confirmation remains the sole relationship write.
@@ -457,6 +459,7 @@ These are ordered from newest resolver to oldest resolver.
 | --- | --- | --- | --- |
 | [0495](0495-let-task-list-filters-hide-assumed-done-rows.md) | Let Task-List Filters Hide Assumed-Done Rows | Accepted | 2026-08-07 |
 | [0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md) | Allow Auto-Assume Done For Rolling After-Completion Routines | Accepted | 2026-08-07 |
+| [0493](0493-prioritize-actionable-relationship-proposals-in-mac-review.md) | Prioritize Actionable Relationship Proposals In Mac Review | Accepted | 2026-08-07 |
 | [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md) | Allow Auto-Assume Done For One-Off Scheduled Blocks | Accepted | 2026-08-07 |
 | [0490](0490-exclude-assumed-done-tasks-from-help-me-choose.md) | Exclude Assumed-Done Tasks From Help Me Choose | Accepted | 2026-08-06 |
 | [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md) | Expand Auto-Assume Done to Scheduled Repeats | Accepted | 2026-08-06 |
