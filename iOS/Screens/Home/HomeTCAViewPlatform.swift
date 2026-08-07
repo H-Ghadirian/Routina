@@ -254,7 +254,10 @@ detailContent
             presentation: taskListPresentation,
             selectedTaskID: selectedTaskBinding,
             isCompactHeaderHidden: isCompactHeaderHidden,
-            hasActiveOptionalFilters: hasActiveOptionalFilters
+            hasActiveOptionalFilters: hasActiveOptionalFilters,
+            isTaskSearchActive: !searchTextBinding.wrappedValue
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty
         ) {
             compactHomeHeader
         } emptyRowContent: { emptyState in

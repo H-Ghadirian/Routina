@@ -5,6 +5,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
     let selectedTaskID: Binding<UUID?>
     let isCompactHeaderHidden: Bool
     let hasActiveOptionalFilters: Bool
+    let isTaskSearchActive: Bool
     let headerContent: () -> HeaderContent
     let emptyRowContent: (HomeTaskListEmptyState) -> EmptyRowContent
     let rowContent: (HomeFeature.RoutineDisplay, Int, Bool, HomeTaskListMoveContext?) -> RowContent
@@ -29,6 +30,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         selectedTaskID: Binding<UUID?>,
         isCompactHeaderHidden: Bool,
         hasActiveOptionalFilters: Bool,
+        isTaskSearchActive: Bool,
         @ViewBuilder headerContent: @escaping () -> HeaderContent,
         @ViewBuilder emptyRowContent: @escaping (HomeTaskListEmptyState) -> EmptyRowContent,
         @ViewBuilder rowContent: @escaping (HomeFeature.RoutineDisplay, Int, Bool, HomeTaskListMoveContext?) -> RowContent,
@@ -40,6 +42,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         self.selectedTaskID = selectedTaskID
         self.isCompactHeaderHidden = isCompactHeaderHidden
         self.hasActiveOptionalFilters = hasActiveOptionalFilters
+        self.isTaskSearchActive = isTaskSearchActive
         self.headerContent = headerContent
         self.emptyRowContent = emptyRowContent
         self.rowContent = rowContent
@@ -75,20 +78,30 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
             ForEach(presentation.sections) { section in
                 Section {
                     if isSectionExpanded(section) {
-                        ForEach(section.tasks, id: \.taskID) { task in
-                            rowContent(
-                                task,
-                                visibleRowNumber(
-                                    for: task,
-                                    in: section,
-                                    visibleOffsets: visibleOffsets
-                                ),
-                                section.includeMarkDone,
-                                section.moveContext
-                            )
-                        }
-                        .onDelete { offsets in
-                            onDelete(offsets, section.tasks)
+                        ForEach(section.taskGroups) { group in
+                            if let title = group.title {
+                                taskGroupHeader(for: group, title: title)
+                            }
+
+                            if isTaskGroupExpanded(group) {
+                                ForEach(group.tasks, id: \.taskID) { task in
+                                    rowContent(
+                                        task,
+                                        visibleRowNumber(
+                                            for: task,
+                                            in: group,
+                                            section: section,
+                                            visibleOffsets: visibleOffsets
+                                        ),
+                                        section.includeMarkDone,
+                                        group.moveContext
+                                            ?? (group.usesSectionMoveContext ? section.moveContext : nil)
+                                    )
+                                }
+                                .onDelete { offsets in
+                                    onDelete(offsets, group.tasks)
+                                }
+                            }
                         }
                     }
                 } header: {
@@ -104,6 +117,39 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         }
         .navigationDestination(for: UUID.self) { taskID in
             destinationContent(taskID)
+        }
+    }
+
+    @ViewBuilder
+    private func taskGroupHeader(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        title: String
+    ) -> some View {
+        if group.isCollapsible {
+            let isExpanded = isTaskGroupExpanded(group)
+            Button {
+                toggleTaskGroup(group)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+
+                    Text(title)
+
+                    Text("\(group.tasks.count)")
+                        .font(.caption2.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(.secondary)
+
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        } else {
+            Text(title)
         }
     }
 
@@ -177,7 +223,11 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         for section in presentation.sections {
             offsets[section.id] = offset
             if isSectionExpanded(section) {
-                offset += section.tasks.count
+                offset += section.taskGroups.reduce(into: 0) { count, group in
+                    if isTaskGroupExpanded(group) {
+                        count += group.tasks.count
+                    }
+                }
             }
         }
         return offsets
@@ -185,12 +235,46 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
 
     private func visibleRowNumber(
         for task: HomeFeature.RoutineDisplay,
-        in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         visibleOffsets: [String: Int]
     ) -> Int {
         let sectionOffset = visibleOffsets[section.id] ?? 0
-        let taskIndex = section.taskIndex(for: task.taskID) ?? 0
-        return sectionOffset + taskIndex + 1
+        let groupOffset = section.taskGroups
+            .prefix { $0.id != group.id }
+            .reduce(into: 0) { count, precedingGroup in
+                if isTaskGroupExpanded(precedingGroup) {
+                    count += precedingGroup.tasks.count
+                }
+            }
+        let taskIndex = group.taskIndex(for: task.taskID) ?? 0
+        return sectionOffset + groupOffset + taskIndex + 1
+    }
+
+    private func isTaskGroupExpanded(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> Bool {
+        guard group.isCollapsible else { return true }
+        if isTaskSearchActive {
+            return true
+        }
+        if group.isCollapsedByDefault {
+            return collapsedTagTaskListSectionIDs.contains(taskListGroupExpandedOverrideID(group))
+        }
+        return !collapsedTagTaskListSectionIDs.contains(taskListGroupCollapseID(group))
+    }
+
+    private func toggleTaskGroup(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) {
+        guard group.isCollapsible else { return }
+        withAnimation(.snappy(duration: 0.2)) {
+            if group.isCollapsedByDefault {
+                setDefaultCollapsedTaskListGroup(group, expanded: !isTaskGroupExpanded(group))
+            } else {
+                setTaskListGroup(group, collapsed: isTaskGroupExpanded(group))
+            }
+        }
     }
 
     private var collapsedTagTaskListSectionIDs: Set<String> {
@@ -210,6 +294,46 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
             ids.insert(section.id)
         } else {
             ids.remove(section.id)
+        }
+        collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
+    }
+
+    private func taskListGroupCollapseID(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> String {
+        "group:\(group.id)"
+    }
+
+    private func taskListGroupExpandedOverrideID(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> String {
+        "expandedGroup:\(group.id)"
+    }
+
+    private func setTaskListGroup(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        collapsed: Bool
+    ) {
+        var ids = collapsedTagTaskListSectionIDs
+        let id = taskListGroupCollapseID(group)
+        if collapsed {
+            ids.insert(id)
+        } else {
+            ids.remove(id)
+        }
+        collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
+    }
+
+    private func setDefaultCollapsedTaskListGroup(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        expanded: Bool
+    ) {
+        var ids = collapsedTagTaskListSectionIDs
+        let id = taskListGroupExpandedOverrideID(group)
+        if expanded {
+            ids.insert(id)
+        } else {
+            ids.remove(id)
         }
         collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
     }

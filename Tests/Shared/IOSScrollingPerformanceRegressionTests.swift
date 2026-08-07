@@ -11,8 +11,8 @@ struct IOSScrollingPerformanceRegressionTests {
 
         #expect(home.contains(".task(id: taskListPresentationRefreshToken)"))
         #expect(!platform.contains("let presentation = HomeTaskListPresentation.iOS("))
-        #expect(taskList.contains("ForEach(section.tasks, id: \\.taskID)"))
-        #expect(!taskList.contains("Array(section.tasks.enumerated())"))
+        #expect(taskList.contains("ForEach(group.tasks, id: \\.taskID)"))
+        #expect(!taskList.contains("Array(group.tasks.enumerated())"))
         #expect(taskList.contains("visibleRowNumberOffsets"))
     }
 

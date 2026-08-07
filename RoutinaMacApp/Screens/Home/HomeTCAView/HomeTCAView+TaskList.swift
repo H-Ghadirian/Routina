@@ -933,7 +933,8 @@ extension HomeTCAView {
                     for: task,
                     rowNumber: rowNumbersByTaskID[task.taskID] ?? 1,
                     includeMarkDone: section.includeMarkDone,
-                    moveContext: group.moveContext ?? section.moveContext,
+                    moveContext: group.moveContext
+                        ?? (group.usesSectionMoveContext ? section.moveContext : nil),
                     metadataPresenter: metadataPresenter,
                     rowVisibility: rowVisibility,
                     showsPlannedTodayLabel: presentation.showsPlannedTodayLabel(
@@ -1662,6 +1663,9 @@ extension HomeTCAView {
         if isMacSearchSidebarRevealActive {
             return true
         }
+        if group.isCollapsedByDefault {
+            return collapsedTagTaskListSectionIDs.contains(taskListGroupExpandedOverrideID(group))
+        }
 
         switch group.kind {
         case .daily:
@@ -1679,6 +1683,11 @@ extension HomeTCAView {
         guard group.isCollapsible else { return }
         let isCurrentlyExpanded = taskListGroupIsExpanded(group)
         preserveMacTaskSourceListScrollPosition {
+            if group.isCollapsedByDefault {
+                setDefaultCollapsedTaskListGroup(group, expanded: !isCurrentlyExpanded)
+                return
+            }
+
             switch group.kind {
             case .daily:
                 isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
@@ -1706,32 +1715,44 @@ extension HomeTCAView {
         in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         collapsed: Bool
     ) {
-        let subsectionIDs = futureTaskListSubsectionCollapseIDs(in: section)
-        guard section.kind == .future, !subsectionIDs.isEmpty else { return }
+        let groups = futureTaskListSubsections(in: section)
+        guard section.kind == .future, !groups.isEmpty else { return }
 
         preserveMacTaskSourceListScrollPosition {
             isMacFutureTasksSectionCollapsed = false
             var ids = collapsedTagTaskListSectionIDs
-            if collapsed {
-                ids.formUnion(subsectionIDs)
-            } else {
-                ids.subtract(subsectionIDs)
+            for group in groups {
+                if group.isCollapsedByDefault {
+                    let id = taskListGroupExpandedOverrideID(group)
+                    if collapsed {
+                        ids.remove(id)
+                    } else {
+                        ids.insert(id)
+                    }
+                } else {
+                    let id = taskListGroupCollapseID(group)
+                    if collapsed {
+                        ids.insert(id)
+                    } else {
+                        ids.remove(id)
+                    }
+                }
             }
             collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
         }
     }
 
-    private func futureTaskListSubsectionCollapseIDs(
+    private func futureTaskListSubsections(
         in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
-    ) -> Set<String> {
-        Set(section.taskGroups.flatMap(taskListGroupCollapseIDs))
+    ) -> [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>] {
+        section.taskGroups.flatMap(taskListCollapsibleGroups)
     }
 
-    private func taskListGroupCollapseIDs(
+    private func taskListCollapsibleGroups(
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
-    ) -> [String] {
-        let currentIDs = group.isCollapsible ? [taskListGroupCollapseID(group)] : []
-        return currentIDs + group.childGroups.flatMap(taskListGroupCollapseIDs)
+    ) -> [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>] {
+        let currentGroups = group.isCollapsible ? [group] : []
+        return currentGroups + group.childGroups.flatMap(taskListCollapsibleGroups)
     }
 
     private func visibleTaskIDs(
@@ -1897,6 +1918,11 @@ extension HomeTCAView {
     ) {
         guard group.isCollapsible else { return }
 
+        if group.isCollapsedByDefault {
+            setDefaultCollapsedTaskListGroup(group, expanded: true)
+            return
+        }
+
         switch group.kind {
         case .daily:
             isMacPlanTodayDailyRoutinesGroupCollapsed = false
@@ -1936,6 +1962,9 @@ extension HomeTCAView {
         guard group.isCollapsible else { return true }
         if isMacSearchSidebarRevealActive {
             return true
+        }
+        if group.isCollapsedByDefault {
+            return collapsedTagIDs.contains(taskListGroupExpandedOverrideID(group))
         }
 
         switch group.kind {
@@ -1980,6 +2009,12 @@ extension HomeTCAView {
         "group:\(group.id)"
     }
 
+    private func taskListGroupExpandedOverrideID(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> String {
+        "expandedGroup:\(group.id)"
+    }
+
     private func setTagTaskListGroup(
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
         collapsed: Bool
@@ -1987,6 +2022,20 @@ extension HomeTCAView {
         var ids = collapsedTagTaskListSectionIDs
         let id = taskListGroupCollapseID(group)
         if collapsed {
+            ids.insert(id)
+        } else {
+            ids.remove(id)
+        }
+        collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
+    }
+
+    private func setDefaultCollapsedTaskListGroup(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        expanded: Bool
+    ) {
+        var ids = collapsedTagTaskListSectionIDs
+        let id = taskListGroupExpandedOverrideID(group)
+        if expanded {
             ids.insert(id)
         } else {
             ids.remove(id)
@@ -2002,6 +2051,7 @@ extension HomeTCAView {
             tasks: tasks,
             rowNumberOffset: 0,
             includeMarkDone: false,
+            separatesUserCompletedTasks: false,
             moveContext: nil
         )
         let presentation = HomeTaskListPresentation(

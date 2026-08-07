@@ -884,6 +884,46 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func presentationMovesOnlyUserCompletedTasksIntoACollapsedCompletedGroup() {
+        let activeID = UUID()
+        let completedID = UUID()
+        let completedOneOffID = UUID()
+        let assumedDoneID = UUID()
+        let section = HomeTaskListPresentationSection<TestTaskDisplay>(
+            kind: .regular,
+            identityKey: "onTrack",
+            title: "On Track",
+            tasks: [
+                TestTaskDisplay(taskID: activeID, name: "Active"),
+                TestTaskDisplay(taskID: completedID, name: "Completed", isDoneToday: true),
+                TestTaskDisplay(
+                    taskID: completedOneOffID,
+                    name: "Completed one-off",
+                    isOneOffTask: true,
+                    isCompletedOneOff: true
+                ),
+                TestTaskDisplay(
+                    taskID: assumedDoneID,
+                    name: "Assumed done",
+                    isDoneToday: true,
+                    isAssumedDoneToday: true
+                )
+            ],
+            rowNumberOffset: 0,
+            includeMarkDone: true,
+            moveContext: nil
+        )
+
+        #expect(section.taskGroups.map(\.title) == [nil, "Completed"])
+        #expect(section.taskGroups[0].tasks.map(\.taskID) == [activeID, assumedDoneID])
+        #expect(section.taskGroups[1].tasks.map(\.taskID) == [completedID, completedOneOffID])
+        #expect(section.taskGroups[1].isCollapsible)
+        #expect(section.taskGroups[1].isCollapsedByDefault)
+        #expect(!section.taskGroups[1].usesSectionMoveContext)
+        #expect(section.tasks.map(\.taskID) == [activeID, assumedDoneID, completedID, completedOneOffID])
+    }
+
+    @Test
     func advancedQueryMatchesFieldedTermsAndExclusions() {
         let tasks = [
             TestTaskDisplay(name: "Draft launch plan", placeName: "Office", tags: ["Work"], isOneOffTask: true, todoState: .ready),

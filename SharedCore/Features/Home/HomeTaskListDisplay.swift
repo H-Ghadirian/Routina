@@ -53,6 +53,11 @@ protocol HomeTaskListDisplay {
 }
 
 extension HomeTaskListDisplay {
+    /// A completion the person explicitly recorded, as distinct from a provisional assumed completion.
+    var isCompletedByUser: Bool {
+        isCompletedOneOff || (isDoneToday && !isAssumedDoneToday)
+    }
+
     var flags: [String] {
         []
     }

@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0501](0501-collapse-user-completed-home-task-list-rows.md) refines [0495](0495-let-task-list-filters-hide-assumed-done-rows.md):** Home task-list sections keep user-completed rows in a stable, initially collapsed `Completed` subgroup while assumed-done rows remain visible under their existing separate filter.
+
 - **[0500](0500-move-auto-assume-done-to-flag-rules.md) refines [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md), [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md), [0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md), and [0497](0497-use-flags-for-task-behavior-rules.md):** Auto-assume done is a typed Flag rule, with visible selection, exact contextual rejection, retained inactive Flag assignments, and a one-time legacy migration.
 
 ## Merged Active Decision State
@@ -34,6 +36,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0501](0501-collapse-user-completed-home-task-list-rows.md) refines [0495](0495-let-task-list-filters-hide-assumed-done-rows.md) and [0252](0252-stabilize-home-task-list-presentation-identity.md):** Home task-list sections partition actually user-completed rows into a stable, initially collapsed `Completed` subgroup; assumed-done rows remain in their ordinary placement and keep Decision 0495's separate filter behavior.
 
 - **[0499](0499-explain-applied-flags-in-task-details.md) refines [0497](0497-use-flags-for-task-behavior-rules.md) and [0498](0498-filter-task-lists-by-flags.md):** Task Details show assigned Flags on both platforms, and a Mac breadcrumb for a selected `Hidden by flag` result identifies that task's hiding Flag or Flags while the shared result section stays generic.
 

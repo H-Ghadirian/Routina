@@ -11,8 +11,11 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
     let title: String?
     let tasks: [Display]
     let moveContext: HomeTaskListMoveContext?
+    let usesSectionMoveContext: Bool
     let isCollapsible: Bool
+    let isCollapsedByDefault: Bool
     let childGroups: [HomeTaskListPresentationTaskGroup<Display>]
+    private let taskIndicesByID: [UUID: Int]
 
     init(
         kind: HomeTaskListPresentationSectionKind,
@@ -20,7 +23,9 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
         title: String?,
         tasks: [Display],
         moveContext: HomeTaskListMoveContext?,
+        usesSectionMoveContext: Bool = true,
         isCollapsible: Bool,
+        isCollapsedByDefault: Bool = false,
         childGroups: [HomeTaskListPresentationTaskGroup<Display>] = []
     ) {
         self.kind = kind
@@ -28,12 +33,21 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
         self.title = title
         self.tasks = tasks
         self.moveContext = moveContext
+        self.usesSectionMoveContext = usesSectionMoveContext
         self.isCollapsible = isCollapsible
+        self.isCollapsedByDefault = isCollapsedByDefault
         self.childGroups = childGroups
+        self.taskIndicesByID = Dictionary(
+            uniqueKeysWithValues: tasks.enumerated().map { ($0.element.taskID, $0.offset) }
+        )
     }
 
     var id: String {
         identityKey ?? moveContext?.sectionKey ?? title ?? "primary"
+    }
+
+    func taskIndex(for taskID: UUID) -> Int? {
+        taskIndicesByID[taskID]
     }
 }
 
@@ -82,6 +96,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
     let title: String
     let rowNumberOffset: Int
     let includeMarkDone: Bool
+    let separatesUserCompletedTasks: Bool
     let colorHex: String?
     let moveContext: HomeTaskListMoveContext?
     let taskGroups: [HomeTaskListPresentationTaskGroup<Display>]
@@ -95,18 +110,21 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
         tasks: [Display],
         rowNumberOffset: Int,
         includeMarkDone: Bool,
+        separatesUserCompletedTasks: Bool = true,
         colorHex: String? = nil,
         moveContext: HomeTaskListMoveContext?,
         taskGroups: [HomeTaskListPresentationTaskGroup<Display>]? = nil
     ) {
         self.kind = kind
-        self.identityKey = identityKey ?? moveContext?.sectionKey ?? title
+        let resolvedIdentityKey = identityKey ?? moveContext?.sectionKey ?? title
+        self.identityKey = resolvedIdentityKey
         self.title = title
         self.rowNumberOffset = rowNumberOffset
         self.includeMarkDone = includeMarkDone
+        self.separatesUserCompletedTasks = separatesUserCompletedTasks
         self.colorHex = colorHex
         self.moveContext = moveContext
-        let resolvedTaskGroups = Self.deduplicatedTaskGroups(taskGroups ?? [
+        let deduplicatedTaskGroups = Self.deduplicatedTaskGroups(taskGroups ?? [
             HomeTaskListPresentationTaskGroup(
                 kind: kind,
                 title: nil,
@@ -115,6 +133,12 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                 isCollapsible: false
             )
         ])
+        let resolvedTaskGroups = separatesUserCompletedTasks
+            ? Self.separatingUserCompletedTasks(
+                from: deduplicatedTaskGroups,
+                completedGroupIdentityKey: "completed:\(kind.rawValue):\(resolvedIdentityKey)"
+            )
+            : deduplicatedTaskGroups
         let resolvedTasks = resolvedTaskGroups.flatMap(\.tasks)
         self.taskGroups = resolvedTaskGroups
         self.tasks = resolvedTasks
@@ -143,6 +167,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
             tasks: tasks,
             rowNumberOffset: rowNumberOffset,
             includeMarkDone: includeMarkDone,
+            separatesUserCompletedTasks: separatesUserCompletedTasks,
             colorHex: colorHex,
             moveContext: moveContext,
             taskGroups: taskGroups
@@ -173,7 +198,9 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                     title: existingGroup.title,
                     tasks: mergedTasks,
                     moveContext: Self.moveContext(existingGroup.moveContext, orderedBy: mergedTasks),
+                    usesSectionMoveContext: existingGroup.usesSectionMoveContext && group.usesSectionMoveContext,
                     isCollapsible: existingGroup.isCollapsible || group.isCollapsible,
+                    isCollapsedByDefault: existingGroup.isCollapsedByDefault || group.isCollapsedByDefault,
                     childGroups: deduplicatedTaskGroups(existingGroup.childGroups + uniqueChildGroups)
                 )
             } else {
@@ -185,7 +212,9 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                         title: group.title,
                         tasks: uniqueTasks,
                         moveContext: Self.moveContext(group.moveContext, orderedBy: uniqueTasks),
+                        usesSectionMoveContext: group.usesSectionMoveContext,
                         isCollapsible: group.isCollapsible,
+                        isCollapsedByDefault: group.isCollapsedByDefault,
                         childGroups: uniqueChildGroups
                     )
                 )
@@ -208,13 +237,67 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                 title: childGroup.title,
                 tasks: uniqueTasks,
                 moveContext: Self.moveContext(childGroup.moveContext, orderedBy: uniqueTasks),
+                usesSectionMoveContext: childGroup.usesSectionMoveContext,
                 isCollapsible: childGroup.isCollapsible,
+                isCollapsedByDefault: childGroup.isCollapsedByDefault,
                 childGroups: Self.childGroups(
                     childGroup.childGroups,
                     limitedTo: Set(uniqueTasks.map(\.taskID))
                 )
             )
         }
+    }
+
+    private static func separatingUserCompletedTasks(
+        from taskGroups: [HomeTaskListPresentationTaskGroup<Display>],
+        completedGroupIdentityKey: String
+    ) -> [HomeTaskListPresentationTaskGroup<Display>] {
+        let completedTasks = taskGroups.flatMap(\.tasks).filter(\.isCompletedByUser)
+        guard !completedTasks.isEmpty else { return taskGroups }
+
+        var activeTaskGroups: [HomeTaskListPresentationTaskGroup<Display>] = []
+        for group in taskGroups {
+            if let activeGroup = removingUserCompletedTasks(from: group) {
+                activeTaskGroups.append(activeGroup)
+            }
+        }
+        let completedGroup = HomeTaskListPresentationTaskGroup(
+            kind: .regular,
+            identityKey: completedGroupIdentityKey,
+            title: "Completed",
+            tasks: completedTasks,
+            moveContext: nil,
+            usesSectionMoveContext: false,
+            isCollapsible: true,
+            isCollapsedByDefault: true
+        )
+        return activeTaskGroups + [completedGroup]
+    }
+
+    private static func removingUserCompletedTasks(
+        from group: HomeTaskListPresentationTaskGroup<Display>
+    ) -> HomeTaskListPresentationTaskGroup<Display>? {
+        let activeTasks = group.tasks.filter { !$0.isCompletedByUser }
+        guard !activeTasks.isEmpty else { return nil }
+
+        var activeChildGroups: [HomeTaskListPresentationTaskGroup<Display>] = []
+        for childGroup in group.childGroups {
+            if let activeChildGroup = removingUserCompletedTasks(from: childGroup) {
+                activeChildGroups.append(activeChildGroup)
+            }
+        }
+
+        return HomeTaskListPresentationTaskGroup(
+            kind: group.kind,
+            identityKey: group.identityKey,
+            title: group.title,
+            tasks: activeTasks,
+            moveContext: moveContext(group.moveContext, orderedBy: activeTasks),
+            usesSectionMoveContext: group.usesSectionMoveContext,
+            isCollapsible: group.isCollapsible,
+            isCollapsedByDefault: group.isCollapsedByDefault,
+            childGroups: activeChildGroups
+        )
     }
 
     private static func moveContext(
