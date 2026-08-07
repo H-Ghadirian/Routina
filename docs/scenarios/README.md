@@ -1595,10 +1595,12 @@ Decision links: [0151](../decisions/0151-combine-mac-stats-and-adventure-tab.md)
 Current behavior: [Stats](../current-behavior/stats.md), [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTests.swift`
+- `Tests/macOS/HomeFeatureTaskListModeTests.swift`
 
 Given a task detail is selected in Mac Home
 When the user opens Stats and then selects Tasks in the top toolbar
 Then the same task row and task detail are restored
+And the existing task-list type selection and filters remain active
 
 ### App Lock Protects Sensitive Reset Actions
 

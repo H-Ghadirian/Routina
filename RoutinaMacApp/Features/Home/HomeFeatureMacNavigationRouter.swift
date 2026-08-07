@@ -18,8 +18,11 @@ struct HomeFeatureMacNavigationRouter {
         case .routines:
             dismissAddRoutineSheet(&state)
             state.macSidebarSelection = state.selection.selectedTaskID.map(HomeFeature.MacSidebarSelection.task)
-            if previousMode != .addTask,
-               !previousSidebarSelection.isTimelineEntry,
+            let preservesTaskListPresentation = previousMode == .addTask
+                || previousMode == .stats
+                || previousMode == .adventure
+                || previousSidebarSelection.isTimelineEntry
+            if !preservesTaskListPresentation,
                let effect = taskListModeSyncEffectForSelectedTask(state) {
                 return effect
             }
