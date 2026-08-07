@@ -142,3 +142,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0098 — Keep direct task linkers on the full preloaded catalog](0098-keep-direct-task-linkers-on-the-full-preloaded-catalog.md)
 - [0099 — Preserve task-list presentation across Stats navigation](0099-preserve-task-list-presentation-across-stats-navigation.md)
 - [0100 — Keep task-detail comment editor bindings live](0100-keep-task-detail-comment-editor-bindings-live.md)
+- [0101 — Share adaptive Task Detail metadata layouts](0101-share-adaptive-task-detail-metadata-layouts.md)

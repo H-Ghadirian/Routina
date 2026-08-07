@@ -379,48 +379,53 @@ struct TaskDetailTCAView: View {
                 todoTimeSpentHeaderBox
             }
 
-            if shouldShowTodoHeaderStatusControls {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .top, spacing: 8) {
-                        if shouldShowTodoStateControl {
-                            TaskDetailTodoStateSegmentedPicker(
-                                store: store,
-                                timingSummary: todoStateTimingSummary,
-                                showPersianDates: showPersianDates
-                            )
-                                .frame(minWidth: 380)
-                        }
-                        if shouldShowPressureControl {
-                            TaskDetailPressureSegmentedPicker(store: store)
-                                .frame(minWidth: 300)
-                        }
-                        if shouldShowThinkingNeededControl {
-                            TaskDetailThinkingNeededSegmentedPicker(store: store)
-                                .frame(minWidth: 300)
-                        }
-                    }
+            taskDetailStatusControls
+        }
+    }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        if shouldShowTodoStateControl {
-                            TaskDetailTodoStateSegmentedPicker(
-                                store: store,
-                                timingSummary: todoStateTimingSummary,
-                                showPersianDates: showPersianDates
-                            )
-                        }
-                        if shouldShowPressureControl {
-                            TaskDetailPressureSegmentedPicker(store: store)
-                        }
-                        if shouldShowThinkingNeededControl {
-                            TaskDetailThinkingNeededSegmentedPicker(store: store)
-                        }
+    @ViewBuilder
+    private var taskDetailStatusControls: some View {
+        if shouldShowTaskDetailStatusControls {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 8) {
+                    if shouldShowTodoStateControl {
+                        TaskDetailTodoStateSegmentedPicker(
+                            store: store,
+                            timingSummary: todoStateTimingSummary,
+                            showPersianDates: showPersianDates
+                        )
+                            .frame(minWidth: 380)
+                    }
+                    if shouldShowPressureControl {
+                        TaskDetailPressureSegmentedPicker(store: store)
+                            .frame(minWidth: 300)
+                    }
+                    if shouldShowThinkingNeededControl {
+                        TaskDetailThinkingNeededSegmentedPicker(store: store)
+                            .frame(minWidth: 300)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    if shouldShowTodoStateControl {
+                        TaskDetailTodoStateSegmentedPicker(
+                            store: store,
+                            timingSummary: todoStateTimingSummary,
+                            showPersianDates: showPersianDates
+                        )
+                    }
+                    if shouldShowPressureControl {
+                        TaskDetailPressureSegmentedPicker(store: store)
+                    }
+                    if shouldShowThinkingNeededControl {
+                        TaskDetailThinkingNeededSegmentedPicker(store: store)
                     }
                 }
             }
         }
     }
 
-    private var shouldShowTodoHeaderStatusControls: Bool {
+    private var shouldShowTaskDetailStatusControls: Bool {
         shouldShowTodoStateControl || shouldShowPressureControl || shouldShowThinkingNeededControl
     }
 
@@ -536,12 +541,7 @@ struct TaskDetailTCAView: View {
             if shouldShowTimeSpentHeaderBox {
                 todoTimeSpentHeaderBox
             }
-            if shouldShowPressureControl {
-                TaskDetailPressureSegmentedPicker(store: store)
-            }
-            if shouldShowThinkingNeededControl {
-                TaskDetailThinkingNeededSegmentedPicker(store: store)
-            }
+            taskDetailStatusControls
         }
     }
 

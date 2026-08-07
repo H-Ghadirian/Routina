@@ -861,6 +861,20 @@ When they place the insertion point in the middle of the comment and type multip
 Then every character is inserted at that moving insertion point
 And a task-detail draft refresh does not move the insertion point to the end of the comment
 
+### Task Detail Metadata Controls Share Their Adaptive Layout
+
+Area: Tasks
+Decision links: [0366](../decisions/0366-keep-mac-task-detail-add-more-inline.md), [0468](../decisions/0468-model-task-thinking-needed-separately.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailMacHeaderControlLayoutTests.swift`
+
+Given a macOS Task Detail displays Pressure or Thinking needed
+When the task is a one-off task or a routine
+Then the controls use the same adaptive layout
+And Pressure and Thinking needed sit side by side when the available detail width permits
+And the controls stack only when the available detail width is too narrow
+
 ### New Routine Checklists Use Checklist Completion
 
 Area: Tasks
