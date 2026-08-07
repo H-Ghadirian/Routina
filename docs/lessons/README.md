@@ -137,3 +137,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0093 — Keep task-list Flags in the task-list filter pane](0093-keep-task-list-flags-in-the-task-list-filter-pane.md)
 - [0094 — Explain hidden task Flags in details](0094-explain-hidden-task-flags-in-details.md)
 - [0095 — Validate Flag rules at selection time](0095-validate-flag-rules-at-selection-time.md)
+- [0096 — Validate renamed SwiftUI types](0096-validate-renamed-swiftui-types.md)

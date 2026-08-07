@@ -139,8 +139,9 @@ struct SettingsMacFlagsDetailView: View {
                     .font(.callout.weight(.medium))
 
                 ForEach(RoutineFlagRuleKind.allCases) { kind in
+                    let isEnabled = store.flags.hasRule(kind, for: flag)
                     Label(
-                        "\(kind.title): \(store.flags.hasRule(kind, for: flag) ? \"On\" : \"Off\")",
+                        "\(kind.title): \(isEnabled ? "On" : "Off")",
                         systemImage: kind == .hideFromTaskLists ? "eye.slash" : "checkmark.circle"
                     )
                     .font(.footnote)
