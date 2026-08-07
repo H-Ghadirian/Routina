@@ -1260,7 +1260,7 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var assumedDoneControl: some View {
-        TaskFormMacDetailCard(title: "Assumed Done") {
+        TaskFormMacSectionCard(title: "Assumed Done") {
             Label("Enabled by a Flag", systemImage: "flag.fill")
             Text(presentation.autoAssumeDailyDoneHelpText)
                 .font(.caption)
