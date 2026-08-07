@@ -130,3 +130,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0086 — Keep batch AI failures task-scoped](0086-keep-batch-ai-failures-task-scoped.md)
 - [0087 — Deduplicate planner block records before rendering](0087-deduplicate-planner-block-records-before-rendering.md)
 - [0088 — Keep one-off auto-assume controls out of recurrence-only branches](0088-keep-one-off-auto-assume-controls-out-of-recurrence-only-branches.md)
+- [0089 — Refresh time-derived Home displays before filtering](0089-refresh-time-derived-home-displays-before-filtering.md)

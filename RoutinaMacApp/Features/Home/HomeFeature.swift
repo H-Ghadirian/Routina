@@ -1253,7 +1253,12 @@ struct HomeFeature {
                 return filterMutationHandler().applyTaskFilterMutation(.selectedEstimationFilter(filter), state: &state)
 
             case let .hideAssumedDoneTasksChanged(hideAssumedDoneTasks):
-                return filterMutationHandler().applyTaskFilterMutation(.hideAssumedDoneTasks(hideAssumedDoneTasks), state: &state)
+                let effect = filterMutationHandler().applyTaskFilterMutation(
+                    .hideAssumedDoneTasks(hideAssumedDoneTasks),
+                    state: &state
+                )
+                refreshDisplays(&state)
+                return effect
 
             case let .taskListViewModeChanged(mode):
                 return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)

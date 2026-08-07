@@ -9,6 +9,40 @@ import Testing
 @MainActor
 struct HomeFeatureTests {
     @Test
+    func hideAssumedDoneTasksRefreshesAnAfterCompletionAssumption() async {
+        let now = makeDate("2026-08-07T12:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Review goals",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 14),
+            lastDone: makeDate("2026-07-24T12:00:00Z"),
+            scheduleAnchor: makeDate("2026-07-24T12:00:00Z"),
+            createdAt: makeDate("2026-07-01T12:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(routineTasks: [task])
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.appSettingsClient.placesEnabled = { false }
+            $0.appSettingsClient.setTemporaryViewState = { _ in }
+        }
+        store.exhaustivity = .off
+
+        #expect(store.state.routineDisplays.isEmpty)
+
+        await store.send(.hideAssumedDoneTasksChanged(true))
+
+        #expect(store.state.hideAssumedDoneTasks)
+        #expect(store.state.routineDisplays.first?.isAssumedDoneToday == true)
+        #expect(store.state.routineDisplays.first?.isDoneToday == true)
+    }
+
+    @Test
     func staleTaskDetailLoadActionAfterDismissIsIgnored() async {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()

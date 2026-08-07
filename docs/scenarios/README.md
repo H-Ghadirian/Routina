@@ -701,6 +701,8 @@ Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineAssumedCompletionTests.swift`
 - `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
+- `Tests/iOS/HomeFeatureTests.swift`
+- `Tests/macOS/HomeFeatureTests.swift`
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 - `Tests/Shared/TaskFormMacLayoutRegressionTests.swift`
@@ -734,6 +736,10 @@ When the user confirms completion on day 3
 Then day 5 is the first assumed offer, and each later day remains assumed done until one is confirmed
 And a manual completion on day 4 instead makes day 6 the next assumed offer
 And the user can confirm only one assumed day at a time, never all prior offers in bulk
+
+Given an eligible `After done` routine becomes assumed done while Home remains open
+When the user enables `Hide assumed-done tasks`
+Then Home refreshes the current assumed-completion state and omits that task from the Task List
 
 ### Planner Can Show Assumed Done Routines
 
