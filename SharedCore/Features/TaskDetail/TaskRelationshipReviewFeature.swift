@@ -27,7 +27,7 @@ struct TaskRelationshipReviewFeature {
         var currentFingerprintsByTaskID: [UUID: String] = [:]
         var reviewedFingerprintsByTaskID: [UUID: String] = [:]
         var reviewedTaskIDs: Set<UUID> = []
-        var dismissedPairKeys: Set<String> = []
+        var dismissalRecordsByPairKey: [String: TaskRelationshipReviewDismissal] = [:]
         var isLoadingCatalog = false
         var isFindingSuggestions = false
         var isAnalyzingAll = false
@@ -135,7 +135,8 @@ struct TaskRelationshipReviewFeature {
         case catalogLoaded(
             [TaskRelationshipReviewTask],
             currentFingerprints: [UUID: String],
-            reviewedFingerprints: [UUID: String]
+            reviewedFingerprints: [UUID: String],
+            dismissals: [TaskRelationshipReviewDismissal]
         )
         case catalogLoadFailed(String)
         case taskSelected(UUID)
@@ -194,12 +195,20 @@ struct TaskRelationshipReviewFeature {
                 state.message = nil
                 return loadCatalog()
 
-            case let .catalogLoaded(tasks, currentFingerprints, reviewedFingerprints):
+            case let .catalogLoaded(
+                tasks,
+                currentFingerprints,
+                reviewedFingerprints,
+                dismissals
+            ):
                 state.isLoadingCatalog = false
                 let previousSelectedTaskID = state.selectedTaskID
                 state.tasks = tasks
                 state.currentFingerprintsByTaskID = currentFingerprints
                 state.reviewedFingerprintsByTaskID = reviewedFingerprints
+                state.dismissalRecordsByPairKey = Dictionary(
+                    uniqueKeysWithValues: dismissals.map { ($0.pairKey, $0) }
+                )
                 state.reviewedTaskIDs = Set(tasks.compactMap { task in
                     guard let currentFingerprint = currentFingerprints[task.id],
                           reviewedFingerprints[task.id] == currentFingerprint else {
@@ -257,21 +266,18 @@ struct TaskRelationshipReviewFeature {
                 state.message = nil
                 return .merge(
                     persistReviewProgress(state.reviewedFingerprintsByTaskID),
-                    findSuggestions(for: sourceTaskID)
+                    findSuggestions(
+                        for: sourceTaskID,
+                        dismissals: state.dismissalRecordsByPairKey
+                    )
                         .cancellable(id: CancelID.suggestions, cancelInFlight: true)
                 )
 
             case let .suggestionsLoaded(sourceTaskID, suggestions):
                 guard state.selectedTaskID == sourceTaskID else { return .none }
                 state.isFindingSuggestions = false
-                let filteredSuggestions = suggestions.filter {
-                    !state.dismissedPairKeys.contains(Self.pairKey(
-                        sourceTaskID: sourceTaskID,
-                        targetTaskID: $0.targetTaskID
-                    ))
-                }
-                state.suggestions = filteredSuggestions
-                state.suggestionsByTaskID[sourceTaskID] = filteredSuggestions
+                state.suggestions = suggestions
+                state.suggestionsByTaskID[sourceTaskID] = suggestions
                 state.batchFailureMessagesByTaskID[sourceTaskID] = nil
                 if state.suggestions.isEmpty {
                     Self.markTaskReviewed(sourceTaskID, in: &state)
@@ -336,8 +342,7 @@ struct TaskRelationshipReviewFeature {
                         sourceTaskID: sourceTaskID,
                         targetTaskID: $0.targetTaskID
                     )
-                    return !state.dismissedPairKeys.contains(pairKey)
-                        && !cachedPairKeys.contains(pairKey)
+                    return !cachedPairKeys.contains(pairKey)
                 }
                 state.suggestionsByTaskID[sourceTaskID] = filteredSuggestions
                 state.batchFailureMessagesByTaskID[sourceTaskID] = nil
@@ -417,10 +422,6 @@ struct TaskRelationshipReviewFeature {
             case let .relationshipSaved(sourceTaskID, targetTaskID):
                 guard state.selectedTaskID == sourceTaskID else { return .none }
                 state.savingSuggestionTargetID = nil
-                state.dismissedPairKeys.insert(Self.pairKey(
-                    sourceTaskID: sourceTaskID,
-                    targetTaskID: targetTaskID
-                ))
                 Self.removeCachedPair(
                     sourceTaskID: sourceTaskID,
                     targetTaskID: targetTaskID,
@@ -452,21 +453,31 @@ struct TaskRelationshipReviewFeature {
                       }) else {
                     return .none
                 }
-                state.dismissedPairKeys.insert(Self.pairKey(
+                if let dismissal = Self.dismissal(
                     sourceTaskID: sourceTaskID,
-                    targetTaskID: targetTaskID
-                ))
+                    targetTaskID: targetTaskID,
+                    currentFingerprints: state.currentFingerprintsByTaskID,
+                    timestamp: now
+                ) {
+                    state.dismissalRecordsByPairKey[dismissal.pairKey] = dismissal
+                }
                 Self.removeCachedPair(
                     sourceTaskID: sourceTaskID,
                     targetTaskID: targetTaskID,
                     from: &state
                 )
+                let persistDismissalFeedback = persistDismissals(
+                    Array(state.dismissalRecordsByPairKey.values)
+                )
                 if state.suggestions.isEmpty {
                     Self.markTaskReviewed(sourceTaskID, in: &state)
                     state.message = "All suggestions for this task are resolved."
-                    return persistReviewProgress(state.reviewedFingerprintsByTaskID)
+                    return .merge(
+                        persistDismissalFeedback,
+                        persistReviewProgress(state.reviewedFingerprintsByTaskID)
+                    )
                 }
-                return .none
+                return persistDismissalFeedback
 
             case .nextTaskTapped:
                 guard state.savingSuggestionTargetID == nil,
@@ -512,7 +523,10 @@ struct TaskRelationshipReviewFeature {
             state.batchFailureMessagesByTaskID[sourceTaskID] = nil
         }
         state.message = nil
-        return analyzeAll(sourceTaskIDs: sourceTaskIDs)
+        return analyzeAll(
+            sourceTaskIDs: sourceTaskIDs,
+            dismissals: state.dismissalRecordsByPairKey
+        )
             .cancellable(id: CancelID.batchSuggestions, cancelInFlight: true)
     }
 
@@ -571,10 +585,18 @@ struct TaskRelationshipReviewFeature {
                 if reviewedFingerprints != loadedFingerprints {
                     reviewProgressClient.saveFingerprints(reviewedFingerprints)
                 }
+                let loadedDismissals = reviewProgressClient.loadDismissals()
+                let currentDismissals = loadedDismissals.filter {
+                    $0.matches(currentFingerprints: currentFingerprints)
+                }
+                if currentDismissals != loadedDismissals {
+                    reviewProgressClient.saveDismissals(currentDismissals)
+                }
                 send(.catalogLoaded(
                     presentations,
                     currentFingerprints: currentFingerprints,
-                    reviewedFingerprints: reviewedFingerprints
+                    reviewedFingerprints: reviewedFingerprints,
+                    dismissals: currentDismissals
                 ))
             } catch {
                 send(.catalogLoadFailed("Couldn’t load tasks for relationship review."))
@@ -582,21 +604,35 @@ struct TaskRelationshipReviewFeature {
         }
     }
 
-    private func findSuggestions(for sourceTaskID: UUID) -> Effect<Action> {
+    private func findSuggestions(
+        for sourceTaskID: UUID,
+        dismissals: [String: TaskRelationshipReviewDismissal]
+    ) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let tasks = try modelContext().fetch(FetchDescriptor<RoutineTask>())
-                guard let sourceTask = tasks.first(where: { $0.id == sourceTaskID }) else {
+                guard tasks.contains(where: { $0.id == sourceTaskID }) else {
                     send(.suggestionsFailed(sourceTaskID, "This task is no longer available."))
                     return
                 }
-                let request = TaskRelationshipSuggestionRequest.make(
-                    source: sourceTask,
-                    from: tasks,
+                let catalog = TaskRelationshipSuggestionCatalog(
+                    tasks: tasks,
                     referenceDate: now,
                     calendar: calendar,
                     customTaskSections: appSettingsClient.customTaskSections()
                 )
+                let excludedCandidateIDs = Self.currentDismissedTargetIDs(
+                    for: sourceTaskID,
+                    dismissals: dismissals,
+                    catalog: catalog
+                )
+                guard let request = catalog.request(
+                    for: sourceTaskID,
+                    excludingCandidateIDs: excludedCandidateIDs
+                ) else {
+                    send(.suggestionsLoaded(sourceTaskID, []))
+                    return
+                }
                 guard !request.candidates.isEmpty else {
                     send(.suggestionsLoaded(sourceTaskID, []))
                     return
@@ -611,7 +647,10 @@ struct TaskRelationshipReviewFeature {
         }
     }
 
-    private func analyzeAll(sourceTaskIDs: [UUID]) -> Effect<Action> {
+    private func analyzeAll(
+        sourceTaskIDs: [UUID],
+        dismissals: [String: TaskRelationshipReviewDismissal]
+    ) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let tasks = try modelContext().fetch(FetchDescriptor<RoutineTask>())
@@ -625,7 +664,15 @@ struct TaskRelationshipReviewFeature {
                 for sourceTaskID in sourceTaskIDs {
                     try Task.checkCancellation()
                     send(.batchTaskStarted(sourceTaskID))
-                    guard let request = catalog.request(for: sourceTaskID),
+                    let excludedCandidateIDs = Self.currentDismissedTargetIDs(
+                        for: sourceTaskID,
+                        dismissals: dismissals,
+                        catalog: catalog
+                    )
+                    guard let request = catalog.request(
+                        for: sourceTaskID,
+                        excludingCandidateIDs: excludedCandidateIDs
+                    ),
                           !request.candidates.isEmpty else {
                         send(.batchTaskCompleted(sourceTaskID, []))
                         continue
@@ -694,10 +741,48 @@ struct TaskRelationshipReviewFeature {
         }
     }
 
+    private func persistDismissals(
+        _ dismissals: [TaskRelationshipReviewDismissal]
+    ) -> Effect<Action> {
+        .run { _ in
+            reviewProgressClient.saveDismissals(dismissals)
+        }
+    }
+
     private static func pairKey(sourceTaskID: UUID, targetTaskID: UUID) -> String {
-        [sourceTaskID.uuidString.lowercased(), targetTaskID.uuidString.lowercased()]
-            .sorted()
-            .joined(separator: "|")
+        TaskRelationshipReviewDismissal.pairKey(sourceTaskID, targetTaskID)
+    }
+
+    private static func dismissal(
+        sourceTaskID: UUID,
+        targetTaskID: UUID,
+        currentFingerprints: [UUID: String],
+        timestamp: Date
+    ) -> TaskRelationshipReviewDismissal? {
+        guard let sourceTaskFingerprint = currentFingerprints[sourceTaskID],
+              let targetTaskFingerprint = currentFingerprints[targetTaskID] else {
+            return nil
+        }
+        return TaskRelationshipReviewDismissal(
+            sourceTaskID: sourceTaskID,
+            sourceTaskFingerprint: sourceTaskFingerprint,
+            targetTaskID: targetTaskID,
+            targetTaskFingerprint: targetTaskFingerprint,
+            dismissedAt: timestamp
+        )
+    }
+
+    private static func currentDismissedTargetIDs(
+        for sourceTaskID: UUID,
+        dismissals: [String: TaskRelationshipReviewDismissal],
+        catalog: TaskRelationshipSuggestionCatalog
+    ) -> Set<UUID> {
+        Set(dismissals.values.compactMap { dismissal in
+            guard dismissal.matches(fingerprintFor: catalog.fingerprint) else {
+                return nil
+            }
+            return dismissal.otherTaskID(for: sourceTaskID)
+        })
     }
 
     private static func incrementRelationshipCount(

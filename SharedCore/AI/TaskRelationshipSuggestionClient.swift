@@ -82,7 +82,8 @@ struct TaskRelationshipSuggestionRequest: Codable, Equatable, Sendable {
         from tasks: [RoutineTask],
         referenceDate: Date,
         calendar: Calendar,
-        customTaskSections: [HomeCustomTaskSection] = []
+        customTaskSections: [HomeCustomTaskSection] = [],
+        excludingCandidateIDs: Set<UUID> = []
     ) -> TaskRelationshipSuggestionRequest {
         let catalogTasks = tasks.contains { $0.id == source.id }
             ? tasks
@@ -93,7 +94,10 @@ struct TaskRelationshipSuggestionRequest: Codable, Equatable, Sendable {
             calendar: calendar,
             customTaskSections: customTaskSections
         )
-        return catalog.request(for: source.id) ?? TaskRelationshipSuggestionRequest(
+        return catalog.request(
+            for: source.id,
+            excludingCandidateIDs: excludingCandidateIDs
+        ) ?? TaskRelationshipSuggestionRequest(
             source: TaskRelationshipSuggestionTask(
                 task: source,
                 calendar: calendar,
@@ -313,7 +317,10 @@ struct TaskRelationshipSuggestionCatalog: Sendable {
         self.linkedTaskIDsByTaskID = linkedTaskIDsByTaskID
     }
 
-    func request(for sourceTaskID: UUID) -> TaskRelationshipSuggestionRequest? {
+    func request(
+        for sourceTaskID: UUID,
+        excludingCandidateIDs: Set<UUID> = []
+    ) -> TaskRelationshipSuggestionRequest? {
         guard eligibleCandidateIDs.contains(sourceTaskID),
               let source = summariesByID[sourceTaskID],
               let sourceProfile = relevanceProfilesByID[sourceTaskID] else {
@@ -324,6 +331,7 @@ struct TaskRelationshipSuggestionCatalog: Sendable {
             guard candidate.id != sourceTaskID,
                   eligibleCandidateIDs.contains(candidate.id),
                   !linkedTaskIDs.contains(candidate.id),
+                  !excludingCandidateIDs.contains(candidate.id),
                   let profile = relevanceProfilesByID[candidate.id] else {
                 return nil
             }

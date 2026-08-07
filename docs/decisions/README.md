@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0491](0491-keep-dismissed-relationship-feedback-local-and-fingerprint-scoped.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0488](0488-prioritize-grounded-task-relationship-analysis.md):** Dismissing a relationship suggestion stores only device-local, fingerprint-scoped pair feedback; unchanged dismissed pairs are removed before candidate selection, while any task change expires the feedback and confirmation remains the sole relationship write.
+
 - **[0490](0490-exclude-assumed-done-tasks-from-help-me-choose.md) refines [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md), [0486](0486-suggest-confirmed-task-relationships-on-device.md), and [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md):** Help me choose excludes a task with a currently assumed-done occurrence before relationship filtering, missing-metadata counts, comparisons, and ranking.
 
 - **[0489](0489-expand-auto-assume-done-to-scheduled-repeats.md) refines [0259](0259-allow-daily-checklist-auto-assumed-completion.md), [0387](0387-keep-completed-scheduled-blocks-visible.md), and [0398](0398-move-auto-assume-done-to-tracking.md):** Eligible repeating Tasks and Tracking entries can opt into synthetic assumed-done occurrences on their scheduled days; task-backed Calendar blocks remain visible unless that task opts to hide assumed-done blocks.

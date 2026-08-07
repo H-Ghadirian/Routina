@@ -77,7 +77,8 @@ struct TaskRelationshipReviewFeatureTests {
         await store.receive(.catalogLoaded(
             [presentation],
             currentFingerprints: [active.id: activeFingerprint],
-            reviewedFingerprints: [:]
+            reviewedFingerprints: [:],
+            dismissals: []
         )) {
             $0.isLoadingCatalog = false
             $0.tasks = [presentation]
@@ -128,9 +129,6 @@ struct TaskRelationshipReviewFeatureTests {
             kind: .blocks,
             reason: "A current passport may be required before booking."
         )
-        let pairKey = [source.id.uuidString.lowercased(), target.id.uuidString.lowercased()]
-            .sorted()
-            .joined(separator: "|")
         let initialState = TaskRelationshipReviewFeature.State(
             tasks: [sourcePresentation, targetPresentation],
             selectedTaskIndex: 0
@@ -167,7 +165,6 @@ struct TaskRelationshipReviewFeatureTests {
             $0.savingSuggestionTargetID = nil
             $0.suggestions = []
             $0.suggestionsByTaskID[source.id] = []
-            $0.dismissedPairKeys = [pairKey]
             $0.tasks[0].relationshipCount = 1
             $0.tasks[1].relationshipCount = 1
             $0.reviewedTaskIDs = [source.id]
@@ -386,6 +383,175 @@ struct TaskRelationshipReviewFeatureTests {
         TaskRelationshipReviewProgressStorage.save(fingerprints, to: defaults)
 
         #expect(TaskRelationshipReviewProgressStorage.load(from: defaults) == fingerprints)
+    }
+
+    @Test
+    func relationshipReviewDismissalStorageRoundTripsFeedback() throws {
+        let suiteName = "TaskRelationshipReviewDismissalStorageTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let sourceID = UUID()
+        let targetID = UUID()
+        let dismissal = TaskRelationshipReviewDismissal(
+            sourceTaskID: sourceID,
+            sourceTaskFingerprint: "source-v1",
+            targetTaskID: targetID,
+            targetTaskFingerprint: "target-v1",
+            dismissedAt: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+
+        TaskRelationshipReviewProgressStorage.saveDismissals([dismissal], to: defaults)
+
+        #expect(TaskRelationshipReviewProgressStorage.loadDismissals(from: defaults) == [dismissal])
+    }
+
+    @Test
+    func dismissedUnchangedPairIsPersistedAndExcludedBeforeAnalysis() async throws {
+        let context = makeInMemoryContext()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let source = RoutineTask(name: "Book flight", emoji: "✈️", tags: ["Travel"])
+        let target = RoutineTask(name: "Renew passport", emoji: "🛂", tags: ["Travel"])
+        context.insert(source)
+        context.insert(target)
+        try context.save()
+
+        let sourcePresentation = TaskRelationshipReviewTask(
+            id: source.id,
+            title: "Book flight",
+            emoji: "✈️",
+            tags: ["Travel"],
+            path: [],
+            relationshipCount: 0
+        )
+        let targetPresentation = TaskRelationshipReviewTask(
+            id: target.id,
+            title: "Renew passport",
+            emoji: "🛂",
+            tags: ["Travel"],
+            path: [],
+            relationshipCount: 0
+        )
+        let suggestion = TaskRelationshipSuggestion(
+            targetTaskID: target.id,
+            targetTaskTitle: "Renew passport",
+            targetTaskEmoji: "🛂",
+            kind: .blockedBy,
+            reason: "A current passport is needed before booking the flight."
+        )
+        let suggestionCatalog = TaskRelationshipSuggestionCatalog(
+            tasks: [source, target],
+            referenceDate: now,
+            calendar: calendar,
+            customTaskSections: []
+        )
+        let sourceFingerprint = try #require(suggestionCatalog.fingerprint(for: source.id))
+        let targetFingerprint = try #require(suggestionCatalog.fingerprint(for: target.id))
+        let fingerprints = [source.id: sourceFingerprint, target.id: targetFingerprint]
+        let persistedDismissals = LockIsolated<[TaskRelationshipReviewDismissal]>([])
+        let store = TestStore(
+            initialState: TaskRelationshipReviewFeature.State(
+                tasks: [sourcePresentation, targetPresentation],
+                selectedTaskIndex: 0,
+                suggestions: [suggestion],
+                suggestionsByTaskID: [source.id: [suggestion]],
+                currentFingerprintsByTaskID: fingerprints
+            )
+        ) {
+            TaskRelationshipReviewFeature()
+        } withDependencies: {
+            $0.date.now = now
+            $0.taskRelationshipReviewProgressClient = TaskRelationshipReviewProgressClient(
+                loadFingerprints: { [:] },
+                saveFingerprints: { _ in },
+                saveDismissals: { persistedDismissals.setValue($0) }
+            )
+        }
+
+        let dismissal = TaskRelationshipReviewDismissal(
+            sourceTaskID: source.id,
+            sourceTaskFingerprint: sourceFingerprint,
+            targetTaskID: target.id,
+            targetTaskFingerprint: targetFingerprint,
+            dismissedAt: now
+        )
+        await store.send(.dismissSuggestionTapped(target.id)) {
+            $0.suggestions = []
+            $0.suggestionsByTaskID[source.id] = []
+            $0.reviewedFingerprintsByTaskID[source.id] = sourceFingerprint
+            $0.reviewedTaskIDs = [source.id]
+            $0.dismissalRecordsByPairKey = [dismissal.pairKey: dismissal]
+            $0.message = "All suggestions for this task are resolved."
+        }
+        await store.finish()
+        #expect(persistedDismissals.value == [dismissal])
+
+        let modelWasCalled = LockIsolated(false)
+        let suppressedStore = TestStore(
+            initialState: TaskRelationshipReviewFeature.State(
+                tasks: [sourcePresentation, targetPresentation],
+                selectedTaskIndex: 0,
+                currentFingerprintsByTaskID: fingerprints,
+                dismissalRecordsByPairKey: [dismissal.pairKey: dismissal]
+            )
+        ) {
+            TaskRelationshipReviewFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+            $0.calendar = calendar
+            $0.taskRelationshipSuggestionClient = TaskRelationshipSuggestionClient { _ in
+                modelWasCalled.setValue(true)
+                return []
+            }
+        }
+
+        await suppressedStore.send(.findSuggestionsTapped) {
+            $0.isFindingSuggestions = true
+        }
+        await suppressedStore.receive(.suggestionsLoaded(source.id, [])) {
+            $0.isFindingSuggestions = false
+            $0.suggestionsByTaskID[source.id] = []
+            $0.reviewedFingerprintsByTaskID[source.id] = sourceFingerprint
+            $0.reviewedTaskIDs = [source.id]
+            $0.message = "No new clear relationships found for this task."
+        }
+        #expect(!modelWasCalled.value)
+
+        target.name = "Renew passport before travel"
+        try context.save()
+        let analyzedCandidateIDs = LockIsolated<[UUID]>([])
+        let changedStore = TestStore(
+            initialState: TaskRelationshipReviewFeature.State(
+                tasks: [sourcePresentation, targetPresentation],
+                selectedTaskIndex: 0,
+                currentFingerprintsByTaskID: fingerprints,
+                dismissalRecordsByPairKey: [dismissal.pairKey: dismissal]
+            )
+        ) {
+            TaskRelationshipReviewFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+            $0.calendar = calendar
+            $0.taskRelationshipSuggestionClient = TaskRelationshipSuggestionClient { request in
+                analyzedCandidateIDs.setValue(request.candidates.map(\.id))
+                return []
+            }
+        }
+
+        await changedStore.send(.findSuggestionsTapped) {
+            $0.isFindingSuggestions = true
+        }
+        await changedStore.receive(.suggestionsLoaded(source.id, [])) {
+            $0.isFindingSuggestions = false
+            $0.suggestionsByTaskID[source.id] = []
+            $0.reviewedFingerprintsByTaskID[source.id] = sourceFingerprint
+            $0.reviewedTaskIDs = [source.id]
+            $0.message = "No new clear relationships found for this task."
+        }
+        #expect(analyzedCandidateIDs.value == [target.id])
     }
 
     @Test
