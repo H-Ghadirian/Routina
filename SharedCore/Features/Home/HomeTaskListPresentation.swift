@@ -429,20 +429,20 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         )
     }
 
-    func appendingTagRuleRevealResults(
+    func appendingFlagRuleRevealResults(
         from sourceDisplays: [Display],
         filtering: HomeTaskListFiltering<Display>,
-        title: String = "Hidden by tag"
+        title: String = "Hidden by flag"
     ) -> Self {
         let presentedTaskIDs = Set(sections.flatMap(\.tasks).map(\.taskID))
-        let revealedTasks = filtering.tagRuleRevealTasks(from: sourceDisplays).filter {
+        let revealedTasks = filtering.flagRuleRevealTasks(from: sourceDisplays).filter {
             !presentedTaskIDs.contains($0.taskID)
         }
         guard !revealedTasks.isEmpty else { return self }
 
         let section = HomeTaskListPresentationSection(
             kind: .regular,
-            identityKey: "hiddenByTagRule",
+            identityKey: "hiddenByFlagRule",
             title: title,
             tasks: revealedTasks,
             rowNumberOffset: visibleTaskCount,

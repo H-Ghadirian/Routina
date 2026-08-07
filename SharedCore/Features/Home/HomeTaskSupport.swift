@@ -252,6 +252,7 @@ enum HomeTaskSupport {
         goals: [RoutineGoal],
         doneStats: HomeDoneStats,
         relatedTagRules: [RoutineRelatedTagRule],
+        availableFlags: [String] = [],
         now: Date,
         calendar: Calendar
     ) {
@@ -299,6 +300,7 @@ enum HomeTaskSupport {
         detailState.editSelectedPlaceID = detailState.editSelectedPlaceIDs.first
         detailState.availableTagSummaries = availableTagSummaries
         detailState.availableTags = availableTagSummaries.map(\.name)
+        detailState.availableFlags = RoutineFlag.deduplicated(availableFlags)
         detailState.editRoutineTags = RoutineTag.deduplicated(
             detailState.editRoutineTags,
             preferredTags: detailState.availableTags

@@ -12,6 +12,11 @@ struct TaskDetailTagGoalRelationshipEditActionHandler {
         return .none
     }
 
+    func editFlagDraftChanged(_ value: String, state: inout State) -> Effect<Action> {
+        draftMutationHandler.setFlagDraft(value, state: &state)
+        return .none
+    }
+
     func editGoalDraftChanged(_ value: String, state: inout State) -> Effect<Action> {
         draftMutationHandler.setGoalDraft(value, state: &state)
         return .none
@@ -22,6 +27,11 @@ struct TaskDetailTagGoalRelationshipEditActionHandler {
         return .none
     }
 
+    func editAddFlagTapped(state: inout State) -> Effect<Action> {
+        draftMutationHandler.addFlag(state: &state)
+        return .none
+    }
+
     func editAddGoalTapped(state: inout State) -> Effect<Action> {
         draftMutationHandler.addGoal(state: &state)
         return .none
@@ -29,6 +39,11 @@ struct TaskDetailTagGoalRelationshipEditActionHandler {
 
     func editRemoveTag(_ tag: String, state: inout State) -> Effect<Action> {
         draftMutationHandler.removeTag(tag, state: &state)
+        return .none
+    }
+
+    func editRemoveFlag(_ flag: String, state: inout State) -> Effect<Action> {
+        draftMutationHandler.removeFlag(flag, state: &state)
         return .none
     }
 
@@ -77,6 +92,11 @@ struct TaskDetailTagGoalRelationshipEditActionHandler {
 
     func editToggleTagSelection(_ tag: String, state: inout State) -> Effect<Action> {
         draftMutationHandler.toggleTagSelection(tag, state: &state)
+        return .none
+    }
+
+    func editToggleFlagSelection(_ flag: String, state: inout State) -> Effect<Action> {
+        draftMutationHandler.toggleFlagSelection(flag, state: &state)
         return .none
     }
 

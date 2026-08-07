@@ -75,6 +75,117 @@ struct SettingsTagsDetailView: View {
     }
 }
 
+struct SettingsFlagsDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        List {
+            Section {
+                Text("Flags are separate from tags. Use them to mark tasks for Routina behavior without changing your tag organization.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Add Flag") {
+                HStack(spacing: 10) {
+                    TextField("New flag", text: draftBinding)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .onSubmit { store.send(.addFlagTapped) }
+
+                    Button("Add") {
+                        store.send(.addFlagTapped)
+                    }
+                    .disabled(RoutineFlag.parseDraft(store.flags.draft).isEmpty)
+                }
+            }
+
+            Section("Defined Flags") {
+                if store.flags.definedFlags.isEmpty {
+                    Text("No flags yet. Add one here, then assign it while editing a task.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(store.flags.definedFlags, id: \.self) { flag in
+                        flagRow(flag)
+                    }
+                }
+            }
+
+            if !store.flags.statusMessage.isEmpty {
+                Section("Status") {
+                    Text(store.flags.statusMessage)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Flags")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func flagRow(_ flag: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label(flag, systemImage: "flag.fill")
+                    .font(.body.weight(.medium))
+                Spacer()
+                Menu {
+                    Button("Remove flag", role: .destructive) {
+                        store.send(.removeFlagTapped(flag))
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
+
+            ForEach(RoutineFlagRuleKind.allCases) { kind in
+                flagRuleControl(flag, kind: kind)
+            }
+        }
+    }
+
+    private func flagRuleControl(
+        _ flag: String,
+        kind: RoutineFlagRuleKind
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Label(kind.title, systemImage: kind == .hideFromTaskLists ? "eye.slash" : "checkmark.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button(store.flags.hasRule(kind, for: flag) ? "Remove" : "Add") {
+                    store.send(
+                        store.flags.hasRule(kind, for: flag)
+                            ? .removeFlagRuleTapped(flagName: flag, kind: kind)
+                            : .addFlagRuleTapped(flagName: flag, kind: kind)
+                    )
+                }
+                .buttonStyle(.borderless)
+            }
+            Text(kind.detail)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            if kind == .autoAssumeDone,
+               store.flags.hasRule(kind, for: flag) {
+                Button("Migrate existing auto-assume tasks") {
+                    store.send(.migrateAutoAssumeDoneTasksTapped(flag))
+                }
+                .buttonStyle(.borderless)
+                Text("Adds this Flag to tasks that already use auto-assume done.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var draftBinding: Binding<String> {
+        Binding(
+            get: { store.flags.draft },
+            set: { store.send(.flagDraftChanged($0)) }
+        )
+    }
+}
+
 private struct SettingsTagRow: View {
     let store: StoreOf<SettingsFeature>
     let tag: RoutineTagSummary
@@ -99,7 +210,6 @@ private struct SettingsTagRow: View {
             if isRelatedTagRulesEnabled {
                 relatedTagsEditor
             }
-            tagRulesEditor
             tagColorEditor
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -168,57 +278,6 @@ private struct SettingsTagRow: View {
             .disabled(store.tags.isTagOperationInProgress)
 
             Text("Separate related tags with commas.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var tagRulesEditor: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Rules")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            if store.tags.hasTagRule(.hideFromTaskLists, for: tag.name) {
-                HStack(spacing: 8) {
-                    Label(
-                        RoutineTagRuleKind.hideFromTaskLists.title,
-                        systemImage: "eye.slash"
-                    )
-                    .font(.footnote)
-
-                    Spacer()
-
-                    Button("Remove") {
-                        store.send(.removeTagRuleTapped(
-                            tagName: tag.name,
-                            kind: .hideFromTaskLists
-                        ))
-                    }
-                    .buttonStyle(.borderless)
-                    .disabled(store.tags.isTagOperationInProgress)
-                }
-            }
-
-            let availableRules = RoutineTagRuleKind.allCases.filter {
-                !store.tags.hasTagRule($0, for: tag.name)
-            }
-            if !availableRules.isEmpty {
-                Menu {
-                    ForEach(availableRules) { rule in
-                        Button {
-                            store.send(.addTagRuleTapped(tagName: tag.name, kind: rule))
-                        } label: {
-                            Label(rule.title, systemImage: "eye.slash")
-                        }
-                    }
-                } label: {
-                    Label("Add rule", systemImage: "plus")
-                }
-                .disabled(store.tags.isTagOperationInProgress)
-            }
-
-            Text(RoutineTagRuleKind.hideFromTaskLists.detail)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }

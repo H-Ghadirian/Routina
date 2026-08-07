@@ -78,6 +78,7 @@ extension SettingsRoutineDataPersistence {
             var placeID: UUID?
             var placeIDs: [UUID]?
             var tags: [String]?
+            var flags: [String]?
             var goalIDs: [UUID]?
             var eventIDs: [UUID]?
             var steps: [RoutineStep]?
@@ -358,6 +359,8 @@ extension SettingsRoutineDataPersistence {
             var dayPlanCalendarListRowHiddenFields: String?
             var relatedTagRules: String?
             var tagRules: String?
+            var flagRules: String?
+            var definedFlags: String?
             var tagColors: String?
             var fastFilterTags: String?
             var iOSStatsDashboardHiddenItemIDs: String?

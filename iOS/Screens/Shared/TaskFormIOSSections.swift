@@ -387,23 +387,19 @@ struct TaskFormIOSRepeatPatternSections: View {
     }
 
     private var showsAssumedDoneSection: Bool {
-        model.canAutoAssumeDailyDone
-            || (model.taskType.wrappedValue == .record && model.autoAssumeDailyDone.wrappedValue)
+        model.autoAssumeDoneEnabledByFlag
     }
 
     private var assumedDoneSection: some View {
         Section(header: Text("Assumed Done")) {
-            Toggle("Auto-assume done", isOn: model.autoAssumeDailyDone)
-                .disabled(!model.canAutoAssumeDailyDone)
+            Label("Enabled by a Flag", systemImage: "flag.fill")
             Text(presentation.autoAssumeDailyDoneHelpText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            if model.autoAssumeDailyDone.wrappedValue {
-                Toggle(
-                    "Hide assumed-done blocks from Calendar",
-                    isOn: model.hidesAssumedDoneCalendarBlock
-                )
-            }
+            Toggle(
+                "Hide assumed-done blocks from Calendar",
+                isOn: model.hidesAssumedDoneCalendarBlock
+            )
         }
     }
 }

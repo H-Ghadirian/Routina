@@ -152,6 +152,8 @@ struct TabFilterStateManager {
         var selectedTag: String?
         var selectedTags: Set<String>
         var includeTagMatchMode: RoutineTagMatchMode
+        var selectedFlags: Set<String> = []
+        var includeFlagMatchMode: RoutineTagMatchMode = .all
         var excludedTags: Set<String>
         var excludeTagMatchMode: RoutineTagMatchMode
         var selectedFilter: RoutineListFilter
@@ -175,6 +177,8 @@ struct TabFilterStateManager {
                 selectedTag: nil,
                 selectedTags: [],
                 includeTagMatchMode: .all,
+                selectedFlags: [],
+                includeFlagMatchMode: .all,
                 excludedTags: [],
                 excludeTagMatchMode: .any,
                 selectedFilter: .all,
@@ -199,6 +203,8 @@ struct TabFilterStateManager {
             selectedTag: String?,
             selectedTags: Set<String>? = nil,
             includeTagMatchMode: RoutineTagMatchMode = .all,
+            selectedFlags: Set<String> = [],
+            includeFlagMatchMode: RoutineTagMatchMode = .all,
             excludedTags: Set<String>,
             excludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedFilter: RoutineListFilter,
@@ -220,6 +226,8 @@ struct TabFilterStateManager {
             self.selectedTag = selectedTag
             self.selectedTags = selectedTags ?? selectedTag.map { [$0] } ?? []
             self.includeTagMatchMode = includeTagMatchMode
+            self.selectedFlags = selectedFlags
+            self.includeFlagMatchMode = includeFlagMatchMode
             self.excludedTags = excludedTags
             self.excludeTagMatchMode = excludeTagMatchMode
             self.selectedFilter = selectedFilter
@@ -243,6 +251,8 @@ struct TabFilterStateManager {
             case selectedTag
             case selectedTags
             case includeTagMatchMode
+            case selectedFlags
+            case includeFlagMatchMode
             case excludedTags
             case excludeTagMatchMode
             case selectedFilter
@@ -268,6 +278,8 @@ struct TabFilterStateManager {
             selectedTags = try container.decodeIfPresent(Set<String>.self, forKey: .selectedTags)
                 ?? selectedTag.map { [$0] } ?? []
             includeTagMatchMode = try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .includeTagMatchMode) ?? .all
+            selectedFlags = try container.decodeIfPresent(Set<String>.self, forKey: .selectedFlags) ?? []
+            includeFlagMatchMode = try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .includeFlagMatchMode) ?? .all
             excludedTags = try container.decodeIfPresent(Set<String>.self, forKey: .excludedTags) ?? []
             excludeTagMatchMode = try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .excludeTagMatchMode) ?? .any
             selectedFilter = try container.decodeIfPresent(RoutineListFilter.self, forKey: .selectedFilter) ?? .all
@@ -317,6 +329,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedTag: String?
     var homeSelectedTags: Set<String>
     var homeIncludeTagMatchMode: RoutineTagMatchMode
+    var homeSelectedFlags: Set<String> = []
+    var homeIncludeFlagMatchMode: RoutineTagMatchMode = .all
     var homeExcludedTags: Set<String>
     var homeExcludeTagMatchMode: RoutineTagMatchMode
     var homeSelectedManualPlaceFilterID: UUID?
@@ -372,6 +386,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTag: String?,
         homeSelectedTags: Set<String>? = nil,
         homeIncludeTagMatchMode: RoutineTagMatchMode = .all,
+        homeSelectedFlags: Set<String> = [],
+        homeIncludeFlagMatchMode: RoutineTagMatchMode = .all,
         homeExcludedTags: Set<String>,
         homeExcludeTagMatchMode: RoutineTagMatchMode = .any,
         homeSelectedManualPlaceFilterID: UUID?,
@@ -426,6 +442,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedTag = homeSelectedTag
         self.homeSelectedTags = homeSelectedTags ?? homeSelectedTag.map { [$0] } ?? []
         self.homeIncludeTagMatchMode = homeIncludeTagMatchMode
+        self.homeSelectedFlags = homeSelectedFlags
+        self.homeIncludeFlagMatchMode = homeIncludeFlagMatchMode
         self.homeExcludedTags = homeExcludedTags
         self.homeExcludeTagMatchMode = homeExcludeTagMatchMode
         self.homeSelectedManualPlaceFilterID = homeSelectedManualPlaceFilterID
@@ -482,6 +500,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedTag
         case homeSelectedTags
         case homeIncludeTagMatchMode
+        case homeSelectedFlags
+        case homeIncludeFlagMatchMode
         case homeExcludedTags
         case homeExcludeTagMatchMode
         case homeSelectedManualPlaceFilterID
@@ -540,6 +560,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedTag: try container.decodeIfPresent(String.self, forKey: .homeSelectedTag),
             homeSelectedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTags),
             homeIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeIncludeTagMatchMode) ?? .all,
+            homeSelectedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedFlags) ?? [],
+            homeIncludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeIncludeFlagMatchMode) ?? .all,
             homeExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeExcludedTags) ?? [],
             homeExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeExcludeTagMatchMode) ?? .any,
             homeSelectedManualPlaceFilterID: try container.decodeIfPresent(UUID.self, forKey: .homeSelectedManualPlaceFilterID),
@@ -600,6 +622,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTag: nil,
         homeSelectedTags: [],
         homeIncludeTagMatchMode: .all,
+        homeSelectedFlags: [],
+        homeIncludeFlagMatchMode: .all,
         homeExcludedTags: [],
         homeExcludeTagMatchMode: .any,
         homeSelectedManualPlaceFilterID: nil,

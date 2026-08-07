@@ -47,6 +47,21 @@ enum HomeDisplayFilterSupport {
         }
     }
 
+    static func matchesSelectedFlags(
+        _ selectedFlags: Set<String>,
+        mode: RoutineTagMatchMode,
+        in flags: [String]
+    ) -> Bool {
+        guard !selectedFlags.isEmpty else { return true }
+
+        switch mode {
+        case .all:
+            return selectedFlags.allSatisfy { RoutineFlag.contains($0, in: flags) }
+        case .any:
+            return selectedFlags.contains { RoutineFlag.contains($0, in: flags) }
+        }
+    }
+
     static func matchesExcludedTags(_ excludedTags: Set<String>, in tags: [String]) -> Bool {
         guard !excludedTags.isEmpty else { return true }
         return !excludedTags.contains { RoutineTag.contains($0, in: tags) }
@@ -193,12 +208,18 @@ enum HomeDisplayFilterSupport {
         awayRoutineDisplays: [T],
         archivedRoutineDisplays: [T],
         routinePlaces: [RoutinePlace],
-        tags: (T) -> [String]
+        tags: (T) -> [String],
+        flags: (T) -> [String]
     ) {
         let allDisplays = routineDisplays + awayRoutineDisplays + archivedRoutineDisplays
         let allAvailableTags = tagSummaries(from: allDisplays, tags: tags).map(\.name)
         let availableSelectedTags = taskFilters.effectiveSelectedTags.filter { RoutineTag.contains($0, in: allAvailableTags) }
         taskFilters.setSelectedTags(availableSelectedTags)
+
+        let allAvailableFlags = RoutineFlag.allFlags(from: allDisplays.map(flags))
+        taskFilters.selectedFlags = taskFilters.selectedFlags.filter {
+            RoutineFlag.contains($0, in: allAvailableFlags)
+        }
 
         let includeScopedDisplays = allDisplays.filter {
             matchesSelectedTags(

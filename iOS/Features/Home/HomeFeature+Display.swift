@@ -59,6 +59,7 @@ extension HomeFeature {
         state.routineDisplays = active
         state.awayRoutineDisplays = away
         state.archivedRoutineDisplays = archived
+        state.flagFilterOptions = HomeFlagFilterCatalog.options(from: active + away + archived)
         state.taskNamesByID = Dictionary(
             state.routineTasks.map { ($0.id, RoutineTask.trimmedName($0.name) ?? "Untitled task") },
             uniquingKeysWith: { first, _ in first }
@@ -99,6 +100,7 @@ private extension HomeFeature.RoutineDisplay {
             placeName: core.placeName,
             locationAvailability: core.locationAvailability,
             tags: core.tags,
+            flags: core.flags,
             taskListTagSectionDescriptor: core.taskListTagSectionDescriptor,
             goalIDs: core.goalIDs,
             goalTitles: core.goalTitles,

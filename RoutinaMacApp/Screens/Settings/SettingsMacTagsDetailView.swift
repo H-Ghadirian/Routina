@@ -26,6 +26,7 @@ SettingsMacDetailShell(
         }
     }
 }
+
 .alert(
     "Delete Tag?",
     isPresented: deleteTagConfirmationBinding
@@ -75,6 +76,118 @@ SettingsMacDetailShell(
         Binding(
             get: { store.tags.isTagNormalizationConfirmationPresented },
             set: { store.send(.setTagNormalizationConfirmation($0)) }
+        )
+    }
+}
+
+struct SettingsMacFlagsDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        SettingsMacDetailShell(title: "Flags") {
+            SettingsMacDetailCard(title: "Task behavior") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Flags are separate from tags. Use them to mark tasks for Routina behavior without changing your tag organization.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    HStack(spacing: 8) {
+                        TextField("New flag", text: draftBinding)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { store.send(.addFlagTapped) }
+
+                        Button("Add") {
+                            store.send(.addFlagTapped)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(RoutineFlag.parseDraft(store.flags.draft).isEmpty)
+                    }
+                }
+            }
+
+            SettingsMacDetailCard(title: "Defined Flags") {
+                if store.flags.definedFlags.isEmpty {
+                    Text("No flags yet. Add one here, then assign it while editing a task.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(store.flags.definedFlags.enumerated()), id: \.element) { index, flag in
+                            flagRow(flag)
+                            if index < store.flags.definedFlags.count - 1 {
+                                Divider()
+                            }
+                        }
+                    }
+                }
+            }
+
+            if !store.flags.statusMessage.isEmpty {
+                SettingsMacDetailCard(title: "Status") {
+                    Text(store.flags.statusMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func flagRow(_ flag: String) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Label(flag, systemImage: "flag.fill")
+                    .font(.callout.weight(.medium))
+
+                ForEach(RoutineFlagRuleKind.allCases) { kind in
+                    Label(
+                        "\(kind.title): \(store.flags.hasRule(kind, for: flag) ? \"On\" : \"Off\")",
+                        systemImage: kind == .hideFromTaskLists ? "eye.slash" : "checkmark.circle"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            Menu("Rules") {
+                ForEach(RoutineFlagRuleKind.allCases) { kind in
+                    Button(store.flags.hasRule(kind, for: flag) ? "Remove \(kind.title)" : "Add \(kind.title)") {
+                        store.send(
+                            store.flags.hasRule(kind, for: flag)
+                                ? .removeFlagRuleTapped(flagName: flag, kind: kind)
+                                : .addFlagRuleTapped(flagName: flag, kind: kind)
+                        )
+                    }
+                }
+            }
+            .menuStyle(.borderedButton)
+
+            if store.flags.hasRule(.autoAssumeDone, for: flag) {
+                Button("Migrate") {
+                    store.send(.migrateAutoAssumeDoneTasksTapped(flag))
+                }
+                .buttonStyle(.bordered)
+                .help("Add this Flag to tasks that already use auto-assume done")
+            }
+
+            Menu {
+                Button("Remove flag", role: .destructive) {
+                    store.send(.removeFlagTapped(flag))
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .help("Flag actions")
+        }
+        .padding(.vertical, 8)
+    }
+
+    private var draftBinding: Binding<String> {
+        Binding(
+            get: { store.flags.draft },
+            set: { store.send(.flagDraftChanged($0)) }
         )
     }
 }

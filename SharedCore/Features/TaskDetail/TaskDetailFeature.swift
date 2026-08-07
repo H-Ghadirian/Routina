@@ -68,11 +68,14 @@ struct TaskDetailFeature: Reducer {
         var taskAttachments: [AttachmentItem] = []
         var editAttachments: [AttachmentItem] = []
         var editRoutineTags: [String] = []
+        var editRoutineFlags: [String] = []
         var editRoutineGoals: [RoutineGoalSummary] = []
         var editEventIDs: [UUID] = []
         var editRelationships: [RoutineTaskRelationship] = []
         var editTagDraft: String = ""
+        var editFlagDraft: String = ""
         var editGoalDraft: String = ""
+        var editFlagSelectionValidationMessage: String?
         var editScheduleMode: RoutineScheduleMode = .fixedInterval
         var editRoutineSteps: [RoutineStep] = []
         var editStepDraft: String = ""
@@ -82,6 +85,8 @@ struct TaskDetailFeature: Reducer {
         var editChecklistValidationMessage: String?
         var availablePlaces: [RoutinePlaceSummary] = []
         var availableTags: [String] = []
+        var availableFlags: [String] = []
+        var flagRules: [RoutineFlagRule] = []
         var availableTagSummaries: [RoutineTagSummary] = []
         var availableGoals: [RoutineGoalSummary] = []
         var availableEvents: [RoutineEventLinkCandidate] = []
@@ -279,6 +284,31 @@ struct TaskDetailFeature: Reducer {
                 )
         }
 
+        var autoAssumeDoneUnavailableReason: String? {
+            candidateRecurrenceDraft.validationIssue == nil
+                ? RoutineAssumedCompletion.unavailableReason(
+                    scheduleMode: editScheduleMode,
+                    recurrenceRule: candidateRecurrenceRule,
+                    recurrenceTimeRangeRole: editRecurrenceTimeRangeRole,
+                    availabilityStartDate: editAvailabilityStartDate,
+                    availabilityEndDate: editAvailabilityEndDate,
+                    isAllDay: editIsAllDay,
+                    trackingCadenceEnabled: editScheduleMode.taskType == .todo
+                        ? true
+                        : editTrackingCadenceEnabled,
+                    hasSequentialSteps: !editRoutineSteps.isEmpty,
+                    hasChecklistItems: !editRoutineChecklistItems.isEmpty
+                )
+                : "Fix the recurrence before using this Flag."
+        }
+
+        var autoAssumeDoneEnabledByFlag: Bool {
+            RoutineFlagRules.enablesAutoAssumeDone(
+                flags: editRoutineFlags,
+                rules: flagRules
+            ) && autoAssumeDoneUnavailableReason == nil
+        }
+
         var canAddDetailComment: Bool {
             RoutineTaskComment.sanitizedBody(detailCommentDraft) != nil
         }
@@ -389,10 +419,13 @@ struct TaskDetailFeature: Reducer {
         case editRemoveAttachment(UUID)
         case attachmentsLoaded([AttachmentItem])
         case editTagDraftChanged(String)
+        case editFlagDraftChanged(String)
         case editGoalDraftChanged(String)
         case editAddTagTapped
+        case editAddFlagTapped
         case editAddGoalTapped
         case editRemoveTag(String)
+        case editRemoveFlag(String)
         case editRemoveGoal(UUID)
         case editAddRelationship(UUID, RoutineTaskRelationshipKind)
         case editRemoveRelationship(UUID)
@@ -410,6 +443,8 @@ struct TaskDetailFeature: Reducer {
         case editRemoveChecklistItem(UUID)
         case availablePlacesLoaded([RoutinePlaceSummary])
         case availableTagsLoaded([String])
+        case availableFlagsLoaded([String])
+        case flagRulesLoaded([RoutineFlagRule])
         case availableTagSummariesLoaded([RoutineTagSummary])
         case availableGoalsLoaded([RoutineGoalSummary])
         case availableEventsLoaded([RoutineEventLinkCandidate])
@@ -418,6 +453,7 @@ struct TaskDetailFeature: Reducer {
         case editSelectedPlaceChanged(UUID?)
         case editSelectedPlaceIDsChanged([UUID])
         case editToggleTagSelection(String)
+        case editToggleFlagSelection(String)
         case editToggleGoalSelection(RoutineGoalSummary)
         case editToggleEventSelection(UUID)
         case editEstimatedDurationChanged(Int?)
@@ -686,6 +722,34 @@ struct TaskDetailFeature: Reducer {
                 matrixPriority(importance: importance, urgency: urgency)
             }
         )
+    }
+
+    private func editAddDraftFlag(state: inout State) -> Effect<Action> {
+        let flags = RoutineFlag.parseDraft(state.editFlagDraft)
+        state.editFlagDraft = ""
+        for flag in flags {
+            _ = editToggleFlagSelection(flag, state: &state)
+        }
+        return .none
+    }
+
+    private func editToggleFlagSelection(
+        _ flag: String,
+        state: inout State
+    ) -> Effect<Action> {
+        if RoutineFlag.contains(flag, in: state.editRoutineFlags) {
+            state.editRoutineFlags = RoutineFlag.removing(flag, from: state.editRoutineFlags)
+            state.editFlagSelectionValidationMessage = nil
+            return .none
+        }
+        if RoutineFlagRules.contains(.autoAssumeDone, for: flag, in: state.flagRules),
+           let reason = state.autoAssumeDoneUnavailableReason {
+            state.editFlagSelectionValidationMessage = "\(flag) was not added. \(reason) \(RoutineAssumedCompletion.flagRuleAvailabilitySummary)"
+            return .none
+        }
+        state.editRoutineFlags = RoutineFlag.appending(flag, to: state.editRoutineFlags)
+        state.editFlagSelectionValidationMessage = nil
+        return .none
     }
 
     private func markManualFulfillmentTargetsDone(
@@ -1472,17 +1536,26 @@ struct TaskDetailFeature: Reducer {
         case let .editTagDraftChanged(value):
             return tagGoalRelationshipEditActionHandler().editTagDraftChanged(value, state: &state)
 
+        case let .editFlagDraftChanged(value):
+            return tagGoalRelationshipEditActionHandler().editFlagDraftChanged(value, state: &state)
+
         case let .editGoalDraftChanged(value):
             return tagGoalRelationshipEditActionHandler().editGoalDraftChanged(value, state: &state)
 
         case .editAddTagTapped:
             return tagGoalRelationshipEditActionHandler().editAddTagTapped(state: &state)
 
+        case .editAddFlagTapped:
+            return editAddDraftFlag(state: &state)
+
         case .editAddGoalTapped:
             return tagGoalRelationshipEditActionHandler().editAddGoalTapped(state: &state)
 
         case let .editRemoveTag(tag):
             return tagGoalRelationshipEditActionHandler().editRemoveTag(tag, state: &state)
+
+        case let .editRemoveFlag(flag):
+            return tagGoalRelationshipEditActionHandler().editRemoveFlag(flag, state: &state)
 
         case let .editRemoveGoal(goalID):
             return tagGoalRelationshipEditActionHandler().editRemoveGoal(goalID, state: &state)
@@ -1549,6 +1622,13 @@ struct TaskDetailFeature: Reducer {
         case let .availableTagsLoaded(tags):
             return editContextActionHandler().availableTagsLoaded(tags, state: &state)
 
+        case let .availableFlagsLoaded(flags):
+            return editContextActionHandler().availableFlagsLoaded(flags, state: &state)
+
+        case let .flagRulesLoaded(rules):
+            state.flagRules = RoutineFlagRules.sanitized(rules)
+            return .none
+
         case let .availableTagSummariesLoaded(summaries):
             return editContextActionHandler().availableTagSummariesLoaded(summaries, state: &state)
 
@@ -1581,6 +1661,9 @@ struct TaskDetailFeature: Reducer {
                 tag,
                 state: &state
             )
+
+        case let .editToggleFlagSelection(flag):
+            return editToggleFlagSelection(flag, state: &state)
 
         case let .editToggleGoalSelection(goal):
             return tagGoalRelationshipEditActionHandler().editToggleGoalSelection(

@@ -11,6 +11,16 @@ struct AddRoutineOrganizationMutationHandler {
         )
     }
 
+    func setAvailableFlags(
+        _ flags: [String],
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineOrganizationEditor.setAvailableFlags(
+            flags,
+            organization: &state.organization
+        )
+    }
+
     func setAvailableTagSummaries(
         _ summaries: [RoutineTagSummary],
         state: inout AddRoutineFeature.State
@@ -68,6 +78,13 @@ struct AddRoutineOrganizationMutationHandler {
         state.organization.tagDraft = value
     }
 
+    func setFlagDraft(
+        _ value: String,
+        state: inout AddRoutineFeature.State
+    ) {
+        state.organization.flagDraft = value
+    }
+
     func setGoalDraft(
         _ value: String,
         state: inout AddRoutineFeature.State
@@ -77,6 +94,12 @@ struct AddRoutineOrganizationMutationHandler {
 
     func commitDraftTag(state: inout AddRoutineFeature.State) {
         AddRoutineOrganizationEditor.commitDraftTag(
+            organization: &state.organization
+        )
+    }
+
+    func commitDraftFlag(state: inout AddRoutineFeature.State) {
+        AddRoutineOrganizationEditor.commitDraftFlag(
             organization: &state.organization
         )
     }
@@ -97,6 +120,16 @@ struct AddRoutineOrganizationMutationHandler {
         )
     }
 
+    func removeFlag(
+        _ flag: String,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineOrganizationEditor.removeFlag(
+            flag,
+            organization: &state.organization
+        )
+    }
+
     func removeGoal(
         _ goalID: UUID,
         state: inout AddRoutineFeature.State
@@ -113,6 +146,16 @@ struct AddRoutineOrganizationMutationHandler {
     ) {
         AddRoutineOrganizationEditor.toggleTagSelection(
             tag,
+            organization: &state.organization
+        )
+    }
+
+    func toggleFlagSelection(
+        _ flag: String,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineOrganizationEditor.toggleFlagSelection(
+            flag,
             organization: &state.organization
         )
     }

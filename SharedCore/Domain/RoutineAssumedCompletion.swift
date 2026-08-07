@@ -2,6 +2,7 @@ import Foundation
 
 enum RoutineAssumedCompletion {
     static let defaultDoneTimeOfDay = RoutineTimeOfDay(hour: 12, minute: 0)
+    static let flagRuleAvailabilitySummary = "Available for scheduled daily, weekly, monthly, or yearly routines with one occurrence per day; eligible multi-day After done routines; and one-time tasks with one date and a Time block."
 
     static func isEligible(_ task: RoutineTask) -> Bool {
         task.autoAssumeDailyDone
@@ -92,6 +93,60 @@ enum RoutineAssumedCompletion {
                 recurrenceRule,
                 scheduleMode: scheduleMode
             )
+    }
+
+    static func unavailableReason(
+        scheduleMode: RoutineScheduleMode,
+        recurrenceRule: RoutineRecurrenceRule,
+        recurrenceTimeRangeRole: RoutineTimeRangeRole = .availability,
+        availabilityStartDate: Date? = nil,
+        availabilityEndDate: Date? = nil,
+        isAllDay: Bool = false,
+        trackingCadenceEnabled: Bool = true,
+        hasSequentialSteps: Bool,
+        hasChecklistItems: Bool
+    ) -> String? {
+        guard !canEnable(
+            scheduleMode: scheduleMode,
+            recurrenceRule: recurrenceRule,
+            recurrenceTimeRangeRole: recurrenceTimeRangeRole,
+            availabilityStartDate: availabilityStartDate,
+            availabilityEndDate: availabilityEndDate,
+            isAllDay: isAllDay,
+            trackingCadenceEnabled: trackingCadenceEnabled,
+            hasSequentialSteps: hasSequentialSteps,
+            hasChecklistItems: hasChecklistItems
+        ) else {
+            return nil
+        }
+
+        if hasSequentialSteps {
+            return "It is not available for tasks with steps."
+        }
+        if scheduleMode.routineFormat == .standard, hasChecklistItems {
+            return "It is not available for Standard routines with checklist items."
+        }
+        if scheduleMode.isChecklistCompletionMode, !hasChecklistItems {
+            return "Checklist-completion routines need checklist items first."
+        }
+        if scheduleMode == .oneOff {
+            return "Use exactly one availability date and a Time block."
+        }
+        if !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
+            return "Add a supported repeating schedule."
+        }
+        if recurrenceRule.advanced?.occursMoreThanOncePerDay == true {
+            return "Use a schedule with at most one occurrence per day."
+        }
+        if scheduleMode.scheduleBehavior != .soft,
+           scheduleMode.taskType != .record,
+           !supportsRollingAfterCompletionAssumption(
+                recurrenceRule,
+                scheduleMode: scheduleMode
+           ) {
+            return "Only eligible multi-day After done Standard routines can use it."
+        }
+        return "This schedule does not support auto-assume done."
     }
 
     static func isAssumedDone(

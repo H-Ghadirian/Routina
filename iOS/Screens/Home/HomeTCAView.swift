@@ -9,7 +9,7 @@ private struct HomeTaskListPresentationRefreshToken: Equatable {
     let hideUnavailableRoutines: Bool
     let searchText: String
     let sectioningMode: RoutineListSectioningMode
-    let tagRules: [RoutineTagRule]
+    let flagRules: [RoutineFlagRule]
     let referenceDay: Date
 }
 
@@ -115,7 +115,7 @@ homeContent
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             searchText: searchTextBinding.wrappedValue,
             sectioningMode: routineListSectioningMode,
-            tagRules: store.tagRules,
+            flagRules: store.flagRules,
             referenceDay: calendar.startOfDay(for: Date())
         )
     }
@@ -130,7 +130,7 @@ homeContent
             showArchivedTasks: store.showArchivedTasks,
             taskListKind: store.taskListMode.filterTaskListKind
         )
-        taskListPresentation = presentation.appendingTagRuleRevealResults(
+        taskListPresentation = presentation.appendingFlagRuleRevealResults(
             from: taskListSearchSourceDisplays,
             filtering: taskListFiltering()
         )

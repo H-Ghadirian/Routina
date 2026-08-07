@@ -116,6 +116,12 @@ struct AddRoutineTaskFormModelFactory {
             onAddTag: { store.send(.addTagTapped) },
             onRemoveTag: { store.send(.removeTag($0)) },
             onToggleTagSelection: { store.send(.toggleTagSelection($0)) },
+            flagDraft: binding(get: { store.organization.flagDraft }, send: AddRoutineFeature.Action.flagDraftChanged),
+            routineFlags: store.organization.routineFlags,
+            availableFlags: store.organization.availableFlags,
+            onAddFlag: { store.send(.addFlagTapped) },
+            onRemoveFlag: { store.send(.removeFlag($0)) },
+            onToggleFlagSelection: { store.send(.toggleFlagSelection($0)) },
             goalDraft: binding(get: { store.organization.goalDraft }, send: AddRoutineFeature.Action.goalDraftChanged),
             selectedGoals: store.organization.routineGoals,
             availableGoals: store.organization.availableGoals,
@@ -213,6 +219,8 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.schedule.autoAssumeDailyDone },
                 send: AddRoutineFeature.Action.autoAssumeDailyDoneChanged
             ),
+            autoAssumeDoneEnabledByFlag: store.autoAssumeDoneEnabledByFlag,
+            flagSelectionValidationMessage: store.organization.flagSelectionValidationMessage,
             hidesAssumedDoneCalendarBlock: binding(
                 get: { store.schedule.hidesAssumedDoneCalendarBlock },
                 send: AddRoutineFeature.Action.hidesAssumedDoneCalendarBlockChanged

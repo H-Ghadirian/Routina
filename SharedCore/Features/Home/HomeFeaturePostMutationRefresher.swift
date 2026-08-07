@@ -12,6 +12,7 @@ protocol HomeFeaturePostMutationRefreshState {
 struct HomeFeaturePostMutationRefresher<State: HomeFeaturePostMutationRefreshState, Action> {
     var refreshDisplays: (inout State) -> Void
     var syncSelectedTaskDetailState: (inout State) -> Void
+    var definedFlags: () -> [String] = { [] }
     var addRoutineAction: (AddRoutineFeature.Action) -> Action
 
     func refreshDisplaysAndSelection(_ state: inout State) {
@@ -36,6 +37,7 @@ struct HomeFeaturePostMutationRefresher<State: HomeFeaturePostMutationRefreshSta
                 places: state.routinePlaces,
                 goals: state.routineGoals,
                 doneStats: state.doneStats,
+                availableFlags: definedFlags(),
                 action: addRoutineAction
             )
         )

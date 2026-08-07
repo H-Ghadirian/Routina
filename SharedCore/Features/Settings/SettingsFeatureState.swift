@@ -174,6 +174,17 @@ struct SettingsTagsState: Equatable {
     var isTagNormalizationConfirmationPresented: Bool = false
 }
 
+struct SettingsFlagsState: Equatable {
+    var definedFlags: [String] = []
+    var rules: [RoutineFlagRule] = []
+    var draft: String = ""
+    var statusMessage: String = ""
+
+    func hasRule(_ kind: RoutineFlagRuleKind, for flag: String) -> Bool {
+        RoutineFlagRules.contains(kind, for: flag, in: rules)
+    }
+}
+
 struct SettingsTagMergeRequest: Equatable {
     var source: RoutineTagSummary
     var replacement: RoutineTagSummary
@@ -230,4 +241,5 @@ struct SettingsFeatureState: Equatable {
     var gitlab = SettingsGitLabState()
     var places = SettingsPlacesState()
     var tags = SettingsTagsState()
+    var flags = SettingsFlagsState()
 }

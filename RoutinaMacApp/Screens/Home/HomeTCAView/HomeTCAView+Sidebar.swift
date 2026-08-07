@@ -161,6 +161,8 @@ extension HomeTCAView {
             selectedTodoStateFilter: store.selectedTodoStateFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
+            selectedFlags: store.selectedFlags,
+            includeFlagMatchMode: store.includeFlagMatchMode,
             excludedTags: store.excludedTags,
             selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             hasSelectedPlaceFilter: isPlacesEnabled && store.selectedManualPlaceFilterID != nil,
@@ -1214,6 +1216,7 @@ extension HomeTCAView {
             showsImportanceUrgencySection: false,
             showsTagSection: false,
             showsPlaceSection: isPlacesEnabled && hasPlaceAwareContent,
+            showsFlagSection: homeFlagFilterData.hasFlags,
             showsPlaceTaskRowField: isPlacesEnabled,
             onTaskRowFieldVisibilityChanged: { field, isVisible in
                 settingsStore.send(.taskRowFieldVisibilityChanged(field, isVisible))
@@ -1232,6 +1235,8 @@ extension HomeTCAView {
                 locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
                 onManagePlaces: { openSettingsPlacesInSidebar() }
             )
+        } flagSectionContent: {
+            platformFlagFilterBar
         }
     }
 

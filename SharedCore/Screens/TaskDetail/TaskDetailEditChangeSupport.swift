@@ -27,11 +27,13 @@ struct TaskDetailEditChangeRequest {
     let selectedPlaceID: UUID?
     let selectedPlaceIDs: [UUID]
     let tags: [String]
+    let flags: [String]
     let availableGoals: [RoutineGoalSummary]
     let goals: [RoutineGoalSummary]
     let eventIDs: [UUID]
     let relationships: [RoutineTaskRelationship]
     let tagDraft: String
+    let flagDraft: String
     let goalDraft: String
     let scheduleMode: RoutineScheduleMode
     let steps: [RoutineStep]
@@ -92,11 +94,13 @@ struct TaskDetailEditChangeRequest {
         self.selectedPlaceID = state.editSelectedPlaceID
         self.selectedPlaceIDs = state.editSelectedPlaceIDs
         self.tags = state.editRoutineTags
+        self.flags = state.editRoutineFlags
         self.availableGoals = state.availableGoals
         self.goals = state.editRoutineGoals
         self.eventIDs = state.editEventIDs
         self.relationships = state.editRelationships
         self.tagDraft = state.editTagDraft
+        self.flagDraft = state.editFlagDraft
         self.goalDraft = state.editGoalDraft
         self.scheduleMode = state.editScheduleMode
         self.steps = state.editRoutineSteps
@@ -144,11 +148,13 @@ enum TaskDetailEditChangeDetector {
         let currentNotes = CalendarTaskImportSupport.displayNotes(from: task.notes) ?? ""
         let currentLink = RoutineTask.linkEditorText(for: task.linkItems)
         let currentTags = RoutineTag.deduplicated(task.tags)
+        let currentFlags = RoutineFlag.deduplicated(task.flags)
         let currentGoalIDs = task.goalIDs
         let currentEventIDs = task.eventIDs
         let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
         let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
         let candidateTags = RoutineTag.appending(request.tagDraft, to: request.tags)
+        let candidateFlags = RoutineFlag.appending(request.flagDraft, to: request.flags)
         let candidateGoals = RoutineGoalSummary.appending(
             request.goalDraft,
             availableGoals: request.availableGoals,
@@ -205,6 +211,7 @@ enum TaskDetailEditChangeDetector {
                 request.selectedPlaceIDs.isEmpty ? request.selectedPlaceID.map { [$0] } ?? [] : request.selectedPlaceIDs
             ) != task.placeIDs
             || candidateTags != currentTags
+            || candidateFlags != currentFlags
             || candidateGoalIDs != currentGoalIDs
             || RoutineEventIDStorage.sanitized(request.eventIDs) != currentEventIDs
             || candidateRelationships != currentRelationships

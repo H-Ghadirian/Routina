@@ -1,5 +1,70 @@
 import Foundation
 
+enum SettingsFlagEditor {
+    static func loadedRules(_ rules: [RoutineFlagRule], state: inout SettingsFlagsState) {
+        state.rules = RoutineFlagRules.sanitized(rules)
+        state.definedFlags = RoutineFlag.deduplicated(
+            state.definedFlags + state.rules.map(\.flag)
+        )
+    }
+
+    static func loadedDefinedFlags(_ flags: [String], state: inout SettingsFlagsState) {
+        state.definedFlags = RoutineFlag.deduplicated(flags + state.rules.map(\.flag))
+    }
+
+    static func updateDraft(_ draft: String, state: inout SettingsFlagsState) {
+        state.draft = draft
+        state.statusMessage = ""
+    }
+
+    static func addDraft(state: inout SettingsFlagsState) -> [String] {
+        let updatedFlags = RoutineFlag.appending(state.draft, to: state.definedFlags)
+        guard updatedFlags != state.definedFlags else {
+            state.statusMessage = "Enter a new flag first."
+            return state.definedFlags
+        }
+        state.definedFlags = updatedFlags
+        state.draft = ""
+        state.statusMessage = "Flag added."
+        return updatedFlags
+    }
+
+    static func removeFlag(_ flag: String, state: inout SettingsFlagsState) -> (flags: [String], rules: [RoutineFlagRule]) {
+        state.definedFlags = RoutineFlag.removing(flag, from: state.definedFlags)
+        state.rules = RoutineFlagRules.removing(flag, from: state.rules)
+        state.statusMessage = "Flag removed from Settings. Existing tasks keep the flag until you edit them."
+        return (state.definedFlags, state.rules)
+    }
+
+    static func addRule(
+        _ kind: RoutineFlagRuleKind,
+        for flag: String,
+        state: inout SettingsFlagsState
+    ) -> (flags: [String], rules: [RoutineFlagRule]) {
+        let updatedRules = RoutineFlagRules.adding(kind, for: flag, in: state.rules)
+        guard updatedRules != state.rules else {
+            state.statusMessage = "That rule is already active for \(flag)."
+            return (state.definedFlags, state.rules)
+        }
+        state.rules = updatedRules
+        state.definedFlags = RoutineFlag.deduplicated(state.definedFlags + [flag])
+        state.statusMessage = "Added \(kind.title.lowercased()) for \(flag)."
+        return (state.definedFlags, state.rules)
+    }
+
+    static func removeRule(
+        _ kind: RoutineFlagRuleKind,
+        for flag: String,
+        state: inout SettingsFlagsState
+    ) -> [RoutineFlagRule] {
+        let updatedRules = RoutineFlagRules.removing(kind, for: flag, from: state.rules)
+        guard updatedRules != state.rules else { return state.rules }
+        state.rules = updatedRules
+        state.statusMessage = "Removed \(kind.title.lowercased()) for \(flag)."
+        return updatedRules
+    }
+}
+
 struct SettingsTagRenameRequest: Equatable {
     var originalTagName: String
     var cleanedName: String

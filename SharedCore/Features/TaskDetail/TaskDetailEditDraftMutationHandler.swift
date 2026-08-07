@@ -74,6 +74,10 @@ struct TaskDetailEditDraftMutationHandler {
         state.editTagDraft = value
     }
 
+    func setFlagDraft(_ value: String, state: inout TaskDetailFeature.State) {
+        state.editFlagDraft = value
+    }
+
     func setGoalDraft(_ value: String, state: inout TaskDetailFeature.State) {
         state.editGoalDraft = value
     }
@@ -87,6 +91,15 @@ struct TaskDetailEditDraftMutationHandler {
         state.editTagDraft = ""
     }
 
+    func addFlag(state: inout TaskDetailFeature.State) {
+        state.editRoutineFlags = RoutineFlag.appending(
+            state.editFlagDraft,
+            to: state.editRoutineFlags,
+            availableFlags: state.availableFlags
+        )
+        state.editFlagDraft = ""
+    }
+
     func addGoal(state: inout TaskDetailFeature.State) {
         state.editRoutineGoals = RoutineGoalSummary.appending(
             state.editGoalDraft,
@@ -98,6 +111,22 @@ struct TaskDetailEditDraftMutationHandler {
 
     func removeTag(_ tag: String, state: inout TaskDetailFeature.State) {
         state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
+    }
+
+    func removeFlag(_ flag: String, state: inout TaskDetailFeature.State) {
+        state.editRoutineFlags = RoutineFlag.removing(flag, from: state.editRoutineFlags)
+    }
+
+    func toggleFlagSelection(_ flag: String, state: inout TaskDetailFeature.State) {
+        if RoutineFlag.contains(flag, in: state.editRoutineFlags) {
+            state.editRoutineFlags = RoutineFlag.removing(flag, from: state.editRoutineFlags)
+        } else {
+            state.editRoutineFlags = RoutineFlag.appending(
+                flag,
+                to: state.editRoutineFlags,
+                availableFlags: state.availableFlags
+            )
+        }
     }
 
     func removeGoal(_ goalID: UUID, state: inout TaskDetailFeature.State) {

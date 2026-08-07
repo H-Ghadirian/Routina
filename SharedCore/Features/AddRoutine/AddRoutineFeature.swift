@@ -34,18 +34,24 @@ struct AddRoutineFeature: Reducer {
         case taskTypeChanged(RoutineTaskType)
         case customTaskSectionChanged(UUID?)
         case availableTagsChanged([String])
+        case availableFlagsChanged([String])
+        case flagRulesChanged([RoutineFlagRule])
         case availableTagSummariesChanged([RoutineTagSummary])
         case availableGoalsChanged([RoutineGoalSummary])
         case availableEventsChanged([RoutineEventLinkCandidate])
         case relatedTagRulesChanged([RoutineRelatedTagRule])
         case availableRelationshipTasksChanged([RoutineTaskRelationshipCandidate])
         case tagDraftChanged(String)
+        case flagDraftChanged(String)
         case goalDraftChanged(String)
         case addTagTapped
+        case addFlagTapped
         case addGoalTapped
         case removeTag(String)
+        case removeFlag(String)
         case removeGoal(UUID)
         case toggleTagSelection(String)
+        case toggleFlagSelection(String)
         case toggleGoalSelection(RoutineGoalSummary)
         case toggleEventSelection(UUID)
         case addRelationship(UUID, RoutineTaskRelationshipKind)
@@ -154,6 +160,30 @@ struct AddRoutineFeature: Reducer {
             recurrenceKind: state.schedule.recurrenceKind,
             frequencyUnit: state.schedule.frequency
         )
+    }
+
+    private func addDraftFlag(state: inout State) {
+        let flags = RoutineFlag.parseDraft(state.organization.flagDraft)
+        state.organization.flagDraft = ""
+        for flag in flags {
+            toggleFlagSelection(flag, state: &state)
+        }
+    }
+
+    private func toggleFlagSelection(_ flag: String, state: inout State) {
+        if RoutineFlag.contains(flag, in: state.organization.routineFlags) {
+            organizationMutationHandler().removeFlag(flag, state: &state)
+            state.organization.flagSelectionValidationMessage = nil
+            return
+        }
+
+        if RoutineFlagRules.contains(.autoAssumeDone, for: flag, in: state.organization.flagRules),
+           let reason = state.autoAssumeDoneUnavailableReason {
+            state.organization.flagSelectionValidationMessage = "\(flag) was not added. \(reason) \(RoutineAssumedCompletion.flagRuleAvailabilitySummary)"
+            return
+        }
+        organizationMutationHandler().toggleFlagSelection(flag, state: &state)
+        state.organization.flagSelectionValidationMessage = nil
     }
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -387,6 +417,14 @@ struct AddRoutineFeature: Reducer {
             organizationMutationHandler().setAvailableTags(tags, state: &state)
             return .none
 
+        case let .availableFlagsChanged(flags):
+            organizationMutationHandler().setAvailableFlags(flags, state: &state)
+            return .none
+
+        case let .flagRulesChanged(rules):
+            state.organization.flagRules = RoutineFlagRules.sanitized(rules)
+            return .none
+
         case let .availableTagSummariesChanged(summaries):
             organizationMutationHandler().setAvailableTagSummaries(summaries, state: &state)
             return .none
@@ -411,12 +449,20 @@ struct AddRoutineFeature: Reducer {
             organizationMutationHandler().setTagDraft(value, state: &state)
             return .none
 
+        case let .flagDraftChanged(value):
+            organizationMutationHandler().setFlagDraft(value, state: &state)
+            return .none
+
         case let .goalDraftChanged(value):
             organizationMutationHandler().setGoalDraft(value, state: &state)
             return .none
 
         case .addTagTapped:
             organizationMutationHandler().commitDraftTag(state: &state)
+            return .none
+
+        case .addFlagTapped:
+            addDraftFlag(state: &state)
             return .none
 
         case .addGoalTapped:
@@ -427,12 +473,20 @@ struct AddRoutineFeature: Reducer {
             organizationMutationHandler().removeTag(tag, state: &state)
             return .none
 
+        case let .removeFlag(flag):
+            organizationMutationHandler().removeFlag(flag, state: &state)
+            return .none
+
         case let .removeGoal(goalID):
             organizationMutationHandler().removeGoal(goalID, state: &state)
             return .none
 
         case let .toggleTagSelection(tag):
             organizationMutationHandler().toggleTagSelection(tag, state: &state)
+            return .none
+
+        case let .toggleFlagSelection(flag):
+            toggleFlagSelection(flag, state: &state)
             return .none
 
         case let .toggleGoalSelection(goal):

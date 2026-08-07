@@ -133,6 +133,8 @@ struct SettingsIOSDetailView: View {
             SettingsPlacesDetailView(store: store)
         case .tags:
             SettingsTagsDetailView(store: store)
+        case .flags:
+            SettingsFlagsDetailView(store: store)
         case .sections:
             SettingsTaskSectionsUnavailableView()
         case .appearance:

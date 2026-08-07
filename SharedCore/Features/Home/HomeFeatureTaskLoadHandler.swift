@@ -12,13 +12,14 @@ protocol HomeFeatureTaskLoadState {
     var selection: HomeSelectionState { get set }
     var presentation: HomePresentationState { get set }
     var relatedTagRules: [RoutineRelatedTagRule] { get set }
-    var tagRules: [RoutineTagRule] { get set }
+    var flagRules: [RoutineFlagRule] { get set }
     var tagColors: [String: String] { get set }
 }
 
 struct HomeFeatureTaskLoadHandler<State: HomeFeatureTaskLoadState, Action> {
     var relatedTagRules: () -> [RoutineRelatedTagRule]
-    var tagRules: () -> [RoutineTagRule]
+    var flagRules: () -> [RoutineFlagRule]
+    var definedFlags: () -> [String] = { [] }
     var tagColors: () -> [String: String]
     var calendar: () -> Calendar = { .current }
     var refreshDisplays: (inout State) -> Void
@@ -49,7 +50,7 @@ struct HomeFeatureTaskLoadHandler<State: HomeFeatureTaskLoadState, Action> {
             calendar: calendar()
         )
         state.relatedTagRules = snapshot.relatedTagRules
-        state.tagRules = RoutineTagRules.sanitized(tagRules())
+        state.flagRules = RoutineFlagRules.sanitized(flagRules())
         state.tagColors = tagColors()
         state.selection.selectedTaskReloadGuard = snapshot.selectedTaskReloadGuard
         state.routineTasks = snapshot.tasks
@@ -73,6 +74,7 @@ struct HomeFeatureTaskLoadHandler<State: HomeFeatureTaskLoadState, Action> {
                 places: snapshot.places,
                 goals: snapshot.goals,
                 doneStats: snapshot.doneStats,
+                availableFlags: definedFlags(),
                 action: addRoutineAction
             )
         )

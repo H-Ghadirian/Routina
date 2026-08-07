@@ -147,6 +147,43 @@ struct AppFeatureTests {
     }
 
     @Test
+    func flagRuleChangesImmediatelyUpdateHomeFilteringRules() async {
+        let persistedRules = LockIsolated<[RoutineFlagRule]>([])
+        let store = TestStore(
+            initialState: AppFeature.State(
+                settings: SettingsFeature.State(flags: .init(definedFlags: ["Tracking"]))
+            )
+        ) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.flagRules = { persistedRules.value }
+            $0.appSettingsClient.setFlagRules = { persistedRules.setValue($0) }
+        }
+
+        await store.send(.settings(.addFlagRuleTapped(
+            flagName: "Tracking",
+            kind: .hideFromTaskLists
+        ))) {
+            $0.home.flagRules = [
+                RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
+            ]
+            $0.settings.flags.rules = [
+                RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
+            ]
+            $0.settings.flags.statusMessage = "Added hide tasks from normal task lists for Tracking."
+        }
+
+        await store.send(.settings(.removeFlagRuleTapped(
+            flagName: "Tracking",
+            kind: .hideFromTaskLists
+        ))) {
+            $0.home.flagRules = []
+            $0.settings.flags.rules = []
+            $0.settings.flags.statusMessage = "Removed hide tasks from normal task lists for Tracking."
+        }
+    }
+
+    @Test
     func missingPressureTaskDetailsRequest_opensTheTaskFromHome() async {
         let taskID = UUID()
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)

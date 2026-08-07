@@ -12,6 +12,7 @@ protocol HomeTaskListDisplay {
     var placeIDs: [UUID] { get }
     var placeName: String? { get }
     var tags: [String] { get }
+    var flags: [String] { get }
     var taskListTagSectionDescriptor: HomeTaskListTagSectionDescriptor { get }
     var goalTitles: [String] { get }
     var interval: Int { get }
@@ -52,6 +53,10 @@ protocol HomeTaskListDisplay {
 }
 
 extension HomeTaskListDisplay {
+    var flags: [String] {
+        []
+    }
+
     var taskDescription: String? {
         nil
     }
@@ -241,12 +246,14 @@ struct HomeTaskListFilteringConfiguration {
     var createdDateFilter: HomeTaskCreatedDateFilter
     var selectedTags: Set<String>
     var includeTagMatchMode: RoutineTagMatchMode
+    var selectedFlags: Set<String> = []
+    var includeFlagMatchMode: RoutineTagMatchMode = .all
     var excludedTags: Set<String>
     var excludeTagMatchMode: RoutineTagMatchMode
     var searchText: String
     var routineListSectioningMode: RoutineListSectioningMode
     var separateDeadlineStatusInTagSections: Bool = false
-    var tagRules: [RoutineTagRule] = []
+    var flagRules: [RoutineFlagRule] = []
     var routineTasks: [RoutineTask]
     var referenceDate: Date
     var calendar: Calendar

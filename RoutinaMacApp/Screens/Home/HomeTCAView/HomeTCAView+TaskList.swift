@@ -1806,9 +1806,33 @@ extension HomeTCAView {
             return nil
         }
 
-        return TaskDetailSidebarLocation(
-            titles: [location.section.title] + location.groups.compactMap(\.title)
+        let sectionTitle = macTaskSourceListSidebarSectionTitle(
+            for: taskID,
+            location: location
         )
+
+        return TaskDetailSidebarLocation(
+            titles: [sectionTitle] + location.groups.compactMap(\.title)
+        )
+    }
+
+    private func macTaskSourceListSidebarSectionTitle(
+        for taskID: UUID,
+        location: MacTaskSourceListTaskLocation
+    ) -> String {
+        guard location.section.identityKey == "hiddenByFlagRule",
+              let task = store.routineTasks.first(where: { $0.id == taskID }) else {
+            return location.section.title
+        }
+
+        let hidingFlags = RoutineFlagRules.flagsHidingFromTaskLists(
+            task.flags,
+            rules: store.flagRules
+        )
+        guard !hidingFlags.isEmpty else { return location.section.title }
+
+        let noun = hidingFlags.count == 1 ? "Flag" : "Flags"
+        return "Hidden by \(noun): \(hidingFlags.joined(separator: ", "))"
     }
 
     private func macTaskSourceListLocation(

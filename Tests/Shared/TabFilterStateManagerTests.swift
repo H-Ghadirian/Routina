@@ -76,6 +76,28 @@ struct TabFilterStateManagerTests {
     }
 
     @Test
+    func codingRoundTripPreservesFlagFilterFields() throws {
+        let snapshot = TabFilterStateManager.Snapshot(
+            selectedTag: "Work",
+            selectedTags: ["Work"],
+            includeTagMatchMode: .all,
+            selectedFlags: ["Tracking", "Focus"],
+            includeFlagMatchMode: .any,
+            excludedTags: [],
+            selectedFilter: .all,
+            selectedManualPlaceFilterID: nil
+        )
+
+        let decoded = try JSONDecoder().decode(
+            TabFilterStateManager.Snapshot.self,
+            from: JSONEncoder().encode(snapshot)
+        )
+
+        #expect(decoded.selectedFlags == ["Tracking", "Focus"])
+        #expect(decoded.includeFlagMatchMode == .any)
+    }
+
+    @Test
     func saveAndRestore_preservesNilFieldsCorrectly() {
         var manager = TabFilterStateManager()
 

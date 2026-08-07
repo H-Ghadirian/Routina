@@ -38,6 +38,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let selectedTodoStateFilter: TodoState?
     let selectedTags: Set<String>
     let includeTagMatchMode: RoutineTagMatchMode
+    let selectedFlags: Set<String>
+    let includeFlagMatchMode: RoutineTagMatchMode
     let excludedTags: Set<String>
     let selectedPlaceName: String?
     let hasSelectedPlaceFilter: Bool
@@ -64,6 +66,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
         selectedTodoStateFilter: TodoState? = nil,
         selectedTags: Set<String> = [],
         includeTagMatchMode: RoutineTagMatchMode = .all,
+        selectedFlags: Set<String> = [],
+        includeFlagMatchMode: RoutineTagMatchMode = .all,
         excludedTags: Set<String> = [],
         selectedPlaceName: String? = nil,
         hasSelectedPlaceFilter: Bool = false,
@@ -89,6 +93,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.selectedTodoStateFilter = selectedTodoStateFilter
         self.selectedTags = selectedTags
         self.includeTagMatchMode = includeTagMatchMode
+        self.selectedFlags = selectedFlags
+        self.includeFlagMatchMode = includeFlagMatchMode
         self.excludedTags = excludedTags
         self.selectedPlaceName = selectedPlaceName
         self.hasSelectedPlaceFilter = hasSelectedPlaceFilter
@@ -109,6 +115,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     var activeOptionalFilterCount: Int {
         var count = 0
         if !selectedTags.isEmpty { count += 1 }
+        if !selectedFlags.isEmpty { count += 1 }
         count += excludedTags.count
         if hasSelectedPlaceFilter { count += 1 }
         if normalizedImportanceUrgencyFilter != nil { count += 1 }
@@ -207,6 +214,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if !selectedTags.isEmpty {
             labels.append("\(includeTagMatchMode.rawValue) \(selectedTags.count) tags")
+        }
+
+        if !selectedFlags.isEmpty {
+            labels.append("\(includeFlagMatchMode.rawValue) \(selectedFlags.count) flags")
         }
 
         if !excludedTags.isEmpty {

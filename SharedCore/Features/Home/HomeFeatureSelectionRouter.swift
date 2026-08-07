@@ -17,6 +17,7 @@ struct HomeFeatureSelectionRouter<State: HomeFeatureSelectionRoutingState, Actio
     var makeTaskDetailState: (RoutineTask) -> TaskDetailFeature.State
     var refreshDisplays: (inout State) -> Void
     var refreshTaskDetailAction: () -> Action
+    var definedFlags: () -> [String] = { [] }
     var synchronizePlatformSelection: (inout State, UUID?) -> Void = { _, _ in }
 
     func setSelectedTask(_ taskID: UUID?, state: inout State) -> Effect<Action> {
@@ -110,6 +111,7 @@ struct HomeFeatureSelectionRouter<State: HomeFeatureSelectionRoutingState, Actio
             goals: state.routineGoals,
             doneStats: state.doneStats,
             relatedTagRules: state.relatedTagRules,
+            availableFlags: definedFlags(),
             now: now,
             calendar: calendar
         )

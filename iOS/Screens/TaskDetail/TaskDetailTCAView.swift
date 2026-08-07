@@ -725,7 +725,8 @@ detailBody
             title: store.task.name ?? "Task",
             statusContextMessage: statusContextMessage,
             badgeRows: todoHeaderBadgeRows,
-            tags: store.task.tags
+            tags: store.task.tags,
+            flags: store.task.flags
         ) { tag in
             statusTagChip(tag)
         } additionalContent: {
@@ -738,6 +739,8 @@ detailBody
                 }
                 headerGoalsBox
             }
+        } flagChip: { flag in
+            TaskDetailFlagChip(flag: flag)
         }
     }
 
@@ -754,7 +757,8 @@ detailBody
             title: store.task.name ?? "Routine",
             statusContextMessage: statusContextMessage,
             badgeRows: routineHeaderBadgeRows,
-            tags: store.task.tags
+            tags: store.task.tags,
+            flags: store.task.flags
         ) { tag in
             statusTagChip(tag)
         } additionalContent: {
@@ -764,6 +768,8 @@ detailBody
                 }
                 headerGoalsBox
             }
+        } flagChip: { flag in
+            TaskDetailFlagChip(flag: flag)
         }
     }
 

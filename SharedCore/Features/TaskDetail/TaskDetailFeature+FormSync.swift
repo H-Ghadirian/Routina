@@ -37,6 +37,7 @@ extension TaskDetailFeature {
         state.editVoiceNote = state.task.voiceNote
         state.editAttachments = state.taskAttachments
         state.editRoutineTags = state.task.tags
+        state.editRoutineFlags = state.task.flags
         state.editRoutineGoals = RoutineGoalSummary.summaries(
             for: state.task.goalIDs,
             in: state.availableGoals
@@ -44,6 +45,7 @@ extension TaskDetailFeature {
         state.editEventIDs = state.task.eventIDs
         state.editRelationships = state.task.relationships
         state.editTagDraft = ""
+        state.editFlagDraft = ""
         state.editGoalDraft = ""
         state.editScheduleMode = state.task.scheduleMode
         state.editRoutineSteps = state.task.steps

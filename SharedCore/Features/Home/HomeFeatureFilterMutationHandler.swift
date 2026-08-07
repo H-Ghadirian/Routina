@@ -25,7 +25,8 @@ struct HomeFeatureFilterMutationHandler<State: HomeFeatureFilterMutationState, A
             awayRoutineDisplays: state.awayRoutineDisplays,
             archivedRoutineDisplays: state.archivedRoutineDisplays,
             routinePlaces: state.routinePlaces,
-            tags: \.tags
+            tags: \.tags,
+            flags: \.flags
         )
     }
 

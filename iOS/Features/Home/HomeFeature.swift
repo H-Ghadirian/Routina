@@ -47,7 +47,8 @@ struct HomeFeature {
         var timelineFilters = HomeTimelineFiltersState()
         var statsFilters = HomeStatsFiltersState()
         var relatedTagRules: [RoutineRelatedTagRule] = []
-        var tagRules: [RoutineTagRule] = []
+        var flagRules: [RoutineFlagRule] = []
+        var flagFilterOptions: [HomeFlagFilterOption] = []
         var tagColors: [String: String] = [:]
 
         init(
@@ -85,6 +86,8 @@ struct HomeFeature {
             selectedTag: String? = nil,
             selectedTags: Set<String> = [],
             includeTagMatchMode: RoutineTagMatchMode = .all,
+            selectedFlags: Set<String> = [],
+            includeFlagMatchMode: RoutineTagMatchMode = .all,
             excludedTags: Set<String> = [],
             excludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedManualPlaceFilterID: UUID? = nil,
@@ -116,7 +119,8 @@ struct HomeFeature {
             statsSelectedTags: Set<String> = [],
             statsIncludeTagMatchMode: RoutineTagMatchMode = .all,
             relatedTagRules: [RoutineRelatedTagRule] = [],
-            tagRules: [RoutineTagRule] = [],
+            flagRules: [RoutineFlagRule] = [],
+            flagFilterOptions: [HomeFlagFilterOption] = [],
             tagColors: [String: String] = [:]
         ) {
             self.routineTasks = routineTasks
@@ -153,6 +157,8 @@ struct HomeFeature {
                 selectedTag: selectedTag,
                 selectedTags: selectedTags.isEmpty ? selectedTag.map { [$0] } ?? [] : selectedTags,
                 includeTagMatchMode: includeTagMatchMode,
+                selectedFlags: selectedFlags,
+                includeFlagMatchMode: includeFlagMatchMode,
                 excludedTags: excludedTags,
                 excludeTagMatchMode: excludeTagMatchMode,
                 selectedManualPlaceFilterID: selectedManualPlaceFilterID,
@@ -189,7 +195,8 @@ struct HomeFeature {
                 includeTagMatchMode: statsIncludeTagMatchMode
             )
             self.relatedTagRules = relatedTagRules
-            self.tagRules = RoutineTagRules.sanitized(tagRules)
+            self.flagRules = RoutineFlagRules.sanitized(flagRules)
+            self.flagFilterOptions = flagFilterOptions
             self.tagColors = RoutineTagColors.sanitized(tagColors)
         }
 
@@ -263,9 +270,19 @@ struct HomeFeature {
             set { taskFilters.setSelectedTags(newValue) }
         }
 
+        var selectedFlags: Set<String> {
+            get { taskFilters.selectedFlags }
+            set { taskFilters.selectedFlags = newValue }
+        }
+
         var includeTagMatchMode: RoutineTagMatchMode {
             get { taskFilters.includeTagMatchMode }
             set { taskFilters.includeTagMatchMode = newValue }
+        }
+
+        var includeFlagMatchMode: RoutineTagMatchMode {
+            get { taskFilters.includeFlagMatchMode }
+            set { taskFilters.includeFlagMatchMode = newValue }
         }
 
         var excludedTags: Set<String> {
@@ -454,6 +471,8 @@ struct HomeFeature {
         case selectedTagChanged(String?)
         case selectedTagsChanged(Set<String>)
         case includeTagMatchModeChanged(RoutineTagMatchMode)
+        case selectedFlagsChanged(Set<String>)
+        case includeFlagMatchModeChanged(RoutineTagMatchMode)
         case excludedTagsChanged(Set<String>)
         case excludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedManualPlaceFilterIDChanged(UUID?)
@@ -553,7 +572,8 @@ struct HomeFeature {
     private func taskLoadHandler() -> HomeFeatureTaskLoadHandler<State, Action> {
         HomeFeatureTaskLoadHandler(
             relatedTagRules: { appSettingsClient.relatedTagRules() },
-            tagRules: { appSettingsClient.tagRules() },
+            flagRules: { appSettingsClient.flagRules() },
+            definedFlags: { appSettingsClient.definedFlags() },
             tagColors: { appSettingsClient.tagColors() },
             calendar: { calendar },
             refreshDisplays: { state in refreshDisplays(&state) },
@@ -579,6 +599,7 @@ struct HomeFeature {
         HomeFeaturePostMutationRefresher(
             refreshDisplays: { state in refreshDisplays(&state) },
             syncSelectedTaskDetailState: { state in selectionRouter().refreshSelectedTaskDetailState(&state) },
+            definedFlags: { appSettingsClient.definedFlags() },
             addRoutineAction: { .addRoutineSheet($0) }
         )
     }
@@ -589,7 +610,8 @@ struct HomeFeature {
             calendar: calendar,
             makeTaskDetailState: makeTaskDetailState(for:),
             refreshDisplays: { state in refreshDisplays(&state) },
-            refreshTaskDetailAction: { .taskDetail(.onAppear) }
+            refreshTaskDetailAction: { .taskDetail(.onAppear) },
+            definedFlags: { appSettingsClient.definedFlags() }
         )
     }
 
@@ -623,6 +645,8 @@ struct HomeFeature {
         HomeFeatureAddRoutinePresentationRouter(
             tagCounterDisplayMode: { appSettingsClient.tagCounterDisplayMode() },
             relatedTagRules: { appSettingsClient.relatedTagRules() },
+            definedFlags: { appSettingsClient.definedFlags() },
+            flagRules: { appSettingsClient.flagRules() },
             addRoutineDraft: { AddRoutineDraftSnapshot.load(client: creationDraftClient) }
         )
     }
@@ -887,6 +911,12 @@ struct HomeFeature {
             case let .includeTagMatchModeChanged(mode):
                 return filterMutationHandler().applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
 
+            case let .selectedFlagsChanged(flags):
+                return filterMutationHandler().applyTaskFilterMutation(.selectedFlags(flags), state: &state)
+
+            case let .includeFlagMatchModeChanged(mode):
+                return filterMutationHandler().applyTaskFilterMutation(.includeFlagMatchMode(mode), state: &state)
+
             case let .excludedTagsChanged(tags):
                 return filterMutationHandler().applyTaskFilterMutation(.excludedTags(tags), state: &state)
 
@@ -947,6 +977,8 @@ struct HomeFeature {
                 guard let cleanedTag = RoutineTag.cleaned(tag) else { return .none }
                 state.taskFilters.setSelectedTags([cleanedTag])
                 state.taskFilters.includeTagMatchMode = .all
+                state.taskFilters.selectedFlags = []
+                state.taskFilters.includeFlagMatchMode = .all
                 state.taskFilters.excludedTags = []
                 state.taskFilters.excludeTagMatchMode = .any
                 state.taskFilters.advancedQuery = ""

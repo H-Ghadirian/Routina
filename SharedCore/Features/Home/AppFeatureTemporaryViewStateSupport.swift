@@ -51,6 +51,8 @@ enum AppFeatureTemporaryViewStateSupport {
         taskFilters.advancedQuery = ""
         taskFilters.setSelectedTags([])
         taskFilters.includeTagMatchMode = .all
+        taskFilters.selectedFlags = []
+        taskFilters.includeFlagMatchMode = .all
         taskFilters.excludedTags = []
         taskFilters.excludeTagMatchMode = .any
         taskFilters.selectedManualPlaceFilterID = nil
@@ -103,6 +105,8 @@ enum AppFeatureTemporaryViewStateSupport {
             homeSelectedTag: existing.homeSelectedTag,
             homeSelectedTags: existing.homeSelectedTags,
             homeIncludeTagMatchMode: existing.homeIncludeTagMatchMode,
+            homeSelectedFlags: existing.homeSelectedFlags,
+            homeIncludeFlagMatchMode: existing.homeIncludeFlagMatchMode,
             homeExcludedTags: existing.homeExcludedTags,
             homeExcludeTagMatchMode: existing.homeExcludeTagMatchMode,
             homeSelectedManualPlaceFilterID: existing.homeSelectedManualPlaceFilterID,

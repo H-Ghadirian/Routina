@@ -12,6 +12,7 @@ extension HomeTCAView {
             createdDateFilter: store.createdDateFilter,
             advancedQuery: store.advancedQuery,
             selectedTags: store.selectedTags,
+            selectedFlags: store.selectedFlags,
             excludedTags: store.excludedTags,
             selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             selectedImportanceUrgencyFilterLabel: homeFilterPresentation.selectedImportanceUrgencyFilterLabel,
@@ -32,6 +33,11 @@ extension HomeTCAView {
                 var selected = store.selectedTags
                 selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
                 store.send(.selectedTagsChanged(selected))
+            },
+            onRemoveIncludedFlag: { flag in
+                store.send(.selectedFlagsChanged(
+                    HomeFlagFilterMutationSupport.toggled(flag, in: store.selectedFlags)
+                ))
             },
             onRemoveExcludedTag: { tag in
                 store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
@@ -80,6 +86,8 @@ extension HomeTCAView {
             selectedTodoStateFilter: store.selectedTodoStateFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
+            selectedFlags: store.selectedFlags,
+            includeFlagMatchMode: store.includeFlagMatchMode,
             excludedTags: store.excludedTags,
             selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             hasSelectedPlaceFilter: isPlacesEnabled && store.selectedManualPlaceFilterID != nil,
@@ -192,6 +200,10 @@ extension HomeTCAView {
                 get: { store.includeTagMatchMode },
                 set: { store.send(.includeTagMatchModeChanged($0)) }
             ),
+            includeFlagMatchMode: Binding(
+                get: { store.includeFlagMatchMode },
+                set: { store.send(.includeFlagMatchModeChanged($0)) }
+            ),
             excludeTagMatchMode: Binding(
                 get: { store.excludeTagMatchMode },
                 set: { store.send(.excludeTagMatchModeChanged($0)) }
@@ -302,6 +314,27 @@ extension HomeTCAView {
 
     var homeTagFilterActions: HomeTagFilterActions {
         homeTagFilterCoordinator.actions
+    }
+
+    var homeFlagFilterData: HomeFlagFilterData {
+        HomeFlagFilterData(
+            selectedFlags: store.selectedFlags,
+            flagOptions: store.flagFilterOptions,
+            taskListKind: store.taskListMode.filterTaskListKind
+        )
+    }
+
+    var homeFlagFilterActions: HomeFlagFilterActions {
+        HomeFlagFilterActions(
+            onShowAllFlags: {
+                store.send(.selectedFlagsChanged([]))
+            },
+            onToggleFlag: { flag in
+                store.send(.selectedFlagsChanged(
+                    HomeFlagFilterMutationSupport.toggled(flag, in: store.selectedFlags)
+                ))
+            }
+        )
     }
 
     private var allRoutineDisplays: [HomeFeature.RoutineDisplay] {

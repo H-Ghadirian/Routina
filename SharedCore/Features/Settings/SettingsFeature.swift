@@ -72,6 +72,8 @@ struct SettingsFeature {
         case tagColorsLoaded([String: String])
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
         case tagRulesLoaded([RoutineTagRule])
+        case flagRulesLoaded([RoutineFlagRule])
+        case definedFlagsLoaded([String])
         case learnedRelatedTagRulesLoaded([RoutineRelatedTagRule])
         case locationSnapshotUpdated(LocationSnapshot)
         case placeDraftNameChanged(String)
@@ -83,6 +85,13 @@ struct SettingsFeature {
         case tagColorChanged(tagName: String, colorHex: String?)
         case addTagRuleTapped(tagName: String, kind: RoutineTagRuleKind)
         case removeTagRuleTapped(tagName: String, kind: RoutineTagRuleKind)
+        case flagDraftChanged(String)
+        case addFlagTapped
+        case removeFlagTapped(String)
+        case addFlagRuleTapped(flagName: String, kind: RoutineFlagRuleKind)
+        case removeFlagRuleTapped(flagName: String, kind: RoutineFlagRuleKind)
+        case migrateAutoAssumeDoneTasksTapped(String)
+        case autoAssumeDoneMigrationFinished(flag: String, migratedCount: Int)
         case saveRelatedTagsTapped(String)
         case addRelatedTagDraftSubmitted(tagName: String, draft: String)
         case appendRelatedTagSuggestionTapped(tagName: String, suggestion: String)
@@ -624,6 +633,14 @@ struct SettingsFeature {
                     state: &state.tags
                 )
 
+            case let .flagRulesLoaded(rules):
+                SettingsFlagEditor.loadedRules(rules, state: &state.flags)
+                return .none
+
+            case let .definedFlagsLoaded(flags):
+                SettingsFlagEditor.loadedDefinedFlags(flags, state: &state.flags)
+                return .none
+
             case let .learnedRelatedTagRulesLoaded(rules):
                 return SettingsTagMetadataActionHandler.learnedRelatedTagRulesLoaded(
                     rules,
@@ -697,6 +714,46 @@ struct SettingsFeature {
                     state: &state.tags,
                     appSettingsClient: self.appSettingsClient
                 )
+
+            case let .flagDraftChanged(draft):
+                SettingsFlagEditor.updateDraft(draft, state: &state.flags)
+                return .none
+
+            case .addFlagTapped:
+                let flags = SettingsFlagEditor.addDraft(state: &state.flags)
+                appSettingsClient.setDefinedFlags(flags)
+                return .none
+
+            case let .removeFlagTapped(flagName):
+                let result = SettingsFlagEditor.removeFlag(flagName, state: &state.flags)
+                appSettingsClient.setDefinedFlags(result.flags)
+                appSettingsClient.setFlagRules(result.rules)
+                return .none
+
+            case let .addFlagRuleTapped(flagName, kind):
+                let result = SettingsFlagEditor.addRule(kind, for: flagName, state: &state.flags)
+                appSettingsClient.setDefinedFlags(result.flags)
+                appSettingsClient.setFlagRules(result.rules)
+                return kind == .autoAssumeDone
+                    ? synchronizeAutoAssumeDoneFlagRules(affectedFlag: flagName)
+                    : .none
+
+            case let .removeFlagRuleTapped(flagName, kind):
+                let rules = SettingsFlagEditor.removeRule(kind, for: flagName, state: &state.flags)
+                appSettingsClient.setFlagRules(rules)
+                return kind == .autoAssumeDone
+                    ? synchronizeAutoAssumeDoneFlagRules(affectedFlag: flagName)
+                    : .none
+
+            case let .migrateAutoAssumeDoneTasksTapped(flag):
+                guard state.flags.hasRule(.autoAssumeDone, for: flag) else { return .none }
+                return migrateAutoAssumeDoneTasks(to: flag)
+
+            case let .autoAssumeDoneMigrationFinished(flag, migratedCount):
+                state.flags.statusMessage = migratedCount == 0
+                    ? "No existing auto-assume tasks needed migration."
+                    : "Migrated \(migratedCount) task\(migratedCount == 1 ? "" : "s") to \(flag)."
+                return .none
 
             case let .saveRelatedTagsTapped(tagName):
                 return SettingsTagMetadataActionHandler.saveRelatedTagsTapped(

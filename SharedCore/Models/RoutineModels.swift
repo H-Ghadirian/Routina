@@ -31,6 +31,7 @@ final class RoutineTask {
     var placeID: UUID?
     var placeIDsStorage: String = ""
     var tagsStorage: String = ""
+    var flagsStorage: String = ""
     var stepsStorage: String = ""
     var checklistItemsStorage: String = ""
     var completedChecklistItemIDsStorage: String = ""
@@ -197,6 +198,11 @@ final class RoutineTask {
     var tags: [String] {
         get { RoutineTag.deserialize(tagsStorage) }
         set { tagsStorage = RoutineTag.serialize(newValue) }
+    }
+
+    var flags: [String] {
+        get { RoutineFlag.deserialize(flagsStorage) }
+        set { flagsStorage = RoutineFlag.serialize(newValue) }
     }
 
     var links: [String] {
@@ -434,6 +440,7 @@ final class RoutineTask {
         placeID: UUID? = nil,
         placeIDs: [UUID] = [],
         tags: [String] = [],
+        flags: [String] = [],
         goalIDs: [UUID] = [],
         eventIDs: [UUID] = [],
         relationships: [RoutineTaskRelationship] = [],
@@ -537,6 +544,7 @@ final class RoutineTask {
         self.placeID = resolvedPlaceIDs.first
         self.placeIDsStorage = RoutinePlaceIDStorage.serialize(resolvedPlaceIDs)
         self.tagsStorage = RoutineTag.serialize(tags)
+        self.flagsStorage = RoutineFlag.serialize(flags)
         self.goalIDsStorage = RoutineGoalIDStorage.serialize(goalIDs)
         self.eventIDsStorage = RoutineEventIDStorage.serialize(eventIDs)
         self.relationshipsStorage = RoutineTaskRelationshipStorage.serialize(relationships, ownerID: id)
@@ -882,6 +890,7 @@ final class RoutineTask {
             placeID: placeID,
             placeIDs: placeIDs,
             tags: tags,
+            flags: flags,
             goalIDs: goalIDs,
             eventIDs: eventIDs,
             relationships: relationships,

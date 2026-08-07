@@ -620,6 +620,7 @@ extension TaskDetailFeature {
             placeID: request.placeID,
             placeIDs: request.placeIDs,
             tags: request.tags,
+            flags: request.flags,
             goals: request.goals,
             eventIDs: request.eventIDs,
             relationships: request.relationships,
@@ -669,6 +670,7 @@ extension TaskDetailFeature {
         placeID: UUID?,
         placeIDs: [UUID],
         tags: [String],
+        flags: [String],
         goals: [RoutineGoalSummary],
         eventIDs: [UUID],
         relationships: [RoutineTaskRelationship],
@@ -745,6 +747,7 @@ extension TaskDetailFeature {
                 }
                 task.placeIDs = RoutinePlaceIDStorage.sanitized(placeIDs.isEmpty ? placeID.map { [$0] } ?? [] : placeIDs)
                 task.tags = tags
+                task.flags = flags
                 task.goalIDs = try RoutineGoalPersistence.ensureGoals(goals, in: context)
                 task.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
                 task.replaceRelationships(relationships)
@@ -1020,6 +1023,8 @@ extension TaskDetailFeature {
                     countsByTaskID: doneStats.countsByTaskID
                 )
             ))
+            send(.availableFlagsLoaded(appSettingsClient.definedFlags()))
+            send(.flagRulesLoaded(appSettingsClient.flagRules()))
             send(.availableGoalsLoaded(RoutineGoalSummary.summaries(from: goals)))
             send(.relatedTagRulesLoaded(
                 RoutineTagRelations.sanitized(

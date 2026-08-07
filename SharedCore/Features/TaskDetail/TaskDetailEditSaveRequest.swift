@@ -28,6 +28,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var placeID: UUID?
     var placeIDs: [UUID]
     var tags: [String]
+    var flags: [String]
     var goals: [RoutineGoalSummary]
     var eventIDs: [UUID]
     var relationships: [RoutineTaskRelationship]
@@ -64,6 +65,20 @@ struct TaskDetailEditSaveRequestBuilder {
             availableTags: state.availableTags
         )
         state.editTagDraft = ""
+        let draftedFlags = RoutineFlag.parseDraft(state.editFlagDraft)
+        var rejectedDraftedFlag = false
+        for flag in draftedFlags {
+            if RoutineFlagRules.contains(.autoAssumeDone, for: flag, in: state.flagRules),
+               let reason = state.autoAssumeDoneUnavailableReason {
+                state.editFlagSelectionValidationMessage = "\(flag) was not added. \(reason) \(RoutineAssumedCompletion.flagRuleAvailabilitySummary)"
+                rejectedDraftedFlag = true
+            } else {
+                state.editRoutineFlags = RoutineFlag.appending(flag, to: state.editRoutineFlags)
+                state.editFlagSelectionValidationMessage = nil
+            }
+        }
+        state.editFlagDraft = ""
+        guard !rejectedDraftedFlag else { return nil }
         state.editRoutineGoals = RoutineGoalSummary.appending(
             state.editGoalDraft,
             availableGoals: state.availableGoals,
@@ -161,6 +176,7 @@ struct TaskDetailEditSaveRequestBuilder {
             placeID: state.editSelectedPlaceIDs.first,
             placeIDs: state.editSelectedPlaceIDs,
             tags: RoutineTag.deduplicated(state.editRoutineTags),
+            flags: RoutineFlag.deduplicated(state.editRoutineFlags),
             goals: state.editRoutineGoals,
             eventIDs: RoutineEventIDStorage.sanitized(state.editEventIDs),
             relationships: state.editRelationships,
@@ -174,9 +190,13 @@ struct TaskDetailEditSaveRequestBuilder {
                 ? .availability
                 : recurrenceDraft.timeRangeRole,
             color: state.editColor,
-            autoAssumeDailyDone: state.editAutoAssumeDailyDone,
+            autoAssumeDailyDone: RoutineFlagRules.enablesAutoAssumeDone(
+                flags: state.editRoutineFlags,
+                rules: state.flagRules
+            ) || (state.flagRules.isEmpty && state.editAutoAssumeDailyDone),
             hidesAssumedDoneCalendarBlock: state.editHidesAssumedDoneCalendarBlock,
-            autoAssumeDoneTimeOfDay: state.editAutoAssumeDailyDone
+            autoAssumeDoneTimeOfDay: (state.autoAssumeDoneEnabledByFlag
+                || (state.flagRules.isEmpty && state.editAutoAssumeDailyDone))
                 ? state.editAutoAssumeDoneTimeOfDay
                 : nil,
             estimatedDurationMinutes: state.editEstimatedDurationMinutes,
@@ -292,6 +312,7 @@ extension TaskDetailFeature {
             request.placeIDs.isEmpty ? request.placeID.map { [$0] } ?? [] : request.placeIDs
         )
         updatedTask.tags = request.tags
+        updatedTask.flags = request.flags
         updatedTask.goalIDs = RoutineGoalIDStorage.sanitized(request.goals.map(\.id))
         updatedTask.eventIDs = RoutineEventIDStorage.sanitized(request.eventIDs)
         updatedTask.replaceRelationships(request.relationships)

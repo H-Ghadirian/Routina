@@ -8,6 +8,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     case calendar
     case places
     case tags
+    case flags
     case sections
     case appearance
     case iCloud
@@ -50,6 +51,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 .calendar,
                 .places,
                 .tags,
+                .flags,
                 .sections,
                 .appearance,
                 .iCloud,
@@ -127,6 +129,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .calendar:      return "Calendar"
         case .places:        return "Places"
         case .tags:          return "Tags"
+        case .flags:         return "Flags"
         case .sections:      return "Sections"
         case .appearance:    return "Appearance"
         case .iCloud:        return "iCloud & Backup"
@@ -149,6 +152,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .calendar:      return "calendar.badge.plus"
         case .places:        return "mappin.and.ellipse"
         case .tags:          return "tag.fill"
+        case .flags:         return "flag.fill"
         case .sections:      return "sidebar.leading"
         case .appearance:    return "app.badge.fill"
         case .iCloud:        return "icloud.fill"
@@ -198,6 +202,13 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
         case .tags:
             return SettingsSectionRowPresentation()
+
+        case .flags:
+            return SettingsSectionRowPresentation(
+                subtitle: state.flags.definedFlags.isEmpty
+                    ? "Task behavior markers"
+                    : "\(state.flags.definedFlags.count) defined"
+            )
 
         case .sections:
             return SettingsSectionRowPresentation(subtitle: "Custom task list sections and rules")

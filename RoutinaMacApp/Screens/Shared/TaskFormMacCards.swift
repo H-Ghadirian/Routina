@@ -1256,23 +1256,19 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var showsAssumedDoneControl: Bool {
-        model.canAutoAssumeDailyDone
-            || (model.taskType.wrappedValue == .record && model.autoAssumeDailyDone.wrappedValue)
+        model.autoAssumeDoneEnabledByFlag
     }
 
     private var assumedDoneControl: some View {
-        TaskFormMacToggleBlock(
-            title: "Auto-assume done",
-            isOn: model.autoAssumeDailyDone,
-            caption: presentation.autoAssumeDailyDoneHelpText,
-            isDisabled: !model.canAutoAssumeDailyDone
-        ) {
-            if model.autoAssumeDailyDone.wrappedValue {
-                Toggle(
-                    "Hide assumed-done blocks from Calendar",
-                    isOn: model.hidesAssumedDoneCalendarBlock
-                )
-            }
+        TaskFormMacDetailCard(title: "Assumed Done") {
+            Label("Enabled by a Flag", systemImage: "flag.fill")
+            Text(presentation.autoAssumeDailyDoneHelpText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Toggle(
+                "Hide assumed-done blocks from Calendar",
+                isOn: model.hidesAssumedDoneCalendarBlock
+            )
         }
     }
 

@@ -195,7 +195,8 @@ struct SettingsFeatureDependencyTests {
         await store.receive(.fastFilterTagsLoaded([]))
         await store.receive(.tagColorsLoaded([:]))
         await store.receive(.relatedTagRulesLoaded([]))
-        await store.receive(.tagRulesLoaded([]))
+        await store.receive(.flagRulesLoaded([]))
+        await store.receive(.definedFlagsLoaded([]))
         await store.receive(.learnedRelatedTagRulesLoaded([]))
         await store.receive(.locationSnapshotUpdated(snapshot)) {
             $0.places.locationAuthorizationStatus = .authorizedAlways

@@ -23,6 +23,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
+            && matchesSelectedFlags(task)
             && matchesExcludedTags(task)
     }
 
@@ -43,6 +44,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
+            && matchesSelectedFlags(task)
             && matchesExcludedTags(task)
     }
 
@@ -66,6 +68,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
+            && matchesSelectedFlags(task)
             && matchesExcludedTags(task)
     }
 
@@ -78,33 +81,25 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             || (task.notes?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || (task.placeName?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)
+            || RoutineFlag.matchesQuery(trimmedSearch, in: task.flags)
             || task.goalTitles.contains { $0.localizedCaseInsensitiveContains(trimmedSearch) }
     }
 
     func matchesTaskListVisibilityRules(_ task: Display) -> Bool {
-        !RoutineTagRules.hidesFromTaskLists(
-            tags: task.tags,
-            rules: configuration.tagRules
+        !RoutineFlagRules.hidesFromTaskLists(
+            flags: task.flags,
+            rules: configuration.flagRules
         )
     }
 
-    func matchesTagRuleRevealTask(_ task: Display) -> Bool {
+    func matchesFlagRuleRevealTask(_ task: Display) -> Bool {
         guard !matchesTaskListVisibilityRules(task),
               matchesSearchFallbackTask(task) else {
             return false
         }
 
-        if !configuration.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return true
-        }
-
-        return configuration.selectedTags.contains { selectedTag in
-            RoutineTagRules.contains(
-                .hideFromTaskLists,
-                for: selectedTag,
-                in: configuration.tagRules
-            ) && RoutineTag.contains(selectedTag, in: task.tags)
-        }
+        return !configuration.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !configuration.selectedFlags.isEmpty
     }
 
     func matchesAdvancedQuery(_ task: Display) -> Bool {
@@ -243,6 +238,14 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             configuration.excludedTags,
             mode: configuration.excludeTagMatchMode,
             in: task.tags
+        )
+    }
+
+    private func matchesSelectedFlags(_ task: Display) -> Bool {
+        HomeDisplayFilterSupport.matchesSelectedFlags(
+            configuration.selectedFlags,
+            mode: configuration.includeFlagMatchMode,
+            in: task.flags
         )
     }
 }

@@ -111,6 +111,15 @@ struct TaskDetailEditRoutineContent: View {
             onAddTag: { store.send(.editAddTagTapped) },
             onRemoveTag: { store.send(.editRemoveTag($0)) },
             onToggleTagSelection: { store.send(.editToggleTagSelection($0)) },
+            flagDraft: Binding(
+                get: { store.editFlagDraft },
+                set: { store.send(.editFlagDraftChanged($0)) }
+            ),
+            routineFlags: store.editRoutineFlags,
+            availableFlags: store.availableFlags,
+            onAddFlag: { store.send(.editAddFlagTapped) },
+            onRemoveFlag: { store.send(.editRemoveFlag($0)) },
+            onToggleFlagSelection: { store.send(.editToggleFlagSelection($0)) },
             goalDraft: Binding(
                 get: { store.editGoalDraft },
                 set: { store.send(.editGoalDraftChanged($0)) }
@@ -190,6 +199,8 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editAutoAssumeDailyDone },
                 set: { store.send(.editAutoAssumeDailyDoneChanged($0)) }
             ),
+            autoAssumeDoneEnabledByFlag: store.autoAssumeDoneEnabledByFlag,
+            flagSelectionValidationMessage: store.editFlagSelectionValidationMessage,
             hidesAssumedDoneCalendarBlock: Binding(
                 get: { store.editHidesAssumedDoneCalendarBlock },
                 set: { store.send(.editHidesAssumedDoneCalendarBlockChanged($0)) }

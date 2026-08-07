@@ -28,12 +28,14 @@ extension HomeTCAView {
                 createdDateFilter: store.createdDateFilter,
                 selectedTags: store.selectedTags,
                 includeTagMatchMode: store.includeTagMatchMode,
+                selectedFlags: store.selectedFlags,
+                includeFlagMatchMode: store.includeFlagMatchMode,
                 excludedTags: store.excludedTags,
                 excludeTagMatchMode: store.excludeTagMatchMode,
                 searchText: searchTextBinding.wrappedValue,
                 routineListSectioningMode: routineListSectioningMode,
                 separateDeadlineStatusInTagSections: separatesDeadlineStatusInTagTaskListSections,
-                tagRules: store.tagRules,
+                flagRules: store.flagRules,
                 routineTasks: store.routineTasks,
                 referenceDate: referenceDate,
                 calendar: calendar
@@ -99,11 +101,13 @@ extension HomeTCAView {
             createdDateFilter: store.createdDateFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
+            selectedFlags: store.selectedFlags,
+            includeFlagMatchMode: store.includeFlagMatchMode,
             excludedTags: store.excludedTags,
             excludeTagMatchMode: store.excludeTagMatchMode,
             searchText: searchTextBinding.wrappedValue,
             routineListSectioningMode: routineListSectioningMode,
-            tagRules: store.tagRules,
+            flagRules: store.flagRules,
             calendar: calendar,
             referenceDate: referenceDate,
             routineTasks: store.routineTasks
@@ -125,7 +129,7 @@ extension HomeTCAView {
                 emptyState: emptyState
             )
 
-            return macSearchFallbackAndTagRulePresentation(
+            return macSearchFallbackAndFlagRulePresentation(
                 presentation,
                 filtering: filtering,
                 routineDisplays: routineDisplays,
@@ -136,7 +140,7 @@ extension HomeTCAView {
         }
     }
 
-    private func macSearchFallbackAndTagRulePresentation(
+    private func macSearchFallbackAndFlagRulePresentation(
         _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
         filtering: HomeTaskListFiltering<HomeFeature.RoutineDisplay>,
         routineDisplays: [HomeFeature.RoutineDisplay],
@@ -150,17 +154,17 @@ extension HomeTCAView {
             archivedRoutineDisplays: archivedRoutineDisplays,
             showArchivedTasks: showArchivedTasks
         )
-        let presentationWithTagRuleResults = presentation.appendingTagRuleRevealResults(
+        let presentationWithFlagRuleResults = presentation.appendingFlagRuleRevealResults(
             from: sourceDisplays,
             filtering: filtering
         )
 
         let trimmedSearchText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSearchText.isEmpty else {
-            return presentationWithTagRuleResults
+        return presentationWithFlagRuleResults
         }
 
-        return presentationWithTagRuleResults.addingSearchFallbackResults(
+        return presentationWithFlagRuleResults.addingSearchFallbackResults(
             from: sourceDisplays,
             filtering: filtering
         )
@@ -313,11 +317,13 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let createdDateFilter: HomeTaskCreatedDateFilter
     let selectedTags: Set<String>
     let includeTagMatchMode: RoutineTagMatchMode
+    let selectedFlags: Set<String>
+    let includeFlagMatchMode: RoutineTagMatchMode
     let excludedTags: Set<String>
     let excludeTagMatchMode: RoutineTagMatchMode
     let searchText: String
     let routineListSectioningMode: RoutineListSectioningMode
-    let tagRules: [RoutineTagRule]
+    let flagRules: [RoutineFlagRule]
     let calendarIdentifier: Calendar.Identifier
     let calendarTimeZoneIdentifier: String
     let calendarFirstWeekday: Int
@@ -355,11 +361,13 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         createdDateFilter: HomeTaskCreatedDateFilter,
         selectedTags: Set<String>,
         includeTagMatchMode: RoutineTagMatchMode,
+        selectedFlags: Set<String>,
+        includeFlagMatchMode: RoutineTagMatchMode,
         excludedTags: Set<String>,
         excludeTagMatchMode: RoutineTagMatchMode,
         searchText: String,
         routineListSectioningMode: RoutineListSectioningMode,
-        tagRules: [RoutineTagRule],
+        flagRules: [RoutineFlagRule],
         calendar: Calendar,
         referenceDate: Date,
         routineTasks: [RoutineTask]
@@ -401,11 +409,13 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.createdDateFilter = createdDateFilter
         self.selectedTags = selectedTags
         self.includeTagMatchMode = includeTagMatchMode
+        self.selectedFlags = selectedFlags
+        self.includeFlagMatchMode = includeFlagMatchMode
         self.excludedTags = excludedTags
         self.excludeTagMatchMode = excludeTagMatchMode
         self.searchText = searchText
         self.routineListSectioningMode = routineListSectioningMode
-        self.tagRules = RoutineTagRules.sanitized(tagRules)
+        self.flagRules = RoutineFlagRules.sanitized(flagRules)
         self.calendarIdentifier = calendar.identifier
         self.calendarTimeZoneIdentifier = calendar.timeZone.identifier
         self.calendarFirstWeekday = calendar.firstWeekday

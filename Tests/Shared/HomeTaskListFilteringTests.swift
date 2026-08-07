@@ -228,35 +228,29 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func tagVisibilityRuleHidesOrdinaryPlacementAndSearchOrTagFilterRevealsIt() {
-        let trackingTask = TestTaskDisplay(name: "Log sleep", tags: ["Tracking"])
+    func flagVisibilityRuleHidesOrdinaryPlacementAndSearchRevealsIt() {
+        let trackingTask = TestTaskDisplay(name: "Log sleep", flags: ["Tracking"])
         let ordinaryTask = TestTaskDisplay(name: "Write plan", tags: ["Planning"])
-        let rules = [RoutineTagRule(tag: "tracking", kind: .hideFromTaskLists)]
+        let rules = [RoutineFlagRule(flag: "tracking", kind: .hideFromTaskLists)]
 
-        let ordinaryResult = makeFiltering(tagRules: rules)
+        let ordinaryResult = makeFiltering(flagRules: rules)
             .filteredTasks([trackingTask, ordinaryTask])
         #expect(ordinaryResult.map(\.name) == ["Write plan"])
 
         let searchedResult = makeFiltering(
             searchText: "sleep",
-            tagRules: rules
-        ).tagRuleRevealTasks(from: [trackingTask, ordinaryTask])
+            flagRules: rules
+        ).flagRuleRevealTasks(from: [trackingTask, ordinaryTask])
         #expect(searchedResult.map(\.name) == ["Log sleep"])
-
-        let tagFilteredResult = makeFiltering(
-            selectedTags: ["TRACKING"],
-            tagRules: rules
-        ).tagRuleRevealTasks(from: [trackingTask, ordinaryTask])
-        #expect(tagFilteredResult.map(\.name) == ["Log sleep"])
     }
 
     @Test
-    func tagVisibilityRuleAddsASeparateHiddenResultsSectionBesideNormalSearchResults() {
-        let trackingTask = TestTaskDisplay(name: "Log sleep", tags: ["Tracking"])
+    func flagVisibilityRuleAddsASeparateHiddenResultsSectionBesideNormalSearchResults() {
+        let trackingTask = TestTaskDisplay(name: "Log sleep", flags: ["Tracking"])
         let ordinaryTask = TestTaskDisplay(name: "Sleep early")
         let filtering = makeFiltering(
             searchText: "sleep",
-            tagRules: [RoutineTagRule(tag: "Tracking", kind: .hideFromTaskLists)]
+            flagRules: [RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)]
         )
         let normalSection = HomeTaskListPresentationSection(
             kind: .regular,
@@ -271,14 +265,52 @@ struct HomeTaskListFilteringTests {
             sections: [normalSection],
             hiddenUnavailableTaskCount: 0,
             emptyState: nil
-        ).appendingTagRuleRevealResults(
+        ).appendingFlagRuleRevealResults(
             from: [trackingTask, ordinaryTask],
             filtering: filtering
         )
 
-        #expect(presentation.sections.map(\.title) == ["Future", "Hidden by tag"])
+        #expect(presentation.sections.map(\.title) == ["Future", "Hidden by flag"])
         #expect(presentation.sections[1].tasks.map(\.name) == ["Log sleep"])
         #expect(presentation.sections[1].includeMarkDone == false)
+    }
+
+    @Test
+    func flagFiltersMatchAllOrAnyAndExplicitlyRevealMatchingHiddenTasks() {
+        let trackingTask = TestTaskDisplay(name: "Log sleep", flags: ["Tracking", "Health"])
+        let focusTask = TestTaskDisplay(name: "Plan week", flags: ["Focus"])
+        let unrelatedTask = TestTaskDisplay(name: "Buy groceries", flags: ["Errands"])
+
+        let allMatching = makeFiltering(
+            selectedFlags: ["tracking", "health"],
+            includeFlagMatchMode: .all
+        ).filteredTasks([trackingTask, focusTask, unrelatedTask])
+        #expect(allMatching.map(\.name) == ["Log sleep"])
+
+        let anyMatching = makeFiltering(
+            selectedFlags: ["Tracking", "Focus"],
+            includeFlagMatchMode: .any
+        ).filteredTasks([trackingTask, focusTask, unrelatedTask])
+        #expect(Set(anyMatching.map(\.name)) == ["Log sleep", "Plan week"])
+
+        let hiddenTrackingRule = [RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)]
+        let hiddenFiltering = makeFiltering(
+            selectedFlags: ["Tracking"],
+            flagRules: hiddenTrackingRule
+        )
+        #expect(hiddenFiltering.filteredTasks([trackingTask, focusTask, unrelatedTask]).isEmpty)
+
+        let presentation = HomeTaskListPresentation(
+            sections: [],
+            hiddenUnavailableTaskCount: 0,
+            emptyState: nil
+        ).appendingFlagRuleRevealResults(
+            from: [trackingTask, focusTask, unrelatedTask],
+            filtering: hiddenFiltering
+        )
+        #expect(presentation.sections.map(\.title) == ["Hidden by flag"])
+        #expect(presentation.sections[0].tasks.map(\.name) == ["Log sleep"])
+        #expect(presentation.sections[0].includeMarkDone == false)
     }
 
     @Test
@@ -2677,12 +2709,14 @@ private func makeFiltering(
     advancedQuery: String = "",
     selectedTags: Set<String> = [],
     includeTagMatchMode: RoutineTagMatchMode = .all,
+    selectedFlags: Set<String> = [],
+    includeFlagMatchMode: RoutineTagMatchMode = .all,
     excludedTags: Set<String> = [],
     excludeTagMatchMode: RoutineTagMatchMode = .any,
     searchText: String = "",
     routineListSectioningMode: RoutineListSectioningMode = .status,
     separateDeadlineStatusInTagSections: Bool = false,
-    tagRules: [RoutineTagRule] = [],
+    flagRules: [RoutineFlagRule] = [],
     routineTasks: [RoutineTask] = [],
     referenceDate: Date = Date(timeIntervalSince1970: 1_714_608_000)
 ) -> HomeTaskListFiltering<TestTaskDisplay> {
@@ -2707,12 +2741,14 @@ private func makeFiltering(
             createdDateFilter: createdDateFilter,
             selectedTags: selectedTags,
             includeTagMatchMode: includeTagMatchMode,
+            selectedFlags: selectedFlags,
+            includeFlagMatchMode: includeFlagMatchMode,
             excludedTags: excludedTags,
             excludeTagMatchMode: excludeTagMatchMode,
             searchText: searchText,
             routineListSectioningMode: routineListSectioningMode,
             separateDeadlineStatusInTagSections: separateDeadlineStatusInTagSections,
-            tagRules: tagRules,
+            flagRules: flagRules,
             routineTasks: routineTasks,
             referenceDate: referenceDate,
             calendar: calendar
@@ -2734,6 +2770,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var placeName: String?
     var locationAvailability: RoutineLocationAvailability = .unrestricted
     var tags: [String] = []
+    var flags: [String] = []
     var goalTitles: [String] = []
     var steps: [String] = []
     var interval: Int = 7

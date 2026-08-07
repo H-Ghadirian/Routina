@@ -37,6 +37,7 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             calendarDisclosure
             metadataRow
+            flagsBox
             goalsBox
         }
     }
@@ -94,6 +95,25 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
             }
         }
         .detailHeaderBoxStyle(minHeight: minHeight)
+    }
+
+    @ViewBuilder
+    private var flagsBox: some View {
+        let flags = RoutineFlag.deduplicated(task.flags)
+        if !flags.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("FLAGS")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                    ForEach(flags, id: \.self) { flag in
+                        TaskDetailFlagChip(flag: flag)
+                    }
+                }
+            }
+            .detailHeaderBoxStyle(tint: .orange)
+        }
     }
 
     @ViewBuilder

@@ -288,6 +288,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
                 placeIDs: (task.placeIDs ?? task.placeID.map { [$0] } ?? []).filter { importedPlaceIDs.contains($0) },
                 tags: task.tags ?? [],
+                flags: task.flags ?? [],
                 goalIDs: (task.goalIDs ?? []).filter { importedGoalIDs.contains($0) },
                 eventIDs: (task.eventIDs ?? []).filter { importedEventIDs.contains($0) },
                 steps: task.steps ?? [],
@@ -1073,6 +1074,8 @@ enum SettingsRoutineDataImportEntityInserter {
             backupPreferences.dayPlanCalendarListRowHiddenFields
         preferences.relatedTagRules = backupPreferences.relatedTagRules
         preferences.tagRules = backupPreferences.tagRules
+        preferences.flagRules = backupPreferences.flagRules
+        preferences.definedFlags = backupPreferences.definedFlags
         preferences.tagColors = backupPreferences.tagColors
         preferences.fastFilterTags = backupPreferences.fastFilterTags
         preferences.iOSStatsDashboardHiddenItemIDs = backupPreferences.iOSStatsDashboardHiddenItemIDs

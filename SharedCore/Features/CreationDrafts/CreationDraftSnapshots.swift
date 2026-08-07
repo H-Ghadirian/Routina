@@ -69,10 +69,12 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var storyPoints: Int?
     var focusModeEnabled = false
     var routineTags: [String] = []
+    var routineFlags: [String]?
     var routineGoals: [RoutineGoalSummary] = []
     var eventIDs: [UUID] = []
     var relationships: [RoutineTaskRelationship] = []
     var tagDraft = ""
+    var flagDraft: String?
     var goalDraft = ""
     var scheduleMode: RoutineScheduleMode = .oneOff
     var frequency: TaskFormFrequencyUnit = .day
@@ -142,10 +144,12 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         storyPoints = basics.storyPoints
         focusModeEnabled = basics.focusModeEnabled
         routineTags = organization.routineTags
+        routineFlags = organization.routineFlags
         routineGoals = organization.routineGoals
         eventIDs = RoutineEventIDStorage.sanitized(organization.eventIDs)
         relationships = organization.relationships
         tagDraft = organization.tagDraft
+        flagDraft = organization.flagDraft
         goalDraft = organization.goalDraft
         scheduleMode = schedule.scheduleMode
         frequency = schedule.frequency
@@ -204,10 +208,12 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             || storyPoints != nil
             || focusModeEnabled
             || !routineTags.isEmpty
+            || !(routineFlags ?? []).isEmpty
             || !routineGoals.isEmpty
             || !eventIDs.isEmpty
             || !relationships.isEmpty
             || hasText(tagDraft)
+            || hasText(flagDraft ?? "")
             || hasText(goalDraft)
             || scheduleMode != .oneOff
             || frequency != .day
@@ -277,11 +283,16 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             routineTags,
             preferredTags: state.organization.availableTags
         )
+        state.organization.routineFlags = RoutineFlag.deduplicated(
+            routineFlags ?? [],
+            preferredFlags: state.organization.availableFlags
+        )
         state.organization.customTaskSectionID = customTaskSectionID
         state.organization.routineGoals = RoutineGoalSummary.sanitized(routineGoals)
         state.organization.eventIDs = availableEventIDs(in: state)
         state.organization.relationships = availableRelationships(in: state)
         state.organization.tagDraft = tagDraft
+        state.organization.flagDraft = flagDraft ?? ""
         state.organization.goalDraft = goalDraft
         state.schedule.scheduleMode = scheduleMode
         state.schedule.frequency = frequency

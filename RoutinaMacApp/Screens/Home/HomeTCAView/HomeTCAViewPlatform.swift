@@ -1073,11 +1073,35 @@ extension HomeTCAView {
 
     @ViewBuilder
     var platformTagFilterBar: some View {
-        if homeTagFilterData.hasTags {
-            HomeMacRoutineTagFiltersView(
-                bindings: homeFilterBindings.tagRules,
-                data: homeTagFilterData,
-                actions: homeTagFilterActions
+        let showsFlagFilters = !isMacBoardSidebarPresented && homeFlagFilterData.hasFlags
+        if homeTagFilterData.hasTags || showsFlagFilters {
+            VStack(alignment: .leading, spacing: 16) {
+                if homeTagFilterData.hasTags {
+                    HomeMacRoutineTagFiltersView(
+                        bindings: homeFilterBindings.tagRules,
+                        data: homeTagFilterData,
+                        actions: homeTagFilterActions
+                    )
+                }
+
+                if showsFlagFilters {
+                    HomeMacRoutineFlagFiltersView(
+                        includeFlagMatchMode: homeFilterBindings.includeFlagMatchMode,
+                        data: homeFlagFilterData,
+                        actions: homeFlagFilterActions
+                    )
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    var platformFlagFilterBar: some View {
+        if !isMacBoardSidebarPresented, homeFlagFilterData.hasFlags {
+            HomeMacRoutineFlagFiltersView(
+                includeFlagMatchMode: homeFilterBindings.includeFlagMatchMode,
+                data: homeFlagFilterData,
+                actions: homeFlagFilterActions
             )
         }
     }

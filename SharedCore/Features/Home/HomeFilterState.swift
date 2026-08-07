@@ -6,6 +6,8 @@ struct HomeTaskFiltersState: Equatable {
     var selectedTag: String? = nil
     var selectedTags: Set<String> = []
     var includeTagMatchMode: RoutineTagMatchMode = .all
+    var selectedFlags: Set<String> = []
+    var includeFlagMatchMode: RoutineTagMatchMode = .all
     var excludedTags: Set<String> = []
     var excludeTagMatchMode: RoutineTagMatchMode = .any
     var selectedManualPlaceFilterID: UUID? = nil
@@ -29,6 +31,8 @@ struct HomeTaskFiltersState: Equatable {
             selectedTag: selectedTag,
             selectedTags: effectiveSelectedTags,
             includeTagMatchMode: includeTagMatchMode,
+            selectedFlags: selectedFlags,
+            includeFlagMatchMode: includeFlagMatchMode,
             excludedTags: excludedTags,
             excludeTagMatchMode: excludeTagMatchMode,
             selectedFilter: selectedFilter,
@@ -68,6 +72,8 @@ struct HomeTaskFiltersState: Equatable {
         selectedTag = snapshot.selectedTag
         selectedTags = snapshot.selectedTags
         includeTagMatchMode = snapshot.includeTagMatchMode
+        selectedFlags = snapshot.selectedFlags
+        includeFlagMatchMode = snapshot.includeFlagMatchMode
         excludedTags = snapshot.excludedTags
         excludeTagMatchMode = snapshot.excludeTagMatchMode
         selectedFilter = snapshot.selectedFilter
@@ -159,6 +165,8 @@ enum HomeTemporaryViewStateMapper {
             selectedTag: persistedState.homeSelectedTag,
             selectedTags: persistedState.homeSelectedTags,
             includeTagMatchMode: persistedState.homeIncludeTagMatchMode,
+            selectedFlags: persistedState.homeSelectedFlags,
+            includeFlagMatchMode: persistedState.homeIncludeFlagMatchMode,
             excludedTags: persistedState.homeExcludedTags,
             excludeTagMatchMode: persistedState.homeExcludeTagMatchMode,
             selectedManualPlaceFilterID: persistedState.homeSelectedManualPlaceFilterID,
@@ -236,6 +244,8 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedTag: taskFilters.selectedTag,
             homeSelectedTags: taskFilters.effectiveSelectedTags,
             homeIncludeTagMatchMode: taskFilters.includeTagMatchMode,
+            homeSelectedFlags: taskFilters.selectedFlags,
+            homeIncludeFlagMatchMode: taskFilters.includeFlagMatchMode,
             homeExcludedTags: taskFilters.excludedTags,
             homeExcludeTagMatchMode: taskFilters.excludeTagMatchMode,
             homeSelectedManualPlaceFilterID: taskFilters.selectedManualPlaceFilterID,

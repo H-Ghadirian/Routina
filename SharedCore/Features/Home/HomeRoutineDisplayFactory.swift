@@ -101,6 +101,7 @@ struct HomeRoutineDisplayFactory {
             placeName: displayPlaceName,
             locationAvailability: locationAvailability,
             tags: taskTags,
+            flags: task.flags,
             taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(for: taskTags),
             goalIDs: task.goalIDs,
             goalTitles: task.goalIDs.compactMap { goalsByID[$0]?.displayTitle },

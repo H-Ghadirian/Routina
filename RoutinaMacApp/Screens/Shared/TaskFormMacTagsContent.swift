@@ -5,11 +5,13 @@ struct TaskFormMacTagsContent: View {
     let onManageTags: () -> Void
 
     @State private var showsAllAvailableTags = false
+    @State private var showsAllAvailableFlags = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             tagComposer
             tagChipsContent
+            flagEditor
         }
     }
 
@@ -93,6 +95,126 @@ struct TaskFormMacTagsContent: View {
             }
             .padding(.vertical, 4)
         }
+    }
+
+    private var flagEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Flags")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 10) {
+                TextField("tracking, private", text: model.flagDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { model.onAddFlag() }
+
+                Button { model.onAddFlag() } label: {
+                    Image(systemName: "plus")
+                }
+                .buttonStyle(.bordered)
+                .disabled(RoutineFlag.parseDraft(model.flagDraft.wrappedValue).isEmpty)
+                .accessibilityLabel("Add flag")
+            }
+
+            if !model.routineFlags.isEmpty {
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                    ForEach(model.routineFlags, id: \.self) { flag in
+                        Button { model.onRemoveFlag(flag) } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "flag.fill")
+                                Text(flag)
+                                Image(systemName: "xmark.circle.fill").font(.caption)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .routinaGlassPill(tint: .orange, tintOpacity: 0.14, interactive: true)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Remove flag \(flag)")
+                    }
+                }
+            }
+
+            if let message = model.flagSelectionValidationMessage {
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !unselectedAvailableFlags.isEmpty {
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                    ForEach(visibleAvailableFlags, id: \.self) { flag in
+                        availableFlagButton(flag)
+                    }
+
+                    if canToggleAvailableFlags {
+                        availableFlagsExpansionButton
+                    }
+                }
+            }
+        }
+        .padding(.top, 4)
+    }
+
+    private var unselectedAvailableFlags: [String] {
+        model.availableFlags.filter { !RoutineFlag.contains($0, in: model.routineFlags) }
+    }
+
+    private var visibleAvailableFlags: [String] {
+        TaskFormFlagSuggestionPresentation.visibleAvailableFlags(
+            unselectedAvailableFlags,
+            showsAll: showsAllAvailableFlags
+        )
+    }
+
+    private var canToggleAvailableFlags: Bool {
+        unselectedAvailableFlags.count > TaskFormFlagSuggestionPresentation.collapsedLimit
+    }
+
+    private var availableFlagsExpansionButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showsAllAvailableFlags.toggle()
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: showsAllAvailableFlags ? "chevron.up" : "chevron.down")
+                    .font(.caption.weight(.semibold))
+                Text(showsAllAvailableFlags ? "Show less" : "Show all (\(unselectedAvailableFlags.count))")
+                    .lineLimit(1)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .accessibilityLabel(showsAllAvailableFlags ? "Show fewer flags" : "Show all flags")
+    }
+
+    private func availableFlagButton(_ flag: String) -> some View {
+        Button { model.onToggleFlagSelection(flag) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "flag")
+                    .font(.caption)
+                Text(flag)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: .orange, tintOpacity: 0.10, interactive: true)
+            .overlay {
+                Capsule()
+                    .stroke(Color.orange.opacity(0.35), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .accessibilityLabel("Add flag \(flag)")
     }
 
     private var availableTagsExpansionButton: some View {

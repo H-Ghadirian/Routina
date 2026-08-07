@@ -15,6 +15,17 @@ enum AddRoutineOrganizationEditor {
         }
     }
 
+    static func setAvailableFlags(
+        _ flags: [String],
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.availableFlags = RoutineFlag.deduplicated(flags)
+        organization.routineFlags = RoutineFlag.deduplicated(
+            organization.routineFlags,
+            preferredFlags: organization.availableFlags
+        )
+    }
+
     static func setAvailableTagSummaries(
         _ summaries: [RoutineTagSummary],
         organization: inout AddRoutineOrganizationState
@@ -83,6 +94,17 @@ enum AddRoutineOrganizationEditor {
         organization.tagDraft = ""
     }
 
+    static func commitDraftFlag(
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.routineFlags = RoutineFlag.appending(
+            organization.flagDraft,
+            to: organization.routineFlags,
+            availableFlags: organization.availableFlags
+        )
+        organization.flagDraft = ""
+    }
+
     static func commitDraftGoal(
         organization: inout AddRoutineOrganizationState
     ) {
@@ -101,6 +123,13 @@ enum AddRoutineOrganizationEditor {
         organization.routineTags = RoutineTag.removing(tag, from: organization.routineTags)
     }
 
+    static func removeFlag(
+        _ flag: String,
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.routineFlags = RoutineFlag.removing(flag, from: organization.routineFlags)
+    }
+
     static func toggleTagSelection(
         _ tag: String,
         organization: inout AddRoutineOrganizationState
@@ -112,6 +141,21 @@ enum AddRoutineOrganizationEditor {
                 tag,
                 to: organization.routineTags,
                 availableTags: organization.availableTags
+            )
+        }
+    }
+
+    static func toggleFlagSelection(
+        _ flag: String,
+        organization: inout AddRoutineOrganizationState
+    ) {
+        if RoutineFlag.contains(flag, in: organization.routineFlags) {
+            organization.routineFlags = RoutineFlag.removing(flag, from: organization.routineFlags)
+        } else {
+            organization.routineFlags = RoutineFlag.appending(
+                flag,
+                to: organization.routineFlags,
+                availableFlags: organization.availableFlags
             )
         }
     }

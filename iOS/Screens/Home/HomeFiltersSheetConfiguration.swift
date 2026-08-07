@@ -22,6 +22,7 @@ struct HomeFiltersPlaceConfiguration {
 
 struct HomeFiltersSheetActions {
     let tagActions: HomeTagFilterActions
+    let flagActions: HomeFlagFilterActions
     let onClearOptionalFilters: () -> Void
     let onDismiss: () -> Void
 }

@@ -10,6 +10,8 @@ enum HomeAddRoutineSupport {
         doneStats: HomeDoneStats,
         tagCounterDisplayMode: TagCounterDisplayMode,
         relatedTagRules: [RoutineRelatedTagRule],
+        availableFlags: [String] = [],
+        flagRules: [RoutineFlagRule] = [],
         preselectedRelationships: [RoutineTaskRelationship] = []
     ) -> AddRoutineFeature.State {
         let learnedRules = RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
@@ -23,6 +25,8 @@ enum HomeAddRoutineSupport {
             organization: AddRoutineOrganizationState(
                 relationships: preselectedRelationships,
                 availableTags: tagSummaries.map(\.name),
+                availableFlags: RoutineFlag.deduplicated(availableFlags),
+                flagRules: RoutineFlagRules.sanitized(flagRules),
                 availableTagSummaries: tagSummaries,
                 availableGoals: RoutineGoalSummary.summaries(from: goals),
                 relatedTagRules: RoutineTagRelations.sanitized(relatedTagRules + learnedRules),
@@ -69,6 +73,7 @@ enum HomeAddRoutineSupport {
             placeID: request.selectedPlaceID,
             placeIDs: request.selectedPlaceIDs,
             tags: request.tags,
+            flags: request.flags,
             goalIDs: goalIDs,
             eventIDs: request.eventIDs,
             relationships: request.relationships,
@@ -206,6 +211,7 @@ enum HomeAddRoutineSupport {
         places: [RoutinePlace],
         goals: [RoutineGoal],
         doneStats: HomeDoneStats,
+        availableFlags: [String] = [],
         action: @escaping (AddRoutineFeature.Action) -> Action
     ) -> Effect<Action> {
         .merge(
@@ -216,6 +222,7 @@ enum HomeAddRoutineSupport {
                     countsByTaskID: doneStats.countsByTaskID
                 )
             ))),
+            .send(action(.availableFlagsChanged(RoutineFlag.deduplicated(availableFlags)))),
             .send(action(.availablePlacesChanged(RoutinePlace.summaries(from: places, linkedTo: tasks)))),
             .send(action(.availableGoalsChanged(RoutineGoalSummary.summaries(from: goals)))),
             .send(action(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(tasks))))

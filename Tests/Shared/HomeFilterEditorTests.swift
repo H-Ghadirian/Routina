@@ -150,6 +150,26 @@ struct HomeFilterEditorTests {
     }
 
     @Test
+    func taskFlagFilterMutationsUpdateSelectionAndMatchMode() {
+        var taskFilters = HomeTaskFiltersState()
+        var hideUnavailableRoutines = false
+
+        HomeFilterEditor.apply(
+            .selectedFlags(["Tracking", "Focus"]),
+            taskFilters: &taskFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+        HomeFilterEditor.apply(
+            .includeFlagMatchMode(.any),
+            taskFilters: &taskFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+
+        #expect(taskFilters.selectedFlags == ["Tracking", "Focus"])
+        #expect(taskFilters.includeFlagMatchMode == .any)
+    }
+
+    @Test
     func taskFilterMutation_clearOptionalFiltersResetsFiltersAndHiddenPreference() {
         var taskFilters = HomeTaskFiltersState(
             selectedFilter: .doneToday,
@@ -157,6 +177,8 @@ struct HomeFilterEditorTests {
             selectedTag: "Focus",
             selectedTags: ["Focus", "Health"],
             includeTagMatchMode: .any,
+            selectedFlags: ["Tracking", "Focus"],
+            includeFlagMatchMode: .any,
             excludedTags: ["Admin"],
             excludeTagMatchMode: .all,
             selectedManualPlaceFilterID: UUID(),
@@ -184,6 +206,8 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedTag == nil)
         #expect(taskFilters.effectiveSelectedTags.isEmpty)
         #expect(taskFilters.includeTagMatchMode == .all)
+        #expect(taskFilters.selectedFlags.isEmpty)
+        #expect(taskFilters.includeFlagMatchMode == .all)
         #expect(taskFilters.excludedTags.isEmpty)
         #expect(taskFilters.excludeTagMatchMode == .any)
         #expect(taskFilters.selectedManualPlaceFilterID == nil)

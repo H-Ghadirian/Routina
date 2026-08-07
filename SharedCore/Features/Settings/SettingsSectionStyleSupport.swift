@@ -17,6 +17,8 @@ extension SettingsSectionID {
             return .blue
         case .tags:
             return .pink
+        case .flags:
+            return .orange
         case .sections:
             return .blue
         case .appearance:

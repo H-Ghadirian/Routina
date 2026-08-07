@@ -84,6 +84,14 @@ struct TaskFormModel {
     var onRemoveTag: (String) -> Void
     var onToggleTagSelection: (String) -> Void
 
+    // MARK: Flags
+    var flagDraft: Binding<String> = .constant("")
+    var routineFlags: [String] = []
+    var availableFlags: [String] = []
+    var onAddFlag: () -> Void = {}
+    var onRemoveFlag: (String) -> Void = { _ in }
+    var onToggleFlagSelection: (String) -> Void = { _ in }
+
     // MARK: Goals
     var goalDraft: Binding<String>
     var selectedGoals: [RoutineGoalSummary]
@@ -150,6 +158,8 @@ struct TaskFormModel {
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
     var autoAssumeDailyDone: Binding<Bool> = .constant(false)
+    var autoAssumeDoneEnabledByFlag: Bool = false
+    var flagSelectionValidationMessage: String? = nil
     var hidesAssumedDoneCalendarBlock: Binding<Bool> = .constant(false)
     var autoAssumeDoneTimeOfDay: Binding<Date> = .constant(
         RoutineAssumedCompletion.defaultDoneTimeOfDay.date(on: Date())
@@ -658,7 +668,8 @@ extension TaskFormModel {
         if !attachments.isEmpty {
             sections.insert(.attachment)
         }
-        if !routineTags.isEmpty || hasText(tagDraft.wrappedValue) {
+        if !routineTags.isEmpty || hasText(tagDraft.wrappedValue)
+            || !routineFlags.isEmpty || !availableFlags.isEmpty || hasText(flagDraft.wrappedValue) {
             sections.insert(.tags)
         }
         if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
@@ -698,6 +709,14 @@ extension TaskFormModel {
             behavior: scheduleMode.scheduleBehavior,
             format: fallbackFormat
         )
+    }
+}
+
+enum TaskFormFlagSuggestionPresentation {
+    static let collapsedLimit = 6
+
+    static func visibleAvailableFlags(_ flags: [String], showsAll: Bool) -> [String] {
+        showsAll ? flags : Array(flags.prefix(collapsedLimit))
     }
 }
 

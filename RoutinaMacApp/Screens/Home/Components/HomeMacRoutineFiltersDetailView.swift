@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: View {
+struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, FlagContent: View>: View {
     @State private var selectedTab: HomeMacRoutineFilterDetailTab = .filter
     @AppStorage(
         UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
@@ -33,10 +33,12 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     let showsImportanceUrgencySection: Bool
     let showsTagSection: Bool
     let showsPlaceSection: Bool
+    let showsFlagSection: Bool
     let showsPlaceTaskRowField: Bool
     let onTaskRowFieldVisibilityChanged: (HomeTaskRowField, Bool) -> Void
     @ViewBuilder let tagSectionContent: () -> TagContent
     @ViewBuilder let placeSectionContent: () -> PlaceContent
+    @ViewBuilder let flagSectionContent: () -> FlagContent
 
     var body: some View {
         Group {
@@ -164,11 +166,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var coreFilterCard: some View {
-        HomeMacCollapsibleFilterSection(
-            title: "Filters",
-            systemImage: "slider.horizontal.3",
-            tint: .accentColor
-        ) {
+        HomeMacSidebarSectionCard(title: "Filters") {
             VStack(alignment: .leading, spacing: 18) {
                 filterControlSection("Task type") {
                     taskListModePicker
@@ -212,6 +210,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     filterControlSection("Todo State") {
                         todoStateFilterSection
                     }
+                }
+
+                if showsFlagSection {
+                    flagSectionContent()
                 }
             }
         }

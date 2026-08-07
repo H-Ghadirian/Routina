@@ -115,7 +115,6 @@ VStack(alignment: .leading, spacing: 10) {
     @ViewBuilder
     private var expandedDetails: some View {
         VStack(alignment: .leading, spacing: 10) {
-            tagRulesEditor
             colorEditorRow
 
             if isRelatedTagRulesEnabled {
@@ -128,65 +127,6 @@ VStack(alignment: .leading, spacing: 10) {
             }
         }
         .padding(.leading, 4)
-    }
-
-    private var tagRulesEditor: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Text("Rules")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .frame(width: 60, alignment: .leading)
-                .padding(.top, 4)
-
-            VStack(alignment: .leading, spacing: 8) {
-                if store.tags.hasTagRule(.hideFromTaskLists, for: tag.name) {
-                    HStack(spacing: 8) {
-                        Label(
-                            RoutineTagRuleKind.hideFromTaskLists.title,
-                            systemImage: "eye.slash"
-                        )
-                        .font(.footnote)
-
-                        Button {
-                            store.send(.removeTagRuleTapped(
-                                tagName: tag.name,
-                                kind: .hideFromTaskLists
-                            ))
-                        } label: {
-                            Label("Remove rule", systemImage: "xmark.circle")
-                        }
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-                        .disabled(store.tags.isTagOperationInProgress)
-                    }
-                }
-
-                let availableRules = RoutineTagRuleKind.allCases.filter {
-                    !store.tags.hasTagRule($0, for: tag.name)
-                }
-                if !availableRules.isEmpty {
-                    Menu {
-                        ForEach(availableRules) { rule in
-                            Button {
-                                store.send(.addTagRuleTapped(tagName: tag.name, kind: rule))
-                            } label: {
-                                Label(rule.title, systemImage: "eye.slash")
-                            }
-                        }
-                    } label: {
-                        Label("Add rule", systemImage: "plus")
-                    }
-                    .menuStyle(.borderlessButton)
-                    .disabled(store.tags.isTagOperationInProgress)
-                }
-
-                Text(RoutineTagRuleKind.hideFromTaskLists.detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
     }
 
     private var colorEditorRow: some View {

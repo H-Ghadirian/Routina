@@ -80,8 +80,8 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         sorter.sortedTasks(displays.filter(predicate.matchesSearchFallbackTask))
     }
 
-    func tagRuleRevealTasks(from displays: [Display]) -> [Display] {
-        sorter.sortedTasks(displays.filter(predicate.matchesTagRuleRevealTask))
+    func flagRuleRevealTasks(from displays: [Display]) -> [Display] {
+        sorter.sortedTasks(displays.filter(predicate.matchesFlagRuleRevealTask))
     }
 
     func filteredAwayTasks(_ displays: [Display]) -> [Display] {

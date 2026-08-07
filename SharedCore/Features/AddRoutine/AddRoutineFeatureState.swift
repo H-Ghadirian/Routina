@@ -36,10 +36,13 @@ struct AddRoutineBasicsState: Equatable {
 struct AddRoutineOrganizationState: Equatable {
     var customTaskSectionID: UUID?
     var routineTags: [String] = []
+    var routineFlags: [String] = []
     var routineGoals: [RoutineGoalSummary] = []
     var eventIDs: [UUID] = []
     var relationships: [RoutineTaskRelationship] = []
     var availableTags: [String] = []
+    var availableFlags: [String] = []
+    var flagRules: [RoutineFlagRule] = []
     var availableTagSummaries: [RoutineTagSummary] = []
     var availableGoals: [RoutineGoalSummary] = []
     var availableEvents: [RoutineEventLinkCandidate] = []
@@ -47,10 +50,12 @@ struct AddRoutineOrganizationState: Equatable {
     var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
     var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
     var tagDraft: String = ""
+    var flagDraft: String = ""
     var goalDraft: String = ""
     var existingRoutineNames: [String] = []
     var availablePlaces: [RoutinePlaceSummary] = []
     var nameValidationMessage: String?
+    var flagSelectionValidationMessage: String?
 }
 
 struct AddRoutineScheduleState: Equatable {
@@ -154,6 +159,31 @@ struct AddRoutineFeatureState: Equatable {
 
     var candidateRecurrenceDraft: RoutineRecurrenceDraft {
         recurrenceDraftForPersistence()
+    }
+
+    var autoAssumeDoneUnavailableReason: String? {
+        candidateRecurrenceDraft.validationIssue == nil
+            ? RoutineAssumedCompletion.unavailableReason(
+                scheduleMode: schedule.scheduleMode,
+                recurrenceRule: candidateRecurrenceRule,
+                recurrenceTimeRangeRole: schedule.recurrenceTimeRangeRole,
+                availabilityStartDate: basics.availabilityStartDate,
+                availabilityEndDate: basics.availabilityEndDate,
+                isAllDay: basics.isAllDay,
+                trackingCadenceEnabled: schedule.scheduleMode.taskType == .todo
+                    ? true
+                    : basics.trackingCadenceEnabled,
+                hasSequentialSteps: !checklist.routineSteps.isEmpty,
+                hasChecklistItems: !candidateChecklistItems.isEmpty
+            )
+            : "Fix the recurrence before using this Flag."
+    }
+
+    var autoAssumeDoneEnabledByFlag: Bool {
+        RoutineFlagRules.enablesAutoAssumeDone(
+            flags: organization.routineFlags,
+            rules: organization.flagRules
+        ) && autoAssumeDoneUnavailableReason == nil
     }
 
     func recurrenceDraftForPersistence(

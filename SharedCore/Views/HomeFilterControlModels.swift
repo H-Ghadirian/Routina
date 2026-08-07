@@ -18,6 +18,7 @@ struct HomeFilterBindings {
     let selectedEstimationFilter: Binding<TaskEstimationFilter>
     let hideAssumedDoneTasks: Binding<Bool>
     let includeTagMatchMode: Binding<RoutineTagMatchMode>
+    let includeFlagMatchMode: Binding<RoutineTagMatchMode>
     let excludeTagMatchMode: Binding<RoutineTagMatchMode>
     let selectedPlaceID: Binding<UUID?>
     let hideUnavailableRoutines: Binding<Bool>
@@ -124,6 +125,37 @@ struct HomeTagFilterActions {
     let onToggleIncludedTag: (String) -> Void
     let onAddIncludedTag: (String) -> Void
     let onToggleExcludedTag: (String) -> Void
+}
+
+struct HomeFlagFilterData {
+    let selectedFlags: Set<String>
+    let flagOptions: [HomeFlagFilterOption]
+    let taskListKind: HomeFilterTaskListKind
+
+    var visibleOptions: [HomeFlagFilterOption] {
+        flagOptions.filter {
+            $0.taskCount(for: taskListKind) > 0
+                || HomeFlagFilterMutationSupport.contains($0.name, in: selectedFlags)
+        }
+    }
+
+    var hasFlags: Bool {
+        !visibleOptions.isEmpty
+    }
+
+    func isSelected(_ flag: String) -> Bool {
+        HomeFlagFilterMutationSupport.contains(flag, in: selectedFlags)
+    }
+
+    func taskCount(for flag: String) -> Int {
+        visibleOptions.first { RoutineFlag.contains($0.name, in: [flag]) }?
+            .taskCount(for: taskListKind) ?? 0
+    }
+}
+
+struct HomeFlagFilterActions {
+    let onShowAllFlags: () -> Void
+    let onToggleFlag: (String) -> Void
 }
 
 struct HomeTagFilterCoordinator<Display> {

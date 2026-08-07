@@ -10,7 +10,9 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
     let statusContextMessage: String?
     let badgeRows: [[TaskDetailHeaderBadgeItem]]
     let tags: [String]
+    let flags: [String]
     let tagChip: (String) -> TagChipContent
+    let flagChip: (String) -> AnyView
     let additionalContent: () -> AdditionalContent
     let headerAccessory: () -> HeaderAccessory
     let titleSupplementaryContent: AnyView
@@ -22,17 +24,21 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
         statusContextMessage: String?,
         badgeRows: [[TaskDetailHeaderBadgeItem]],
         tags: [String],
+        flags: [String] = [],
         @ViewBuilder headerAccessory: @escaping () -> HeaderAccessory,
         @ViewBuilder titleSupplementaryContent: () -> TitleSupplementaryContent,
         @ViewBuilder tagChip: @escaping (String) -> TagChipContent,
-        @ViewBuilder additionalContent: @escaping () -> AdditionalContent
+        @ViewBuilder additionalContent: @escaping () -> AdditionalContent,
+        @ViewBuilder flagChip: @escaping (String) -> AnyView = { _ in AnyView(EmptyView()) }
     ) {
         self.title = title
         self.titleDragPayload = titleDragPayload
         self.statusContextMessage = statusContextMessage
         self.badgeRows = badgeRows
         self.tags = tags
+        self.flags = flags
         self.tagChip = tagChip
+        self.flagChip = flagChip
         self.additionalContent = additionalContent
         self.headerAccessory = headerAccessory
         self.titleSupplementaryContent = AnyView(titleSupplementaryContent())
@@ -57,6 +63,10 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
 
             if !tags.isEmpty {
                 TaskDetailHeaderTagsView(tags: tags, tagChip: tagChip)
+            }
+
+            if !flags.isEmpty {
+                TaskDetailHeaderFlagsView(flags: flags, flagChip: flagChip)
             }
         }
         .padding(16)
@@ -188,8 +198,10 @@ extension TaskDetailHeaderSectionView where HeaderAccessory == EmptyView {
         statusContextMessage: String?,
         badgeRows: [[TaskDetailHeaderBadgeItem]],
         tags: [String],
+        flags: [String] = [],
         @ViewBuilder tagChip: @escaping (String) -> TagChipContent,
-        @ViewBuilder additionalContent: @escaping () -> AdditionalContent
+        @ViewBuilder additionalContent: @escaping () -> AdditionalContent,
+        @ViewBuilder flagChip: @escaping (String) -> AnyView = { _ in AnyView(EmptyView()) }
     ) {
         self.init(
             title: title,
@@ -197,10 +209,12 @@ extension TaskDetailHeaderSectionView where HeaderAccessory == EmptyView {
             statusContextMessage: statusContextMessage,
             badgeRows: badgeRows,
             tags: tags,
+            flags: flags,
             headerAccessory: { EmptyView() },
             titleSupplementaryContent: { EmptyView() },
             tagChip: tagChip,
-            additionalContent: additionalContent
+            additionalContent: additionalContent,
+            flagChip: flagChip
         )
     }
 }
@@ -212,7 +226,9 @@ extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView, Head
         statusContextMessage: String?,
         badgeRows: [[TaskDetailHeaderBadgeItem]],
         tags: [String],
-        @ViewBuilder tagChip: @escaping (String) -> TagChipContent
+        flags: [String] = [],
+        @ViewBuilder tagChip: @escaping (String) -> TagChipContent,
+        @ViewBuilder flagChip: @escaping (String) -> AnyView = { _ in AnyView(EmptyView()) }
     ) {
         self.init(
             title: title,
@@ -220,10 +236,12 @@ extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView, Head
             statusContextMessage: statusContextMessage,
             badgeRows: badgeRows,
             tags: tags,
+            flags: flags,
             headerAccessory: { EmptyView() },
             titleSupplementaryContent: { EmptyView() },
             tagChip: tagChip,
-            additionalContent: { EmptyView() }
+            additionalContent: { EmptyView() },
+            flagChip: flagChip
         )
     }
 }
@@ -386,6 +404,49 @@ struct TaskDetailHeaderTagsView<TagChipContent: View>: View {
                 }
             }
         }
+    }
+}
+
+struct TaskDetailHeaderFlagsView<FlagChipContent: View>: View {
+    let flags: [String]
+    let flagChip: (String) -> FlagChipContent
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("FLAGS")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(flags, id: \.self) { flag in
+                    flagChip(flag)
+                }
+            }
+        }
+    }
+}
+
+struct TaskDetailFlagChip: View {
+    let flag: String
+
+    var body: some View {
+        Label(flag, systemImage: "flag.fill")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.orange)
+            .lineLimit(1)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: .orange, tintOpacity: 0.13)
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(.orange.opacity(0.25), lineWidth: 1)
+            )
+            .contentShape(Capsule(style: .continuous))
+            .accessibilityLabel("Flag \(flag)")
     }
 }
 

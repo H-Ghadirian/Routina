@@ -4,6 +4,7 @@ struct HomeFiltersSheetView: View {
     let configuration: HomeFiltersSheetConfiguration
     let bindings: HomeFilterBindings
     let tagData: HomeTagFilterData
+    let flagData: HomeFlagFilterData
     let actions: HomeFiltersSheetActions
 
     @AppStorage(
@@ -68,6 +69,11 @@ struct HomeFiltersSheetView: View {
                     bindings: bindings.tagRules,
                     data: tagData,
                     actions: actions.tagActions
+                )
+                HomeFiltersFlagSection(
+                    includeFlagMatchMode: bindings.includeFlagMatchMode,
+                    data: flagData,
+                    actions: actions.flagActions
                 )
                 if configuration.place.isPlacesEnabled {
                     HomeFiltersPlaceSection(

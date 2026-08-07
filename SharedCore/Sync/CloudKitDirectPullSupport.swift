@@ -21,6 +21,7 @@ extension CloudKitDirectPullService {
         var placeID: UUID?
         var placeIDs: [UUID]?
         var tags: [String]?
+        var flags: [String]?
         var goalIDs: [UUID]?
         var eventIDs: [UUID]?
         var steps: [RoutineStep]?

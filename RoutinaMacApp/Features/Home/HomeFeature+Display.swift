@@ -75,6 +75,7 @@ extension HomeFeature {
         state.awayRoutineDisplays = away
         state.archivedRoutineDisplays = archived
         state.boardTodoDisplays = boardTodos
+        state.flagFilterOptions = HomeFlagFilterCatalog.options(from: active + away + archived)
         if didChangeDisplays {
             state.routineDisplaysRevision = state.routineDisplaysRevision &+ 1
         }
@@ -139,6 +140,7 @@ private extension HomeFeature.RoutineDisplay {
             placeName: core.placeName,
             locationAvailability: core.locationAvailability,
             tags: core.tags,
+            flags: core.flags,
             taskListTagSectionDescriptor: core.taskListTagSectionDescriptor,
             goalIDs: core.goalIDs,
             goalTitles: core.goalTitles,

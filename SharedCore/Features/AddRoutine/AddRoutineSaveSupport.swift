@@ -105,6 +105,7 @@ struct AddRoutineSaveRequest: Equatable {
     let selectedPlaceID: UUID?
     let selectedPlaceIDs: [UUID]
     let tags: [String]
+    let flags: [String]
     let goals: [RoutineGoalSummary]
     let eventIDs: [UUID]
     let relationships: [RoutineTaskRelationship]
@@ -153,6 +154,7 @@ struct AddRoutineSaveRequest: Equatable {
         selectedPlaceID: UUID? = nil,
         selectedPlaceIDs: [UUID] = [],
         tags: [String] = [],
+        flags: [String] = [],
         goals: [RoutineGoalSummary] = [],
         eventIDs: [UUID] = [],
         relationships: [RoutineTaskRelationship] = [],
@@ -228,6 +230,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.selectedPlaceID = resolvedPlaceIDs.first
         self.selectedPlaceIDs = resolvedPlaceIDs
         self.tags = RoutineTag.deduplicated(tags)
+        self.flags = RoutineFlag.deduplicated(flags)
         self.goals = RoutineGoalSummary.sanitized(goals)
         self.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
         self.relationships = relationships
@@ -360,6 +363,7 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.selectedPlaceID = selectedPlaceIDs.first
         self.tags = RoutineTag.deduplicated(organization.routineTags)
+        self.flags = RoutineFlag.deduplicated(organization.routineFlags)
         self.goals = organization.routineGoals
         self.eventIDs = RoutineEventIDStorage.sanitized(organization.eventIDs)
         self.relationships = organization.relationships
@@ -383,7 +387,12 @@ struct AddRoutineSaveRequest: Equatable {
         self.trackingNudgesEnabled = schedule.scheduleMode.usesRoutineCadence
             ? trackingCadenceEnabled && basics.trackingNudgesEnabled
             : true
-        self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
+        let hasAutoAssumeDoneFlag = RoutineFlagRules.enablesAutoAssumeDone(
+            flags: self.flags,
+            rules: organization.flagRules
+        )
+        self.autoAssumeDailyDone = (hasAutoAssumeDoneFlag
+            || (organization.flagRules.isEmpty && schedule.autoAssumeDailyDone))
             && RoutineAssumedCompletion.canEnable(
                 scheduleMode: self.scheduleMode,
                 recurrenceRule: self.recurrenceRule,

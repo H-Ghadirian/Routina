@@ -6,6 +6,7 @@ struct HomeActiveFilterChipBar: View {
     let createdDateFilter: HomeTaskCreatedDateFilter
     let advancedQuery: String
     let selectedTags: Set<String>
+    let selectedFlags: Set<String>
     let excludedTags: Set<String>
     let selectedPlaceName: String?
     let selectedImportanceUrgencyFilterLabel: String?
@@ -23,6 +24,7 @@ struct HomeActiveFilterChipBar: View {
     let onClearCreatedDateFilter: () -> Void
     let onClearAdvancedQuery: () -> Void
     let onRemoveIncludedTag: (String) -> Void
+    let onRemoveIncludedFlag: (String) -> Void
     let onRemoveExcludedTag: (String) -> Void
     let onClearPlace: () -> Void
     let onClearImportanceUrgency: () -> Void
@@ -79,6 +81,12 @@ struct HomeActiveFilterChipBar: View {
                 ForEach(selectedTags.sorted(), id: \.self) { tag in
                     HomeActiveFilterChip(title: "#\(tag)") {
                         onRemoveIncludedTag(tag)
+                    }
+                }
+
+                ForEach(selectedFlags.sorted(), id: \.self) { flag in
+                    HomeActiveFilterChip(title: "Flag: \(flag)", systemImage: "flag.fill") {
+                        onRemoveIncludedFlag(flag)
                     }
                 }
 

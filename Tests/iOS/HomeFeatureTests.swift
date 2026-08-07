@@ -9,6 +9,28 @@ import Testing
 @MainActor
 struct HomeFeatureTests {
     @Test
+    func refreshDisplaysCarriesFlagsIntoTaskListDisplaysAndFilterOptions() {
+        let now = makeDate("2026-08-07T12:00:00Z")
+        let task = RoutineTask(
+            name: "Log sleep",
+            flags: ["Tracking"],
+            scheduleMode: .oneOff,
+            createdAt: now
+        )
+        var state = HomeFeature.State(routineTasks: [task])
+
+        withDependencies {
+            setTestDateDependencies(&$0, now: now, calendar: makeTestCalendar())
+            $0.appSettingsClient.placesEnabled = { false }
+        } operation: {
+            HomeFeature().refreshDisplays(&state)
+        }
+
+        #expect(state.routineDisplays.map(\.flags) == [["Tracking"]])
+        #expect(state.flagFilterOptions.map(\.name) == ["Tracking"])
+    }
+
+    @Test
     func hideAssumedDoneTasksRefreshesAnAfterCompletionAssumption() async {
         let now = makeDate("2026-08-07T12:00:00Z")
         let calendar = makeTestCalendar()

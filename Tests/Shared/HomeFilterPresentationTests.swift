@@ -16,6 +16,7 @@ struct HomeFilterPresentationTests {
             taskListViewMode: .actionable,
             selectedTodoStateFilter: .inProgress,
             selectedTags: ["Focus", "Work"],
+            selectedFlags: ["Tracking", "Focus"],
             excludedTags: ["Errand", "Low"],
             hasSelectedPlaceFilter: true,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
@@ -27,7 +28,7 @@ struct HomeFilterPresentationTests {
             hideUnavailableRoutines: true
         )
 
-        #expect(presentation.activeOptionalFilterCount == 14)
+        #expect(presentation.activeOptionalFilterCount == 15)
         #expect(presentation.hasActiveOptionalFilters)
     }
 
@@ -41,6 +42,8 @@ struct HomeFilterPresentationTests {
             selectedTodoStateFilter: .blocked,
             selectedTags: ["Focus", "Work"],
             includeTagMatchMode: .any,
+            selectedFlags: ["Tracking", "Focus"],
+            includeFlagMatchMode: .all,
             excludedTags: ["Errand"],
             selectedPlaceName: "Office",
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level3),
@@ -63,12 +66,13 @@ struct HomeFilterPresentationTests {
             "No Estimate",
             "Query tag:work",
             "Any 2 tags",
+            "All 2 flags",
             "not #Errand",
             "Office",
             "L4/L3+",
             "Away hidden"
         ])
-        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Assumed done hidden • Blocked +10 • 12 results")
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Assumed done hidden • Blocked +11 • 12 results")
     }
 
     @Test

@@ -1,8 +1,8 @@
-# 0496: Use Extensible Per-Tag Task-List Rules
+# 0496: Use Extensible Per-Tag Task-List Rules (Superseded)
 
 ## Status
 
-Accepted
+Superseded by [0497: Use Flags for Task Behavior Rules](../0497-use-flags-for-task-behavior-rules.md)
 
 ## Date
 

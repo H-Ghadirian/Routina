@@ -12,6 +12,8 @@ protocol HomeFeatureAddRoutinePresentationState {
 struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePresentationState> {
     var tagCounterDisplayMode: () -> TagCounterDisplayMode
     var relatedTagRules: () -> [RoutineRelatedTagRule]
+    var definedFlags: () -> [String] = { [] }
+    var flagRules: () -> [RoutineFlagRule] = { [] }
     var addRoutineDraft: () -> AddRoutineDraftSnapshot?
 
     func setSheet(
@@ -87,6 +89,8 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
             doneStats: state.doneStats,
             tagCounterDisplayMode: tagCounterDisplayMode(),
             relatedTagRules: relatedTagRules(),
+            availableFlags: definedFlags(),
+            flagRules: flagRules(),
             preselectedRelationships: preselectedRelationships
         )
         if let seedName = seedName.flatMap(RoutineTask.trimmedName),

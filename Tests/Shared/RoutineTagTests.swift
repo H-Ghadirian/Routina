@@ -9,6 +9,14 @@ import Testing
 
 struct RoutineTagTests {
     @Test
+    func autoAssumeDoneRuleMatchesAssignedFlagIgnoringCase() {
+        let rules = [RoutineFlagRule(flag: "Tracking", kind: .autoAssumeDone)]
+
+        #expect(RoutineFlagRules.enablesAutoAssumeDone(flags: ["tracking"], rules: rules))
+        #expect(!RoutineFlagRules.enablesAutoAssumeDone(flags: ["Private"], rules: rules))
+    }
+
+    @Test
     func parseDraft_splitsCommaAndNewlineSeparatedTags() {
         #expect(
             RoutineTag.parseDraft("  Deep   Work, Health\nmindful focus ,health ")
@@ -205,20 +213,23 @@ struct RoutineTagTests {
     }
 
     @Test
-    func tagRules_deduplicateByTagAndRuleKindAndFollowTagRenameDelete() {
-        let rules = RoutineTagRules.sanitized([
-            RoutineTagRule(tag: " Tracking ", kind: .hideFromTaskLists),
-            RoutineTagRule(tag: "tracking", kind: .hideFromTaskLists)
+    func flagRules_deduplicateByFlagAndRuleKind() {
+        let rules = RoutineFlagRules.sanitized([
+            RoutineFlagRule(flag: " Tracking ", kind: .hideFromTaskLists),
+            RoutineFlagRule(flag: "tracking", kind: .hideFromTaskLists)
         ])
 
-        #expect(rules == [RoutineTagRule(tag: "tracking", kind: .hideFromTaskLists)])
-        #expect(RoutineTagRules.hidesFromTaskLists(tags: ["TRACKING"], rules: rules))
-        #expect(!RoutineTagRules.hidesFromTaskLists(tags: ["Planning"], rules: rules))
+        #expect(rules == [RoutineFlagRule(flag: "tracking", kind: .hideFromTaskLists)])
+        #expect(RoutineFlagRules.hidesFromTaskLists(flags: ["TRACKING"], rules: rules))
+        #expect(!RoutineFlagRules.hidesFromTaskLists(flags: ["Planning"], rules: rules))
+        #expect(
+            RoutineFlagRules.flagsHidingFromTaskLists(
+                ["Planning", " TRACKING ", "tracking"],
+                rules: rules
+            ) == ["TRACKING"]
+        )
 
-        let renamed = RoutineTagRules.replacing("tracking", with: "Private", in: rules)
-        #expect(renamed == [RoutineTagRule(tag: "Private", kind: .hideFromTaskLists)])
-
-        let removed = RoutineTagRules.removing("private", from: renamed)
+        let removed = RoutineFlagRules.removing("tracking", from: rules)
         #expect(removed.isEmpty)
     }
 }

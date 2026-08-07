@@ -134,6 +134,8 @@ enum AppSettingsDefaults {
         .appSettingTagCounterDisplayMode,
         .appSettingRelatedTagRules,
         .appSettingTagRules,
+        .appSettingFlagRules,
+        .appSettingDefinedFlags,
         .appSettingTagColors,
         .appSettingFastFilterTags,
         .appSettingIOSStatsDashboardHiddenItemIDs,
@@ -282,6 +284,8 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingDayPlanCalendarListRowHiddenFields
     case appSettingRelatedTagRules
     case appSettingTagRules
+    case appSettingFlagRules
+    case appSettingDefinedFlags
     case appSettingTagColors
     case appSettingFastFilterTags
     case appSettingIOSStatsDashboardHiddenItemIDs
@@ -359,6 +363,10 @@ struct AppSettingsClient: Sendable {
     var setRelatedTagRules: @Sendable ([RoutineRelatedTagRule]) -> Void
     var tagRules: @Sendable () -> [RoutineTagRule]
     var setTagRules: @Sendable ([RoutineTagRule]) -> Void
+    var flagRules: @Sendable () -> [RoutineFlagRule] = { [] }
+    var setFlagRules: @Sendable ([RoutineFlagRule]) -> Void = { _ in }
+    var definedFlags: @Sendable () -> [String] = { [] }
+    var setDefinedFlags: @Sendable ([String]) -> Void = { _ in }
     var tagColors: @Sendable () -> [String: String]
     var setTagColors: @Sendable ([String: String]) -> Void
     var fastFilterTags: @Sendable () -> [String]
@@ -384,6 +392,8 @@ enum CloudSettingsKeyValueSync {
         .selectedMacAppIcon,
         .appSettingRelatedTagRules,
         .appSettingTagRules,
+        .appSettingFlagRules,
+        .appSettingDefinedFlags,
         .appSettingTagColors,
         .appSettingFastFilterTags,
         .appSettingIOSStatsDashboardHiddenItemIDs,
@@ -726,6 +736,40 @@ extension AppSettingsClient {
             }
             CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingTagRules)
         },
+        flagRules: {
+            guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingFlagRules),
+                  let data = rawValue.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode([RoutineFlagRule].self, from: data)
+            else {
+                return []
+            }
+            return RoutineFlagRules.sanitized(decoded)
+        },
+        setFlagRules: { rules in
+            let sanitizedRules = RoutineFlagRules.sanitized(rules)
+            guard !sanitizedRules.isEmpty else {
+                CloudSettingsKeyValueSync.setString(nil, for: .appSettingFlagRules)
+                return
+            }
+            guard let data = try? JSONEncoder().encode(sanitizedRules),
+                  let rawValue = String(data: data, encoding: .utf8)
+            else {
+                return
+            }
+            CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingFlagRules)
+        },
+        definedFlags: {
+            RoutineFlag.deserialize(
+                CloudSettingsKeyValueSync.string(for: .appSettingDefinedFlags) ?? ""
+            )
+        },
+        setDefinedFlags: { flags in
+            let sanitizedFlags = RoutineFlag.deduplicated(flags)
+            CloudSettingsKeyValueSync.setString(
+                sanitizedFlags.isEmpty ? nil : RoutineFlag.serialize(sanitizedFlags),
+                for: .appSettingDefinedFlags
+            )
+        },
         tagColors: {
             guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingTagColors),
                   let data = rawValue.data(using: .utf8),
@@ -887,6 +931,10 @@ extension AppSettingsClient {
         setRelatedTagRules: { _ in },
         tagRules: { [] },
         setTagRules: { _ in },
+        flagRules: { [] },
+        setFlagRules: { _ in },
+        definedFlags: { [] },
+        setDefinedFlags: { _ in },
         tagColors: { [:] },
         setTagColors: { _ in },
         fastFilterTags: { [] },

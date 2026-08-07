@@ -17,6 +17,10 @@ Use decision records for architecture, conventions, data model, dependencies, pr
 
 Decision records explain why. Current-behavior pages state what is true now. Regression scenarios define concrete Given/When/Then expectations that should be protected by tests.
 
+## Recent Decisions
+
+- **[0500](0500-move-auto-assume-done-to-flag-rules.md) refines [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md), [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md), [0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md), and [0497](0497-use-flags-for-task-behavior-rules.md):** Auto-assume done is a typed Flag rule, with visible selection, exact contextual rejection, retained inactive Flag assignments, and a one-time legacy migration.
+
 ## Merged Active Decision State
 
 This section is the cleaned, category-level merge of the numbered records. The records below remain the source for rationale, tradeoffs, and implementation boundaries.
@@ -31,7 +35,11 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
-- **[0496](0496-use-extensible-per-tag-task-list-rules.md) refines [0405](0405-show-hidden-scheduled-task-search-results.md) and [0449](0449-keep-custom-section-rules-tag-based.md):** Tag settings hold extensible typed rules; the first hides tasks from ordinary task-list placement while search and an explicit tag filter reveal them in a labelled presentation-only result section.
+- **[0499](0499-explain-applied-flags-in-task-details.md) refines [0497](0497-use-flags-for-task-behavior-rules.md) and [0498](0498-filter-task-lists-by-flags.md):** Task Details show assigned Flags on both platforms, and a Mac breadcrumb for a selected `Hidden by flag` result identifies that task's hiding Flag or Flags while the shared result section stays generic.
+
+- **[0498](0498-filter-task-lists-by-flags.md) refines [0497](0497-use-flags-for-task-behavior-rules.md):** Home task lists support persisted `All` / `Any` Flag filtering. A deliberately selected tracking-style Flag reveals matching rule-hidden tasks only in the presentation-only `Hidden by flag` result section; Board, Planner, Timeline, and Stats are unchanged.
+
+- **[0497](0497-use-flags-for-task-behavior-rules.md) supersedes [0496](superseded/0496-use-extensible-per-tag-task-list-rules.md):** Task-only Flags hold extensible typed behavior rules, while tags remain organizational. The first rule hides matching tasks from ordinary task-list placement but text search can reveal them in a labelled presentation-only result section.
 
 - **[0495](0495-let-task-list-filters-hide-assumed-done-rows.md) supersedes [0410](superseded/0410-show-assumed-done-home-rows-by-default.md):** Home task lists show assumed-done rows by default but let people hide them deliberately through a persisted task-list-only filter; Planner Calendar and Task Detail remain unchanged.
 

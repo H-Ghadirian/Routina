@@ -28,6 +28,15 @@ struct TaskDetailEditContextActionHandler {
         return .none
     }
 
+    func availableFlagsLoaded(_ flags: [String], state: inout State) -> Effect<Action> {
+        state.availableFlags = RoutineFlag.deduplicated(flags)
+        state.editRoutineFlags = RoutineFlag.deduplicated(
+            state.editRoutineFlags,
+            preferredFlags: state.availableFlags
+        )
+        return .none
+    }
+
     func availableTagSummariesLoaded(
         _ summaries: [RoutineTagSummary],
         state: inout State

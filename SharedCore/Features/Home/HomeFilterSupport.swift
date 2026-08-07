@@ -102,6 +102,8 @@ enum HomeTaskFilterMutation: Equatable {
     case selectedTag(String?)
     case selectedTags(Set<String>)
     case includeTagMatchMode(RoutineTagMatchMode)
+    case selectedFlags(Set<String>)
+    case includeFlagMatchMode(RoutineTagMatchMode)
     case excludedTags(Set<String>)
     case excludeTagMatchMode(RoutineTagMatchMode)
     case selectedManualPlaceFilterID(UUID?)
@@ -181,6 +183,8 @@ enum HomeFilterEditor {
         taskFilters.setSelectedTag(nil)
         taskFilters.advancedQuery = ""
         taskFilters.includeTagMatchMode = .all
+        taskFilters.selectedFlags = []
+        taskFilters.includeFlagMatchMode = .all
         taskFilters.excludedTags = []
         taskFilters.excludeTagMatchMode = .any
         taskFilters.selectedManualPlaceFilterID = nil
@@ -247,6 +251,12 @@ enum HomeFilterEditor {
 
         case let .includeTagMatchMode(mode):
             taskFilters.includeTagMatchMode = mode
+
+        case let .selectedFlags(flags):
+            taskFilters.selectedFlags = flags
+
+        case let .includeFlagMatchMode(mode):
+            taskFilters.includeFlagMatchMode = mode
 
         case let .excludedTags(tags):
             taskFilters.excludedTags = tags

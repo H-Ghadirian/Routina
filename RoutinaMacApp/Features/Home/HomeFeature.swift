@@ -94,7 +94,8 @@ struct HomeFeature {
         var navigation = HomeMacNavigationState()
         var pendingSleepPlannerSessionID: UUID?
         var relatedTagRules: [RoutineRelatedTagRule] = []
-        var tagRules: [RoutineTagRule] = []
+        var flagRules: [RoutineFlagRule] = []
+        var flagFilterOptions: [HomeFlagFilterOption] = []
         var tagColors: [String: String] = [:]
         var statusComposerSaveCount = 0
         var statusComposerErrorMessage: String?
@@ -135,6 +136,8 @@ struct HomeFeature {
             selectedTag: String? = nil,
             selectedTags: Set<String> = [],
             includeTagMatchMode: RoutineTagMatchMode = .all,
+            selectedFlags: Set<String> = [],
+            includeFlagMatchMode: RoutineTagMatchMode = .all,
             excludedTags: Set<String> = [],
             excludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedManualPlaceFilterID: UUID? = nil,
@@ -170,7 +173,8 @@ struct HomeFeature {
             selectedSettingsSection: SettingsMacSection? = .notifications,
             selectedBoardScope: BoardScope = .backlog,
             relatedTagRules: [RoutineRelatedTagRule] = [],
-            tagRules: [RoutineTagRule] = [],
+            flagRules: [RoutineFlagRule] = [],
+            flagFilterOptions: [HomeFlagFilterOption] = [],
             tagColors: [String: String] = [:]
         ) {
             self.routineTasks = routineTasks
@@ -216,6 +220,8 @@ struct HomeFeature {
                 selectedTag: selectedTag,
                 selectedTags: selectedTags.isEmpty ? selectedTag.map { [$0] } ?? [] : selectedTags,
                 includeTagMatchMode: includeTagMatchMode,
+                selectedFlags: selectedFlags,
+                includeFlagMatchMode: includeFlagMatchMode,
                 excludedTags: excludedTags,
                 excludeTagMatchMode: excludeTagMatchMode,
                 selectedManualPlaceFilterID: selectedManualPlaceFilterID,
@@ -257,7 +263,8 @@ struct HomeFeature {
                 selectedSettingsSection: selectedSettingsSection
             )
             self.relatedTagRules = relatedTagRules
-            self.tagRules = RoutineTagRules.sanitized(tagRules)
+            self.flagRules = RoutineFlagRules.sanitized(flagRules)
+            self.flagFilterOptions = flagFilterOptions
             self.tagColors = RoutineTagColors.sanitized(tagColors)
         }
 
@@ -341,9 +348,19 @@ struct HomeFeature {
             set { taskFilters.setSelectedTags(newValue) }
         }
 
+        var selectedFlags: Set<String> {
+            get { taskFilters.selectedFlags }
+            set { taskFilters.selectedFlags = newValue }
+        }
+
         var includeTagMatchMode: RoutineTagMatchMode {
             get { taskFilters.includeTagMatchMode }
             set { taskFilters.includeTagMatchMode = newValue }
+        }
+
+        var includeFlagMatchMode: RoutineTagMatchMode {
+            get { taskFilters.includeFlagMatchMode }
+            set { taskFilters.includeFlagMatchMode = newValue }
         }
 
         var excludedTags: Set<String> {
@@ -638,6 +655,8 @@ struct HomeFeature {
         case selectedTagsChanged(Set<String>)
         case taskDetailTagFilterTapped(String)
         case includeTagMatchModeChanged(RoutineTagMatchMode)
+        case selectedFlagsChanged(Set<String>)
+        case includeFlagMatchModeChanged(RoutineTagMatchMode)
         case excludedTagsChanged(Set<String>)
         case excludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedManualPlaceFilterIDChanged(UUID?)
@@ -749,7 +768,8 @@ struct HomeFeature {
     private func taskLoadHandler() -> HomeFeatureTaskLoadHandler<State, Action> {
         HomeFeatureTaskLoadHandler(
             relatedTagRules: { appSettingsClient.relatedTagRules() },
-            tagRules: { appSettingsClient.tagRules() },
+            flagRules: { appSettingsClient.flagRules() },
+            definedFlags: { appSettingsClient.definedFlags() },
             tagColors: { appSettingsClient.tagColors() },
             calendar: { calendar },
             refreshDisplays: { state in refreshDisplays(&state) },
@@ -775,6 +795,7 @@ struct HomeFeature {
         HomeFeaturePostMutationRefresher(
             refreshDisplays: { state in refreshDisplays(&state) },
             syncSelectedTaskDetailState: { state in selectionRouter().refreshSelectedTaskDetailState(&state) },
+            definedFlags: { appSettingsClient.definedFlags() },
             addRoutineAction: { .addRoutineSheet($0) }
         )
     }
@@ -786,6 +807,7 @@ struct HomeFeature {
             makeTaskDetailState: makeTaskDetailState(for:),
             refreshDisplays: { state in refreshDisplays(&state) },
             refreshTaskDetailAction: { .taskDetail(.onAppear) },
+            definedFlags: { appSettingsClient.definedFlags() },
             synchronizePlatformSelection: { state, taskID in
                 if state.macSidebarMode == .routines || state.macSidebarMode == .board {
                     state.macSidebarSelection = taskID.map(MacSidebarSelection.task)
@@ -824,6 +846,8 @@ struct HomeFeature {
         HomeFeatureAddRoutinePresentationRouter(
             tagCounterDisplayMode: { appSettingsClient.tagCounterDisplayMode() },
             relatedTagRules: { appSettingsClient.relatedTagRules() },
+            definedFlags: { appSettingsClient.definedFlags() },
+            flagRules: { appSettingsClient.flagRules() },
             addRoutineDraft: { AddRoutineDraftSnapshot.load(client: creationDraftClient) }
         )
     }
@@ -1225,6 +1249,12 @@ struct HomeFeature {
 
             case let .includeTagMatchModeChanged(mode):
                 return filterMutationHandler().applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
+
+            case let .selectedFlagsChanged(flags):
+                return filterMutationHandler().applyTaskFilterMutation(.selectedFlags(flags), state: &state)
+
+            case let .includeFlagMatchModeChanged(mode):
+                return filterMutationHandler().applyTaskFilterMutation(.includeFlagMatchMode(mode), state: &state)
 
             case let .excludedTagsChanged(tags):
                 return filterMutationHandler().applyTaskFilterMutation(.excludedTags(tags), state: &state)

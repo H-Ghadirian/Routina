@@ -144,6 +144,7 @@ detailContent
             configuration: homeFiltersSheetConfiguration,
             bindings: homeFilterBindings,
             tagData: homeTagFilterData,
+            flagData: homeFlagFilterData,
             actions: homeFiltersSheetActions
         )
     }
@@ -171,6 +172,7 @@ detailContent
     var homeFiltersSheetActions: HomeFiltersSheetActions {
         HomeFiltersSheetActions(
             tagActions: homeTagFilterActions,
+            flagActions: homeFlagFilterActions,
             onClearOptionalFilters: {
                 store.send(.clearOptionalFilters)
             },

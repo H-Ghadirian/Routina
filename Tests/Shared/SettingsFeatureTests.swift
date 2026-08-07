@@ -1933,38 +1933,38 @@ struct SettingsFeatureTests {
     }
 
     @Test
-    func tagRuleActionsPersistAnExtensiblePerTagRuleWithoutDuplicates() async {
-        let persistedRules = LockIsolated<[RoutineTagRule]>([])
+    func flagRuleActionsPersistAnExtensiblePerFlagRuleWithoutDuplicates() async {
+        let persistedRules = LockIsolated<[RoutineFlagRule]>([])
         let store = TestStore(
             initialState: SettingsFeature.State(
-                tags: .init(savedTags: [RoutineTagSummary(name: "Tracking", linkedRoutineCount: 1)])
+                flags: .init(definedFlags: ["Tracking"])
             )
         ) {
             SettingsFeature()
         } withDependencies: {
             $0.modelContext = { makeInMemoryContext() }
-            $0.appSettingsClient.setTagRules = { persistedRules.setValue($0) }
+            $0.appSettingsClient.setFlagRules = { persistedRules.setValue($0) }
         }
 
-        await store.send(.addTagRuleTapped(
-            tagName: "Tracking",
+        await store.send(.addFlagRuleTapped(
+            flagName: "Tracking",
             kind: .hideFromTaskLists
         )) {
-            $0.tags.tagRules = [
-                RoutineTagRule(tag: "Tracking", kind: .hideFromTaskLists)
+            $0.flags.rules = [
+                RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
             ]
-            $0.tags.tagStatusMessage = "Added hide tasks from normal task lists for #Tracking."
+            $0.flags.statusMessage = "Added hide tasks from normal task lists for Tracking."
         }
         #expect(persistedRules.value == [
-            RoutineTagRule(tag: "Tracking", kind: .hideFromTaskLists)
+            RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
         ])
 
-        await store.send(.removeTagRuleTapped(
-            tagName: "Tracking",
+        await store.send(.removeFlagRuleTapped(
+            flagName: "Tracking",
             kind: .hideFromTaskLists
         )) {
-            $0.tags.tagRules = []
-            $0.tags.tagStatusMessage = "Removed hide tasks from normal task lists for #Tracking."
+            $0.flags.rules = []
+            $0.flags.statusMessage = "Removed hide tasks from normal task lists for Tracking."
         }
         #expect(persistedRules.value.isEmpty)
     }
