@@ -118,6 +118,12 @@ struct TaskDetailCompletionLogActionHandler {
     }
 
     func confirmAssumedPastDays(state: inout State) -> Effect<Action> {
+        guard !RoutineAssumedCompletion.requiresIndividualAssumedCompletionConfirmation(
+            for: state.task
+        ) else {
+            return .none
+        }
+
         let assumedDays = RoutineAssumedCompletion.assumedDates(
             for: state.task,
             through: now(),

@@ -745,6 +745,10 @@ struct TaskFormMacBehaviorCard: View {
 
             if model.taskType.wrappedValue == .todo {
                 availabilityControl
+
+                if showsAssumedDoneControl {
+                    assumedDoneControl
+                }
             } else {
                 Divider()
                 routineBehaviorControls

@@ -325,9 +325,13 @@ extension TaskDetailFeature {
             updatedTask.ongoingSince = nil
         }
         updatedTask.autoAssumeDailyDone = request.autoAssumeDailyDone
-            && RoutineAssumedCompletion.isEligible(
+            && RoutineAssumedCompletion.canEnable(
                 scheduleMode: request.scheduleMode,
                 recurrenceRule: request.recurrenceRule,
+                recurrenceTimeRangeRole: updatedTask.recurrenceTimeRangeRole,
+                availabilityStartDate: updatedTask.availabilityStartDate,
+                availabilityEndDate: updatedTask.availabilityEndDate,
+                isAllDay: updatedTask.isAllDay,
                 trackingCadenceEnabled: request.trackingCadenceEnabled,
                 hasSequentialSteps: !request.steps.isEmpty,
                 hasChecklistItems: !request.checklistItems.isEmpty

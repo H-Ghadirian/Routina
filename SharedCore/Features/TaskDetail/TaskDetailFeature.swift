@@ -264,9 +264,13 @@ struct TaskDetailFeature: Reducer {
 
         var canAutoAssumeDailyDone: Bool {
             candidateRecurrenceDraft.validationIssue == nil
-                && RoutineAssumedCompletion.isEligible(
+                && RoutineAssumedCompletion.canEnable(
                 scheduleMode: editScheduleMode,
                 recurrenceRule: candidateRecurrenceRule,
+                recurrenceTimeRangeRole: editRecurrenceTimeRangeRole,
+                availabilityStartDate: editAvailabilityStartDate,
+                availabilityEndDate: editAvailabilityEndDate,
+                isAllDay: editIsAllDay,
                 trackingCadenceEnabled: editScheduleMode.taskType == .todo
                     ? true
                     : editTrackingCadenceEnabled,

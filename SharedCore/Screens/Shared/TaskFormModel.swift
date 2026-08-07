@@ -395,9 +395,13 @@ extension TaskFormModel {
 
     var canAutoAssumeDailyDone: Bool {
         recurrenceDraft.wrappedValue.validationIssue == nil
-            && RoutineAssumedCompletion.isEligible(
+            && RoutineAssumedCompletion.canEnable(
             scheduleMode: scheduleMode.wrappedValue,
             recurrenceRule: candidateRecurrenceRule,
+            recurrenceTimeRangeRole: recurrenceTimeRangeRole.wrappedValue,
+            availabilityStartDate: availabilityStartDate.wrappedValue,
+            availabilityEndDate: availabilityEndDate.wrappedValue,
+            isAllDay: isAllDay.wrappedValue,
             trackingCadenceEnabled: trackingCadenceEnabled.wrappedValue,
             hasSequentialSteps: !routineSteps.isEmpty,
             hasChecklistItems: !routineChecklistItems.isEmpty

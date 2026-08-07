@@ -1743,18 +1743,18 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
-    func completionButton_usesBulkConfirmWhenTodayAndPastDaysAreAssumed() {
+    func completionButton_requiresIndividualConfirmationForRollingAssumedDays() {
         let calendar = Calendar.current
         let now = Date()
         let today = calendar.startOfDay(for: now)
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        let threeDaysAgo = calendar.date(byAdding: .day, value: -3, to: today) ?? today
 
         let task = RoutineTask(
             name: "Walk",
             emoji: "🚶",
-            scheduleMode: .record,
-            recurrenceRule: .interval(days: 1),
-            createdAt: yesterday,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 2),
+            createdAt: threeDaysAgo,
             autoAssumeDailyDone: true
         )
         let state = TaskDetailFeature.State(
@@ -1763,9 +1763,11 @@ struct TaskDetailFeatureCompletionTests {
             selectedDate: today
         )
 
-        #expect(state.shouldUseBulkConfirmAsPrimaryAction)
-        #expect(state.completionButtonAction == .confirmAssumedPastDays)
-        #expect(state.completionButtonTitle == "Confirm 2 assumed days")
+        #expect(state.isSelectedDateAssumedDone)
+        #expect(!state.pastAssumedDates.isEmpty)
+        #expect(!state.shouldUseBulkConfirmAsPrimaryAction)
+        #expect(state.completionButtonAction == .markAsDone)
+        #expect(state.completionButtonTitle == "Confirm done")
         #expect(!state.shouldShowBulkConfirmAssumedDays)
     }
 

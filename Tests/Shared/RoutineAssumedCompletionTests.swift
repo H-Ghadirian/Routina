@@ -142,6 +142,102 @@ struct RoutineAssumedCompletionTests {
     }
 
     @Test
+    func oneOffScheduledTimeBlockIsAssumedOnlyOnItsDateAfterItStarts() {
+        let calendar = makeTestCalendar()
+        let scheduledDay = makeDate("2026-02-25T00:00:00Z")
+        let beforeStart = makeDate("2026-02-25T11:59:00Z")
+        let afterStart = makeDate("2026-02-25T12:00:00Z")
+        let followingDay = makeDate("2026-02-26T12:00:00Z")
+        let timeBlock = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 12, minute: 0),
+            end: RoutineTimeOfDay(hour: 15, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Visit museum",
+            availabilityStartDate: scheduledDay,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, timeRange: timeBlock),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            createdAt: makeDate("2026-02-20T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        #expect(RoutineAssumedCompletion.isEligible(task))
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: scheduledDay,
+            referenceDate: beforeStart,
+            calendar: calendar
+        ))
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: scheduledDay,
+            referenceDate: afterStart,
+            calendar: calendar
+        ))
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: followingDay,
+            referenceDate: followingDay,
+            calendar: calendar
+        ))
+        #expect(RoutineAssumedCompletion.assumedDates(
+            for: task,
+            through: followingDay,
+            calendar: calendar
+        ) == [scheduledDay])
+    }
+
+    @Test
+    func oneOffFlexibleAvailabilityAndChecklistTimeBlocksCannotAutoAssume() {
+        let timeBlock = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 12, minute: 0),
+            end: RoutineTimeOfDay(hour: 15, minute: 0)
+        )
+        let exactDate = makeDate("2026-02-25T00:00:00Z")
+        let flexibleTask = RoutineTask(
+            name: "Flexible errand",
+            availabilityStartDate: exactDate,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, timeRange: timeBlock),
+            recurrenceTimeRangeRole: .availability,
+            autoAssumeDailyDone: true
+        )
+        let dateWindowTask = RoutineTask(
+            name: "Trip",
+            availabilityStartDate: exactDate,
+            availabilityEndDate: makeDate("2026-02-27T00:00:00Z"),
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, timeRange: timeBlock),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            autoAssumeDailyDone: true
+        )
+        let allDayTask = RoutineTask(
+            name: "All-day errand",
+            isAllDay: true,
+            availabilityStartDate: exactDate,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, timeRange: timeBlock),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            autoAssumeDailyDone: true
+        )
+        let checklistTask = RoutineTask(
+            name: "Pack",
+            availabilityStartDate: exactDate,
+            checklistItems: [RoutineChecklistItem(title: "Passport", intervalDays: 1)],
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, timeRange: timeBlock),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            autoAssumeDailyDone: true
+        )
+
+        #expect(!RoutineAssumedCompletion.isEligible(flexibleTask))
+        #expect(!RoutineAssumedCompletion.isEligible(dateWindowTask))
+        #expect(!RoutineAssumedCompletion.isEligible(allDayTask))
+        #expect(!RoutineAssumedCompletion.isEligible(checklistTask))
+    }
+
+    @Test
     func today_waitsUntilDailyTime() {
         let calendar = makeTestCalendar()
         let today = makeDate("2026-02-25T00:00:00Z")
@@ -419,5 +515,76 @@ struct RoutineAssumedCompletionTests {
         )
 
         #expect(assumedDates == [makeDate("2026-02-22T00:00:00Z")])
+    }
+
+    @Test
+    func afterCompletionAssumptionsContinueUntilAnIndividualConfirmationResetsTheAnchor() {
+        let calendar = makeTestCalendar()
+        let day3 = makeDate("2026-02-03T12:00:00Z")
+        let day4 = makeDate("2026-02-04T12:00:00Z")
+        let day5 = makeDate("2026-02-05T12:00:00Z")
+        let day6 = makeDate("2026-02-06T12:00:00Z")
+        let day7 = makeDate("2026-02-07T12:00:00Z")
+        let day8 = makeDate("2026-02-08T12:00:00Z")
+        let task = RoutineTask(
+            name: "Journal",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 2),
+            lastDone: day3,
+            scheduleAnchor: day3,
+            createdAt: makeDate("2026-02-01T12:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        #expect(RoutineAssumedCompletion.isEligible(task))
+        #expect(RoutineAssumedCompletion.requiresIndividualAssumedCompletionConfirmation(for: task))
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: day4,
+            referenceDate: day4,
+            calendar: calendar
+        ))
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: day5,
+            referenceDate: day5,
+            calendar: calendar
+        ))
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: day6,
+            referenceDate: day6,
+            calendar: calendar
+        ))
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: day7,
+            referenceDate: day7,
+            calendar: calendar
+        ))
+
+        _ = task.advance(completedAt: day4, calendar: calendar)
+
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: day5,
+            referenceDate: day5,
+            calendar: calendar
+        ))
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: day6,
+            referenceDate: day6,
+            calendar: calendar
+        ))
+        #expect(RoutineAssumedCompletion.assumedDates(
+            for: task,
+            through: day8,
+            calendar: calendar
+        ) == [
+            calendar.startOfDay(for: day6),
+            calendar.startOfDay(for: day7),
+            calendar.startOfDay(for: day8),
+        ])
     }
 }

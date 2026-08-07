@@ -1187,9 +1187,7 @@ private struct DayPlanTimelineTaskInfo {
     var isAssumedCompletionEligible: Bool
 
     init(task: RoutineTask) {
-        let scheduleMode = task.scheduleMode
         let recurrenceRule = task.recurrenceRule
-        let hasSequentialSteps = task.hasSequentialSteps
         let hasChecklistItems = task.hasChecklistItems
 
         self.task = task
@@ -1206,14 +1204,7 @@ private struct DayPlanTimelineTaskInfo {
         snoozedUntil = task.snoozedUntil
         self.recurrenceRule = recurrenceRule
         self.hasChecklistItems = hasChecklistItems
-        isAssumedCompletionEligible = task.autoAssumeDailyDone
-            && RoutineAssumedCompletion.isEligible(
-                scheduleMode: scheduleMode,
-                recurrenceRule: recurrenceRule,
-                trackingCadenceEnabled: task.trackingCadenceEnabled,
-                hasSequentialSteps: hasSequentialSteps,
-                hasChecklistItems: hasChecklistItems
-            )
+        isAssumedCompletionEligible = RoutineAssumedCompletion.isEligible(task)
     }
 
     func currentOccurrenceDay(referenceDate: Date, calendar: Calendar) -> Date {
@@ -1324,6 +1315,14 @@ private struct DayPlanTimelineTaskInfo {
     }
 
     private func hasScheduledOccurrence(on day: Date, calendar: Calendar) -> Bool {
+        if task.isOneOffTask {
+            guard let availabilityStartDate = task.availabilityStartDate,
+                  task.availabilityEndDate == nil else {
+                return false
+            }
+            return calendar.isDate(availabilityStartDate, inSameDayAs: day)
+        }
+
         if recurrenceRule.advanced != nil {
             return !RoutineDateMath.scheduledOccurrences(
                 for: task,

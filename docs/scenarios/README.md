@@ -696,12 +696,14 @@ Then the selected detail state and Home selected row drop the checklist immediat
 ### Repeating Task Auto-Assume Uses Day-Level Completion
 
 Area: Tasks
-Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md)
+Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md), [0492](../decisions/0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md), [0494](../decisions/0494-allow-auto-assume-done-for-rolling-after-completion-routines.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineAssumedCompletionTests.swift`
 - `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/Shared/TaskFormMacLayoutRegressionTests.swift`
 
 Given a daily Gentle checklist-completion routine has auto-assume done enabled
 When today's availability starts and no checklist item progress exists
@@ -721,6 +723,17 @@ Given a weekly time-block task has Auto-assume done enabled
 When its scheduled weekday and start time have passed
 Then that occurrence is presented as assumed done
 And days without a scheduled occurrence are not assumed done
+
+Given a Standard one-off task has one exact availability date and a scheduled Time block
+When the user enables Auto-assume done and the block's start time passes
+Then only that one date is presented as assumed done
+And a date window, Available window, all-day task, exact time, steps, or checklist items keeps the toggle unavailable
+
+Given a Standard `After done` routine has Auto-assume done enabled with a two-day interval
+When the user confirms completion on day 3
+Then day 5 is the first assumed offer, and each later day remains assumed done until one is confirmed
+And a manual completion on day 4 instead makes day 6 the next assumed offer
+And the user can confirm only one assumed day at a time, never all prior offers in bulk
 
 ### Planner Can Show Assumed Done Routines
 

@@ -243,9 +243,13 @@ struct AddRoutineSaveRequest: Equatable {
         self.color = color
         self.trackingCadenceEnabled = scheduleMode.taskType == .todo ? true : trackingCadenceEnabled
         self.autoAssumeDailyDone = autoAssumeDailyDone
-            && RoutineAssumedCompletion.isEligible(
+            && RoutineAssumedCompletion.canEnable(
                 scheduleMode: scheduleMode,
                 recurrenceRule: recurrenceRule,
+                recurrenceTimeRangeRole: self.recurrenceTimeRangeRole,
+                availabilityStartDate: self.availabilityStartDate,
+                availabilityEndDate: self.availabilityEndDate,
+                isAllDay: self.isAllDay,
                 trackingCadenceEnabled: self.trackingCadenceEnabled,
                 hasSequentialSteps: !self.steps.isEmpty,
                 hasChecklistItems: !self.checklistItems.isEmpty
@@ -380,9 +384,13 @@ struct AddRoutineSaveRequest: Equatable {
             ? trackingCadenceEnabled && basics.trackingNudgesEnabled
             : true
         self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
-            && RoutineAssumedCompletion.isEligible(
+            && RoutineAssumedCompletion.canEnable(
                 scheduleMode: self.scheduleMode,
                 recurrenceRule: self.recurrenceRule,
+                recurrenceTimeRangeRole: self.recurrenceTimeRangeRole,
+                availabilityStartDate: self.availabilityStartDate,
+                availabilityEndDate: self.availabilityEndDate,
+                isAllDay: self.isAllDay,
                 trackingCadenceEnabled: trackingCadenceEnabled,
                 hasSequentialSteps: !self.steps.isEmpty,
                 hasChecklistItems: !self.checklistItems.isEmpty

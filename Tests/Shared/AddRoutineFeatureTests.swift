@@ -817,6 +817,84 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func saveTapped_afterCompletionIntervalPersistsAutoAssume() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Journal"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .day,
+                    frequencyValue: 2,
+                    recurrenceKind: .intervalDays,
+                    autoAssumeDailyDone: true
+                )
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        #expect(store.state.canAutoAssumeDailyDone)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Journal",
+            frequencyInDays: 2,
+            recurrenceRule: .interval(days: 2),
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay
+        ))))
+    }
+
+    @Test
+    func saveTapped_oneOffScheduledTimeBlockPersistsAutoAssume() async {
+        let scheduledDate = makeDate("2026-05-01T00:00:00Z")
+        let timeBlock = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 12, minute: 0),
+            end: RoutineTimeOfDay(hour: 15, minute: 0)
+        )
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Museum visit",
+                    availabilityStartDate: scheduledDate
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .oneOff,
+                    recurrenceHasTimeRange: true,
+                    recurrenceTimeRangeRole: .scheduledBlock,
+                    recurrenceTimeRangeStart: timeBlock.start,
+                    recurrenceTimeRangeEnd: timeBlock.end,
+                    autoAssumeDailyDone: true
+                )
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        #expect(store.state.canAutoAssumeDailyDone)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Museum visit",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1, timeRange: timeBlock),
+            emoji: "✨",
+            availabilityStartDate: scheduledDate,
+            calendar: makeTestCalendar(),
+            scheduleMode: .oneOff,
+            recurrenceTimeRangeRole: .scheduledBlock,
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay
+        ))))
+    }
+
+    @Test
     func saveTapped_recordCanSkipRepeatCadence() async {
         let plannedDate = makeDate("2026-05-01T09:00:00Z")
         let exactTime = RoutineTimeOfDay(hour: 14, minute: 30)

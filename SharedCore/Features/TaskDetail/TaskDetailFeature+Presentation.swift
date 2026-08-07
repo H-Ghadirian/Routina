@@ -384,14 +384,18 @@ extension TaskDetailFeature.State {
     }
 
     var shouldUseBulkConfirmAsPrimaryAction: Bool {
-        !task.isArchived()
+        !RoutineAssumedCompletion.requiresIndividualAssumedCompletionConfirmation(for: task)
+            && !task.isArchived()
             && Calendar.current.isDateInToday(resolvedSelectedDate)
             && isSelectedDateAssumedDone
             && !pastAssumedDates.isEmpty
     }
 
     var shouldShowBulkConfirmAssumedDays: Bool {
-        !task.isArchived() && !pastAssumedDates.isEmpty && !shouldUseBulkConfirmAsPrimaryAction
+        !RoutineAssumedCompletion.requiresIndividualAssumedCompletionConfirmation(for: task)
+            && !task.isArchived()
+            && !pastAssumedDates.isEmpty
+            && !shouldUseBulkConfirmAsPrimaryAction
     }
 
     var bulkConfirmAssumedDaysTitle: String {

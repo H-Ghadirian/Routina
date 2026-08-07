@@ -265,9 +265,13 @@ struct AddRoutineFeatureState: Equatable {
 
     var canAutoAssumeDailyDone: Bool {
         candidateRecurrenceDraft.validationIssue == nil
-            && RoutineAssumedCompletion.isEligible(
+            && RoutineAssumedCompletion.canEnable(
             scheduleMode: schedule.scheduleMode,
             recurrenceRule: candidateRecurrenceRule,
+            recurrenceTimeRangeRole: schedule.recurrenceTimeRangeRole,
+            availabilityStartDate: basics.availabilityStartDate,
+            availabilityEndDate: basics.availabilityEndDate,
+            isAllDay: basics.isAllDay,
             trackingCadenceEnabled: schedule.scheduleMode.taskType == .todo
                 ? true
                 : basics.trackingCadenceEnabled,

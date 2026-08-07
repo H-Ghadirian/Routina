@@ -483,9 +483,9 @@ struct TaskFormPresentation {
 
     var autoAssumeDailyDoneHelpText: String {
         if canAutoAssumeDailyDone {
-            return "Defaults scheduled occurrences to done. You can still confirm one or mark it not done later."
+            return "Defaults eligible occurrences to done. You can still confirm one or mark it not done later."
         }
-        return "Available for repeating tasks without steps or optional checklist items, and repeating checklist-completion tasks."
+        return "Available for eligible schedules without steps or optional checklist items."
     }
 
     var weekdayOptions: [(id: Int, name: String)] {

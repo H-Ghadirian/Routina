@@ -1813,6 +1813,44 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func assumedDoneSummaryIncludesOneOffScheduledTimeBlockOnItsDate() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-22T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T13:00:00Z"))
+        let scheduledDay = try #require(date("2026-06-22T00:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: activityDate, calendar: calendar)
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Museum visit",
+            availabilityStartDate: scheduledDay,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, timeRange: RoutineTimeRange(
+                start: RoutineTimeOfDay(hour: 12, minute: 0),
+                end: RoutineTimeOfDay(hour: 15, minute: 0)
+            )),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            createdAt: date("2026-06-20T08:00:00Z"),
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 30
+        )
+
+        let summaries = DayPlanTimelineTasks.assumedDoneSummaryBlocksByDayKey(
+            on: [activityDate],
+            from: [task],
+            logs: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let summary = try #require(summaries[dayKey]?.first)
+
+        #expect(summary.block.taskID == taskID)
+        #expect(summary.source == DayPlanTimelineActivitySource.assumedDone)
+        #expect(summary.block.startMinute == 11 * 60 + 30)
+        #expect(summary.block.durationMinutes == 30)
+    }
+
+    @Test
     func automaticPlannerAssumedDoneConflictAppearsUnplaceable() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-06-22T12:00:00Z"))
