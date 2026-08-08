@@ -6,6 +6,7 @@ struct StatsFocus2048Section: View {
     let chartPresentation: StatsChartPresentation
     let surfaceGradient: LinearGradient
     let colorScheme: ColorScheme
+    let showsSupplementaryDetails: Bool
 
     private var board: Focus2048Board {
         Focus2048Stats.board(totalFocusSeconds: totalFocusSeconds)
@@ -17,12 +18,14 @@ struct StatsFocus2048Section: View {
                 title: "Focus 2048",
                 subtitle: "Each full 2 focused hours compounds into 2048-style hour tiles."
             ) {
-                StatsSmallHighlightBadge(
-                    title: "Largest tile",
-                    value: largestTileText,
-                    colorScheme: colorScheme,
-                    surfaceGradient: surfaceGradient
-                )
+                if showsSupplementaryDetails {
+                    StatsSmallHighlightBadge(
+                        title: "Largest tile",
+                        value: largestTileText,
+                        colorScheme: colorScheme,
+                        surfaceGradient: surfaceGradient
+                    )
+                }
             }
 
             VStack(alignment: .leading, spacing: 14) {
@@ -30,10 +33,12 @@ struct StatsFocus2048Section: View {
                 progressPanel
             }
 
-            StatsChartInsightRow(
-                insights: insights,
-                colorScheme: colorScheme
-            )
+            if showsSupplementaryDetails {
+                StatsChartInsightRow(
+                    insights: insights,
+                    colorScheme: colorScheme
+                )
+            }
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
         .accessibilityElement(children: .contain)
@@ -47,11 +52,13 @@ struct StatsFocus2048Section: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                Spacer(minLength: 8)
+                if showsSupplementaryDetails {
+                    Spacer(minLength: 8)
 
-                Text(earnedTileSummary)
-                    .font(.caption.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    Text(earnedTileSummary)
+                        .font(.caption.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
             }
 
             LazyVGrid(columns: tileColumns, alignment: .leading, spacing: 10) {

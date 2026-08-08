@@ -778,7 +778,8 @@ struct StatsView: View {
             selectedRange: snapshot.selectedRange,
             chartPresentation: snapshot.chartPresentation,
             surfaceGradient: surfaceGradient,
-            colorScheme: colorScheme
+            colorScheme: colorScheme,
+            showsSupplementaryDetails: true
         )
     }
 

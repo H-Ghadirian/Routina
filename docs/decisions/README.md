@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0504](0504-simplify-ios-focus-2048-stats-details.md) refines [0120](0120-show-focus-2048-board.md) and [0121](0121-show-focus-2048-earned-tiles.md):** iOS Focus 2048 keeps only tiles and next-tile progress, removing the largest-tile callout, tile count, and insight pills while macOS retains them.
+
 - **[0503](0503-remove-ios-secondary-stats-comparison-reports.md) refines [0109](0109-show-focus-work-comparison.md) and [0112](0112-show-estimated-actual-time-stats.md):** iOS removes Focus vs completed work and Estimated vs Actual time from the Stats dashboard and Edit/Add controls, while macOS keeps its existing hidden-but-addable reports.
 
 - **[0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md), and [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md):** Mac task forms lazily render scrolling cards and use lightweight form surfaces, while toolbar search keeps raw typing ahead of a short applied-query debounce and never reclaims first responder after each character.
@@ -40,6 +42,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0504](0504-simplify-ios-focus-2048-stats-details.md) refines [0120](0120-show-focus-2048-board.md) and [0121](0121-show-focus-2048-earned-tiles.md):** iOS Focus 2048 keeps only tiles and next-tile progress, removing the largest-tile callout, tile count, and insight pills while macOS retains them.
 
 - **[0503](0503-remove-ios-secondary-stats-comparison-reports.md) refines [0109](0109-show-focus-work-comparison.md) and [0112](0112-show-estimated-actual-time-stats.md):** iOS removes Focus vs completed work and Estimated vs Actual time from the Stats dashboard and Edit/Add controls, while macOS keeps its existing hidden-but-addable reports.
 

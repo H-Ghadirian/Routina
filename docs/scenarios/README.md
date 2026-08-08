@@ -1817,6 +1817,20 @@ Then Focus vs completed work and Estimated vs Actual time are unavailable
 And neither report appears in the dashboard or its Add controls
 And the macOS availability policy remains unchanged
 
+### iOS Focus 2048 Shows Only Progress-Relevant Details
+
+Area: Stats / UI
+Decision links: [0504](../decisions/0504-simplify-ios-focus-2048-stats-details.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- Tests/Shared/IOSStatsDashboardPresentationTests.swift
+
+Given a person views Focus 2048 in iOS Stats
+When the section renders any focus total
+Then it shows earned tiles, the next-tile preview, and the progress bar
+And it omits the Largest tile callout, earned-tile count, and insight pills
+And macOS retains its supplementary details
+
 ### One-Off Task Archiving Keeps It Out of Suggestions
 
 Area: Tasks / Lifecycle

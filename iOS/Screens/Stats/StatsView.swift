@@ -973,7 +973,8 @@ struct StatsView: View {
             selectedRange: selectedRange,
             chartPresentation: chartPresentation,
             surfaceGradient: surfaceGradient,
-            colorScheme: colorScheme
+            colorScheme: colorScheme,
+            showsSupplementaryDetails: false
         )
     }
 

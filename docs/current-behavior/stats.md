@@ -32,6 +32,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
 - [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
 - [0503](../decisions/0503-remove-ios-secondary-stats-comparison-reports.md)
+- [0504](../decisions/0504-simplify-ios-focus-2048-stats-details.md)
 
 ## Current Contract
 
@@ -46,6 +47,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Place reports and place achievements follow the Places beta setting.
 - macOS Event and Emotion reports follow the Mac Event/Emotion beta setting.
 - iOS does not offer Focus vs completed work or Estimated vs Actual time reports. macOS keeps both reports addable but hidden by default.
+- iOS Focus 2048 shows earned and next tiles with next-tile progress, without a largest-tile callout, tile-count label, or supplemental insight pills. macOS keeps those supplementary details.
 - macOS Summary view and Edit toolbar controls are unavailable in production. Development builds can enable them through Support & About -> Beta Experiments -> `Show Stats dashboard controls`; saved dashboard customization state remains intact while the controls are hidden.
 - macOS Stats and Adventure hide the shared Home toolbar search pill while keeping the top toolbar row, mode strip, and Stats/Adventure progress picker available.
 - Wins, Achievements, Sleep scope, Goals UI, and Adventure surfaces remain implemented but are unavailable in production. Development builds can enable them through their related experiment settings; Sleep-specific Stats and Adventure surfaces also stay hidden while `Show Away` is off.
