@@ -1,6 +1,17 @@
 import Foundation
 import SwiftUI
 
+struct TaskRelationshipSuggestionPickerConfiguration {
+    let hasCandidates: Bool
+    let suggestions: [TaskRelationshipSuggestion]
+    let isLoading: Bool
+    let message: String?
+    let requestSuggestions: () -> Void
+    let changeSuggestionKind: (UUID, RoutineTaskRelationshipKind) -> Void
+    let acceptSuggestion: (UUID) -> Void
+    let dismissSuggestion: (UUID) -> Void
+}
+
 struct TaskRelationshipsEditor<SearchField: View>: View {
     let relationships: [RoutineTaskRelationship]
     let candidates: [RoutineTaskRelationshipCandidate]
@@ -165,21 +176,25 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
     let onSelect: (UUID, RoutineTaskRelationshipKind) -> Void
 
     private let searchField: (Binding<String>) -> SearchField
+    private let suggestionConfiguration: TaskRelationshipSuggestionPickerConfiguration?
 
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var selectedKind: RoutineTaskRelationshipKind = .related
+    @State private var isShowingSuggestions = false
 
     init(
         candidates: [RoutineTaskRelationshipCandidate],
         linkedTaskIDs: Set<UUID>,
         initialKind: RoutineTaskRelationshipKind,
         onSelect: @escaping (UUID, RoutineTaskRelationshipKind) -> Void,
+        suggestionConfiguration: TaskRelationshipSuggestionPickerConfiguration? = nil,
         @ViewBuilder searchField: @escaping (Binding<String>) -> SearchField
     ) {
         self.candidates = candidates
         self.linkedTaskIDs = linkedTaskIDs
         self.onSelect = onSelect
+        self.suggestionConfiguration = suggestionConfiguration
         self.searchField = searchField
         _selectedKind = State(initialValue: initialKind)
     }
@@ -199,81 +214,23 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                 VStack(alignment: .leading, spacing: 12) {
                     TaskRelationshipKindChipPicker(selection: $selectedKind)
 
-                    HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundStyle(.secondary)
-
-                        searchField($searchText)
-
-                        if !searchText.isEmpty {
-                            Button {
-                                searchText = ""
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                        }
+                    if let suggestionConfiguration {
+                        relationshipSourceControls(configuration: suggestionConfiguration)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.08, interactive: true)
+
+                    if !isShowingSuggestions {
+                        taskSearchField
+                    }
                 }
                 .padding()
 
                 Divider()
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Choose Task")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    if filteredCandidates.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(availableCandidates.isEmpty ? "All tasks are already linked." : "No matching tasks.")
-                                .foregroundStyle(.secondary)
-
-                            if !availableCandidates.isEmpty && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                Text("Try part of the task name or a copied task link.")
-                                    .font(.caption)
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                Group {
+                    if isShowingSuggestions, let suggestionConfiguration {
+                        suggestionResults(configuration: suggestionConfiguration)
                     } else {
-                        ScrollView {
-                            VStack(spacing: 0) {
-                                ForEach(filteredCandidates) { candidate in
-                                    Button {
-                                        onSelect(candidate.id, selectedKind)
-                                        dismiss()
-                                    } label: {
-                                        HStack(spacing: 10) {
-                                            Text(candidate.emoji)
-                                                .font(.title3)
-
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(candidate.displayName)
-                                                    .foregroundStyle(.primary)
-                                                Text(selectedKind.title)
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                            }
-
-                                            Spacer(minLength: 0)
-                                        }
-                                        .padding(.vertical, 10)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
-
-                                    if candidate.id != filteredCandidates.last?.id {
-                                        Divider()
-                                    }
-                                }
-                            }
-                        }
+                        manualTaskSelection
                     }
                 }
                 .padding()
@@ -289,6 +246,223 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                 }
             }
         }
+    }
+
+    private var taskSearchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            searchField($searchText)
+
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.08, interactive: true)
+    }
+
+    private func relationshipSourceControls(
+        configuration: TaskRelationshipSuggestionPickerConfiguration
+    ) -> some View {
+        HStack(spacing: 8) {
+            Button {
+                isShowingSuggestions = false
+            } label: {
+                Label("Link manually", systemImage: "magnifyingglass")
+                    .frame(maxWidth: .infinity)
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.bordered)
+            .tint(isShowingSuggestions ? .secondary : .accentColor)
+
+            Button {
+                isShowingSuggestions = true
+                configuration.requestSuggestions()
+            } label: {
+                HStack(spacing: 6) {
+                    if configuration.isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "sparkles")
+                    }
+                    Text("Suggest")
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.bordered)
+            .tint(isShowingSuggestions ? .accentColor : .secondary)
+            .disabled(configuration.isLoading || !configuration.hasCandidates)
+            .accessibilityLabel(
+                configuration.isLoading
+                    ? "Analyzing task relationships"
+                    : "Find task relationship suggestions"
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var manualTaskSelection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Choose Task")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            if filteredCandidates.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(availableCandidates.isEmpty ? "All tasks are already linked." : "No matching tasks.")
+                        .foregroundStyle(.secondary)
+
+                    if !availableCandidates.isEmpty && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text("Try part of the task name or a copied task link.")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(filteredCandidates) { candidate in
+                            Button {
+                                onSelect(candidate.id, selectedKind)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Text(candidate.emoji)
+                                        .font(.title3)
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(candidate.displayName)
+                                            .foregroundStyle(.primary)
+                                        Text(selectedKind.title)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+
+                            if candidate.id != filteredCandidates.last?.id {
+                                Divider()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func suggestionResults(
+        configuration: TaskRelationshipSuggestionPickerConfiguration
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Suggested relationships", systemImage: "sparkles")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            if configuration.isLoading {
+                VStack(alignment: .leading, spacing: 10) {
+                    ProgressView()
+                    Text("Finding relevant task relationships…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else if configuration.suggestions.isEmpty {
+                Text(configuration.message ?? "No suggestions yet.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(configuration.suggestions) { suggestion in
+                            TaskRelationshipSuggestionCard(
+                                suggestion: suggestion,
+                                onChangeKind: configuration.changeSuggestionKind,
+                                onAccept: configuration.acceptSuggestion,
+                                onDismiss: configuration.dismissSuggestion
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct TaskRelationshipSuggestionCard: View {
+    let suggestion: TaskRelationshipSuggestion
+    let onChangeKind: (UUID, RoutineTaskRelationshipKind) -> Void
+    let onAccept: (UUID) -> Void
+    let onDismiss: (UUID) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(suggestion.targetTaskEmoji)
+
+                Text(suggestion.targetTaskTitle)
+                    .font(.subheadline.weight(.medium))
+
+                Spacer(minLength: 0)
+
+                Picker("", selection: Binding(
+                    get: { suggestion.kind },
+                    set: { onChangeKind(suggestion.targetTaskID, $0) }
+                )) {
+                    ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
+                        Label(kind.title, systemImage: kind.systemImage).tag(kind)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+            }
+
+            Text(suggestion.reason)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 8) {
+                Button("Dismiss", role: .cancel) {
+                    onDismiss(suggestion.targetTaskID)
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
+
+                Button("Confirm") {
+                    onAccept(suggestion.targetTaskID)
+                }
+                .buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(12)
+        .routinaGlassCard(
+            cornerRadius: 12,
+            tint: .accentColor,
+            tintOpacity: 0.08,
+            interactive: false
+        )
     }
 }
 

@@ -1061,25 +1061,14 @@ detailBody
     private var relationshipsSection: some View {
         TaskDetailRelationshipsSectionView(
             groups: store.groupedResolvedRelationships,
-            suggestions: store.relationshipSuggestions,
-            hasSuggestionCandidates: !store.availableRelationshipTasks.isEmpty,
-            isLoadingSuggestions: store.isLoadingRelationshipSuggestions,
-            suggestionMessage: store.relationshipSuggestionMessage,
             selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
-            showsAppleIntelligenceSuggestions: false,
             showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onVisualize: { isRelationshipGraphPresented = true },
             onOpenTask: { store.send(.openLinkedTask($0)) },
-            onOpenAddLinkedTask: { store.send(.openAddLinkedTask) },
-            onFindSuggestions: { store.send(.relationshipSuggestionsRequested) },
-            onChangeSuggestionKind: {
-                store.send(.relationshipSuggestionKindChanged($0, $1))
-            },
-            onAcceptSuggestion: { store.send(.acceptRelationshipSuggestion($0)) },
-            onDismissSuggestion: { store.send(.dismissRelationshipSuggestion($0)) }
+            onOpenAddLinkedTask: { store.send(.openAddLinkedTask) }
         )
     }
 

@@ -123,7 +123,7 @@ And choosing a task persists that relationship without requiring a second Save a
 ### Mac Task Relationship Suggestions Require Confirmation
 
 Area: Tasks / AI
-Decision links: [0506](../decisions/0506-make-apple-intelligence-relationship-suggestions-macos-only.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0488](../decisions/0488-prioritize-grounded-task-relationship-analysis.md)
+Decision links: [0512](../decisions/0512-present-mac-relationship-suggestions-in-link-task-sheet.md), [0506](../decisions/0506-make-apple-intelligence-relationship-suggestions-macos-only.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0488](../decisions/0488-prioritize-grounded-task-relationship-analysis.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/IOSAppleIntelligenceAvailabilityTests.swift`
@@ -131,7 +131,10 @@ Coverage:
 - `Tests/Shared/TaskRelationshipReviewFeatureTests.swift`
 
 Given a task is open in Mac Task Details
-When the person requests relationship suggestions
+When the person opens `Link a Task` and chooses `Suggest`
+Then the Link Task sheet hides its manual task-search field
+And it shows a loading indicator until the relationship request finishes
+And the Task Details card does not show a separate Suggest action or explanatory placeholder
 Then Routina sends a bounded set of active, unlinked task summaries to the
 on-device model
 And those summaries include bounded task paths, descriptions, deadlines,
@@ -151,7 +154,7 @@ And dismissing a suggestion instead leaves both tasks unchanged
 
 Given Apple Intelligence is unavailable or no useful relationship is found
 When the suggestion request finishes
-Then Task Details explains the outcome
+Then the Link Task sheet explains the outcome
 And the existing manual relationship actions remain available
 
 Given a task is open in iOS Task Details

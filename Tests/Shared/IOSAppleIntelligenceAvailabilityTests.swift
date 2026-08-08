@@ -9,10 +9,14 @@ struct IOSAppleIntelligenceAvailabilityTests {
         let relationshipSection = try sourceFile(
             "SharedCore/Screens/TaskDetail/TaskDetailRelationshipsSectionView.swift"
         )
+        let relationshipPicker = try sourceFile("SharedCore/Views/TaskRelationshipsEditor.swift")
 
-        #expect(iosTaskDetail.contains("showsAppleIntelligenceSuggestions: false"))
-        #expect(macTaskDetail.contains("showsAppleIntelligenceSuggestions: true"))
-        #expect(relationshipSection.contains("if showsAppleIntelligenceSuggestions {"))
+        #expect(!iosTaskDetail.contains("relationshipSuggestionsRequested"))
+        #expect(macTaskDetail.contains("suggestionConfiguration: relationshipSuggestionConfiguration"))
+        #expect(!relationshipSection.contains("Suggest"))
+        #expect(relationshipPicker.contains("@State private var isShowingSuggestions = false"))
+        #expect(relationshipPicker.contains("if !isShowingSuggestions"))
+        #expect(relationshipPicker.contains("Finding relevant task relationships…"))
     }
 
     private func sourceFile(_ relativePath: String) throws -> String {

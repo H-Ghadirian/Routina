@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md):** Mac Task Detail keeps manual linking in its `Link Task` sheet, where an explicit Suggest mode replaces manual search with loading and confirmed relationship proposals.
+
 - **[0511](0511-pause-custom-mac-super-sections.md) refines [0419](0419-nest-custom-subsections-under-super-sections.md), [0446](0446-edit-custom-section-paths-in-mac-task-forms.md), and [0450](0450-use-progressive-custom-section-management.md):** A custom Mac super section can pause its currently assigned or tag-routed active tasks as one tracked snapshot, keeping the section visibly resumable without reviving independently paused tasks.
 
 - **[0510](0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md), [0444](0444-log-completion-duration-without-a-specific-time.md), and [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md):** Confirming a synthetic one-off Time block records its scheduled interval as specific completed work and Task Detail keeps that block's date/time visible as Schedule metadata.
@@ -56,6 +58,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md):** Mac Task Detail puts the Apple Intelligence entry point, loading state, and proposal review in the Link Task sheet, while manual search stays separately available in that sheet and iOS remains manual-only.
 
 - **[0511](0511-pause-custom-mac-super-sections.md) refines [0419](0419-nest-custom-subsections-under-super-sections.md), [0446](0446-edit-custom-section-paths-in-mac-task-forms.md), and [0450](0450-use-progressive-custom-section-management.md):** Pausing a Mac super section uses the ordinary task pause lifecycle for its current assigned and tag-routed snapshot; the section remains visibly resumable and resuming excludes independently paused tasks.
 
@@ -511,6 +515,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) | Present Mac Relationship Suggestions in Link Task Sheet | Accepted | 2026-08-08 |
 | [0511](0511-pause-custom-mac-super-sections.md) | Pause Custom Mac Super Sections | Accepted | 2026-08-08 |
 | [0510](0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md) | Confirm Auto-Assumed One-Off Time Blocks As Planned Intervals | Accepted | 2026-08-08 |
 | [0509](0509-collapse-calendar-list-assumed-done-sections.md) | Collapse Calendar List Assumed-Done Sections | Accepted | 2026-08-08 |

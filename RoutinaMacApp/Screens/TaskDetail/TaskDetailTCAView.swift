@@ -890,11 +890,31 @@ struct TaskDetailTCAView: View {
             initialKind: store.addLinkedTaskRelationshipKind,
             onSelect: { taskID, kind in
                 store.send(.detailLinkExistingTask(taskID, kind))
-            }
+            },
+            suggestionConfiguration: relationshipSuggestionConfiguration
         ) { searchText in
             TextField("Search tasks", text: searchText)
                 .routinaTaskRelationshipSearchFieldPlatform()
         }
+    }
+
+    private var relationshipSuggestionConfiguration: TaskRelationshipSuggestionPickerConfiguration {
+        TaskRelationshipSuggestionPickerConfiguration(
+            hasCandidates: !store.availableRelationshipTasks.isEmpty,
+            suggestions: store.relationshipSuggestions,
+            isLoading: store.isLoadingRelationshipSuggestions,
+            message: store.relationshipSuggestionMessage,
+            requestSuggestions: { store.send(.relationshipSuggestionsRequested) },
+            changeSuggestionKind: { taskID, kind in
+                store.send(.relationshipSuggestionKindChanged(taskID, kind))
+            },
+            acceptSuggestion: { taskID in
+                store.send(.acceptRelationshipSuggestion(taskID))
+            },
+            dismissSuggestion: { taskID in
+                store.send(.dismissRelationshipSuggestion(taskID))
+            }
+        )
     }
 
     private var shouldShowCommentsSection: Bool {
@@ -1542,12 +1562,7 @@ struct TaskDetailTCAView: View {
     private var relationshipsSection: some View {
         TaskDetailRelationshipsSectionView(
             groups: store.groupedResolvedRelationships,
-            suggestions: store.relationshipSuggestions,
-            hasSuggestionCandidates: !store.availableRelationshipTasks.isEmpty,
-            isLoadingSuggestions: store.isLoadingRelationshipSuggestions,
-            suggestionMessage: store.relationshipSuggestionMessage,
             selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
-            showsAppleIntelligenceSuggestions: true,
             showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
             background: routineLogsBackground,
@@ -1555,12 +1570,6 @@ struct TaskDetailTCAView: View {
             onVisualize: { isRelationshipGraphPresented = true },
             onOpenTask: { store.send(.openLinkedTask($0)) },
             onOpenAddLinkedTask: openCreateLinkedTask,
-            onFindSuggestions: { store.send(.relationshipSuggestionsRequested) },
-            onChangeSuggestionKind: {
-                store.send(.relationshipSuggestionKindChanged($0, $1))
-            },
-            onAcceptSuggestion: { store.send(.acceptRelationshipSuggestion($0)) },
-            onDismissSuggestion: { store.send(.dismissRelationshipSuggestion($0)) },
             onLinkExistingTask: openExistingTaskLinker
         )
     }

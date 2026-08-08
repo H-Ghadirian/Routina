@@ -74,12 +74,7 @@ private struct TaskDetailGoalChip: View {
 
 struct TaskDetailRelationshipsSectionView: View {
     let groups: [(kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])]
-    let suggestions: [TaskRelationshipSuggestion]
-    let hasSuggestionCandidates: Bool
-    let isLoadingSuggestions: Bool
-    let suggestionMessage: String?
     @Binding var selectedRelationshipKind: RoutineTaskRelationshipKind
-    let showsAppleIntelligenceSuggestions: Bool
     let showsVisualizeButton: Bool
     let isVisualizeDisabled: Bool
     let background: Color
@@ -87,10 +82,6 @@ struct TaskDetailRelationshipsSectionView: View {
     let onVisualize: () -> Void
     let onOpenTask: (UUID) -> Void
     let onOpenAddLinkedTask: () -> Void
-    let onFindSuggestions: () -> Void
-    let onChangeSuggestionKind: (UUID, RoutineTaskRelationshipKind) -> Void
-    let onAcceptSuggestion: (UUID) -> Void
-    let onDismissSuggestion: (UUID) -> Void
     var onLinkExistingTask: (() -> Void)? = nil
 
     var body: some View {
@@ -103,10 +94,6 @@ struct TaskDetailRelationshipsSectionView: View {
                     Divider()
                 }
 
-                suggestionContent
-
-                Divider()
-
                 addRelationshipControls
             }
         }
@@ -118,29 +105,6 @@ struct TaskDetailRelationshipsSectionView: View {
                 .font(.headline)
 
             Spacer(minLength: 0)
-
-            if showsAppleIntelligenceSuggestions {
-                Button {
-                    onFindSuggestions()
-                } label: {
-                    if isLoadingSuggestions {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(minWidth: 20, minHeight: 20)
-                    } else {
-                        Label("Suggest", systemImage: "sparkles")
-                            .font(.caption.weight(.semibold))
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(isLoadingSuggestions || !hasSuggestionCandidates)
-                .accessibilityLabel(
-                    isLoadingSuggestions
-                        ? "Analyzing task relationships"
-                        : "Find task relationship suggestions"
-                )
-            }
 
             if showsVisualizeButton {
                 Button {
@@ -227,98 +191,6 @@ struct TaskDetailRelationshipsSectionView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    private var suggestionContent: some View {
-        if showsAppleIntelligenceSuggestions {
-            if !suggestions.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("Suggested relationships", systemImage: "sparkles")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    ForEach(suggestions) { suggestion in
-                        suggestionRow(suggestion)
-                    }
-                }
-            } else if let suggestionMessage {
-                Text(suggestionMessage)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text("Ask Apple Intelligence to look for prerequisites and clearly related tasks. Nothing changes until you confirm.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    private func suggestionRow(_ suggestion: TaskRelationshipSuggestion) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(suggestion.targetTaskEmoji)
-
-                Text(suggestion.targetTaskTitle)
-                    .font(.subheadline.weight(.medium))
-
-                Spacer(minLength: 0)
-
-                Picker("", selection: Binding(
-                    get: { suggestion.kind },
-                    set: { onChangeSuggestionKind(suggestion.targetTaskID, $0) }
-                )) {
-                    Label(
-                        RoutineTaskRelationshipKind.blockedBy.title,
-                        systemImage: RoutineTaskRelationshipKind.blockedBy.systemImage
-                    )
-                    .tag(RoutineTaskRelationshipKind.blockedBy)
-
-                    Label(
-                        RoutineTaskRelationshipKind.blocks.title,
-                        systemImage: RoutineTaskRelationshipKind.blocks.systemImage
-                    )
-                    .tag(RoutineTaskRelationshipKind.blocks)
-
-                    Label(
-                        RoutineTaskRelationshipKind.related.title,
-                        systemImage: RoutineTaskRelationshipKind.related.systemImage
-                    )
-                    .tag(RoutineTaskRelationshipKind.related)
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .fixedSize()
-            }
-
-            Text(suggestion.reason)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 8) {
-                Button("Dismiss", role: .cancel) {
-                    onDismissSuggestion(suggestion.targetTaskID)
-                }
-                .buttonStyle(.bordered)
-                .frame(maxWidth: .infinity)
-
-                Button("Confirm") {
-                    onAcceptSuggestion(suggestion.targetTaskID)
-                }
-                .buttonStyle(.borderedProminent)
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .padding(12)
-        .routinaGlassCard(
-            cornerRadius: 12,
-            tint: .accentColor,
-            tintOpacity: 0.08,
-            interactive: false
-        )
     }
 
     private var addRelationshipControls: some View {
