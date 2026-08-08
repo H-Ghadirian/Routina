@@ -74,6 +74,7 @@ struct TimelineFeatureTests {
         #expect(store.state.groupedEntries.count == 1)
         #expect(store.state.groupedEntries.first?.date == calendar.startOfDay(for: now))
         #expect(store.state.groupedEntries.first?.entries.count == 2)
+        #expect(store.state.rowNumbersByEntryID == [morningLog.id: 1, eveningLog.id: 2])
         #expect(!store.state.hasActiveFilters)
     }
 

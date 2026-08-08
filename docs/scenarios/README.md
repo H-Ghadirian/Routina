@@ -1283,6 +1283,20 @@ Then iOS Timeline explicitly refetches its stable data snapshot
 And today's newest activity appears above yesterday without reopening Timeline
 And the scrolling view does not depend on unbounded SwiftData queries or whole-history change tokens
 
+### Timeline Appearance Settings Match iOS Rows
+
+Area: Timeline / Settings
+Decision links: [0222](../decisions/0222-configure-timeline-row-fields.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Coverage:
+- `Tests/iOS/ScopedFeatureTests.swift`
+- `Tests/Shared/IOSScrollingPerformanceRegressionTests.swift`
+- `Tests/Shared/SettingsTimelineRowPreviewTests.swift`
+
+Given Timeline Row settings enable icon, row number, subtitle, and type
+When iOS renders Timeline rows and the Appearance preview
+Then both surfaces show the same compact icon, numeric badge, subtitle, and type treatment
+And row numbers come from the already-grouped Timeline presentation rather than being rebuilt while rows scroll
+
 ### Planner List Honors Home Timeline Filters
 
 Area: Timeline

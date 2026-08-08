@@ -25,6 +25,9 @@ struct IOSScrollingPerformanceRegressionTests {
         #expect(feature.contains("var noteAttachmentsByNoteID: [UUID: [RoutineNoteAttachment]]"))
         #expect(view.contains(".onChange(of: store.presentationRevision)"))
         #expect(view.contains("selectedTimelineEntryID.flatMap { store.visibleEntriesByID[$0] }"))
+        #expect(feature.contains("@ObservationStateIgnored var rowNumberCache"))
+        #expect(feature.contains("TimelineLogic.rowNumbersByEntryID"))
+        #expect(view.contains("rowNumbersByEntryID[entry.id]"))
         #expect(!view.contains("visibleTimelineEntryIDs"))
         #expect(!view.contains("TimelineLogic.filteredEntries("))
     }

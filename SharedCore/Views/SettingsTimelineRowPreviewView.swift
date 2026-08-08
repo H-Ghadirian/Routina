@@ -4,13 +4,22 @@ struct SettingsTimelineRowPreviewView: View {
     let visibility: HomeTimelineRowVisibility
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             leadingAccessory
 
-            Text("Implement handling for tickets")
-                .font(.headline)
-                .lineLimit(1)
-                .layoutPriority(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Implement handling for tickets")
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+                    .layoutPriority(1)
+
+                if visibility.shows(.subtitle) {
+                    Text("Yesterday · Completed task")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
 
             Spacer(minLength: 0)
 
@@ -20,14 +29,7 @@ struct SettingsTimelineRowPreviewView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.1)
-        .overlay(alignment: .topTrailing) {
-            if visibility.shows(.rowNumber) {
-                rowNumber
-                    .padding(.top, 8)
-                    .padding(.trailing, 12)
-            }
-        }
+        .routinaScrollingRoundedFill(cornerRadius: 12, tint: .secondary, tintOpacity: 0.1)
         .animation(.snappy(duration: 0.22), value: visibility)
     }
 
@@ -37,9 +39,15 @@ struct SettingsTimelineRowPreviewView: View {
             Text("✨")
                 .font(.title2)
                 .frame(width: 36, height: 36)
-                .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
-        } else if visibility.shows(.subtitle) {
-            Spacer()
+                .routinaScrollingRoundedFill(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
+                .overlay(alignment: .topLeading) {
+                    if visibility.shows(.rowNumber) {
+                        rowNumber
+                            .offset(x: -8, y: -6)
+                    }
+                }
+        } else if visibility.shows(.rowNumber) {
+            rowNumber
         }
     }
 
@@ -49,7 +57,7 @@ struct SettingsTimelineRowPreviewView: View {
             .font(.caption2.weight(.semibold))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .routinaGlassPill(tint: .blue, tintOpacity: 0.15)
+            .routinaScrollingPillFill(tint: .blue, tintOpacity: 0.15)
             .foregroundStyle(.blue)
     }
 
@@ -59,6 +67,6 @@ struct SettingsTimelineRowPreviewView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
-            .routinaGlassPill()
+            .routinaScrollingPillFill(tint: .secondary, tintOpacity: 0.14)
     }
 }

@@ -92,6 +92,14 @@ struct TimelineFeature {
 
     @ObservableState
     struct State: Equatable {
+        struct RowNumberCache: Equatable {
+            var values: [UUID: Int] = [:]
+
+            static func == (_ lhs: RowNumberCache, _ rhs: RowNumberCache) -> Bool {
+                true
+            }
+        }
+
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
         var events: [RoutineEvent] = []
@@ -122,10 +130,15 @@ struct TimelineFeature {
         var visibleEntryIDs: [UUID] = []
         var visibleEntryIDSet: Set<UUID> = []
         var visibleEntriesByID: [UUID: TimelineEntry] = [:]
+        @ObservationStateIgnored var rowNumberCache = RowNumberCache()
         var presentationRevision: UInt = 0
         var hasAnyTimelineRecords = false
         var deepLinkedNoteID: UUID?
         var deepLinkedEventID: UUID?
+
+        var rowNumbersByEntryID: [UUID: Int] {
+            rowNumberCache.values
+        }
 
         var hasActiveFilters: Bool {
             selectedRange != .all
@@ -386,6 +399,9 @@ struct TimelineFeature {
         let groupedEntries = TimelineLogic.groupedByDay(entries: entries, calendar: calendar)
             .map { TimelineSection(date: $0.date, entries: $0.entries) }
         state.groupedEntries = groupedEntries
+        state.rowNumberCache.values = TimelineLogic.rowNumbersByEntryID(
+            groupedEntries: groupedEntries.map { (date: $0.date, entries: $0.entries) }
+        )
         state.visibleEntryIDs = groupedEntries.flatMap { $0.entries.map(\.id) }
         state.visibleEntryIDSet = Set(state.visibleEntryIDs)
         state.visibleEntriesByID = Dictionary(

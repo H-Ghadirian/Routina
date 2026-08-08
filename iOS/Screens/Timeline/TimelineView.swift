@@ -184,6 +184,10 @@ struct TimelineView: View {
         selectedTimelineEntryID.flatMap { store.visibleEntriesByID[$0] }
     }
 
+    private var rowNumbersByEntryID: [UUID: Int] {
+        store.rowNumbersByEntryID
+    }
+
     private var deepLinkedNotePresentationBinding: Binding<TimelineNoteDeepLinkPresentation?> {
         Binding(
             get: {
@@ -569,7 +573,7 @@ struct TimelineView: View {
             ForEach(groupedByDay, id: \.date) { section in
                 Section {
                     ForEach(section.entries) { entry in
-                        timelineRow(entry)
+                        timelineRow(entry, rowNumber: rowNumbersByEntryID[entry.id])
                             .id(entry.id)
                     }
                 } header: {
@@ -612,7 +616,7 @@ struct TimelineView: View {
                     ForEach(groupedByDay, id: \.date) { section in
                         Section {
                             ForEach(section.entries) { entry in
-                                timelineRowContent(entry)
+                                timelineRowContent(entry, rowNumber: rowNumbersByEntryID[entry.id])
                                     .id(entry.id)
                                     .tag(entry.id)
                             }
@@ -804,22 +808,22 @@ struct TimelineView: View {
     }
 
     @ViewBuilder
-    private func timelineRow(_ entry: TimelineEntry) -> some View {
+    private func timelineRow(_ entry: TimelineEntry, rowNumber: Int?) -> some View {
         if let taskID = entry.taskID {
             NavigationLink(value: taskID) {
-                timelineRowContent(entry)
+                timelineRowContent(entry, rowNumber: rowNumber)
             }
         } else if entry.isEmotion, let emotion = emotionLog(for: entry) {
             NavigationLink {
                 EmotionLogDetailView(emotion: emotion)
             } label: {
-                timelineRowContent(entry)
+                timelineRowContent(entry, rowNumber: rowNumber)
             }
         } else if entry.isEvent, let event = event(for: entry) {
             NavigationLink {
                 RoutineEventDetailView(event: event)
             } label: {
-                timelineRowContent(entry)
+                timelineRowContent(entry, rowNumber: rowNumber)
             }
         } else if entry.isNote, let note = note(for: entry) {
             NavigationLink {
@@ -828,34 +832,34 @@ struct TimelineView: View {
                     attachments: noteAttachments(for: note)
                 )
             } label: {
-                timelineRowContent(entry)
+                timelineRowContent(entry, rowNumber: rowNumber)
             }
         } else if entry.isPlaceCheckIn, let session = placeCheckInSession(for: entry) {
             NavigationLink {
                 PlaceCheckInSessionDetailView(session: session)
             } label: {
-                timelineRowContent(entry)
+                timelineRowContent(entry, rowNumber: rowNumber)
             }
         } else if entry.isSleep {
             Button {
                 RoutinaDeepLinkDispatcher.open(.sleep(entry.id))
             } label: {
-                timelineRowContent(entry)
+                timelineRowContent(entry, rowNumber: rowNumber)
             }
             .buttonStyle(.plain)
         } else if entry.isAway, let session = awaySession(for: entry) {
             Button {
                 editingAwaySession = session
             } label: {
-                timelineRowContent(entry)
+                timelineRowContent(entry, rowNumber: rowNumber)
             }
             .buttonStyle(.plain)
         } else {
-            timelineRowContent(entry)
+            timelineRowContent(entry, rowNumber: rowNumber)
         }
     }
 
-    private func timelineRowContent(_ entry: TimelineEntry) -> some View {
+    private func timelineRowContent(_ entry: TimelineEntry, rowNumber: Int?) -> some View {
         HStack(spacing: 12) {
             if timelineRowVisibility.shows(.icon) {
                 Text(entry.taskEmoji)
@@ -866,6 +870,14 @@ struct TimelineView: View {
                         tint: .secondary,
                         tintOpacity: 0.06
                     )
+                    .overlay(alignment: .topLeading) {
+                        if let rowNumber, timelineRowVisibility.shows(.rowNumber) {
+                            timelineRowNumberPill(rowNumber)
+                                .offset(x: -8, y: -6)
+                        }
+                    }
+            } else if let rowNumber, timelineRowVisibility.shows(.rowNumber) {
+                timelineRowNumberPill(rowNumber)
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -895,6 +907,15 @@ struct TimelineView: View {
             }
         }
         .padding(.vertical, 2)
+    }
+
+    private func timelineRowNumberPill(_ rowNumber: Int) -> some View {
+        Text("\(rowNumber)")
+            .font(.caption2.monospacedDigit().weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .routinaScrollingPillFill(tint: .secondary, tintOpacity: 0.14)
     }
 
     private var timelineRowVisibility: HomeTimelineRowVisibility {
