@@ -284,7 +284,7 @@ homeContent
         platformCompactHomeHeader
     }
 
-    func routineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
+    func routineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int?) -> some View {
         platformRoutineRow(for: task, rowNumber: rowNumber)
     }
 

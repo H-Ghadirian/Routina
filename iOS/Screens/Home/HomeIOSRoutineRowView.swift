@@ -2,7 +2,7 @@ import SwiftUI
 
 struct HomeIOSRoutineRowView: View {
     let task: HomeFeature.RoutineDisplay
-    let rowNumber: Int
+    let rowNumber: Int?
     let metadataText: String?
     let rowVisibility: HomeTaskRowVisibility
     let showTaskTypeBadge: Bool
@@ -24,8 +24,8 @@ struct HomeIOSRoutineRowView: View {
     private var leadingAccessories: some View {
         if rowVisibility.shows(.icon) {
             icon
-        } else if rowVisibility.shows(.rowNumber) {
-            rowNumberPill
+        } else if let rowNumber, rowVisibility.shows(.rowNumber) {
+            rowNumberPill(rowNumber)
         }
     }
 
@@ -41,8 +41,8 @@ struct HomeIOSRoutineRowView: View {
         }
         .frame(width: 40, height: 40)
         .overlay(alignment: .topLeading) {
-            if rowVisibility.shows(.rowNumber) {
-                rowNumberPill
+            if let rowNumber, rowVisibility.shows(.rowNumber) {
+                rowNumberPill(rowNumber)
                     .offset(x: -10, y: -8)
             }
         }
@@ -63,7 +63,7 @@ struct HomeIOSRoutineRowView: View {
         .padding(2)
     }
 
-    private var rowNumberPill: some View {
+    private func rowNumberPill(_ rowNumber: Int) -> some View {
         Text("\(rowNumber)")
             .font(.caption2.monospacedDigit().weight(.semibold))
             .foregroundStyle(.secondary)

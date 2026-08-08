@@ -28,7 +28,7 @@ extension HomeTCAView {
 
     func routineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
-        rowNumber: Int,
+        rowNumber: Int?,
         includeMarkDone: Bool = true,
         moveContext: HomeTaskListMoveContext? = nil
     ) -> some View {

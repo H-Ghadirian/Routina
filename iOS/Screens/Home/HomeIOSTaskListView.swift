@@ -8,7 +8,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
     let isTaskSearchActive: Bool
     let headerContent: () -> HeaderContent
     let emptyRowContent: (HomeTaskListEmptyState) -> EmptyRowContent
-    let rowContent: (HomeFeature.RoutineDisplay, Int, Bool, HomeTaskListMoveContext?) -> RowContent
+    let rowContent: (HomeFeature.RoutineDisplay, Int?, Bool, HomeTaskListMoveContext?) -> RowContent
     let onDelete: (IndexSet, [HomeFeature.RoutineDisplay]) -> Void
     let onScroll: (CGFloat, CGFloat) -> Void
     let destinationContent: (UUID) -> DestinationContent
@@ -33,7 +33,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         isTaskSearchActive: Bool,
         @ViewBuilder headerContent: @escaping () -> HeaderContent,
         @ViewBuilder emptyRowContent: @escaping (HomeTaskListEmptyState) -> EmptyRowContent,
-        @ViewBuilder rowContent: @escaping (HomeFeature.RoutineDisplay, Int, Bool, HomeTaskListMoveContext?) -> RowContent,
+        @ViewBuilder rowContent: @escaping (HomeFeature.RoutineDisplay, Int?, Bool, HomeTaskListMoveContext?) -> RowContent,
         onDelete: @escaping (IndexSet, [HomeFeature.RoutineDisplay]) -> Void,
         onScroll: @escaping (CGFloat, CGFloat) -> Void,
         @ViewBuilder destinationContent: @escaping (UUID) -> DestinationContent
@@ -87,12 +87,14 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
                                 ForEach(group.tasks, id: \.taskID) { task in
                                     rowContent(
                                         task,
-                                        visibleRowNumber(
-                                            for: task,
-                                            in: group,
-                                            section: section,
-                                            visibleOffsets: visibleOffsets
-                                        ),
+                                        section.tasks.count == 1
+                                            ? nil
+                                            : visibleRowNumber(
+                                                for: task,
+                                                in: group,
+                                                section: section,
+                                                visibleOffsets: visibleOffsets
+                                            ),
                                         section.includeMarkDone,
                                         group.moveContext
                                             ?? (group.usesSectionMoveContext ? section.moveContext : nil)

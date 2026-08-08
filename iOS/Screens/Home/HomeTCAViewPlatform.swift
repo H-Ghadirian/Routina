@@ -282,7 +282,7 @@ detailContent
         }
     }
 
-    func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
+    func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int?) -> some View {
         HomeIOSRoutineRowView(
             task: task,
             rowNumber: rowNumber,
@@ -324,7 +324,7 @@ detailContent
 
     func platformRoutineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
-        rowNumber: Int,
+        rowNumber: Int?,
         includeMarkDone: Bool,
         moveContext: HomeTaskListMoveContext?
     ) -> some View {
