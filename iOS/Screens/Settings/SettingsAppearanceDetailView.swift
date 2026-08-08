@@ -81,8 +81,6 @@ List {
             }
         }
 
-        Text("Shown: \(store.appearance.timelineRowVisibility.summaryText)")
-            .foregroundStyle(.secondary)
     }
 
     Section("Tag Counters") {

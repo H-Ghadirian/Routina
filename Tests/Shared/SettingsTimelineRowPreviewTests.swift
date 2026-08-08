@@ -13,6 +13,13 @@ struct SettingsTimelineRowPreviewTests {
         #expect(!source.contains("routinaGlassPill"))
     }
 
+    @Test
+    func timelineAppearanceSettingsDoNotShowAFieldCountSummary() throws {
+        let source = try sourceFile("iOS/Screens/Settings/SettingsAppearanceDetailView.swift")
+
+        #expect(!source.contains("timelineRowVisibility.summaryText"))
+    }
+
     private func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
