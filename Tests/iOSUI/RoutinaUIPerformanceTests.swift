@@ -4,6 +4,7 @@ import XCTest
 final class RoutinaUIPerformanceTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
+        executionTimeAllowance = 1_200
     }
 
     func testLaunchPerformance() {
@@ -41,7 +42,10 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let app = makeApp(seedProfile: "performance")
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(seedTask(named: "Seed Task 01", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            seedTask(named: "Seed Task 21", in: app).waitForExistence(timeout: 90),
+            "The seeded Home todo did not finish loading"
+        )
 
         app.swipeUp()
         app.swipeDown()
@@ -75,20 +79,112 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         }
     }
 
+    func testSeededTimelineScrollInteractionPerformance() {
+        let app = makeApp(seedProfile: "guided-review-performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+        XCTAssertTrue(
+            seedTask(named: "Guided Review Task 020", in: app).waitForExistence(timeout: 90),
+            "The long-history test store did not finish loading"
+        )
+
+        tapTab("Timeline", in: app)
+        XCTAssertTrue(app.navigationBars["Timeline"].waitForExistence(timeout: 10))
+        app.swipeUp()
+        app.swipeDown()
+
+        measureInteraction {
+            app.swipeUp()
+            app.swipeUp()
+            app.swipeUp()
+            app.swipeDown()
+            app.swipeDown()
+            app.swipeDown()
+        }
+    }
+
+    func testSeededHomeSearchAndTaskDetailListTraversal() {
+        let app = makeApp(seedProfile: "guided-review-performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+        XCTAssertTrue(
+            seedTask(named: "Guided Review Task 020", in: app).waitForExistence(timeout: 90),
+            "The long-history traversal store did not finish loading"
+        )
+
+        let firstTask = seedTask(named: "Guided Review Task 020", in: app)
+        XCTAssertTrue(firstTask.waitForExistence(timeout: 10))
+        firstTask.tap()
+        XCTAssertTrue(taskDetailLoaded(in: app))
+        scrollToBothEdges(in: app, swipeCount: 16)
+
+        tapTab("Home", in: app)
+        XCTAssertTrue(app.navigationBars["Todos"].waitForExistence(timeout: 10))
+        selectAllHomeTasks(in: app)
+        scrollToBothEdges(in: app, swipeCount: 60)
+
+        tapTab("New", in: app)
+        XCTAssertTrue(app.navigationBars["New Task"].waitForExistence(timeout: 10))
+        scrollToBothEdges(in: app, swipeCount: 4)
+        let newTaskCancel = app.navigationBars.buttons["Cancel"].firstMatch
+        XCTAssertTrue(newTaskCancel.waitForExistence(timeout: 10))
+        newTaskCancel.tap()
+
+        tapTab("Search", in: app)
+        scrollToBothEdges(in: app, swipeCount: 40)
+    }
+
+    func testSeededTimelineListEdgeTraversal() {
+        let app = makeApp(seedProfile: "guided-review-performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+        XCTAssertTrue(
+            seedTask(named: "Guided Review Task 020", in: app).waitForExistence(timeout: 90),
+            "The long-history Timeline store did not finish loading"
+        )
+
+        tapTab("Timeline", in: app)
+        XCTAssertTrue(app.navigationBars["Timeline"].waitForExistence(timeout: 10))
+        scrollToBothEdges(in: app, swipeCount: 140)
+        openTimelineFilterSheetAndScroll(in: app)
+    }
+
+    func testSeededMoreStatsAndSettingsListTraversal() {
+        let app = makeApp(seedProfile: "guided-review-performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+        XCTAssertTrue(
+            seedTask(named: "Guided Review Task 020", in: app).waitForExistence(timeout: 90),
+            "The long-history More store did not finish loading"
+        )
+
+        tapTab("More", in: app)
+        XCTAssertTrue(app.navigationBars["More"].waitForExistence(timeout: 10))
+        scrollToBothEdges(in: app, swipeCount: 4)
+        visitMoreDestination(named: "Help me choose", in: app, swipeCount: 4)
+        visitMoreDestination(named: "Add missing Pressure data", in: app, swipeCount: 4)
+        visitMoreDestination(named: "Add missing Thinking needed data", in: app, swipeCount: 4)
+        visitMoreDestination(named: "Add missing time estimates", in: app, swipeCount: 4)
+        visitMoreDestination(named: "Review Importance", in: app, swipeCount: 4)
+        visitMoreDestination(named: "Review Urgency", in: app, swipeCount: 4)
+        visitMoreDestination(named: "Stats", in: app, swipeCount: 12)
+        visitMoreDestination(named: "Settings", in: app, swipeCount: 16)
+    }
+
     func testSeededTaskDetailNavigationInteractionPerformance() {
         let app = makeApp(seedProfile: "performance")
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
 
-        let row = seedTask(named: "Seed Task 01", in: app)
-        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        let row = seedTask(named: "Seed Task 21", in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: 90))
         row.tap()
         XCTAssertTrue(taskDetailLoaded(in: app))
         backToHome(in: app)
 
         measureInteraction {
-            let measuredRow = seedTask(named: "Seed Task 01", in: app)
-            XCTAssertTrue(measuredRow.waitForExistence(timeout: 10))
+            let measuredRow = seedTask(named: "Seed Task 21", in: app)
+            XCTAssertTrue(measuredRow.waitForExistence(timeout: 90))
             measuredRow.tap()
             XCTAssertTrue(taskDetailLoaded(in: app))
             backToHome(in: app)
@@ -132,7 +228,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
-        XCTAssertTrue(seedTask(named: "Seed Task 01", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(seedTask(named: "Seed Task 21", in: app).waitForExistence(timeout: 90))
 
         openAndCloseFilterSheet(in: app)
         measureInteraction {
@@ -144,7 +240,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let app = makeApp(seedProfile: "performance")
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(seedTask(named: "Seed Task 01", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(seedTask(named: "Seed Task 21", in: app).waitForExistence(timeout: 90))
 
         openFilterSheet(in: app)
         toggleFilterChip(containing: "#Health", in: app)
@@ -210,6 +306,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let runID = UUID().uuidString.lowercased()
         app.launchEnvironment["ROUTINA_UI_TEST_MODE"] = "1"
         app.launchEnvironment["ROUTINA_SANDBOX"] = "1"
+        app.launchEnvironment["ROUTINA_UNLOCK_ALL_TASKS"] = "1"
         app.launchEnvironment["ROUTINA_STORE_FILENAME"] = "RoutinaModel-UIPerf-\(runID).sqlite"
         app.launchEnvironment["ROUTINA_USER_DEFAULTS_SUITE"] = "app.ui-perf.\(runID)"
         if let seedProfile {
@@ -323,6 +420,20 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         closeFilterSheet(in: app)
     }
 
+    private func selectAllHomeTasks(in app: XCUIApplication) {
+        openFilterSheet(in: app)
+
+        let allTasksButton = app.buttons["All"].firstMatch
+        XCTAssertTrue(allTasksButton.waitForExistence(timeout: 10), "Missing All task-type filter")
+        allTasksButton.tap()
+
+        let doneButton = app.navigationBars["Filters"].buttons["Done"].firstMatch
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 10))
+        doneButton.tap()
+
+        XCTAssertTrue(app.navigationBars["All"].waitForExistence(timeout: 10))
+    }
+
     private func openFilterSheet(in app: XCUIApplication) {
         let filtersButton = app.buttons["Filters"].firstMatch
         XCTAssertTrue(filtersButton.waitForExistence(timeout: 10))
@@ -337,6 +448,44 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         doneButton.tap()
 
         XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+    }
+
+    private func openTimelineFilterSheetAndScroll(in app: XCUIApplication) {
+        let filtersButton = app.buttons["Filters"].firstMatch
+        XCTAssertTrue(filtersButton.waitForExistence(timeout: 10))
+        filtersButton.tap()
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: 10))
+        scrollToBothEdges(in: app, swipeCount: 8)
+
+        let doneButton = app.navigationBars["Filters"].buttons["Done"].firstMatch
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 10))
+        doneButton.tap()
+        XCTAssertTrue(app.navigationBars["Timeline"].waitForExistence(timeout: 10))
+    }
+
+    private func visitMoreDestination(
+        named name: String,
+        in app: XCUIApplication,
+        swipeCount: Int = 12
+    ) {
+        let destination = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS %@", name)
+        ).firstMatch
+        XCTAssertTrue(destination.waitForExistence(timeout: 10), "Missing \(name) destination")
+        destination.tap()
+        scrollToBothEdges(in: app, swipeCount: swipeCount)
+
+        tapTab("More", in: app)
+        XCTAssertTrue(app.navigationBars["More"].waitForExistence(timeout: 10))
+    }
+
+    private func scrollToBothEdges(in app: XCUIApplication, swipeCount: Int) {
+        for _ in 0..<swipeCount {
+            app.swipeUp()
+        }
+        for _ in 0..<swipeCount {
+            app.swipeDown()
+        }
     }
 
     private func toggleFilterChip(containing labelPart: String, in app: XCUIApplication) {

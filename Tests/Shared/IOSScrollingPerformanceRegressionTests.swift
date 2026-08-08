@@ -13,7 +13,11 @@ struct IOSScrollingPerformanceRegressionTests {
         #expect(!platform.contains("let presentation = HomeTaskListPresentation.iOS("))
         #expect(taskList.contains("ForEach(group.tasks, id: \\.taskID)"))
         #expect(!taskList.contains("Array(group.tasks.enumerated())"))
-        #expect(taskList.contains("visibleRowNumberOffsets"))
+        #expect(taskList.contains("@State private var rowNumberCache"))
+        #expect(taskList.contains(".task(id: rowNumberCacheInvalidation)"))
+        #expect(taskList.contains("HomeIOSTaskListRowNumberCache.make"))
+        #expect(!taskList.contains("visibleRowNumberOffsets"))
+        #expect(!taskList.contains("section.taskGroups.reduce"))
     }
 
     @Test

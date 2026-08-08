@@ -151,3 +151,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0107 — Name repeatable cadence-free completions](0107-name-repeatable-cadence-free-completions.md)
 - [0108 — Keep iOS Add More Details last](0108-keep-ios-add-more-details-last.md)
 - [0109 — Wrap five-option iOS filter segments](0109-wrap-five-option-ios-filter-segments.md)
+- [0110 — Cache Home row numbers outside List builders](0110-cache-home-row-numbers-outside-list-builders.md)

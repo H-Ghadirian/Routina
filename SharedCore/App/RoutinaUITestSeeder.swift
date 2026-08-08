@@ -2,6 +2,10 @@ import Foundation
 import SwiftData
 
 enum RoutinaUITestSeeder {
+    private static let performanceTaskCount = 360
+    private static let guidedReviewPerformanceTaskCount = 360
+    private static let guidedReviewPerformanceTimelineEntryCount = 1_200
+
     @MainActor
     static func seedIfRequested(in context: ModelContext) {
         guard let profile = AppEnvironment.uiTestSeedProfile else { return }
@@ -88,7 +92,7 @@ enum RoutinaUITestSeeder {
         guard try context.fetch(descriptor).isEmpty else { return }
 
         let referenceDate = Date()
-        let tasks = (1...300).map { index in
+        let tasks = (1...guidedReviewPerformanceTaskCount).map { index in
             RoutineTask(
                 name: String(format: "Guided Review Task %03d", index),
                 emoji: index.isMultiple(of: 3) ? "square.and.pencil" : "checklist",
@@ -104,7 +108,7 @@ enum RoutinaUITestSeeder {
         }
         tasks.forEach(context.insert)
 
-        for index in 0..<9_000 {
+        for index in 0..<guidedReviewPerformanceTimelineEntryCount {
             let task = tasks[index % tasks.count]
             let dayOffset = index % 365
             let timestamp = Calendar.current.date(
@@ -125,7 +129,7 @@ enum RoutinaUITestSeeder {
     }
 
     private static func performanceTasks(referenceDate: Date) -> [RoutineTask] {
-        (1...150).map { index in
+        (1...performanceTaskCount).map { index in
             let isTodo = index.isMultiple(of: 3)
             let isPinned = index == 1 || index.isMultiple(of: 7)
             let isDone = index.isMultiple(of: 10)

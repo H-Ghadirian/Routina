@@ -58,6 +58,7 @@ struct HomeTCAView: View {
         hiddenUnavailableTaskCount: 0,
         emptyState: nil
     )
+    @State var taskListPresentationRevision: UInt = 0
 
     init(
         store: StoreOf<HomeFeature>,
@@ -134,6 +135,7 @@ homeContent
             from: taskListSearchSourceDisplays,
             filtering: taskListFiltering()
         )
+        taskListPresentationRevision &+= 1
     }
 
     private var taskListSearchSourceDisplays: [HomeFeature.RoutineDisplay] {

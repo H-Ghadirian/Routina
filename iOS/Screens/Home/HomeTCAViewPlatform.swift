@@ -252,6 +252,7 @@ detailContent
     ) -> some View {
         HomeIOSTaskListView(
             presentation: taskListPresentation,
+            presentationRevision: taskListPresentationRevision,
             selectedTaskID: selectedTaskBinding,
             isCompactHeaderHidden: isCompactHeaderHidden,
             hasActiveOptionalFilters: hasActiveOptionalFilters,
