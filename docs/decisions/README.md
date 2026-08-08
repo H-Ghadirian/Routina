@@ -19,6 +19,10 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0508](0508-keep-ios-add-more-details-last.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details places `Add more details` after all currently visible task content for both todos and routines.
+
+- **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](0424-make-task-detail-priority-optional.md):** iOS Task Details puts overall Priority above its component values, groups Pressure with metadata, keeps Done as the sole prominent action, and labels a second cadence-free completion explicitly.
+
 - **[0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** iOS Task Details keeps manual task linking but removes Apple Intelligence relationship suggestions; macOS retains both its on-demand Suggest action and relationship-review window.
 
 - **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
@@ -46,6 +50,10 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0508](0508-keep-ios-add-more-details-last.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details places `Add more details` after all currently visible task content for both todos and routines.
+
+- **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](0424-make-task-detail-priority-optional.md):** iOS Task Details puts overall Priority above its component values, groups Pressure with metadata, keeps Done as the sole prominent action, and labels a second cadence-free completion explicitly.
 
 - **[0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** iOS Task Details keeps manual task linking but removes Apple Intelligence relationship suggestions; macOS retains both its on-demand Suggest action and relationship-review window.
 
@@ -491,6 +499,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0508](0508-keep-ios-add-more-details-last.md) | Keep iOS Add More Details Last | Accepted | 2026-08-08 |
+| [0507](0507-clarify-ios-task-detail-action-hierarchy.md) | Clarify iOS Task Detail Action Hierarchy | Accepted | 2026-08-08 |
 | [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) | Make Apple Intelligence Relationship Suggestions macOS-Only | Accepted | 2026-08-08 |
 | [0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) | Keep Mac Task Forms and Search Input Frame-Safe | Accepted | 2026-08-07 |
 | [0495](0495-let-task-list-filters-hide-assumed-done-rows.md) | Let Task-List Filters Hide Assumed-Done Rows | Accepted | 2026-08-07 |

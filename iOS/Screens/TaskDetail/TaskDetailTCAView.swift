@@ -254,7 +254,6 @@ detailBody
                 TaskDetailTodoPrimaryActionSection(
                     store: store,
                     showsTodoStateControl: shouldShowTodoStateControl,
-                    showsPressureControl: shouldShowPressureControl,
                     showsThinkingNeededControl: shouldShowThinkingNeededControl,
                     stateTimingSummary: todoStateTimingSummary,
                     showPersianDates: showPersianDates
@@ -262,7 +261,6 @@ detailBody
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
-                optionalActionsSection
                 if shouldShowCommentsSection {
                     commentsSection
                 }
@@ -281,6 +279,7 @@ detailBody
                 if hasTaskExtras {
                     taskExtrasSection
                 }
+                optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -302,14 +301,12 @@ detailBody
                 TaskDetailRoutinePrimaryActionSection(
                     store: store,
                     pauseArchivePresentation: pauseArchivePresentation,
-                    showsPressureControl: shouldShowPressureControl,
                     showsThinkingNeededControl: shouldShowThinkingNeededControl
                 )
                 calendarSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
-                optionalActionsSection
                 if shouldShowCommentsSection {
                     commentsSection
                 }
@@ -328,6 +325,7 @@ detailBody
                 if hasTaskExtras {
                     taskExtrasSection
                 }
+                optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -738,6 +736,9 @@ detailBody
                 if shouldShowPriorityControl {
                     priorityDisclosureBox
                 }
+                if shouldShowPressureControl {
+                    TaskDetailPressurePickerPill(store: store)
+                }
                 if shouldShowTimeControl {
                     todoTimeSpentHeaderBox
                 }
@@ -770,6 +771,9 @@ detailBody
                 if shouldShowPriorityControl {
                     priorityDisclosureBox
                 }
+                if shouldShowPressureControl {
+                    TaskDetailPressurePickerPill(store: store)
+                }
                 headerGoalsBox
             }
         } flagChip: { flag in
@@ -797,6 +801,7 @@ detailBody
             importance: store.task.importance,
             urgency: store.task.urgency,
             isExpanded: $isMatrixExpanded,
+            summaryLayout: .stacked,
             onImportanceChanged: { store.send(.importanceChanged($0)) },
             onUrgencyChanged: { store.send(.urgencyChanged($0)) }
         )

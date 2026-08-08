@@ -3,6 +3,7 @@ import SwiftUI
 enum TaskDetailPrioritySummaryLayout {
     case adaptive
     case horizontal
+    case stacked
     case overallOnly
 }
 
@@ -23,22 +24,7 @@ struct TaskDetailPriorityDisclosureBox: View {
                     isExpanded.toggle()
                 }
             } label: {
-                HStack(alignment: .center, spacing: 8) {
-                    Text("PRIORITY")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    prioritySummaryRow
-
-                    Spacer(minLength: 8)
-
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+                prioritySummaryButtonLabel
             }
             .buttonStyle(.plain)
 
@@ -73,9 +59,54 @@ struct TaskDetailPriorityDisclosureBox: View {
             }
         case .horizontal:
             horizontalPrioritySummary
+        case .stacked:
+            stackedPrioritySummary
         case .overallOnly:
             priorityFlagChip
         }
+    }
+
+    @ViewBuilder
+    private var prioritySummaryButtonLabel: some View {
+        if summaryLayout == .stacked {
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(alignment: .center, spacing: 8) {
+                    prioritySectionLabel
+                    priorityFlagChip
+                    Spacer(minLength: 8)
+                    disclosureChevron
+                }
+
+                HStack(alignment: .center, spacing: 8) {
+                    importanceChip
+                    urgencyChip
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        } else {
+            HStack(alignment: .center, spacing: 8) {
+                prioritySectionLabel
+                prioritySummaryRow
+                Spacer(minLength: 8)
+                disclosureChevron
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+    }
+
+    private var prioritySectionLabel: some View {
+        Text("PRIORITY")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.secondary)
+    }
+
+    private var disclosureChevron: some View {
+        Image(systemName: "chevron.down")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .rotationEffect(.degrees(isExpanded ? 180 : 0))
     }
 
     private var horizontalPrioritySummary: some View {
@@ -88,6 +119,17 @@ struct TaskDetailPriorityDisclosureBox: View {
     }
 
     private var wrappedPrioritySummary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            priorityFlagChip
+            HStack(alignment: .center, spacing: 8) {
+                importanceChip
+                urgencyChip
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var stackedPrioritySummary: some View {
         VStack(alignment: .leading, spacing: 6) {
             priorityFlagChip
             HStack(alignment: .center, spacing: 8) {

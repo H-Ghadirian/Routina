@@ -148,3 +148,5 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0104 — Reconcile active Focus after CloudKit import delay](0104-reconcile-active-focus-after-cloud-import-delay.md)
 - [0105 — Keep Timeline preview and row rendering aligned](0105-keep-timeline-preview-and-row-rendering-aligned.md)
 - [0106 — Let assigned Flag chips use available width](0106-let-assigned-flag-chips-use-available-width.md)
+- [0107 — Name repeatable cadence-free completions](0107-name-repeatable-cadence-free-completions.md)
+- [0108 — Keep iOS Add More Details last](0108-keep-ios-add-more-details-last.md)

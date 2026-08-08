@@ -4,7 +4,6 @@ import ComposableArchitecture
 struct TaskDetailTodoPrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
     let showsTodoStateControl: Bool
-    let showsPressureControl: Bool
     let showsThinkingNeededControl: Bool
     let stateTimingSummary: TodoStateTimingSummary?
     let showPersianDates: Bool
@@ -18,9 +17,6 @@ struct TaskDetailTodoPrimaryActionSection: View {
                         if showsTodoStateControl {
                             todoStateControl
                         }
-                        if showsPressureControl {
-                            TaskDetailPressurePickerPill(store: store)
-                        }
                         if showsThinkingNeededControl {
                             TaskDetailThinkingNeededPickerPill(store: store)
                         }
@@ -28,9 +24,6 @@ struct TaskDetailTodoPrimaryActionSection: View {
                     VStack(alignment: .leading, spacing: 8) {
                         if showsTodoStateControl {
                             todoStateControl
-                        }
-                        if showsPressureControl {
-                            TaskDetailPressurePickerPill(store: store)
                         }
                         if showsThinkingNeededControl {
                             TaskDetailThinkingNeededPickerPill(store: store)
@@ -67,7 +60,7 @@ struct TaskDetailTodoPrimaryActionSection: View {
     }
 
     private var shouldShowStatusControls: Bool {
-        showsTodoStateControl || showsPressureControl || showsThinkingNeededControl
+        showsTodoStateControl || showsThinkingNeededControl
     }
 
     @ViewBuilder
@@ -98,14 +91,10 @@ struct TaskDetailTodoPrimaryActionSection: View {
 struct TaskDetailRoutinePrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
     let pauseArchivePresentation: RoutinePauseArchivePresentation
-    let showsPressureControl: Bool
     let showsThinkingNeededControl: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if showsPressureControl {
-                TaskDetailPressurePickerPill(store: store)
-            }
             if showsThinkingNeededControl {
                 TaskDetailThinkingNeededPickerPill(store: store)
             }
@@ -131,39 +120,13 @@ struct TaskDetailRoutinePrimaryActionSection: View {
     @ViewBuilder
     private var secondaryActionControls: some View {
         if showsPauseResumeControl {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 10) {
-                    pauseResumeButton
-                    notTodayButton
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    pauseResumeButton
-                    notTodayButton
-                }
-            }
+            routineActionsMenu
         }
     }
 
     private var showsPauseResumeControl: Bool {
         !store.task.isOneOffTask
             || (!store.task.isCompletedOneOff && !store.task.isCanceledOneOff)
-    }
-
-    private var pauseResumeButton: some View {
-        Button {
-            store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
-        } label: {
-            Label(
-                pauseArchivePresentation.actionTitle,
-                systemImage: pauseResumeSystemImage
-            )
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.bordered)
-        .tint(store.task.isArchived() ? .teal : .orange)
-        .routinaPlatformSecondaryActionControlSize()
-        .frame(maxWidth: .infinity)
     }
 
     private var pauseResumeSystemImage: String {
@@ -173,20 +136,32 @@ struct TaskDetailRoutinePrimaryActionSection: View {
         return store.task.isArchived() ? "play.circle" : "pause.circle"
     }
 
-    @ViewBuilder
-    private var notTodayButton: some View {
-        if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
+    private var routineActionsMenu: some View {
+        Menu {
             Button {
-                store.send(.notTodayTapped)
+                store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
             } label: {
-                Label(secondaryActionTitle, systemImage: "moon.zzz.fill")
-                    .frame(maxWidth: .infinity)
+                Label(
+                    pauseArchivePresentation.actionTitle,
+                    systemImage: pauseResumeSystemImage
+                )
             }
-            .buttonStyle(.bordered)
-            .tint(.indigo)
-            .routinaPlatformSecondaryActionControlSize()
-            .frame(maxWidth: .infinity)
+
+            if pauseArchivePresentation.secondaryActionTitle != nil {
+                Button {
+                    store.send(.notTodayTapped)
+                } label: {
+                    Label("Not today — hide until tomorrow", systemImage: "moon.zzz.fill")
+                }
+            }
+        } label: {
+            Label("More routine actions", systemImage: "ellipsis.circle")
+                .font(.subheadline.weight(.medium))
         }
+        .buttonStyle(.bordered)
+        .tint(.secondary)
+        .routinaPlatformSecondaryActionControlSize()
+        .accessibilityHint("Pause, resume, or hide this routine until tomorrow")
     }
 
     @ViewBuilder
@@ -200,20 +175,6 @@ struct TaskDetailRoutinePrimaryActionSection: View {
 
         if store.isChecklistCompletionFromStoredItems && !store.canUndoSelectedDate && !store.isSelectedDateAssumedDone {
             Text("Complete checklist items below to finish this routine.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-
-        if let pauseDescription = pauseArchivePresentation.description {
-            Text(pauseDescription)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-
-        if let secondaryActionDescription = pauseArchivePresentation.secondaryActionDescription {
-            Text(secondaryActionDescription)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -237,8 +198,8 @@ struct TaskDetailPrimaryActionButton: View {
             store.send(store.completionButtonAction)
         } label: {
             TaskDetailCompletionButtonLabel(
-                title: store.completionButtonTitle,
-                systemImage: store.completionButtonSystemImage
+                title: TaskDetailIOSCompletionPresentation.title(for: store.state),
+                systemImage: TaskDetailIOSCompletionPresentation.systemImage(for: store.state)
             )
             .routinaPlatformPrimaryActionLabelLayout()
         }
@@ -246,6 +207,32 @@ struct TaskDetailPrimaryActionButton: View {
         .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
         .routinaPlatformPrimaryActionButtonLayout()
         .disabled(store.isCompletionButtonDisabled)
+    }
+}
+
+enum TaskDetailIOSCompletionPresentation {
+    static func title(for state: TaskDetailFeature.State) -> String {
+        guard isCadenceFreeRoutineCompletedToday(state) else {
+            return state.completionButtonTitle
+        }
+        return "Log another completion"
+    }
+
+    static func systemImage(for state: TaskDetailFeature.State) -> String? {
+        guard isCadenceFreeRoutineCompletedToday(state) else {
+            return state.completionButtonSystemImage
+        }
+        return "plus.circle.fill"
+    }
+
+    private static func isCadenceFreeRoutineCompletedToday(
+        _ state: TaskDetailFeature.State
+    ) -> Bool {
+        !state.task.isOneOffTask
+            && !state.task.usesEffectiveRoutineCadence
+            && !state.isChecklistDrivenFromStoredItems
+            && state.isSelectedDateTerminal
+            && Calendar.current.isDateInToday(state.resolvedSelectedDate)
     }
 }
 

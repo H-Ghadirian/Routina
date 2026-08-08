@@ -16,8 +16,9 @@ struct TaskDetailPlatformActionParityTests {
         #expect(!routineActions.contains("Start ongoing"))
         #expect(!routineActions.contains("startOngoingButton"))
         #expect(!routineActions.contains(".startOngoingTapped"))
-        #expect(routineActions.contains("pauseResumeButton"))
-        #expect(routineActions.contains("notTodayButton"))
+        #expect(routineActions.contains("routineActionsMenu"))
+        #expect(routineActions.contains("More routine actions"))
+        #expect(routineActions.contains("Not today — hide until tomorrow"))
     }
 
     @Test
@@ -31,6 +32,32 @@ struct TaskDetailPlatformActionParityTests {
         #expect(source.contains("return .finishOngoingTapped"))
         #expect(source.contains("return \"play.circle.fill\""))
         #expect(source.contains("return \"stop.circle.fill\""))
+    }
+
+    @Test
+    func iosAddMoreDetailsSectionIsLastForTodosAndRoutines() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let todoContent = try Self.sourceSection(
+            startingAt: "private var todoDetailContent",
+            endingAt: "private var taskDetailContent",
+            in: source
+        )
+        let routineContent = try Self.sourceSection(
+            startingAt: "private var taskDetailContent",
+            endingAt: "private var focusSessionSection",
+            in: source
+        )
+
+        try assertOptionalActionsAreLast(in: todoContent)
+        try assertOptionalActionsAreLast(in: routineContent)
+    }
+
+    private func assertOptionalActionsAreLast(in content: String) throws {
+        let optionalActions = try #require(content.range(of: "optionalActionsSection"))
+        let extras = try #require(content.range(of: "taskExtrasSection"))
+        #expect(extras.upperBound < optionalActions.lowerBound)
     }
 
     private static func sourceSection(
