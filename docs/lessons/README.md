@@ -145,3 +145,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0101 — Share adaptive Task Detail metadata layouts](0101-share-adaptive-task-detail-metadata-layouts.md)
 - [0102 — Keep Mac task-form and search work frame-safe](0102-keep-mac-task-form-and-search-work-frame-safe.md)
 - [0103 — Return opaque task-form views after local setup](0103-return-opaque-task-form-views-after-local-setup.md)
+- [0104 — Reconcile active Focus after CloudKit import delay](0104-reconcile-active-focus-after-cloud-import-delay.md)

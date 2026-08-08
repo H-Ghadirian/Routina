@@ -42,6 +42,12 @@ struct RoutinaIOSRootScene: Scene {
                             containerIdentifier: AppEnvironment.cloudKitContainerIdentifier
                         )
                     }
+                    Task { @MainActor in
+                        await CloudKitDirectPullService.reconcileActiveFocusIfNeeded(
+                            containerIdentifier: AppEnvironment.cloudKitContainerIdentifier,
+                            modelContext: persistence.container.mainContext
+                        )
+                    }
                 }
         }
         .routinaAppWindowDefaults()

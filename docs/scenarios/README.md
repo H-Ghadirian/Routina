@@ -29,6 +29,20 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Finished Focus Does Not Remain Active After a Cross-Device Refresh
+
+Area: Other
+Decision links: [0032](../decisions/0032-sync-active-sleep-mode-across-devices.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/CloudKitDirectPullFocusSessionTests.swift`
+
+Given a Focus session began on one device and another device has already imported its active state
+When the first device stops the session and the other device opens with that stale active record
+Then the receiving device performs a bounded CloudKit reconciliation and records the terminal timestamp
+And the Focus session no longer appears as active on the receiving device
+And a delayed active record cannot reopen a session that is already completed
+
 ### Production Experiment Lockdown Matches Signed Capabilities
 
 Area: Settings / Other

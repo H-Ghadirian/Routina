@@ -96,6 +96,27 @@ extension CloudKitDirectPullService {
         var sourceTaskID: UUID?
     }
 
+    struct FocusSessionPayload {
+        var id: UUID
+        var taskID: UUID
+        var startedAt: Date?
+        var plannedDurationSeconds: TimeInterval?
+        var completedAt: Date?
+        var abandonedAt: Date?
+        var pausedAt: Date?
+        var accumulatedPausedSeconds: TimeInterval?
+        var tagName: String?
+    }
+
+    struct SprintFocusSessionPayload {
+        var id: UUID
+        var sprintID: UUID
+        var startedAt: Date?
+        var stoppedAt: Date?
+        var pausedAt: Date?
+        var accumulatedPausedSeconds: TimeInterval?
+    }
+
     static func stringValue(in record: CKRecord, keys: [String]) -> String? {
         for key in keys {
             if let value = record[key] as? String {
@@ -269,5 +290,17 @@ extension CloudKitDirectPullService {
         let normalized = recordType.lowercased()
         return normalized.contains("routinelog")
             || normalized.contains("routine_log")
+    }
+
+    static func isFocusSessionRecordType(_ recordType: String) -> Bool {
+        let normalized = recordType.lowercased()
+        return (normalized.contains("focussession") || normalized.contains("focus_session"))
+            && !isSprintFocusSessionRecordType(recordType)
+    }
+
+    static func isSprintFocusSessionRecordType(_ recordType: String) -> Bool {
+        let normalized = recordType.lowercased()
+        return normalized.contains("sprintfocussession")
+            || normalized.contains("sprint_focus_session")
     }
 }

@@ -106,3 +106,99 @@ enum CloudKitDirectPullLogPayloadApplier {
         )
     }
 }
+
+enum CloudKitDirectPullFocusSessionPayloadApplier {
+    static func apply(
+        _ payload: CloudKitDirectPullService.FocusSessionPayload,
+        to session: FocusSession
+    ) {
+        session.taskID = payload.taskID
+        if let startedAt = payload.startedAt {
+            session.startedAt = startedAt
+        }
+        if let plannedDurationSeconds = payload.plannedDurationSeconds {
+            session.plannedDurationSeconds = max(0, plannedDurationSeconds)
+        }
+        if let accumulatedPausedSeconds = payload.accumulatedPausedSeconds {
+            session.accumulatedPausedSeconds = max(0, accumulatedPausedSeconds)
+        }
+        if let tagName = payload.tagName {
+            session.tagName = RoutineTag.cleaned(tagName)
+        }
+
+        if let completedAt = payload.completedAt {
+            session.completedAt = completedAt
+            session.abandonedAt = nil
+            session.pausedAt = nil
+            return
+        }
+
+        if let abandonedAt = payload.abandonedAt {
+            session.abandonedAt = abandonedAt
+            session.completedAt = nil
+            session.pausedAt = nil
+            return
+        }
+
+        // A finished session never becomes active again. A delayed direct pull
+        // can still contain the start record after this device has received the
+        // terminal state through normal CloudKit mirroring.
+        guard session.state == .active else { return }
+        session.pausedAt = payload.pausedAt
+    }
+
+    static func makeFocusSession(
+        from payload: CloudKitDirectPullService.FocusSessionPayload
+    ) -> FocusSession {
+        FocusSession(
+            id: payload.id,
+            taskID: payload.taskID,
+            startedAt: payload.startedAt,
+            plannedDurationSeconds: max(0, payload.plannedDurationSeconds ?? 0),
+            completedAt: payload.completedAt,
+            abandonedAt: payload.abandonedAt,
+            pausedAt: payload.completedAt == nil && payload.abandonedAt == nil ? payload.pausedAt : nil,
+            accumulatedPausedSeconds: max(0, payload.accumulatedPausedSeconds ?? 0),
+            tagName: payload.tagName
+        )
+    }
+}
+
+enum CloudKitDirectPullSprintFocusSessionPayloadApplier {
+    static func apply(
+        _ payload: CloudKitDirectPullService.SprintFocusSessionPayload,
+        to session: SprintFocusSessionRecord
+    ) {
+        session.sprintID = payload.sprintID
+        if let startedAt = payload.startedAt {
+            session.startedAt = startedAt
+        }
+        if let accumulatedPausedSeconds = payload.accumulatedPausedSeconds {
+            session.accumulatedPausedSeconds = max(0, accumulatedPausedSeconds)
+        }
+
+        if let stoppedAt = payload.stoppedAt {
+            session.stoppedAt = stoppedAt
+            session.pausedAt = nil
+            return
+        }
+
+        // A delayed active record must not reopen a focus session that already
+        // stopped on this device.
+        guard session.stoppedAt == nil else { return }
+        session.pausedAt = payload.pausedAt
+    }
+
+    static func makeSprintFocusSession(
+        from payload: CloudKitDirectPullService.SprintFocusSessionPayload
+    ) -> SprintFocusSessionRecord {
+        SprintFocusSessionRecord(
+            id: payload.id,
+            sprintID: payload.sprintID,
+            startedAt: payload.startedAt ?? Date(),
+            stoppedAt: payload.stoppedAt,
+            pausedAt: payload.stoppedAt == nil ? payload.pausedAt : nil,
+            accumulatedPausedSeconds: max(0, payload.accumulatedPausedSeconds ?? 0)
+        )
+    }
+}

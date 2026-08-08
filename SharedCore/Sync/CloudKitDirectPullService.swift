@@ -19,6 +19,38 @@ enum CloudKitDirectPullService {
         try merge(result: result, into: modelContext)
     }
 
+    /// Repairs a locally active focus timer after an app launch or foreground
+    /// transition. SwiftData normally imports CloudKit changes on its own, but
+    /// a terminal focus update must not leave a timer visibly running while an
+    /// import is delayed.
+    @MainActor
+    static func reconcileActiveFocusIfNeeded(
+        containerIdentifier: String?,
+        modelContext: ModelContext
+    ) async {
+        guard let containerIdentifier, !containerIdentifier.isEmpty else { return }
+
+        do {
+            guard try hasActiveFocus(in: modelContext) else { return }
+            try await pullLatestIntoLocalStore(
+                containerIdentifier: containerIdentifier,
+                modelContext: modelContext
+            )
+
+            // A just-finished timer can race its originating Mac's CloudKit
+            // export. One short retry closes that narrow gap without polling.
+            guard try hasActiveFocus(in: modelContext) else { return }
+            try? await Task.sleep(for: .seconds(2))
+            guard try hasActiveFocus(in: modelContext) else { return }
+            try await pullLatestIntoLocalStore(
+                containerIdentifier: containerIdentifier,
+                modelContext: modelContext
+            )
+        } catch {
+            NSLog("Focus-session CloudKit reconciliation failed: \(error.localizedDescription)")
+        }
+    }
+
     @MainActor
     static func mergeForTesting(
         _ result: PullResult,
@@ -87,6 +119,25 @@ enum CloudKitDirectPullService {
             try CloudKitDirectPullUpserter.upsertLog(canonicalPayload, in: context)
         }
 
+        for focusSessionPayload in payloadBatch.focusSessionPayloads {
+            var canonicalPayload = focusSessionPayload
+            if canonicalPayload.taskID != FocusSession.unassignedTaskID {
+                canonicalPayload.taskID = mergedTaskIDs[focusSessionPayload.taskID]
+                    ?? CloudKitDirectPullCanonicalIDResolver.canonicalTaskID(
+                        for: focusSessionPayload.taskID,
+                        in: context
+                    )
+            }
+            try CloudKitDirectPullUpserter.upsertFocusSession(canonicalPayload, in: context)
+        }
+
+        for sprintFocusSessionPayload in payloadBatch.sprintFocusSessionPayloads {
+            try CloudKitDirectPullUpserter.upsertSprintFocusSession(
+                sprintFocusSessionPayload,
+                in: context
+            )
+        }
+
         for (sourcePlaceID, targetPlaceID) in mergedPlaceIDs where sourcePlaceID != targetPlaceID {
             try CloudKitDirectPullMergeHousekeeping.migratePlaceReferences(
                 from: sourcePlaceID,
@@ -126,6 +177,25 @@ enum CloudKitDirectPullService {
             try context.save()
             NotificationCenter.default.postRoutineDidUpdate()
         }
+    }
+
+    @MainActor
+    private static func hasActiveFocus(in context: ModelContext) throws -> Bool {
+        let activeFocusPredicate = #Predicate<FocusSession> { session in
+            session.completedAt == nil && session.abandonedAt == nil
+        }
+        var focusDescriptor = FetchDescriptor<FocusSession>(predicate: activeFocusPredicate)
+        focusDescriptor.fetchLimit = 1
+        if try context.fetch(focusDescriptor).isEmpty == false {
+            return true
+        }
+
+        let activeSprintFocusPredicate = #Predicate<SprintFocusSessionRecord> { session in
+            session.stoppedAt == nil
+        }
+        var sprintDescriptor = FetchDescriptor<SprintFocusSessionRecord>(predicate: activeSprintFocusPredicate)
+        sprintDescriptor.fetchLimit = 1
+        return try context.fetch(sprintDescriptor).isEmpty == false
     }
 
 }

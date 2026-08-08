@@ -6,6 +6,8 @@ enum CloudKitDirectPullUpserter {
     typealias PlacePayload = CloudKitDirectPullService.PlacePayload
     typealias TaskPayload = CloudKitDirectPullService.TaskPayload
     typealias LogPayload = CloudKitDirectPullService.LogPayload
+    typealias FocusSessionPayload = CloudKitDirectPullService.FocusSessionPayload
+    typealias SprintFocusSessionPayload = CloudKitDirectPullService.SprintFocusSessionPayload
 
     @MainActor
     static func upsertGoal(_ payload: GoalPayload, in context: ModelContext) throws -> UUID {
@@ -146,6 +148,40 @@ enum CloudKitDirectPullUpserter {
             CloudKitDirectPullLogPayloadApplier.apply(payload, to: existing)
         } else {
             context.insert(CloudKitDirectPullLogPayloadApplier.makeLog(from: payload))
+        }
+    }
+
+    @MainActor
+    static func upsertFocusSession(_ payload: FocusSessionPayload, in context: ModelContext) throws {
+        let payloadID = payload.id
+        var descriptor = FetchDescriptor<FocusSession>(
+            predicate: #Predicate { session in
+                session.id == payloadID
+            }
+        )
+        descriptor.fetchLimit = 1
+
+        if let existing = try context.fetch(descriptor).first {
+            CloudKitDirectPullFocusSessionPayloadApplier.apply(payload, to: existing)
+        } else {
+            context.insert(CloudKitDirectPullFocusSessionPayloadApplier.makeFocusSession(from: payload))
+        }
+    }
+
+    @MainActor
+    static func upsertSprintFocusSession(_ payload: SprintFocusSessionPayload, in context: ModelContext) throws {
+        let payloadID = payload.id
+        var descriptor = FetchDescriptor<SprintFocusSessionRecord>(
+            predicate: #Predicate { session in
+                session.id == payloadID
+            }
+        )
+        descriptor.fetchLimit = 1
+
+        if let existing = try context.fetch(descriptor).first {
+            CloudKitDirectPullSprintFocusSessionPayloadApplier.apply(payload, to: existing)
+        } else {
+            context.insert(CloudKitDirectPullSprintFocusSessionPayloadApplier.makeSprintFocusSession(from: payload))
         }
     }
 }

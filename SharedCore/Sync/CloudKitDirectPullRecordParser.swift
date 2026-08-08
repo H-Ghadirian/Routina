@@ -200,4 +200,108 @@ enum CloudKitDirectPullRecordParser {
             sourceTaskID: sourceTaskID
         )
     }
+
+    static func parseFocusSession(from record: CKRecord) -> CloudKitDirectPullService.FocusSessionPayload? {
+        guard CloudKitDirectPullService.isFocusSessionRecordType(record.recordType),
+              let id = recordIdentifier(from: record),
+              let taskID = CloudKitDirectPullService.uuidValue(
+                in: record,
+                keys: ["taskID", "taskId", "TASKID", "ztaskid", "ZTASKID", "cd_taskid"]
+              )
+        else {
+            return nil
+        }
+
+        return CloudKitDirectPullService.FocusSessionPayload(
+            id: id,
+            taskID: taskID,
+            startedAt: CloudKitDirectPullService.dateValue(
+                in: record,
+                keys: ["startedAt", "STARTEDAT", "zstartedat", "ZSTARTEDAT", "cd_startedat"]
+            ),
+            plannedDurationSeconds: CloudKitDirectPullService.doubleValue(
+                in: record,
+                keys: [
+                    "plannedDurationSeconds",
+                    "PLANNEDDURATIONSECONDS",
+                    "zplanneddurationseconds",
+                    "ZPLANNEDDURATIONSECONDS",
+                    "cd_planneddurationseconds"
+                ]
+            ),
+            completedAt: CloudKitDirectPullService.dateValue(
+                in: record,
+                keys: ["completedAt", "COMPLETEDAT", "zcompletedat", "ZCOMPLETEDAT", "cd_completedat"]
+            ),
+            abandonedAt: CloudKitDirectPullService.dateValue(
+                in: record,
+                keys: ["abandonedAt", "ABANDONEDAT", "zabandonedat", "ZABANDONEDAT", "cd_abandonedat"]
+            ),
+            pausedAt: CloudKitDirectPullService.dateValue(
+                in: record,
+                keys: ["pausedAt", "PAUSEDAT", "zpausedat", "ZPAUSEDAT", "cd_pausedat"]
+            ),
+            accumulatedPausedSeconds: CloudKitDirectPullService.doubleValue(
+                in: record,
+                keys: [
+                    "accumulatedPausedSeconds",
+                    "ACCUMULATEDPAUSEDSECONDS",
+                    "zaccumulatedpausedseconds",
+                    "ZACCUMULATEDPAUSEDSECONDS",
+                    "cd_accumulatedpausedseconds"
+                ]
+            ),
+            tagName: CloudKitDirectPullService.stringValue(
+                in: record,
+                keys: ["tagName", "TAGNAME", "ztagname", "ZTAGNAME", "cd_tagname"]
+            )
+        )
+    }
+
+    static func parseSprintFocusSession(from record: CKRecord) -> CloudKitDirectPullService.SprintFocusSessionPayload? {
+        guard CloudKitDirectPullService.isSprintFocusSessionRecordType(record.recordType),
+              let id = recordIdentifier(from: record),
+              let sprintID = CloudKitDirectPullService.uuidValue(
+                in: record,
+                keys: ["sprintID", "sprintId", "SPRINTID", "zsprintid", "ZSPRINTID", "cd_sprintid"]
+              )
+        else {
+            return nil
+        }
+
+        return CloudKitDirectPullService.SprintFocusSessionPayload(
+            id: id,
+            sprintID: sprintID,
+            startedAt: CloudKitDirectPullService.dateValue(
+                in: record,
+                keys: ["startedAt", "STARTEDAT", "zstartedat", "ZSTARTEDAT", "cd_startedat"]
+            ),
+            stoppedAt: CloudKitDirectPullService.dateValue(
+                in: record,
+                keys: ["stoppedAt", "STOPPEDAT", "zstoppedat", "ZSTOPPEDAT", "cd_stoppedat"]
+            ),
+            pausedAt: CloudKitDirectPullService.dateValue(
+                in: record,
+                keys: ["pausedAt", "PAUSEDAT", "zpausedat", "ZPAUSEDAT", "cd_pausedat"]
+            ),
+            accumulatedPausedSeconds: CloudKitDirectPullService.doubleValue(
+                in: record,
+                keys: [
+                    "accumulatedPausedSeconds",
+                    "ACCUMULATEDPAUSEDSECONDS",
+                    "zaccumulatedpausedseconds",
+                    "ZACCUMULATEDPAUSEDSECONDS",
+                    "cd_accumulatedpausedseconds"
+                ]
+            )
+        )
+    }
+
+    private static func recordIdentifier(from record: CKRecord) -> UUID? {
+        UUID(uuidString: record.recordID.recordName)
+            ?? CloudKitDirectPullService.uuidValue(
+                in: record,
+                keys: ["id", "ID", "zid", "ZID", "cd_id"]
+            )
+    }
 }

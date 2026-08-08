@@ -6,11 +6,23 @@ struct CloudKitDirectPullPayloadBatch {
     var goalPayloads: [CloudKitDirectPullService.GoalPayload] = []
     var taskPayloads: [CloudKitDirectPullService.TaskPayload] = []
     var logPayloads: [CloudKitDirectPullService.LogPayload] = []
+    var focusSessionPayloads: [CloudKitDirectPullService.FocusSessionPayload] = []
+    var sprintFocusSessionPayloads: [CloudKitDirectPullService.SprintFocusSessionPayload] = []
 
     static func make(from records: [CKRecord]) -> CloudKitDirectPullPayloadBatch {
         var batch = CloudKitDirectPullPayloadBatch()
 
         for record in records {
+            if let sprintFocusSessionPayload = CloudKitDirectPullRecordParser.parseSprintFocusSession(from: record) {
+                batch.sprintFocusSessionPayloads.append(sprintFocusSessionPayload)
+                continue
+            }
+
+            if let focusSessionPayload = CloudKitDirectPullRecordParser.parseFocusSession(from: record) {
+                batch.focusSessionPayloads.append(focusSessionPayload)
+                continue
+            }
+
             if let goalPayload = CloudKitDirectPullRecordParser.parseGoal(from: record) {
                 batch.goalPayloads.append(goalPayload)
                 continue
