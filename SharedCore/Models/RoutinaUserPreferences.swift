@@ -58,6 +58,7 @@ final class RoutinaUserPreferences {
     var macFocusAppBlockingEnabled: Bool = true
     var automaticPlaceCheckInEnabled: Bool = true
     var showTimelineTasksInDayPlanner: Bool = true
+    var dayPlanCalendarListAssumedDoneCollapsedByDefault: Bool = true
     var separateDailyRoutinesInTaskList: Bool = false
     var showTomorrowInTaskList: Bool = false
     var macShowDoneCountInToolbar: Bool = false
@@ -215,6 +216,9 @@ enum RoutinaUserPreferencesStore {
         preferences.macFocusAppBlockingEnabled = defaults[.appSettingMacFocusAppBlockingEnabled]
         preferences.automaticPlaceCheckInEnabled = defaults[.appSettingAutomaticPlaceCheckInEnabled]
         preferences.showTimelineTasksInDayPlanner = defaults[.appSettingShowTimelineTasksInDayPlanner]
+        preferences.dayPlanCalendarListAssumedDoneCollapsedByDefault = defaults[
+            .appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault
+        ]
         preferences.separateDailyRoutinesInTaskList = defaults[.appSettingSeparateDailyRoutinesInTaskList]
         preferences.showTomorrowInTaskList = defaults[.appSettingShowTomorrowInTaskList]
         preferences.macShowDoneCountInToolbar = defaults[.appSettingMacShowDoneCountInToolbar]
@@ -290,6 +294,8 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingMacFocusAppBlockingEnabled] = preferences.macFocusAppBlockingEnabled
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = preferences.automaticPlaceCheckInEnabled
         defaults[.appSettingShowTimelineTasksInDayPlanner] = preferences.showTimelineTasksInDayPlanner
+        defaults[.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault] = preferences
+            .dayPlanCalendarListAssumedDoneCollapsedByDefault
         defaults[.appSettingSeparateDailyRoutinesInTaskList] = preferences.separateDailyRoutinesInTaskList
         defaults[.appSettingShowTomorrowInTaskList] = preferences.showTomorrowInTaskList
         defaults[.appSettingMacShowDoneCountInToolbar] = preferences.macShowDoneCountInToolbar

@@ -399,6 +399,7 @@ extension SettingsRoutineDataPersistence {
             var macFocusAppBlockingEnabled: Bool?
             var automaticPlaceCheckInEnabled: Bool?
             var showTimelineTasksInDayPlanner: Bool?
+            var dayPlanCalendarListAssumedDoneCollapsedByDefault: Bool?
             var separateDailyRoutinesInTaskList: Bool?
             var showTomorrowInTaskList: Bool?
             var macShowDoneCountInToolbar: Bool?

@@ -417,6 +417,8 @@ enum SettingsRoutineDataBackupMapping {
             macFocusAppBlockingEnabled: preferences.macFocusAppBlockingEnabled,
             automaticPlaceCheckInEnabled: preferences.automaticPlaceCheckInEnabled,
             showTimelineTasksInDayPlanner: preferences.showTimelineTasksInDayPlanner,
+            dayPlanCalendarListAssumedDoneCollapsedByDefault: preferences
+                .dayPlanCalendarListAssumedDoneCollapsedByDefault,
             separateDailyRoutinesInTaskList: preferences.separateDailyRoutinesInTaskList,
             showTomorrowInTaskList: preferences.showTomorrowInTaskList,
             macShowDoneCountInToolbar: preferences.macShowDoneCountInToolbar,

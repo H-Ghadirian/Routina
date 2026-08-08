@@ -1114,6 +1114,8 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.macFocusAppBlockingEnabled = backupPreferences.macFocusAppBlockingEnabled ?? true
         preferences.automaticPlaceCheckInEnabled = backupPreferences.automaticPlaceCheckInEnabled ?? true
         preferences.showTimelineTasksInDayPlanner = backupPreferences.showTimelineTasksInDayPlanner ?? true
+        preferences.dayPlanCalendarListAssumedDoneCollapsedByDefault = backupPreferences
+            .dayPlanCalendarListAssumedDoneCollapsedByDefault ?? true
         preferences.separateDailyRoutinesInTaskList = backupPreferences.separateDailyRoutinesInTaskList ?? false
         preferences.showTomorrowInTaskList = backupPreferences.showTomorrowInTaskList ?? false
         preferences.macShowDoneCountInToolbar = backupPreferences.macShowDoneCountInToolbar ?? false

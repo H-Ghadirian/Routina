@@ -143,6 +143,7 @@ struct SettingsRoutineDataPersistenceTests {
             UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
             UserDefaultBoolValueKey.appSettingFocusShieldEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingAutomaticPlaceCheckInEnabled.rawValue,
+            UserDefaultBoolValueKey.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault.rawValue,
             UserDefaultBoolValueKey.appSettingSeparateDailyRoutinesInTaskList.rawValue,
             UserDefaultBoolValueKey.appSettingShowTomorrowInTaskList.rawValue,
             UserDefaultBoolValueKey.appSettingMacShowDoneCountInToolbar.rawValue,
@@ -188,6 +189,7 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingShowPersianDates] = true
         defaults[.appSettingFocusShieldEnabled] = true
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = false
+        defaults[.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault] = false
         defaults[.appSettingSeparateDailyRoutinesInTaskList] = true
         defaults[.appSettingShowTomorrowInTaskList] = true
         defaults[.appSettingMacShowDoneCountInToolbar] = true
@@ -220,6 +222,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.unlockUnlimitedTasks == true)
         #expect(backup.userPreferences?.separateTodosAndRoutinesInTagTaskListSections == true)
         #expect(backup.userPreferences?.separateDeadlineStatusInTagTaskListSections == true)
+        #expect(backup.userPreferences?.dayPlanCalendarListAssumedDoneCollapsedByDefault == false)
         #expect(backup.userPreferences?.showTomorrowInTaskList == true)
         #expect(backup.userPreferences?.macShowDoneCountInToolbar == true)
         #expect(backup.userPreferences?.customTaskSections == customTaskSectionsRawValue)
@@ -261,6 +264,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.showPersianDates)
         #expect(restored.focusShieldEnabled)
         #expect(!restored.automaticPlaceCheckInEnabled)
+        #expect(!restored.dayPlanCalendarListAssumedDoneCollapsedByDefault)
         #expect(restored.separateDailyRoutinesInTaskList)
         #expect(restored.showTomorrowInTaskList)
         #expect(restored.macShowDoneCountInToolbar)

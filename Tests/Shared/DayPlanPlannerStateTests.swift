@@ -173,6 +173,40 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func macCalendarListAssumedDoneSectionDefaultsToCollapsible() throws {
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
+        )
+        let settingsSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Settings/SettingsMacView.swift"
+        )
+        let defaultsSource = try Self.sourceFile(
+            "SharedCore/Dependencies/UserDefaultsProtocol.swift"
+        )
+
+        #expect(
+            calendarSource.contains(
+                "var assumedDoneSectionCollapsed: Binding<Bool>? = nil"
+            )
+        )
+        #expect(calendarSource.contains("section == .assumedDone"))
+        #expect(calendarSource.contains("isCollapsed?.wrappedValue != true"))
+        #expect(calendarSource.contains("accessibilityValue(isCollapsed.wrappedValue ? \"Collapsed\" : \"Expanded\")"))
+        #expect(
+            settingsSource.contains(
+                "Picker(\"Assumed done default\", selection: $isCalendarListAssumedDoneCollapsedByDefault)"
+            )
+        )
+        #expect(settingsSource.contains("Text(\"Collapsed\").tag(true)"))
+        #expect(settingsSource.contains("Text(\"Expanded\").tag(false)"))
+        #expect(
+            defaultsSource.contains(
+                ".appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault: true"
+            )
+        )
+    }
+
+    @Test
     func displayModePickerReservesRoomForTimelineLabel() {
         #expect(DayPlanHeaderRangePickerVisibility.displayModePickerWidth >= 220)
         #expect(

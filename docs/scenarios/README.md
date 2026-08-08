@@ -1567,7 +1567,7 @@ Then the top range segmented picker can remain visible
 ### Planner Day Headers Open Planned Task Lists
 
 Area: Planner
-Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md), [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md), [0448](../decisions/0448-complete-planned-tasks-inline-from-calendar-list.md)
+Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md), [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md), [0448](../decisions/0448-complete-planned-tasks-inline-from-calendar-list.md), [0509](../decisions/0509-collapse-calendar-list-assumed-done-sections.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanDayTaskListPresentationTests.swift`
@@ -1593,6 +1593,15 @@ Given Planner Calendar is in `List` task-view mode
 When day-task columns render the same agenda rows
 Then those columns do not provide drag payloads or general Planner-block editing
 And eligible planned rows may expose their focused completion action
+
+Given a Mac Calendar `List` day has assumed-done rows
+When its day-task column first appears with the Calendar List default set to `Collapsed`
+Then the `Assumed done` header and count are visible while its rows are hidden
+And selecting the full header expands or collapses only that day’s assumed-done rows
+
+Given the Calendar List default is set to `Expanded`
+When a newly shown Calendar List day has assumed-done rows
+Then its `Assumed done` rows start expanded without changing the Planner snapshot, filters, completion history, or the focused day-task sidebar
 
 Given the user opens Calendar filters and selects `Appearance`
 When they hide Icon, Time and Duration, or Row Color

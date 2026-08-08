@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0509](0509-collapse-calendar-list-assumed-done-sections.md) refines [0368](0368-hide-assumed-done-calendar-layer-by-default.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), [0455](0455-customize-calendar-list-task-rows.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Calendar `List` keeps every Assumed done count visible in a per-day disclosure that is collapsed by default, while Settings -> Calendar offers an expanded default without changing cached Planner presentation work.
+
 - **[0508](0508-keep-ios-add-more-details-last.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details places `Add more details` after all currently visible task content for both todos and routines.
 
 - **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](0424-make-task-detail-priority-optional.md):** iOS Task Details puts overall Priority above its component values, groups Pressure with metadata, keeps Done as the sole prominent action, and labels a second cadence-free completion explicitly.
@@ -50,6 +52,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0509](0509-collapse-calendar-list-assumed-done-sections.md) refines [0368](0368-hide-assumed-done-calendar-layer-by-default.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), [0455](0455-customize-calendar-list-task-rows.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Calendar `List` uses a per-day, initially collapsed Assumed done disclosure whose stored default affects newly shown columns only, preserving current local review choices and cached presentation snapshots.
 
 - **[0508](0508-keep-ios-add-more-details-last.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details places `Add more details` after all currently visible task content for both todos and routines.
 
@@ -499,6 +503,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0509](0509-collapse-calendar-list-assumed-done-sections.md) | Collapse Calendar List Assumed-Done Sections | Accepted | 2026-08-08 |
 | [0508](0508-keep-ios-add-more-details-last.md) | Keep iOS Add More Details Last | Accepted | 2026-08-08 |
 | [0507](0507-clarify-ios-task-detail-action-hierarchy.md) | Clarify iOS Task Detail Action Hierarchy | Accepted | 2026-08-08 |
 | [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) | Make Apple Intelligence Relationship Suggestions macOS-Only | Accepted | 2026-08-08 |

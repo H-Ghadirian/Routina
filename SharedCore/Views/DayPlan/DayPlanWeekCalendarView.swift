@@ -1206,6 +1206,11 @@ private struct DayPlanDayTaskColumnView: View {
     var onCompletePlannedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault.rawValue,
+        store: SharedDefaults.app
+    ) private var isAssumedDoneCollapsedByDefault = true
+    @State private var assumedDoneSectionCollapsedOverride: Bool?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1223,7 +1228,8 @@ private struct DayPlanDayTaskColumnView: View {
                     onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                     onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                     availableRowWidth: availableRowWidth,
-                    sectionSpacing: 12
+                    sectionSpacing: 12,
+                    assumedDoneSectionCollapsed: assumedDoneSectionCollapsed
                 )
             }
         }
@@ -1239,6 +1245,17 @@ private struct DayPlanDayTaskColumnView: View {
 
     private var availableRowWidth: CGFloat {
         max(columnWidth - (DayPlanWeekCalendarSizing.dayTaskListColumnPadding * 2), 0)
+    }
+
+    private var assumedDoneSectionCollapsed: Binding<Bool> {
+        Binding(
+            get: {
+                assumedDoneSectionCollapsedOverride ?? isAssumedDoneCollapsedByDefault
+            },
+            set: { isCollapsed in
+                assumedDoneSectionCollapsedOverride = isCollapsed
+            }
+        )
     }
 
     private var emptyState: some View {
@@ -1268,6 +1285,7 @@ struct DayPlanDayTaskListContentView: View {
     var onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)? = nil
     var availableRowWidth: CGFloat? = nil
     var sectionSpacing: CGFloat = 14
+    var assumedDoneSectionCollapsed: Binding<Bool>? = nil
     @AppStorage(
         UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue,
         store: SharedDefaults.app
@@ -1292,7 +1310,10 @@ struct DayPlanDayTaskListContentView: View {
                         onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                         onDragProvider: onDragProvider,
                         availableRowWidth: availableRowWidth,
-                        rowVisibility: rowVisibility
+                        rowVisibility: rowVisibility,
+                        isCollapsed: section == .assumedDone
+                            ? assumedDoneSectionCollapsed
+                            : nil
                     )
                 }
             }
@@ -1323,44 +1344,74 @@ private struct DayPlanDayTaskListContentSectionView: View {
     let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
     let availableRowWidth: CGFloat?
     let rowVisibility: DayPlanCalendarListRowVisibility
+    let isCollapsed: Binding<Bool>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+            if let isCollapsed {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.16)) {
+                        isCollapsed.wrappedValue.toggle()
+                    }
+                } label: {
+                    sectionHeader(isCollapsed: isCollapsed.wrappedValue)
+                }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .accessibilityLabel("\(title), \(count) tasks")
+                .accessibilityValue(isCollapsed.wrappedValue ? "Collapsed" : "Expanded")
+            } else {
+                sectionHeader(isCollapsed: nil)
+            }
 
-                Text("\(count)")
-                    .font(.caption2.weight(.bold))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color.secondary.opacity(0.10))
+            if isCollapsed?.wrappedValue != true {
+                ForEach(items) { item in
+                    DayPlanDayTaskListContentRow(
+                        item: item,
+                        tint: taskTint(item.taskID),
+                        date: date,
+                        calendar: calendar,
+                        isOpenable: isTaskOpenable(item.taskID),
+                        onOpenTaskDetails: onOpenTaskDetails,
+                        onCompletePlannedDayTask: onCompletePlannedDayTask,
+                        onConfirmAssumedDayTask: onConfirmAssumedDayTask,
+                        onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
+                        onDragProvider: onDragProvider,
+                        availableRowWidth: availableRowWidth,
+                        rowVisibility: rowVisibility
                     )
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
-                Spacer(minLength: 0)
+    private func sectionHeader(isCollapsed: Bool?) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            if let isCollapsed {
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isCollapsed ? 0 : 90))
+                    .frame(width: 10)
             }
 
-            ForEach(items) { item in
-                DayPlanDayTaskListContentRow(
-                    item: item,
-                    tint: taskTint(item.taskID),
-                    date: date,
-                    calendar: calendar,
-                    isOpenable: isTaskOpenable(item.taskID),
-                    onOpenTaskDetails: onOpenTaskDetails,
-                    onCompletePlannedDayTask: onCompletePlannedDayTask,
-                    onConfirmAssumedDayTask: onConfirmAssumedDayTask,
-                    onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
-                    onDragProvider: onDragProvider,
-                    availableRowWidth: availableRowWidth,
-                    rowVisibility: rowVisibility
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text("\(count)")
+                .font(.caption2.weight(.bold))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.secondary.opacity(0.10))
                 )
-            }
+
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

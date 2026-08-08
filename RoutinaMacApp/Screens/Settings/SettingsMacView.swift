@@ -194,6 +194,10 @@ private struct SettingsMacCalendarDetailView: View {
     let store: StoreOf<SettingsFeature>
     @Query private var existingTasks: [RoutineTask]
     @State private var isCalendarTaskImportPresented = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault.rawValue,
+        store: SharedDefaults.app
+    ) private var isCalendarListAssumedDoneCollapsedByDefault = true
 
     var body: some View {
 SettingsMacDetailShell(
@@ -218,6 +222,18 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("When off, planner dates show a timeline badge that opens the activity list instead.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: "Calendar List") {
+        Picker("Assumed done default", selection: $isCalendarListAssumedDoneCollapsedByDefault) {
+            Text("Collapsed").tag(true)
+            Text("Expanded").tag(false)
+        }
+        .pickerStyle(.segmented)
+
+        Text("Newly shown Assumed done sections use this state. You can still open or collapse each day directly in Calendar List.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }
