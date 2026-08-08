@@ -1547,6 +1547,7 @@ struct TaskDetailTCAView: View {
             isLoadingSuggestions: store.isLoadingRelationshipSuggestions,
             suggestionMessage: store.relationshipSuggestionMessage,
             selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
+            showsAppleIntelligenceSuggestions: true,
             showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
             background: routineLogsBackground,

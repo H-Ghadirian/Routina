@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** iOS Task Details keeps manual task linking but removes Apple Intelligence relationship suggestions; macOS retains both its on-demand Suggest action and relationship-review window.
+
 - **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
 
 - **[0504](0504-simplify-ios-focus-2048-stats-details.md) refines [0120](0120-show-focus-2048-board.md) and [0121](0121-show-focus-2048-earned-tiles.md):** iOS Focus 2048 keeps only tiles and next-tile progress, removing the largest-tile callout, tile count, and insight pills while macOS retains them.
@@ -44,6 +46,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** iOS Task Details keeps manual task linking but removes Apple Intelligence relationship suggestions; macOS retains both its on-demand Suggest action and relationship-review window.
 
 - **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
 
@@ -487,6 +491,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) | Make Apple Intelligence Relationship Suggestions macOS-Only | Accepted | 2026-08-08 |
 | [0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) | Keep Mac Task Forms and Search Input Frame-Safe | Accepted | 2026-08-07 |
 | [0495](0495-let-task-list-filters-hide-assumed-done-rows.md) | Let Task-List Filters Hide Assumed-Done Rows | Accepted | 2026-08-07 |
 | [0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md) | Allow Auto-Assume Done For Rolling After-Completion Routines | Accepted | 2026-08-07 |

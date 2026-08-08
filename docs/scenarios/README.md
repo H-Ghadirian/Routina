@@ -120,16 +120,17 @@ And no second Linked Tasks editor or second `Link a Task` button is inserted bel
 And the picker lists every other task in Home's loaded catalog except tasks already linked to the open task
 And choosing a task persists that relationship without requiring a second Save action
 
-### Task Relationship Suggestions Require Confirmation
+### Mac Task Relationship Suggestions Require Confirmation
 
 Area: Tasks / AI
-Decision links: [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0488](../decisions/0488-prioritize-grounded-task-relationship-analysis.md)
+Decision links: [0506](../decisions/0506-make-apple-intelligence-relationship-suggestions-macos-only.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0488](../decisions/0488-prioritize-grounded-task-relationship-analysis.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
+- `Tests/Shared/IOSAppleIntelligenceAvailabilityTests.swift`
 - `Tests/Shared/TaskDetailEditSaveTests.swift`
 - `Tests/Shared/TaskRelationshipReviewFeatureTests.swift`
 
-Given a task is open in iOS or Mac Task Details
+Given a task is open in Mac Task Details
 When the person requests relationship suggestions
 Then Routina sends a bounded set of active, unlinked task summaries to the
 on-device model
@@ -152,6 +153,11 @@ Given Apple Intelligence is unavailable or no useful relationship is found
 When the suggestion request finishes
 Then Task Details explains the outcome
 And the existing manual relationship actions remain available
+
+Given a task is open in iOS Task Details
+When the person reviews Linked Tasks
+Then the manual linked-task controls remain available
+And no Apple Intelligence Suggest action, explanation, status message, or suggestion card is shown
 
 Given the Mac app is active
 When the person chooses `Review Task Relationships…` from the Routinam menu

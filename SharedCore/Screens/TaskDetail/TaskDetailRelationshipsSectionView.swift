@@ -79,6 +79,7 @@ struct TaskDetailRelationshipsSectionView: View {
     let isLoadingSuggestions: Bool
     let suggestionMessage: String?
     @Binding var selectedRelationshipKind: RoutineTaskRelationshipKind
+    let showsAppleIntelligenceSuggestions: Bool
     let showsVisualizeButton: Bool
     let isVisualizeDisabled: Bool
     let background: Color
@@ -118,26 +119,28 @@ struct TaskDetailRelationshipsSectionView: View {
 
             Spacer(minLength: 0)
 
-            Button {
-                onFindSuggestions()
-            } label: {
-                if isLoadingSuggestions {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(minWidth: 20, minHeight: 20)
-                } else {
-                    Label("Suggest", systemImage: "sparkles")
-                        .font(.caption.weight(.semibold))
+            if showsAppleIntelligenceSuggestions {
+                Button {
+                    onFindSuggestions()
+                } label: {
+                    if isLoadingSuggestions {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(minWidth: 20, minHeight: 20)
+                    } else {
+                        Label("Suggest", systemImage: "sparkles")
+                            .font(.caption.weight(.semibold))
+                    }
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(isLoadingSuggestions || !hasSuggestionCandidates)
+                .accessibilityLabel(
+                    isLoadingSuggestions
+                        ? "Analyzing task relationships"
+                        : "Find task relationship suggestions"
+                )
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .disabled(isLoadingSuggestions || !hasSuggestionCandidates)
-            .accessibilityLabel(
-                isLoadingSuggestions
-                    ? "Analyzing task relationships"
-                    : "Find task relationship suggestions"
-            )
 
             if showsVisualizeButton {
                 Button {
@@ -228,26 +231,28 @@ struct TaskDetailRelationshipsSectionView: View {
 
     @ViewBuilder
     private var suggestionContent: some View {
-        if !suggestions.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Suggested relationships", systemImage: "sparkles")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+        if showsAppleIntelligenceSuggestions {
+            if !suggestions.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Suggested relationships", systemImage: "sparkles")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
 
-                ForEach(suggestions) { suggestion in
-                    suggestionRow(suggestion)
+                    ForEach(suggestions) { suggestion in
+                        suggestionRow(suggestion)
+                    }
                 }
+            } else if let suggestionMessage {
+                Text(suggestionMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Ask Apple Intelligence to look for prerequisites and clearly related tasks. Nothing changes until you confirm.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-        } else if let suggestionMessage {
-            Text(suggestionMessage)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        } else {
-            Text("Ask Apple Intelligence to look for prerequisites and clearly related tasks. Nothing changes until you confirm.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

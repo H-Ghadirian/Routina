@@ -1061,6 +1061,7 @@ detailBody
             isLoadingSuggestions: store.isLoadingRelationshipSuggestions,
             suggestionMessage: store.relationshipSuggestionMessage,
             selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
+            showsAppleIntelligenceSuggestions: false,
             showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
             background: routineLogsBackground,
