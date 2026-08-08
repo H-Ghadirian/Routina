@@ -533,6 +533,25 @@ Given Mac Home search has triggered a toolbar search update
 When the user moves focus into a task comment, note, or other text editor before the delayed search-focus repair completes
 Then typing stays in that editor instead of jumping back to the toolbar search field
 
+### Mac Task Forms and Search Keep Input Frame-Safe
+
+Area: Tasks / Other
+Decision links: [0502](../decisions/0502-keep-mac-task-forms-and-search-input-frame-safe.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Add Task, Edit Task, or inline Add More has several revealed sections
+When the person scrolls through the form
+Then the form creates off-screen section cards lazily
+And form cards, segmented controls, and schedule preview badges use lightweight fills rather than independently composited glass backdrops
+
+Given the Mac toolbar search field is focused
+When the person types several characters quickly
+Then the native field keeps accepting text without scheduling a first-responder repair after each character
+And the global task and timeline presentation catches up after a short idle debounce
+And Return still checks the current query before it creates a task
+
 ### Mac Development Screenshot Preparation Is Safe
 
 Area: Settings / Home / Planner / Timeline / Stats

@@ -117,7 +117,7 @@ extension HomeTCAView {
             excludedTags: store.selectedTimelineExcludedTags,
             excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
             importanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
-            searchText: searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines),
+            searchText: macSearchPresentationText.trimmingCharacters(in: .whitespacesAndNewlines),
             showsEventsAndEmotions: areMacEventEmotionActionsEnabled,
             showsPlaces: isPlacesEnabled,
             showsNotes: isNotesEnabled,
@@ -576,7 +576,7 @@ extension HomeTCAView {
     }
 
     private func matchesTimelineSearch(_ entry: TimelineEntry) -> Bool {
-        let trimmedSearch = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSearch = macSearchPresentationText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSearch.isEmpty else { return true }
         return matchesTimelineSearch(entry, searchText: trimmedSearch)
     }

@@ -100,7 +100,10 @@ struct TaskFormMacSectionCard<Content: View, HeaderAccessory: View>: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .routinaGlassPanel(cornerRadius: 14, tint: .secondary, tintOpacity: 0.06)
+        .background(
+            Color.secondary.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.gray.opacity(0.18), lineWidth: 1)
@@ -264,7 +267,7 @@ private struct TaskFormMacScheduleBehaviorPreviewBadge: View {
             .foregroundStyle(tint)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .routinaGlassPill(tint: tint, tintOpacity: tintOpacity)
+            .routinaScrollingPillFill(tint: tint, tintOpacity: tintOpacity)
     }
 
     private var tint: Color {

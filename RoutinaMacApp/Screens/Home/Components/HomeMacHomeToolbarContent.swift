@@ -1021,7 +1021,6 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
 
         func controlTextDidChange(_ notification: Notification) {
             syncSearchText(from: notification.object)
-            restoreFocusAfterSearchUpdate()
         }
 
         func control(

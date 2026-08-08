@@ -37,6 +37,9 @@
 
 ## Build Verification
 
+- Completion gate: never mark a task that changes application code, tests, project configuration, or build behavior as finished until the relevant automated tests have passed and the affected app has been built and launched successfully from that final change. Do not rely on results from before the final edit.
+- For macOS or shared-code work, this means running `swift test -q`, building `RoutinaMacOSDev`, and launching the newly built macOS app. Treat a failed launch as an unfinished task: diagnose or clearly report the blocker instead of claiming completion.
+- For iOS-only work, run the relevant tests, build the iOS development target, and launch the newly built app on its target simulator or device before finishing.
 - Swift package tests:
   `swift test -q`
 - iOS CLI build:

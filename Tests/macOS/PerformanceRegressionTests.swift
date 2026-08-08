@@ -175,6 +175,39 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacTaskFormsAndToolbarSearchKeepInputWorkOutOfScrollAndKeystrokeFrames() throws {
+        let formSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"
+        )
+        let cardSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Shared/TaskFormMacCards.swift"
+        )
+        let searchFieldSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"
+        )
+        let searchPresentationSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
+        )
+        let filteringSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Filtering.swift"
+        )
+
+        XCTAssertTrue(formSource.contains("LazyVStack(alignment: .leading, spacing: 20)"))
+        XCTAssertTrue(formSource.contains(".routinaSegmentedControlSurfaceStyle(.scrolling)"))
+        XCTAssertTrue(formSource.contains("return TaskFormMacIdentityCard("))
+        XCTAssertTrue(cardSource.contains(".routinaScrollingPillFill(tint: tint, tintOpacity: tintOpacity)"))
+        XCTAssertFalse(cardSource.contains(".routinaGlassPanel(cornerRadius: 14, tint: .secondary, tintOpacity: 0.06)"))
+        XCTAssertTrue(
+            searchFieldSource.contains(
+                "func controlTextDidChange(_ notification: Notification) {\n            syncSearchText(from: notification.object)\n        }"
+            ),
+            "Typing must update the binding without scheduling responder repairs for every character."
+        )
+        XCTAssertTrue(searchPresentationSource.contains("HomeMacSearchPresentationPolicy.inputDebounce"))
+        XCTAssertTrue(searchPresentationSource.contains("isMacSearchPresentationCurrent"))
+        XCTAssertTrue(filteringSource.contains("searchText: macSearchPresentationText"))
+    }
+
     func testMacExpandedTaskSidebarKeepsNestedRowsLazyAndStable() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"

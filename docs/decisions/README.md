@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md), and [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md):** Mac task forms lazily render scrolling cards and use lightweight form surfaces, while toolbar search keeps raw typing ahead of a short applied-query debounce and never reclaims first responder after each character.
+
 - **[0501](0501-collapse-user-completed-home-task-list-rows.md) refines [0495](0495-let-task-list-filters-hide-assumed-done-rows.md):** Home task-list sections keep user-completed rows in a stable, initially collapsed `Completed` subgroup while assumed-done rows remain visible under their existing separate filter.
 
 - **[0500](0500-move-auto-assume-done-to-flag-rules.md) refines [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md), [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md), [0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md), and [0497](0497-use-flags-for-task-behavior-rules.md):** Auto-assume done is a typed Flag rule, with visible selection, exact contextual rejection, retained inactive Flag assignments, and a one-time legacy migration.
@@ -36,6 +38,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md), and [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md):** Mac task forms use lazy, lightweight scrolling surfaces; global search defers presentation rebuilds briefly while raw text input stays responsive and Return still checks the current query before creating a task.
 
 - **[0501](0501-collapse-user-completed-home-task-list-rows.md) refines [0495](0495-let-task-list-filters-hide-assumed-done-rows.md) and [0252](0252-stabilize-home-task-list-presentation-identity.md):** Home task-list sections partition actually user-completed rows into a stable, initially collapsed `Completed` subgroup; assumed-done rows remain in their ordinary placement and keep Decision 0495's separate filter behavior.
 
@@ -471,6 +475,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) | Keep Mac Task Forms and Search Input Frame-Safe | Accepted | 2026-08-07 |
 | [0495](0495-let-task-list-filters-hide-assumed-done-rows.md) | Let Task-List Filters Hide Assumed-Done Rows | Accepted | 2026-08-07 |
 | [0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md) | Allow Auto-Assume Done For Rolling After-Completion Routines | Accepted | 2026-08-07 |
 | [0493](0493-prioritize-actionable-relationship-proposals-in-mac-review.md) | Prioritize Actionable Relationship Proposals In Mac Review | Accepted | 2026-08-07 |

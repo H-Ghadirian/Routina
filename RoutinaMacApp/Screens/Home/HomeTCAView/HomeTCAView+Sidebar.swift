@@ -1098,7 +1098,7 @@ extension HomeTCAView {
     }
 
     var emptyTaskListMessage: String {
-        let trimmedSearchText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSearchText = macSearchPresentationText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedSearchText.isEmpty {
             return "Try a different timeline search or filters."
         }

@@ -143,3 +143,5 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0099 — Preserve task-list presentation across Stats navigation](0099-preserve-task-list-presentation-across-stats-navigation.md)
 - [0100 — Keep task-detail comment editor bindings live](0100-keep-task-detail-comment-editor-bindings-live.md)
 - [0101 — Share adaptive Task Detail metadata layouts](0101-share-adaptive-task-detail-metadata-layouts.md)
+- [0102 — Keep Mac task-form and search work frame-safe](0102-keep-mac-task-form-and-search-work-frame-safe.md)
+- [0103 — Return opaque task-form views after local setup](0103-return-opaque-task-form-views-after-local-setup.md)

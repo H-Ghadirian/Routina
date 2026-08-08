@@ -32,7 +32,7 @@ extension HomeTCAView {
                 includeFlagMatchMode: store.includeFlagMatchMode,
                 excludedTags: store.excludedTags,
                 excludeTagMatchMode: store.excludeTagMatchMode,
-                searchText: searchTextBinding.wrappedValue,
+                searchText: macSearchPresentationText,
                 routineListSectioningMode: routineListSectioningMode,
                 separateDeadlineStatusInTagSections: separatesDeadlineStatusInTagTaskListSections,
                 flagRules: store.flagRules,
@@ -105,7 +105,7 @@ extension HomeTCAView {
             includeFlagMatchMode: store.includeFlagMatchMode,
             excludedTags: store.excludedTags,
             excludeTagMatchMode: store.excludeTagMatchMode,
-            searchText: searchTextBinding.wrappedValue,
+            searchText: macSearchPresentationText,
             routineListSectioningMode: routineListSectioningMode,
             flagRules: store.flagRules,
             calendar: calendar,
@@ -159,7 +159,7 @@ extension HomeTCAView {
             filtering: filtering
         )
 
-        let trimmedSearchText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSearchText = macSearchPresentationText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSearchText.isEmpty else {
         return presentationWithFlagRuleResults
         }

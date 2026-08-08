@@ -59,6 +59,7 @@ struct TaskFormContent: View {
 
     var body: some View {
         content
+            .routinaSegmentedControlSurfaceStyle(.scrolling)
             .sheet(isPresented: $isTagManagerPresented) {
                 SettingsTagManagerPresentationView(store: tagManagerStore)
             }
@@ -213,39 +214,38 @@ struct TaskFormContent: View {
         return section != .goals || isGoalsTabEnabled
     }
 
-    private var visibleSections: [FormSection] {
-        FormSection.visibleTaskFormSections(
-            from: availableSections,
-            mode: model.visibilityMode,
-            revealedSections: formCoordinator.revealedTaskFormSections,
-            populatedSections: model.populatedMacFormSections,
-            allowsOptionalChecklistReveal: model.allowsOptionalChecklistReveal
-        )
-    }
-
-    private var hiddenOptionalSections: [FormSection] {
-        let visibleSet = Set(visibleSections)
-        return formCoordinator.orderedSections(available: availableSections).filter {
-            $0 != .identity
-                && !visibleSet.contains($0)
-                && canRevealOptionalSection($0)
-        }
-    }
-
     private func canRevealOptionalSection(_ section: FormSection) -> Bool {
         section != .checklist || model.allowsOptionalChecklistReveal
     }
 
     @ViewBuilder
     private var scrollableFormSections: some View {
-        let ordered = formCoordinator.orderedSections(available: visibleSections)
-        VStack(alignment: .leading, spacing: 20) {
+        // Resolve the section collections once for this render. The form can grow
+        // substantially after Add More Details, so its scroll container must not
+        // eagerly construct every card or repeat the disclosure derivation.
+        let available = availableSections
+        let visible = FormSection.visibleTaskFormSections(
+            from: available,
+            mode: model.visibilityMode,
+            revealedSections: formCoordinator.revealedTaskFormSections,
+            populatedSections: model.populatedMacFormSections,
+            allowsOptionalChecklistReveal: model.allowsOptionalChecklistReveal
+        )
+        let ordered = formCoordinator.orderedSections(available: visible)
+        let visibleSet = Set(visible)
+        let hiddenOptional = formCoordinator.orderedSections(available: available).filter {
+            $0 != .identity
+                && !visibleSet.contains($0)
+                && canRevealOptionalSection($0)
+        }
+
+        LazyVStack(alignment: .leading, spacing: 20) {
             ForEach(ordered, id: \.self) { section in
                 formSectionView(for: section)
             }
 
-            if model.visibilityMode.usesProgressiveDisclosure && !hiddenOptionalSections.isEmpty {
-                addDetailsCard(sections: hiddenOptionalSections)
+            if model.visibilityMode.usesProgressiveDisclosure && !hiddenOptional.isEmpty {
+                addDetailsCard(sections: hiddenOptional)
             }
         }
     }
@@ -328,13 +328,14 @@ struct TaskFormContent: View {
     // MARK: Identity
 
     private var identityCard: some View {
-        TaskFormMacIdentityCard(
+        let parsedSmartNameDraft = smartNameDraft
+        return TaskFormMacIdentityCard(
             model: model,
-            smartNameDraft: smartNameDraft,
+            smartNameDraft: parsedSmartNameDraft,
             smartNameCalendar: calendar,
             onApplySmartName: model.onApplySmartName
         ) {
-            taskNameField
+            taskNameField(onTab: parsedSmartNameDraft == nil ? nil : model.onApplySmartName)
         }
         .id(FormSection.identity)
     }
@@ -358,13 +359,13 @@ struct TaskFormContent: View {
         return draft
     }
 
-    private var taskNameField: some View {
+    private func taskNameField(onTab: (() -> Void)?) -> some View {
         MacFocusableTextField(
             placeholder: smartNamePlaceholder,
             text: model.name,
             isFocusRequested: model.autofocusName,
             focusRequestID: model.nameFocusRequestID,
-            onTab: smartNameDraft == nil ? nil : model.onApplySmartName
+            onTab: onTab
         )
         .frame(height: 50)
     }

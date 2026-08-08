@@ -9,6 +9,10 @@ private enum HomeSidebarSizing {
     static let maxWidth: CGFloat = 360
 }
 
+private enum HomeMacSearchPresentationPolicy {
+    static let inputDebounce: Duration = .milliseconds(120)
+}
+
 extension View {
     func routinaHomeSidebarColumnWidth() -> some View {
         navigationSplitViewColumnWidth(
@@ -347,7 +351,7 @@ extension HomeTCAView {
                             : [],
                         isPlannerTimelineFilterActive: isPlannerTimelineListVisible && macHasActiveTimelineFilters,
                         plannerTimelineFilterSummary: isPlannerTimelineListVisible ? macActiveTimelineFiltersSummary : nil,
-                        plannerSearchText: searchTextBinding.wrappedValue,
+                        plannerSearchText: macSearchPresentationText,
                         focusStartTaskCount: toolbarFocusStartTaskCount,
                         activePlanFocusSession: toolbarActivePlanFocusSession,
                         isPlanFocusStartDisabled: toolbarIsPlanFocusStartDisabled,
@@ -460,6 +464,37 @@ extension HomeTCAView {
         }
     }
 
+    private func scheduleMacSearchPresentationUpdate(for rawSearchText: String) {
+        macSearchPresentationUpdateTask?.cancel()
+
+        let trimmedSearchText = rawSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSearchText.isEmpty else {
+            applyMacSearchPresentation(rawSearchText)
+            return
+        }
+
+        isMacSearchPresentationCurrent = false
+        macSearchPresentationUpdateTask = Task { @MainActor in
+            do {
+                try await Task.sleep(for: HomeMacSearchPresentationPolicy.inputDebounce)
+            } catch {
+                return
+            }
+
+            guard !Task.isCancelled else { return }
+            applyMacSearchPresentation(rawSearchText)
+        }
+    }
+
+    private func applyMacSearchPresentation(_ rawSearchText: String) {
+        macSearchPresentationText = rawSearchText
+        isMacSearchPresentationCurrent = true
+
+        let trimmedSearchText = rawSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        toolbarSearchHasResult = !trimmedSearchText.isEmpty
+            && hasToolbarSearchResult(for: trimmedSearchText)
+    }
+
     private func beginMacSearchSidebarRevealIfNeeded() {
         isMacSearchSidebarRestoreInProgress = false
         guard macSearchSidebarRevealSnapshot == nil else {
@@ -542,9 +577,14 @@ extension HomeTCAView {
         view
             .onAppear {
                 updateMacSearchSidebarReveal(for: searchText.wrappedValue)
+                applyMacSearchPresentation(searchText.wrappedValue)
             }
             .onChange(of: searchText.wrappedValue) { _, newValue in
                 updateMacSearchSidebarReveal(for: newValue)
+                scheduleMacSearchPresentationUpdate(for: newValue)
+            }
+            .onDisappear {
+                macSearchPresentationUpdateTask?.cancel()
             }
     }
 
@@ -846,7 +886,8 @@ extension HomeTCAView {
         let trimmedText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
         return !trimmedText.isEmpty
             && !isToolbarSearchCreateInProgress
-            && !hasToolbarSearchResult(for: trimmedText)
+            && isMacSearchPresentationCurrent
+            && !toolbarSearchHasResult
     }
 
     private var toolbarSearchCreateDraft: RoutinaQuickAddDraft? {

@@ -270,6 +270,10 @@ struct HomeTCAView: View {
     ) var macHomeTaskListSectionOrderRawValue = ""
     @StateObject var collapsedTagTaskListSectionIDsCache = HomeCollapsedTagTaskListSectionIDsCache()
     @State private var localSearchText = ""
+    @State var macSearchPresentationText = ""
+    @State var macSearchPresentationUpdateTask: Task<Void, Never>?
+    @State var isMacSearchPresentationCurrent = true
+    @State var toolbarSearchHasResult = false
     @State var isCompactHeaderHidden = false
     @State var quickAddCreatedToast: MacTaskCreatedToast?
     @State var isToolbarSearchTextFocused = false
