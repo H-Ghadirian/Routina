@@ -43,6 +43,22 @@ Then the receiving device performs a bounded CloudKit reconciliation and records
 And the Focus session no longer appears as active on the receiving device
 And a delayed active record cannot reopen a session that is already completed
 
+### Task Detail Flags Use Available Width
+
+Area: Tasks / UI
+Decision links: [0500](../decisions/0500-move-auto-assume-done-to-flag-rules.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- Tests/Shared/TaskDetailFlagPresentationTests.swift
+
+Given a Task Detail has one assigned Flag
+When the Flag chip is rendered in the available width of its section
+Then the chip retains its full label instead of being constrained to a narrow grid cell
+
+Given a Task Detail has several assigned Flags
+When the Flag chips are rendered
+Then each grid cell has enough minimum width for ordinary Flag labels
+
 ### Production Experiment Lockdown Matches Signed Capabilities
 
 Area: Settings / Other

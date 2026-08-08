@@ -147,3 +147,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0103 — Return opaque task-form views after local setup](0103-return-opaque-task-form-views-after-local-setup.md)
 - [0104 — Reconcile active Focus after CloudKit import delay](0104-reconcile-active-focus-after-cloud-import-delay.md)
 - [0105 — Keep Timeline preview and row rendering aligned](0105-keep-timeline-preview-and-row-rendering-aligned.md)
+- [0106 — Let assigned Flag chips use available width](0106-let-assigned-flag-chips-use-available-width.md)

@@ -74,6 +74,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 
 ## Current Contract
 
+- Task Details let an assigned Flag chip use the available section width before truncating its label.
 - Todos and routines share the task model while keeping their distinct timing semantics. If an internal `record`-shaped development row is encountered, every product surface treats it as a routine.
 - Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks. Development apps can temporarily unlock unlimited task creation from Settings while StoreKit products are unavailable. Production apps ignore this testing override and require a StoreKit entitlement.
 - Active-task counting includes todos and routines that are not paused, snoozed, archived, done, or canceled; internal record-shaped rows count as routines.
