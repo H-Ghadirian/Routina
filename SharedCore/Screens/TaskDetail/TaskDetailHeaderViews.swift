@@ -49,7 +49,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
             headerLayout
                 .background(headerMetricReader(.availableWidth))
                 .overlay(alignment: .topLeading) {
-                    titleWidthProbe
+                    headerContentWidthProbe
                 }
                 .onPreferenceChange(TaskDetailHeaderMetricPreferenceKey.self) { metrics in
                     headerMetrics = metrics
@@ -69,6 +69,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
                 TaskDetailHeaderFlagsView(flags: flags, flagChip: flagChip)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .detailCardStyle(cornerRadius: 16)
     }
@@ -136,12 +137,22 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
             .background(headerMetricReader(.accessoryWidth))
     }
 
-    private var titleWidthProbe: some View {
-        Text(title)
-            .font(.title2.weight(.bold))
-            .lineLimit(1)
+    private var headerContentWidthProbe: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.title2.weight(.bold))
+                .lineLimit(1)
+
+            titleSupplementaryContent
+
+            if let statusContextMessage {
+                Text(statusContextMessage)
+                    .font(.subheadline)
+                    .lineLimit(1)
+            }
+        }
             .fixedSize(horizontal: true, vertical: false)
-            .background(headerMetricReader(.titleWidth))
+            .background(headerMetricReader(.headerContentWidth))
             .opacity(0)
             .accessibilityHidden(true)
             .allowsHitTesting(false)
@@ -150,7 +161,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
     private var usesStackedHeaderLayout: Bool {
         guard
             let availableWidth = headerMetrics[.availableWidth],
-            let titleWidth = headerMetrics[.titleWidth],
+            let headerContentWidth = headerMetrics[.headerContentWidth],
             availableWidth > 0
         else {
             return false
@@ -161,7 +172,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
             return false
         }
 
-        return titleWidth + accessoryWidth + TaskDetailHeaderSectionMetrics.titleAccessorySpacing > availableWidth
+        return headerContentWidth + accessoryWidth + TaskDetailHeaderSectionMetrics.titleAccessorySpacing > availableWidth
     }
 
     private func headerMetricReader(_ metric: TaskDetailHeaderSectionViewMetric) -> some View {
@@ -187,7 +198,7 @@ private struct TaskDetailHeaderMetricPreferenceKey: PreferenceKey {
 
 private enum TaskDetailHeaderSectionViewMetric: Hashable {
     case availableWidth
-    case titleWidth
+    case headerContentWidth
     case accessoryWidth
 }
 

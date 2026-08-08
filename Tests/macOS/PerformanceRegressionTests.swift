@@ -780,16 +780,19 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
-    func testTaskDetailHeaderStacksLongTitlesAwayFromActionCluster() throws {
+    func testTaskDetailHeaderStacksItsFullSummaryAwayFromActionCluster() throws {
         let source = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift")
 
         XCTAssertTrue(source.contains("private var usesStackedHeaderLayout"))
         XCTAssertTrue(source.contains("guard accessoryWidth > 0.5 else"))
-        XCTAssertTrue(source.contains("titleWidth + accessoryWidth + TaskDetailHeaderSectionMetrics.titleAccessorySpacing > availableWidth"))
+        XCTAssertTrue(source.contains("headerContentWidth + accessoryWidth + TaskDetailHeaderSectionMetrics.titleAccessorySpacing > availableWidth"))
         XCTAssertTrue(source.contains("HStack {\n                    Spacer(minLength: 0)\n                    measuredHeaderAccessory"))
-        XCTAssertTrue(source.contains("titleWidthProbe"))
+        XCTAssertTrue(source.contains("headerContentWidthProbe"))
+        XCTAssertTrue(source.contains("if let statusContextMessage"))
+        XCTAssertTrue(source.contains(".background(headerMetricReader(.headerContentWidth))"))
         XCTAssertTrue(source.contains(".background(headerMetricReader(.accessoryWidth))"))
         XCTAssertTrue(source.contains(".allowsHitTesting(false)"))
+        XCTAssertTrue(source.contains("}\n        .frame(maxWidth: .infinity, alignment: .leading)\n        .padding(16)"))
     }
 
     func testMacHomeBoardReusesColumnOrderedTaskIDs() throws {
