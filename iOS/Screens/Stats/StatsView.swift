@@ -837,7 +837,8 @@ struct StatsView: View {
                 accessibilityIdentifier: item.accessibilityIdentifier,
                 colorScheme: colorScheme,
                 surfaceGradient: surfaceGradient,
-                accessibilityChildren: item.showsAccessory ? .contain : .combine
+                accessibilityChildren: item.showsAccessory ? .contain : .combine,
+                isCompactTile: true
             ) {
                 EmptyView()
             }

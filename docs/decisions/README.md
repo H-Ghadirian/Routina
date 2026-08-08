@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
+
 - **[0504](0504-simplify-ios-focus-2048-stats-details.md) refines [0120](0120-show-focus-2048-board.md) and [0121](0121-show-focus-2048-earned-tiles.md):** iOS Focus 2048 keeps only tiles and next-tile progress, removing the largest-tile callout, tile count, and insight pills while macOS retains them.
 
 - **[0503](0503-remove-ios-secondary-stats-comparison-reports.md) refines [0109](0109-show-focus-work-comparison.md) and [0112](0112-show-estimated-actual-time-stats.md):** iOS removes Focus vs completed work and Estimated vs Actual time from the Stats dashboard and Edit/Add controls, while macOS keeps its existing hidden-but-addable reports.
@@ -42,6 +44,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
 
 - **[0504](0504-simplify-ios-focus-2048-stats-details.md) refines [0120](0120-show-focus-2048-board.md) and [0121](0121-show-focus-2048-earned-tiles.md):** iOS Focus 2048 keeps only tiles and next-tile progress, removing the largest-tile callout, tile count, and insight pills while macOS retains them.
 

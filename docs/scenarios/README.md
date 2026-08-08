@@ -1831,6 +1831,20 @@ Then it shows earned tiles, the next-tile preview, and the progress bar
 And it omits the Largest tile callout, earned-tile count, and insight pills
 And macOS retains its supplementary details
 
+### iOS Stats Cards Use Dense Metric Tiles
+
+Area: Stats / UI
+Decision links: [0505](../decisions/0505-use-dense-ios-stats-metric-tiles.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- Tests/Shared/IOSStatsDashboardPresentationTests.swift
+
+Given a person views summary metrics in iOS Stats Cards mode
+When the dashboard renders a two-column summary grid
+Then each metric uses a compact icon/title header, one-line value, and optional one-line caption
+And tiles use the dense metric-tile height rather than the prior spacious card height
+And macOS cards and iOS Compact-mode rows remain unchanged
+
 ### One-Off Task Archiving Keeps It Out of Suggestions
 
 Area: Tasks / Lifecycle

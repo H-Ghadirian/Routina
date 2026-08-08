@@ -92,6 +92,7 @@ struct StatsSummaryCard<Accessory: View>: View {
     let colorScheme: ColorScheme
     let surfaceGradient: LinearGradient
     let accessibilityChildren: AccessibilityChildBehavior
+    let isCompactTile: Bool
     let accessory: () -> Accessory
 
     init(
@@ -104,6 +105,7 @@ struct StatsSummaryCard<Accessory: View>: View {
         colorScheme: ColorScheme,
         surfaceGradient: LinearGradient,
         accessibilityChildren: AccessibilityChildBehavior = .combine,
+        isCompactTile: Bool = false,
         @ViewBuilder accessory: @escaping () -> Accessory
     ) {
         self.icon = icon
@@ -115,42 +117,81 @@ struct StatsSummaryCard<Accessory: View>: View {
         self.colorScheme = colorScheme
         self.surfaceGradient = surfaceGradient
         self.accessibilityChildren = accessibilityChildren
+        self.isCompactTile = isCompactTile
         self.accessory = accessory
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: isCompactTile ? 10 : 18) {
             HStack(alignment: .top) {
                 Image(systemName: icon)
-                    .font(.title3.weight(.semibold))
+                    .font(isCompactTile ? .subheadline.weight(.semibold) : .title3.weight(.semibold))
                     .foregroundStyle(accent)
-                    .frame(width: 42, height: 42)
-                    .routinaGlassCard(cornerRadius: 14, tint: accent, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
+                    .frame(
+                        width: isCompactTile ? 34 : 42,
+                        height: isCompactTile ? 34 : 42
+                    )
+                    .routinaGlassCard(
+                        cornerRadius: isCompactTile ? 12 : 14,
+                        tint: accent,
+                        tintOpacity: colorScheme == .dark ? 0.18 : 0.12
+                    )
+
+                if isCompactTile {
+                    Text(title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
 
                 Spacer(minLength: 0)
                 accessory()
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-
+            if isCompactTile {
                 Text(value)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.56)
 
                 if let caption {
                     Text(caption)
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(title)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+
+                    Text(value)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+
+                    if let caption {
+                        Text(caption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
-        .padding(18)
-        .routinaGlassPanel(cornerRadius: 24, tint: accent, tintOpacity: colorScheme == .dark ? 0.12 : 0.08)
+        .frame(
+            maxWidth: .infinity,
+            minHeight: isCompactTile ? 112 : 160,
+            alignment: .topLeading
+        )
+        .padding(isCompactTile ? 14 : 18)
+        .routinaGlassPanel(
+            cornerRadius: isCompactTile ? 20 : 24,
+            tint: accent,
+            tintOpacity: colorScheme == .dark ? 0.12 : 0.08
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: isCompactTile ? 20 : 24, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
         )
         .accessibilityElement(children: accessibilityChildren)

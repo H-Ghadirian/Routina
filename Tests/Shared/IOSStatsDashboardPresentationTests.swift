@@ -30,6 +30,16 @@ struct IOSStatsDashboardPresentationTests {
         )
     }
 
+    @Test
+    func iOSStatsCardsUseDenseMetricTiles() throws {
+        let iOSStatsSource = try sourceFile("iOS/Screens/Stats/StatsView.swift")
+        let cardSource = try sourceFile("SharedCore/Views/StatsDashboardComponents.swift")
+
+        #expect(iOSStatsSource.contains("isCompactTile: true"))
+        #expect(cardSource.contains("minHeight: isCompactTile ? 112 : 160"))
+        #expect(cardSource.contains("if isCompactTile {"))
+    }
+
     private func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

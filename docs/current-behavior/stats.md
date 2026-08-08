@@ -33,12 +33,13 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
 - [0503](../decisions/0503-remove-ios-secondary-stats-comparison-reports.md)
 - [0504](../decisions/0504-simplify-ios-focus-2048-stats-details.md)
+- [0505](../decisions/0505-use-dense-ios-stats-metric-tiles.md)
 
 ## Current Contract
 
 - Stats dashboards are customizable, reorderable, and adaptive-width.
 - iOS Stats renders dashboard reports lazily from reducer-owned presentation snapshots. Whole-history achievement and win derivations run only when the data snapshot changes, and semantic data-update bursts are coalesced before reloading.
-- Compact Stats summary cards use widths that accommodate their icon, labels, value, and optional accessory; titles and captions wrap instead of truncating when additional vertical space is available.
+- iOS Cards mode uses dense two-column metric tiles, with compact icon/title headers and single-line values and captions. The separate Compact mode remains a shorter one-column summary row; macOS retains its larger cards. Both modes preserve the same values, captions, colors, and accessories.
 - Stats offers Today, Week, Month, and Year presets plus an inclusive custom start/end date range on iOS and macOS. All dashboard reports and available integrations use the same selected boundaries.
 - Single-day ranges, whether selected through Today or a one-day custom range, omit multi-day comparisons such as daily averages, best-day callouts, active-day badges, and trend charts.
 - Dashboard reports appear only when their backing metric has data. Saved order and hidden-item preferences are preserved for when data appears later.
