@@ -185,6 +185,48 @@ struct HomeTaskLifecycleCoordinator<Action> {
         )
     }
 
+    func pauseTasks(
+        taskIDs: [UUID],
+        tasks: inout [RoutineTask]
+    ) -> Effect<Action>? {
+        guard let update = HomeTaskLifecycleSupport.pauseTasks(
+            taskIDs: taskIDs,
+            pauseDate: referenceDate(),
+            calendar: calendar,
+            tasks: &tasks
+        ) else {
+            return nil
+        }
+
+        return HomeTaskLifecycleExecutionSupport.pauseTasks(
+            update,
+            modelContext: modelContext,
+            cancelNotification: cancelNotification
+        )
+    }
+
+    func resumeTasks(
+        taskIDs: [UUID],
+        tasks: inout [RoutineTask]
+    ) -> Effect<Action>? {
+        guard let update = HomeTaskLifecycleSupport.resumeTasks(
+            taskIDs: taskIDs,
+            resumeDate: referenceDate(),
+            calendar: calendar,
+            tasks: &tasks
+        ) else {
+            return nil
+        }
+
+        return HomeTaskLifecycleExecutionSupport.resumeTasks(
+            update,
+            calendar: calendar,
+            modelContext: modelContext,
+            cancelNotification: cancelNotification,
+            scheduleNotification: scheduleNotification
+        )
+    }
+
     func notTodayTask(
         taskID: UUID,
         tasks: inout [RoutineTask]

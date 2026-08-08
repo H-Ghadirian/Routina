@@ -715,6 +715,10 @@ struct SettingsMacTaskSectionsDetailView: View {
         )
         var summaryParts: [String] = []
 
+        if section.isPaused {
+            summaryParts.append("Paused")
+        }
+
         if !section.rules.tagNames.isEmpty {
             let visibleTags = section.rules.tagNames.prefix(2).joined(separator: ", ")
             let remainingCount = section.rules.tagNames.count - 2

@@ -202,6 +202,81 @@ extension HomeTCAView {
         HomeCustomTaskSectionStorage.decoded(from: customTaskSectionsRawValue)
     }
 
+    func toggleCustomSuperSectionPause(_ sectionID: UUID) {
+        guard let section = customTaskSections.first(where: {
+            $0.id == sectionID && $0.parentSectionID == nil
+        }) else {
+            return
+        }
+
+        if section.isPaused {
+            resumeCustomSuperSection(section)
+        } else {
+            pauseCustomSuperSection(section)
+        }
+    }
+
+    func isCustomSuperSectionPaused(_ sectionID: UUID) -> Bool {
+        customTaskSections.first(where: {
+            $0.id == sectionID && $0.parentSectionID == nil
+        })?.isPaused == true
+    }
+
+    private func pauseCustomSuperSection(_ section: HomeCustomTaskSection) {
+        let pauseDate = Date()
+        let taskIDs = pausableTaskIDs(in: section)
+        guard let updatedSections = HomeCustomTaskSectionStorage.pausingSuperSection(
+            section.id,
+            taskIDs: taskIDs,
+            at: pauseDate,
+            in: customTaskSections
+        ) else {
+            return
+        }
+
+        customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded(updatedSections)
+        AppSettingsPersistenceMirror.schedule()
+        store.send(.pauseCustomTaskSectionTasks(taskIDs))
+    }
+
+    private func resumeCustomSuperSection(_ section: HomeCustomTaskSection) {
+        let taskIDs = section.pausedTaskIDs
+        guard let updatedSections = HomeCustomTaskSectionStorage.resumingSuperSection(
+            section.id,
+            in: customTaskSections
+        ) else {
+            return
+        }
+
+        customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded(updatedSections)
+        AppSettingsPersistenceMirror.schedule()
+        store.send(.resumeCustomTaskSectionTasks(taskIDs))
+    }
+
+    private func pausableTaskIDs(in superSection: HomeCustomTaskSection) -> [UUID] {
+        let sectionIDs = HomeCustomTaskSectionStorage.sectionAndDescendantIDs(
+            for: superSection.id,
+            in: customTaskSections
+        )
+        let superSections = HomeCustomTaskSectionStorage.topLevelSections(in: customTaskSections)
+        let referenceDate = Date()
+        return store.routineTasks.compactMap { task in
+            guard !task.isArchived(referenceDate: referenceDate, calendar: calendar) else {
+                return nil
+            }
+
+            if let customTaskSectionID = task.customTaskSectionID {
+                return sectionIDs.contains(customTaskSectionID) ? task.id : nil
+            }
+
+            guard !task.isPinned,
+                  superSections.first(where: { $0.rules.matchesTags(task.tags) })?.id == superSection.id
+            else { return nil }
+
+            return task.id
+        }
+    }
+
     func presentCustomTaskSectionPrompt(for taskID: UUID?, parentSectionID: UUID? = nil) {
         pendingCustomTaskSectionTaskID = taskID
         pendingCustomTaskSectionParentID = parentSectionID
@@ -487,7 +562,7 @@ extension NSMenu {
                 submenu.addActionItem(
                     title: section.title,
                     systemImage: "rectangle.stack",
-                    isEnabled: currentCustomSectionID != section.id
+                    isEnabled: currentCustomSectionID != section.id && !section.isPaused
                 ) {
                     moveToCustomSection(section.id)
                 }
@@ -505,7 +580,7 @@ extension NSMenu {
                 sectionSubmenu.addActionItem(
                     title: "In \(section.title)",
                     systemImage: "rectangle.stack",
-                    isEnabled: currentCustomSectionID != section.id
+                    isEnabled: currentCustomSectionID != section.id && !section.isPaused
                 ) {
                     moveToCustomSection(section.id)
                 }
@@ -513,7 +588,7 @@ extension NSMenu {
                     sectionSubmenu.addActionItem(
                         title: subsection.title,
                         systemImage: "rectangle.inset.filled",
-                        isEnabled: currentCustomSectionID != subsection.id
+                        isEnabled: currentCustomSectionID != subsection.id && !section.isPaused
                     ) {
                         moveToCustomSection(subsection.id)
                     }

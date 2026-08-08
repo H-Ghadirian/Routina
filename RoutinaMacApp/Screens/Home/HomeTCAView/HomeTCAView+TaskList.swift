@@ -1147,6 +1147,15 @@ extension HomeTCAView {
                 .lineLimit(1)
                 .layoutPriority(1)
 
+            if section.isPaused {
+                Text("Paused")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.teal)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
+            }
+
             Spacer(minLength: 6)
 
             Text(section.tasks.count.formatted())
@@ -1359,8 +1368,9 @@ extension HomeTCAView {
         let menu = NSMenu(title: section.title)
         let showsFutureSubsectionActions = section.kind == .future && section.taskGroups.contains { $0.isCollapsible }
         let customSectionID = customTaskSectionID(for: section)
+        let isCustomSectionPaused = customSectionID.map(isCustomSuperSectionPaused) ?? false
 
-        if let customSectionID {
+        if let customSectionID, !isCustomSectionPaused {
             menu.addActionItem(title: "New Task", systemImage: "plus") {
                 store.send(.openAddTaskInCustomSection(customSectionID))
             }
@@ -1377,6 +1387,13 @@ extension HomeTCAView {
         }
 
         if let customSectionID {
+            menu.addActionItem(
+                title: isCustomSectionPaused ? "Resume Section" : "Pause Section",
+                systemImage: isCustomSectionPaused ? "play.circle" : "pause.circle"
+            ) {
+                toggleCustomSuperSectionPause(customSectionID)
+            }
+
             menu.addActionItem(title: "New Subsection", systemImage: "plus.rectangle.on.rectangle") {
                 presentCustomTaskSectionPrompt(for: nil, parentSectionID: customSectionID)
             }

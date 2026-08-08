@@ -1827,6 +1827,39 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationKeepsPausedSuperSectionAvailableForResume() throws {
+        let sectionID = UUID()
+        let pauseDate = makeDate("2026-08-08T09:00:00Z")
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(referenceDate: pauseDate),
+            routineDisplays: [],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(
+                    id: sectionID,
+                    title: "Work",
+                    createdAt: nil,
+                    pausedAt: pauseDate
+                )
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "Empty",
+                message: "Empty",
+                systemImage: "tray"
+            )
+        )
+
+        let section = try #require(presentation.sections.first)
+        #expect(presentation.sections.count == 1)
+        #expect(section.kind == .custom)
+        #expect(section.title == "Work")
+        #expect(section.isPaused)
+        #expect(section.tasks.isEmpty)
+        #expect(presentation.emptyState == nil)
+    }
+
+    @Test
     func sidebarPresentationNestsSubsectionRowsInsideTheirSuperSection() throws {
         let referenceDate = makeDate("2026-06-22T10:00:00Z")
         let superSectionID = UUID()

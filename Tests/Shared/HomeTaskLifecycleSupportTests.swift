@@ -576,4 +576,44 @@ struct HomeTaskLifecycleSupportTests {
         #expect(doneStats.totalCount == 1)
         #expect(doneStats.countsByTaskID[task.id] == 1)
     }
+
+    @Test
+    func pausingAndResumingTasksOnlyChangesTheSectionSnapshot() throws {
+        let calendar = makeTestCalendar()
+        let pauseDate = makeDate("2026-08-08T09:00:00Z")
+        let resumeDate = makeDate("2026-08-10T09:00:00Z")
+        let activeTask = RoutineTask(name: "Active", scheduleMode: .fixedInterval)
+        let independentlyPausedTask = RoutineTask(
+            name: "Already paused",
+            scheduleMode: .fixedInterval,
+            pausedAt: makeDate("2026-08-01T09:00:00Z")
+        )
+        var tasks = [activeTask, independentlyPausedTask]
+
+        let pauseUpdate = try #require(
+            HomeTaskLifecycleSupport.pauseTasks(
+                taskIDs: [activeTask.id, independentlyPausedTask.id, activeTask.id],
+                pauseDate: pauseDate,
+                calendar: calendar,
+                tasks: &tasks
+            )
+        )
+
+        #expect(pauseUpdate == HomePauseTasksUpdate(taskIDs: [activeTask.id], pauseDate: pauseDate))
+        #expect(tasks[0].pausedAt == pauseDate)
+        #expect(tasks[1].pausedAt == makeDate("2026-08-01T09:00:00Z"))
+
+        let resumeUpdate = try #require(
+            HomeTaskLifecycleSupport.resumeTasks(
+                taskIDs: pauseUpdate.taskIDs,
+                resumeDate: resumeDate,
+                calendar: calendar,
+                tasks: &tasks
+            )
+        )
+
+        #expect(resumeUpdate == HomeResumeTasksUpdate(taskIDs: [activeTask.id], resumeDate: resumeDate))
+        #expect(tasks[0].pausedAt == nil)
+        #expect(tasks[1].pausedAt == makeDate("2026-08-01T09:00:00Z"))
+    }
 }

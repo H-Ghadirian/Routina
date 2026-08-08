@@ -98,6 +98,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
     let includeMarkDone: Bool
     let separatesUserCompletedTasks: Bool
     let colorHex: String?
+    let isPaused: Bool
     let moveContext: HomeTaskListMoveContext?
     let taskGroups: [HomeTaskListPresentationTaskGroup<Display>]
     let tasks: [Display]
@@ -112,6 +113,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
         includeMarkDone: Bool,
         separatesUserCompletedTasks: Bool = true,
         colorHex: String? = nil,
+        isPaused: Bool = false,
         moveContext: HomeTaskListMoveContext?,
         taskGroups: [HomeTaskListPresentationTaskGroup<Display>]? = nil
     ) {
@@ -123,6 +125,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
         self.includeMarkDone = includeMarkDone
         self.separatesUserCompletedTasks = separatesUserCompletedTasks
         self.colorHex = colorHex
+        self.isPaused = isPaused
         self.moveContext = moveContext
         let deduplicatedTaskGroups = Self.deduplicatedTaskGroups(taskGroups ?? [
             HomeTaskListPresentationTaskGroup(
@@ -169,6 +172,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
             includeMarkDone: includeMarkDone,
             separatesUserCompletedTasks: separatesUserCompletedTasks,
             colorHex: colorHex,
+            isPaused: isPaused,
             moveContext: moveContext,
             taskGroups: taskGroups
         )
@@ -907,6 +911,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                     rowNumberOffset: offset,
                     includeMarkDone: true,
                     colorHex: customTaskSection.section.colorHex,
+                    isPaused: customTaskSection.section.isPaused,
                     moveContext: HomeTaskListMoveContext(
                         sectionKey: HomeTaskListFiltering<Display>.customManualOrderSectionKey(
                             for: customTaskSection.section.id
@@ -1083,7 +1088,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 )
             }
 
-            guard !allTasks.isEmpty else { return nil }
+            guard !allTasks.isEmpty || section.isPaused else { return nil }
             return SidebarCustomTaskSection(
                 section: section,
                 tasks: allTasks,

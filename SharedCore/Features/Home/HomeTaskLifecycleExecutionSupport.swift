@@ -351,6 +351,115 @@ enum HomeTaskLifecycleExecutionSupport {
         }
     }
 
+    static func pauseTasks<Action>(
+        _ update: HomePauseTasksUpdate,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        cancelNotification: @escaping @Sendable (String) async -> Void
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                let taskIDs = Set(update.taskIDs)
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                    .filter { taskIDs.contains($0.id) }
+                var tasksByID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
+
+                for taskID in update.taskIDs {
+                    guard let task = tasksByID.removeValue(forKey: taskID),
+                          !task.isOneOffTask || (!task.isCompletedOneOff && !task.isCanceledOneOff)
+                    else { continue }
+                    if !task.isOneOffTask, task.scheduleAnchor == nil {
+                        task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(
+                            for: task,
+                            referenceDate: update.pauseDate
+                        )
+                    }
+                    task.pausedAt = update.pauseDate
+                    DeviceActivityRecorder.recordAction(
+                        .paused,
+                        entity: .task,
+                        entityID: taskID,
+                        entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                        at: update.pauseDate,
+                        in: context
+                    )
+                }
+
+                try context.save()
+                for taskID in update.taskIDs {
+                    await cancelNotification(taskID.uuidString)
+                }
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to pause routines from custom section: \(error)")
+            }
+        }
+    }
+
+    static func resumeTasks<Action>(
+        _ update: HomeResumeTasksUpdate,
+        calendar: Calendar,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        cancelNotification: @escaping @Sendable (String) async -> Void,
+        scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                let taskIDs = Set(update.taskIDs)
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                    .filter { taskIDs.contains($0.id) }
+                var tasksByID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
+                var resumedTasks: [RoutineTask] = []
+
+                for taskID in update.taskIDs {
+                    guard let task = tasksByID.removeValue(forKey: taskID), task.pausedAt != nil else {
+                        continue
+                    }
+                    if !task.isOneOffTask {
+                        task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
+                            for: task,
+                            resumedAt: update.resumeDate
+                        )
+                    }
+                    task.pausedAt = nil
+                    task.snoozedUntil = nil
+                    resumedTasks.append(task)
+                    DeviceActivityRecorder.recordAction(
+                        .resumed,
+                        entity: .task,
+                        entityID: taskID,
+                        entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                        at: update.resumeDate,
+                        in: context
+                    )
+                }
+
+                try context.save()
+                for task in resumedTasks {
+                    if NotificationCoordinator.shouldScheduleNotification(
+                        for: task,
+                        referenceDate: update.resumeDate,
+                        calendar: calendar
+                    ) {
+                        await scheduleNotification(
+                            NotificationCoordinator.notificationPayload(
+                                for: task,
+                                referenceDate: update.resumeDate,
+                                calendar: calendar
+                            )
+                        )
+                    } else {
+                        await cancelNotification(task.id.uuidString)
+                    }
+                }
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to resume routines from custom section: \(error)")
+            }
+        }
+    }
+
     static func notTodayTask<Action>(
         _ update: HomeSnoozeTaskUpdate,
         calendar: Calendar,

@@ -640,6 +640,8 @@ struct HomeFeature {
         case notTodayTask(UUID)
         case pauseTask(UUID)
         case resumeTask(UUID)
+        case pauseCustomTaskSectionTasks([UUID])
+        case resumeCustomTaskSectionTasks([UUID])
         case pinTask(UUID)
         case planTask(UUID, Date?)
         case moveTaskToCustomSection(taskID: UUID, sectionID: UUID?)
@@ -1543,6 +1545,12 @@ struct HomeFeature {
             case let .resumeTask(id):
                 return taskLifecycleCommandRouter().resumeTask(id, state: &state)
 
+            case let .pauseCustomTaskSectionTasks(taskIDs):
+                return pauseCustomTaskSectionTasks(taskIDs, state: &state)
+
+            case let .resumeCustomTaskSectionTasks(taskIDs):
+                return resumeCustomTaskSectionTasks(taskIDs, state: &state)
+
             case let .notTodayTask(id):
                 return taskLifecycleCommandRouter().notTodayTask(id, state: &state)
 
@@ -1792,6 +1800,32 @@ struct HomeFeature {
             persistDeletedCustomTaskSection(update),
             state: &state
         )
+    }
+
+    private func pauseCustomTaskSectionTasks(
+        _ taskIDs: [UUID],
+        state: inout State
+    ) -> Effect<Action> {
+        guard let effect = taskLifecycleCoordinator().pauseTasks(
+            taskIDs: taskIDs,
+            tasks: &state.routineTasks
+        ) else {
+            return .none
+        }
+        return postMutationRefresher().finishMutation(effect, state: &state)
+    }
+
+    private func resumeCustomTaskSectionTasks(
+        _ taskIDs: [UUID],
+        state: inout State
+    ) -> Effect<Action> {
+        guard let effect = taskLifecycleCoordinator().resumeTasks(
+            taskIDs: taskIDs,
+            tasks: &state.routineTasks
+        ) else {
+            return .none
+        }
+        return postMutationRefresher().finishMutation(effect, state: &state)
     }
 
     private func persistDeletedCustomTaskSection(

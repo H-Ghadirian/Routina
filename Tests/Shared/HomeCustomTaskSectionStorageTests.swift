@@ -80,6 +80,57 @@ struct HomeCustomTaskSectionStorageTests {
         #expect(sections.first?.parentSectionID == nil)
         #expect(sections.first?.rules.isEmpty == true)
         #expect(sections.first?.colorHex == nil)
+        #expect(sections.first?.isPaused == false)
+        #expect(sections.first?.pausedTaskIDs == [])
+    }
+
+    @Test
+    func pausingSuperSectionTracksOnlyTasksPausedByTheSection() throws {
+        let workID = UUID()
+        let projectsID = UUID()
+        let firstTaskID = UUID()
+        let secondTaskID = UUID()
+        let pausedAt = makeDate("2026-08-08T09:00:00Z")
+        let sections = [
+            HomeCustomTaskSection(id: workID, title: "Work", createdAt: nil),
+            HomeCustomTaskSection(
+                id: projectsID,
+                parentSectionID: workID,
+                title: "Projects",
+                createdAt: nil
+            )
+        ]
+
+        let pausedSections = try #require(
+            HomeCustomTaskSectionStorage.pausingSuperSection(
+                workID,
+                taskIDs: [firstTaskID, secondTaskID, firstTaskID],
+                at: pausedAt,
+                in: sections
+            )
+        )
+        let pausedSuperSection = try #require(pausedSections.first { $0.id == workID })
+        let subsection = try #require(pausedSections.first { $0.id == projectsID })
+
+        #expect(pausedSuperSection.pausedAt == pausedAt)
+        #expect(pausedSuperSection.pausedTaskIDs == [firstTaskID, secondTaskID])
+        #expect(subsection.isPaused == false)
+        #expect(subsection.pausedTaskIDs == [])
+        #expect(
+            HomeCustomTaskSectionStorage.pausingSuperSection(
+                projectsID,
+                taskIDs: [firstTaskID],
+                at: pausedAt,
+                in: sections
+            ) == nil
+        )
+
+        let resumedSections = try #require(
+            HomeCustomTaskSectionStorage.resumingSuperSection(workID, in: pausedSections)
+        )
+        let resumedSuperSection = try #require(resumedSections.first { $0.id == workID })
+        #expect(resumedSuperSection.isPaused == false)
+        #expect(resumedSuperSection.pausedTaskIDs == [])
     }
 
     @Test

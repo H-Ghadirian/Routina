@@ -21,6 +21,16 @@ struct HomeResumeTaskUpdate: Equatable {
     var resumeDate: Date
 }
 
+struct HomePauseTasksUpdate: Equatable {
+    var taskIDs: [UUID]
+    var pauseDate: Date
+}
+
+struct HomeResumeTasksUpdate: Equatable {
+    var taskIDs: [UUID]
+    var resumeDate: Date
+}
+
 struct HomeSnoozeTaskUpdate: Equatable {
     var taskID: UUID
     var snoozedUntil: Date
@@ -456,6 +466,42 @@ enum HomeTaskLifecycleSupport {
         tasks[index].pausedAt = nil
         tasks[index].snoozedUntil = nil
         return HomeResumeTaskUpdate(taskID: taskID, resumeDate: resumeDate)
+    }
+
+    static func pauseTasks(
+        taskIDs: [UUID],
+        pauseDate: Date,
+        calendar: Calendar,
+        tasks: inout [RoutineTask]
+    ) -> HomePauseTasksUpdate? {
+        let updates = HomeCustomTaskSectionStorage.deduplicatedTaskIDs(taskIDs).compactMap { taskID in
+            pauseTask(
+                taskID: taskID,
+                pauseDate: pauseDate,
+                calendar: calendar,
+                tasks: &tasks
+            )
+        }
+        guard !updates.isEmpty else { return nil }
+        return HomePauseTasksUpdate(taskIDs: updates.map(\.taskID), pauseDate: pauseDate)
+    }
+
+    static func resumeTasks(
+        taskIDs: [UUID],
+        resumeDate: Date,
+        calendar: Calendar,
+        tasks: inout [RoutineTask]
+    ) -> HomeResumeTasksUpdate? {
+        let updates = HomeCustomTaskSectionStorage.deduplicatedTaskIDs(taskIDs).compactMap { taskID in
+            resumeTask(
+                taskID: taskID,
+                resumeDate: resumeDate,
+                calendar: calendar,
+                tasks: &tasks
+            )
+        }
+        guard !updates.isEmpty else { return nil }
+        return HomeResumeTasksUpdate(taskIDs: updates.map(\.taskID), resumeDate: resumeDate)
     }
 
     static func notTodayTask(

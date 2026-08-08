@@ -355,18 +355,24 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                             in: customTaskSections
                         )
                         if subsections.isEmpty {
-                            sidebarPathButton(title: section.title, sectionID: section.id)
+                            sidebarPathButton(
+                                title: section.title,
+                                sectionID: section.id,
+                                isEnabled: !section.isPaused
+                            )
                         } else {
                             Menu(section.title) {
                                 sidebarPathButton(
                                     title: "Use \(section.title)",
-                                    sectionID: section.id
+                                    sectionID: section.id,
+                                    isEnabled: !section.isPaused
                                 )
                                 Divider()
                                 ForEach(subsections) { subsection in
                                     sidebarPathButton(
                                         title: subsection.title,
-                                        sectionID: subsection.id
+                                        sectionID: subsection.id,
+                                        isEnabled: !section.isPaused
                                     )
                                 }
                             }
@@ -397,7 +403,8 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
 
     private func sidebarPathButton(
         title: String,
-        sectionID: UUID?
+        sectionID: UUID?,
+        isEnabled: Bool = true
     ) -> some View {
         Button {
             model.customTaskSectionID.wrappedValue = sectionID
@@ -408,6 +415,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                 Text(title)
             }
         }
+        .disabled(!isEnabled)
     }
 
     private func clearMissingSidebarPath() {

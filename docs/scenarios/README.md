@@ -1130,6 +1130,11 @@ Given a user-created Mac task super section contains a subsection
 When the super section is expanded in the left sidebar
 Then the subsection uses the same nested card surface and persistent collapse behavior as a built-in tag subsection
 
+Given an active task is assigned directly or automatically tag-routed to a Mac task super section or one of its subsections
+When the user pauses that super section from its Home header
+Then those assigned tasks pause with their existing task lifecycle semantics and the section stays visible as Paused with a Resume action
+And resuming restores only the tasks paused by that section, leaving independently paused tasks paused
+
 Given Mac task-row `Move to` shows custom super sections with and without subsections
 When the user opens the menu
 Then leaf super sections are direct actions without chevrons, while only super sections that contain subsections open nested menus

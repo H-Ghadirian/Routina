@@ -115,6 +115,10 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
     var createdAt: Date?
     var rules: HomeCustomTaskSectionRules
     var colorHex: String?
+    /// Super sections retain the exact tasks they paused so resuming the section
+    /// never resumes a task that had already been paused independently.
+    var pausedAt: Date?
+    var pausedTaskIDs: [UUID]
 
     init(
         id: UUID = UUID(),
@@ -122,7 +126,9 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         title: String,
         createdAt: Date? = Date(),
         rules: HomeCustomTaskSectionRules = HomeCustomTaskSectionRules(),
-        colorHex: String? = nil
+        colorHex: String? = nil,
+        pausedAt: Date? = nil,
+        pausedTaskIDs: [UUID] = []
     ) {
         self.id = id
         self.parentSectionID = parentSectionID
@@ -130,6 +136,14 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         self.createdAt = createdAt
         self.rules = rules
         self.colorHex = HomeCustomTaskSectionStorage.sanitizedColorHex(colorHex)
+        self.pausedAt = parentSectionID == nil ? pausedAt : nil
+        self.pausedTaskIDs = parentSectionID == nil
+            ? HomeCustomTaskSectionStorage.deduplicatedTaskIDs(pausedTaskIDs)
+            : []
+    }
+
+    var isPaused: Bool {
+        pausedAt != nil
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -139,6 +153,8 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         case createdAt
         case rules
         case colorHex
+        case pausedAt
+        case pausedTaskIDs
     }
 
     init(from decoder: Decoder) throws {
@@ -154,6 +170,14 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         colorHex = HomeCustomTaskSectionStorage.sanitizedColorHex(
             try? container.decodeIfPresent(String.self, forKey: .colorHex)
         )
+        pausedAt = parentSectionID == nil
+            ? try? container.decodeIfPresent(Date.self, forKey: .pausedAt)
+            : nil
+        pausedTaskIDs = parentSectionID == nil
+            ? HomeCustomTaskSectionStorage.deduplicatedTaskIDs(
+                (try? container.decodeIfPresent([UUID].self, forKey: .pausedTaskIDs)) ?? []
+            )
+            : []
     }
 }
 
@@ -181,6 +205,11 @@ enum HomeCustomTaskSectionStorage {
     static func sanitizedColorHex(_ colorHex: String?) -> String? {
         guard let colorHex else { return nil }
         return RoutineTagColors.sanitized(["section": colorHex])["section"]
+    }
+
+    static func deduplicatedTaskIDs(_ taskIDs: [UUID]) -> [UUID] {
+        var seenTaskIDs: Set<UUID> = []
+        return taskIDs.filter { seenTaskIDs.insert($0).inserted }
     }
 
     static func decoded(from rawValue: String?) -> [HomeCustomTaskSection] {
@@ -230,7 +259,9 @@ enum HomeCustomTaskSectionStorage {
                     title: title,
                     createdAt: section.createdAt,
                     rules: section.rules,
-                    colorHex: section.colorHex
+                    colorHex: section.colorHex,
+                    pausedAt: parentSectionID == nil ? section.pausedAt : nil,
+                    pausedTaskIDs: parentSectionID == nil ? section.pausedTaskIDs : []
                 )
             )
         }
@@ -368,6 +399,40 @@ enum HomeCustomTaskSectionStorage {
 
         sanitizedSections[sectionIndex].rules = sanitizedSections[sectionIndex].rules
             .settingTagMatchMode(tagMatchMode)
+        return sanitizedSections
+    }
+
+    static func pausingSuperSection(
+        _ sectionID: UUID,
+        taskIDs: [UUID],
+        at pauseDate: Date,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection]? {
+        var sanitizedSections = sanitized(sections)
+        guard let sectionIndex = sanitizedSections.firstIndex(where: {
+            $0.id == sectionID && $0.parentSectionID == nil
+        }), !sanitizedSections[sectionIndex].isPaused else {
+            return nil
+        }
+
+        sanitizedSections[sectionIndex].pausedAt = pauseDate
+        sanitizedSections[sectionIndex].pausedTaskIDs = deduplicatedTaskIDs(taskIDs)
+        return sanitizedSections
+    }
+
+    static func resumingSuperSection(
+        _ sectionID: UUID,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection]? {
+        var sanitizedSections = sanitized(sections)
+        guard let sectionIndex = sanitizedSections.firstIndex(where: {
+            $0.id == sectionID && $0.parentSectionID == nil
+        }), sanitizedSections[sectionIndex].isPaused else {
+            return nil
+        }
+
+        sanitizedSections[sectionIndex].pausedAt = nil
+        sanitizedSections[sectionIndex].pausedTaskIDs = []
         return sanitizedSections
     }
 
