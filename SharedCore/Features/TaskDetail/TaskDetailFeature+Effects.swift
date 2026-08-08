@@ -122,7 +122,9 @@ extension TaskDetailFeature {
         completedAt: Date,
         referenceDate: Date? = nil,
         previousStateTitle: String? = nil,
-        manuallySelectedFulfillmentTargetIDs: Set<UUID> = []
+        manuallySelectedFulfillmentTargetIDs: Set<UUID> = [],
+        actualDurationMinutes: Int? = nil,
+        hasSpecificWorkTime: Bool? = nil
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -132,6 +134,8 @@ extension TaskDetailFeature {
                     completedAt: completedAt,
                     referenceDate: referenceDate,
                     allowEarlyScheduledCompletion: true,
+                    actualDurationMinutes: actualDurationMinutes,
+                    hasSpecificWorkTime: hasSpecificWorkTime,
                     context: context,
                     calendar: calendar
                 ) else {

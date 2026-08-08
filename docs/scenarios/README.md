@@ -753,7 +753,7 @@ Then the selected detail state and Home selected row drop the checklist immediat
 ### Repeating Task Auto-Assume Uses Day-Level Completion
 
 Area: Tasks
-Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md), [0492](../decisions/0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md), [0494](../decisions/0494-allow-auto-assume-done-for-rolling-after-completion-routines.md)
+Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md), [0492](../decisions/0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md), [0494](../decisions/0494-allow-auto-assume-done-for-rolling-after-completion-routines.md), [0510](../decisions/0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineAssumedCompletionTests.swift`
@@ -787,6 +787,12 @@ Given a Standard one-off task has one exact availability date and a scheduled Ti
 When the user enables Auto-assume done and the block's start time passes
 Then only that one date is presented as assumed done
 And a date window, Available window, all-day task, exact time, steps, or checklist items keeps the toggle unavailable
+
+Given that assumed one-off Time block runs from 12:00 to 15:00
+When the user confirms it
+Then Task Detail keeps its scheduled date and 12:00–15:00 range visible as Schedule metadata
+And its recorded Done is specific-time work ending at 15:00 with a 180-minute actual duration
+And the Mac Calendar List `Done this day` editor initializes to a 12:00 start, 180-minute duration, and 15:00 end
 
 Given a Standard `After done` routine has Auto-assume done enabled with a two-day interval
 When the user confirms completion on day 3

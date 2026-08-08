@@ -284,7 +284,13 @@ extension TaskDetailFeature {
         return mergedLogs
     }
 
-    func upsertLocalLog(at timestamp: Date, kind: RoutineLogKind = .completed, in state: inout State) {
+    func upsertLocalLog(
+        at timestamp: Date,
+        kind: RoutineLogKind = .completed,
+        actualDurationMinutes: Int? = nil,
+        hasSpecificWorkTime: Bool? = nil,
+        in state: inout State
+    ) {
         if let existingIndex = state.logs.firstIndex(where: { log in
             guard let logTimestamp = log.timestamp else { return false }
             return log.kind == kind && resolutionDatesMatch(logTimestamp, timestamp, for: state.task)
@@ -294,6 +300,10 @@ extension TaskDetailFeature {
             }
             if kind.resolvesDoneDate {
                 state.logs[existingIndex].scheduledOccurrenceAt = state.task.lastSatisfiedScheduledOccurrenceAt
+            }
+            if let actualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes) {
+                state.logs[existingIndex].actualDurationMinutes = actualDurationMinutes
+                state.logs[existingIndex].hasSpecificWorkTime = hasSpecificWorkTime
             }
             state.logs.sort {
                 ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast)
@@ -307,7 +317,9 @@ extension TaskDetailFeature {
                 ? state.task.lastSatisfiedScheduledOccurrenceAt
                 : nil,
             taskID: state.task.id,
-            kind: kind
+            kind: kind,
+            actualDurationMinutes: actualDurationMinutes,
+            hasSpecificWorkTime: actualDurationMinutes == nil ? nil : hasSpecificWorkTime
         ), at: 0)
     }
 

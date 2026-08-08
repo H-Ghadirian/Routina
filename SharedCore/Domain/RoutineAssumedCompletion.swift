@@ -1,6 +1,11 @@
 import Foundation
 
 enum RoutineAssumedCompletion {
+    struct ScheduledBlockCompletionTiming: Equatable, Sendable {
+        let completedAt: Date
+        let actualDurationMinutes: Int
+    }
+
     static let defaultDoneTimeOfDay = RoutineTimeOfDay(hour: 12, minute: 0)
     static let flagRuleAvailabilitySummary = "Available for scheduled daily, weekly, monthly, or yearly routines with one occurrence per day; eligible multi-day After done routines; and one-time tasks with one date and a Time block."
 
@@ -313,6 +318,38 @@ enum RoutineAssumedCompletion {
             timeOfDay: task.autoAssumeDoneTimeOfDay,
             referenceDate: referenceDate,
             calendar: calendar
+        )
+    }
+
+    /// Resolves the concrete interval that an eligible one-off assumed completion
+    /// represents when the user confirms it.
+    static func scheduledBlockCompletionTiming(
+        for task: RoutineTask,
+        on day: Date,
+        calendar: Calendar = .current
+    ) -> ScheduledBlockCompletionTiming? {
+        guard task.isOneOffTask,
+              isEligible(task),
+              let availabilityStartDate = task.availabilityStartDate,
+              task.availabilityEndDate == nil,
+              calendar.isDate(availabilityStartDate, inSameDayAs: day),
+              let timeRange = task.recurrenceRule.timeRange
+        else {
+            return nil
+        }
+
+        let startsAt = timeRange.startDate(on: availabilityStartDate, calendar: calendar)
+        let completedAt = timeRange.endDate(on: availabilityStartDate, calendar: calendar)
+        let actualDurationMinutes = calendar.dateComponents(
+            [.minute],
+            from: startsAt,
+            to: completedAt
+        ).minute ?? 0
+        guard actualDurationMinutes > 0 else { return nil }
+
+        return ScheduledBlockCompletionTiming(
+            completedAt: completedAt,
+            actualDurationMinutes: actualDurationMinutes
         )
     }
 

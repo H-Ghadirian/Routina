@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0510](0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md), [0444](0444-log-completion-duration-without-a-specific-time.md), and [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md):** Confirming a synthetic one-off Time block records its scheduled interval as specific completed work and Task Detail keeps that block's date/time visible as Schedule metadata.
+
 - **[0509](0509-collapse-calendar-list-assumed-done-sections.md) refines [0368](0368-hide-assumed-done-calendar-layer-by-default.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), [0455](0455-customize-calendar-list-task-rows.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Calendar `List` keeps every Assumed done count visible in a per-day disclosure that is collapsed by default, while Settings -> Calendar offers an expanded default without changing cached Planner presentation work.
 
 - **[0508](0508-keep-ios-add-more-details-last.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details places `Add more details` after all currently visible task content for both todos and routines.
@@ -52,6 +54,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0510](0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md), [0444](0444-log-completion-duration-without-a-specific-time.md), and [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md):** Confirming a synthetic one-off Time block writes its scheduled finish and duration as specific completed work, while Task Detail continues to show that one-off block's date/time as Schedule metadata.
 
 - **[0509](0509-collapse-calendar-list-assumed-done-sections.md) refines [0368](0368-hide-assumed-done-calendar-layer-by-default.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), [0455](0455-customize-calendar-list-task-rows.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Calendar `List` uses a per-day, initially collapsed Assumed done disclosure whose stored default affects newly shown columns only, preserving current local review choices and cached presentation snapshots.
 
@@ -503,6 +507,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0510](0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md) | Confirm Auto-Assumed One-Off Time Blocks As Planned Intervals | Accepted | 2026-08-08 |
 | [0509](0509-collapse-calendar-list-assumed-done-sections.md) | Collapse Calendar List Assumed-Done Sections | Accepted | 2026-08-08 |
 | [0508](0508-keep-ios-add-more-details-last.md) | Keep iOS Add More Details Last | Accepted | 2026-08-08 |
 | [0507](0507-clarify-ios-task-detail-action-hierarchy.md) | Clarify iOS Task Detail Action Hierarchy | Accepted | 2026-08-08 |

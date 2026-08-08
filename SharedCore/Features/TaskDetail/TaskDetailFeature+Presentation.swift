@@ -654,6 +654,10 @@ extension TaskDetailFeature.State {
         return TaskDetailDateMetadataPresentation.reminderMetadataText(reminderAt: task.reminderAt)
     }
 
+    var scheduledTimeBlockMetadataText: String? {
+        TaskDetailDateMetadataPresentation.scheduledTimeBlockMetadataText(task: task)
+    }
+
     var notificationDisabledWarningText: String? {
         TaskDetailNotificationWarningPresentation.warningText(
             hasLoadedNotificationStatus: hasLoadedNotificationStatus,

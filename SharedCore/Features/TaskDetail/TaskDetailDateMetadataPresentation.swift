@@ -22,6 +22,28 @@ enum TaskDetailDateMetadataPresentation {
         return reminderAt.formatted(date: .abbreviated, time: .shortened)
     }
 
+    static func scheduledTimeBlockMetadataText(
+        task: RoutineTask,
+        calendar: Calendar = .current
+    ) -> String? {
+        guard task.isOneOffTask,
+              !task.isAllDay,
+              task.availabilityEndDate == nil,
+              task.recurrenceTimeRangeRole == .scheduledBlock,
+              let availabilityStartDate = task.availabilityStartDate,
+              let timeRange = task.recurrenceRule.timeRange
+        else {
+            return nil
+        }
+
+        let startsAt = timeRange.startDate(on: availabilityStartDate, calendar: calendar)
+        let endsAt = timeRange.endDate(on: availabilityStartDate, calendar: calendar)
+        let dateText = startsAt.formatted(date: .abbreviated, time: .omitted)
+        let startTimeText = startsAt.formatted(date: .omitted, time: .shortened)
+        let endTimeText = endsAt.formatted(date: .omitted, time: .shortened)
+        return "\(dateText) · \(startTimeText)–\(endTimeText)"
+    }
+
     static func shouldShowSelectedDateMetadata(
         selectedDate: Date,
         task: RoutineTask,

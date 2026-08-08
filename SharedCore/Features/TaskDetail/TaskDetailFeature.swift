@@ -811,9 +811,19 @@ struct TaskDetailFeature: Reducer {
                 return .none
             }
             let pendingManualCompletion = state.pendingManualCompletion
+            let selectedDay = calendar.startOfDay(for: state.selectedDate ?? now)
+            let assumedScheduledBlockTiming = state.isSelectedDateAssumedDone
+                ? RoutineAssumedCompletion.scheduledBlockCompletionTiming(
+                    for: state.task,
+                    on: selectedDay,
+                    calendar: calendar
+                )
+                : nil
             let completionDate: Date
             if let pendingManualCompletion {
                 completionDate = pendingManualCompletion.completedAt
+            } else if let assumedScheduledBlockTiming {
+                completionDate = assumedScheduledBlockTiming.completedAt
             } else if let selectedOccurrenceDate = state.validSelectedOccurrenceDate {
                 completionDate = selectedOccurrenceDate
             } else {
@@ -886,7 +896,17 @@ struct TaskDetailFeature: Reducer {
                     for: state.task,
                     at: completionDate
                 )
-                upsertLocalLog(at: completionDate, in: &state)
+                if let assumedScheduledBlockTiming {
+                    state.task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(
+                        assumedScheduledBlockTiming.actualDurationMinutes
+                    )
+                }
+                upsertLocalLog(
+                    at: completionDate,
+                    actualDurationMinutes: assumedScheduledBlockTiming?.actualDurationMinutes,
+                    hasSpecificWorkTime: assumedScheduledBlockTiming == nil ? nil : true,
+                    in: &state
+                )
                 trackPendingLocalCompletion(at: completionDate, in: &state)
                 appendLocalTodoStateChange(
                     to: state.task,
@@ -902,7 +922,9 @@ struct TaskDetailFeature: Reducer {
                 completedAt: completionDate,
                 referenceDate: completionReferenceDate,
                 previousStateTitle: persistedPreviousTodoStateTitle,
-                manuallySelectedFulfillmentTargetIDs: manualFulfillmentTargetIDs
+                manuallySelectedFulfillmentTargetIDs: manualFulfillmentTargetIDs,
+                actualDurationMinutes: assumedScheduledBlockTiming?.actualDurationMinutes,
+                hasSpecificWorkTime: assumedScheduledBlockTiming == nil ? nil : true
             )
 
         case .cancelTodo:

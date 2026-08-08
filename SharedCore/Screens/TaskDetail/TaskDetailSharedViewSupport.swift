@@ -227,6 +227,17 @@ enum TaskDetailHeaderBadgePresentation {
         state: TaskDetailFeature.State,
         layout: Layout
     ) {
+        if let scheduledTimeBlockMetadataText = state.scheduledTimeBlockMetadataText {
+            rows.append([
+                TaskDetailHeaderBadgeItem(
+                    title: "Schedule",
+                    value: scheduledTimeBlockMetadataText,
+                    systemImage: "calendar.badge.clock",
+                    tint: .blue
+                )
+            ])
+        }
+
         if let reminderMetadataText = state.reminderMetadataText {
             rows.append([
                 TaskDetailHeaderBadgeItem(
@@ -361,12 +372,7 @@ enum TaskDetailStatusMetadataPresentation {
             return "Resume it anytime to put it back in rotation."
         }
 
-        if state.task.isOneOffTask {
-            if state.task.isCompletedOneOff || state.task.isCanceledOneOff {
-                return style == .desktop ? "Select the logged date to undo it if needed." : nil
-            }
-            return nil
-        }
+        if state.task.isOneOffTask { return nil }
 
         if state.isSelectedDateAssumedDone {
             let isSelectedDateToday = calendar.isDate(state.resolvedSelectedDate, inSameDayAs: referenceDate)
@@ -418,6 +424,7 @@ enum TaskDetailStatusMetadataPresentation {
             || (showsPlaces && state.linkedPlaceSummary != nil)
             || state.task.pausedAt != nil
             || state.dueDateMetadataText != nil
+            || state.scheduledTimeBlockMetadataText != nil
             || state.shouldShowSelectedDateMetadata
             || !state.task.tags.isEmpty
             || state.task.hasImage

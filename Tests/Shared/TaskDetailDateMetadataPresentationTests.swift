@@ -53,4 +53,32 @@ struct TaskDetailDateMetadataPresentationTests {
             ) == false
         )
     }
+
+    @Test
+    func scheduledTimeBlockMetadataDescribesOneOffDateAndRange() throws {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Watch film",
+            availabilityStartDate: makeDate("2026-08-08T00:00:00Z"),
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(
+                days: 1,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 12, minute: 0),
+                    end: RoutineTimeOfDay(hour: 15, minute: 0)
+                )
+            ),
+            recurrenceTimeRangeRole: .scheduledBlock
+        )
+
+        let metadata = try #require(
+            TaskDetailDateMetadataPresentation.scheduledTimeBlockMetadataText(
+                task: task,
+                calendar: calendar
+            )
+        )
+
+        #expect(metadata.contains("·"))
+        #expect(metadata.contains("–"))
+    }
 }

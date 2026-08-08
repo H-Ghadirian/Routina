@@ -1743,6 +1743,86 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func markAsDone_confirmsAssumedOneOffTimeBlockWithItsScheduledInterval() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let scheduledDay = makeDate("2026-08-08T00:00:00Z")
+        let now = makeDate("2026-08-08T17:42:00Z")
+        let completedAt = makeDate("2026-08-08T15:00:00Z")
+        let task = RoutineTask(
+            name: "Watch film",
+            availabilityStartDate: scheduledDay,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(
+                days: 1,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 12, minute: 0),
+                    end: RoutineTimeOfDay(hour: 15, minute: 0)
+                )
+            ),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            createdAt: makeDate("2026-08-01T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                logs: [],
+                selectedDate: scheduledDay
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        #expect(store.state.isSelectedDateAssumedDone)
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) {
+                $0.task.lastDone = completedAt
+                $0.task.actualDurationMinutes = 180
+                $0.taskRefreshID = 1
+                $0.isDoneToday = true
+                $0.isAssumedDoneToday = false
+                $0.pendingLocalCompletionDates = [completedAt]
+            }
+        }
+
+        await store.receive {
+            guard case let .logsLoaded(logs) = $0 else { return false }
+            return logs.contains {
+                $0.kind == .completed
+                    && $0.timestamp == completedAt
+                    && $0.actualDurationMinutes == 180
+                    && $0.hasSpecificWorkTime == true
+            }
+        } assert: {
+            $0.logs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
+            $0.pendingLocalCompletionDates = []
+            $0.isDoneToday = true
+            $0.isAssumedDoneToday = false
+        }
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLog = try #require(
+            RoutineLogHistory.detailLogs(taskID: task.id, context: context).first
+        )
+        #expect(persistedTask.lastDone == completedAt)
+        #expect(persistedTask.actualDurationMinutes == 180)
+        #expect(persistedLog.timestamp == completedAt)
+        #expect(persistedLog.actualDurationMinutes == 180)
+        #expect(persistedLog.hasSpecificWorkTime == true)
+    }
+
+    @Test
     func completionButton_requiresIndividualConfirmationForRollingAssumedDays() {
         let calendar = Calendar.current
         let now = Date()

@@ -135,6 +135,8 @@ enum RoutineLogHistory {
         completedAt: Date,
         referenceDate: Date? = nil,
         allowEarlyScheduledCompletion: Bool = false,
+        actualDurationMinutes: Int? = nil,
+        hasSpecificWorkTime: Bool? = nil,
         context: ModelContext,
         calendar: Calendar = .current,
         sourceDevice: RoutinaDeviceActivitySource? = nil
@@ -151,6 +153,7 @@ enum RoutineLogHistory {
         guard !task.blocksManualCompletionForIncompleteChecklist else {
             return nil
         }
+        let sanitizedActualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
         if RoutineDateMath.canCompleteScheduledOccurrenceEarly(
             for: task,
             completedAt: completedAt,
@@ -243,6 +246,11 @@ enum RoutineLogHistory {
             return (task, result)
 
         case .completedRoutine:
+            if task.isOneOffTask, let sanitizedActualDurationMinutes {
+                task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(
+                    sanitizedActualDurationMinutes
+                )
+            }
             deleteNonCompletionResolutionLogs(
                 on: resolvedCompletedAt,
                 for: task,
@@ -254,7 +262,9 @@ enum RoutineLogHistory {
                 timestamp: resolvedCompletedAt,
                 scheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
                 taskID: taskID,
-                kind: .completed
+                kind: .completed,
+                actualDurationMinutes: sanitizedActualDurationMinutes,
+                hasSpecificWorkTime: sanitizedActualDurationMinutes == nil ? nil : hasSpecificWorkTime
             ))
             try fulfillLinkedTasks(
                 from: task,

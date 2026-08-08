@@ -117,6 +117,34 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func oneOffScheduledTimeBlockAppearsInTaskDetailHeader() {
+        let task = RoutineTask(
+            name: "Watch film",
+            availabilityStartDate: makeDate("2026-08-08T00:00:00Z"),
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(
+                days: 1,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 12, minute: 0),
+                    end: RoutineTimeOfDay(hour: 15, minute: 0)
+                )
+            ),
+            recurrenceTimeRangeRole: .scheduledBlock
+        )
+        let state = TaskDetailFeature.State(task: task)
+
+        let rows = TaskDetailHeaderBadgePresentation.todoBadgeRows(
+            state: state,
+            summaryStatusColor: .green,
+            dueDateMetadataDisplayText: nil,
+            layout: .desktop
+        )
+
+        #expect(rows.map { $0.map(\.title) } == [["Schedule"]])
+        #expect(TaskDetailStatusMetadataPresentation.hasVisibleMetadata(for: state))
+    }
+
+    @Test
     func headerBadgeRowsPreserveMobileAndDesktopRoutineLayout() {
         let placeID = UUID()
         let task = RoutineTask(
@@ -311,7 +339,7 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
-    func statusContextCopyPreservesPlatformDifferences() {
+    func completedTodoDoesNotShowRedundantUndoInstruction() {
         let completedTodo = RoutineTask(
             name: "Submit report",
             scheduleMode: .oneOff,
@@ -330,7 +358,7 @@ struct TaskDetailSharedViewSupportTests {
             showPersianDates: false,
             style: .desktop,
             referenceDate: makeDate("2026-04-25T10:00:00Z")
-        ) == "Select the logged date to undo it if needed.")
+        ) == nil)
     }
 
     @Test

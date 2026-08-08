@@ -189,6 +189,38 @@ struct RoutineAssumedCompletionTests {
     }
 
     @Test
+    func oneOffScheduledTimeBlockConfirmationUsesTheBlockEndAndDuration() throws {
+        let calendar = makeTestCalendar()
+        let scheduledDay = makeDate("2026-02-25T00:00:00Z")
+        let task = RoutineTask(
+            name: "Visit museum",
+            availabilityStartDate: scheduledDay,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(
+                days: 1,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 12, minute: 0),
+                    end: RoutineTimeOfDay(hour: 15, minute: 0)
+                )
+            ),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            createdAt: makeDate("2026-02-20T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        let timing = try #require(
+            RoutineAssumedCompletion.scheduledBlockCompletionTiming(
+                for: task,
+                on: scheduledDay,
+                calendar: calendar
+            )
+        )
+
+        #expect(timing.completedAt == makeDate("2026-02-25T15:00:00Z"))
+        #expect(timing.actualDurationMinutes == 180)
+    }
+
+    @Test
     func oneOffFlexibleAvailabilityAndChecklistTimeBlocksCannotAutoAssume() {
         let timeBlock = RoutineTimeRange(
             start: RoutineTimeOfDay(hour: 12, minute: 0),
