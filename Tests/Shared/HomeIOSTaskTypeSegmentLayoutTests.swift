@@ -18,6 +18,28 @@ struct HomeIOSTaskTypeSegmentLayoutTests {
         #expect(!section.contains("Label(mode.title"))
     }
 
+    @Test
+    func pressureAndThinkingFiltersWrapFiveValuesWithoutTruncatingMedium() throws {
+        let source = try Self.sourceFile("iOS/Screens/Home/HomeFiltersListSections.swift")
+        let pressureSection = try Self.sourceSection(
+            startingAt: "struct HomeFiltersPressureSection",
+            endingAt: "struct HomeFiltersThinkingNeededSection",
+            in: source
+        )
+        let thinkingSection = try Self.sourceSection(
+            startingAt: "struct HomeFiltersThinkingNeededSection",
+            endingAt: "struct HomeFiltersGoalSection",
+            in: source
+        )
+
+        for section in [pressureSection, thinkingSection] {
+            #expect(section.contains("maximumSegmentsPerRow: 3"))
+            #expect(section.contains("horizontalPadding: 10"))
+            #expect(section.contains("verticalPadding: 8"))
+            #expect(section.contains("fillsAvailableWidth: true"))
+        }
+    }
+
     private static func sourceSection(
         startingAt startMarker: String,
         endingAt endMarker: String,

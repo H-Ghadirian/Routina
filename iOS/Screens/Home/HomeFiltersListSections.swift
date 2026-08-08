@@ -152,7 +152,10 @@ struct HomeFiltersPressureSection: View {
                 accessibilityLabel: "Pressure",
                 options: [Optional<RoutineTaskPressure>.none] + RoutineTaskPressure.allCases.map(Optional.some),
                 selection: $selectedPressureFilter,
-                fillsAvailableWidth: true
+                horizontalPadding: 10,
+                verticalPadding: 8,
+                fillsAvailableWidth: true,
+                maximumSegmentsPerRow: 3
             ) { pressure in
                 Text(pressure?.title ?? "All")
             }
@@ -170,7 +173,10 @@ struct HomeFiltersThinkingNeededSection: View {
                 options: [Optional<RoutineTaskThinkingNeeded>.none]
                     + RoutineTaskThinkingNeeded.allCases.map(Optional.some),
                 selection: $selectedThinkingNeededFilter,
-                fillsAvailableWidth: true
+                horizontalPadding: 10,
+                verticalPadding: 8,
+                fillsAvailableWidth: true,
+                maximumSegmentsPerRow: 3
             ) { level in
                 Text(level?.title ?? "All")
             }
