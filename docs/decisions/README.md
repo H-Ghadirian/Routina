@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0503](0503-remove-ios-secondary-stats-comparison-reports.md) refines [0109](0109-show-focus-work-comparison.md) and [0112](0112-show-estimated-actual-time-stats.md):** iOS removes Focus vs completed work and Estimated vs Actual time from the Stats dashboard and Edit/Add controls, while macOS keeps its existing hidden-but-addable reports.
+
 - **[0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md), and [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md):** Mac task forms lazily render scrolling cards and use lightweight form surfaces, while toolbar search keeps raw typing ahead of a short applied-query debounce and never reclaims first responder after each character.
 
 - **[0501](0501-collapse-user-completed-home-task-list-rows.md) refines [0495](0495-let-task-list-filters-hide-assumed-done-rows.md):** Home task-list sections keep user-completed rows in a stable, initially collapsed `Completed` subgroup while assumed-done rows remain visible under their existing separate filter.
@@ -38,6 +40,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0503](0503-remove-ios-secondary-stats-comparison-reports.md) refines [0109](0109-show-focus-work-comparison.md) and [0112](0112-show-estimated-actual-time-stats.md):** iOS removes Focus vs completed work and Estimated vs Actual time from the Stats dashboard and Edit/Add controls, while macOS keeps its existing hidden-but-addable reports.
 
 - **[0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md), and [0471](0471-use-lightweight-segmented-surfaces-in-scrolling-task-forms.md):** Mac task forms use lazy, lightweight scrolling surfaces; global search defers presentation rebuilds briefly while raw text input stays responsive and Return still checks the current query before creating a task.
 

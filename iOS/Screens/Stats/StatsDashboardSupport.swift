@@ -365,9 +365,9 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
         isStatsAchievementsEnabled: Bool
     ) -> Bool {
         switch self {
-        case .unassignedFocus:
+        case .unassignedFocus, .focusWorkChart, .estimateActual:
             return false
-        case .dailyAverage, .focusAverage, .bestDay, .completionChart, .focusChart, .focusWorkChart:
+        case .dailyAverage, .focusAverage, .bestDay, .completionChart, .focusChart:
             return selectedRange.trailingDayCount > 1
         case .gitHub:
             return isGitFeaturesEnabled

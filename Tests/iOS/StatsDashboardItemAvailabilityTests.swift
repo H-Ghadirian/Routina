@@ -14,6 +14,24 @@ struct StatsDashboardItemAvailabilityTests {
     }
 
     @Test
+    func secondaryComparisonCharts_areUnavailableOnIOS() {
+        #expect(!StatsDashboardItem.focusWorkChart.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
+        #expect(!StatsDashboardItem.estimateActual.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
+    }
+
+    @Test
     func recentWins_requiresBetaExperiment() {
         #expect(!StatsDashboardItem.recentWins.isAvailable(
             selectedRange: .week,

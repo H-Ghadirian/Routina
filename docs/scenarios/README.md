@@ -1802,6 +1802,21 @@ instead of walking whole history from a scrolling section builder
 And raw persistence saves do not duplicate semantic refresh notifications
 And bursts of semantic updates are coalesced before Stats reloads its snapshot
 
+### iOS Stats Omits Secondary Comparison Reports
+
+Area: Stats / UI
+Decision links: [0503](../decisions/0503-remove-ios-secondary-stats-comparison-reports.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- Tests/iOS/StatsDashboardItemAvailabilityTests.swift
+- Tests/Shared/IOSStatsDashboardPresentationTests.swift
+
+Given a person views or edits the iOS Stats dashboard
+When report availability is evaluated for any supported date range
+Then Focus vs completed work and Estimated vs Actual time are unavailable
+And neither report appears in the dashboard or its Add controls
+And the macOS availability policy remains unchanged
+
 ### One-Off Task Archiving Keeps It Out of Suggestions
 
 Area: Tasks / Lifecycle
