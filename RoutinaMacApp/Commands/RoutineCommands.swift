@@ -108,10 +108,12 @@ struct RoutineCommands: Commands {
 
         CommandGroup(before: .appSettings) {
             #if !SWIFT_PACKAGE
-            Button("Going to Sleep") {
-                RoutinaMacSleepModeStarter.requestStartUsingSharedPersistence()
+            if isAwayEnabled {
+                Button("Going to Sleep") {
+                    RoutinaMacSleepModeStarter.requestStartUsingSharedPersistence()
+                }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
             }
-            .keyboardShortcut("s", modifiers: [.command, .shift])
 
             Divider()
             #endif

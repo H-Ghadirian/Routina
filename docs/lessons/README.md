@@ -152,3 +152,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0108 — Keep iOS Add More Details last](0108-keep-ios-add-more-details-last.md)
 - [0109 — Wrap five-option iOS filter segments](0109-wrap-five-option-ios-filter-segments.md)
 - [0110 — Cache Home row numbers outside List builders](0110-cache-home-row-numbers-outside-list-builders.md)
+- [0111 — Gate the Mac sleep command by the Away setting](0111-gate-mac-sleep-command-by-away-setting.md)
