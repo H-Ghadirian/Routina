@@ -169,6 +169,7 @@ enum HomeReloadGuardSupport {
             && current.recurrenceRule == incoming.recurrenceRule
             && current.interval == incoming.interval
             && current.pausedAt == incoming.pausedAt
+            && current.pauseUntil == incoming.pauseUntil
             && current.completedStepCount == incoming.completedStepCount
             && current.sequenceStartedAt == incoming.sequenceStartedAt
     }

@@ -58,6 +58,7 @@ struct TaskDetailStatusMutationHandler {
         case .paused:
             let pauseDate = now()
             state.task.pausedAt = pauseDate
+            state.task.pauseUntil = nil
             state.task.todoStateRawValue = nil
             appendLocalTodoStateChange(state.task, previousStateTitle, newState.displayTitle)
             refreshTaskView(&state)
@@ -75,6 +76,7 @@ struct TaskDetailStatusMutationHandler {
 
         case .ready, .inProgress, .blocked:
             state.task.pausedAt = nil
+            state.task.pauseUntil = nil
             state.task.snoozedUntil = nil
             state.task.todoStateRawValue = newState.rawValue
             appendLocalTodoStateChange(state.task, previousStateTitle, newState.displayTitle)

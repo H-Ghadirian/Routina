@@ -366,6 +366,7 @@ struct TaskDetailFeature: Reducer {
         case revealHeatmapInTaskDetail
         case revealHistoryInTaskDetail
         case pauseTapped
+        case pauseUntilTapped(Date)
         case notTodayTapped
         case resumeTapped
         case startOngoingTapped
@@ -638,8 +639,8 @@ struct TaskDetailFeature: Reducer {
             upsertLocalLog: { date, state in
                 upsertLocalLog(at: date, in: &state)
             },
-            persistPause: { taskID, pausedAt in
-                handlePauseRoutine(taskID: taskID, pausedAt: pausedAt)
+            persistPause: { taskID, pausedAt, pauseUntil in
+                handlePauseRoutine(taskID: taskID, pausedAt: pausedAt, pauseUntil: pauseUntil)
             },
             persistNotToday: { taskID, snoozedUntil in
                 handleNotTodayRoutine(taskID: taskID, snoozedUntil: snoozedUntil)
@@ -1257,6 +1258,9 @@ struct TaskDetailFeature: Reducer {
 
         case .pauseTapped:
             return routineLifecycleActionHandler().pauseTapped(state: &state)
+
+        case let .pauseUntilTapped(pauseUntil):
+            return routineLifecycleActionHandler().pauseUntilTapped(pauseUntil, state: &state)
 
         case .notTodayTapped:
             return routineLifecycleActionHandler().notTodayTapped(state: &state)

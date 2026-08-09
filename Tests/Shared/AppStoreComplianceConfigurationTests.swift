@@ -31,6 +31,30 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
+    func productionArchivesRequireAnAcknowledgedCloudKitSchemaDeployment() throws {
+        let guardScript = try Self.sourceFile("script/cloudkit_schema_guard.sh")
+        #expect(guardScript.contains("--xcode-build"))
+        #expect(guardScript.contains("CloudKit Dashboard"))
+        #expect(guardScript.contains("--acknowledge-production-deployment"))
+        #expect(guardScript.contains("--yes-i-deployed-to-production"))
+        #expect(guardScript.contains("CloudKit Production schema acknowledgement is stale."))
+
+        let manifest = try Self.sourceFile("Config/CloudKit/production-schema.manifest")
+        #expect(!manifest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+        for projectPath in [
+            "RoutinaMacOS.xcodeproj/project.pbxproj",
+            "RoutinaiOS.xcodeproj/project.pbxproj",
+        ] {
+            let project = try Self.sourceFile(projectPath)
+            #expect(project.contains("Verify CloudKit Production Schema"))
+            #expect(project.contains(
+                "shellScript = \"/bin/sh \\\"$SRCROOT/script/cloudkit_schema_guard.sh\\\" --xcode-build\\n\";"
+            ))
+        }
+    }
+
+    @Test
     func productionMacBundleUsesOnlyReleaseVisibleSensitiveCapabilities() throws {
         let prohibitedEntitlements = [
             "com.apple.security.automation.apple-events",

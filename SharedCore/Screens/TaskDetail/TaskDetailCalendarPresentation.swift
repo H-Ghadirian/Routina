@@ -135,6 +135,7 @@ enum TaskDetailCalendarPresentation {
         completedMultiDaySpanDates: Set<Date> = [],
         createdAt: Date?,
         pausedAt: Date?,
+        pauseUntil: Date? = nil,
         ongoingSince: Date? = nil,
         isOrangeUrgencyToday: Bool,
         resolvesOverdueBeforeDueDate: Bool = false,
@@ -167,6 +168,7 @@ enum TaskDetailCalendarPresentation {
         let isPausedDate = !isDoneDate && !isAssumedDate && !isCanceledDate && !isMissedDate && isInPausedRange(
             day: day,
             pausedAt: pausedAt,
+            pauseUntil: pauseUntil,
             referenceDate: referenceDate,
             calendar: calendar
         )
@@ -258,14 +260,16 @@ enum TaskDetailCalendarPresentation {
     static func isInPausedRange(
         day: Date,
         pausedAt: Date?,
+        pauseUntil: Date? = nil,
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> Bool {
         guard let pausedAt else { return false }
         let dayStart = calendar.startOfDay(for: day)
         let pausedStart = calendar.startOfDay(for: pausedAt)
-        let referenceStart = calendar.startOfDay(for: referenceDate)
-        return dayStart >= pausedStart && dayStart <= referenceStart
+        let pauseEnd = pauseUntil ?? referenceDate
+        let endDay = calendar.startOfDay(for: min(pauseEnd, referenceDate))
+        return dayStart >= pausedStart && dayStart <= endDay
     }
 
     static func isInOngoingRange(

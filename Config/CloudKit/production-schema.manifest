@@ -1,0 +1,3 @@
+# Intentionally empty until the current Development schema is deployed to
+# CloudKit Production and explicitly acknowledged with:
+# script/cloudkit_schema_guard.sh --acknowledge-production-deployment --yes-i-deployed-to-production

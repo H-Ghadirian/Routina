@@ -29,6 +29,46 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### TestFlight Archives Cannot Skip a CloudKit Production Schema Deployment
+
+Area: Settings / Other
+Decision links: [0525](../decisions/0525-gate-testflight-archives-on-cloudkit-schema-deployment.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
+- `script/cloudkit_schema_guard.sh --check`
+
+Given a stored property or its declared storage type changes in a Routina
+`@Model` class after the Production schema was last acknowledged
+When an iOS or macOS production build is archived for TestFlight
+Then the archive fails before upload and explains how to deploy the Development
+schema in CloudKit Dashboard and acknowledge that completed deployment
+
+Given the Dashboard deployment has completed successfully
+When the release owner explicitly acknowledges it and commits the updated
+manifest
+Then the matching production archive can proceed
+
+### Paused Tasks Stay Out of Calendar Scheduling Until Their Expiry
+
+Area: Tasks / Planner
+Decision links: [0524](../decisions/0524-pause-tasks-until-a-date.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskPauseUntilTests.swift`
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given an active task is paused until a future date and time
+When Calendar scheduling is shown before that timestamp
+Then the task does not appear in the task picker or in its automatic, stored, all-day, or date-only task blocks
+
+When that timestamp has passed
+Then the task is active again and becomes eligible for its normal Calendar projections
+
+Given a task is paused without an expiry
+When Calendar scheduling is shown
+Then the task remains absent until the person manually resumes it
+
 ### Finished Focus Does Not Remain Active After a Cross-Device Refresh
 
 Area: Other
@@ -2011,11 +2051,25 @@ Coverage:
 - `Tests/Shared/TaskRelationshipReviewFeatureTests.swift`
 
 Given an unfinished one-off task is active
-When the person chooses `Archive` from its Mac Task Detail toolbar or Home row context menu
+When the person chooses `Archive` from its Mac Task Detail overflow menu or Home row context menu
 Then Routina moves it to Archived, cancels its notification, and keeps its task data intact
 And every guided `Add missing…` review excludes the task
 And Help me choose excludes the task before metadata readiness, comparison, and ranking
 And task-relationship review excludes the task as both a review source and a suggestion candidate
+
+### Mac Task Detail Keeps Secondary Lifecycle Actions Together
+
+Area: Tasks / macOS UI
+Decision links: [0521](../decisions/0521-group-secondary-mac-task-detail-actions.md), [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0335](../decisions/0335-move-mac-task-detail-actions-into-detail-content.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+- `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+
+Given full Mac Task Details is open
+When the person opens the task action `…` menu
+Then one-off tasks offer Archive or Restore and eligible Cancel todo, while routines offer Pause or Resume
+And Delete is a separated destructive menu item that still requires confirmation
+And Done remains the only visible task lifecycle action
 
 Given an archived one-off task
 When the person chooses `Restore`

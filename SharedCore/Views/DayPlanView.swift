@@ -1622,6 +1622,7 @@ private struct DayPlanTimelineDataSnapshotSignature: Equatable {
         var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var pauseUntil: Date?
         var snoozedUntil: Date?
         var createdAt: Date?
         var colorRawValue: String
@@ -1662,6 +1663,7 @@ private struct DayPlanTimelineDataSnapshotSignature: Equatable {
             canceledAt = task.canceledAt
             scheduleAnchor = task.scheduleAnchor
             pausedAt = task.pausedAt
+            pauseUntil = task.pauseUntil
             snoozedUntil = task.snoozedUntil
             createdAt = task.createdAt
             colorRawValue = task.colorRawValue
@@ -4288,6 +4290,7 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
         var canceledAt: Date?
         var createdAt: Date?
         var pausedAt: Date?
+        var pauseUntil: Date?
         var snoozedUntil: Date?
         var autoAssumeDailyDone: Bool
         var autoAssumeDoneTimeOfDayHour: Int?
@@ -4315,6 +4318,7 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
             canceledAt = task.canceledAt
             createdAt = task.createdAt
             pausedAt = task.pausedAt
+            pauseUntil = task.pauseUntil
             snoozedUntil = task.snoozedUntil
             autoAssumeDailyDone = task.autoAssumeDailyDone
             autoAssumeDoneTimeOfDayHour = task.autoAssumeDoneTimeOfDay?.hour
@@ -5063,6 +5067,7 @@ private struct DayPlanAllDayBlocksCacheKey: Equatable {
         var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var pauseUntil: Date?
         var snoozedUntil: Date?
         var createdAt: Date?
 
@@ -5093,6 +5098,7 @@ private struct DayPlanAllDayBlocksCacheKey: Equatable {
             canceledAt = task.canceledAt
             scheduleAnchor = task.scheduleAnchor
             pausedAt = task.pausedAt
+            pauseUntil = task.pauseUntil
             snoozedUntil = task.snoozedUntil
             createdAt = task.createdAt
         }
@@ -5439,6 +5445,7 @@ private struct DayPlanTimelinePlacementCacheKey: Equatable {
         var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var pauseUntil: Date?
         var snoozedUntil: Date?
         var createdAt: Date?
         var autoAssumeDailyDone: Bool
@@ -5475,6 +5482,7 @@ private struct DayPlanTimelinePlacementCacheKey: Equatable {
             canceledAt = task.canceledAt
             scheduleAnchor = task.scheduleAnchor
             pausedAt = task.pausedAt
+            pauseUntil = task.pauseUntil
             snoozedUntil = task.snoozedUntil
             createdAt = task.createdAt
             self.autoAssumeDailyDone = autoAssumeDailyDone

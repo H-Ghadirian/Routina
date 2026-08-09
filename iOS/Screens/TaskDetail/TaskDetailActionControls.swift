@@ -93,6 +93,8 @@ struct TaskDetailRoutinePrimaryActionSection: View {
     let pauseArchivePresentation: RoutinePauseArchivePresentation
     let showsThinkingNeededControl: Bool
 
+    @State private var isPauseUntilPresented = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if showsThinkingNeededControl {
@@ -115,6 +117,13 @@ struct TaskDetailRoutinePrimaryActionSection: View {
         }
         .padding(16)
         .detailCardStyle()
+        .sheet(isPresented: $isPauseUntilPresented) {
+            TaskDetailPauseUntilSheet(
+                actionTitle: pauseUntilActionTitle
+            ) { pauseUntil in
+                store.send(.pauseUntilTapped(pauseUntil))
+            }
+        }
     }
 
     @ViewBuilder
@@ -138,13 +147,30 @@ struct TaskDetailRoutinePrimaryActionSection: View {
 
     private var routineActionsMenu: some View {
         Menu {
-            Button {
-                store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
-            } label: {
-                Label(
-                    pauseArchivePresentation.actionTitle,
-                    systemImage: pauseResumeSystemImage
-                )
+            if store.task.isArchived() {
+                Button {
+                    store.send(.resumeTapped)
+                } label: {
+                    Label(
+                        pauseArchivePresentation.actionTitle,
+                        systemImage: pauseResumeSystemImage
+                    )
+                }
+            } else {
+                Button {
+                    store.send(.pauseTapped)
+                } label: {
+                    Label(
+                        pauseArchivePresentation.actionTitle,
+                        systemImage: pauseResumeSystemImage
+                    )
+                }
+
+                Button {
+                    isPauseUntilPresented = true
+                } label: {
+                    Label(pauseUntilActionTitle, systemImage: "clock.arrow.circlepath")
+                }
             }
 
             if pauseArchivePresentation.secondaryActionTitle != nil {
@@ -161,7 +187,11 @@ struct TaskDetailRoutinePrimaryActionSection: View {
         .buttonStyle(.bordered)
         .tint(.secondary)
         .routinaPlatformSecondaryActionControlSize()
-        .accessibilityHint("Pause, resume, or hide this routine until tomorrow")
+        .accessibilityHint("Pause, resume, choose a pause end time, or hide this routine until tomorrow")
+    }
+
+    private var pauseUntilActionTitle: String {
+        store.task.isOneOffTask ? "Archive Until…" : "Pause Until…"
     }
 
     @ViewBuilder

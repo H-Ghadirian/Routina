@@ -445,6 +445,7 @@ enum HomeTaskLifecycleSupport {
             )
         }
         tasks[index].pausedAt = pauseDate
+        tasks[index].pauseUntil = nil
         return HomePauseTaskUpdate(taskID: taskID, pauseDate: pauseDate)
     }
 
@@ -464,6 +465,7 @@ enum HomeTaskLifecycleSupport {
             )
         }
         tasks[index].pausedAt = nil
+        tasks[index].pauseUntil = nil
         tasks[index].snoozedUntil = nil
         return HomeResumeTaskUpdate(taskID: taskID, resumeDate: resumeDate)
     }

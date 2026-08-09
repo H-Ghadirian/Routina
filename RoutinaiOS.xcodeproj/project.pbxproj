@@ -413,6 +413,7 @@
 				2A5A74B92D7B92F600E91075 /* Sources */,
 				2A5A74BA2D7B92F600E91075 /* Frameworks */,
 				2A5A74BB2D7B92F600E91075 /* Resources */,
+				C20000102F90000100000001 /* Verify CloudKit Production Schema */,
 				B700000A2F40000100000002 /* Embed Foundation Extensions */,
 				5F1000052E90000100000001 /* Embed Watch Content */,
 			);
@@ -743,6 +744,30 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C20000102F90000100000001 /* Verify CloudKit Production Schema */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/cloudkit_schema_guard.sh",
+				"$(SRCROOT)/Config/CloudKit",
+				"$(SRCROOT)/SharedCore/Models",
+			);
+			name = "Verify CloudKit Production Schema";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/cloudkit_schema_guard.sh\" --xcode-build\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2A5A74B92D7B92F600E91075 /* Sources */ = {

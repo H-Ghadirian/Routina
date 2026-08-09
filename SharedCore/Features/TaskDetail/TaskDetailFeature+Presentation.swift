@@ -773,7 +773,10 @@ extension TaskDetailFeature.State {
         if let snoozedUntil {
             return "Not today. Back on \(snoozedUntil.formatted(date: .abbreviated, time: .omitted))"
         }
-        if let pausedAt {
+        if task.isPaused(), let pausedAt {
+            if let pauseUntil = task.pauseUntil {
+                return "Paused until \(pauseUntil.formatted(date: .abbreviated, time: .shortened))"
+            }
             return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
         }
         if task.usesOngoingLifecycle && task.isOngoing {

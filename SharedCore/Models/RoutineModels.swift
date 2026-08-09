@@ -59,6 +59,9 @@ final class RoutineTask {
     var canceledAt: Date?
     var scheduleAnchor: Date?
     var pausedAt: Date?
+    /// Nil represents an indefinite pause. A non-nil value restores the task's
+    /// active state as soon as this instant is reached.
+    var pauseUntil: Date?
     var snoozedUntil: Date?
     var pinnedAt: Date?
     var manualSectionOrderStorage: String = ""
@@ -455,6 +458,7 @@ final class RoutineTask {
         canceledAt: Date? = nil,
         scheduleAnchor: Date? = nil,
         pausedAt: Date? = nil,
+        pauseUntil: Date? = nil,
         snoozedUntil: Date? = nil,
         pinnedAt: Date? = nil,
         completedStepCount: Int16 = 0,
@@ -563,6 +567,7 @@ final class RoutineTask {
         self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil
         self.scheduleAnchor = resolvedScheduleMode == .oneOff || !resolvedTrackingCadenceEnabled ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
+        self.pauseUntil = pauseUntil
         self.snoozedUntil = snoozedUntil
         self.pinnedAt = pinnedAt
         self.manualSectionOrderStorage = ""
@@ -905,6 +910,7 @@ final class RoutineTask {
             canceledAt: canceledAt,
             scheduleAnchor: scheduleAnchor,
             pausedAt: pausedAt,
+            pauseUntil: pauseUntil,
             snoozedUntil: snoozedUntil,
             pinnedAt: pinnedAt,
             completedStepCount: completedStepCount,

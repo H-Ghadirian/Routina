@@ -10,13 +10,22 @@ struct TaskDetailRoutineLifecycleActionHandler {
     var refreshTaskView: (inout State) -> Void
     var updateDerivedState: (inout State) -> Void
     var upsertLocalLog: (Date, inout State) -> Void
-    var persistPause: (UUID, Date) -> Effect<Action>
+    var persistPause: (UUID, Date, Date?) -> Effect<Action>
     var persistNotToday: (UUID, Date) -> Effect<Action>
     var persistResume: (UUID, Date) -> Effect<Action>
     var persistStartOngoing: (UUID, Date) -> Effect<Action>
     var persistFinishOngoing: (UUID, Date) -> Effect<Action>
 
     func pauseTapped(state: inout State) -> Effect<Action> {
+        pause(state: &state, pauseUntil: nil)
+    }
+
+    func pauseUntilTapped(_ pauseUntil: Date, state: inout State) -> Effect<Action> {
+        guard pauseUntil > now() else { return .none }
+        return pause(state: &state, pauseUntil: pauseUntil)
+    }
+
+    private func pause(state: inout State, pauseUntil: Date?) -> Effect<Action> {
         if state.task.isOneOffTask {
             guard !state.task.isCompletedOneOff, !state.task.isCanceledOneOff else { return .none }
         }
@@ -29,9 +38,10 @@ struct TaskDetailRoutineLifecycleActionHandler {
             )
         }
         state.task.pausedAt = pauseDate
+        state.task.pauseUntil = pauseUntil
         refreshTaskView(&state)
         updateDerivedState(&state)
-        return persistPause(state.task.id, pauseDate)
+        return persistPause(state.task.id, pauseDate, pauseUntil)
     }
 
     func notTodayTapped(state: inout State) -> Effect<Action> {
@@ -61,6 +71,7 @@ struct TaskDetailRoutineLifecycleActionHandler {
             )
         }
         state.task.pausedAt = nil
+        state.task.pauseUntil = nil
         state.task.snoozedUntil = nil
         refreshTaskView(&state)
         updateDerivedState(&state)

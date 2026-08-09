@@ -47,6 +47,7 @@ struct TaskDetailCalendarCardContent: View {
                 completedMultiDaySpanDates: completedMultiDaySpanDates,
                 createdAt: task.createdAt,
                 pausedAt: task.pausedAt,
+                pauseUntil: task.pauseUntil,
                 ongoingSince: task.ongoingSince,
                 isOrangeUrgencyToday: isOrangeUrgencyToday,
                 resolvesOverdueBeforeDueDate: task.isOneOffTask,

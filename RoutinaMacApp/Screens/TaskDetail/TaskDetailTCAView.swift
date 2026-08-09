@@ -1627,6 +1627,7 @@ struct TaskDetailTCAView: View {
 
         return TaskDetailPresentation.summaryTitleColor(
             pausedAt: store.task.pausedAt,
+            pauseUntil: store.task.pauseUntil,
             isSnoozed: store.task.isSnoozed(),
             usesOngoingLifecycle: store.task.usesOngoingLifecycle,
             isOngoing: store.task.isOngoing,

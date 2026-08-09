@@ -42,6 +42,7 @@ extension HomeFeature {
         case .paused:
             let pauseDate = now
             state.routineTasks[index].pausedAt = pauseDate
+            state.routineTasks[index].pauseUntil = nil
             state.routineTasks[index].snoozedUntil = nil
             state.routineTasks[index].todoStateRawValue = nil
             state.routineTasks[index].setManualSectionOrder(nextOrder, for: targetSectionKey)
@@ -59,6 +60,7 @@ extension HomeFeature {
                     let context = self.modelContext()
                     guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: id)).first else { return }
                     task.pausedAt = pauseDate
+                    task.pauseUntil = nil
                     task.snoozedUntil = nil
                     task.todoStateRawValue = nil
                     task.setManualSectionOrder(nextOrder, for: targetSectionKey)
@@ -77,6 +79,7 @@ extension HomeFeature {
 
         case .ready, .inProgress, .blocked:
             state.routineTasks[index].pausedAt = nil
+            state.routineTasks[index].pauseUntil = nil
             state.routineTasks[index].snoozedUntil = nil
             state.routineTasks[index].todoStateRawValue = newState.rawValue
             state.routineTasks[index].setManualSectionOrder(nextOrder, for: targetSectionKey)
@@ -94,6 +97,7 @@ extension HomeFeature {
                     let context = self.modelContext()
                     guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: id)).first else { return }
                     task.pausedAt = nil
+                    task.pauseUntil = nil
                     task.snoozedUntil = nil
                     task.todoStateRawValue = rawValue
                     task.setManualSectionOrder(nextOrder, for: targetSectionKey)

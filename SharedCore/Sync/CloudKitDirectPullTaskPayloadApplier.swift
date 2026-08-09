@@ -75,6 +75,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
         task.canceledAt = payload.canceledAt
         task.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? task.scheduleAnchor
         task.pausedAt = payload.pausedAt
+        task.pauseUntil = payload.pauseUntil
         task.snoozedUntil = payload.snoozedUntil
         task.pinnedAt = payload.pinnedAt
         task.completedStepCount = payload.completedStepCount
@@ -168,6 +169,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             canceledAt: payload.canceledAt,
             scheduleAnchor: payload.scheduleAnchor,
             pausedAt: payload.pausedAt,
+            pauseUntil: payload.pauseUntil,
             snoozedUntil: payload.snoozedUntil,
             pinnedAt: payload.pinnedAt,
             completedStepCount: payload.completedStepCount,

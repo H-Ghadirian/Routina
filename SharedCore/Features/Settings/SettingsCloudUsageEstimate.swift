@@ -193,6 +193,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var pauseUntil: Date?
         var pinnedAt: Date?
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
@@ -251,6 +252,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             canceledAt = task.canceledAt
             scheduleAnchor = task.scheduleAnchor
             pausedAt = task.pausedAt
+            pauseUntil = task.pauseUntil
             pinnedAt = task.pinnedAt
             completedStepCount = task.completedStepCount
             sequenceStartedAt = task.sequenceStartedAt

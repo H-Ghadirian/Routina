@@ -19,9 +19,15 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0524](0524-pause-tasks-until-a-date.md):** iOS and macOS production archives block TestFlight distribution until the local SwiftData schema has an explicit CloudKit Production deployment acknowledgement.
+
+- **[0524](0524-pause-tasks-until-a-date.md) refines [0487](0487-allow-archiving-one-off-tasks.md) and [0521](0521-group-secondary-mac-task-detail-actions.md):** a task may retain an optional pause expiry; it is absent from Calendar scheduling until then and becomes active again by evaluating its persisted lifecycle dates.
+
 - **[0523](0523-report-manual-icloud-refresh-honestly.md) refines [0167](0167-merge-icloud-and-backup-settings.md):** `Sync Now` reports its verified iCloud download separately from Core Data's asynchronous local upload outcome.
 
 - **[0522](0522-anonymize-cloudkit-partial-failure-diagnostics.md) refines [0516](0516-make-support-diagnostics-copyable.md):** partial CloudKit failures report the actionable per-item error codes with stable anonymized item fingerprints, never record names or contents.
+
+- **[0521](0521-group-secondary-mac-task-detail-actions.md) refines [0335](0335-move-mac-task-detail-actions-into-detail-content.md) and [0487](0487-allow-archiving-one-off-tasks.md):** Full Mac Task Details keeps Done visible and groups task-specific lifecycle actions plus confirmed Delete in a native `…` menu; the compact companion pane remains completion, fullscreen, and close only.
 
 - **[0520](0520-archive-embedded-helper-dsym.md) refines [0517](0517-sandbox-embedded-mcp-helper.md):** the externally built macOS MCP helper generates a matching dSYM in the archive's symbols folder so App Store Connect can symbolicate helper crashes.
 
@@ -79,9 +85,15 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0524](0524-pause-tasks-until-a-date.md):** the production archive gate compares the generated SwiftData contract to the last explicitly acknowledged CloudKit Production deployment, so TestFlight cannot rely on a remembered Dashboard step.
+
+- **[0524](0524-pause-tasks-until-a-date.md) refines [0487](0487-allow-archiving-one-off-tasks.md) and [0521](0521-group-secondary-mac-task-detail-actions.md):** an optional task pause expiry is derived from its persisted dates, so it leaves Calendar scheduling only for the pause window and becomes active automatically after that time.
+
 - **[0523](0523-report-manual-icloud-refresh-honestly.md) refines [0167](0167-merge-icloud-and-backup-settings.md):** manual sync completion means the direct CloudKit download finished; only a successful CloudKit export verifies this device's queued uploads.
 
 - **[0522](0522-anonymize-cloudkit-partial-failure-diagnostics.md) refines [0516](0516-make-support-diagnostics-copyable.md):** copyable diagnostics expose only the child CloudKit error codes and stable anonymized item fingerprints necessary to diagnose a partial failure.
+
+- **[0521](0521-group-secondary-mac-task-detail-actions.md) refines [0335](0335-move-mac-task-detail-actions-into-detail-content.md) and [0487](0487-allow-archiving-one-off-tasks.md):** Full Mac Task Details keeps Done visible and groups task-specific lifecycle actions plus confirmed Delete in a native `…` menu; the compact companion pane remains completion, fullscreen, and close only.
 
 - **[0520](0520-archive-embedded-helper-dsym.md) refines [0517](0517-sandbox-embedded-mcp-helper.md):** the manual helper embedding phase produces the matching helper dSYM in Xcode's dSYM folder for archive collection.
 
@@ -555,8 +567,11 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) | Gate TestFlight Archives on CloudKit Schema Deployment | Accepted | 2026-08-09 |
+| [0524](0524-pause-tasks-until-a-date.md) | Pause Tasks Until a Date | Accepted | 2026-08-09 |
 | [0523](0523-report-manual-icloud-refresh-honestly.md) | Report Manual iCloud Refresh Honestly | Accepted | 2026-08-09 |
 | [0522](0522-anonymize-cloudkit-partial-failure-diagnostics.md) | Anonymize CloudKit Partial Failure Diagnostics | Accepted | 2026-08-09 |
+| [0521](0521-group-secondary-mac-task-detail-actions.md) | Group Secondary Mac Task Detail Actions | Accepted | 2026-08-09 |
 | [0520](0520-archive-embedded-helper-dsym.md) | Archive Embedded Helper dSYM Files | Accepted | 2026-08-09 |
 | [0519](0519-maintain-platform-versioned-release-notes.md) | Maintain Platform-Versioned Release Notes | Accepted | 2026-08-09 |
 | [0518](0518-scope-signed-cloudkit-diagnostics-to-macos.md) | Scope Signed CloudKit Diagnostics to macOS | Accepted | 2026-08-09 |

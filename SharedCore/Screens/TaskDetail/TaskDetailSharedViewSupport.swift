@@ -460,8 +460,17 @@ enum TaskDetailStatusMetadataPresentation {
             items.append(.init(id: "canceled", label: "Canceled", value: state.canceledLogCountText, systemImage: "xmark.circle"))
         }
 
-        if let pausedAt = state.task.pausedAt {
-            items.append(.init(id: "paused", label: "Paused", value: pausedAt.formatted(date: .abbreviated, time: .omitted)))
+        if state.task.isPaused(referenceDate: referenceDate), let pausedAt = state.task.pausedAt {
+            let pauseValue = state.task.pauseUntil?
+                .formatted(date: .abbreviated, time: .shortened)
+                ?? pausedAt.formatted(date: .abbreviated, time: .omitted)
+            items.append(
+                .init(
+                    id: "paused",
+                    label: state.task.pauseUntil == nil ? "Paused" : "Paused Until",
+                    value: pauseValue
+                )
+            )
         } else if let dueDateMetadataDisplayText {
             items.append(.init(id: "due", label: "Due", value: dueDateMetadataDisplayText))
         }

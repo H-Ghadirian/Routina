@@ -92,6 +92,7 @@ extension SettingsRoutineDataPersistence {
             var canceledAt: Date?
             var scheduleAnchor: Date?
             var pausedAt: Date?
+            var pauseUntil: Date?
             var snoozedUntil: Date?
             var pinnedAt: Date?
             var completedStepCount: Int?

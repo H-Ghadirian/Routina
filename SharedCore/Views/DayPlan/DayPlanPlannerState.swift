@@ -355,7 +355,7 @@ final class DayPlanPlannerState: ObservableObject {
         context: ModelContext
     ) {
         let visibleDates = visibleAndSelectedDates(calendar: calendar)
-        let availableTasks = DayPlanTaskSorting.availableTasks(from: tasks)
+        let candidateTasks = tasks.filter { !$0.isCompletedOneOff && !$0.isCanceledOneOff }
         let now = Date()
         var updatedBlocksByDayKey = weekBlocksByDayKey
 
@@ -368,7 +368,7 @@ final class DayPlanPlannerState: ObservableObject {
             )
             var didChangeDay = false
 
-            for task in availableTasks {
+            for task in candidateTasks {
                 if let windowBlock = automaticWindowScheduledBlock(for: task, on: date, calendar: calendar) {
                     let windowStartMinute = startMinute(for: windowBlock.startDate, calendar: calendar)
                     let windowDurationMinutes = scheduledDurationMinutes(

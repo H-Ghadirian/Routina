@@ -170,7 +170,7 @@ private extension RoutinaAIQueryService {
     ) -> RoutinaAITaskSummary {
         let placeName = task.placeID.flatMap { placesByID[$0]?.displayName }
         let goalTitles = task.goalIDs.compactMap { goalsByID[$0]?.displayTitle }
-        let isPaused = task.pausedAt != nil
+        let isPaused = task.isPaused(referenceDate: now)
         let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
         let isArchived = task.isArchived(referenceDate: now, calendar: calendar)
         let isCompleted = task.isCompletedOneOff

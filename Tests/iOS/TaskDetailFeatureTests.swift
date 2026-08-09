@@ -251,6 +251,48 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func pauseUntilTapped_persistsExpiryAndCancelsNotification() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        let pauseUntil = makeDate("2026-03-16T15:30:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 5,
+            lastDone: nil,
+            emoji: "📚",
+            scheduleAnchor: now
+        )
+        try context.save()
+
+        let canceledIDs = LockIsolated<[String]>([])
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { identifier in
+                canceledIDs.withValue { $0.append(identifier) }
+            }
+        }
+
+        await store.send(.pauseUntilTapped(pauseUntil)) {
+            $0.taskRefreshID = 1
+        }
+
+        #expect(store.state.task.pausedAt == now)
+        #expect(store.state.task.pauseUntil == pauseUntil)
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pausedAt == now)
+        #expect(savedTask.pauseUntil == pauseUntil)
+        #expect(canceledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func resumeTapped_restoresRoutineAndSchedulesNotification() async throws {
         let context = makeInMemoryContext()
         let pauseDate = makeDate("2026-03-10T10:00:00Z")

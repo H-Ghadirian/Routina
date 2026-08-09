@@ -302,6 +302,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 canceledAt: task.canceledAt,
                 scheduleAnchor: task.scheduleAnchor,
                 pausedAt: task.pausedAt,
+                pauseUntil: task.pauseUntil,
                 snoozedUntil: task.snoozedUntil,
                 pinnedAt: task.pinnedAt,
                 completedStepCount: Int16(clamping: task.completedStepCount ?? 0),

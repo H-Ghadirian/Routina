@@ -282,6 +282,7 @@ enum HomeTaskLifecycleExecutionSupport {
                     )
                 }
                 task.pausedAt = update.pauseDate
+                task.pauseUntil = nil
                 DeviceActivityRecorder.recordAction(
                     .paused,
                     entity: .task,
@@ -319,6 +320,7 @@ enum HomeTaskLifecycleExecutionSupport {
                     )
                 }
                 task.pausedAt = nil
+                task.pauseUntil = nil
                 task.snoozedUntil = nil
                 DeviceActivityRecorder.recordAction(
                     .resumed,
@@ -375,6 +377,7 @@ enum HomeTaskLifecycleExecutionSupport {
                         )
                     }
                     task.pausedAt = update.pauseDate
+                    task.pauseUntil = nil
                     DeviceActivityRecorder.recordAction(
                         .paused,
                         entity: .task,
@@ -423,6 +426,7 @@ enum HomeTaskLifecycleExecutionSupport {
                         )
                     }
                     task.pausedAt = nil
+                    task.pauseUntil = nil
                     task.snoozedUntil = nil
                     resumedTasks.append(task)
                     DeviceActivityRecorder.recordAction(

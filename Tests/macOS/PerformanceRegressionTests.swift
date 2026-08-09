@@ -93,22 +93,22 @@ final class PerformanceRegressionTests: XCTestCase {
         let completionAction = try XCTUnwrap(
             actionButtonsSource.range(of: "store.send(store.completionButtonAction)")
         )
-        let pauseAction = try XCTUnwrap(
-            actionButtonsSource.range(of: "store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)")
-        )
-        let cancelAction = try XCTUnwrap(
-            actionButtonsSource.range(of: "store.send(.cancelTodo)")
+        let moreActionsMenu = try XCTUnwrap(
+            actionButtonsSource.range(of: "taskLifecycleActionsMenu")
         )
 
         XCTAssertLessThan(
             completionAction.lowerBound,
-            pauseAction.lowerBound,
-            "Done must remain left of the repeating-task Pause/Resume action."
+            moreActionsMenu.lowerBound,
+            "Done must remain left of the overflow menu for secondary task actions."
         )
-        XCTAssertLessThan(
-            completionAction.lowerBound,
-            cancelAction.lowerBound,
-            "Done must remain left of the one-time-task Cancel action."
+        XCTAssertFalse(
+            actionButtonsSource.contains("store.send(.cancelTodo)"),
+            "Cancel Todo belongs in the overflow menu instead of competing with Done."
+        )
+        XCTAssertFalse(
+            actionButtonsSource.contains("store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)"),
+            "Archive/Restore and Pause/Resume belong in the overflow menu instead of competing with Done."
         )
     }
 

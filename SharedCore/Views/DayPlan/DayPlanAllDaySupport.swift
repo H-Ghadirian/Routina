@@ -62,7 +62,9 @@ enum DayPlanAllDayTasks {
                 calendar: calendar
             )
                 .filter { span in
-                    span.endDate > visibleStart && span.startDate < visibleEnd
+                    span.endDate > visibleStart
+                        && span.startDate < visibleEnd
+                        && !task.isArchived(referenceDate: span.startDate, calendar: calendar)
                 }
                 .map { span in
                     DayPlanAllDayBlock(

@@ -451,6 +451,10 @@ struct DayPlanVisibleBlockContext {
             return false
         }
 
+        if task.isArchived(referenceDate: day, calendar: calendar) {
+            return true
+        }
+
         return task.hidesAssumedDoneCalendarBlock
             && RoutineAssumedCompletion.isAssumedDone(
             for: task,
@@ -606,9 +610,17 @@ enum DayPlanCalendarTimelineActivityPresentationFilter {
 }
 
 enum DayPlanTaskSorting {
-    static func availableTasks(from tasks: [RoutineTask]) -> [RoutineTask] {
+    static func availableTasks(
+        from tasks: [RoutineTask],
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [RoutineTask] {
         tasks
-            .filter { !$0.isCompletedOneOff && !$0.isCanceledOneOff }
+            .filter {
+                !$0.isCompletedOneOff
+                    && !$0.isCanceledOneOff
+                    && !$0.isArchived(referenceDate: referenceDate, calendar: calendar)
+            }
             .sorted { lhs, rhs in
                 if lhs.isPinned != rhs.isPinned {
                     return lhs.isPinned

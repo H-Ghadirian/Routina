@@ -424,7 +424,7 @@ struct MissingTaskMetadataFeature {
     }
 
     private func isEligible(_ task: RoutineTask) -> Bool {
-        task.pausedAt == nil
+        !task.isPaused
             && !field.isExplicit(for: task)
             && (!task.isOneOffTask || (task.lastDone == nil && task.canceledAt == nil))
     }

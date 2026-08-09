@@ -149,6 +149,10 @@ enum CloudKitDirectPullTaskRecordParser {
             in: record,
             keys: ["pausedAt", "PAUSEDAT", "zpausedat", "ZPAUSEDAT", "cd_pausedat"]
         )
+        let pauseUntilValue = dateValue(
+            in: record,
+            keys: ["pauseUntil", "PAUSEUNTIL", "zpauseuntil", "ZPAUSEUNTIL", "cd_pauseuntil"]
+        )
         let snoozedUntilValue = dateValue(
             in: record,
             keys: ["snoozedUntil", "SNOOZEDUNTIL", "zsnoozeduntil", "ZSNOOZEDUNTIL", "cd_snoozeduntil"]
@@ -314,6 +318,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || canceledAtValue != nil
                 || scheduleAnchorValue != nil
                 || pausedAtValue != nil
+                || pauseUntilValue != nil
                 || snoozedUntilValue != nil
                 || pinnedAtValue != nil
                 || completedStepCountValue != nil
@@ -388,6 +393,7 @@ enum CloudKitDirectPullTaskRecordParser {
             canceledAt: canceledAtValue,
             scheduleAnchor: scheduleAnchorValue,
             pausedAt: pausedAtValue,
+            pauseUntil: pauseUntilValue,
             snoozedUntil: snoozedUntilValue,
             pinnedAt: pinnedAtValue,
             completedStepCount: Int16(clamping: completedStepCountValue ?? 0),

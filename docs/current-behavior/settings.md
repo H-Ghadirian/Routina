@@ -36,6 +36,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0516](../decisions/0516-make-support-diagnostics-copyable.md)
 - [0517](../decisions/0517-sandbox-embedded-mcp-helper.md)
 - [0518](../decisions/0518-scope-signed-cloudkit-diagnostics-to-macos.md)
+- [0525](../decisions/0525-gate-testflight-archives-on-cloudkit-schema-deployment.md)
 
 ## Current Contract
 
@@ -50,6 +51,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Hidden Support & About diagnostics show configured Data Mode and iCloud Container separately from the running executable's signed CloudKit environment. macOS reads the signed value from `com.apple.developer.icloud-container-environment`; iOS explicitly reports that this verification is unavailable rather than inferring it from configuration.
 - Hidden Support & About diagnostics also shows the app's operating system and offers `Copy Diagnostics`. It copies a labelled report containing app, operating-system, CloudKit, and push metadata only; it excludes user data, identifiers, credentials, and device tokens. A partial CloudKit failure includes up to three nested error codes and anonymized item fingerprints, never record names or contents.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section. `Sync Now` verifies the manual iCloud download only; local uploads remain asynchronous and must not be reported as completed until CloudKit records a successful export.
+- iOS and macOS production archives compare the current persisted SwiftData model contract with `Config/CloudKit/production-schema.manifest`. A mismatch blocks the archive before TestFlight upload. After deploying the Development schema in CloudKit Dashboard, the release owner explicitly acknowledges it with `script/cloudkit_schema_guard.sh --acknowledge-production-deployment --yes-i-deployed-to-production` and commits the manifest.
 - Estimated iCloud Usage lists only categories whose user-facing feature is available. Tasks, logs, and images remain visible; Places, Goals, Events, Emotions, Notes, and Voice Notes follow their corresponding feature gates.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
 - Legacy `.json` backup remains compatibility-only for older task, place, goal, and log payloads.

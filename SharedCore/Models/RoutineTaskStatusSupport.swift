@@ -2,7 +2,16 @@ import Foundation
 
 extension RoutineTask {
     var isPaused: Bool {
-        pausedAt != nil
+        isPaused(referenceDate: Date())
+    }
+
+    /// A pause applies from its start until its optional expiry instant. Keeping
+    /// the expiry as data instead of requiring a background wake makes the task
+    /// become active consistently on every device as soon as it is observed.
+    func isPaused(referenceDate: Date = Date()) -> Bool {
+        guard let pausedAt, referenceDate >= pausedAt else { return false }
+        guard let pauseUntil else { return true }
+        return referenceDate < pauseUntil
     }
 
     func isSnoozed(
@@ -17,7 +26,8 @@ extension RoutineTask {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> Bool {
-        isPaused || isSnoozed(referenceDate: referenceDate, calendar: calendar)
+        isPaused(referenceDate: referenceDate)
+            || isSnoozed(referenceDate: referenceDate, calendar: calendar)
     }
 
     var isPinned: Bool {
@@ -38,7 +48,7 @@ extension RoutineTask {
     /// so legacy tasks without todoStateRawValue are handled correctly.
     var todoState: TodoState? {
         guard isOneOffTask else { return nil }
-        if pausedAt != nil { return .paused }
+        if isPaused { return .paused }
         if lastDone != nil || canceledAt != nil { return .done }
         if let raw = todoStateRawValue { return TodoState(rawValue: raw) ?? .ready }
         return .ready

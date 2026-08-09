@@ -60,6 +60,7 @@ enum CloudSharingService {
         var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var pauseUntil: Date?
         var snoozedUntil: Date?
         var pinnedAt: Date?
         var completedStepCount: Int16
@@ -330,6 +331,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.canceledAt = task.canceledAt
         self.scheduleAnchor = task.scheduleAnchor
         self.pausedAt = task.pausedAt
+        self.pauseUntil = task.pauseUntil
         self.snoozedUntil = task.snoozedUntil
         self.pinnedAt = task.pinnedAt
         self.completedStepCount = task.completedStepCount
@@ -421,6 +423,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.canceledAt = scheduleMode == .oneOff ? canceledAt : nil
         task.scheduleAnchor = scheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
         task.pausedAt = pausedAt
+        task.pauseUntil = pauseUntil
         task.snoozedUntil = snoozedUntil
         task.pinnedAt = pinnedAt
         task.completedStepCount = completedStepCount
@@ -497,6 +500,7 @@ private extension RoutineTask {
             canceledAt: payload.canceledAt,
             scheduleAnchor: payload.scheduleAnchor,
             pausedAt: payload.pausedAt,
+            pauseUntil: payload.pauseUntil,
             snoozedUntil: payload.snoozedUntil,
             pinnedAt: payload.pinnedAt,
             completedStepCount: payload.completedStepCount,

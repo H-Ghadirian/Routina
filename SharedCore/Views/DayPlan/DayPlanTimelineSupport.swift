@@ -1181,6 +1181,7 @@ private struct DayPlanTimelineTaskInfo {
     var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
     var createdAt: Date?
     var pausedAt: Date?
+    var pauseUntil: Date?
     var snoozedUntil: Date?
     var recurrenceRule: RoutineRecurrenceRule
     var hasChecklistItems: Bool
@@ -1201,6 +1202,7 @@ private struct DayPlanTimelineTaskInfo {
         autoAssumeDoneTimeOfDay = task.autoAssumeDoneTimeOfDay
         createdAt = task.createdAt
         pausedAt = task.pausedAt
+        pauseUntil = task.pauseUntil
         snoozedUntil = task.snoozedUntil
         self.recurrenceRule = recurrenceRule
         self.hasChecklistItems = hasChecklistItems
@@ -1245,8 +1247,7 @@ private struct DayPlanTimelineTaskInfo {
             guard selectedDay >= createdDay else { return false }
         }
 
-        if let pausedAt,
-           selectedDay >= calendar.startOfDay(for: pausedAt) {
+        if isPaused(referenceDate: selectedDay) {
             return false
         }
 
@@ -1346,11 +1347,17 @@ private struct DayPlanTimelineTaskInfo {
     }
 
     private func isArchived(referenceDate: Date, calendar: Calendar) -> Bool {
-        if pausedAt != nil {
+        if isPaused(referenceDate: referenceDate) {
             return true
         }
         guard let snoozedUntil else { return false }
         return calendar.startOfDay(for: referenceDate) < calendar.startOfDay(for: snoozedUntil)
+    }
+
+    private func isPaused(referenceDate: Date) -> Bool {
+        guard let pausedAt, referenceDate >= pausedAt else { return false }
+        guard let pauseUntil else { return true }
+        return referenceDate < pauseUntil
     }
 }
 

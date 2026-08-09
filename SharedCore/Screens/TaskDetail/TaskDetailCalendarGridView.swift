@@ -11,6 +11,7 @@ struct TaskDetailCalendarGridView: View {
     let completedMultiDaySpanDates: Set<Date>
     let createdAt: Date?
     let pausedAt: Date?
+    let pauseUntil: Date?
     let ongoingSince: Date?
     let isOrangeUrgencyToday: Bool
     let resolvesOverdueBeforeDueDate: Bool
@@ -60,6 +61,7 @@ struct TaskDetailCalendarGridView: View {
             completedMultiDaySpanDates: completedMultiDaySpanDates,
             createdAt: createdAt,
             pausedAt: pausedAt,
+            pauseUntil: pauseUntil,
             ongoingSince: ongoingSince,
             isOrangeUrgencyToday: isOrangeUrgencyToday,
             resolvesOverdueBeforeDueDate: resolvesOverdueBeforeDueDate,

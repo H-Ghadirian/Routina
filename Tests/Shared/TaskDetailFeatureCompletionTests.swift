@@ -604,7 +604,7 @@ struct TaskDetailFeatureCompletionTests {
             upsertLocalLog: { date, state in
                 state.logs.append(RoutineLog(timestamp: date, taskID: state.task.id, kind: .completed))
             },
-            persistPause: { _, _ in .none },
+            persistPause: { _, _, _ in .none },
             persistNotToday: { _, _ in .none },
             persistResume: { _, _ in .none },
             persistStartOngoing: { _, _ in .none },
@@ -662,7 +662,7 @@ struct TaskDetailFeatureCompletionTests {
             upsertLocalLog: { date, state in
                 state.logs.append(RoutineLog(timestamp: date, taskID: state.task.id, kind: .completed))
             },
-            persistPause: { _, _ in .none },
+            persistPause: { _, _, _ in .none },
             persistNotToday: { _, _ in .none },
             persistResume: { _, _ in .none },
             persistStartOngoing: { _, _ in .none },
@@ -717,7 +717,7 @@ struct TaskDetailFeatureCompletionTests {
             upsertLocalLog: { date, state in
                 state.logs.append(RoutineLog(timestamp: date, taskID: state.task.id, kind: .completed))
             },
-            persistPause: { _, _ in .none },
+            persistPause: { _, _, _ in .none },
             persistNotToday: { _, _ in .none },
             persistResume: { _, _ in .none },
             persistStartOngoing: { _, _ in .none },

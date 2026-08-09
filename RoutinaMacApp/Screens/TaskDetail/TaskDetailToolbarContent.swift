@@ -60,6 +60,8 @@ struct TaskDetailActionClusterView: View {
     let onClose: (() -> Void)?
     let isTaskSharingEnabled: Bool
 
+    @State private var isPauseUntilPresented = false
+
     var body: some View {
         HStack(spacing: 8) {
             actionButtons
@@ -103,6 +105,13 @@ struct TaskDetailActionClusterView: View {
         .padding(.vertical, 4)
         .routinaGlassPill(tint: .secondary, tintOpacity: 0.05, interactive: true)
         .contentShape(Capsule(style: .continuous))
+        .sheet(isPresented: $isPauseUntilPresented) {
+            TaskDetailPauseUntilSheet(
+                actionTitle: pauseUntilActionTitle
+            ) { pauseUntil in
+                store.send(.pauseUntilTapped(pauseUntil))
+            }
+        }
     }
 
     @ViewBuilder
@@ -117,40 +126,67 @@ struct TaskDetailActionClusterView: View {
         .help(store.completionButtonTitle)
         .accessibilityLabel(store.completionButtonTitle)
 
-        if showsFullDetailActions && showsPauseResumeButton {
-            Button {
-                store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
-            } label: {
-                toolbarTextActionLabel(
-                    title: pauseActionTitle,
-                    systemImage: pauseSystemImage,
-                    tint: pauseTint
-                )
-            }
-            .buttonStyle(.plain)
-            .help(pauseActionTitle)
-            .accessibilityLabel(pauseActionTitle)
+        if showsFullDetailActions {
+            taskLifecycleActionsMenu
         }
+    }
 
-        if showsFullDetailActions && showsCancelTodoButton {
-            Button {
-                store.send(.cancelTodo)
-            } label: {
-                toolbarTextActionLabel(
-                    title: store.cancelTodoButtonTitle,
-                    systemImage: "slash.circle",
-                    tint: .orange
-                )
+    private var taskLifecycleActionsMenu: some View {
+        Menu {
+            if showsPauseResumeButton {
+                if store.task.isArchived() {
+                    Button {
+                        store.send(.resumeTapped)
+                    } label: {
+                        Label(pauseActionTitle, systemImage: pauseSystemImage)
+                    }
+                } else {
+                    Button {
+                        store.send(.pauseTapped)
+                    } label: {
+                        Label(pauseActionTitle, systemImage: pauseSystemImage)
+                    }
+
+                    Button {
+                        isPauseUntilPresented = true
+                    } label: {
+                        Label(pauseUntilActionTitle, systemImage: "clock.arrow.circlepath")
+                    }
+                }
             }
-            .buttonStyle(.plain)
-            .disabled(store.isCancelTodoButtonDisabled)
-            .help(store.cancelTodoButtonTitle)
-            .accessibilityLabel(store.cancelTodoButtonTitle)
+
+            if showsCancelTodoButton {
+                Button {
+                    store.send(.cancelTodo)
+                } label: {
+                    Label(store.cancelTodoButtonTitle, systemImage: "slash.circle")
+                }
+                .disabled(store.isCancelTodoButtonDisabled)
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                store.send(.setDeleteConfirmation(true))
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        } label: {
+            toolbarIconLabel(systemImage: "ellipsis.vertical")
         }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("More task actions")
+        .accessibilityLabel("More task actions")
     }
 
     private var showsFullDetailActions: Bool {
         style == .fullDetail
+    }
+
+    private var pauseUntilActionTitle: String {
+        store.task.isOneOffTask ? "Archive Until…" : "Pause Until…"
     }
 
     private var closeButtonTitle: String {
@@ -206,32 +242,6 @@ struct TaskDetailActionClusterView: View {
         .opacity(store.isCompletionButtonDisabled ? 0.55 : 1)
     }
 
-    private func toolbarTextActionLabel(
-        title: String,
-        systemImage: String,
-        tint: Color
-    ) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: systemImage)
-            Text(title)
-        }
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(tint)
-        .lineLimit(1)
-        .fixedSize(horizontal: true, vertical: false)
-        .padding(.horizontal, 12)
-        .frame(minHeight: Metrics.controlHeight)
-        .background(
-            RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous)
-                .fill(tint.opacity(0.10))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous)
-                .stroke(tint.opacity(0.24), lineWidth: 1)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous))
-    }
-
     private func toolbarIconLabel(systemImage: String) -> some View {
         toolbarIconChrome {
             Image(systemName: systemImage)
@@ -285,7 +295,4 @@ struct TaskDetailActionClusterView: View {
         return store.task.isArchived() ? "play.fill" : "pause.fill"
     }
 
-    private var pauseTint: Color {
-        store.task.isArchived() ? .teal : .orange
-    }
 }

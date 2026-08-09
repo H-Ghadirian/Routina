@@ -85,6 +85,7 @@ enum SettingsRoutineDataBackupMapping {
             canceledAt: task.canceledAt,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
+            pauseUntil: task.pauseUntil,
             snoozedUntil: task.snoozedUntil,
             pinnedAt: task.pinnedAt,
             completedStepCount: task.completedSteps,

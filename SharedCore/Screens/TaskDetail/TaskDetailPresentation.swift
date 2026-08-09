@@ -56,7 +56,7 @@ enum TaskDetailPresentation {
         referenceDate: Date = Date()
     ) -> Color {
         if task.isSnoozed(referenceDate: referenceDate) { return .indigo }
-        if pausedAt != nil { return .teal }
+        if task.isPaused(referenceDate: referenceDate) { return .teal }
         if task.usesOngoingLifecycle && task.isOngoing { return .orange }
         if task.isOneOffTask {
             if task.isInProgress { return .orange }
@@ -104,6 +104,7 @@ enum TaskDetailPresentation {
 
     static func summaryTitleColor(
         pausedAt: Date?,
+        pauseUntil: Date? = nil,
         isSnoozed: Bool,
         usesOngoingLifecycle: Bool,
         isOngoing: Bool,
@@ -119,10 +120,11 @@ enum TaskDetailPresentation {
         overdueDays: Int,
         daysUntilDueIfActive: Int?,
         hasUnresolvedMissedExactTimedOccurrence: Bool,
-        isOrangeUrgency: Bool
+        isOrangeUrgency: Bool,
+        referenceDate: Date = Date()
     ) -> Color {
         if isSnoozed { return .indigo }
-        if pausedAt != nil { return .teal }
+        if isPaused(pausedAt: pausedAt, pauseUntil: pauseUntil, referenceDate: referenceDate) { return .teal }
         if usesOngoingLifecycle && isOngoing { return .orange }
         if isOneOffTask {
             if isInProgress { return .orange }
@@ -162,6 +164,16 @@ enum TaskDetailPresentation {
         }
         if isOrangeUrgency { return .orange }
         return .primary
+    }
+
+    private static func isPaused(
+        pausedAt: Date?,
+        pauseUntil: Date?,
+        referenceDate: Date
+    ) -> Bool {
+        guard let pausedAt, referenceDate >= pausedAt else { return false }
+        guard let pauseUntil else { return true }
+        return referenceDate < pauseUntil
     }
 
     // MARK: - Urgency helpers

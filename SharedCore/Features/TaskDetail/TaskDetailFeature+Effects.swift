@@ -1083,7 +1083,11 @@ extension TaskDetailFeature {
         }
     }
 
-    func handlePauseRoutine(taskID: UUID, pausedAt: Date) -> Effect<Action> {
+    func handlePauseRoutine(
+        taskID: UUID,
+        pausedAt: Date,
+        pauseUntil: Date?
+    ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
@@ -1093,6 +1097,7 @@ extension TaskDetailFeature {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: pausedAt)
                 }
                 task.pausedAt = pausedAt
+                task.pauseUntil = pauseUntil
                 task.snoozedUntil = nil
                 DeviceActivityRecorder.recordAction(
                     .paused,
@@ -1162,6 +1167,7 @@ extension TaskDetailFeature {
                     task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumedAt)
                 }
                 task.pausedAt = nil
+                task.pauseUntil = nil
                 task.snoozedUntil = nil
                 DeviceActivityRecorder.recordAction(
                     .resumed,
@@ -1414,6 +1420,7 @@ extension TaskDetailFeature {
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.todoStateRawValue = rawValue
                 task.pausedAt = pausedAt
+                task.pauseUntil = nil
                 if clearSnoozed { task.snoozedUntil = nil }
                 if previousStateTitle != newStateTitle {
                     task.appendChangeLogEntry(
