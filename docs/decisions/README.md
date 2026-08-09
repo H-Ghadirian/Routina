@@ -19,6 +19,10 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0518](0518-scope-signed-cloudkit-diagnostics-to-macos.md) refines [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md):** macOS reports its signed CloudKit environment; iOS explicitly reports that no public API can verify the installed binary's entitlement.
+
+- **[0517](0517-sandbox-embedded-mcp-helper.md):** The macOS MCP helper is re-signed with exactly the App Sandbox and sandbox-inheritance entitlements required for a Mac App Store embedded executable.
+
 - **[0516](0516-make-support-diagnostics-copyable.md) refines [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md):** Support diagnostics shows the OS version and copies one privacy-safe, labelled report for direct support sharing.
 
 - **[0515](0515-report-signed-cloudkit-environment-in-diagnostics.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0248](0248-add-explicit-mac-prod-run-entrypoint.md):** Support diagnostics reports the running executable's signed CloudKit environment separately from its configured data mode and container.
@@ -66,6 +70,10 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0518](0518-scope-signed-cloudkit-diagnostics-to-macos.md) refines [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md):** macOS uses the public signed-entitlement read; iOS reports that this verification is unavailable rather than inferring an environment.
+
+- **[0517](0517-sandbox-embedded-mcp-helper.md):** The embedded macOS MCP helper uses only the App Sandbox and inheritance entitlements so it remains a valid child executable of Routina's sandboxed app.
 
 - **[0516](0516-make-support-diagnostics-copyable.md) refines [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md):** Support diagnostics shows the current OS and copies only the labelled support metadata necessary to assess an app, signing, or CloudKit issue.
 
@@ -531,6 +539,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0518](0518-scope-signed-cloudkit-diagnostics-to-macos.md) | Scope Signed CloudKit Diagnostics to macOS | Accepted | 2026-08-09 |
+| [0517](0517-sandbox-embedded-mcp-helper.md) | Sandbox the Embedded MCP Helper | Accepted | 2026-08-09 |
 | [0516](0516-make-support-diagnostics-copyable.md) | Make Support Diagnostics Copyable | Accepted | 2026-08-09 |
 | [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md) | Report Signed CloudKit Environment in Diagnostics | Accepted | 2026-08-09 |
 | [0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) | Present Mac Relationship Suggestions in Link Task Sheet | Accepted | 2026-08-08 |

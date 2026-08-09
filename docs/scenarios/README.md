@@ -89,6 +89,19 @@ Then it has no location usage description or `CLLocationManager` implementation
 And its location client returns a no-op snapshot
 And iOS development configurations retain the actual location implementation for Places testing
 
+### Embedded macOS MCP Helper Inherits App Sandbox
+
+Area: Other
+Decision links: [0517](../decisions/0517-sandbox-embedded-mcp-helper.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
+
+Given a macOS Routina archive embeds `RoutinaAIMCPServer`
+When the helper is re-signed for App Store distribution
+Then it has exactly the App Sandbox and sandbox-inheritance entitlements
+And the helper has no independent sandbox capability that would break inheritance
+
 ### Support Diagnostics Report the Signed CloudKit Environment
 
 Area: Settings / Other
@@ -99,11 +112,16 @@ Coverage:
 - `Tests/Shared/SettingsFeatureDependencyTests.swift`
 
 Given a Routina executable is signed with a CloudKit environment entitlement
-When Support & About diagnostics are revealed
+When Support & About diagnostics are revealed on macOS
 Then the signed environment is displayed separately from the configured Data Mode and iCloud Container
 And the displayed signed environment is derived from `com.apple.developer.icloud-container-environment`, not inferred from configured values
 
-Given the running executable has no readable CloudKit environment entitlement
+Given a Routina installation runs on iOS
+When Support & About diagnostics are revealed
+Then the signed CloudKit Environment explicitly reports that verification is unavailable on iOS
+And the app does not infer Development or Production from configured Data Mode or iCloud Container
+
+Given a macOS executable has no readable CloudKit environment entitlement
 When Support & About diagnostics are revealed
 Then it explicitly reports the entitlement as unavailable or not present
 

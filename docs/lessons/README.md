@@ -159,3 +159,5 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0115 — Declare both HealthKit purpose strings](0115-declare-both-healthkit-purpose-strings.md)
 - [0116 — Compile out protected experimental services](0116-compile-out-protected-experimental-services.md)
 - [0117 — Report signed CloudKit environment in diagnostics](0117-report-signed-cloudkit-environment-in-diagnostics.md)
+- [0118 — Sandbox every embedded macOS executable](0118-sandbox-every-embedded-macos-executable.md)
+- [0119 — Scope Security task entitlement reads to macOS](0119-scope-security-task-entitlement-reads-to-macos.md)

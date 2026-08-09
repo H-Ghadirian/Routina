@@ -61,6 +61,23 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
+    func embeddedMacMCPHelperInheritsTheAppSandbox() throws {
+        let helperEntitlements = try Self.propertyListDictionary(
+            "Config/macOS/RoutinaAIMCPServer.entitlements"
+        )
+        #expect(helperEntitlements.count == 2)
+        #expect(helperEntitlements["com.apple.security.app-sandbox"] as? Bool == true)
+        #expect(helperEntitlements["com.apple.security.inherit"] as? Bool == true)
+
+        let embedScript = try Self.sourceFile("script/embed_mcp_helper.sh")
+        #expect(embedScript.contains(
+            "entitlements_path=\"$SRCROOT/Config/macOS/RoutinaAIMCPServer.entitlements\""
+        ))
+        #expect(embedScript.contains("--entitlements \"$entitlements_path\""))
+        #expect(embedScript.contains("--identifier \"$helper_identifier\""))
+    }
+
+    @Test
     func productionBundlesDoNotDeclareHiddenExperimentPermissions() throws {
         let macInfo = try Self.propertyListDictionary("Config/macOS/RoutinaMacOSProd-Info.plist")
         for key in [

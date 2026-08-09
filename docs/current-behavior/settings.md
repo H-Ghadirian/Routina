@@ -34,6 +34,8 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0514](../decisions/0514-defer-ios-location-services-until-places-release.md)
 - [0515](../decisions/0515-report-signed-cloudkit-environment-in-diagnostics.md)
 - [0516](../decisions/0516-make-support-diagnostics-copyable.md)
+- [0517](../decisions/0517-sandbox-embedded-mcp-helper.md)
+- [0518](../decisions/0518-scope-signed-cloudkit-diagnostics-to-macos.md)
 
 ## Current Contract
 
@@ -45,7 +47,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Beta Experiments are available only in development app variants. Production does not render the Beta Experiments panel after the hidden diagnostics gesture, resolves every experimental preference to disabled, and forces attempted experimental writes off, including values restored from older releases.
 - The Mac production entitlement set omits location, audio input, and Apple Events automation because their Places, voice-note, and browser-automation entry points are experimental. The iOS production build likewise omits its location purpose string and compiles a no-op location client. Development builds retain those capabilities. Apple Calendar access remains a production feature and retains its calendar entitlement and purpose strings.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
-- Hidden Support & About diagnostics show configured Data Mode and iCloud Container separately from the running executable's signed CloudKit environment. The signed value comes from `com.apple.developer.icloud-container-environment`; absent or unexpected values remain explicit rather than being inferred from configuration.
+- Hidden Support & About diagnostics show configured Data Mode and iCloud Container separately from the running executable's signed CloudKit environment. macOS reads the signed value from `com.apple.developer.icloud-container-environment`; iOS explicitly reports that this verification is unavailable rather than inferring it from configuration.
 - Hidden Support & About diagnostics also shows the app's operating system and offers `Copy Diagnostics`. It copies a labelled report containing app, operating-system, CloudKit, and push metadata only; it excludes user data, identifiers, credentials, and device tokens.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
@@ -60,4 +62,5 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - While Away is unavailable, Blocking exposes only Focus mode controls and Stats hides Sleep-specific surfaces.
 - Mac app widget source remains in the repository, but the Mac app targets do not build, embed, or register widget extensions, so Routina widgets are not exposed on macOS.
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.
+- The embedded macOS MCP helper inherits Routina's App Sandbox and is signed with only the App Sandbox and inheritance entitlements required for a Mac App Store helper executable.
 - The Mac development app exposes screenshot preparation in Settings -> Appearance. Its development badge remains visible by default but can be hidden with `Show development badge`; `Generate Screenshot Data` adds an idempotent, non-destructive set of representative tasks, history, planner blocks, focus, goals, notes, events, emotions, sleep, and Away records. Production hides these controls and ignores the screenshot seed launch trigger.

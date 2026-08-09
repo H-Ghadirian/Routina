@@ -170,6 +170,7 @@ enum AppEnvironment {
     /// This intentionally does not derive from the selected container or the app's
     /// configured data mode: those values cannot prove how the installed binary was signed.
     static let signedCloudKitEnvironmentDescription: String = {
+        #if os(macOS)
         guard let task = SecTaskCreateFromSelf(nil) else {
             return "Unavailable"
         }
@@ -180,6 +181,12 @@ enum AppEnvironment {
             nil
         )
         return cloudKitEnvironmentDescription(from: entitlementValue)
+        #else
+        // iOS does not expose the public SecTask entitlement-reading API. In
+        // particular, TestFlight and App Store apps do not have an embedded
+        // provisioning profile that could serve as a signed-entitlement fallback.
+        return "Unavailable on iOS"
+        #endif
     }()
 
     static let operatingSystemDescription: String = {
