@@ -1209,7 +1209,8 @@ private struct DayPlanDayTaskColumnView: View {
     @AppStorage(
         UserDefaultBoolValueKey.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault.rawValue,
         store: SharedDefaults.app
-    ) private var isAssumedDoneCollapsedByDefault = true
+    ) private var areCalendarListTaskSectionsCollapsedByDefault = true
+    @State private var plannedTasksSectionCollapsedOverride: Bool?
     @State private var assumedDoneSectionCollapsedOverride: Bool?
 
     var body: some View {
@@ -1229,6 +1230,7 @@ private struct DayPlanDayTaskColumnView: View {
                     onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                     availableRowWidth: availableRowWidth,
                     sectionSpacing: 12,
+                    plannedTasksSectionCollapsed: plannedTasksSectionCollapsed,
                     assumedDoneSectionCollapsed: assumedDoneSectionCollapsed
                 )
             }
@@ -1250,10 +1252,23 @@ private struct DayPlanDayTaskColumnView: View {
     private var assumedDoneSectionCollapsed: Binding<Bool> {
         Binding(
             get: {
-                assumedDoneSectionCollapsedOverride ?? isAssumedDoneCollapsedByDefault
+                assumedDoneSectionCollapsedOverride
+                    ?? areCalendarListTaskSectionsCollapsedByDefault
             },
             set: { isCollapsed in
                 assumedDoneSectionCollapsedOverride = isCollapsed
+            }
+        )
+    }
+
+    private var plannedTasksSectionCollapsed: Binding<Bool> {
+        Binding(
+            get: {
+                plannedTasksSectionCollapsedOverride
+                    ?? areCalendarListTaskSectionsCollapsedByDefault
+            },
+            set: { isCollapsed in
+                plannedTasksSectionCollapsedOverride = isCollapsed
             }
         )
     }
@@ -1285,6 +1300,7 @@ struct DayPlanDayTaskListContentView: View {
     var onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)? = nil
     var availableRowWidth: CGFloat? = nil
     var sectionSpacing: CGFloat = 14
+    var plannedTasksSectionCollapsed: Binding<Bool>? = nil
     var assumedDoneSectionCollapsed: Binding<Bool>? = nil
     @AppStorage(
         UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue,
@@ -1311,9 +1327,7 @@ struct DayPlanDayTaskListContentView: View {
                         onDragProvider: onDragProvider,
                         availableRowWidth: availableRowWidth,
                         rowVisibility: rowVisibility,
-                        isCollapsed: section == .assumedDone
-                            ? assumedDoneSectionCollapsed
-                            : nil
+                        isCollapsed: collapsedState(for: section)
                     )
                 }
             }
@@ -1326,6 +1340,19 @@ struct DayPlanDayTaskListContentView: View {
 
     private var rowVisibility: DayPlanCalendarListRowVisibility {
         DayPlanCalendarListRowVisibility(storageRawValue: rowHiddenFieldsRawValue)
+    }
+
+    private func collapsedState(
+        for section: DayPlanDayTaskListItem.Section
+    ) -> Binding<Bool>? {
+        switch section {
+        case .planned:
+            plannedTasksSectionCollapsed
+        case .assumedDone:
+            assumedDoneSectionCollapsed
+        case .done:
+            nil
+        }
     }
 }
 

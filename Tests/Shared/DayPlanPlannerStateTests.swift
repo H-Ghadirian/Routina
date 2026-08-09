@@ -173,7 +173,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func macCalendarListAssumedDoneSectionDefaultsToCollapsible() throws {
+    func macCalendarListTaskSectionsDefaultToCollapsible() throws {
         let calendarSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
         )
@@ -186,19 +186,27 @@ struct DayPlanPlannerStateTests {
 
         #expect(
             calendarSource.contains(
+                "var plannedTasksSectionCollapsed: Binding<Bool>? = nil"
+            )
+        )
+        #expect(
+            calendarSource.contains(
                 "var assumedDoneSectionCollapsed: Binding<Bool>? = nil"
             )
         )
-        #expect(calendarSource.contains("section == .assumedDone"))
+        #expect(calendarSource.contains("case .planned:"))
+        #expect(calendarSource.contains("plannedTasksSectionCollapsed"))
+        #expect(calendarSource.contains("case .assumedDone:"))
         #expect(calendarSource.contains("isCollapsed?.wrappedValue != true"))
         #expect(calendarSource.contains("accessibilityValue(isCollapsed.wrappedValue ? \"Collapsed\" : \"Expanded\")"))
         #expect(
             settingsSource.contains(
-                "Picker(\"Assumed done default\", selection: $isCalendarListAssumedDoneCollapsedByDefault)"
+                "Picker(\"Task sections default\", selection: $areCalendarListTaskSectionsCollapsedByDefault)"
             )
         )
         #expect(settingsSource.contains("Text(\"Collapsed\").tag(true)"))
         #expect(settingsSource.contains("Text(\"Expanded\").tag(false)"))
+        #expect(settingsSource.contains("Newly shown Planned tasks and Assumed done sections use this state."))
         #expect(
             defaultsSource.contains(
                 ".appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault: true"

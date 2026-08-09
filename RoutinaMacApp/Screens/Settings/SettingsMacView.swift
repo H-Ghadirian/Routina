@@ -197,7 +197,7 @@ private struct SettingsMacCalendarDetailView: View {
     @AppStorage(
         UserDefaultBoolValueKey.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault.rawValue,
         store: SharedDefaults.app
-    ) private var isCalendarListAssumedDoneCollapsedByDefault = true
+    ) private var areCalendarListTaskSectionsCollapsedByDefault = true
 
     var body: some View {
 SettingsMacDetailShell(
@@ -227,13 +227,13 @@ SettingsMacDetailShell(
     }
 
     SettingsMacDetailCard(title: "Calendar List") {
-        Picker("Assumed done default", selection: $isCalendarListAssumedDoneCollapsedByDefault) {
+        Picker("Task sections default", selection: $areCalendarListTaskSectionsCollapsedByDefault) {
             Text("Collapsed").tag(true)
             Text("Expanded").tag(false)
         }
         .pickerStyle(.segmented)
 
-        Text("Newly shown Assumed done sections use this state. You can still open or collapse each day directly in Calendar List.")
+        Text("Newly shown Planned tasks and Assumed done sections use this state. You can still open or collapse each section for a day directly in Calendar List.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }
