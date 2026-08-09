@@ -2,8 +2,10 @@ import Foundation
 
 struct SettingsOnAppearSnapshot: Equatable {
     var appVersion: String
+    var operatingSystemDescription: String
     var dataModeDescription: String
     var iCloudContainerDescription: String
+    var signedCloudKitEnvironmentDescription: String
     var cloudSyncAvailable: Bool
     var gitHubConnection: GitHubConnectionStatus
     var gitLabConnection: GitLabConnectionStatus
@@ -44,8 +46,10 @@ enum SettingsRefreshEditor {
         state: inout SettingsFeatureState
     ) {
         state.diagnostics.appVersion = snapshot.appVersion
+        state.diagnostics.operatingSystemDescription = snapshot.operatingSystemDescription
         state.diagnostics.dataModeDescription = snapshot.dataModeDescription
         state.diagnostics.iCloudContainerDescription = snapshot.iCloudContainerDescription
+        state.diagnostics.signedCloudKitEnvironmentDescription = snapshot.signedCloudKitEnvironmentDescription
         state.diagnostics.isDebugSectionVisible = false
         state.diagnostics.cloudDiagnosticsSummary = snapshot.cloudDiagnosticsSummary
         state.diagnostics.cloudDiagnosticsTimestamp = snapshot.cloudDiagnosticsTimestamp

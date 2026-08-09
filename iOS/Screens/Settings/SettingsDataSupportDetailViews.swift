@@ -3,6 +3,7 @@ import ComposableArchitecture
 
 struct SettingsAboutDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @State private var didCopyDiagnostics = false
 
     var body: some View {
 List {
@@ -50,8 +51,13 @@ List {
         }
 
         Section("Diagnostics") {
+            SettingsInfoRow(title: "Operating System", value: store.diagnostics.operatingSystemDescription)
             SettingsInfoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)
             SettingsInfoRow(title: "iCloud Container", value: store.diagnostics.iCloudContainerDescription)
+            SettingsInfoRow(
+                title: "Signed CloudKit Environment",
+                value: store.diagnostics.signedCloudKitEnvironmentDescription
+            )
 
             Text("Last CloudKit Event: \(store.diagnostics.cloudDiagnosticsTimestamp)")
                 .foregroundStyle(.secondary)
@@ -59,6 +65,19 @@ List {
                 .foregroundStyle(.secondary)
             Text(store.diagnostics.pushDiagnosticsStatus)
                 .foregroundStyle(.secondary)
+
+            Button {
+                SettingsDiagnosticsClipboard.copy(
+                    SettingsDiagnosticsReport.text(for: store.diagnostics)
+                )
+                didCopyDiagnostics = true
+            } label: {
+                Label(
+                    didCopyDiagnostics ? "Diagnostics Copied" : "Copy Diagnostics",
+                    systemImage: didCopyDiagnostics ? "checkmark" : "doc.on.doc"
+                )
+            }
+            .accessibilityHint("Copies the complete diagnostic report for sharing with support")
         }
     }
 }

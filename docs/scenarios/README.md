@@ -89,6 +89,38 @@ Then it has no location usage description or `CLLocationManager` implementation
 And its location client returns a no-op snapshot
 And iOS development configurations retain the actual location implementation for Places testing
 
+### Support Diagnostics Report the Signed CloudKit Environment
+
+Area: Settings / Other
+Decision links: [0515](../decisions/0515-report-signed-cloudkit-environment-in-diagnostics.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/AppEnvironmentTests.swift`
+- `Tests/Shared/SettingsFeatureDependencyTests.swift`
+
+Given a Routina executable is signed with a CloudKit environment entitlement
+When Support & About diagnostics are revealed
+Then the signed environment is displayed separately from the configured Data Mode and iCloud Container
+And the displayed signed environment is derived from `com.apple.developer.icloud-container-environment`, not inferred from configured values
+
+Given the running executable has no readable CloudKit environment entitlement
+When Support & About diagnostics are revealed
+Then it explicitly reports the entitlement as unavailable or not present
+
+### Support Diagnostics Are Copyable and Include the Operating System
+
+Area: Settings / Other
+Decision links: [0516](../decisions/0516-make-support-diagnostics-copyable.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/AppEnvironmentTests.swift`
+- `Tests/Shared/SettingsFeatureDependencyTests.swift`
+
+Given a user reveals Support & About diagnostics on iOS or macOS
+When they select `Copy Diagnostics`
+Then their clipboard receives one labelled report containing the app version, operating system, CloudKit configuration/signing values, last CloudKit event, and push status
+And the report does not contain task content, account identifiers, credentials, or device tokens
+
 ### Production Uploads Carry Export-Compliance Metadata
 
 Area: Other

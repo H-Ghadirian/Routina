@@ -32,6 +32,8 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
 - [0513](../decisions/0513-defer-ios-screen-time-blocking-until-distribution-approval.md)
 - [0514](../decisions/0514-defer-ios-location-services-until-places-release.md)
+- [0515](../decisions/0515-report-signed-cloudkit-environment-in-diagnostics.md)
+- [0516](../decisions/0516-make-support-diagnostics-copyable.md)
 
 ## Current Contract
 
@@ -43,6 +45,8 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Beta Experiments are available only in development app variants. Production does not render the Beta Experiments panel after the hidden diagnostics gesture, resolves every experimental preference to disabled, and forces attempted experimental writes off, including values restored from older releases.
 - The Mac production entitlement set omits location, audio input, and Apple Events automation because their Places, voice-note, and browser-automation entry points are experimental. The iOS production build likewise omits its location purpose string and compiles a no-op location client. Development builds retain those capabilities. Apple Calendar access remains a production feature and retains its calendar entitlement and purpose strings.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
+- Hidden Support & About diagnostics show configured Data Mode and iCloud Container separately from the running executable's signed CloudKit environment. The signed value comes from `com.apple.developer.icloud-container-environment`; absent or unexpected values remain explicit rather than being inferred from configuration.
+- Hidden Support & About diagnostics also shows the app's operating system and offers `Copy Diagnostics`. It copies a labelled report containing app, operating-system, CloudKit, and push metadata only; it excludes user data, identifiers, credentials, and device tokens.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
 - Legacy `.json` backup remains compatibility-only for older task, place, goal, and log payloads.

@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 enum AppEnvironment {
     static let productionDeepLinkURLScheme = "routina"
@@ -161,6 +162,31 @@ enum AppEnvironment {
         cloudKitContainerIdentifier != nil
     }()
 
+    private static let cloudKitEnvironmentEntitlementKey =
+        "com.apple.developer.icloud-container-environment"
+
+    /// The CloudKit environment from this executable's code-signature entitlement.
+    ///
+    /// This intentionally does not derive from the selected container or the app's
+    /// configured data mode: those values cannot prove how the installed binary was signed.
+    static let signedCloudKitEnvironmentDescription: String = {
+        guard let task = SecTaskCreateFromSelf(nil) else {
+            return "Unavailable"
+        }
+
+        let entitlementValue = SecTaskCopyValueForEntitlement(
+            task,
+            cloudKitEnvironmentEntitlementKey as CFString,
+            nil
+        )
+        return cloudKitEnvironmentDescription(from: entitlementValue)
+    }()
+
+    static let operatingSystemDescription: String = {
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        return "\(operatingSystemName) \(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
+    }()
+
     static let persistentStoreFileName: String = {
         if isUITestMode,
            let override = processEnvironment["ROUTINA_STORE_FILENAME"],
@@ -238,11 +264,39 @@ enum AppEnvironment {
         return isCloudSyncEnabled ? "Production (iCloud)" : "Production (local only)"
     }()
 
+    static func cloudKitEnvironmentDescription(from entitlementValue: Any?) -> String {
+        guard let rawValue = entitlementValue as? String else {
+            return entitlementValue == nil ? "Not present" : "Unexpected value"
+        }
+
+        let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return "Not present" }
+
+        switch value.lowercased() {
+        case "development":
+            return "Development"
+        case "production":
+            return "Production"
+        default:
+            return value
+        }
+    }
+
     static func subscriptionProductID(for plan: RoutinaSubscriptionPlan) -> String {
         resolvedString(
             infoKey: plan.subscriptionInfoKey,
             envKey: plan.subscriptionEnvironmentKey
         ) ?? plan.defaultProductID
+    }
+
+    private static var operatingSystemName: String {
+        #if os(macOS)
+        "macOS"
+        #elseif os(iOS)
+        "iOS"
+        #else
+        "Apple OS"
+        #endif
     }
 
     static func cleanedURLScheme(_ rawValue: String) -> String {

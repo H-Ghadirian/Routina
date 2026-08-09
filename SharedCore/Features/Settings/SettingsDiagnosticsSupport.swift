@@ -1,4 +1,9 @@
 import Foundation
+#if os(macOS)
+import AppKit
+#elseif os(iOS)
+import UIKit
+#endif
 
 enum SettingsDiagnosticsLoader {
     static func makeOnAppearSnapshot(
@@ -11,8 +16,10 @@ enum SettingsDiagnosticsLoader {
         let diagnostics = CloudKitSyncDiagnostics.snapshot()
         return SettingsOnAppearSnapshot(
             appVersion: appInfoClient.versionString(),
+            operatingSystemDescription: appInfoClient.operatingSystemDescription(),
             dataModeDescription: appInfoClient.dataModeDescription(),
             iCloudContainerDescription: appInfoClient.cloudContainerDescription(),
+            signedCloudKitEnvironmentDescription: appInfoClient.signedCloudKitEnvironmentDescription(),
             cloudSyncAvailable: appInfoClient.isCloudSyncEnabled(),
             gitHubConnection: gitHubConnection,
             gitLabConnection: gitLabConnection,
@@ -57,5 +64,33 @@ enum SettingsDiagnosticsLoader {
         state.cloudDiagnosticsSummary = diagnostics.summary
         state.cloudDiagnosticsTimestamp = diagnostics.timestampText
         state.pushDiagnosticsStatus = diagnostics.pushStatus
+    }
+}
+
+enum SettingsDiagnosticsReport {
+    static func text(for diagnostics: SettingsDiagnosticsState) -> String {
+        [
+            "Routina Diagnostics",
+            "App Version: \(diagnostics.appVersion)",
+            "Operating System: \(diagnostics.operatingSystemDescription)",
+            "Data Mode: \(diagnostics.dataModeDescription)",
+            "iCloud Container: \(diagnostics.iCloudContainerDescription)",
+            "Signed CloudKit Environment: \(diagnostics.signedCloudKitEnvironmentDescription)",
+            "Last CloudKit Event: \(diagnostics.cloudDiagnosticsTimestamp)",
+            "CloudKit Detail: \(diagnostics.cloudDiagnosticsSummary)",
+            "Push Status: \(diagnostics.pushDiagnosticsStatus)"
+        ].joined(separator: "\n")
+    }
+}
+
+enum SettingsDiagnosticsClipboard {
+    @MainActor
+    static func copy(_ text: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #elseif os(iOS)
+        UIPasteboard.general.string = text
+        #endif
     }
 }

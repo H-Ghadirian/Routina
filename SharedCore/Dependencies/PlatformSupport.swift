@@ -82,8 +82,10 @@ enum AppIconOption: String, CaseIterable, Equatable, Identifiable {
 
 struct AppInfoClient: Sendable {
     var versionString: @Sendable () -> String
+    var operatingSystemDescription: @Sendable () -> String
     var dataModeDescription: @Sendable () -> String
     var cloudContainerDescription: @Sendable () -> String
+    var signedCloudKitEnvironmentDescription: @Sendable () -> String
     var isCloudSyncEnabled: @Sendable () -> Bool
 }
 
@@ -92,11 +94,17 @@ extension AppInfoClient {
         versionString: {
             Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
         },
+        operatingSystemDescription: {
+            AppEnvironment.operatingSystemDescription
+        },
         dataModeDescription: {
             AppEnvironment.dataModeLabel
         },
         cloudContainerDescription: {
             AppEnvironment.cloudKitContainerIdentifier ?? "Disabled"
+        },
+        signedCloudKitEnvironmentDescription: {
+            AppEnvironment.signedCloudKitEnvironmentDescription
         },
         isCloudSyncEnabled: {
             AppEnvironment.isCloudSyncEnabled
@@ -105,8 +113,10 @@ extension AppInfoClient {
 
     static let noop = AppInfoClient(
         versionString: { "Unknown" },
+        operatingSystemDescription: { "Unknown" },
         dataModeDescription: { "Unknown" },
         cloudContainerDescription: { "Disabled" },
+        signedCloudKitEnvironmentDescription: { "Unavailable" },
         isCloudSyncEnabled: { false }
     )
 }

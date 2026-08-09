@@ -19,6 +19,10 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0516](0516-make-support-diagnostics-copyable.md) refines [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md):** Support diagnostics shows the OS version and copies one privacy-safe, labelled report for direct support sharing.
+
+- **[0515](0515-report-signed-cloudkit-environment-in-diagnostics.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0248](0248-add-explicit-mac-prod-run-entrypoint.md):** Support diagnostics reports the running executable's signed CloudKit environment separately from its configured data mode and container.
+
 - **[0514](0514-defer-ios-location-services-until-places-release.md) refines [0275](0275-hide-places-behind-beta-toggle.md) and [0470](0470-keep-beta-experiments-out-of-production.md):** iOS development retains Places location services, while production compiles no `CLLocationManager` implementation until Places becomes a release feature.
 
 - **[0513](0513-defer-ios-screen-time-blocking-until-distribution-approval.md) refines [0085](0085-shield-apps-and-websites-during-focus.md):** iOS development retains Screen Time app and website blocking, while production omits its UI, implementation, and Family Controls entitlement until Apple grants distribution approval.
@@ -62,6 +66,10 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0516](0516-make-support-diagnostics-copyable.md) refines [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md):** Support diagnostics shows the current OS and copies only the labelled support metadata necessary to assess an app, signing, or CloudKit issue.
+
+- **[0515](0515-report-signed-cloudkit-environment-in-diagnostics.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0248](0248-add-explicit-mac-prod-run-entrypoint.md):** Support diagnostics reads the running executable's `com.apple.developer.icloud-container-environment` entitlement and presents it separately from configured Data Mode and iCloud Container values.
 
 - **[0514](0514-defer-ios-location-services-until-places-release.md) refines [0275](0275-hide-places-behind-beta-toggle.md) and [0470](0470-keep-beta-experiments-out-of-production.md):** Until Places is deliberately promoted for release, iOS development retains device-location services while production compiles a no-op client and no `CLLocationManager` implementation.
 
@@ -523,6 +531,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0516](0516-make-support-diagnostics-copyable.md) | Make Support Diagnostics Copyable | Accepted | 2026-08-09 |
+| [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md) | Report Signed CloudKit Environment in Diagnostics | Accepted | 2026-08-09 |
 | [0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) | Present Mac Relationship Suggestions in Link Task Sheet | Accepted | 2026-08-08 |
 | [0513](0513-defer-ios-screen-time-blocking-until-distribution-approval.md) | Defer iOS Screen Time Blocking Until Distribution Approval | Accepted | 2026-08-09 |
 | [0511](0511-pause-custom-mac-super-sections.md) | Pause Custom Mac Super Sections | Accepted | 2026-08-08 |

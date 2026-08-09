@@ -399,6 +399,7 @@ private struct SettingsMacShortcutKeyCluster: View {
 
 struct SettingsMacAboutDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @State private var didCopyDiagnostics = false
 
     var body: some View {
 SettingsMacDetailShell(
@@ -442,8 +443,13 @@ SettingsMacDetailShell(
         }
 
         SettingsMacDetailCard(title: "Diagnostics") {
+            settingsInfoRow(title: "Operating System", value: store.diagnostics.operatingSystemDescription)
             settingsInfoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)
             settingsInfoRow(title: "iCloud Container", value: store.diagnostics.iCloudContainerDescription)
+            settingsInfoRow(
+                title: "Signed CloudKit Environment",
+                value: store.diagnostics.signedCloudKitEnvironmentDescription
+            )
 
             Text("Last CloudKit Event: \(store.diagnostics.cloudDiagnosticsTimestamp)")
                 .font(.footnote)
@@ -454,6 +460,20 @@ SettingsMacDetailShell(
             Text(store.diagnostics.pushDiagnosticsStatus)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            Button {
+                SettingsDiagnosticsClipboard.copy(
+                    SettingsDiagnosticsReport.text(for: store.diagnostics)
+                )
+                didCopyDiagnostics = true
+            } label: {
+                Label(
+                    didCopyDiagnostics ? "Diagnostics Copied" : "Copy Diagnostics",
+                    systemImage: didCopyDiagnostics ? "checkmark" : "doc.on.doc"
+                )
+            }
+            .buttonStyle(.bordered)
+            .accessibilityHint("Copies the complete diagnostic report for sharing with support")
         }
     }
 }

@@ -48,8 +48,10 @@ struct SettingsFeatureDependencyTests {
             $0.modelContext = { context }
             $0.appInfoClient = AppInfoClient(
                 versionString: { "9.9.9" },
+                operatingSystemDescription: { "iOS 26.5.0" },
                 dataModeDescription: { "Local + Cloud" },
                 cloudContainerDescription: { "iCloud.com.routina" },
+                signedCloudKitEnvironmentDescription: { "Production" },
                 isCloudSyncEnabled: { true }
             )
             $0.appSettingsClient = AppSettingsClient(
@@ -130,8 +132,10 @@ struct SettingsFeatureDependencyTests {
 
         await store.send(.onAppear) {
             $0.diagnostics.appVersion = "9.9.9"
+            $0.diagnostics.operatingSystemDescription = "iOS 26.5.0"
             $0.diagnostics.dataModeDescription = "Local + Cloud"
             $0.diagnostics.iCloudContainerDescription = "iCloud.com.routina"
+            $0.diagnostics.signedCloudKitEnvironmentDescription = "Production"
             $0.cloud.cloudSyncAvailable = true
             $0.notifications.notificationsEnabled = true
             $0.notifications.notificationReminderTime = reminderTime
