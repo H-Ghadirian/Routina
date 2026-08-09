@@ -33,3 +33,9 @@ if [ "${CODE_SIGNING_ALLOWED:-NO}" = "YES" ]; then
         --entitlements "$entitlements_path" \
         "$destination"
 fi
+
+if [ "${DEBUG_INFORMATION_FORMAT:-}" = "dwarf-with-dsym" ]; then
+    helper_dsym_path="$DWARF_DSYM_FOLDER_PATH/RoutinaAIMCPServer.dSYM"
+    mkdir -p "$DWARF_DSYM_FOLDER_PATH"
+    dsymutil "$destination" -o "$helper_dsym_path"
+fi

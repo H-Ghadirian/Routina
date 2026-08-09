@@ -75,6 +75,13 @@ struct AppStoreComplianceConfigurationTests {
         ))
         #expect(embedScript.contains("--entitlements \"$entitlements_path\""))
         #expect(embedScript.contains("--identifier \"$helper_identifier\""))
+        #expect(embedScript.contains(
+            "if [ \"${DEBUG_INFORMATION_FORMAT:-}\" = \"dwarf-with-dsym\" ]; then"
+        ))
+        #expect(embedScript.contains(
+            "helper_dsym_path=\"$DWARF_DSYM_FOLDER_PATH/RoutinaAIMCPServer.dSYM\""
+        ))
+        #expect(embedScript.contains("dsymutil \"$destination\" -o \"$helper_dsym_path\""))
     }
 
     @Test

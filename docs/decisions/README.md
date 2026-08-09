@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0520](0520-archive-embedded-helper-dsym.md) refines [0517](0517-sandbox-embedded-mcp-helper.md):** the externally built macOS MCP helper generates a matching dSYM in the archive's symbols folder so App Store Connect can symbolicate helper crashes.
+
 - **[0519](0519-maintain-platform-versioned-release-notes.md) refines [0416](0416-use-semantic-release-versions.md):** every public version has separate macOS, iOS, iPadOS, and watchOS notes that record user-visible features, fixes, and known issues.
 
 - **[0518](0518-scope-signed-cloudkit-diagnostics-to-macos.md) refines [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md):** macOS reports its signed CloudKit environment; iOS explicitly reports that no public API can verify the installed binary's entitlement.
@@ -72,6 +74,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0520](0520-archive-embedded-helper-dsym.md) refines [0517](0517-sandbox-embedded-mcp-helper.md):** the manual helper embedding phase produces the matching helper dSYM in Xcode's dSYM folder for archive collection.
 
 - **[0519](0519-maintain-platform-versioned-release-notes.md) refines [0416](0416-use-semantic-release-versions.md):** release history has independently readable macOS, iOS, iPadOS, and watchOS documents for every public version; each records user-visible scope, fixes, and known issues without inventing unverified historical release contents.
 
@@ -543,6 +547,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0520](0520-archive-embedded-helper-dsym.md) | Archive Embedded Helper dSYM Files | Accepted | 2026-08-09 |
 | [0519](0519-maintain-platform-versioned-release-notes.md) | Maintain Platform-Versioned Release Notes | Accepted | 2026-08-09 |
 | [0518](0518-scope-signed-cloudkit-diagnostics-to-macos.md) | Scope Signed CloudKit Diagnostics to macOS | Accepted | 2026-08-09 |
 | [0517](0517-sandbox-embedded-mcp-helper.md) | Sandbox the Embedded MCP Helper | Accepted | 2026-08-09 |

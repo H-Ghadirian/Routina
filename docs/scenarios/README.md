@@ -102,6 +102,18 @@ When the helper is re-signed for App Store distribution
 Then it has exactly the App Sandbox and sandbox-inheritance entitlements
 And the helper has no independent sandbox capability that would break inheritance
 
+### Embedded macOS MCP Helper Includes Matching Archive Symbols
+
+Area: Other
+Decision links: [0520](../decisions/0520-archive-embedded-helper-dsym.md), [0517](../decisions/0517-sandbox-embedded-mcp-helper.md)
+Coverage:
+- `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
+
+Given a Release macOS archive embeds `RoutinaAIMCPServer` from the Swift Package build
+When the embedding phase runs with `dwarf-with-dsym` enabled
+Then it generates `RoutinaAIMCPServer.dSYM` in Xcode's dSYM output folder from that helper executable
+And the archive contains a dSYM whose UUID matches the embedded helper
+
 ### Support Diagnostics Report the Signed CloudKit Environment
 
 Area: Settings / Other
