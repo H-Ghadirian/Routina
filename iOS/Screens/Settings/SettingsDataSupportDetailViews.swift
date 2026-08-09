@@ -43,6 +43,13 @@ List {
         .onLongPressGesture(minimumDuration: 5) {
             store.send(.aboutSectionLongPressed)
         }
+
+        HStack {
+            Text("Build Number")
+            Spacer()
+            Text(store.diagnostics.buildNumber)
+                .foregroundStyle(.secondary)
+        }
     }
 
     if store.diagnostics.isDebugSectionVisible {

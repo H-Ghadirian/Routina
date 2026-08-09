@@ -2,6 +2,7 @@ import Foundation
 
 struct SettingsOnAppearSnapshot: Equatable {
     var appVersion: String
+    var buildNumber: String
     var operatingSystemDescription: String
     var dataModeDescription: String
     var iCloudContainerDescription: String
@@ -46,6 +47,7 @@ enum SettingsRefreshEditor {
         state: inout SettingsFeatureState
     ) {
         state.diagnostics.appVersion = snapshot.appVersion
+        state.diagnostics.buildNumber = snapshot.buildNumber
         state.diagnostics.operatingSystemDescription = snapshot.operatingSystemDescription
         state.diagnostics.dataModeDescription = snapshot.dataModeDescription
         state.diagnostics.iCloudContainerDescription = snapshot.iCloudContainerDescription

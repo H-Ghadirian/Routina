@@ -177,10 +177,10 @@ Given a macOS executable has no readable CloudKit environment entitlement
 When Support & About diagnostics are revealed
 Then it explicitly reports the entitlement as unavailable or not present
 
-### Support Diagnostics Are Copyable and Include the Operating System
+### Support Diagnostics Identify the Exact Build and Are Copyable
 
 Area: Settings / Other
-Decision links: [0516](../decisions/0516-make-support-diagnostics-copyable.md)
+Decision links: [0516](../decisions/0516-make-support-diagnostics-copyable.md), [0526](../decisions/0526-identify-exact-builds-in-support.md)
 Current behavior: [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/Shared/AppEnvironmentTests.swift`
@@ -188,8 +188,12 @@ Coverage:
 
 Given a user reveals Support & About diagnostics on iOS or macOS
 When they select `Copy Diagnostics`
-Then their clipboard receives one labelled report containing the app version, operating system, CloudKit configuration/signing values, last CloudKit event, and push status
+Then their clipboard receives one labelled report containing the app version, build number, operating system, CloudKit configuration/signing values, last CloudKit event, and push status
 And the report does not contain task content, account identifiers, credentials, or device tokens
+
+Given several TestFlight builds share the same public app version
+When a person opens Support & About
+Then the Version and Build Number appear as separate values, identifying the installed binary without revealing Diagnostics
 
 Given a CloudKit export or import completes with `partialFailure`
 When Support & About diagnostics are copied

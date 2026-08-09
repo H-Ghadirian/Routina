@@ -82,6 +82,7 @@ enum AppIconOption: String, CaseIterable, Equatable, Identifiable {
 
 struct AppInfoClient: Sendable {
     var versionString: @Sendable () -> String
+    var buildNumber: @Sendable () -> String
     var operatingSystemDescription: @Sendable () -> String
     var dataModeDescription: @Sendable () -> String
     var cloudContainerDescription: @Sendable () -> String
@@ -93,6 +94,9 @@ extension AppInfoClient {
     static let live = AppInfoClient(
         versionString: {
             Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        },
+        buildNumber: {
+            Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
         },
         operatingSystemDescription: {
             AppEnvironment.operatingSystemDescription
@@ -113,6 +117,7 @@ extension AppInfoClient {
 
     static let noop = AppInfoClient(
         versionString: { "Unknown" },
+        buildNumber: { "Unknown" },
         operatingSystemDescription: { "Unknown" },
         dataModeDescription: { "Unknown" },
         cloudContainerDescription: { "Disabled" },

@@ -48,6 +48,7 @@ struct SettingsFeatureDependencyTests {
             $0.modelContext = { context }
             $0.appInfoClient = AppInfoClient(
                 versionString: { "9.9.9" },
+                buildNumber: { "42" },
                 operatingSystemDescription: { "iOS 26.5.0" },
                 dataModeDescription: { "Local + Cloud" },
                 cloudContainerDescription: { "iCloud.com.routina" },
@@ -132,6 +133,7 @@ struct SettingsFeatureDependencyTests {
 
         await store.send(.onAppear) {
             $0.diagnostics.appVersion = "9.9.9"
+            $0.diagnostics.buildNumber = "42"
             $0.diagnostics.operatingSystemDescription = "iOS 26.5.0"
             $0.diagnostics.dataModeDescription = "Local + Cloud"
             $0.diagnostics.iCloudContainerDescription = "iCloud.com.routina"

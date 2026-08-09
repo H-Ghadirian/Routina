@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0526](0526-identify-exact-builds-in-support.md) refines [0516](0516-make-support-diagnostics-copyable.md):** Support & About and copied diagnostics report the installed public version and build number separately, so TestFlight binaries are unambiguous.
+
 - **[0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0524](0524-pause-tasks-until-a-date.md):** iOS and macOS production archives block TestFlight distribution until the local SwiftData schema has an explicit CloudKit Production deployment acknowledgement.
 
 - **[0524](0524-pause-tasks-until-a-date.md) refines [0487](0487-allow-archiving-one-off-tasks.md) and [0521](0521-group-secondary-mac-task-detail-actions.md):** a task may retain an optional pause expiry; it is absent from Calendar scheduling until then and becomes active again by evaluating its persisted lifecycle dates.
@@ -84,6 +86,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0526](0526-identify-exact-builds-in-support.md) refines [0516](0516-make-support-diagnostics-copyable.md):** Support reports the installed app version together with its distinct bundle build number; neither value is inferred from user data or TestFlight state.
 
 - **[0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0524](0524-pause-tasks-until-a-date.md):** the production archive gate compares the generated SwiftData contract to the last explicitly acknowledged CloudKit Production deployment, so TestFlight cannot rely on a remembered Dashboard step.
 
@@ -567,6 +571,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0526](0526-identify-exact-builds-in-support.md) | Identify Exact Builds in Support | Accepted | 2026-08-09 |
 | [0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) | Gate TestFlight Archives on CloudKit Schema Deployment | Accepted | 2026-08-09 |
 | [0524](0524-pause-tasks-until-a-date.md) | Pause Tasks Until a Date | Accepted | 2026-08-09 |
 | [0523](0523-report-manual-icloud-refresh-honestly.md) | Report Manual iCloud Refresh Honestly | Accepted | 2026-08-09 |

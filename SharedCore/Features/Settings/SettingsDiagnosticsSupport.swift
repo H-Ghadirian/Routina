@@ -16,6 +16,7 @@ enum SettingsDiagnosticsLoader {
         let diagnostics = CloudKitSyncDiagnostics.snapshot()
         return SettingsOnAppearSnapshot(
             appVersion: appInfoClient.versionString(),
+            buildNumber: appInfoClient.buildNumber(),
             operatingSystemDescription: appInfoClient.operatingSystemDescription(),
             dataModeDescription: appInfoClient.dataModeDescription(),
             iCloudContainerDescription: appInfoClient.cloudContainerDescription(),
@@ -72,6 +73,7 @@ enum SettingsDiagnosticsReport {
         [
             "Routina Diagnostics",
             "App Version: \(diagnostics.appVersion)",
+            "Build Number: \(diagnostics.buildNumber)",
             "Operating System: \(diagnostics.operatingSystemDescription)",
             "Data Mode: \(diagnostics.dataModeDescription)",
             "iCloud Container: \(diagnostics.iCloudContainerDescription)",

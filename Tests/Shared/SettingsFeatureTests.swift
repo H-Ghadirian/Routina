@@ -430,6 +430,7 @@ struct SettingsFeatureTests {
             $0.appSettingsClient.tagCounterDisplayMode = { .doneOnly }
             $0.appInfoClient = AppInfoClient(
                 versionString: { "1.0" },
+                buildNumber: { "1" },
                 operatingSystemDescription: { "macOS 26.5.0" },
                 dataModeDescription: { "Local" },
                 cloudContainerDescription: { "Disabled" },

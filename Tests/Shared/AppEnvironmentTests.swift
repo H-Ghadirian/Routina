@@ -27,6 +27,7 @@ struct AppEnvironmentTests {
     func diagnosticsReportIncludesAllSupportValues() {
         var diagnostics = SettingsDiagnosticsState()
         diagnostics.appVersion = "1.3.0"
+        diagnostics.buildNumber = "42"
         diagnostics.operatingSystemDescription = "iOS 26.5.0"
         diagnostics.dataModeDescription = "Production (iCloud)"
         diagnostics.iCloudContainerDescription = "iCloud.ir.hamedgh.Routinam.prod"
@@ -39,6 +40,7 @@ struct AppEnvironmentTests {
             SettingsDiagnosticsReport.text(for: diagnostics) == """
             Routina Diagnostics
             App Version: 1.3.0
+            Build Number: 42
             Operating System: iOS 26.5.0
             Data Mode: Production (iCloud)
             iCloud Container: iCloud.ir.hamedgh.Routinam.prod

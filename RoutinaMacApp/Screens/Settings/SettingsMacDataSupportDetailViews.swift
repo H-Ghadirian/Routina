@@ -457,6 +457,7 @@ SettingsMacDetailShell(
             .onLongPressGesture(minimumDuration: 5) {
                 store.send(.aboutSectionLongPressed)
             }
+        settingsInfoRow(title: "Build Number", value: store.diagnostics.buildNumber)
     }
 
     if store.diagnostics.isDebugSectionVisible {

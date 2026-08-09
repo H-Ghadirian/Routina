@@ -33,6 +33,7 @@ enum AppColorScheme: String, CaseIterable, Identifiable, Sendable, Equatable {
 
 struct SettingsDiagnosticsState: Equatable {
     var appVersion: String = ""
+    var buildNumber: String = ""
     var operatingSystemDescription: String = "Unknown"
     var dataModeDescription: String = ""
     var iCloudContainerDescription: String = "Disabled"

@@ -37,6 +37,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0517](../decisions/0517-sandbox-embedded-mcp-helper.md)
 - [0518](../decisions/0518-scope-signed-cloudkit-diagnostics-to-macos.md)
 - [0525](../decisions/0525-gate-testflight-archives-on-cloudkit-schema-deployment.md)
+- [0526](../decisions/0526-identify-exact-builds-in-support.md)
 
 ## Current Contract
 
@@ -49,7 +50,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - The Mac production entitlement set omits location, audio input, and Apple Events automation because their Places, voice-note, and browser-automation entry points are experimental. The iOS production build likewise omits its location purpose string and compiles a no-op location client. Development builds retain those capabilities. Apple Calendar access remains a production feature and retains its calendar entitlement and purpose strings.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
 - Hidden Support & About diagnostics show configured Data Mode and iCloud Container separately from the running executable's signed CloudKit environment. macOS reads the signed value from `com.apple.developer.icloud-container-environment`; iOS explicitly reports that this verification is unavailable rather than inferring it from configuration.
-- Hidden Support & About diagnostics also shows the app's operating system and offers `Copy Diagnostics`. It copies a labelled report containing app, operating-system, CloudKit, and push metadata only; it excludes user data, identifiers, credentials, and device tokens. A partial CloudKit failure includes up to three nested error codes and anonymized item fingerprints, never record names or contents.
+- Support & About shows the installed public Version and Build Number separately. Hidden diagnostics also shows the app's operating system and offers `Copy Diagnostics`. It copies a labelled report containing version, build number, operating-system, CloudKit, and push metadata only; it excludes user data, identifiers, credentials, and device tokens. A partial CloudKit failure includes up to three nested error codes and anonymized item fingerprints, never record names or contents.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section. `Sync Now` verifies the manual iCloud download only; local uploads remain asynchronous and must not be reported as completed until CloudKit records a successful export.
 - iOS and macOS production archives compare the current persisted SwiftData model contract with `Config/CloudKit/production-schema.manifest`. A mismatch blocks the archive before TestFlight upload. After deploying the Development schema in CloudKit Dashboard, the release owner explicitly acknowledges it with `script/cloudkit_schema_guard.sh --acknowledge-production-deployment --yes-i-deployed-to-production` and commits the manifest.
 - Estimated iCloud Usage lists only categories whose user-facing feature is available. Tasks, logs, and images remain visible; Places, Goals, Events, Emotions, Notes, and Voice Notes follow their corresponding feature gates.
