@@ -94,6 +94,11 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         if section == .git && !isGitFeaturesEnabled {
             return false
         }
+        #if !os(macOS) && !ROUTINA_IOS_FAMILY_CONTROLS
+        if section == .blocking {
+            return false
+        }
+        #endif
         #if !os(macOS)
         if section == .sections || section == .aiConnections {
             return false

@@ -30,6 +30,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0466](../decisions/0466-harden-app-store-release-surfaces.md)
 - [0467](../decisions/0467-declare-exempt-encryption-in-production-bundles.md)
 - [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
+- [0513](../decisions/0513-defer-ios-screen-time-blocking-until-distribution-approval.md)
 
 ## Current Contract
 
@@ -50,6 +51,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Turning App Lock off requires fresh device-owner authentication.
 - Production hides Devices, Places, Notes, Away, task sharing, the linked-task visualizer, Goals, Adventure, Board, advanced Query sections, Wins, Achievements, Sleep scope, and the other Beta Experiment surfaces. Previously stored experimental content remains in persistence, sync, and backups.
 - Development builds expose the experiment controls in Support & About after revealing diagnostics. Their toggles continue to drive the implemented experimental surfaces for internal testing.
+- iOS app and website blocking remains available in development builds, but production omits its Settings entry, Screen Time implementation, and Family Controls entitlement until Apple approves the Family Controls distribution capability. macOS blocking remains unchanged.
 - While Away is unavailable, Blocking exposes only Focus mode controls and Stats hides Sleep-specific surfaces.
 - Mac app widget source remains in the repository, but the Mac app targets do not build, embed, or register widget extensions, so Routina widgets are not exposed on macOS.
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.

@@ -1,11 +1,12 @@
 import SwiftData
 import SwiftUI
 
-#if canImport(FamilyControls) && canImport(ManagedSettings)
+#if ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)
 import FamilyControls
 import ManagedSettings
 #endif
 
+#if ROUTINA_IOS_FAMILY_CONTROLS
 struct SettingsBlockingDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var enabledModes = FocusShieldSupport.loadEnabledBlockingModes()
@@ -324,3 +325,4 @@ private struct SettingsBlockingModeLabel: View {
         }
     }
 }
+#endif

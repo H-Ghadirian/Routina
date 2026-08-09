@@ -126,7 +126,11 @@ struct SettingsIOSDetailView: View {
         case .notifications:
             SettingsNotificationsDetailView(store: store)
         case .blocking:
+            #if ROUTINA_IOS_FAMILY_CONTROLS
             SettingsBlockingDetailView()
+            #else
+            EmptyView()
+            #endif
         case .calendar:
             SettingsCalendarDetailView(store: store)
         case .places:

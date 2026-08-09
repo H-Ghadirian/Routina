@@ -435,7 +435,7 @@ enum AwaySessionSupport {
 
     @MainActor
     private static func notifyAwayChanged(using context: ModelContext) {
-        #if (os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)) || os(macOS)
+        #if (os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)) || os(macOS)
         FocusShieldSupport.syncFocusShield(using: context)
         #endif
         NotificationCenter.default.postRoutineDidUpdate()

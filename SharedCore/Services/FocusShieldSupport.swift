@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+#if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)
 import FamilyControls
 import ManagedSettings
 #endif
@@ -19,7 +19,7 @@ enum FocusShieldAuthorizationState: Equatable {
 
 enum FocusShieldSupport {
     static var isSupported: Bool {
-        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        #if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)
         true
         #elseif os(macOS)
         true
@@ -30,7 +30,7 @@ enum FocusShieldSupport {
 
     @MainActor
     static func authorizationState() -> FocusShieldAuthorizationState {
-        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        #if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)
         switch AuthorizationCenter.shared.authorizationStatus {
         case .notDetermined:
             return .notDetermined
@@ -48,7 +48,7 @@ enum FocusShieldSupport {
 
     @MainActor
     static func requestAuthorization() async throws {
-        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        #if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)
         try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
         #endif
     }
@@ -61,7 +61,7 @@ enum FocusShieldSupport {
             return
         }
 
-        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        #if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)
         _ = applyShieldForCurrentSelection(for: activeMode)
         #elseif os(macOS)
         MacFocusAppBlocker.shared.sync(for: activeMode)
@@ -222,7 +222,7 @@ enum FocusShieldSupport {
 
     @MainActor
     private static func clearCurrentBlocking() {
-        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        #if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)
         clearShield()
         #elseif os(macOS)
         MacFocusAppBlocker.shared.stop()
@@ -1123,7 +1123,7 @@ private struct MacBrowserAutomationError: LocalizedError {
 }
 #endif
 
-#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+#if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)
 extension FocusShieldSupport {
     @MainActor private static let store = ManagedSettingsStore()
 

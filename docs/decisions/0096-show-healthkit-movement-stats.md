@@ -15,7 +15,7 @@ Routina requests read-only Health access. It does not write Health samples, pers
 
 ## Consequences
 
-- iOS targets include the HealthKit entitlement and a Health data usage description.
+- iOS targets include the HealthKit entitlement plus read and update Health data usage descriptions. The update description explicitly says Routina does not write Health data, so its privacy disclosure remains accurate while satisfying HealthKit target requirements.
 - Health access starts from a user-initiated Stats action instead of prompting during launch.
 - macOS Stats remains unchanged because HealthKit movement data is an iOS device capability for this product surface.
 - Future Health metrics should stay factual and permission-scoped unless a separate decision adopts deeper health insights or persistence.

@@ -62,7 +62,7 @@ Then each grid cell has enough minimum width for ordinary Flag labels
 ### Production Experiment Lockdown Matches Signed Capabilities
 
 Area: Settings / Other
-Decision links: [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
+Decision links: [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0513](../decisions/0513-defer-ios-screen-time-blocking-until-distribution-approval.md)
 Current behavior: [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
@@ -77,6 +77,11 @@ Given the Mac production app does not expose Places, voice notes, or browser aut
 When its Debug or Release production configuration is signed
 Then the bundle omits location, audio-input, and Apple Events entitlements
 And development builds retain those capabilities for experiment testing
+
+Given the Family Controls distribution entitlement has not yet been approved
+When an iOS production configuration is signed
+Then it omits the Family Controls entitlement and the Blocking Settings entry
+And the Family Controls implementation remains available only in iOS development configurations
 
 ### Production Uploads Carry Export-Compliance Metadata
 

@@ -79,6 +79,57 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
+    func iOSHealthKitPurposeStringsDescribeOptionalReadOnlyStats() throws {
+        let expectedReadDescription =
+            "Routina reads movement data from Apple Health to show steps, active calories, distance, and exercise stats."
+        let expectedUpdateDescription =
+            "Routina does not write Apple Health data. It requests optional access only to show your movement stats after you choose Connect Health."
+
+        for relativePath in [
+            "Config/iOS/RoutinaiOSProd-Info.plist",
+            "Config/iOS/RoutinaiOSDev-Info.plist",
+        ] {
+            let info = try Self.propertyListDictionary(relativePath)
+            #expect(info["NSHealthShareUsageDescription"] as? String == expectedReadDescription)
+            #expect(info["NSHealthUpdateUsageDescription"] as? String == expectedUpdateDescription)
+        }
+    }
+
+    @Test
+    func iOSProductionDefersFamilyControlsUntilDistributionApproval() throws {
+        let productionEntitlements = try Self.propertyListDictionary(
+            "Config/iOS/RoutinaiOS.entitlements"
+        )
+        #expect(productionEntitlements["com.apple.developer.family-controls"] == nil)
+
+        let developmentEntitlements = try Self.propertyListDictionary(
+            "Config/iOS/RoutinaiOSDev.entitlements"
+        )
+        #expect(developmentEntitlements["com.apple.developer.family-controls"] as? Bool == true)
+
+        let project = try Self.sourceFile("RoutinaiOS.xcodeproj/project.pbxproj")
+        #expect(project.components(separatedBy: "ROUTINA_IOS_FAMILY_CONTROLS").count == 3)
+
+        let settingsSections = try Self.sourceFile(
+            "SharedCore/Features/Settings/SettingsSectionViewSupport.swift"
+        )
+        #expect(settingsSections.contains("#if !os(macOS) && !ROUTINA_IOS_FAMILY_CONTROLS"))
+
+        let settingsDetail = try Self.sourceFile(
+            "iOS/Screens/Settings/SettingsIOSViews.swift"
+        )
+        #expect(settingsDetail.contains("#if ROUTINA_IOS_FAMILY_CONTROLS\n            SettingsBlockingDetailView()"))
+
+        let focusShieldSupport = try Self.sourceFile("SharedCore/Services/FocusShieldSupport.swift")
+        #expect(focusShieldSupport.contains(
+            "#if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls)"
+        ))
+        #expect(!focusShieldSupport.contains(
+            "#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)"
+        ))
+    }
+
+    @Test
     func productionDisablesEveryExperimentalPreference() {
         for key in RoutinaExperimentalFeaturePolicy.preferenceKeys {
             #expect(

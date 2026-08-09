@@ -34,6 +34,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0503](../decisions/0503-remove-ios-secondary-stats-comparison-reports.md)
 - [0504](../decisions/0504-simplify-ios-focus-2048-stats-details.md)
 - [0505](../decisions/0505-use-dense-ios-stats-metric-tiles.md)
+- [0096](../decisions/0096-show-healthkit-movement-stats.md)
 
 ## Current Contract
 
@@ -56,4 +57,5 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
 - Stats summary cards show assumed-done daily Gentle-routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
 - Stats task-type filtering offers only `All`, `Routines`, and `Todos`. Stats has no Tracking count, Tracking time, or Tracking dashboard item; internal record-shaped data is counted and filtered with routines.
+- On iOS, users can choose Connect Health to grant read-only access to steps, active calories, walking/running distance, and exercise time for Stats. Routina neither writes Apple Health samples nor persists or syncs those values.
 - Adventure derives progression from existing activity history and shares the Mac Stats sidebar tab behind a `Stats / Adventure` segment when enabled.
