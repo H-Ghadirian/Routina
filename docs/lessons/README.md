@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0121 — Decode partial CloudKit failures without copying user data](0121-decode-partial-cloudkit-failures-without-copying-user-data.md)
 - [0120 — Archive symbols for externally built helper tools](0120-archive-symbols-for-externally-built-helper-tools.md)
 - [0001 — Number mixed timeline entries in display order](0001-number-mixed-timeline-entries-in-display-order.md)
 - [0002 — Keep Timeline change detection out of the render path](0002-keep-timeline-change-detection-out-of-render-path.md)

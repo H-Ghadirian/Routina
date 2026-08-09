@@ -151,6 +151,11 @@ When they select `Copy Diagnostics`
 Then their clipboard receives one labelled report containing the app version, operating system, CloudKit configuration/signing values, last CloudKit event, and push status
 And the report does not contain task content, account identifiers, credentials, or device tokens
 
+Given a CloudKit export or import completes with `partialFailure`
+When Support & About diagnostics are copied
+Then the CloudKit detail includes the child error code and an anonymized fingerprint for each actionable failed item, up to three items
+And it omits record names, record contents, account identifiers, credentials, and device tokens
+
 ### Production Uploads Carry Export-Compliance Metadata
 
 Area: Other

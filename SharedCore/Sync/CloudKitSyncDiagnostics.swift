@@ -1,5 +1,6 @@
 import CloudKit
 import CoreData
+import CryptoKit
 import Foundation
 
 enum CloudKitSyncDiagnostics {
@@ -91,7 +92,7 @@ enum CloudKitSyncDiagnostics {
         return "type=\(typeText) status=\(statusText)\(errorText)"
     }
 
-    private static func describe(_ error: Error) -> String {
+    static func describe(_ error: Error) -> String {
         guard let ckError = error as? CKError else {
             return error.localizedDescription
         }
@@ -101,19 +102,84 @@ enum CloudKitSyncDiagnostics {
         parts.append("ckName=\(ckError.code)")
         parts.append("message=\(ckError.localizedDescription)")
 
-        if ckError.code == .partialFailure,
-           let partials = ckError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error],
-           !partials.isEmpty {
-            let partialSummary = partials.prefix(3).map { key, value in
-                if let nested = value as? CKError {
-                    return "\(key):\(nested.code.rawValue)"
+        if ckError.code == .partialFailure {
+            let partials = partialErrors(from: ckError)
+            if !partials.isEmpty {
+                let rootPartials = partials.filter { _, error in
+                    (error as? CKError)?.code != .batchRequestFailed
                 }
-                return "\(key):\(value.localizedDescription)"
-            }.joined(separator: ",")
-            parts.append("partials=\(partialSummary)")
+                let relevantPartials = rootPartials.isEmpty ? partials : rootPartials
+                let partialSummary = relevantPartials
+                    .map { item, error in
+                        "\(diagnosticItemLabel(for: item)) \(describePartial(error))"
+                    }
+                    .sorted()
+                    .prefix(3)
+                    .joined(separator: ", ")
+
+                parts.append("partialCount=\(partials.count)")
+                if relevantPartials.count != partials.count {
+                    parts.append("rootPartialCount=\(relevantPartials.count)")
+                }
+                parts.append("partials=\(partialSummary)")
+            } else {
+                parts.append("partials=unavailable")
+            }
         }
 
         return parts.joined(separator: " ")
+    }
+
+    private static func partialErrors(from ckError: CKError) -> [AnyHashable: Error] {
+        if let partials = ckError.partialErrorsByItemID, !partials.isEmpty {
+            return partials
+        }
+
+        guard let rawPartials = ckError.userInfo[CKPartialErrorsByItemIDKey] as? NSDictionary else {
+            return [:]
+        }
+
+        return rawPartials.reduce(into: [:]) { result, entry in
+            guard let item = entry.key as? AnyHashable,
+                  let error = entry.value as? Error else {
+                return
+            }
+            result[item] = error
+        }
+    }
+
+    private static func diagnosticItemLabel(for item: AnyHashable) -> String {
+        let itemKind: String
+        switch item.base {
+        case is CKRecord.ID:
+            itemKind = "record"
+        case is CKRecordZone.ID:
+            itemKind = "zone"
+        default:
+            itemKind = "item"
+        }
+
+        let digest = SHA256.hash(data: Data(String(reflecting: item).utf8))
+            .prefix(6)
+            .map { String(format: "%02x", $0) }
+            .joined()
+        return "\(itemKind)#\(digest)"
+    }
+
+    private static func describePartial(_ error: Error) -> String {
+        if let ckError = error as? CKError {
+            var parts = [
+                "ckCode=\(ckError.code.rawValue)",
+                "ckName=\(ckError.code)",
+            ]
+            if let retryAfter = ckError.retryAfterSeconds {
+                parts.append("retryAfter=\(retryAfter)")
+            }
+            return parts.joined(separator: " ")
+        }
+
+        let nsError = error as NSError
+        return "domain=\(nsError.domain) code=\(nsError.code)"
     }
 
     private static func timestampString(from date: Date?) -> String {

@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0522](0522-anonymize-cloudkit-partial-failure-diagnostics.md) refines [0516](0516-make-support-diagnostics-copyable.md):** partial CloudKit failures report the actionable per-item error codes with stable anonymized item fingerprints, never record names or contents.
+
 - **[0520](0520-archive-embedded-helper-dsym.md) refines [0517](0517-sandbox-embedded-mcp-helper.md):** the externally built macOS MCP helper generates a matching dSYM in the archive's symbols folder so App Store Connect can symbolicate helper crashes.
 
 - **[0519](0519-maintain-platform-versioned-release-notes.md) refines [0416](0416-use-semantic-release-versions.md):** every public version has separate macOS, iOS, iPadOS, and watchOS notes that record user-visible features, fixes, and known issues.
@@ -74,6 +76,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0522](0522-anonymize-cloudkit-partial-failure-diagnostics.md) refines [0516](0516-make-support-diagnostics-copyable.md):** copyable diagnostics expose only the child CloudKit error codes and stable anonymized item fingerprints necessary to diagnose a partial failure.
 
 - **[0520](0520-archive-embedded-helper-dsym.md) refines [0517](0517-sandbox-embedded-mcp-helper.md):** the manual helper embedding phase produces the matching helper dSYM in Xcode's dSYM folder for archive collection.
 
@@ -547,6 +551,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0522](0522-anonymize-cloudkit-partial-failure-diagnostics.md) | Anonymize CloudKit Partial Failure Diagnostics | Accepted | 2026-08-09 |
 | [0520](0520-archive-embedded-helper-dsym.md) | Archive Embedded Helper dSYM Files | Accepted | 2026-08-09 |
 | [0519](0519-maintain-platform-versioned-release-notes.md) | Maintain Platform-Versioned Release Notes | Accepted | 2026-08-09 |
 | [0518](0518-scope-signed-cloudkit-diagnostics-to-macos.md) | Scope Signed CloudKit Diagnostics to macOS | Accepted | 2026-08-09 |
