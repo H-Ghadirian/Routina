@@ -110,6 +110,7 @@ enum NotificationCoordinator {
         calendar: Calendar = .current
     ) -> Bool {
         guard !task.isArchived(referenceDate: referenceDate, calendar: calendar) else { return false }
+        guard !RoutineAssumedCompletion.isEligible(task) else { return false }
 
         if let reminderDate = activeReminderDate(for: task, referenceDate: referenceDate) {
             return reminderDate > referenceDate

@@ -1620,6 +1620,7 @@ struct TaskDetailFeatureCompletionTests {
 
         let calendar = makeTestCalendar()
         let scheduledIDs = LockIsolated<[String]>([])
+        let cancelledIDs = LockIsolated<[String]>([])
         let store = TestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
@@ -1635,7 +1636,9 @@ struct TaskDetailFeatureCompletionTests {
             $0.notificationClient.schedule = { payload in
                 scheduledIDs.withValue { $0.append(payload.identifier) }
             }
-            $0.notificationClient.cancel = { _ in }
+            $0.notificationClient.cancel = { identifier in
+                cancelledIDs.withValue { $0.append(identifier) }
+            }
         }
 
         _ = await store.withExhaustivity(.off) {
@@ -1668,7 +1671,8 @@ struct TaskDetailFeatureCompletionTests {
             now,
             makeDate("2026-02-24T12:00:00Z"),
         ])
-        #expect(scheduledIDs.value == [task.id.uuidString])
+        #expect(scheduledIDs.value.isEmpty)
+        #expect(cancelledIDs.value == [task.id.uuidString])
     }
 
     @Test

@@ -5,6 +5,8 @@ import SwiftData
 extension SettingsFeature {
     func synchronizeAutoAssumeDoneFlagRules(affectedFlag: String) -> Effect<Action> {
         let rules = appSettingsClient.flagRules()
+        let appSettingsClient = self.appSettingsClient
+        let notificationClient = self.notificationClient
         return .run { @MainActor _ in
             let context = modelContext()
             let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -34,12 +36,19 @@ extension SettingsFeature {
             }
             guard changed else { return }
             try context.save()
+            try await SettingsExecutionSupport.rescheduleNotificationsIfNeeded(
+                in: context,
+                appSettingsClient: appSettingsClient,
+                notificationClient: notificationClient
+            )
             NotificationCenter.default.postRoutineDidUpdate()
         }
     }
 
     func migrateAutoAssumeDoneTasks(to flag: String) -> Effect<Action> {
         let rules = appSettingsClient.flagRules()
+        let appSettingsClient = self.appSettingsClient
+        let notificationClient = self.notificationClient
         return .run { @MainActor send in
             let context = modelContext()
             let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -71,6 +80,11 @@ extension SettingsFeature {
             }
             if migratedCount > 0 {
                 try context.save()
+                try await SettingsExecutionSupport.rescheduleNotificationsIfNeeded(
+                    in: context,
+                    appSettingsClient: appSettingsClient,
+                    notificationClient: notificationClient
+                )
                 NotificationCenter.default.postRoutineDidUpdate()
             }
             send(.autoAssumeDoneMigrationFinished(flag: flag, migratedCount: migratedCount))

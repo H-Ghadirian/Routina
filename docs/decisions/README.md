@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0528](0528-suppress-notifications-for-auto-assumed-tasks.md) refines [0500](0500-move-auto-assume-done-to-flag-rules.md):** active auto-assume done suppresses every task notification because a prompt to act conflicts with the task's synthetic completion state.
+
 - **[0527](0527-keep-mac-task-detail-overflow-compact-and-stateful.md) refines [0521](0521-group-secondary-mac-task-detail-actions.md):** Mac Task Detail keeps its native compact overflow menu, using a vertical `⋮` trigger with a circular highlight only while the menu is open; Delete remains its separated red final action.
 
 - **[0526](0526-identify-exact-builds-in-support.md) refines [0516](0516-make-support-diagnostics-copyable.md):** Support & About and copied diagnostics report the installed public version and build number separately, so TestFlight binaries are unambiguous.
@@ -88,6 +90,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0528](0528-suppress-notifications-for-auto-assumed-tasks.md) refines [0500](0500-move-auto-assume-done-to-flag-rules.md):** an active auto-assumed task does not schedule due alerts or direct task reminders, while the unrelated task-list hiding Flag stays presentation-only.
 
 - **[0527](0527-keep-mac-task-detail-overflow-compact-and-stateful.md) refines [0521](0521-group-secondary-mac-task-detail-actions.md):** Mac Task Detail keeps its native compact overflow menu, using a vertical `⋮` trigger with a circular highlight only while the menu is open; Delete remains its separated red final action.
 
@@ -575,6 +579,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0528](0528-suppress-notifications-for-auto-assumed-tasks.md) | Suppress Notifications for Auto-Assumed Tasks | Accepted | 2026-08-09 |
 | [0527](0527-keep-mac-task-detail-overflow-compact-and-stateful.md) | Keep Mac Task Detail Overflow Compact and Stateful | Accepted | 2026-08-09 |
 | [0526](0526-identify-exact-builds-in-support.md) | Identify Exact Builds in Support | Accepted | 2026-08-09 |
 | [0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) | Gate TestFlight Archives on CloudKit Schema Deployment | Accepted | 2026-08-09 |

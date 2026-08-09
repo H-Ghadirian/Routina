@@ -65,6 +65,56 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func shouldScheduleNotification_returnsFalseForAutoAssumedRoutine() {
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .record,
+            recurrenceRule: .daily(in: timeRange),
+            createdAt: makeDate("2026-08-01T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        #expect(RoutineAssumedCompletion.isEligible(task))
+        #expect(
+            !NotificationCoordinator.shouldScheduleNotification(
+                for: task,
+                referenceDate: makeDate("2026-08-09T13:14:00Z"),
+                calendar: makeTestCalendar()
+            )
+        )
+    }
+
+    @Test
+    func shouldScheduleNotification_returnsFalseForAutoAssumedTaskWithDirectReminder() {
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 12, minute: 0),
+            end: RoutineTimeOfDay(hour: 15, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Visit museum",
+            availabilityStartDate: makeDate("2026-08-10T00:00:00Z"),
+            reminderAt: makeDate("2026-08-10T11:30:00Z"),
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, timeRange: timeRange),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            autoAssumeDailyDone: true
+        )
+
+        #expect(RoutineAssumedCompletion.isEligible(task))
+        #expect(
+            !NotificationCoordinator.shouldScheduleNotification(
+                for: task,
+                referenceDate: makeDate("2026-08-10T09:00:00Z"),
+                calendar: makeTestCalendar()
+            )
+        )
+    }
+
+    @Test
     func shouldScheduleNotification_returnsFalseForCadenceFreeRoutine() {
         let task = RoutineTask(
             name: "Go to library",

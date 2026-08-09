@@ -905,7 +905,7 @@ Then the selected detail state and Home selected row drop the checklist immediat
 ### Repeating Task Auto-Assume Uses Day-Level Completion
 
 Area: Tasks
-Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md), [0492](../decisions/0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md), [0494](../decisions/0494-allow-auto-assume-done-for-rolling-after-completion-routines.md), [0510](../decisions/0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md)
+Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md), [0492](../decisions/0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md), [0494](../decisions/0494-allow-auto-assume-done-for-rolling-after-completion-routines.md), [0510](../decisions/0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md), [0528](../decisions/0528-suppress-notifications-for-auto-assumed-tasks.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineAssumedCompletionTests.swift`
@@ -915,6 +915,7 @@ Coverage:
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 - `Tests/Shared/TaskFormMacLayoutRegressionTests.swift`
+- `Tests/Shared/NotificationCoordinatorTests.swift`
 
 Given a daily Gentle checklist-completion routine has auto-assume done enabled
 When today's availability starts and no checklist item progress exists
@@ -955,6 +956,10 @@ And the user can confirm only one assumed day at a time, never all prior offers 
 Given an eligible `After done` routine becomes assumed done while Home remains open
 When the user enables `Hide assumed-done tasks`
 Then Home refreshes the current assumed-completion state and omits that task from the Task List
+
+Given an auto-assume behavior is active for a task
+When Routina reconciles that task's notifications
+Then it schedules neither a due alert nor a direct reminder for the task
 
 ### Planner Can Show Assumed Done Routines
 
