@@ -2064,16 +2064,17 @@ And task-relationship review excludes the task as both a review source and a sug
 ### Mac Task Detail Keeps Secondary Lifecycle Actions Together
 
 Area: Tasks / macOS UI
-Decision links: [0521](../decisions/0521-group-secondary-mac-task-detail-actions.md), [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0335](../decisions/0335-move-mac-task-detail-actions-into-detail-content.md)
+Decision links: [0527](../decisions/0527-keep-mac-task-detail-overflow-compact-and-stateful.md), [0521](../decisions/0521-group-secondary-mac-task-detail-actions.md), [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0335](../decisions/0335-move-mac-task-detail-actions-into-detail-content.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
 
 Given full Mac Task Details is open
-When the person opens the task action `…` menu
+When the person opens the vertical `⋮` task-action menu
 Then one-off tasks offer Archive or Restore and eligible Cancel todo, while routines offer Pause or Resume
 And Delete is a separated destructive menu item that still requires confirmation
 And Done remains the only visible task lifecycle action
+And the `⋮` button has a circular accent highlight only while its compact native menu is open
 
 Given an archived one-off task
 When the person chooses `Restore`

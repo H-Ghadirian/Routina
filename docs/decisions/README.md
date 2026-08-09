@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0527](0527-keep-mac-task-detail-overflow-compact-and-stateful.md) refines [0521](0521-group-secondary-mac-task-detail-actions.md):** Mac Task Detail keeps its native compact overflow menu, using a vertical `⋮` trigger with a circular highlight only while the menu is open; Delete remains its separated red final action.
+
 - **[0526](0526-identify-exact-builds-in-support.md) refines [0516](0516-make-support-diagnostics-copyable.md):** Support & About and copied diagnostics report the installed public version and build number separately, so TestFlight binaries are unambiguous.
 
 - **[0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0524](0524-pause-tasks-until-a-date.md):** iOS and macOS production archives block TestFlight distribution until the local SwiftData schema has an explicit CloudKit Production deployment acknowledgement.
@@ -86,6 +88,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0527](0527-keep-mac-task-detail-overflow-compact-and-stateful.md) refines [0521](0521-group-secondary-mac-task-detail-actions.md):** Mac Task Detail keeps its native compact overflow menu, using a vertical `⋮` trigger with a circular highlight only while the menu is open; Delete remains its separated red final action.
 
 - **[0526](0526-identify-exact-builds-in-support.md) refines [0516](0516-make-support-diagnostics-copyable.md):** Support reports the installed app version together with its distinct bundle build number; neither value is inferred from user data or TestFlight state.
 
@@ -571,6 +575,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0527](0527-keep-mac-task-detail-overflow-compact-and-stateful.md) | Keep Mac Task Detail Overflow Compact and Stateful | Accepted | 2026-08-09 |
 | [0526](0526-identify-exact-builds-in-support.md) | Identify Exact Builds in Support | Accepted | 2026-08-09 |
 | [0525](0525-gate-testflight-archives-on-cloudkit-schema-deployment.md) | Gate TestFlight Archives on CloudKit Schema Deployment | Accepted | 2026-08-09 |
 | [0524](0524-pause-tasks-until-a-date.md) | Pause Tasks Until a Date | Accepted | 2026-08-09 |

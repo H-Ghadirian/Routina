@@ -45,17 +45,21 @@ struct TaskDetailPlatformActionParityTests {
             in: source
         )
 
-        #expect(overflowMenu.contains("Menu {"))
+        #expect(!overflowMenu.contains("Menu {"))
+        #expect(overflowMenu.contains("TaskDetailOverflowMenuPresenter("))
+        #expect(overflowMenu.contains("taskLifecycleActionsMenuRequestID &+= 1"))
         #expect(overflowMenu.contains("store.send(.resumeTapped)"))
         #expect(overflowMenu.contains("store.send(.pauseTapped)"))
         #expect(overflowMenu.contains("isPauseUntilPresented = true"))
-        #expect(overflowMenu.contains("Label(pauseUntilActionTitle, systemImage: \"clock.arrow.circlepath\")"))
+        #expect(overflowMenu.contains("systemImage: \"clock.arrow.circlepath\""))
         #expect(overflowMenu.contains("store.send(.cancelTodo)"))
         #expect(overflowMenu.contains("store.send(.setDeleteConfirmation(true))"))
-        #expect(overflowMenu.contains("Button(role: .destructive)"))
-        #expect(overflowMenu.contains("toolbarIconLabel(systemImage: \"ellipsis.vertical\")"))
-        #expect(overflowMenu.contains(".menuStyle(.borderlessButton)"))
-        #expect(overflowMenu.contains(".menuIndicator(.hidden)"))
+        #expect(overflowMenu.contains("role: .destructive"))
+        #expect(overflowMenu.contains("Image(systemName: \"ellipsis.vertical\")"))
+        #expect(overflowMenu.contains("isTaskLifecycleActionsMenuPresented"))
+        #expect(overflowMenu.contains("Circle()"))
+        #expect(source.contains("menu.popUp("))
+        #expect(source.contains("NSColor.systemRed"))
     }
 
     @Test

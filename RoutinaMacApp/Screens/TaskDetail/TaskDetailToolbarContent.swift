@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import ComposableArchitecture
 
@@ -61,6 +62,8 @@ struct TaskDetailActionClusterView: View {
     let isTaskSharingEnabled: Bool
 
     @State private var isPauseUntilPresented = false
+    @State private var isTaskLifecycleActionsMenuPresented = false
+    @State private var taskLifecycleActionsMenuRequestID = 0
 
     var body: some View {
         HStack(spacing: 8) {
@@ -132,53 +135,115 @@ struct TaskDetailActionClusterView: View {
     }
 
     private var taskLifecycleActionsMenu: some View {
-        Menu {
-            if showsPauseResumeButton {
-                if store.task.isArchived() {
-                    Button {
-                        store.send(.resumeTapped)
-                    } label: {
-                        Label(pauseActionTitle, systemImage: pauseSystemImage)
-                    }
-                } else {
-                    Button {
-                        store.send(.pauseTapped)
-                    } label: {
-                        Label(pauseActionTitle, systemImage: pauseSystemImage)
-                    }
-
-                    Button {
-                        isPauseUntilPresented = true
-                    } label: {
-                        Label(pauseUntilActionTitle, systemImage: "clock.arrow.circlepath")
-                    }
-                }
+        Button {
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isTaskLifecycleActionsMenuPresented = true
             }
-
-            if showsCancelTodoButton {
-                Button {
-                    store.send(.cancelTodo)
-                } label: {
-                    Label(store.cancelTodoButtonTitle, systemImage: "slash.circle")
-                }
-                .disabled(store.isCancelTodoButtonDisabled)
-            }
-
-            Divider()
-
-            Button(role: .destructive) {
-                store.send(.setDeleteConfirmation(true))
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
+            taskLifecycleActionsMenuRequestID &+= 1
         } label: {
-            toolbarIconLabel(systemImage: "ellipsis.vertical")
+            taskLifecycleActionsMenuLabel
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
+        .background {
+            TaskDetailOverflowMenuPresenter(
+                requestID: taskLifecycleActionsMenuRequestID,
+                isPresented: $isTaskLifecycleActionsMenuPresented,
+                elements: taskLifecycleActionsMenuElements
+            )
+        }
         .fixedSize()
         .help("More task actions")
         .accessibilityLabel("More task actions")
+    }
+
+    private var taskLifecycleActionsMenuElements: [TaskDetailOverflowMenuElement] {
+        var elements: [TaskDetailOverflowMenuElement] = []
+
+        if showsPauseResumeButton {
+            if store.task.isArchived() {
+                elements.append(
+                    .action(
+                        TaskDetailOverflowMenuAction(
+                            title: pauseActionTitle,
+                            systemImage: pauseSystemImage,
+                            action: { store.send(.resumeTapped) }
+                        )
+                    )
+                )
+            } else {
+                elements.append(
+                    .action(
+                        TaskDetailOverflowMenuAction(
+                            title: pauseActionTitle,
+                            systemImage: pauseSystemImage,
+                            action: { store.send(.pauseTapped) }
+                        )
+                    )
+                )
+                elements.append(
+                    .action(
+                        TaskDetailOverflowMenuAction(
+                            title: pauseUntilActionTitle,
+                            systemImage: "clock.arrow.circlepath",
+                            action: { isPauseUntilPresented = true }
+                        )
+                    )
+                )
+            }
+        }
+
+        if showsCancelTodoButton {
+            elements.append(
+                .action(
+                    TaskDetailOverflowMenuAction(
+                        title: store.cancelTodoButtonTitle,
+                        systemImage: "slash.circle",
+                        isEnabled: !store.isCancelTodoButtonDisabled,
+                        action: { store.send(.cancelTodo) }
+                    )
+                )
+            )
+        }
+
+        elements.append(.separator)
+        elements.append(
+            .action(
+                TaskDetailOverflowMenuAction(
+                    title: "Delete",
+                    systemImage: "trash",
+                    role: .destructive,
+                    action: { store.send(.setDeleteConfirmation(true)) }
+                )
+            )
+        )
+
+        return elements
+    }
+
+    private var taskLifecycleActionsMenuLabel: some View {
+        Image(systemName: "ellipsis.vertical")
+            .font(.system(size: 16, weight: .bold))
+            .foregroundStyle(isTaskLifecycleActionsMenuPresented ? Color.primary : Color.secondary)
+            .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
+            .background(
+                Circle()
+                    .fill(
+                        isTaskLifecycleActionsMenuPresented
+                            ? Color.accentColor.opacity(0.20)
+                            : Color.clear
+                    )
+            )
+            .overlay(
+                Circle()
+                    .stroke(
+                        Color.accentColor.opacity(
+                            isTaskLifecycleActionsMenuPresented ? 0.28 : 0
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .frame(width: Metrics.iconControlWidth, height: Metrics.controlHeight)
+            .contentShape(Rectangle())
     }
 
     private var showsFullDetailActions: Bool {
@@ -295,4 +360,136 @@ struct TaskDetailActionClusterView: View {
         return store.task.isArchived() ? "play.fill" : "pause.fill"
     }
 
+}
+
+private enum TaskDetailOverflowMenuElement {
+    case action(TaskDetailOverflowMenuAction)
+    case separator
+}
+
+private struct TaskDetailOverflowMenuAction {
+    enum Role: Equatable {
+        case standard
+        case destructive
+    }
+
+    let title: String
+    let systemImage: String
+    var isEnabled = true
+    var role: Role = .standard
+    let action: () -> Void
+}
+
+@MainActor
+private struct TaskDetailOverflowMenuPresenter: NSViewRepresentable {
+    let requestID: Int
+    @Binding var isPresented: Bool
+    let elements: [TaskDetailOverflowMenuElement]
+
+    func makeNSView(context: Context) -> TaskDetailOverflowMenuAnchorView {
+        TaskDetailOverflowMenuAnchorView()
+    }
+
+    func updateNSView(_ nsView: TaskDetailOverflowMenuAnchorView, context: Context) {
+        let coordinator = context.coordinator
+        coordinator.elements = elements
+        let presentationBinding = $isPresented
+        coordinator.setPresented = { isPresented in
+            guard presentationBinding.wrappedValue != isPresented else { return }
+            withAnimation(.easeInOut(duration: 0.12)) {
+                presentationBinding.wrappedValue = isPresented
+            }
+        }
+
+        guard requestID != coordinator.lastRequestID else { return }
+        coordinator.lastRequestID = requestID
+        guard requestID > 0 else { return }
+
+        DispatchQueue.main.async {
+            coordinator.presentMenu(from: nsView)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        var elements: [TaskDetailOverflowMenuElement] = []
+        var lastRequestID = 0
+        var setPresented: ((Bool) -> Void)?
+
+        private var actionHandlers: [() -> Void] = []
+        private var isMenuPresented = false
+
+        func presentMenu(from anchorView: NSView) {
+            guard !isMenuPresented else { return }
+            guard anchorView.window != nil else {
+                setPresented?(false)
+                return
+            }
+
+            isMenuPresented = true
+            setPresented?(true)
+
+            let menu = makeMenu()
+            menu.popUp(
+                positioning: nil,
+                at: NSPoint(x: anchorView.bounds.midX, y: anchorView.bounds.minY),
+                in: anchorView
+            )
+
+            isMenuPresented = false
+            setPresented?(false)
+        }
+
+        private func makeMenu() -> NSMenu {
+            let menu = NSMenu()
+            menu.autoenablesItems = false
+            actionHandlers = []
+
+            for element in elements {
+                switch element {
+                case .separator:
+                    menu.addItem(.separator())
+
+                case let .action(action):
+                    let item = NSMenuItem(
+                        title: action.title,
+                        action: #selector(performAction(_:)),
+                        keyEquivalent: ""
+                    )
+                    item.target = self
+                    item.tag = actionHandlers.count
+                    item.isEnabled = action.isEnabled
+                    item.image = NSImage(
+                        systemSymbolName: action.systemImage,
+                        accessibilityDescription: action.title
+                    )
+                    if action.role == .destructive {
+                        item.attributedTitle = NSAttributedString(
+                            string: action.title,
+                            attributes: [.foregroundColor: NSColor.systemRed]
+                        )
+                    }
+                    actionHandlers.append(action.action)
+                    menu.addItem(item)
+                }
+            }
+
+            return menu
+        }
+
+        @objc private func performAction(_ sender: NSMenuItem) {
+            guard actionHandlers.indices.contains(sender.tag) else { return }
+            actionHandlers[sender.tag]()
+        }
+    }
+}
+
+private final class TaskDetailOverflowMenuAnchorView: NSView {
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        nil
+    }
 }

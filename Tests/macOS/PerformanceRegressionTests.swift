@@ -83,13 +83,13 @@ final class PerformanceRegressionTests: XCTestCase {
         let actionButtonsStart = try XCTUnwrap(
             source.range(of: "private var actionButtons: some View")
         )
-        let showsFullDetailActionsStart = try XCTUnwrap(
+        let overflowMenuStart = try XCTUnwrap(
             source.range(
-                of: "private var showsFullDetailActions: Bool",
+                of: "private var taskLifecycleActionsMenu: some View",
                 range: actionButtonsStart.upperBound..<source.endIndex
             )
         )
-        let actionButtonsSource = source[actionButtonsStart.lowerBound..<showsFullDetailActionsStart.lowerBound]
+        let actionButtonsSource = source[actionButtonsStart.lowerBound..<overflowMenuStart.lowerBound]
         let completionAction = try XCTUnwrap(
             actionButtonsSource.range(of: "store.send(store.completionButtonAction)")
         )
