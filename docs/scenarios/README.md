@@ -156,6 +156,33 @@ When Support & About diagnostics are copied
 Then the CloudKit detail includes the child error code and an anonymized fingerprint for each actionable failed item, up to three items
 And it omits record names, record contents, account identifiers, credentials, and device tokens
 
+### Manual iCloud Refresh Does Not Claim Background Upload Success
+
+Area: Settings
+Decision links: [0523](../decisions/0523-report-manual-icloud-refresh-honestly.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/SettingsFeatureTests.swift`
+
+Given a user selects `Sync Now`
+When Routina's direct CloudKit download completes
+Then the status confirms that the latest iCloud data was received
+And it explains that changes from this device continue syncing in the background
+And it does not claim a full sync completed before CloudKit reports an export outcome
+
+### Estimated iCloud Usage Respects Feature Availability
+
+Area: Settings
+Decision links: [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/SettingsSectionViewSupportTests.swift`
+
+Given a Routina feature such as Places, Goals, Events, Emotions, Notes, or Voice Notes is unavailable to the user
+When they view Estimated iCloud Usage
+Then that feature's category is not listed
+And Tasks, Logs, and Images remain visible as released data categories
+
 ### Production Uploads Carry Export-Compliance Metadata
 
 Area: Other

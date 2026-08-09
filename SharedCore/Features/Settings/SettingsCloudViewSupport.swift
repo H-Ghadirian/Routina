@@ -1,5 +1,39 @@
 import Foundation
 
+enum SettingsCloudUsageCategory: Equatable {
+    case tasks
+    case logs
+    case places
+    case goals
+    case emotions
+    case notes
+    case events
+    case images
+    case voiceNotes
+}
+
+struct SettingsCloudUsageVisibility: Equatable {
+    var isPlacesEnabled: Bool
+    var isGoalsEnabled: Bool
+    var areEventEmotionActionsEnabled: Bool
+    var isNotesEnabled: Bool
+
+    func shows(_ category: SettingsCloudUsageCategory) -> Bool {
+        switch category {
+        case .tasks, .logs, .images:
+            true
+        case .places:
+            isPlacesEnabled
+        case .goals:
+            isGoalsEnabled
+        case .emotions, .events:
+            areEventEmotionActionsEnabled
+        case .notes, .voiceNotes:
+            isNotesEnabled
+        }
+    }
+}
+
 extension SettingsCloudState {
     var usageTotalText: String {
         ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.totalPayloadBytes, countStyle: .file)
@@ -61,7 +95,7 @@ extension SettingsCloudState {
 
     var overviewSubtitle: String {
         if isCloudSyncInProgress {
-            return "Syncing with iCloud"
+            return "Checking iCloud for updates"
         }
         if isCloudDataResetAuthenticationInProgress {
             return "Confirming App Lock"
@@ -86,7 +120,7 @@ extension SettingsCloudState {
             return "Deleting iCloud data..."
         }
         if isCloudSyncInProgress {
-            return "Syncing..."
+            return "Checking iCloud for updates..."
         }
         if !cloudStatusMessage.isEmpty {
             return cloudStatusMessage

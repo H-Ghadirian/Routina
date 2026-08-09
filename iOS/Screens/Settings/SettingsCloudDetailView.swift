@@ -15,8 +15,22 @@ struct SettingsCloudDetailView: View {
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
 
     var body: some View {
+let usageVisibility = SettingsCloudUsageVisibility(
+    isPlacesEnabled: isPlacesEnabled,
+    isGoalsEnabled: isGoalsTabEnabled,
+    areEventEmotionActionsEnabled: areEventEmotionActionsEnabled,
+    isNotesEnabled: isNotesEnabled
+)
 List {
     Section("iCloud") {
         Button {
@@ -86,17 +100,23 @@ List {
         SettingsInfoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
         SettingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
         SettingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
-        if isPlacesEnabled {
+        if usageVisibility.shows(.places) {
             SettingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
         }
-        SettingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
-        SettingsInfoRow(title: "Emotions", value: "\(store.cloud.cloudUsageEstimate.emotionLogCount) • \(store.cloud.usageEmotionPayloadText)")
-        if isNotesEnabled {
+        if usageVisibility.shows(.goals) {
+            SettingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
+        }
+        if usageVisibility.shows(.emotions) {
+            SettingsInfoRow(title: "Emotions", value: "\(store.cloud.cloudUsageEstimate.emotionLogCount) • \(store.cloud.usageEmotionPayloadText)")
+        }
+        if usageVisibility.shows(.notes) {
             SettingsInfoRow(title: "Notes", value: "\(store.cloud.cloudUsageEstimate.noteCount) • \(store.cloud.usageNotePayloadText)")
         }
-        SettingsInfoRow(title: "Events", value: "\(store.cloud.cloudUsageEstimate.eventCount) • \(store.cloud.usageEventPayloadText)")
+        if usageVisibility.shows(.events) {
+            SettingsInfoRow(title: "Events", value: "\(store.cloud.cloudUsageEstimate.eventCount) • \(store.cloud.usageEventPayloadText)")
+        }
         SettingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
-        if isNotesEnabled {
+        if usageVisibility.shows(.voiceNotes) {
             SettingsInfoRow(title: "Voice Notes", value: "\(store.cloud.cloudUsageEstimate.voiceNoteCount) • \(store.cloud.usageVoiceNotePayloadText)")
         }
 

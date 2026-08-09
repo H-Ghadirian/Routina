@@ -49,7 +49,8 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
 - Hidden Support & About diagnostics show configured Data Mode and iCloud Container separately from the running executable's signed CloudKit environment. macOS reads the signed value from `com.apple.developer.icloud-container-environment`; iOS explicitly reports that this verification is unavailable rather than inferring it from configuration.
 - Hidden Support & About diagnostics also shows the app's operating system and offers `Copy Diagnostics`. It copies a labelled report containing app, operating-system, CloudKit, and push metadata only; it excludes user data, identifiers, credentials, and device tokens. A partial CloudKit failure includes up to three nested error codes and anonymized item fingerprints, never record names or contents.
-- iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.
+- iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section. `Sync Now` verifies the manual iCloud download only; local uploads remain asynchronous and must not be reported as completed until CloudKit records a successful export.
+- Estimated iCloud Usage lists only categories whose user-facing feature is available. Tasks, logs, and images remain visible; Places, Goals, Events, Emotions, Notes, and Voice Notes follow their corresponding feature gates.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
 - Legacy `.json` backup remains compatibility-only for older task, place, goal, and log payloads.
 - Data-wide reset actions show backup/export first when possible.

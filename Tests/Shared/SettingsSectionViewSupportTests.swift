@@ -10,6 +10,43 @@ import Testing
 @MainActor
 struct SettingsSectionViewSupportTests {
     @Test
+    func cloudUsageHidesCategoriesWhoseFeaturesAreUnavailable() {
+        let visibility = SettingsCloudUsageVisibility(
+            isPlacesEnabled: false,
+            isGoalsEnabled: false,
+            areEventEmotionActionsEnabled: false,
+            isNotesEnabled: false
+        )
+
+        #expect(visibility.shows(.tasks))
+        #expect(visibility.shows(.logs))
+        #expect(visibility.shows(.images))
+        #expect(!visibility.shows(.places))
+        #expect(!visibility.shows(.goals))
+        #expect(!visibility.shows(.emotions))
+        #expect(!visibility.shows(.events))
+        #expect(!visibility.shows(.notes))
+        #expect(!visibility.shows(.voiceNotes))
+    }
+
+    @Test
+    func cloudUsageShowsAvailableFeatureCategories() {
+        let visibility = SettingsCloudUsageVisibility(
+            isPlacesEnabled: true,
+            isGoalsEnabled: true,
+            areEventEmotionActionsEnabled: true,
+            isNotesEnabled: true
+        )
+
+        #expect(visibility.shows(.places))
+        #expect(visibility.shows(.goals))
+        #expect(visibility.shows(.emotions))
+        #expect(visibility.shows(.events))
+        #expect(visibility.shows(.notes))
+        #expect(visibility.shows(.voiceNotes))
+    }
+
+    @Test
     func generalSectionAppearsFirstWithBatteryRoutineSummary() {
         var state = SettingsFeatureState()
         state.appearance.isAppLockEnabled = true

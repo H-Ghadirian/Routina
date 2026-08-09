@@ -100,14 +100,14 @@ enum SettingsCloudActionExecution {
                 await send(
                     .cloudSyncFinished(
                         success: true,
-                        message: "Sync completed."
+                        message: "Latest iCloud data received. Changes from this device continue syncing in the background."
                     )
                 )
             } catch {
                 await send(
                     .cloudSyncFinished(
                         success: false,
-                        message: "Sync failed: \(error.localizedDescription)"
+                        message: "Couldn't check iCloud: \(error.localizedDescription)"
                     )
                 )
             }

@@ -15,7 +15,7 @@ enum SettingsCloudEditor {
         }
 
         state.isCloudSyncInProgress = true
-        state.cloudStatusMessage = "Syncing with iCloud..."
+        state.cloudStatusMessage = "Checking iCloud for updates..."
         return true
     }
 

@@ -159,6 +159,50 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func syncNow_reportsTheVerifiedDownloadWithoutClaimingBackgroundUploadsSucceeded() async {
+        let context = makeInMemoryContext()
+        let pullCallCount = LockIsolated(0)
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                cloud: .init(cloudSyncAvailable: true)
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.cloudSyncClient.pullLatestIntoLocalStore = { _ in
+                pullCallCount.withValue { $0 += 1 }
+            }
+        }
+
+        await store.send(.syncNowTapped) {
+            $0.cloud.isCloudSyncInProgress = true
+            $0.cloud.cloudStatusMessage = "Checking iCloud for updates..."
+        }
+
+        var loadedEstimate = CloudUsageEstimate.zero
+        await store.receive { action in
+            guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
+            loadedEstimate = estimate
+            return true
+        } assert: {
+            $0.cloud.cloudUsageEstimate = loadedEstimate
+        }
+
+        await store.receive(
+            .cloudSyncFinished(
+                success: true,
+                message: "Latest iCloud data received. Changes from this device continue syncing in the background."
+            )
+        ) {
+            $0.cloud.isCloudSyncInProgress = false
+            $0.cloud.cloudStatusMessage = "Latest iCloud data received. Changes from this device continue syncing in the background."
+        }
+
+        #expect(pullCallCount.value == 1)
+    }
+
+    @Test
     func localUserDataReset_deletesEverySwiftDataUserModel() throws {
         let context = makeInMemoryContext()
         let source = RoutinaDeviceActivitySource(

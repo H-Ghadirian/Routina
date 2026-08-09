@@ -17,8 +17,22 @@ struct SettingsMacCloudDetailView: View {
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isAwayEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
 
     var body: some View {
+let usageVisibility = SettingsCloudUsageVisibility(
+    isPlacesEnabled: isPlacesEnabled,
+    isGoalsEnabled: isGoalsTabEnabled,
+    areEventEmotionActionsEnabled: areEventEmotionActionsEnabled,
+    isNotesEnabled: isNotesEnabled
+)
 SettingsMacDetailShell(
     title: "iCloud & Backup",
     subtitle: "Sync routines across devices, save backup packages, and manage the cloud copy when needed."
@@ -93,17 +107,23 @@ SettingsMacDetailShell(
         settingsInfoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
         settingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
         settingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
-        if isPlacesEnabled {
+        if usageVisibility.shows(.places) {
             settingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
         }
-        settingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
-        settingsInfoRow(title: "Emotions", value: "\(store.cloud.cloudUsageEstimate.emotionLogCount) • \(store.cloud.usageEmotionPayloadText)")
-        if isNotesEnabled {
+        if usageVisibility.shows(.goals) {
+            settingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
+        }
+        if usageVisibility.shows(.emotions) {
+            settingsInfoRow(title: "Emotions", value: "\(store.cloud.cloudUsageEstimate.emotionLogCount) • \(store.cloud.usageEmotionPayloadText)")
+        }
+        if usageVisibility.shows(.notes) {
             settingsInfoRow(title: "Notes", value: "\(store.cloud.cloudUsageEstimate.noteCount) • \(store.cloud.usageNotePayloadText)")
         }
-        settingsInfoRow(title: "Events", value: "\(store.cloud.cloudUsageEstimate.eventCount) • \(store.cloud.usageEventPayloadText)")
+        if usageVisibility.shows(.events) {
+            settingsInfoRow(title: "Events", value: "\(store.cloud.cloudUsageEstimate.eventCount) • \(store.cloud.usageEventPayloadText)")
+        }
         settingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
-        if isNotesEnabled {
+        if usageVisibility.shows(.voiceNotes) {
             settingsInfoRow(title: "Voice Notes", value: "\(store.cloud.cloudUsageEstimate.voiceNoteCount) • \(store.cloud.usageVoiceNotePayloadText)")
         }
 
