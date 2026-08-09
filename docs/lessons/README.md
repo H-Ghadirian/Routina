@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0124 — Allow unchanged async Settings state](0124-allow-unchanged-async-settings-state.md)
 - [0123 — Keep disabled features out of iCloud usage](0123-keep-disabled-features-out-of-cloud-usage.md)
 - [0122 — Distinguish a CloudKit download from an export](0122-distinguish-cloudkit-download-from-export.md)
 - [0121 — Decode partial CloudKit failures without copying user data](0121-decode-partial-cloudkit-failures-without-copying-user-data.md)

@@ -135,6 +135,10 @@ extension SettingsCloudState {
 extension SettingsDataTransferState {
     static let recentBackupWindow: TimeInterval = 24 * 60 * 60
 
+    var shouldShowStatusText: Bool {
+        isDataTransferInProgress || !dataTransferStatusMessage.isEmpty
+    }
+
     var overviewSubtitle: String {
         if isDataTransferInProgress {
             return "Importing or exporting backup"

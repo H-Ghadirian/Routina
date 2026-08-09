@@ -84,7 +84,7 @@ List {
                 Text(store.dataTransfer.statusText)
                     .foregroundStyle(.secondary)
             }
-        } else {
+        } else if store.dataTransfer.shouldShowStatusText {
             Text(store.dataTransfer.statusText)
                 .foregroundStyle(.secondary)
         }

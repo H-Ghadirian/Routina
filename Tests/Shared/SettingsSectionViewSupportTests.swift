@@ -47,6 +47,21 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func backupStatusHidesItsDefaultInstructionButKeepsOperationFeedback() {
+        var state = SettingsDataTransferState()
+
+        #expect(!state.shouldShowStatusText)
+        #expect(state.statusText == "Export a full backup package, or import a package or legacy JSON file.")
+
+        state.isDataTransferInProgress = true
+        #expect(state.shouldShowStatusText)
+
+        state.isDataTransferInProgress = false
+        state.dataTransferStatusMessage = "Saved to Routina.routinabackup."
+        #expect(state.shouldShowStatusText)
+    }
+
+    @Test
     func generalSectionAppearsFirstWithBatteryRoutineSummary() {
         var state = SettingsFeatureState()
         state.appearance.isAppLockEnabled = true

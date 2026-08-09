@@ -114,21 +114,6 @@ SettingsMacDetailShell(
         }
     }
 
-    SettingsMacDetailCard(title: "Tag Counters") {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Tag counter display",
-            options: TagCounterDisplayMode.allCases,
-            selection: tagCounterDisplayModeBinding,
-            minimumSegmentWidth: 104
-        ) { mode in
-            Text(mode.summaryText)
-        }
-
-        Text(store.appearance.tagCounterDisplayMode.subtitle)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
     SettingsMacDetailCard(title: "Temporary View State") {
         Button {
             guard store.appearance.hasTemporaryViewStateToReset else { return }
@@ -174,13 +159,6 @@ SettingsMacDetailShell(
         store.appearance.hasTemporaryViewStateToReset
             ? "Reset Filters and Selections"
             : "Filters and Selections Are Clear"
-    }
-
-    private var tagCounterDisplayModeBinding: Binding<TagCounterDisplayMode> {
-        Binding(
-            get: { store.appearance.tagCounterDisplayMode },
-            set: { store.send(.tagCounterDisplayModeChanged($0)) }
-        )
     }
 
     private var showDoneCountInToolbarBinding: Binding<Bool> {

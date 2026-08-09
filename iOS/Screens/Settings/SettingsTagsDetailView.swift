@@ -14,6 +14,18 @@ struct SettingsTagsDetailView: View {
 
     var body: some View {
         List {
+            Section("Tag Counters") {
+                Picker("Display", selection: tagCounterDisplayModeBinding) {
+                    ForEach(TagCounterDisplayMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text(store.appearance.tagCounterDisplayMode.subtitle)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Saved Tags") {
                 if store.tags.savedTags.isEmpty {
                     Text(emptyTagsText)
@@ -60,6 +72,13 @@ struct SettingsTagsDetailView: View {
             : "No tags yet. Tags you add to tasks, goals, or events will appear here."
     }
 
+    private var tagCounterDisplayModeBinding: Binding<TagCounterDisplayMode> {
+        Binding(
+            get: { store.appearance.tagCounterDisplayMode },
+            set: { store.send(.tagCounterDisplayModeChanged($0)) }
+        )
+    }
+
     private var deleteTagConfirmationBinding: Binding<Bool> {
         Binding(
             get: { store.tags.isDeleteTagConfirmationPresented },
@@ -81,7 +100,7 @@ struct SettingsFlagsDetailView: View {
     var body: some View {
         List {
             Section {
-                Text("Flags are separate from tags. Use them to mark tasks for Routina behavior without changing your tag organization.")
+                Text("Flags add behavior to tasks without changing your tag organization.")
                     .foregroundStyle(.secondary)
             }
 
@@ -148,23 +167,14 @@ struct SettingsFlagsDetailView: View {
         kind: RoutineFlagRuleKind
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Label(kind.title, systemImage: kind == .hideFromTaskLists ? "eye.slash" : "checkmark.circle")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button(store.flags.hasRule(kind, for: flag) ? "Remove" : "Add") {
-                    store.send(
-                        store.flags.hasRule(kind, for: flag)
-                            ? .removeFlagRuleTapped(flagName: flag, kind: kind)
-                            : .addFlagRuleTapped(flagName: flag, kind: kind)
-                    )
+            Toggle(isOn: flagRuleBinding(flag, kind: kind)) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Label(kind.title, systemImage: ruleSystemImage(for: kind))
+                    Text(kind.detail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.borderless)
             }
-            Text(kind.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
             if kind == .autoAssumeDone,
                store.flags.hasRule(kind, for: flag) {
                 Button("Migrate existing auto-assume tasks") {
@@ -176,6 +186,26 @@ struct SettingsFlagsDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func flagRuleBinding(
+        _ flag: String,
+        kind: RoutineFlagRuleKind
+    ) -> Binding<Bool> {
+        Binding(
+            get: { store.flags.hasRule(kind, for: flag) },
+            set: { isEnabled in
+                store.send(
+                    isEnabled
+                        ? .addFlagRuleTapped(flagName: flag, kind: kind)
+                        : .removeFlagRuleTapped(flagName: flag, kind: kind)
+                )
+            }
+        )
+    }
+
+    private func ruleSystemImage(for kind: RoutineFlagRuleKind) -> String {
+        kind == .hideFromTaskLists ? "eye.slash" : "checkmark.circle"
     }
 
     private var draftBinding: Binding<String> {

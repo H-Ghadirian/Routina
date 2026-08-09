@@ -180,13 +180,10 @@ struct SettingsFeatureTests {
             $0.cloud.cloudStatusMessage = "Checking iCloud for updates..."
         }
 
-        var loadedEstimate = CloudUsageEstimate.zero
         await store.receive { action in
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
-            loadedEstimate = estimate
+            #expect(estimate == .zero)
             return true
-        } assert: {
-            $0.cloud.cloudUsageEstimate = loadedEstimate
         }
 
         await store.receive(

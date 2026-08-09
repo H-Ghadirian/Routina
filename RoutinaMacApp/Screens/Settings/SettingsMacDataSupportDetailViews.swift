@@ -92,9 +92,11 @@ SettingsMacDetailShell(
             }
         }
 
-        Text(store.dataTransfer.statusText)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
+        if store.dataTransfer.shouldShowStatusText {
+            Text(store.dataTransfer.statusText)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
 
         Text(store.dataTransfer.backupFreshnessText())
             .font(.footnote)

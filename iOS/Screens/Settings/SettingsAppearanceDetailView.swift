@@ -83,18 +83,6 @@ List {
 
     }
 
-    Section("Tag Counters") {
-        Picker("Display", selection: tagCounterDisplayModeBinding) {
-            ForEach(TagCounterDisplayMode.allCases) { mode in
-                Text(mode.title).tag(mode)
-            }
-        }
-        .pickerStyle(.menu)
-
-        Text(store.appearance.tagCounterDisplayMode.subtitle)
-            .foregroundStyle(.secondary)
-    }
-
     Section("Temporary View State") {
         Button {
             guard store.appearance.hasTemporaryViewStateToReset else { return }
@@ -141,13 +129,6 @@ List {
         store.appearance.hasTemporaryViewStateToReset
             ? "Reset Filters and Selections"
             : "Filters and Selections Are Clear"
-    }
-
-    private var tagCounterDisplayModeBinding: Binding<TagCounterDisplayMode> {
-        Binding(
-            get: { store.appearance.tagCounterDisplayMode },
-            set: { store.send(.tagCounterDisplayModeChanged($0)) }
-        )
     }
 
     private func taskRowFieldVisibilityBinding(_ field: HomeTaskRowField) -> Binding<Bool> {
