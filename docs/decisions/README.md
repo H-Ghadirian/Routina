@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0514](0514-defer-ios-location-services-until-places-release.md) refines [0275](0275-hide-places-behind-beta-toggle.md) and [0470](0470-keep-beta-experiments-out-of-production.md):** iOS development retains Places location services, while production compiles no `CLLocationManager` implementation until Places becomes a release feature.
+
 - **[0513](0513-defer-ios-screen-time-blocking-until-distribution-approval.md) refines [0085](0085-shield-apps-and-websites-during-focus.md):** iOS development retains Screen Time app and website blocking, while production omits its UI, implementation, and Family Controls entitlement until Apple grants distribution approval.
 
 - **[0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md):** Mac Task Detail keeps manual linking in its `Link Task` sheet, where an explicit Suggest mode replaces manual search with loading and confirmed relationship proposals.
@@ -60,6 +62,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0514](0514-defer-ios-location-services-until-places-release.md) refines [0275](0275-hide-places-behind-beta-toggle.md) and [0470](0470-keep-beta-experiments-out-of-production.md):** Until Places is deliberately promoted for release, iOS development retains device-location services while production compiles a no-op client and no `CLLocationManager` implementation.
 
 - **[0513](0513-defer-ios-screen-time-blocking-until-distribution-approval.md) refines [0085](0085-shield-apps-and-websites-during-focus.md):** Until Apple grants Family Controls distribution approval, iOS development retains Screen Time app and website blocking while production omits the UI, implementation, and entitlement; macOS blocking is unchanged.
 

@@ -1,3 +1,4 @@
+#if ROUTINA_IOS_LOCATION_SERVICES
 import CoreLocation
 import Foundation
 
@@ -151,3 +152,4 @@ extension OneShotLocationProvider {
         return snapshot(authorizationStatus: mappedAuthorization, location: location)
     }
 }
+#endif

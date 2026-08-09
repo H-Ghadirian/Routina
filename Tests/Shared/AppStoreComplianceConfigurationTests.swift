@@ -130,6 +130,35 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
+    func iOSProductionCompilesOutLocationServicesUntilPlacesShips() throws {
+        let productionInfo = try Self.propertyListDictionary(
+            "Config/iOS/RoutinaiOSProd-Info.plist"
+        )
+        #expect(productionInfo["NSLocationWhenInUseUsageDescription"] == nil)
+
+        let developmentInfo = try Self.propertyListDictionary(
+            "Config/iOS/RoutinaiOSDev-Info.plist"
+        )
+        #expect(developmentInfo["NSLocationWhenInUseUsageDescription"] as? String ==
+            "Routina uses your location to show place-based routines when you are at the right place.")
+
+        let project = try Self.sourceFile("RoutinaiOS.xcodeproj/project.pbxproj")
+        #expect(project.components(separatedBy: "ROUTINA_IOS_LOCATION_SERVICES").count == 3)
+
+        let locationProvider = try Self.sourceFile("iOS/Utilities/LocationProvider.swift")
+        #expect(locationProvider.contains("#if ROUTINA_IOS_LOCATION_SERVICES\nimport CoreLocation"))
+        #expect(locationProvider.contains("manager.requestWhenInUseAuthorization()"))
+
+        let platformClients = try Self.sourceFile("iOS/Utilities/PlatformClients.swift")
+        #expect(platformClients.contains(
+            "#if ROUTINA_IOS_LOCATION_SERVICES\n            await OneShotLocationProvider()"
+        ))
+        #expect(platformClients.contains(
+            "#else\n            _ = requestAuthorizationIfNeeded\n            return LocationSnapshot(authorizationStatus: .notDetermined)"
+        ))
+    }
+
+    @Test
     func productionDisablesEveryExperimentalPreference() {
         for key in RoutinaExperimentalFeaturePolicy.preferenceKeys {
             #expect(

@@ -24,10 +24,12 @@ This page summarizes active Places, saved-place, check-in, and map behavior.
 - [0234](../decisions/0234-hide-current-place-map-check-in.md)
 - [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
 - [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
+- [0514](../decisions/0514-defer-ios-location-services-until-places-release.md)
 
 ## Current Contract
 
 - Places is unavailable in production and its stored experiment preference resolves to disabled. Development builds can enable it through Support & About -> Beta Experiments -> `Show Places`.
+- iOS development builds retain `CLLocationManager` access for Places. Production compiles a no-op location client instead, so it cannot request or read device location while Places remains unavailable.
 - When Places is off, visible app surfaces do not show place navigation, Check In entry points, task place sections, place filters, place stats, place timeline filters, Quick Add place help/parsing, Watch place sync, or Settings Places controls.
 - Place check-ins are duration-based `PlaceCheckInSession` records and timeline evidence.
 - Place check-ins are distinct from planner blocks, sleep, and focus sessions.

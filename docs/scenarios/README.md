@@ -62,7 +62,7 @@ Then each grid cell has enough minimum width for ordinary Flag labels
 ### Production Experiment Lockdown Matches Signed Capabilities
 
 Area: Settings / Other
-Decision links: [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0513](../decisions/0513-defer-ios-screen-time-blocking-until-distribution-approval.md)
+Decision links: [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0513](../decisions/0513-defer-ios-screen-time-blocking-until-distribution-approval.md), [0514](../decisions/0514-defer-ios-location-services-until-places-release.md)
 Current behavior: [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
@@ -82,6 +82,12 @@ Given the Family Controls distribution entitlement has not yet been approved
 When an iOS production configuration is signed
 Then it omits the Family Controls entitlement and the Blocking Settings entry
 And the Family Controls implementation remains available only in iOS development configurations
+
+Given Places remains an iOS development experiment
+When an iOS production configuration is compiled
+Then it has no location usage description or `CLLocationManager` implementation
+And its location client returns a no-op snapshot
+And iOS development configurations retain the actual location implementation for Places testing
 
 ### Production Uploads Carry Export-Compliance Metadata
 

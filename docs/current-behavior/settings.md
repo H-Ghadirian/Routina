@@ -31,6 +31,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0467](../decisions/0467-declare-exempt-encryption-in-production-bundles.md)
 - [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
 - [0513](../decisions/0513-defer-ios-screen-time-blocking-until-distribution-approval.md)
+- [0514](../decisions/0514-defer-ios-location-services-until-places-release.md)
 
 ## Current Contract
 
@@ -40,7 +41,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Calendar task import always supports Apple Calendar. Outlook appears only when the app bundle has a nonempty Microsoft Graph client ID, so unconfigured release builds do not advertise a nonfunctional sign-in path.
 - The iOS and macOS production bundles declare `ITSAppUsesNonExemptEncryption` as false so App Store Connect can reuse Routina's current exempt-encryption answer. The declaration must be reassessed before shipping custom cryptography, encrypted communications or VPN functionality, or a cryptography-providing dependency.
 - Beta Experiments are available only in development app variants. Production does not render the Beta Experiments panel after the hidden diagnostics gesture, resolves every experimental preference to disabled, and forces attempted experimental writes off, including values restored from older releases.
-- The Mac production entitlement set omits location, audio input, and Apple Events automation because their Places, voice-note, and browser-automation entry points are experimental. Development builds retain those capabilities. Apple Calendar access remains a production feature and retains its calendar entitlement and purpose strings.
+- The Mac production entitlement set omits location, audio input, and Apple Events automation because their Places, voice-note, and browser-automation entry points are experimental. The iOS production build likewise omits its location purpose string and compiles a no-op location client. Development builds retain those capabilities. Apple Calendar access remains a production feature and retains its calendar entitlement and purpose strings.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.

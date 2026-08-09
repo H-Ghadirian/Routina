@@ -157,3 +157,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0113 — Preserve assumed one-off time blocks on confirmation](0113-preserve-assumed-one-off-time-blocks-on-confirmation.md)
 - [0114 — Gate every production-excluded platform branch](0114-gate-every-production-excluded-platform-branch.md)
 - [0115 — Declare both HealthKit purpose strings](0115-declare-both-healthkit-purpose-strings.md)
+- [0116 — Compile out protected experimental services](0116-compile-out-protected-experimental-services.md)

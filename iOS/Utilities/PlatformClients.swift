@@ -20,9 +20,14 @@ extension AppIconClient {
 extension LocationClient {
     static let live = LocationClient(
         snapshot: { requestAuthorizationIfNeeded in
+#if ROUTINA_IOS_LOCATION_SERVICES
             await OneShotLocationProvider().fetchSnapshot(
                 requestAuthorizationIfNeeded: requestAuthorizationIfNeeded
             )
+#else
+            _ = requestAuthorizationIfNeeded
+            return LocationSnapshot(authorizationStatus: .notDetermined)
+#endif
         }
     )
 }
