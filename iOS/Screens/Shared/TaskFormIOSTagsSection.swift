@@ -128,11 +128,7 @@ struct TaskFormIOSTagsSection: View {
         if !model.routineTags.isEmpty
             || !tagSuggestionPresentation.relatedTags.isEmpty
             || tagSuggestionPresentation.remainingTagCount > 0 {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
-                alignment: .leading,
-                spacing: 8
-            ) {
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(model.routineTags, id: \.self) { tag in
                     selectedTagButton(tag)
                 }

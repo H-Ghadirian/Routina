@@ -56,6 +56,11 @@ struct TaskFormIOSLayoutRegressionTests {
         let source = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"
         )
+        let tagChips = try Self.sourceSection(
+            startingAt: "private var tagChipsContent",
+            endingAt: "private var browseTagsButton",
+            in: source
+        )
 
         #expect(source.contains("ForEach(visibleAvailableTags, id: \\.self)"))
         #expect(!source.contains("ForEach(unselectedAvailableTags, id: \\.self)"))
@@ -67,6 +72,8 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(source.contains("displayedTags = availableTags.filter"))
         #expect(source.contains("let remainingTagCount: Int"))
         #expect(!source.contains("let remainingTags: [String]"))
+        #expect(tagChips.contains("HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8)"))
+        #expect(!tagChips.contains("GridItem(.adaptive(minimum: 90)"))
     }
 
     @Test

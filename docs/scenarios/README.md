@@ -128,6 +128,19 @@ When they open `Browse all tags`
 Then the searchable tag picker stays open above the task form
 And dismissing the picker returns to the still-open task form with its draft intact
 
+### iOS Task Form Tags Preserve Full Labels
+
+Area: Tasks / UI
+Decision links: [0531](../decisions/0531-keep-ios-task-tag-selection-compact-and-searchable.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+
+Given an iOS Add Task or Edit Task form shows selected, related, or suggested tags
+When a tag label fits in the available Tags section width
+Then the chip shows its full label instead of an ellipsis
+And chips wrap to a later row only when their combined intrinsic widths require it
+
 ### Production Experiment Lockdown Matches Signed Capabilities
 
 Area: Settings / Other

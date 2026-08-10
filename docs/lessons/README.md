@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0131 — Let compact iOS tag chips wrap before truncating](0131-let-compact-ios-tag-chips-wrap-before-truncating.md)
 - [0130 — Anchor nested pickers to stable form roots](0130-anchor-nested-pickers-to-stable-form-roots.md)
 - [0129 — Verify dictionary inference in iOS builds](0129-verify-dictionary-inference-in-ios-builds.md)
 - [0128 — Let task-detail tags use their intrinsic width](0128-let-task-detail-tags-use-their-intrinsic-width.md)
