@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0531](0531-keep-ios-task-tag-selection-compact-and-searchable.md) refines [0426](0426-collapse-mac-task-form-tag-suggestions.md):** iOS Add Task and Edit Task keep selected, related, and six top saved tags inline, while a deliberate searchable picker contains the full catalog without rebuilding it from the picker’s scrolling render path.
+
 - **[0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md) refines [0529](0529-collapse-calendar-list-planned-task-sections.md) and [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` keeps user-confirmed assumed completions in their own persisted `Confirmed assumed done` section instead of mixing them into `Dones`.
 
 - **[0529](0529-collapse-calendar-list-planned-task-sections.md) refines [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` gives each day’s Planned tasks and Assumed done sections independent disclosures with one shared default, so dense future plans remain scannable without changing cached Planner presentation work.

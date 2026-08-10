@@ -52,6 +52,24 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func tagsKeepSuggestionsBoundedAndBrowseTheFullCatalogInASearchablePicker() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"
+        )
+
+        #expect(source.contains("ForEach(visibleAvailableTags, id: \\.self)"))
+        #expect(!source.contains("ForEach(unselectedAvailableTags, id: \\.self)"))
+        #expect(source.contains("Label(\"Browse all tags\", systemImage: \"magnifyingglass\")"))
+        #expect(source.contains("struct TaskFormIOSTagPicker"))
+        #expect(source.contains("@State private var displayedTags: [String] = []"))
+        #expect(source.contains(".searchable(text: $searchText, prompt: \"Search tags\")"))
+        #expect(source.contains(".onChange(of: searchText)"))
+        #expect(source.contains("displayedTags = availableTags.filter"))
+        #expect(source.contains("let remainingTagCount: Int"))
+        #expect(!source.contains("let remainingTags: [String]"))
+    }
+
+    @Test
     func descriptionIsIndependentFromExperimentalNotesAndSupportsTargetedReveal() throws {
         let formSource = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormContentPlatform.swift"

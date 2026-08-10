@@ -5,15 +5,86 @@ struct TaskFormIOSTagsSection: View {
     let tagColor: (String) -> Color?
     let onManageTags: () -> Void
 
+    @State private var isTagPickerPresented = false
     @State private var showsAllAvailableFlags = false
+    @State private var tagSuggestionPresentation: TaskFormIOSTagSuggestionPresentation.Data
+    @State private var tagAutocompleteSuggestion: String?
+    @State private var tagSummariesByID: [String: RoutineTagSummary]
+
+    init(
+        model: TaskFormModel,
+        tagColor: @escaping (String) -> Color?,
+        onManageTags: @escaping () -> Void
+    ) {
+        self.model = model
+        self.tagColor = tagColor
+        self.onManageTags = onManageTags
+        _tagSuggestionPresentation = State(
+            initialValue: TaskFormIOSTagSuggestionPresentation.make(
+                routineTags: model.routineTags,
+                relatedTagRules: model.relatedTagRules,
+                availableTags: model.availableTags
+            )
+        )
+        _tagAutocompleteSuggestion = State(
+            initialValue: RoutineTag.autocompleteSuggestion(
+                for: model.tagDraft.wrappedValue,
+                availableTags: model.availableTags,
+                selectedTags: model.routineTags
+            )
+        )
+        _tagSummariesByID = State(
+            initialValue: Self.makeTagSummariesByID(
+                model.availableTagSummaries,
+                for: TaskFormIOSTagSuggestionPresentation.make(
+                    routineTags: model.routineTags,
+                    relatedTagRules: model.relatedTagRules,
+                    availableTags: model.availableTags
+                ).suggestedTags
+            )
+        )
+    }
 
     var body: some View {
-        Section(header: Text("Tags")) {
-            tagComposer
-            tagChipsContent
+        Group {
+            Section(header: Text("Tags")) {
+                tagComposer
+                tagChipsContent
+                browseTagsButton
+            }
+            Section(header: Text("Flags")) {
+                flagEditor
+            }
         }
-        Section(header: Text("Flags")) {
-            flagEditor
+        .sheet(isPresented: $isTagPickerPresented) {
+            TaskFormIOSTagPicker(
+                availableTags: model.availableTags,
+                selectedTags: model.routineTags,
+                availableTagSummaries: model.availableTagSummaries,
+                tagCounterDisplayMode: model.tagCounterDisplayMode,
+                onToggleTagSelection: model.onToggleTagSelection
+            )
+        }
+        .onAppear {
+            refreshTagSuggestionPresentationAndSummaries()
+            refreshTagAutocompleteSuggestion()
+        }
+        .onChange(of: model.routineTags) { _, _ in
+            refreshTagSuggestionPresentationAndSummaries()
+            refreshTagAutocompleteSuggestion()
+        }
+        .onChange(of: model.relatedTagRules) { _, _ in
+            refreshTagSuggestionPresentationAndSummaries()
+        }
+        .onChange(of: model.availableTags) { _, _ in
+            refreshTagSuggestionPresentationAndSummaries()
+            refreshTagAutocompleteSuggestion()
+        }
+        .onChange(of: model.tagDraft.wrappedValue) { _, _ in
+            refreshTagAutocompleteSuggestion()
+        }
+        .onChange(of: model.availableTagSummaries) { _, _ in
+            refreshTagSummaries()
         }
     }
 
@@ -22,11 +93,11 @@ struct TaskFormIOSTagsSection: View {
             ZStack(alignment: .trailing) {
                 TextField("health, focus, morning", text: model.tagDraft)
                     .onSubmit { model.onAddTag() }
-                    .padding(.trailing, model.tagAutocompleteSuggestion == nil ? 0 : 88)
+                    .padding(.trailing, tagAutocompleteSuggestion == nil ? 0 : 88)
 
-                if let suggestion = model.tagAutocompleteSuggestion {
+                if let suggestion = tagAutocompleteSuggestion {
                     Button {
-                        model.acceptTagAutocompleteSuggestion()
+                        acceptTagAutocompleteSuggestion()
                     } label: {
                         let tint = tagColor(suggestion) ?? .secondary
                         Text("#\(suggestion)")
@@ -61,7 +132,9 @@ struct TaskFormIOSTagsSection: View {
 
     @ViewBuilder
     private var tagChipsContent: some View {
-        if !model.routineTags.isEmpty || !unselectedRelatedTags.isEmpty || !unselectedAvailableTags.isEmpty {
+        if !model.routineTags.isEmpty
+            || !tagSuggestionPresentation.relatedTags.isEmpty
+            || tagSuggestionPresentation.remainingTagCount > 0 {
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
                 alignment: .leading,
@@ -71,15 +144,39 @@ struct TaskFormIOSTagsSection: View {
                     selectedTagButton(tag)
                 }
 
-                ForEach(unselectedRelatedTags, id: \.self) { tag in
+                ForEach(tagSuggestionPresentation.relatedTags, id: \.self) { tag in
                     relatedTagButton(tag)
                 }
 
-                ForEach(unselectedAvailableTags, id: \.self) { tag in
+                ForEach(visibleAvailableTags, id: \.self) { tag in
                     availableTagButton(tag)
                 }
             }
             .padding(.vertical, 4)
+        }
+    }
+
+    @ViewBuilder
+    private var browseTagsButton: some View {
+        if tagSuggestionPresentation.remainingTagCount
+            > TaskFormIOSTagSuggestionPresentation.collapsedLimit {
+            Button {
+                isTagPickerPresented = true
+            } label: {
+                HStack(spacing: 12) {
+                    Label("Browse all tags", systemImage: "magnifyingglass")
+                    Spacer()
+                    Text("\(tagSuggestionPresentation.remainingTagCount)")
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Search and select saved tags")
         }
     }
 
@@ -237,9 +334,7 @@ struct TaskFormIOSTagsSection: View {
     }
 
     private func availableTagButton(_ tag: String) -> some View {
-        let summary = model.availableTagSummaries.first(where: {
-            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
-        })
+        let summary = tagSummariesByID[tagID(for: tag)]
         let tint = tagColor(tag) ?? .secondary
 
         return Button { model.onToggleTagSelection(tag) } label: {
@@ -265,15 +360,8 @@ struct TaskFormIOSTagsSection: View {
         .accessibilityLabel("Add tag \(tag)")
     }
 
-    private var unselectedAvailableTags: [String] {
-        model.availableTags.filter {
-            !RoutineTag.contains($0, in: model.routineTags)
-                && !RoutineTag.contains($0, in: unselectedRelatedTags)
-        }
-    }
-
-    private var unselectedRelatedTags: [String] {
-        model.suggestedRelatedTags.filter { !RoutineTag.contains($0, in: model.routineTags) }
+    private var visibleAvailableTags: [String] {
+        tagSuggestionPresentation.suggestedTags
     }
 
     private func tagChipTitle(tag: String, summary: RoutineTagSummary?) -> String {
@@ -282,5 +370,228 @@ struct TaskFormIOSTagsSection: View {
             summary: summary,
             mode: model.tagCounterDisplayMode
         )
+    }
+
+    private func refreshTagSuggestionPresentationAndSummaries() {
+        tagSuggestionPresentation = TaskFormIOSTagSuggestionPresentation.make(
+            routineTags: model.routineTags,
+            relatedTagRules: model.relatedTagRules,
+            availableTags: model.availableTags
+        )
+        refreshTagSummaries()
+    }
+
+    private func refreshTagAutocompleteSuggestion() {
+        tagAutocompleteSuggestion = RoutineTag.autocompleteSuggestion(
+            for: model.tagDraft.wrappedValue,
+            availableTags: model.availableTags,
+            selectedTags: model.routineTags
+        )
+    }
+
+    private func acceptTagAutocompleteSuggestion() {
+        guard let tagAutocompleteSuggestion else { return }
+        model.tagDraft.wrappedValue = RoutineTag.acceptingAutocompleteSuggestion(
+            tagAutocompleteSuggestion,
+            in: model.tagDraft.wrappedValue
+        )
+    }
+
+    private func refreshTagSummaries() {
+        tagSummariesByID = Self.makeTagSummariesByID(
+            model.availableTagSummaries,
+            for: tagSuggestionPresentation.suggestedTags
+        )
+    }
+
+    private func tagID(for tag: String) -> String {
+        RoutineTag.normalized(tag) ?? tag
+    }
+
+    private static func makeTagSummariesByID(
+        _ summaries: [RoutineTagSummary],
+        for tags: [String]
+    ) -> [String: RoutineTagSummary] {
+        let tagIDs = Set(tags.map { RoutineTag.normalized($0) ?? $0 })
+        Dictionary(
+            summaries.compactMap { summary in
+                guard tagIDs.contains(summary.id) else { return nil }
+                return (summary.id, summary)
+            },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+    }
+}
+
+enum TaskFormIOSTagSuggestionPresentation {
+    static let collapsedLimit = 6
+
+    struct Data: Equatable {
+        let relatedTags: [String]
+        let suggestedTags: [String]
+        let remainingTagCount: Int
+    }
+
+    static func make(
+        routineTags: [String],
+        relatedTagRules: [RoutineRelatedTagRule],
+        availableTags: [String]
+    ) -> Data {
+        let selectedTagIDs = Set(routineTags.map { RoutineTag.normalized($0) ?? $0 })
+        let relatedTags = RoutineTagRelations.relatedTags(
+            for: routineTags,
+            rules: relatedTagRules,
+            availableTags: availableTags
+        ).filter { !selectedTagIDs.contains(RoutineTag.normalized($0) ?? $0) }
+        let relatedTagIDs = Set(relatedTags.map { RoutineTag.normalized($0) ?? $0 })
+        var suggestedTags: [String] = []
+        var remainingTagCount = 0
+
+        for tag in availableTags {
+            let tagID = RoutineTag.normalized(tag) ?? tag
+            guard !selectedTagIDs.contains(tagID), !relatedTagIDs.contains(tagID) else {
+                continue
+            }
+
+            remainingTagCount += 1
+            if suggestedTags.count < collapsedLimit {
+                suggestedTags.append(tag)
+            }
+        }
+
+        return Data(
+            relatedTags: relatedTags,
+            suggestedTags: suggestedTags,
+            remainingTagCount: remainingTagCount
+        )
+    }
+}
+
+private struct TaskFormIOSTagPicker: View {
+    let availableTags: [String]
+    let selectedTags: [String]
+    let availableTagSummaries: [RoutineTagSummary]
+    let tagCounterDisplayMode: TagCounterDisplayMode
+    let onToggleTagSelection: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+    @State private var displayedTags: [String] = []
+    @State private var selectedTagIDs = Set<String>()
+    @State private var tagTitlesByID = [String: String]()
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if displayedTags.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                } else {
+                    ForEach(displayedTags, id: \.self) { tag in
+                        tagRow(tag)
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Add Tags")
+            .searchable(text: $searchText, prompt: "Search tags")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear(perform: refreshDisplayedTags)
+            .onAppear(perform: refreshSelectedTagIDs)
+            .onAppear(perform: refreshTagTitles)
+            .onChange(of: searchText) { _, _ in
+                refreshDisplayedTags()
+            }
+            .onChange(of: availableTags) { _, _ in
+                refreshDisplayedTags()
+                refreshTagTitles()
+            }
+            .onChange(of: selectedTags) { _, _ in
+                refreshSelectedTagIDs()
+            }
+            .onChange(of: availableTagSummaries) { _, _ in
+                refreshTagTitles()
+            }
+            .onChange(of: tagCounterDisplayMode) { _, _ in
+                refreshTagTitles()
+            }
+        }
+    }
+
+    private func tagRow(_ tag: String) -> some View {
+        let isSelected = selectedTagIDs.contains(tagID(for: tag))
+        let tint = Color.accentColor
+
+        return Button {
+            onToggleTagSelection(tag)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
+                    .foregroundStyle(isSelected ? tint : .secondary)
+                Text(tagChipTitle(tag))
+                    .foregroundStyle(.primary)
+                Spacer()
+                if isSelected {
+                    Text("Selected")
+                        .font(.caption)
+                        .foregroundStyle(tint)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isSelected ? "Remove tag \(tag)" : "Add tag \(tag)")
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+    }
+
+    private func refreshDisplayedTags() {
+        guard let normalizedQuery = RoutineTag.normalized(searchText) else {
+            displayedTags = availableTags
+            return
+        }
+
+        displayedTags = availableTags.filter { tag in
+            RoutineTag.normalized(tag)?.localizedCaseInsensitiveContains(normalizedQuery) == true
+        }
+    }
+
+    private func tagChipTitle(_ tag: String) -> String {
+        tagTitlesByID[tagID(for: tag)] ?? "#\(tag)"
+    }
+
+    private func refreshSelectedTagIDs() {
+        selectedTagIDs = Set(selectedTags.map(tagID(for:)))
+    }
+
+    private func refreshTagTitles() {
+        let summariesByID = Dictionary(
+            availableTagSummaries.map { summary in
+                (summary.id, summary)
+            },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        tagTitlesByID = Dictionary(
+            availableTags.map { tag in
+                (
+                    tagID(for: tag),
+                    TagCounterFormatting.chipTitle(
+                        tag: tag,
+                        summary: summariesByID[tagID(for: tag)],
+                        mode: tagCounterDisplayMode
+                    )
+                )
+            },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+    }
+
+    private func tagID(for tag: String) -> String {
+        RoutineTag.normalized(tag) ?? tag
     }
 }
