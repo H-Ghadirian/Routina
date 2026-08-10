@@ -13,6 +13,51 @@ import Testing
 @MainActor
 struct CloudKitDirectPullFocusSessionTests {
     @Test
+    func cloudKitReconciliation_discoversAnActiveFocusSessionFromAnotherDevice() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Write", interval: 1, lastDone: nil, emoji: nil)
+        let sessionID = UUID()
+        let startedAt = makeDate("2026-08-10T08:00:00Z")
+        let remoteSession = CKRecord(
+            recordType: "FocusSession",
+            recordID: CKRecord.ID(recordName: sessionID.uuidString)
+        )
+        remoteSession["taskID"] = task.id.uuidString as CKRecordValue
+        remoteSession["startedAt"] = startedAt as CKRecordValue
+        remoteSession["plannedDurationSeconds"] = NSNumber(value: 60 * 60)
+        var pullCount = 0
+
+        await CloudKitDirectPullService.reconcileActiveFocusIfNeeded(
+            containerIdentifier: "iCloud.com.routina.tests",
+            modelContext: context,
+            pullLatest: { _, modelContext in
+                pullCount += 1
+                try CloudKitDirectPullService.mergeForTesting(
+                    .init(
+                        changedRecords: pullCount == 1 ? [remoteSession] : [],
+                        deletedRecordIDs: []
+                    ),
+                    into: modelContext
+                )
+            },
+            retryDelay: .zero
+        )
+
+        let session = try #require(
+            try context.fetch(
+                FetchDescriptor<FocusSession>(
+                    predicate: #Predicate { session in
+                        session.id == sessionID
+                    }
+                )
+            ).first
+        )
+        #expect(pullCount == 2)
+        #expect(session.state == .active)
+        #expect(session.startedAt == startedAt)
+    }
+
+    @Test
     func cloudKitMerge_marksAnExistingFocusSessionFinished() throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Write", interval: 1, lastDone: nil, emoji: nil)

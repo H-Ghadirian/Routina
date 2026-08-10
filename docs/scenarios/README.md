@@ -69,13 +69,17 @@ Given a task is paused without an expiry
 When Calendar scheduling is shown
 Then the task remains absent until the person manually resumes it
 
-### Finished Focus Does Not Remain Active After a Cross-Device Refresh
+### Active Focus Synchronizes During a Cross-Device Refresh
 
 Area: Other
 Decision links: [0032](../decisions/0032-sync-active-sleep-mode-across-devices.md)
-Current behavior: [Stats](../current-behavior/stats.md)
+Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/CloudKitDirectPullFocusSessionTests.swift`
+
+Given a Focus session begins on one device while another device has no local Focus session
+When the receiving device opens or returns to the foreground
+Then it performs a bounded CloudKit reconciliation and shows the active Focus session
 
 Given a Focus session began on one device and another device has already imported its active state
 When the first device stops the session and the other device opens with that stale active record

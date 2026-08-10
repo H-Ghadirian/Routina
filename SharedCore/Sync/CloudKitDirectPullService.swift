@@ -3,6 +3,9 @@ import Foundation
 import SwiftData
 
 enum CloudKitDirectPullService {
+    @MainActor
+    private static var isActiveFocusReconciliationInFlight = false
+
     struct PullResult {
         var changedRecords: [CKRecord]
         var deletedRecordIDs: [CKRecord.ID]
@@ -19,33 +22,51 @@ enum CloudKitDirectPullService {
         try merge(result: result, into: modelContext)
     }
 
-    /// Repairs a locally active focus timer after an app launch or foreground
-    /// transition. SwiftData normally imports CloudKit changes on its own, but
-    /// a terminal focus update must not leave a timer visibly running while an
-    /// import is delayed.
+    /// Reconciles Focus state after an app launch or foreground transition.
+    /// SwiftData normally imports CloudKit changes on its own, but an active
+    /// timer that started on another device must also be discoverable before
+    /// that asynchronous import arrives.
     @MainActor
     static func reconcileActiveFocusIfNeeded(
         containerIdentifier: String?,
         modelContext: ModelContext
     ) async {
+        await reconcileActiveFocusIfNeeded(
+            containerIdentifier: containerIdentifier,
+            modelContext: modelContext,
+            pullLatest: { containerIdentifier, modelContext in
+                try await pullLatestIntoLocalStore(
+                    containerIdentifier: containerIdentifier,
+                    modelContext: modelContext
+                )
+            }
+        )
+    }
+
+    @MainActor
+    static func reconcileActiveFocusIfNeeded(
+        containerIdentifier: String?,
+        modelContext: ModelContext,
+        pullLatest: @MainActor (_ containerIdentifier: String, _ modelContext: ModelContext) async throws -> Void,
+        retryDelay: Duration = .seconds(2)
+    ) async {
         guard let containerIdentifier, !containerIdentifier.isEmpty else { return }
+        guard !isActiveFocusReconciliationInFlight else { return }
+        isActiveFocusReconciliationInFlight = true
+        defer { isActiveFocusReconciliationInFlight = false }
 
         do {
-            guard try hasActiveFocus(in: modelContext) else { return }
-            try await pullLatestIntoLocalStore(
-                containerIdentifier: containerIdentifier,
-                modelContext: modelContext
-            )
+            try await pullLatest(containerIdentifier, modelContext)
 
-            // A just-finished timer can race its originating Mac's CloudKit
-            // export. One short retry closes that narrow gap without polling.
+            // A just-started or just-finished timer can race the originating
+            // device's CloudKit export. One short retry closes that narrow gap
+            // without polling.
             guard try hasActiveFocus(in: modelContext) else { return }
-            try? await Task.sleep(for: .seconds(2))
+            if retryDelay > .zero {
+                try? await Task.sleep(for: retryDelay)
+            }
             guard try hasActiveFocus(in: modelContext) else { return }
-            try await pullLatestIntoLocalStore(
-                containerIdentifier: containerIdentifier,
-                modelContext: modelContext
-            )
+            try await pullLatest(containerIdentifier, modelContext)
         } catch {
             NSLog("Focus-session CloudKit reconciliation failed: \(error.localizedDescription)")
         }

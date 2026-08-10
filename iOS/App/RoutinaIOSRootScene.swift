@@ -49,6 +49,19 @@ struct RoutinaIOSRootScene: Scene {
                         )
                     }
                 }
+                .onReceive(
+                    NotificationCenter.default.publisher(
+                        for: UIApplication.didBecomeActiveNotification
+                    )
+                ) { _ in
+                    guard !AppEnvironment.isAutomatedTestMode else { return }
+                    Task { @MainActor in
+                        await CloudKitDirectPullService.reconcileActiveFocusIfNeeded(
+                            containerIdentifier: AppEnvironment.cloudKitContainerIdentifier,
+                            modelContext: persistence.container.mainContext
+                        )
+                    }
+                }
         }
         .routinaAppWindowDefaults()
     }
