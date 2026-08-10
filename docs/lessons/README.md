@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0127 — Keep desktop sheet minimum sizes out of iOS presentations](0127-keep-desktop-sheet-minimum-sizes-out-of-ios-presentations.md)
 - [0126 — Discover remotely started Focus during iOS reconciliation](0126-discover-remotely-started-focus-during-ios-reconciliation.md)
 - [0125 — Keep synthetic completion and notification eligibility aligned](0125-keep-synthetic-completion-and-notification-eligibility-aligned.md)
 - [0124 — Allow unchanged async Settings state](0124-allow-unchanged-async-settings-state.md)

@@ -237,7 +237,9 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
             .navigationTitle("Link Task")
+#if os(macOS)
             .frame(minWidth: 520, minHeight: 420)
+#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

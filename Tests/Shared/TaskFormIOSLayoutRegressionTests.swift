@@ -71,6 +71,20 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(detailSource.contains("taskDescription: store.task.taskDescription"))
     }
 
+    @Test
+    func linkTaskPickerKeepsDesktopMinimumSizeOutOfIOSSheets() throws {
+        let source = try Self.sourceFile(
+            "SharedCore/Views/TaskRelationshipsEditor.swift"
+        )
+        let picker = try Self.sourceSection(
+            startingAt: "struct TaskRelationshipPickerSheet",
+            endingAt: "private var taskSearchField",
+            in: source
+        )
+
+        #expect(picker.contains("#if os(macOS)\n            .frame(minWidth: 520, minHeight: 420)\n#endif"))
+    }
+
     private static func sourceSection(
         startingAt startMarker: String,
         endingAt endMarker: String,
