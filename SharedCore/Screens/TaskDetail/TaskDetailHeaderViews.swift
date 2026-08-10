@@ -405,11 +405,7 @@ struct TaskDetailHeaderTagsView<TagChipContent: View>: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
-                alignment: .leading,
-                spacing: 8
-            ) {
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(tags, id: \.self) { tag in
                     tagChip(tag)
                 }

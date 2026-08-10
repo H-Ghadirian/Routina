@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0128 — Let task-detail tags use their intrinsic width](0128-let-task-detail-tags-use-their-intrinsic-width.md)
 - [0127 — Keep desktop sheet minimum sizes out of iOS presentations](0127-keep-desktop-sheet-minimum-sizes-out-of-ios-presentations.md)
 - [0126 — Discover remotely started Focus during iOS reconciliation](0126-discover-remotely-started-focus-during-ios-reconciliation.md)
 - [0125 — Keep synthetic completion and notification eligibility aligned](0125-keep-synthetic-completion-and-notification-eligibility-aligned.md)

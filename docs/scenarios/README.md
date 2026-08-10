@@ -103,6 +103,18 @@ Given a Task Detail has several assigned Flags
 When the Flag chips are rendered
 Then each grid cell has enough minimum width for ordinary Flag labels
 
+### Task Detail Tags Use Their Intrinsic Width
+
+Area: Tasks / UI
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailTagPresentationTests.swift`
+
+Given a Task Detail has tags whose full labels fit within the header card
+When the tag chips are rendered
+Then each chip uses its intrinsic width instead of a narrow adaptive grid cell
+And tags wrap onto a later row only when their combined widths exceed the card width
+
 ### Production Experiment Lockdown Matches Signed Capabilities
 
 Area: Settings / Other
