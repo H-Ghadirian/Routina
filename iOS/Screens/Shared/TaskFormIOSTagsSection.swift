@@ -413,13 +413,10 @@ struct TaskFormIOSTagsSection: View {
         for tags: [String]
     ) -> [String: RoutineTagSummary] {
         let tagIDs = Set(tags.map { RoutineTag.normalized($0) ?? $0 })
-        Dictionary(
-            summaries.compactMap { summary in
-                guard tagIDs.contains(summary.id) else { return nil }
-                return (summary.id, summary)
-            },
-            uniquingKeysWith: { existing, _ in existing }
-        )
+        return summaries.reduce(into: [String: RoutineTagSummary]()) { results, summary in
+            guard tagIDs.contains(summary.id), results[summary.id] == nil else { return }
+            results[summary.id] = summary
+        }
     }
 }
 
