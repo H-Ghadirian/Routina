@@ -115,6 +115,19 @@ When the tag chips are rendered
 Then each chip uses its intrinsic width instead of a narrow adaptive grid cell
 And tags wrap onto a later row only when their combined widths exceed the card width
 
+### iOS Tag Browser Preserves Task Editing
+
+Area: Tasks / UI
+Decision links: [0531](../decisions/0531-keep-ios-task-tag-selection-compact-and-searchable.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+
+Given a person is editing or adding a task on iOS
+When they open `Browse all tags`
+Then the searchable tag picker stays open above the task form
+And dismissing the picker returns to the still-open task form with its draft intact
+
 ### Production Experiment Lockdown Matches Signed Capabilities
 
 Area: Settings / Other

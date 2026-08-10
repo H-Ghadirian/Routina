@@ -7,6 +7,7 @@ struct TaskFormContent: View {
     let model: TaskFormModel
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @FocusState private var isNameFocused: Bool
+    @State private var isTagPickerPresented = false
     @State private var isTagManagerPresented = false
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
@@ -68,6 +69,15 @@ struct TaskFormContent: View {
             .contentMargins(.top, 10, for: .scrollContent)
             .scrollDismissesKeyboard(.interactively)
             .routinaSegmentedControlSurfaceStyle(.scrolling)
+        }
+        .sheet(isPresented: $isTagPickerPresented) {
+            TaskFormIOSTagPicker(
+                availableTags: model.availableTags,
+                selectedTags: model.routineTags,
+                availableTagSummaries: model.availableTagSummaries,
+                tagCounterDisplayMode: model.tagCounterDisplayMode,
+                onToggleTagSelection: model.onToggleTagSelection
+            )
         }
         .sheet(isPresented: $isTagManagerPresented) {
             SettingsTagManagerPresentationView(store: tagManagerStore)
@@ -398,7 +408,8 @@ struct TaskFormContent: View {
     private var tagsSection: some View {
         TaskFormIOSTagsSection(
             model: model,
-            tagColor: tagColor(for:)
+            tagColor: tagColor(for:),
+            isTagPickerPresented: $isTagPickerPresented
         ) {
             isTagManagerPresented = true
         }

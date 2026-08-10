@@ -70,6 +70,22 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func tagPickerPresentationIsOwnedByTheStableFormRoot() throws {
+        let formSource = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormContentPlatform.swift"
+        )
+        let tagsSource = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"
+        )
+
+        #expect(formSource.contains("@State private var isTagPickerPresented = false"))
+        #expect(formSource.contains(".sheet(isPresented: $isTagPickerPresented)"))
+        #expect(formSource.contains("isTagPickerPresented: $isTagPickerPresented"))
+        #expect(tagsSource.contains("@Binding var isTagPickerPresented: Bool"))
+        #expect(!tagsSource.contains(".sheet(isPresented: $isTagPickerPresented)"))
+    }
+
+    @Test
     func descriptionIsIndependentFromExperimentalNotesAndSupportsTargetedReveal() throws {
         let formSource = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormContentPlatform.swift"

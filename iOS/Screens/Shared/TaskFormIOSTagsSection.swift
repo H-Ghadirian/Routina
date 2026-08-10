@@ -5,7 +5,7 @@ struct TaskFormIOSTagsSection: View {
     let tagColor: (String) -> Color?
     let onManageTags: () -> Void
 
-    @State private var isTagPickerPresented = false
+    @Binding var isTagPickerPresented: Bool
     @State private var showsAllAvailableFlags = false
     @State private var tagSuggestionPresentation: TaskFormIOSTagSuggestionPresentation.Data
     @State private var tagAutocompleteSuggestion: String?
@@ -14,10 +14,12 @@ struct TaskFormIOSTagsSection: View {
     init(
         model: TaskFormModel,
         tagColor: @escaping (String) -> Color?,
+        isTagPickerPresented: Binding<Bool>,
         onManageTags: @escaping () -> Void
     ) {
         self.model = model
         self.tagColor = tagColor
+        _isTagPickerPresented = isTagPickerPresented
         self.onManageTags = onManageTags
         _tagSuggestionPresentation = State(
             initialValue: TaskFormIOSTagSuggestionPresentation.make(
@@ -55,15 +57,6 @@ struct TaskFormIOSTagsSection: View {
             Section(header: Text("Flags")) {
                 flagEditor
             }
-        }
-        .sheet(isPresented: $isTagPickerPresented) {
-            TaskFormIOSTagPicker(
-                availableTags: model.availableTags,
-                selectedTags: model.routineTags,
-                availableTagSummaries: model.availableTagSummaries,
-                tagCounterDisplayMode: model.tagCounterDisplayMode,
-                onToggleTagSelection: model.onToggleTagSelection
-            )
         }
         .onAppear {
             refreshTagSuggestionPresentationAndSummaries()
@@ -464,7 +457,7 @@ enum TaskFormIOSTagSuggestionPresentation {
     }
 }
 
-private struct TaskFormIOSTagPicker: View {
+struct TaskFormIOSTagPicker: View {
     let availableTags: [String]
     let selectedTags: [String]
     let availableTagSummaries: [RoutineTagSummary]
