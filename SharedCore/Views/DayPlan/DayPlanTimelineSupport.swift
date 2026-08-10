@@ -7,6 +7,7 @@ struct DayPlanTimelineActivityBlock: Identifiable, Equatable {
     var kind: RoutineLogKind
     var source: DayPlanTimelineActivitySource
     var hasSpecificTime: Bool = true
+    var isConfirmedAssumedDone: Bool = false
 
     var id: String {
         switch source {
@@ -456,7 +457,8 @@ enum DayPlanTimelineTasks {
                     kind: kind,
                     actualDurationMinutes: log.actualDurationMinutes,
                     source: .log(log.id),
-                    hasSpecificTime: log.hasSpecificWorkTime ?? true
+                    hasSpecificTime: log.hasSpecificWorkTime ?? true,
+                    isConfirmedAssumedDone: log.isConfirmedAssumedDone
                 ),
                 taskID: log.taskID
             )
@@ -545,7 +547,8 @@ enum DayPlanTimelineTasks {
                 block: block,
                 kind: activity.kind,
                 source: activity.source,
-                hasSpecificTime: activity.hasSpecificTime
+                hasSpecificTime: activity.hasSpecificTime,
+                isConfirmedAssumedDone: activity.isConfirmedAssumedDone
             )
             guard !hiddenActivityIDs.contains(activityBlock.dismissalID) else { return nil }
             return activityBlock
@@ -1124,7 +1127,8 @@ private extension DayPlanTimelineActivityBlock {
                 block: adjustedBlock,
                 kind: kind,
                 source: source,
-                hasSpecificTime: hasSpecificTime
+                hasSpecificTime: hasSpecificTime,
+                isConfirmedAssumedDone: isConfirmedAssumedDone
             )
         }
 
@@ -1138,6 +1142,7 @@ private struct DayPlanTimelineActivity: Equatable {
     var actualDurationMinutes: Int?
     var source: DayPlanTimelineActivitySource
     var hasSpecificTime: Bool = true
+    var isConfirmedAssumedDone: Bool = false
 }
 
 private struct DayPlanTimelineDateInfo {

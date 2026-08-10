@@ -131,6 +131,7 @@ extension SettingsRoutineDataPersistence {
             var actualDurationMinutes: Int?
             var hasSpecificWorkTime: Bool?
             var sourceTaskID: UUID?
+            var isConfirmedAssumedDone: Bool?
         }
 
         struct Sleep: Codable {

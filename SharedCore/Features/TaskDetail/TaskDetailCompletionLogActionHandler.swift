@@ -14,6 +14,7 @@ struct TaskDetailCompletionLogActionHandler {
     var removeLogEntryLocally: (Date, inout State) -> Void
     var logsPreservingPendingLocalCompletions: ([RoutineLog], inout State) -> [RoutineLog]
     var upsertLocalLog: (Date, inout State) -> Void
+    var upsertConfirmedAssumedDoneLocalLog: (Date, inout State) -> Void
     var refreshTaskView: (inout State) -> Void
     var updateDerivedState: (inout State) -> Void
     var persistUndoCompletion: (UUID, Date) -> Effect<Action>
@@ -141,7 +142,7 @@ struct TaskDetailCompletionLogActionHandler {
                 calendar: calendar
             )
             _ = state.task.advance(completedAt: completionDate, calendar: calendar)
-            upsertLocalLog(completionDate, &state)
+            upsertConfirmedAssumedDoneLocalLog(completionDate, &state)
         }
         refreshTaskView(&state)
         updateDerivedState(&state)

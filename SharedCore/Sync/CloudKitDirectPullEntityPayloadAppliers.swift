@@ -91,6 +91,7 @@ enum CloudKitDirectPullLogPayloadApplier {
         log.actualDurationMinutes = payload.actualDurationMinutes
         log.hasSpecificWorkTime = payload.hasSpecificWorkTime
         log.sourceTaskID = payload.sourceTaskID
+        log.isConfirmedAssumedDone = payload.isConfirmedAssumedDone
     }
 
     static func makeLog(from payload: CloudKitDirectPullService.LogPayload) -> RoutineLog {
@@ -102,7 +103,8 @@ enum CloudKitDirectPullLogPayloadApplier {
             kind: payload.kind,
             actualDurationMinutes: payload.actualDurationMinutes,
             hasSpecificWorkTime: payload.hasSpecificWorkTime,
-            sourceTaskID: payload.sourceTaskID
+            sourceTaskID: payload.sourceTaskID,
+            isConfirmedAssumedDone: payload.isConfirmedAssumedDone
         )
     }
 }

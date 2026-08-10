@@ -682,6 +682,9 @@ struct TaskDetailFeature: Reducer {
             upsertLocalLog: { date, state in
                 upsertLocalLog(at: date, in: &state)
             },
+            upsertConfirmedAssumedDoneLocalLog: { date, state in
+                upsertLocalLog(at: date, isConfirmedAssumedDone: true, in: &state)
+            },
             refreshTaskView: { state in
                 refreshTaskView(&state)
             },
@@ -813,6 +816,7 @@ struct TaskDetailFeature: Reducer {
             }
             let pendingManualCompletion = state.pendingManualCompletion
             let selectedDay = calendar.startOfDay(for: state.selectedDate ?? now)
+            let isConfirmingAssumedDone = state.isSelectedDateAssumedDone
             let assumedScheduledBlockTiming = state.isSelectedDateAssumedDone
                 ? RoutineAssumedCompletion.scheduledBlockCompletionTiming(
                     for: state.task,
@@ -906,6 +910,7 @@ struct TaskDetailFeature: Reducer {
                     at: completionDate,
                     actualDurationMinutes: assumedScheduledBlockTiming?.actualDurationMinutes,
                     hasSpecificWorkTime: assumedScheduledBlockTiming == nil ? nil : true,
+                    isConfirmedAssumedDone: isConfirmingAssumedDone,
                     in: &state
                 )
                 trackPendingLocalCompletion(at: completionDate, in: &state)
@@ -925,7 +930,8 @@ struct TaskDetailFeature: Reducer {
                 previousStateTitle: persistedPreviousTodoStateTitle,
                 manuallySelectedFulfillmentTargetIDs: manualFulfillmentTargetIDs,
                 actualDurationMinutes: assumedScheduledBlockTiming?.actualDurationMinutes,
-                hasSpecificWorkTime: assumedScheduledBlockTiming == nil ? nil : true
+                hasSpecificWorkTime: assumedScheduledBlockTiming == nil ? nil : true,
+                isConfirmedAssumedDone: isConfirmingAssumedDone
             )
 
         case .cancelTodo:

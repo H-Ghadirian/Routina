@@ -86,7 +86,8 @@ struct SettingsRoutineDataPersistenceTests {
             taskID: task.id,
             kind: .completed,
             actualDurationMinutes: 35,
-            hasSpecificWorkTime: false
+            hasSpecificWorkTime: false,
+            isConfirmedAssumedDone: true
         )
         context.insert(task)
         context.insert(log)
@@ -111,6 +112,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredLog.timestamp == completedAt)
         #expect(restoredLog.actualDurationMinutes == 35)
         #expect(restoredLog.hasSpecificWorkTime == false)
+        #expect(restoredLog.isConfirmedAssumedDone)
     }
 
     @Test

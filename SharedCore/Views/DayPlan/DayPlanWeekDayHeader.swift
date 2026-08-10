@@ -132,10 +132,11 @@ struct DayPlanWeekDayHeader: View {
     }
 
     private var dayTaskBreakdownText: String {
-        [
+        let recordedDoneCount = dayTaskCounts.confirmedAssumedDone + dayTaskCounts.done
+        return [
             dayTaskCounts.planned > 0 ? "\(dayTaskCounts.planned) planned" : nil,
             dayTaskCounts.assumedDone > 0 ? "\(dayTaskCounts.assumedDone) assumed done" : nil,
-            dayTaskCounts.done > 0 ? "\(dayTaskCounts.done) done" : nil,
+            recordedDoneCount > 0 ? "\(recordedDoneCount) done" : nil,
         ]
         .compactMap { $0 }
         .joined(separator: ", ")

@@ -274,6 +274,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var actualDurationMinutes: Int?
         var hasSpecificWorkTime: Bool?
         var sourceTaskID: UUID?
+        var isConfirmedAssumedDone: Bool
 
         init(log: RoutineLog) {
             id = log.id
@@ -284,6 +285,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             actualDurationMinutes = log.actualDurationMinutes
             hasSpecificWorkTime = log.hasSpecificWorkTime
             sourceTaskID = log.sourceTaskID
+            isConfirmedAssumedDone = log.isConfirmedAssumedDone
         }
     }
 

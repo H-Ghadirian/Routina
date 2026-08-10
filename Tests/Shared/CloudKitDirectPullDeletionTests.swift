@@ -145,4 +145,34 @@ struct CloudKitDirectPullDeletionTests {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         #expect(logs.isEmpty)
     }
+
+    @Test
+    func cloudKitMerge_preservesConfirmedAssumedDoneLogOrigin() throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Brush teeth",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🪥"
+        )
+        let logID = UUID()
+        let cloudLog = CKRecord(
+            recordType: "RoutineLog",
+            recordID: CKRecord.ID(recordName: logID.uuidString)
+        )
+        cloudLog["taskID"] = task.id.uuidString as CKRecordValue
+        cloudLog["timestamp"] = makeDate("2026-03-15T08:00:00Z") as CKRecordValue
+        cloudLog["kindRawValue"] = RoutineLogKind.completed.rawValue as CKRecordValue
+        cloudLog["isConfirmedAssumedDone"] = NSNumber(value: true)
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(changedRecords: [cloudLog], deletedRecordIDs: []),
+            into: context
+        )
+
+        let log = try #require(context.fetch(FetchDescriptor<RoutineLog>()).first)
+        #expect(log.id == logID)
+        #expect(log.isConfirmedAssumedDone)
+    }
 }

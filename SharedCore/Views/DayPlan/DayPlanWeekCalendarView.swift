@@ -1231,7 +1231,8 @@ private struct DayPlanDayTaskColumnView: View {
                     availableRowWidth: availableRowWidth,
                     sectionSpacing: 12,
                     plannedTasksSectionCollapsed: plannedTasksSectionCollapsed,
-                    assumedDoneSectionCollapsed: assumedDoneSectionCollapsed
+                    assumedDoneSectionCollapsed: assumedDoneSectionCollapsed,
+                    separatesConfirmedAssumedDone: true
                 )
             }
         }
@@ -1302,6 +1303,7 @@ struct DayPlanDayTaskListContentView: View {
     var sectionSpacing: CGFloat = 14
     var plannedTasksSectionCollapsed: Binding<Bool>? = nil
     var assumedDoneSectionCollapsed: Binding<Bool>? = nil
+    var separatesConfirmedAssumedDone = false
     @AppStorage(
         UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue,
         store: SharedDefaults.app
@@ -1309,7 +1311,7 @@ struct DayPlanDayTaskListContentView: View {
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: sectionSpacing) {
-            ForEach(DayPlanDayTaskListItem.Section.allCases, id: \.self) { section in
+            ForEach(displayedSections, id: \.self) { section in
                 let sectionItems = items(in: section)
                 if !sectionItems.isEmpty {
                     DayPlanDayTaskListContentSectionView(
@@ -1335,7 +1337,23 @@ struct DayPlanDayTaskListContentView: View {
     }
 
     private func items(in section: DayPlanDayTaskListItem.Section) -> [DayPlanDayTaskListItem] {
-        items.filter { $0.section == section }
+        items.filter { displayedSection(for: $0) == section }
+    }
+
+    private var displayedSections: [DayPlanDayTaskListItem.Section] {
+        separatesConfirmedAssumedDone
+            ? DayPlanDayTaskListItem.Section.allCases
+            : [.planned, .assumedDone, .done]
+    }
+
+    private func displayedSection(
+        for item: DayPlanDayTaskListItem
+    ) -> DayPlanDayTaskListItem.Section {
+        if !separatesConfirmedAssumedDone,
+           item.section == .confirmedAssumedDone {
+            return .done
+        }
+        return item.section
     }
 
     private var rowVisibility: DayPlanCalendarListRowVisibility {
@@ -1350,6 +1368,8 @@ struct DayPlanDayTaskListContentView: View {
             plannedTasksSectionCollapsed
         case .assumedDone:
             assumedDoneSectionCollapsed
+        case .confirmedAssumedDone:
+            nil
         case .done:
             nil
         }

@@ -931,6 +931,37 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func confirmTaskCompletions_marksPersistedLogsAsConfirmedAssumedDone() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let completionDate = makeDate("2026-05-07T18:30:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Brush teeth",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🪥",
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+
+        _ = try #require(
+            try RoutineLogHistory.confirmTaskCompletions(
+                taskID: task.id,
+                on: [completionDate],
+                context: context,
+                referenceDate: completionDate,
+                calendar: calendar
+            )
+        )
+        let log = try #require(context.fetch(FetchDescriptor<RoutineLog>()).first)
+
+        #expect(log.kind == .completed)
+        #expect(log.timestamp == completionDate)
+        #expect(log.isConfirmedAssumedDone)
+    }
+
+    @Test
     func markExactTimedOccurrenceCanceled_recordsCanceledLogWithoutCancelingRoutine() throws {
         let context = makeInMemoryContext()
         var calendar = makeTestCalendar()

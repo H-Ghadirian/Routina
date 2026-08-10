@@ -1739,7 +1739,7 @@ Then the top range segmented picker can remain visible
 ### Planner Day Headers Open Planned Task Lists
 
 Area: Planner
-Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md), [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md), [0448](../decisions/0448-complete-planned-tasks-inline-from-calendar-list.md), [0509](../decisions/0509-collapse-calendar-list-assumed-done-sections.md)
+Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md), [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md), [0448](../decisions/0448-complete-planned-tasks-inline-from-calendar-list.md), [0509](../decisions/0509-collapse-calendar-list-assumed-done-sections.md), [0530](../decisions/0530-separate-confirmed-assumed-dones-in-calendar-list.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanDayTaskListPresentationTests.swift`
@@ -1791,7 +1791,7 @@ Then Planner Calendar remains in `List` task-view mode instead of resetting to `
 
 Given an assumed-done row is visible in Mac Planner Calendar `List` while a task-detail companion pane keeps full Planner snapshot refresh deferred
 When the user clicks the row's green check
-Then the persisted completion moves the row from `Assumed done` to `Dones` immediately
+Then the persisted completion moves the row from `Assumed done` to `Confirmed assumed done` immediately
 And the immediate transition only overlays the visible day-task presentation instead of fetching or regrouping full task history
 
 Given an eligible standard planned row is visible for today or a past day in Mac Planner Calendar `List`

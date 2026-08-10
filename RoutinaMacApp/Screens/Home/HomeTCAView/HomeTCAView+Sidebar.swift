@@ -574,7 +574,7 @@ extension HomeTCAView {
         _ item: DayPlanDayTaskListItem,
         on date: Date
     ) {
-        let doneSelection = item.section == .done
+        let doneSelection = item.section.isRecordedCompletion
             ? item.doneOccurrence.map {
                 MacPlannerDoneTaskDetailSelection(
                     taskID: item.taskID,

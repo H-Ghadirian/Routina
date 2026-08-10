@@ -289,6 +289,7 @@ extension TaskDetailFeature {
         kind: RoutineLogKind = .completed,
         actualDurationMinutes: Int? = nil,
         hasSpecificWorkTime: Bool? = nil,
+        isConfirmedAssumedDone: Bool = false,
         in state: inout State
     ) {
         if let existingIndex = state.logs.firstIndex(where: { log in
@@ -305,6 +306,8 @@ extension TaskDetailFeature {
                 state.logs[existingIndex].actualDurationMinutes = actualDurationMinutes
                 state.logs[existingIndex].hasSpecificWorkTime = hasSpecificWorkTime
             }
+            state.logs[existingIndex].isConfirmedAssumedDone =
+                state.logs[existingIndex].isConfirmedAssumedDone || isConfirmedAssumedDone
             state.logs.sort {
                 ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast)
             }
@@ -319,7 +322,8 @@ extension TaskDetailFeature {
             taskID: state.task.id,
             kind: kind,
             actualDurationMinutes: actualDurationMinutes,
-            hasSpecificWorkTime: actualDurationMinutes == nil ? nil : hasSpecificWorkTime
+            hasSpecificWorkTime: actualDurationMinutes == nil ? nil : hasSpecificWorkTime,
+            isConfirmedAssumedDone: isConfirmedAssumedDone
         ), at: 0)
     }
 

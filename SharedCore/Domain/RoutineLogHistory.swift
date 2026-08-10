@@ -137,6 +137,7 @@ enum RoutineLogHistory {
         allowEarlyScheduledCompletion: Bool = false,
         actualDurationMinutes: Int? = nil,
         hasSpecificWorkTime: Bool? = nil,
+        isConfirmedAssumedDone: Bool = false,
         context: ModelContext,
         calendar: Calendar = .current,
         sourceDevice: RoutinaDeviceActivitySource? = nil
@@ -264,7 +265,8 @@ enum RoutineLogHistory {
                 taskID: taskID,
                 kind: .completed,
                 actualDurationMinutes: sanitizedActualDurationMinutes,
-                hasSpecificWorkTime: sanitizedActualDurationMinutes == nil ? nil : hasSpecificWorkTime
+                hasSpecificWorkTime: sanitizedActualDurationMinutes == nil ? nil : hasSpecificWorkTime,
+                isConfirmedAssumedDone: isConfirmedAssumedDone
             ))
             try fulfillLinkedTasks(
                 from: task,
@@ -494,7 +496,8 @@ enum RoutineLogHistory {
                     timestamp: completionDate,
                     scheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
                     taskID: taskID,
-                    kind: .completed
+                    kind: .completed,
+                    isConfirmedAssumedDone: true
                 ))
                 let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 try fulfillLinkedTasks(

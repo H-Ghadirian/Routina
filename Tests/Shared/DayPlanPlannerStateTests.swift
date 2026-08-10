@@ -1136,7 +1136,7 @@ struct DayPlanPlannerStateTests {
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
 
         #expect(calendarSource.contains("onOpenTaskDetails(item, date)"))
-        #expect(sidebarSource.contains("item.section == .done"))
+        #expect(sidebarSource.contains("item.section.isRecordedCompletion"))
         #expect(sidebarSource.contains("item.doneOccurrence.map"))
         #expect(!sidebarSource.contains("item.section == .planned"))
         #expect(containerSource.contains("doneOccurrenceContext: doneOccurrenceContext(for: detailStore.task.id)"))

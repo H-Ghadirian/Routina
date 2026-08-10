@@ -757,6 +757,7 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
     enum Section: String, CaseIterable, Equatable {
         case planned
         case assumedDone
+        case confirmedAssumedDone
         case done
 
         var title: String {
@@ -765,9 +766,15 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
                 return "Planned tasks"
             case .assumedDone:
                 return "Assumed done"
+            case .confirmedAssumedDone:
+                return "Confirmed assumed done"
             case .done:
                 return "Dones"
             }
+        }
+
+        var isRecordedCompletion: Bool {
+            self == .confirmedAssumedDone || self == .done
         }
     }
 
@@ -792,15 +799,22 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
 struct DayPlanDayTaskCounts: Equatable {
     var planned: Int = 0
     var assumedDone: Int = 0
+    var confirmedAssumedDone: Int = 0
     var done: Int = 0
 
     var total: Int {
-        planned + assumedDone + done
+        planned + assumedDone + confirmedAssumedDone + done
     }
 
-    init(planned: Int = 0, assumedDone: Int = 0, done: Int = 0) {
+    init(
+        planned: Int = 0,
+        assumedDone: Int = 0,
+        confirmedAssumedDone: Int = 0,
+        done: Int = 0
+    ) {
         self.planned = planned
         self.assumedDone = assumedDone
+        self.confirmedAssumedDone = confirmedAssumedDone
         self.done = done
     }
 
@@ -811,6 +825,8 @@ struct DayPlanDayTaskCounts: Equatable {
                 planned += 1
             case .assumedDone:
                 assumedDone += 1
+            case .confirmedAssumedDone:
+                confirmedAssumedDone += 1
             case .done:
                 done += 1
             }
@@ -879,7 +895,9 @@ struct DayPlanDayTaskResolutionOverlay: Equatable {
                     return item
                 }
                 var confirmedItem = item
-                confirmedItem.section = .done
+                confirmedItem.section = item.section == .assumedDone
+                    ? .confirmedAssumedDone
+                    : .done
                 confirmedItem.doneOccurrence = doneOccurrence
                 confirmedItem.plannedCompletionDate = nil
                 return confirmedItem
@@ -1037,7 +1055,7 @@ enum DayPlanDayTaskListPresentation {
                     emoji: allDayBlock.emoji,
                     section: section,
                     placement: .allDay,
-                    doneOccurrence: section == .done
+                    doneOccurrence: section.isRecordedCompletion
                         ? completionContext.doneOccurrence(taskID, dayKey: dayKey)
                         : nil
                 )
@@ -1110,7 +1128,7 @@ enum DayPlanDayTaskListPresentation {
                         startMinute: block.startMinute,
                         durationMinutes: block.durationMinutes
                     ),
-                    doneOccurrence: section == .done
+                    doneOccurrence: section.isRecordedCompletion
                         ? completionContext.doneOccurrence(block.taskID, dayKey: dayKey)
                         : nil
                 )
@@ -1133,13 +1151,25 @@ enum DayPlanDayTaskListPresentation {
                 guard activity.kind == .completed else { return nil }
 
                 let block = activity.block
+                let section: DayPlanDayTaskListItem.Section
+                let identifierPrefix: String
+                if activity.source.isSyntheticAssumedDone {
+                    section = .assumedDone
+                    identifierPrefix = "assumed"
+                } else if activity.isConfirmedAssumedDone {
+                    section = .confirmedAssumedDone
+                    identifierPrefix = "confirmed-assumed"
+                } else {
+                    section = .done
+                    identifierPrefix = "done"
+                }
                 return DayPlanDayTaskListItem(
-                    id: "\(activity.source.isSyntheticAssumedDone ? "assumed" : "done")-\(activity.id)",
+                    id: "\(identifierPrefix)-\(activity.id)",
                     taskID: block.taskID,
                     blockID: nil,
                     title: block.titleSnapshot,
                     emoji: block.emojiSnapshot,
-                    section: activity.source.isSyntheticAssumedDone ? .assumedDone : .done,
+                    section: section,
                     placement: activity.hasSpecificTime
                         ? .timed(
                             startMinute: block.startMinute,
@@ -1161,15 +1191,24 @@ enum DayPlanDayTaskListPresentation {
             activityItems.filter { $0.section == .assumedDone }
         )
         let assumedDoneTaskIDs = Set(assumedDoneItems.map(\.taskID))
-        let rawDoneItems = sortedActivityItems(
-            allDayItems.filter { $0.section == .done }
-                + timedItems.filter { $0.section == .done }
-                + activityItems.filter { $0.section == .done }
+        let rawRecordedCompletionItems = sortedActivityItems(
+            allDayItems.filter { $0.section.isRecordedCompletion }
+                + timedItems.filter { $0.section.isRecordedCompletion }
+                + activityItems.filter { $0.section.isRecordedCompletion }
         )
+        let confirmedAssumedDoneItems = rawRecordedCompletionItems.filter {
+            $0.section == .confirmedAssumedDone
+        }
+        let rawDoneItems = rawRecordedCompletionItems.filter { $0.section == .done }
         let plannedAllDayItems = allDayItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
         let plannedTimedItems = timedItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
         let visibleTaskIDsBeforeFulfillmentSuppression = Set(
-            (plannedAllDayItems + plannedDateItems + plannedTimedItems + assumedDoneItems + rawDoneItems)
+            (plannedAllDayItems
+                + plannedDateItems
+                + plannedTimedItems
+                + assumedDoneItems
+                + confirmedAssumedDoneItems
+                + rawDoneItems)
                 .map(\.taskID)
         )
         let doneItems = rawDoneItems.filter { item in
@@ -1190,6 +1229,7 @@ enum DayPlanDayTaskListPresentation {
             + plannedDateItems
             + plannedTimedItems
             + assumedDoneItems
+            + confirmedAssumedDoneItems
             + doneItems)
             .map { item in
                 guard item.section == .planned,
@@ -1264,6 +1304,7 @@ private struct DayPlanDayTaskListCompletionContext {
     private var tasksByID: [UUID: RoutineTask] = [:]
     private var completedDayKeysByTaskID: [UUID: Set<String>] = [:]
     private var directCompletedDayKeysByTaskID: [UUID: Set<String>] = [:]
+    private var confirmedAssumedDoneDayKeysByTaskID: [UUID: Set<String>] = [:]
     private var fulfillmentSourceTaskIDsByTaskIDAndDayKey: [UUID: [String: Set<UUID>]] = [:]
     private var doneOccurrencesByTaskIDAndDayKey: [UUID: [String: DayPlanDoneTaskOccurrence]] = [:]
 
@@ -1299,6 +1340,9 @@ private struct DayPlanDayTaskListCompletionContext {
             switch log.kind {
             case .completed:
                 directCompletedDayKeysByTaskID[log.taskID, default: []].insert(dayKey)
+                if log.isConfirmedAssumedDone {
+                    confirmedAssumedDoneDayKeysByTaskID[log.taskID, default: []].insert(dayKey)
+                }
                 if let timestamp = log.timestamp {
                     recordDoneOccurrence(
                         DayPlanDoneTaskOccurrence(
@@ -1390,7 +1434,9 @@ private struct DayPlanDayTaskListCompletionContext {
         dayKey: String
     ) -> DayPlanDayTaskListItem.Section? {
         if hasCompletion(taskID, dayKey: dayKey) {
-            return .done
+            return confirmedAssumedDoneDayKeysByTaskID[taskID]?.contains(dayKey) == true
+                ? .confirmedAssumedDone
+                : .done
         }
         if tasksByID[taskID]?.isCompletedOneOff == true {
             return nil
@@ -1487,6 +1533,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
         var titleSnapshot: String
         var emojiSnapshot: String?
         var updatedAt: Date
+        var isConfirmedAssumedDone: Bool
 
         init(activity: DayPlanTimelineActivityBlock) {
             let block = activity.block
@@ -1499,6 +1546,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             titleSnapshot = block.titleSnapshot
             emojiSnapshot = block.emojiSnapshot
             updatedAt = block.updatedAt
+            isConfirmedAssumedDone = activity.isConfirmedAssumedDone
         }
     }
 

@@ -189,6 +189,16 @@ enum CloudKitDirectPullRecordParser {
                 "cd_sourcetaskid"
             ]
         )
+        let isConfirmedAssumedDone = CloudKitDirectPullService.boolValue(
+            in: record,
+            keys: [
+                "isConfirmedAssumedDone",
+                "ISCONFIRMEDASSUMEDDONE",
+                "zisconfirmedassumeddone",
+                "ZISCONFIRMEDASSUMEDDONE",
+                "cd_isconfirmedassumeddone"
+            ]
+        ) ?? false
         return LogPayload(
             id: id,
             timestamp: timestamp,
@@ -197,7 +207,8 @@ enum CloudKitDirectPullRecordParser {
             kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed,
             actualDurationMinutes: RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes),
             hasSpecificWorkTime: hasSpecificWorkTime,
-            sourceTaskID: sourceTaskID
+            sourceTaskID: sourceTaskID,
+            isConfirmedAssumedDone: isConfirmedAssumedDone
         )
     }
 

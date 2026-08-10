@@ -706,6 +706,57 @@ struct DayPlanDayTaskListPresentationTests {
     }
 
     @Test
+    func confirmedAssumedDoneActivityStaysSeparateFromRecordedDones() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let confirmedTaskID = try #require(UUID(uuidString: "69696969-6969-6969-6969-696969696969"))
+        let recordedTaskID = try #require(UUID(uuidString: "70707070-7070-7070-7070-707070707070"))
+        let confirmedLogID = try #require(UUID(uuidString: "71717171-7171-7171-7171-717171717171"))
+        let recordedLogID = try #require(UUID(uuidString: "72727272-7272-7272-7272-727272727272"))
+
+        let confirmed = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: confirmedTaskID,
+                taskID: confirmedTaskID,
+                dayKey: dayKey,
+                startMinute: 8 * 60,
+                durationMinutes: 15,
+                titleSnapshot: "Morning reset"
+            ),
+            kind: .completed,
+            source: .log(confirmedLogID),
+            isConfirmedAssumedDone: true
+        )
+        let recorded = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: recordedTaskID,
+                taskID: recordedTaskID,
+                dayKey: dayKey,
+                startMinute: 9 * 60,
+                durationMinutes: 30,
+                titleSnapshot: "Inbox review"
+            ),
+            kind: .completed,
+            source: .log(recordedLogID)
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [],
+            allDayBlocks: [],
+            timelineActivityBlocks: [recorded, confirmed],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.section) == [.confirmedAssumedDone, .done])
+        #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(
+            confirmedAssumedDone: 1,
+            done: 1
+        ))
+    }
+
+    @Test
     func assumedDoneActivityReplacesMatchingTimedPlannedRow() throws {
         let calendar = testCalendar
         let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
@@ -859,7 +910,7 @@ struct DayPlanDayTaskListPresentationTests {
     }
 
     @Test
-    func confirmedAssumedDoneOverlayMovesOnlyTheMatchingDayRowToDone() throws {
+    func confirmedAssumedDoneOverlayMovesOnlyTheMatchingDayRowToItsOwnSection() throws {
         let calendar = testCalendar
         let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
         let nextDay = try #require(calendar.date(byAdding: .day, value: 1, to: day))
@@ -886,7 +937,7 @@ struct DayPlanDayTaskListPresentationTests {
         let resolvedItems = overlay.applying(to: [assumedItem], on: day, calendar: calendar)
         let unchangedNextDayItems = overlay.applying(to: [assumedItem], on: nextDay, calendar: calendar)
 
-        #expect(resolvedItems.map(\.section) == [.done])
+        #expect(resolvedItems.map(\.section) == [.confirmedAssumedDone])
         #expect(resolvedItems.first?.doneOccurrence == DayPlanDoneTaskOccurrence(
             source: .taskLastDone,
             completedAt: completedAt,

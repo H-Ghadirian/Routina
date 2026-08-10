@@ -1730,7 +1730,11 @@ struct TaskDetailFeatureCompletionTests {
 
         await store.receive {
             guard case let .logsLoaded(logs) = $0 else { return false }
-            return logs.contains { $0.kind == RoutineLogKind.completed && $0.timestamp == now }
+            return logs.contains {
+                $0.kind == RoutineLogKind.completed
+                    && $0.timestamp == now
+                    && $0.isConfirmedAssumedDone
+            }
         } assert: {
             $0.logs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
             $0.pendingLocalCompletionDates = []
@@ -1743,7 +1747,11 @@ struct TaskDetailFeatureCompletionTests {
         let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
         let persistedLogs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
         #expect(persistedTask.lastDone == now)
-        #expect(persistedLogs.contains { $0.kind == RoutineLogKind.completed && $0.timestamp == now })
+        #expect(persistedLogs.contains {
+            $0.kind == RoutineLogKind.completed
+                && $0.timestamp == now
+                && $0.isConfirmedAssumedDone
+        })
     }
 
     @Test
@@ -1807,6 +1815,7 @@ struct TaskDetailFeatureCompletionTests {
                     && $0.timestamp == completedAt
                     && $0.actualDurationMinutes == 180
                     && $0.hasSpecificWorkTime == true
+                    && $0.isConfirmedAssumedDone
             }
         } assert: {
             $0.logs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
@@ -1824,6 +1833,7 @@ struct TaskDetailFeatureCompletionTests {
         #expect(persistedLog.timestamp == completedAt)
         #expect(persistedLog.actualDurationMinutes == 180)
         #expect(persistedLog.hasSpecificWorkTime == true)
+        #expect(persistedLog.isConfirmedAssumedDone)
     }
 
     @Test

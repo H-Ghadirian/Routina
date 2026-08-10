@@ -11,6 +11,7 @@ final class RoutineLog {
     var actualDurationMinutes: Int?
     var hasSpecificWorkTime: Bool?
     var sourceTaskID: UUID?
+    var isConfirmedAssumedDone: Bool = false
 
     var kind: RoutineLogKind {
         get { RoutineLogKind(rawValue: kindRawValue) ?? .completed }
@@ -25,7 +26,8 @@ final class RoutineLog {
         kind: RoutineLogKind = .completed,
         actualDurationMinutes: Int? = nil,
         hasSpecificWorkTime: Bool? = nil,
-        sourceTaskID: UUID? = nil
+        sourceTaskID: UUID? = nil,
+        isConfirmedAssumedDone: Bool = false
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -35,6 +37,7 @@ final class RoutineLog {
         self.actualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.hasSpecificWorkTime = hasSpecificWorkTime
         self.sourceTaskID = sourceTaskID
+        self.isConfirmedAssumedDone = isConfirmedAssumedDone
     }
 
     func detachedCopy() -> RoutineLog {
@@ -46,7 +49,8 @@ final class RoutineLog {
             kind: kind,
             actualDurationMinutes: actualDurationMinutes,
             hasSpecificWorkTime: hasSpecificWorkTime,
-            sourceTaskID: sourceTaskID
+            sourceTaskID: sourceTaskID,
+            isConfirmedAssumedDone: isConfirmedAssumedDone
         )
     }
 
