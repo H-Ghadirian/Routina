@@ -540,7 +540,8 @@ Given a user creates or edits a repeating task
 When the user selects Gentle behavior
 Then Nudges can be turned off independently without removing cadence or history
 And an eligible daily Gentle routine can opt into Auto-assume done
-And Due or `No schedule` makes those Gentle-only behaviors unavailable
+And an eligible daily Due routine can also opt into Auto-assume done
+And Due makes Gentle-only Nudges unavailable, while `No schedule` makes both behaviors unavailable
 And creating the behavior does not require or create a separate task purpose
 
 ### Retired Task Types Do Not Leak Into Product Surfaces
@@ -1071,6 +1072,7 @@ Coverage:
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 - `Tests/Shared/TaskFormMacLayoutRegressionTests.swift`
+- `Tests/Shared/TaskDetailFlagSuggestionTests.swift`
 - `Tests/Shared/NotificationCoordinatorTests.swift`
 
 Given a daily Gentle checklist-completion routine has auto-assume done enabled
@@ -1091,6 +1093,10 @@ Given a weekly time-block task has Auto-assume done enabled
 When its scheduled weekday and start time have passed
 Then that occurrence is presented as assumed done
 And days without a scheduled occurrence are not assumed done
+
+Given a Standard `On schedule` routine repeats every two weeks on Tuesday
+When the user assigns an Auto Assumed Done Flag
+Then Routina accepts the Flag because the schedule has one occurrence per day
 
 Given a Standard one-off task has one exact availability date and a scheduled Time block
 When the user enables Auto-assume done and the block's start time passes

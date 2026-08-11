@@ -1742,11 +1742,11 @@ struct TaskDetailEditSaveTests {
 
         #expect(store.state.editRoutineChecklistItems.map(\.title) == ["Bread"])
         #expect(store.state.editRoutineChecklistItems.map(\.intervalDays) == [1])
-        #expect(!store.state.canAutoAssumeDailyDone)
+        #expect(store.state.canAutoAssumeDailyDone)
     }
 
     @Test
-    func editSaveTapped_promotesNewStandardRoutineChecklistToChecklistCompletionWithoutAutoAssume() async throws {
+    func editSaveTapped_promotesNewStandardRoutineChecklistToEligibleChecklistCompletion() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
@@ -1802,8 +1802,8 @@ struct TaskDetailEditSaveTests {
         #expect(persistedTask.scheduleMode == .fixedIntervalChecklist)
         #expect(persistedTask.checklistItems.map(\.title) == ["Bread"])
         #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])
-        #expect(!persistedTask.autoAssumeDailyDone)
-        #expect(persistedTask.autoAssumeDoneTimeOfDay == nil)
+        #expect(persistedTask.autoAssumeDailyDone)
+        #expect(persistedTask.autoAssumeDoneTimeOfDay == RoutineTimeOfDay(hour: 8, minute: 15))
     }
 
     @Test

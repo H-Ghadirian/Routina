@@ -92,12 +92,7 @@ enum RoutineAssumedCompletion {
             return true
         }
 
-        return scheduleMode.scheduleBehavior == .soft
-            || scheduleMode.taskType == .record
-            || supportsRollingAfterCompletionAssumption(
-                recurrenceRule,
-                scheduleMode: scheduleMode
-            )
+        return true
     }
 
     static func unavailableReason(

@@ -336,7 +336,7 @@ struct TaskFormPresentationTests {
     }
 
     @Test @MainActor
-    func gentleNudgesAndAutoAssumeFollowRoutineBehaviorAndCadence() {
+    func gentleNudgesAndAutoAssumeFollowCadenceAndScheduleEligibility() {
         var scheduleMode = RoutineScheduleMode.oneOff
         let model = taskFormModel(
             taskType: .record,
@@ -386,7 +386,7 @@ struct TaskFormPresentationTests {
         #expect(!noCadenceModel.canAutoAssumeDailyDone)
         #expect(gentleRoutineModel.canAutoAssumeDailyDone)
         #expect(gentleRoutineModel.supportsGentleNudges)
-        #expect(!dueRoutineModel.canAutoAssumeDailyDone)
+        #expect(dueRoutineModel.canAutoAssumeDailyDone)
         #expect(!dueRoutineModel.supportsGentleNudges)
         #expect(!noCadenceGentleRoutineModel.canAutoAssumeDailyDone)
         #expect(!noCadenceGentleRoutineModel.supportsGentleNudges)

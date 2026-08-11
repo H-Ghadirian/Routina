@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0147 — Keep Flag assignment aligned with auto-assume eligibility](0147-keep-flag-assignment-aligned-with-auto-assume-eligibility.md)
 - [0146 — Derive elapsed completion status from recorded history](0146-derive-elapsed-completion-status-from-recorded-history.md)
 - [0145 — Own iOS filter details at stable sheet roots](0145-own-ios-filter-details-at-stable-sheet-roots.md)
 - [0144 — Route optional dashboard prompts through dashboard customization](0144-route-optional-dashboard-prompts-through-dashboard-customization.md)
