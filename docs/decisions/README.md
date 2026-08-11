@@ -21,7 +21,15 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 - **[0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md) refines [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md) and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** iOS Stats and Timeline keep each available filter in a compact entry with a persistent detail sheet, deferring the full tag catalog to its searchable picker.
 
+- **[0547](0547-verify-final-ios-release-build-state.md) refines [0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md):** iOS device verification belongs only to the exact final worktree state and requires a complete, signed app product before installation.
+
 - **[0546](0546-separate-mac-backlog-from-the-radar-sidebar.md) refines [0394](0394-add-custom-mac-sidebar-task-sections.md), [0419](0419-nest-custom-subsections-under-super-sections.md), and [0498](0498-filter-task-lists-by-flags.md):** Mac Backlog is a separate window that keeps explicitly assigned sections and automatically surfaced Flag-hidden tasks off the everyday Home sidebar radar.
+
+- **[0545](0545-bound-ios-foreground-focus-reconciliation.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md), and [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md):** foreground Focus reconciliation queries only active CloudKit Focus rows, while full-zone deletion cleanup is batched per pull.
+
+- **[0544](0544-scope-ios-search-field-to-dedicated-search-tab.md) refines [0541](0541-keep-ios-search-input-ahead-of-home-presentations.md):** the iOS search field belongs only to the dedicated bottom Search tab while the tab host remains stable.
+
+- **[0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0541](0541-keep-ios-search-input-ahead-of-home-presentations.md):** retained iOS Home, Search, and Timeline tabs defer synchronization work while inactive, and Home performs whole-history repair only for its initial snapshot.
 
 - **[0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** iOS performance investigations use a validated Release production build on a physical device, numeric-PID or validated all-process Time Profiler traces, separate baseline/scenario windows, and mandatory profiling-artifact cleanup.
 
@@ -618,7 +626,12 @@ These are ordered from newest resolver to oldest resolver.
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
 | [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md) | Keep iOS Stats and Timeline Filter Details in Sheets | Accepted | 2026-08-11 |
-| [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md) | Separate the Mac Backlog from the Radar Sidebar | Accepted | 2026-08-11 |
+| [0547](0547-verify-final-ios-release-build-state.md) | Verify the Final iOS Release Build State | Accepted | 2026-08-11 |
+| [0545](0545-bound-ios-foreground-focus-reconciliation.md) | Bound iOS Foreground Focus Reconciliation | Accepted | 2026-08-11 |
+| [0544](0544-scope-ios-search-field-to-dedicated-search-tab.md) | Scope iOS Search Field to the Dedicated Search Tab | Accepted | 2026-08-11 |
+| [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md) | Defer iOS Sync Refresh Work Until Its Tab Is Active | Accepted | 2026-08-11 |
+| [0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md) | Use Validated Release Device Traces for iOS Performance Investigations | Accepted | 2026-08-11 |
+| [0541](0541-keep-ios-search-input-ahead-of-home-presentations.md) | Keep iOS Search Input Ahead of Home Presentations | Accepted | 2026-08-11 |
 | [0540](0540-group-ios-task-reviews-under-more-destination.md) | Group iOS Task Reviews Under More Destination | Accepted | 2026-08-11 |
 | [0539](0539-offer-ios-task-creation-from-home-empty-states.md) | Offer iOS Task Creation From Home Empty States | Accepted | 2026-08-11 |
 | [0536](0536-match-mac-task-detail-overflow-to-toolbar-chrome.md) | Match Mac Task Detail Overflow to Toolbar Chrome | Accepted | 2026-08-11 |

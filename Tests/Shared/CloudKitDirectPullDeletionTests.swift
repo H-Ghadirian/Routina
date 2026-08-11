@@ -127,6 +127,44 @@ struct CloudKitDirectPullDeletionTests {
     }
 
     @Test
+    func cloudKitMerge_batchesMultipleDeletedTasksWithoutRemovingKeptHistory() throws {
+        let context = makeInMemoryContext()
+        let firstDeletedTask = makeTask(in: context, name: "First old", interval: 1, lastDone: nil, emoji: nil)
+        let secondDeletedTask = makeTask(in: context, name: "Second old", interval: 1, lastDone: nil, emoji: nil)
+        let keptTask = makeTask(in: context, name: "Kept", interval: 1, lastDone: nil, emoji: nil)
+
+        _ = makeLog(in: context, task: firstDeletedTask, timestamp: makeDate("2026-03-14T08:00:00Z"))
+        _ = makeLog(in: context, task: secondDeletedTask, timestamp: makeDate("2026-03-14T09:00:00Z"))
+        let keptLog = makeLog(in: context, task: keptTask, timestamp: makeDate("2026-03-15T08:00:00Z"))
+        context.insert(FocusSession(taskID: firstDeletedTask.id, startedAt: makeDate("2026-03-14T08:00:00Z")))
+        context.insert(FocusSession(taskID: secondDeletedTask.id, startedAt: makeDate("2026-03-14T09:00:00Z")))
+        context.insert(RoutineAttachment(taskID: firstDeletedTask.id, fileName: "first.txt", data: Data([1])))
+        context.insert(RoutineAttachment(taskID: secondDeletedTask.id, fileName: "second.txt", data: Data([2])))
+        try context.save()
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(
+                changedRecords: [],
+                deletedRecordIDs: [
+                    CKRecord.ID(recordName: firstDeletedTask.id.uuidString),
+                    CKRecord.ID(recordName: secondDeletedTask.id.uuidString)
+                ]
+            ),
+            into: context
+        )
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
+        let attachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
+
+        #expect(tasks.map(\.id) == [keptTask.id])
+        #expect(logs.map(\.id) == [keptLog.id])
+        #expect(focusSessions.isEmpty)
+        #expect(attachments.isEmpty)
+    }
+
+    @Test
     func cloudKitMerge_discardsLogWhoseTaskIsMissingFromRefresh() throws {
         let context = makeInMemoryContext()
         let missingTaskID = UUID()

@@ -3,6 +3,7 @@ import SwiftData
 import SwiftUI
 
 private struct HomeTaskListPresentationRefreshToken: Equatable {
+    let isActive: Bool
     let displayRevision: UInt
     let filters: HomeTaskFiltersState
     let taskListMode: HomeTaskListMode
@@ -16,6 +17,7 @@ private struct HomeTaskListPresentationRefreshToken: Equatable {
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let externalSearchText: Binding<String>?
+    let isActive: Bool
     @Environment(\.calendar) var calendar
     @Environment(\.modelContext) private var modelContext
     @AppStorage(
@@ -54,6 +56,7 @@ struct HomeTCAView: View {
     @State var isCompactHeaderHidden = false
     @State var areTaskListModeActionsExpanded = false
     @State var isRefreshScheduled = false
+    @State var needsRefreshWhenActive = false
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var planningDateTaskID: UUID?
     @State var planningDateDraft = Date()
@@ -67,10 +70,12 @@ struct HomeTCAView: View {
 
     init(
         store: StoreOf<HomeFeature>,
-        searchText: Binding<String>? = nil
+        searchText: Binding<String>? = nil,
+        isActive: Bool = true
     ) {
         self.store = store
         self.externalSearchText = searchText
+        self.isActive = isActive
     }
 
     var body: some View {
@@ -102,12 +107,18 @@ homeContent
                     )
                 }
                 .task {
+                    guard isActive else { return }
                     refreshFileAttachmentTaskIDs()
                 }
                 .task(id: taskListPresentationRefreshToken) {
+                    guard isActive else { return }
                     refreshTaskListPresentation()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                    guard isActive else {
+                        needsRefreshWhenActive = true
+                        return
+                    }
                     refreshFileAttachmentTaskIDs()
                 }
         )
@@ -115,6 +126,7 @@ homeContent
 
     private var taskListPresentationRefreshToken: HomeTaskListPresentationRefreshToken {
         HomeTaskListPresentationRefreshToken(
+            isActive: isActive,
             displayRevision: store.taskListPresentationRevision,
             filters: store.taskFilters,
             taskListMode: store.taskListMode,

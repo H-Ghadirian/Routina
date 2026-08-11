@@ -41,6 +41,10 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0143 — Treat device verification as revision-specific](0143-treat-device-verification-as-revision-specific.md)
+- [0142 — Bound iOS foreground CloudKit reconciliation](0142-bound-ios-foreground-cloudkit-reconciliation.md)
+- [0141 — Scope the iOS search field to its Search tab](0141-scope-ios-search-field-to-search-tab.md)
+- [0140 — Defer inactive iOS tab refreshes](0140-defer-inactive-ios-tab-refreshes.md)
 - [0139 — Keep iOS search input ahead of Home presentation work](0139-keep-ios-search-input-ahead-of-home-presentation-work.md)
 - [0138 — Gate Add Task goals with feature availability](0138-gate-add-task-goals-with-feature-availability.md)
 - [0137 — Use a reliable glyph for the Mac overflow trigger](0137-use-reliable-glyph-for-mac-overflow-trigger.md)

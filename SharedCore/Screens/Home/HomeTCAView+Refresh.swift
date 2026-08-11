@@ -10,6 +10,9 @@ extension HomeTCAView {
 #if os(macOS)
                 RoutinaMacScrollInteractionGate.start()
 #endif
+#if os(iOS)
+                guard isActive else { return }
+#endif
                 guard !store.hasLoadedTaskSnapshot else { return }
                 requestRefresh()
             }
@@ -17,14 +20,34 @@ extension HomeTCAView {
                 NotificationCenter.default.publisher(for: .routineDidUpdate)
                     .receive(on: RunLoop.main)
             ) { _ in
+#if os(iOS)
+                guard isActive else {
+                    needsRefreshWhenActive = true
+                    return
+                }
+#endif
                 requestRoutineUpdateRefresh()
             }
             .onReceive(
                 NotificationCenter.default.publisher(for: PlatformSupport.didBecomeActiveNotification)
                     .receive(on: RunLoop.main)
             ) { _ in
+#if os(iOS)
+                guard isActive else {
+                    needsRefreshWhenActive = true
+                    return
+                }
+#endif
                 requestRefresh()
             }
+#if os(iOS)
+            .onChange(of: isActive) { _, isActive in
+                guard isActive else { return }
+                guard needsRefreshWhenActive || !store.hasLoadedTaskSnapshot else { return }
+                needsRefreshWhenActive = false
+                requestRefresh()
+            }
+#endif
 #if os(macOS)
             .onChange(of: shouldDeferRoutineUpdateRefresh) { _, shouldDefer in
                 guard !shouldDefer else { return }
@@ -56,6 +79,12 @@ extension HomeTCAView {
         Task { @MainActor in
             defer { isRefreshScheduled = false }
             await Task.yield()
+#if os(iOS)
+            guard isActive else {
+                needsRefreshWhenActive = true
+                return
+            }
+#endif
             store.send(.onAppear)
         }
     }

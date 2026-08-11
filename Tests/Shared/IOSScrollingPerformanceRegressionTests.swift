@@ -26,7 +26,8 @@ struct IOSScrollingPerformanceRegressionTests {
 
         #expect(appView.contains("@State private var appliedSearchText = \"\""))
         #expect(appView.contains("platformSearchHomeView(searchText: $appliedSearchText)"))
-        #expect(appView.contains(".searchable(text: $searchText, prompt: \"Search routines and todos\")"))
+        #expect(appView.contains("platformSearchHomeView(searchText: $appliedSearchText)\n            .searchable(text: $searchText, prompt: \"Search routines and todos\")"))
+        #expect(!appView.contains("tabView\n            .searchable"))
         #expect(appView.contains(".onChange(of: searchText)"))
         #expect(appView.contains("scheduleSearchPresentationUpdate(for: rawSearchText)"))
         #expect(appView.contains("searchPresentationUpdateTask?.cancel()"))
@@ -35,6 +36,54 @@ struct IOSScrollingPerformanceRegressionTests {
         #expect(appView.contains("appliedSearchText = rawSearchText"))
         #expect(appView.contains("guard !Task.isCancelled, searchText == rawSearchText else { return }"))
         #expect(!appView.contains("if store.selectedTab == .search"))
+    }
+
+    @Test
+    func activeIOSSurfaceOwnsRefreshWorkAndHomeMaintenanceRunsOnce() throws {
+        let appView = try Self.sourceFile("iOS/Screens/App/AppView.swift")
+        let appPlatform = try Self.sourceFile("iOS/Screens/App/AppViewPlatform.swift")
+        let home = try Self.sourceFile("iOS/Screens/Home/HomeTCAView.swift")
+        let homeFeature = try Self.sourceFile("iOS/Features/Home/HomeFeature.swift")
+        let homeRefresh = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
+        let timeline = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
+
+        #expect(appView.contains("isActive: store.selectedTab == .timeline"))
+        #expect(appPlatform.contains("isActive: store.selectedTab == .home"))
+        #expect(appPlatform.contains("isActive: store.selectedTab == .search"))
+        #expect(home.contains("let isActive: Bool"))
+        #expect(home.contains("@State var needsRefreshWhenActive = false"))
+        #expect(home.contains("let isActive: Bool\n    let displayRevision"))
+        #expect(home.contains("guard isActive else { return }\n                    refreshTaskListPresentation()"))
+        #expect(homeRefresh.contains(".onChange(of: isActive)"))
+        #expect(homeRefresh.contains("needsRefreshWhenActive = true"))
+        #expect(homeFeature.contains("loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot)"))
+        #expect(homeFeature.contains("private func loadTasksEffect(performingMaintenance: Bool = false)"))
+        #expect(timeline.contains("let isActive: Bool"))
+        #expect(timeline.contains(".task(id: isActive)"))
+        #expect(timeline.contains("guard isActive else { return }\n                refreshTimelineDataSnapshot()"))
+    }
+
+    @Test
+    func foregroundCloudKitFocusSyncUsesBoundedQueriesAndBatchedTombstones() throws {
+        let service = try Self.sourceFile("SharedCore/Sync/CloudKitDirectPullService.swift")
+        let fetcher = try Self.sourceFile("SharedCore/Sync/CloudKitDirectPullFetcher.swift")
+        let deletionHandler = try Self.sourceFile("SharedCore/Sync/CloudKitDirectPullDeletionHandler.swift")
+        let housekeeping = try Self.sourceFile("SharedCore/Sync/CloudKitDirectPullMergeHousekeeping.swift")
+
+        #expect(service.contains("CloudKitDirectPullFetcher.fetchActiveFocusRecords"))
+        #expect(service.contains("knownActiveFocusIDs: try activeFocusRecordIDs(in: modelContext)"))
+        #expect(service.contains("private static func mergeActiveFocusRecords"))
+        #expect(fetcher.contains("recordType: \"CD_FocusSession\""))
+        #expect(fetcher.contains("CD_completedAt == nil AND CD_abandonedAt == nil"))
+        #expect(fetcher.contains("recordType: \"CD_SprintFocusSessionRecord\""))
+        #expect(fetcher.contains("static func fetchActiveFocusRecords"))
+        #expect(fetcher.contains("let currentLocalFocusRecords = try await fetchRecords("))
+        #expect(fetcher.contains("CKFetchRecordsOperation(recordIDs: cloudRecordIDs)"))
+        #expect(deletionHandler.contains("let deletedIDs = Set("))
+        #expect(!deletionHandler.contains("for recordID in recordIDs"))
+        #expect(deletionHandler.contains("deleteRows(\n                forTaskIDs: deletedTaskIDs"))
+        #expect(housekeeping.contains("[CloudKitDirectPullMergeSupport.LogDeduplicationKey: RoutineLog]"))
+        #expect(!housekeeping.contains("logs.first(where:"))
     }
 
     @Test

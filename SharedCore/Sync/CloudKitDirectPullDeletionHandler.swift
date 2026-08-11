@@ -11,31 +11,73 @@ enum CloudKitDirectPullDeletionHandler {
         mergedGoalIDs: [UUID: UUID],
         in context: ModelContext
     ) throws {
-        for recordID in recordIDs {
-            guard let id = UUID(uuidString: recordID.recordName) else { continue }
-            if shouldIgnoreDeletedRecord(
-                id,
-                mergedTaskIDs: mergedTaskIDs,
-                mergedPlaceIDs: mergedPlaceIDs,
-                mergedGoalIDs: mergedGoalIDs
-            ) {
-                continue
+        let deletedIDs = Set(recordIDs.compactMap { UUID(uuidString: $0.recordName) })
+            .filter {
+                !shouldIgnoreDeletedRecord(
+                    $0,
+                    mergedTaskIDs: mergedTaskIDs,
+                    mergedPlaceIDs: mergedPlaceIDs,
+                    mergedGoalIDs: mergedGoalIDs
+                )
             }
+        guard !deletedIDs.isEmpty else { return }
 
-            if try deleteGoal(id: id, in: context) {
-                continue
+        // A zone fetch can contain hundreds of tombstones. Fetch every affected
+        // model family once, then apply the complete deletion set. Repeating
+        // these full-history scans for each record freezes foreground UI.
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+
+        let deletedTaskIDs = Set(tasks.lazy.map(\.id)).intersection(deletedIDs)
+        let deletedGoalIDs = Set(goals.lazy.map(\.id)).intersection(deletedIDs)
+        let deletedPlaceIDs = Set(places.lazy.map(\.id)).intersection(deletedIDs)
+        let deletedEventIDs = Set(events.lazy.map(\.id)).intersection(deletedIDs)
+
+        if !deletedTaskIDs.isEmpty {
+            RoutineTask.removeRelationships(targeting: deletedTaskIDs, from: tasks)
+            for task in tasks where deletedTaskIDs.contains(task.id) {
+                context.delete(task)
             }
+            try CloudKitDirectPullMergeHousekeeping.deleteRows(
+                forTaskIDs: deletedTaskIDs,
+                in: context
+            )
+        }
 
-            if try deletePlace(id: id, in: context) {
-                continue
+        for goal in goals where deletedGoalIDs.contains(goal.id) {
+            context.delete(goal)
+        }
+        for place in places where deletedPlaceIDs.contains(place.id) {
+            context.delete(place)
+        }
+        for event in events where deletedEventIDs.contains(event.id) {
+            context.delete(event)
+        }
+
+        for task in tasks where !deletedTaskIDs.contains(task.id) {
+            if !deletedGoalIDs.isEmpty, task.goalIDs.contains(where: deletedGoalIDs.contains) {
+                task.goalIDs = task.goalIDs.filter { !deletedGoalIDs.contains($0) }
             }
-
-            if try deleteEvent(id: id, in: context) {
-                continue
+            if !deletedPlaceIDs.isEmpty, task.placeIDs.contains(where: deletedPlaceIDs.contains) {
+                task.placeIDs = task.placeIDs.filter { !deletedPlaceIDs.contains($0) }
             }
+            if !deletedEventIDs.isEmpty, task.eventIDs.contains(where: deletedEventIDs.contains) {
+                task.eventIDs = task.eventIDs.filter { !deletedEventIDs.contains($0) }
+            }
+        }
 
-            try CloudKitDirectPullMergeHousekeeping.deleteTaskAndRelatedRows(taskID: id, in: context)
-            try deleteLog(id: id, in: context)
+        for goal in goals where !deletedGoalIDs.contains(goal.id) {
+            if let parentGoalID = goal.parentGoalID, deletedGoalIDs.contains(parentGoalID) {
+                goal.parentGoalID = nil
+            }
+        }
+
+        let directLogIDs = deletedIDs.subtracting(deletedTaskIDs)
+        guard !directLogIDs.isEmpty else { return }
+        for log in try context.fetch(FetchDescriptor<RoutineLog>()) where directLogIDs.contains(log.id) {
+            context.delete(log)
         }
     }
 
@@ -57,83 +99,4 @@ enum CloudKitDirectPullDeletionHandler {
         return false
     }
 
-    @MainActor
-    private static func deleteGoal(id: UUID, in context: ModelContext) throws -> Bool {
-        let descriptor = FetchDescriptor<RoutineGoal>(
-            predicate: #Predicate { goal in
-                goal.id == id
-            }
-        )
-        guard let goal = try context.fetch(descriptor).first else { return false }
-        context.delete(goal)
-        try clearGoalReference(goalID: id, in: context)
-        return true
-    }
-
-    @MainActor
-    private static func deletePlace(id: UUID, in context: ModelContext) throws -> Bool {
-        let descriptor = FetchDescriptor<RoutinePlace>(
-            predicate: #Predicate { place in
-                place.id == id
-            }
-        )
-        guard let place = try context.fetch(descriptor).first else { return false }
-        context.delete(place)
-        try clearPlaceReference(placeID: id, in: context)
-        return true
-    }
-
-    @MainActor
-    private static func deleteEvent(id: UUID, in context: ModelContext) throws -> Bool {
-        let descriptor = FetchDescriptor<RoutineEvent>(
-            predicate: #Predicate { event in
-                event.id == id
-            }
-        )
-        guard let event = try context.fetch(descriptor).first else { return false }
-        context.delete(event)
-        try clearEventReference(eventID: id, in: context)
-        return true
-    }
-
-    @MainActor
-    private static func deleteLog(id: UUID, in context: ModelContext) throws {
-        let descriptor = FetchDescriptor<RoutineLog>(
-            predicate: #Predicate { log in
-                log.id == id
-            }
-        )
-        if let log = try context.fetch(descriptor).first {
-            context.delete(log)
-        }
-    }
-
-    @MainActor
-    private static func clearPlaceReference(placeID: UUID, in context: ModelContext) throws {
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        for task in tasks where task.placeIDs.contains(placeID) {
-            task.placeIDs = task.placeIDs.filter { $0 != placeID }
-        }
-    }
-
-    @MainActor
-    private static func clearGoalReference(goalID: UUID, in context: ModelContext) throws {
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        for task in tasks where task.goalIDs.contains(goalID) {
-            task.goalIDs = task.goalIDs.filter { $0 != goalID }
-        }
-
-        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-        for goal in goals where goal.parentGoalID == goalID {
-            goal.parentGoalID = nil
-        }
-    }
-
-    @MainActor
-    private static func clearEventReference(eventID: UUID, in context: ModelContext) throws {
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        for task in tasks where task.eventIDs.contains(eventID) {
-            task.eventIDs = task.eventIDs.filter { $0 != eventID }
-        }
-    }
 }

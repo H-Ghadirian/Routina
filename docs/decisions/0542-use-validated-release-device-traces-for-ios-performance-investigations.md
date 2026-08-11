@@ -36,6 +36,12 @@ The investigation must use `RoutinaiOSProd` in `Release`, install the verified
 numeric PID whose executable path is the production app. Each trace covers one
 declared interaction path and has a separate idle baseline.
 
+The recorded worktree state is part of the build identity. Before the final
+build, record `git status --short`, resolve unexpected target-affecting changes
+with their owner, and validate that the app has both `Info.plist` and an
+executable before installation. Any later source or worktree change invalidates
+the previous device verification and requires a new build, install, and launch.
+
 Before analysis, export `time-profile` and verify that it contains Routinam
 samples. A table listed in trace metadata is insufficient. If direct PID
 attachment yields no samples, repeat the same scenario with `--all-processes`
@@ -51,6 +57,8 @@ exports, and temporary helpers before handoff.
 - Production-device results are reproducible and tied to a known build, device,
   interaction, and symbol set.
 - Empty or ambiguously attached traces cannot produce misleading diagnoses.
+- An older installed build cannot be mistaken for verification of later source,
+  and partial app directories cannot be installed as successful Release builds.
 - Search, Home, and Timeline work can be attributed to a specific interaction
   rather than a mixed, unmarked recording window.
 - Performance investigations leave no stale local artifacts after reporting.

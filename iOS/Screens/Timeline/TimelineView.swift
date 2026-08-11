@@ -6,6 +6,7 @@ import UIKit
 struct TimelineView: View {
     let store: StoreOf<TimelineFeature>
     let presentationID: UUID
+    let isActive: Bool
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -37,8 +38,12 @@ struct TimelineView: View {
 
     private var timelineWithDataObservers: some View {
         timelineRootWithSheets
-            .task(timelineTask)
+            .task(id: isActive) {
+                guard isActive else { return }
+                await timelineTask()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                guard isActive else { return }
                 refreshTimelineDataSnapshot()
             }
             .onReceive(
@@ -46,6 +51,7 @@ struct TimelineView: View {
                     for: PlatformSupport.didBecomeActiveNotification
                 )
             ) { _ in
+                guard isActive else { return }
                 refreshTimelineDataSnapshot()
             }
     }
@@ -53,16 +59,19 @@ struct TimelineView: View {
     private var timelineWithRoutingObservers: some View {
         timelineWithDataObservers
             .onChange(of: isPlacesEnabled) { _, _ in
+                guard isActive else { return }
                 syncTimelineData()
                 validateTimelineFilterVisibility()
             }
             .onChange(of: isNotesEnabled) { _, _ in
+                guard isActive else { return }
                 syncTimelineData()
                 validateTimelineFilterVisibility()
                 guard !isNotesEnabled, let noteID = store.deepLinkedNoteID else { return }
                 store.send(.noteDeepLinkPresentationDismissed(noteID))
             }
             .onChange(of: isAwayEnabled) { _, _ in
+                guard isActive else { return }
                 syncTimelineData()
                 validateTimelineFilterVisibility()
                 if !isAwayEnabled {

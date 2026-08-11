@@ -14,6 +14,14 @@ an empty trace.
   the investigation notes.
 - Run one scenario per trace. Do not combine Home scrolling, Search activation,
   and typing into one unmarked recording.
+- Before a final build, capture `git status --short` and identify any modified
+  or untracked files that affect the target. Do not change another person's
+  work just to make a build pass; resolve it with its owner or obtain explicit
+  permission first.
+- Device verification is revision-specific. After any source, configuration,
+  dependency, or worktree change, rebuild, validate, install, and launch again
+  before treating the app as verified. A previously installed app cannot
+  verify later source.
 - Keep every build product, trace, export, and temporary analysis helper under
   a uniquely named project-local `.codex/` profiling path, and delete them
   after the investigation.
@@ -43,6 +51,16 @@ APP_PATH="$PROFILE_ROOT/Build/Products/Release-iphoneos/Routinam.app"
 
 ## 2. Build and validate the real Release app
 
+Freeze the exact source state before building and record it with the scenario:
+
+```zsh
+git status --short
+git rev-parse HEAD
+```
+
+If unexpected changes affect the target, stop and resolve ownership before
+building. Do not silently remove, edit, or exclude untracked work.
+
 Build the production scheme into a fresh, profiling-only Derived Data folder:
 
 ```zsh
@@ -59,13 +77,16 @@ the actual `xcodebuild` process to end, then verify the product before
 installing it:
 
 ```zsh
+test -x "$APP_PATH/Routinam"
 plutil -extract CFBundleIdentifier raw -o - "$APP_PATH/Info.plist"
 dwarfdump --uuid "$APP_PATH/Routinam"
 dwarfdump --uuid "$APP_PATH.dSYM/Contents/Resources/DWARF/Routinam"
 ```
 
 The identifier must be `ir.hamedgh.Routinam`; the executable and dSYM UUIDs
-must match. Do not substitute the development scheme or bundle.
+must match. A partial `.app` directory without `Info.plist` or the executable
+is a failed build, not an installable product. Do not substitute the development
+scheme or bundle.
 
 ## 3. Install, launch, and select the exact process
 

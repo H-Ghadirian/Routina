@@ -46,6 +46,31 @@ Given an active Search query
 When the person clears it
 Then the unfiltered Home presentation returns immediately
 
+Given the person is on Home, Timeline, More, or another non-Search iOS tab
+When that tab is shown
+Then it does not display the task Search field
+
+Given the person selects the dedicated bottom Search tab
+When Search appears
+Then its native Search field is available without replacing the tab host
+
+### Inactive iOS Tabs Do Not Compete With Search And Home
+
+Area: Tasks / UI
+Decision links: [0543](../decisions/0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/IOSScrollingPerformanceRegressionTests.swift`
+
+Given iOS retains Home, Search, and Timeline destinations in the tab host
+When a semantic routine update arrives while one of those destinations is inactive
+Then the inactive destination does not fetch SwiftData or rebuild its presentation
+And the active destination alone handles the update
+
+Given Home has already established its task snapshot
+When an ordinary routine update triggers a Home reload
+Then it skips full-history deduplication, backfill, and orphan cleanup
+
 
 ### TestFlight Archives Cannot Skip a CloudKit Production Schema Deployment
 
@@ -90,7 +115,7 @@ Then the task remains absent until the person manually resumes it
 ### Active Focus Synchronizes During a Cross-Device Refresh
 
 Area: Other
-Decision links: [0032](../decisions/0032-sync-active-sleep-mode-across-devices.md)
+Decision links: [0032](../decisions/0032-sync-active-sleep-mode-across-devices.md), [0545](../decisions/0545-bound-ios-foreground-focus-reconciliation.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/CloudKitDirectPullFocusSessionTests.swift`
@@ -98,12 +123,17 @@ Coverage:
 Given a Focus session begins on one device while another device has no local Focus session
 When the receiving device opens or returns to the foreground
 Then it performs a bounded CloudKit reconciliation and shows the active Focus session
+And the foreground reconciliation does not replay the private CloudKit history zone
 
 Given a Focus session began on one device and another device has already imported its active state
 When the first device stops the session and the other device opens with that stale active record
 Then the receiving device performs a bounded CloudKit reconciliation and records the terminal timestamp
 And the Focus session no longer appears as active on the receiving device
 And a delayed active record cannot reopen a session that is already completed
+
+Given an explicit full sync receives multiple task-deletion tombstones
+When it removes their task-backed history
+Then it batches the tombstones and scans each related model family once for the pull
 
 ### Task Detail Flags Use Available Width
 

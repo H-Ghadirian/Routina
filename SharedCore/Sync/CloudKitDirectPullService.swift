@@ -35,10 +35,11 @@ enum CloudKitDirectPullService {
             containerIdentifier: containerIdentifier,
             modelContext: modelContext,
             pullLatest: { containerIdentifier, modelContext in
-                try await pullLatestIntoLocalStore(
+                let records = try await CloudKitDirectPullFetcher.fetchActiveFocusRecords(
                     containerIdentifier: containerIdentifier,
-                    modelContext: modelContext
+                    knownActiveFocusIDs: try activeFocusRecordIDs(in: modelContext)
                 )
+                try mergeActiveFocusRecords(records, into: modelContext)
             }
         )
     }
@@ -201,22 +202,57 @@ enum CloudKitDirectPullService {
     }
 
     @MainActor
+    private static func mergeActiveFocusRecords(
+        _ records: [CKRecord],
+        into context: ModelContext
+    ) throws {
+        let payloadBatch = CloudKitDirectPullPayloadBatch.make(from: records)
+
+        for focusSessionPayload in payloadBatch.focusSessionPayloads {
+            var canonicalPayload = focusSessionPayload
+            if canonicalPayload.taskID != FocusSession.unassignedTaskID {
+                canonicalPayload.taskID = CloudKitDirectPullCanonicalIDResolver.canonicalTaskID(
+                    for: canonicalPayload.taskID,
+                    in: context
+                )
+            }
+            try CloudKitDirectPullUpserter.upsertFocusSession(canonicalPayload, in: context)
+        }
+
+        for sprintFocusSessionPayload in payloadBatch.sprintFocusSessionPayloads {
+            try CloudKitDirectPullUpserter.upsertSprintFocusSession(
+                sprintFocusSessionPayload,
+                in: context
+            )
+        }
+
+        if context.hasChanges {
+            try context.save()
+            NotificationCenter.default.postRoutineDidUpdate()
+        }
+    }
+
+    @MainActor
     private static func hasActiveFocus(in context: ModelContext) throws -> Bool {
+        try !activeFocusRecordIDs(in: context).isEmpty
+    }
+
+    @MainActor
+    private static func activeFocusRecordIDs(in context: ModelContext) throws -> [UUID] {
         let activeFocusPredicate = #Predicate<FocusSession> { session in
             session.completedAt == nil && session.abandonedAt == nil
         }
         var focusDescriptor = FetchDescriptor<FocusSession>(predicate: activeFocusPredicate)
-        focusDescriptor.fetchLimit = 1
-        if try context.fetch(focusDescriptor).isEmpty == false {
-            return true
-        }
+        focusDescriptor.fetchLimit = 4
+        var activeIDs = try context.fetch(focusDescriptor).map(\.id)
 
         let activeSprintFocusPredicate = #Predicate<SprintFocusSessionRecord> { session in
             session.stoppedAt == nil
         }
         var sprintDescriptor = FetchDescriptor<SprintFocusSessionRecord>(predicate: activeSprintFocusPredicate)
-        sprintDescriptor.fetchLimit = 1
-        return try context.fetch(sprintDescriptor).isEmpty == false
+        sprintDescriptor.fetchLimit = 4
+        activeIDs.append(contentsOf: try context.fetch(sprintDescriptor).map(\.id))
+        return activeIDs
     }
 
 }

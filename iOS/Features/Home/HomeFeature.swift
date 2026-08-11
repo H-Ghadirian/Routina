@@ -775,9 +775,9 @@ struct HomeFeature {
             persistTemporaryViewState: { state in
                 persistTemporaryViewState(state)
             },
-            loadOnAppearEffect: { _ in
+            loadOnAppearEffect: { state in
                 .concatenate(
-                    loadTasksEffect(),
+                    loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot),
                     .run { @MainActor send in
                         let snapshot = await self.locationClient.snapshot(false)
                         send(.locationSnapshotUpdated(snapshot))
@@ -1251,8 +1251,8 @@ struct HomeFeature {
         )
     }
 
-    private func loadTasksEffect() -> Effect<Action> {
-        taskLoadEffectFactory().loadTasksEffect()
+    private func loadTasksEffect(performingMaintenance: Bool = false) -> Effect<Action> {
+        taskLoadEffectFactory().loadTasksEffect(performingMaintenance: performingMaintenance)
     }
 
     private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {

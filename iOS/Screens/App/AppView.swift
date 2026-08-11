@@ -56,6 +56,10 @@ let tabView = TabView(
 
     SwiftUI.Tab(Tab.search.rawValue, systemImage: "magnifyingglass", value: AppTabBarItem.search, role: .search) {
         platformSearchHomeView(searchText: $appliedSearchText)
+            .searchable(text: $searchText, prompt: "Search routines and todos")
+            .onChange(of: searchText) { _, rawSearchText in
+                scheduleSearchPresentationUpdate(for: rawSearchText)
+            }
     }
 
     if !usesCompactMoreTab && isGoalsTabEnabled {
@@ -73,7 +77,8 @@ let tabView = TabView(
     SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: AppTabBarItem.timeline) {
         TimelineView(
             store: store.scope(state: \.timeline, action: \.timeline),
-            presentationID: timelinePresentationID
+            presentationID: timelinePresentationID,
+            isActive: store.selectedTab == .timeline
         )
     }
 
@@ -128,10 +133,6 @@ let tabView = TabView(
 Group {
     AppLockGate {
         tabView
-            .searchable(text: $searchText, prompt: "Search routines and todos")
-            .onChange(of: searchText) { _, rawSearchText in
-                scheduleSearchPresentationUpdate(for: rawSearchText)
-            }
             .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
                 PlatformSupport.applyAppIcon(.persistedSelection)
                 store.send(.cloudSettingsChanged)

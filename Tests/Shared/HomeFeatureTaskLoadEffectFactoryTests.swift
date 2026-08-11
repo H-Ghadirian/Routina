@@ -98,7 +98,7 @@ struct HomeFeatureTaskLoadEffectFactoryTests {
             failedAction: { .failed }
         )
 
-        let result = try factory.loadTasks()
+        let result = try factory.loadTasks(performingMaintenance: true)
 
         #expect(result.logs.map(\.id) == [keptLog.id])
         let verificationContext = ModelContext(context.container)

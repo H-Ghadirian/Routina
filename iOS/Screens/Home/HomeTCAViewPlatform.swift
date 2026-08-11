@@ -428,19 +428,23 @@ detailContent
 struct HomeIOSView: View {
     let store: StoreOf<HomeFeature>
     private let searchText: Binding<String>?
+    private let isActive: Bool
 
     init(
         store: StoreOf<HomeFeature>,
-        searchText: Binding<String>? = nil
+        searchText: Binding<String>? = nil,
+        isActive: Bool = true
     ) {
         self.store = store
         self.searchText = searchText
+        self.isActive = isActive
     }
 
     var body: some View {
         HomeTCAView(
             store: store,
-            searchText: searchText
+            searchText: searchText,
+            isActive: isActive
         )
     }
 }

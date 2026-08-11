@@ -6,7 +6,7 @@ enum CloudKitDirectPullMergeHousekeeping {
     static func deduplicateLogs(in context: ModelContext) throws {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
-        var keptLogIDsByKey: [CloudKitDirectPullMergeSupport.LogDeduplicationKey: UUID] = [:]
+        var keptLogsByKey: [CloudKitDirectPullMergeSupport.LogDeduplicationKey: RoutineLog] = [:]
         for log in logs {
             let key = CloudKitDirectPullMergeSupport.LogDeduplicationKey(
                 taskID: log.taskID,
@@ -14,35 +14,15 @@ enum CloudKitDirectPullMergeHousekeeping {
                 sourceTaskID: log.sourceTaskID,
                 timestamp: log.timestamp
             )
-            if let keptLogID = keptLogIDsByKey[key], keptLogID != log.id {
-                if let keptLog = logs.first(where: { $0.id == keptLogID }) {
-                    if keptLog.scheduledOccurrenceAt == nil {
-                        keptLog.scheduledOccurrenceAt = log.scheduledOccurrenceAt
-                    }
-                    context.delete(log)
+            if let keptLog = keptLogsByKey[key], keptLog.id != log.id {
+                if keptLog.scheduledOccurrenceAt == nil {
+                    keptLog.scheduledOccurrenceAt = log.scheduledOccurrenceAt
                 }
+                context.delete(log)
             } else {
-                keptLogIDsByKey[key] = log.id
+                keptLogsByKey[key] = log
             }
         }
-    }
-
-    @MainActor
-    static func deleteTaskAndRelatedRows(taskID: UUID, in context: ModelContext) throws {
-        let taskDescriptor = FetchDescriptor<RoutineTask>(
-            predicate: #Predicate { task in
-                task.id == taskID
-            }
-        )
-
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        RoutineTask.removeRelationships(targeting: Set([taskID]), from: tasks)
-
-        if let task = try context.fetch(taskDescriptor).first {
-            context.delete(task)
-        }
-
-        try deleteRows(forTaskIDs: Set([taskID]), in: context)
     }
 
     @MainActor
@@ -171,7 +151,7 @@ enum CloudKitDirectPullMergeHousekeeping {
     }
 
     @MainActor
-    private static func deleteRows(
+    static func deleteRows(
         forTaskIDs taskIDs: Set<UUID>,
         in context: ModelContext
     ) throws {
