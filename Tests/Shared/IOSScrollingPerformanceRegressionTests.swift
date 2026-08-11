@@ -111,7 +111,7 @@ struct IOSScrollingPerformanceRegressionTests {
         #expect(stats.contains("tagPicker: {\n                HomeTagFilterPickerSheet("))
         #expect(timeline.contains("HomeFiltersTagFilterEntrySection"))
         #expect(!timeline.contains("HomeFiltersTagRulesSection("))
-        #expect(timeline.contains("tagPicker: {\n                            HomeTagFilterPickerSheet("))
+        #expect(timeline.contains("case .tags:\n            HomeTagFilterPickerSheet("))
     }
 
     @Test

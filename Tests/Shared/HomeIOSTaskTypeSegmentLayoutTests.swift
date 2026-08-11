@@ -4,10 +4,10 @@ import Testing
 struct HomeIOSTaskTypeSegmentLayoutTests {
     @Test
     func compactTaskTypeSegmentsPrioritizeFullTextLabels() throws {
-        let source = try Self.sourceFile("iOS/Screens/Home/HomeFiltersListSections.swift")
+        let source = try Self.sourceFile("iOS/Screens/Home/HomeFiltersSheetView.swift")
         let section = try Self.sourceSection(
-            startingAt: "struct HomeFiltersTaskListModeSection",
-            endingAt: "struct HomeFiltersVisibilitySection",
+            startingAt: "case .homeTaskType:",
+            endingAt: "case .visibility:",
             in: source
         )
 
@@ -20,15 +20,15 @@ struct HomeIOSTaskTypeSegmentLayoutTests {
 
     @Test
     func pressureAndThinkingFiltersWrapFiveValuesWithoutTruncatingMedium() throws {
-        let source = try Self.sourceFile("iOS/Screens/Home/HomeFiltersListSections.swift")
+        let source = try Self.sourceFile("iOS/Screens/Home/HomeFiltersSheetView.swift")
         let pressureSection = try Self.sourceSection(
-            startingAt: "struct HomeFiltersPressureSection",
-            endingAt: "struct HomeFiltersThinkingNeededSection",
+            startingAt: "case .pressure:",
+            endingAt: "case .thinkingNeeded:",
             in: source
         )
         let thinkingSection = try Self.sourceSection(
-            startingAt: "struct HomeFiltersThinkingNeededSection",
-            endingAt: "struct HomeFiltersGoalSection",
+            startingAt: "case .thinkingNeeded:",
+            endingAt: "case .goal:",
             in: source
         )
 

@@ -123,8 +123,11 @@ struct TaskFormIOSLayoutRegressionTests {
         )
         let homePrioritySection = try Self.sourceSection(
             startingAt: "struct HomeFiltersImportanceUrgencySection",
-            endingAt: "private struct HomeFiltersPriorityPickerSheet",
+            endingAt: "struct HomeFiltersPriorityPickerSheet",
             in: homeFilters
+        )
+        let homeFilterSheet = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersSheetView.swift"
         )
 
         #expect(formPrioritySection.contains("@State private var isPriorityPickerPresented = false"))
@@ -134,11 +137,12 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(formSections.contains("private struct TaskFormIOSPriorityPickerSheet"))
         #expect(formSections.contains("showsSummaryChip: false"))
 
-        #expect(homePrioritySection.contains("@State private var isPriorityPickerPresented = false"))
         #expect(homePrioritySection.contains("Label(\"Filter priority\""))
-        #expect(homePrioritySection.contains(".sheet(isPresented: $isPriorityPickerPresented)"))
+        #expect(homePrioritySection.contains("onPresent(.priority)"))
+        #expect(!homePrioritySection.contains(".sheet("))
         #expect(!homePrioritySection.contains("ImportanceUrgencyMatrixPicker(selectedFilter:"))
-        #expect(homeFilters.contains("private struct HomeFiltersPriorityPickerSheet"))
+        #expect(homeFilterSheet.contains("case .priority:"))
+        #expect(homeFilterSheet.contains("HomeFiltersPriorityPickerSheet("))
     }
 
     @Test
@@ -160,20 +164,27 @@ struct TaskFormIOSLayoutRegressionTests {
             "iOS/Screens/Home/HomeFiltersFlagSection.swift"
         )
 
-        #expect(groupingSection.contains("@State private var isGroupingPickerPresented = false"))
-        #expect(groupingSection.contains(".sheet(isPresented: $isGroupingPickerPresented)"))
-        #expect(!groupingSection.contains(".pickerStyle(.inline)"))
-        #expect(filterSections.contains("private struct HomeFiltersGroupingPickerSheet"))
+        let homeFilterSheet = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersSheetView.swift"
+        )
 
-        #expect(sortSection.contains("@State private var isSortPickerPresented = false"))
-        #expect(sortSection.contains(".sheet(isPresented: $isSortPickerPresented)"))
+        #expect(groupingSection.contains("onPresent(.grouping)"))
+        #expect(!groupingSection.contains(".sheet("))
+        #expect(!groupingSection.contains(".pickerStyle(.inline)"))
+        #expect(homeFilterSheet.contains("case .grouping:"))
+        #expect(homeFilterSheet.contains("HomeFiltersGroupingPickerSheet("))
+
+        #expect(sortSection.contains("onPresent(.sort)"))
+        #expect(!sortSection.contains(".sheet("))
         #expect(!sortSection.contains(".pickerStyle(.inline)"))
-        #expect(filterSections.contains("private struct HomeFiltersSortPickerSheet"))
+        #expect(homeFilterSheet.contains("case .sort:"))
+        #expect(homeFilterSheet.contains("HomeFiltersSortPickerSheet("))
         #expect(filterSections.contains(".frame(maxWidth: .infinity, minHeight: 44"))
 
-        #expect(flagSection.contains("@State private var isFlagPickerPresented = false"))
-        #expect(flagSection.contains(".sheet(isPresented: $isFlagPickerPresented)"))
-        #expect(flagSection.contains("private struct HomeFiltersFlagPickerSheet"))
+        #expect(flagSection.contains("onPresent(.flags)"))
+        #expect(!flagSection.contains(".sheet("))
+        #expect(homeFilterSheet.contains("case .flags:"))
+        #expect(homeFilterSheet.contains("HomeFiltersFlagPickerSheet("))
         #expect(flagSection.contains("@State private var displayedFlagOptions"))
         #expect(flagSection.contains("Section(\"Selected flags\")"))
         #expect(flagSection.contains(".searchable(text: $searchText, prompt: \"Search flags\")"))
@@ -186,10 +197,8 @@ struct TaskFormIOSLayoutRegressionTests {
         let filterSections = try Self.sourceFile(
             "iOS/Screens/Home/HomeFiltersListSections.swift"
         )
-        let sharedEntry = try Self.sourceSection(
-            startingAt: "struct HomeFiltersPickerEntry",
-            endingAt: "private struct HomeFiltersGroupingPickerSheet",
-            in: filterSections
+        let filterSheet = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersSheetView.swift"
         )
 
         for sectionTitle in [
@@ -209,10 +218,10 @@ struct TaskFormIOSLayoutRegressionTests {
             #expect(filterSections.contains("sectionTitle: \"\(sectionTitle)\""))
         }
 
-        #expect(sharedEntry.contains(".sheet(isPresented: $isPresented)"))
-        #expect(sharedEntry.contains("private let content: () -> Content"))
-        #expect(sharedEntry.contains("Button(\"Done\")"))
-        #expect(sharedEntry.components(separatedBy: "dismiss()").count == 2)
+        #expect(filterSheet.contains("@State private var presentedDetail: IOSFilterDetailDestination?"))
+        #expect(filterSheet.contains(".sheet(item: $presentedDetail, content: detailSheet)"))
+        #expect(filterSheet.contains("private func detailSheet("))
+        #expect(!filterSections.contains(".sheet(isPresented:"))
     }
 
     @Test
@@ -224,12 +233,18 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(statsFilters.contains("sectionTitle: \"Type\""))
         #expect(statsFilters.contains("HomeFiltersTagFilterEntrySection"))
         #expect(!statsFilters.contains("HomeFiltersTagRulesSection("))
+        #expect(statsFilters.contains("@State private var presentedDetail: IOSFilterDetailDestination?"))
+        #expect(statsFilters.contains(".sheet(item: $presentedDetail, content: detailSheet)"))
+        #expect(statsFilters.contains("case .tags:"))
 
         #expect(timeline.contains("sectionTitle: \"Range\""))
         #expect(timeline.contains("sectionTitle: \"Type\""))
-        #expect(timeline.contains("HomeFiltersMediaSection(selectedMediaFilter: mediaFilterBinding)"))
+        #expect(timeline.contains("HomeFiltersMediaSection(\n                    selectedMediaFilter: mediaFilterBinding,"))
         #expect(timeline.contains("HomeFiltersTagFilterEntrySection"))
         #expect(!timeline.contains("HomeFiltersTagRulesSection("))
+        #expect(timeline.contains("@State private var presentedFilterDetail: IOSFilterDetailDestination?"))
+        #expect(timeline.contains(".sheet(item: $presentedFilterDetail, content: timelineFilterDetailSheet)"))
+        #expect(timeline.contains("case .tags:\n            HomeTagFilterPickerSheet("))
     }
 
     @Test

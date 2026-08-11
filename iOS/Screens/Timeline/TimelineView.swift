@@ -31,6 +31,7 @@ struct TimelineView: View {
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
     @State private var editingAwaySession: AwaySession?
+    @State private var presentedFilterDetail: IOSFilterDetailDestination?
 
     var body: some View {
         timelineWithRoutingObservers
@@ -730,17 +731,9 @@ struct TimelineView: View {
                     title: "Range",
                     systemImage: "calendar",
                     value: selectedRangeBinding.wrappedValue.rawValue,
-                    pickerTitle: "Range"
-                ) {
-                    Section {
-                        Picker("Range", selection: selectedRangeBinding) {
-                            ForEach(TimelineRange.allCases) { range in
-                                Text(range.rawValue).tag(range)
-                            }
-                        }
-                        .pickerStyle(.inline)
-                    }
-                }
+                    destination: .timelineRange,
+                    onPresent: presentTimelineFilterDetail
+                )
 
                 if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || (isNotesEnabled && !notes.isEmpty) || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || (isAwayEnabled && !awaySessions.isEmpty) || (isPlacesEnabled && !placeCheckInSessions.isEmpty) {
                     HomeFiltersPickerEntry(
@@ -748,22 +741,9 @@ struct TimelineView: View {
                         title: "Type",
                         systemImage: "line.3.horizontal.decrease.circle",
                         value: filterTypeBinding.wrappedValue.title,
-                        pickerTitle: "Type"
-                    ) {
-                        Section {
-                            Picker("Type", selection: filterTypeBinding) {
-                                ForEach(TimelineFilterType.visibleCases(
-                                    includingEventEmotion: true,
-                                    includingPlaces: isPlacesEnabled,
-                                    includingNotes: isNotesEnabled,
-                                    includingAway: isAwayEnabled
-                                )) { type in
-                                    Text(type.title).tag(type)
-                                }
-                            }
-                            .pickerStyle(.inline)
-                        }
-                    }
+                        destination: .timelineType,
+                        onPresent: presentTimelineFilterDetail
+                    )
                 }
 
                 HomeFiltersImportanceUrgencySection(
@@ -771,10 +751,14 @@ struct TimelineView: View {
                         get: { store.selectedImportanceUrgencyFilter },
                         set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
                     ),
-                    summary: importanceUrgencyFilterSummary
+                    summary: importanceUrgencyFilterSummary,
+                    onPresent: presentTimelineFilterDetail
                 )
 
-                HomeFiltersMediaSection(selectedMediaFilter: mediaFilterBinding)
+                HomeFiltersMediaSection(
+                    selectedMediaFilter: mediaFilterBinding,
+                    onPresent: presentTimelineFilterDetail
+                )
 
                 if !availableTags.isEmpty || !store.effectiveSelectedTags.isEmpty || !store.excludedTags.isEmpty {
                     HomeFiltersTagFilterEntrySection(
@@ -786,19 +770,7 @@ struct TimelineView: View {
                             get: { store.excludedTags },
                             set: { store.send(.excludedTagsChanged($0)) }
                         ),
-                        tagPicker: {
-                            HomeTagFilterPickerSheet(
-                                data: tagRuleData,
-                                bindings: tagRuleBindings,
-                                actions: tagRuleActions,
-                                labels: HomeTagFilterPickerLabels(
-                                    includeCatalogTitle: "Show timeline items with",
-                                    excludeCatalogTitle: "Hide timeline items with",
-                                    includeFooter: "Select tags to include in the Timeline.",
-                                    excludeFooter: "Select tags to hide from the Timeline."
-                                )
-                            )
-                        }
+                        onPresent: presentTimelineFilterDetail
                     )
                 }
 
@@ -817,11 +789,86 @@ struct TimelineView: View {
                 }
             }
         }
+        .sheet(item: $presentedFilterDetail, content: timelineFilterDetailSheet)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onChange(of: availableTags) { _, newValue in
             let selected = store.effectiveSelectedTags.filter { RoutineTag.contains($0, in: newValue) }
             store.send(.selectedTagsChanged(selected))
+        }
+    }
+
+    private func presentTimelineFilterDetail(_ destination: IOSFilterDetailDestination) {
+        presentedFilterDetail = destination
+    }
+
+    @ViewBuilder
+    private func timelineFilterDetailSheet(
+        _ destination: IOSFilterDetailDestination
+    ) -> some View {
+        switch destination {
+        case .timelineRange:
+            HomeFiltersDetailSheet(title: "Range") {
+                Section {
+                    Picker("Range", selection: selectedRangeBinding) {
+                        ForEach(TimelineRange.allCases) { range in
+                            Text(range.rawValue).tag(range)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
+            }
+        case .timelineType:
+            HomeFiltersDetailSheet(title: "Type") {
+                Section {
+                    Picker("Type", selection: filterTypeBinding) {
+                        ForEach(TimelineFilterType.visibleCases(
+                            includingEventEmotion: true,
+                            includingPlaces: isPlacesEnabled,
+                            includingNotes: isNotesEnabled,
+                            includingAway: isAwayEnabled
+                        )) { type in
+                            Text(type.title).tag(type)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
+            }
+        case .priority:
+            HomeFiltersPriorityPickerSheet(
+                selectedImportanceUrgencyFilter: Binding(
+                    get: { store.selectedImportanceUrgencyFilter },
+                    set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                ),
+                summary: importanceUrgencyFilterSummary
+            )
+        case .media:
+            HomeFiltersDetailSheet(title: "Media") {
+                Section {
+                    Picker("Media", selection: mediaFilterBinding) {
+                        ForEach(TaskMediaFilter.allCases) { filter in
+                            Label(filter.title, systemImage: filter.systemImage).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
+            }
+        case .tags:
+            HomeTagFilterPickerSheet(
+                data: tagRuleData,
+                bindings: tagRuleBindings,
+                actions: tagRuleActions,
+                labels: HomeTagFilterPickerLabels(
+                    includeCatalogTitle: "Show timeline items with",
+                    excludeCatalogTitle: "Hide timeline items with",
+                    includeFooter: "Select tags to include in the Timeline.",
+                    excludeFooter: "Select tags to hide from the Timeline."
+                )
+            )
+        case .advancedQuery, .homeTaskType, .visibility, .grouping, .sort,
+                .created, .status, .todoState, .pressure, .thinkingNeeded,
+                .goal, .estimation, .flags, .place, .statsTaskType:
+            EmptyView()
         }
     }
 

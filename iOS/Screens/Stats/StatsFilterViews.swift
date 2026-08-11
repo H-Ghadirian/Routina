@@ -256,6 +256,7 @@ struct StatsFiltersSheet<TagPicker: View>: View {
         UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var showsFilterQuerySections = false
+    @State private var presentedDetail: IOSFilterDetailDestination?
 
     var body: some View {
         NavigationStack {
@@ -266,12 +267,9 @@ struct StatsFiltersSheet<TagPicker: View>: View {
                         title: "Advanced query",
                         systemImage: "magnifyingglass",
                         value: advancedQuery.isEmpty ? "None" : "Active",
-                        pickerTitle: "Advanced Query"
-                    ) {
-                        Section {
-                            HomeAdvancedQueryBuilder(query: $advancedQuery, options: advancedQueryOptions)
-                        }
-                    }
+                        destination: .advancedQuery,
+                        onPresent: presentDetail
+                    )
                 }
 
                 if showsTaskTypeFilter {
@@ -280,29 +278,21 @@ struct StatsFiltersSheet<TagPicker: View>: View {
                         title: "Task type",
                         systemImage: "checklist",
                         value: taskTypeFilter.title,
-                        pickerTitle: "Task Type"
-                    ) {
-                        Section {
-                            Picker("Task type", selection: $taskTypeFilter) {
-                                ForEach(StatsTaskTypeFilter.allCases) { filter in
-                                    Label(filter.title, systemImage: filter.iosStatsIconName)
-                                        .tag(filter)
-                                }
-                            }
-                            .pickerStyle(.inline)
-                        }
-                    }
+                        destination: .statsTaskType,
+                        onPresent: presentDetail
+                    )
                 }
 
                 HomeFiltersImportanceUrgencySection(
                     selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
-                    summary: importanceUrgencyFilterSummary
+                    summary: importanceUrgencyFilterSummary,
+                    onPresent: presentDetail
                 )
 
                 HomeFiltersTagFilterEntrySection(
                     selectedTags: $selectedTags,
                     excludedTags: $excludedTags,
-                    tagPicker: tagPicker
+                    onPresent: presentDetail
                 )
 
                 if !availableFlags.isEmpty {
@@ -311,16 +301,9 @@ struct StatsFiltersSheet<TagPicker: View>: View {
                         title: "Flags",
                         systemImage: "flag.fill",
                         value: flagSelectionSummary,
-                        pickerTitle: "Flags"
-                    ) {
-                        StatsFlagFilterPicker(
-                            selectedFlags: $selectedFlags,
-                            includeFlagMatchMode: $includeFlagMatchMode,
-                            excludedFlags: $excludedFlags,
-                            excludeFlagMatchMode: $excludeFlagMatchMode,
-                            availableFlags: availableFlags
-                        )
-                    }
+                        destination: .flags,
+                        onPresent: presentDetail
+                    )
                 }
 
                 HomeFiltersClearSection(
@@ -336,6 +319,7 @@ struct StatsFiltersSheet<TagPicker: View>: View {
                 }
             }
         }
+        .sheet(item: $presentedDetail, content: detailSheet)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onChange(of: availableTags) { _, newValue in
@@ -350,6 +334,60 @@ struct StatsFiltersSheet<TagPicker: View>: View {
             return "\(availableFlags.count) \(availableFlags.count == 1 ? "flag" : "flags") available"
         }
         return "\(count) active \(count == 1 ? "filter" : "filters")"
+    }
+
+    private func presentDetail(_ destination: IOSFilterDetailDestination) {
+        presentedDetail = destination
+    }
+
+    @ViewBuilder
+    private func detailSheet(
+        _ destination: IOSFilterDetailDestination
+    ) -> some View {
+        switch destination {
+        case .advancedQuery:
+            HomeFiltersDetailSheet(title: "Advanced Query") {
+                Section {
+                    HomeAdvancedQueryBuilder(
+                        query: $advancedQuery,
+                        options: advancedQueryOptions
+                    )
+                }
+            }
+        case .statsTaskType:
+            HomeFiltersDetailSheet(title: "Task Type") {
+                Section {
+                    Picker("Task type", selection: $taskTypeFilter) {
+                        ForEach(StatsTaskTypeFilter.allCases) { filter in
+                            Label(filter.title, systemImage: filter.iosStatsIconName)
+                                .tag(filter)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
+            }
+        case .priority:
+            HomeFiltersPriorityPickerSheet(
+                selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
+                summary: importanceUrgencyFilterSummary
+            )
+        case .tags:
+            tagPicker()
+        case .flags:
+            HomeFiltersDetailSheet(title: "Flags") {
+                StatsFlagFilterPicker(
+                    selectedFlags: $selectedFlags,
+                    includeFlagMatchMode: $includeFlagMatchMode,
+                    excludedFlags: $excludedFlags,
+                    excludeFlagMatchMode: $excludeFlagMatchMode,
+                    availableFlags: availableFlags
+                )
+            }
+        case .homeTaskType, .visibility, .grouping, .sort, .created, .status,
+                .todoState, .pressure, .thinkingNeeded, .goal, .media,
+                .estimation, .place, .timelineRange, .timelineType:
+            EmptyView()
+        }
     }
 }
 

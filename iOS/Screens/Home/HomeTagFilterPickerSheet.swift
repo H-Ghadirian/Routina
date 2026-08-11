@@ -1,16 +1,14 @@
 import SwiftUI
 
-struct HomeFiltersTagFilterEntrySection<TagPicker: View>: View {
+struct HomeFiltersTagFilterEntrySection: View {
     @Binding var selectedTags: Set<String>
     @Binding var excludedTags: Set<String>
-    let tagPicker: () -> TagPicker
-
-    @State private var isTagPickerPresented = false
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         Section("Tags") {
             Button {
-                isTagPickerPresented = true
+                onPresent(.tags)
             } label: {
                 HStack(spacing: 12) {
                     Label("Filter tags", systemImage: "tag")
@@ -29,9 +27,6 @@ struct HomeFiltersTagFilterEntrySection<TagPicker: View>: View {
             .accessibilityLabel("Filter tags")
             .accessibilityValue(selectionSummary)
             .accessibilityHint("Choose tags to show or hide")
-        }
-        .sheet(isPresented: $isTagPickerPresented) {
-            tagPicker()
         }
     }
 

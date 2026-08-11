@@ -4,7 +4,7 @@ struct HomeFiltersFlagSection: View {
     @Binding var includeFlagMatchMode: RoutineTagMatchMode
     let data: HomeFlagFilterData
     let actions: HomeFlagFilterActions
-    @State private var isFlagPickerPresented = false
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     @ViewBuilder
     var body: some View {
@@ -15,15 +15,8 @@ struct HomeFiltersFlagSection: View {
                     systemImage: "flag",
                     value: selectionSummary
                 ) {
-                    isFlagPickerPresented = true
+                    onPresent(.flags)
                 }
-            }
-            .sheet(isPresented: $isFlagPickerPresented) {
-                HomeFiltersFlagPickerSheet(
-                    includeFlagMatchMode: $includeFlagMatchMode,
-                    data: data,
-                    actions: actions
-                )
             }
         }
     }
@@ -39,7 +32,7 @@ struct HomeFiltersFlagSection: View {
     }
 }
 
-private struct HomeFiltersFlagPickerSheet: View {
+struct HomeFiltersFlagPickerSheet: View {
     @Binding var includeFlagMatchMode: RoutineTagMatchMode
     let data: HomeFlagFilterData
     let actions: HomeFlagFilterActions

@@ -1,8 +1,33 @@
 import SwiftUI
 
+enum IOSFilterDetailDestination: String, Identifiable {
+    case advancedQuery
+    case homeTaskType
+    case visibility
+    case grouping
+    case sort
+    case created
+    case status
+    case todoState
+    case pressure
+    case thinkingNeeded
+    case goal
+    case media
+    case estimation
+    case priority
+    case tags
+    case flags
+    case place
+    case statsTaskType
+    case timelineRange
+    case timelineType
+
+    var id: String { rawValue }
+}
+
 struct HomeFiltersQuerySection: View {
     @Binding var advancedQuery: String
-    let options: () -> HomeAdvancedQueryOptions
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -10,17 +35,15 @@ struct HomeFiltersQuerySection: View {
             title: "Advanced query",
             systemImage: "magnifyingglass",
             value: advancedQuery.isEmpty ? "None" : "Active",
-            pickerTitle: "Advanced Query"
-        ) {
-            Section {
-                HomeAdvancedQueryBuilder(query: $advancedQuery, options: options())
-            }
-        }
+            destination: .advancedQuery,
+            onPresent: onPresent
+        )
     }
 }
 
 struct HomeFiltersTaskListModeSection: View {
     @Binding var taskListMode: HomeFeature.TaskListMode
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -28,24 +51,9 @@ struct HomeFiltersTaskListModeSection: View {
             title: "Task type",
             systemImage: "checklist",
             value: taskListMode.title,
-            pickerTitle: "Task Type"
-        ) {
-            Section {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Task type",
-                    options: HomeFeature.TaskListMode.allCases,
-                    selection: $taskListMode,
-                    minimumSegmentWidth: 82,
-                    horizontalPadding: 10,
-                    fillsAvailableWidth: true
-                ) { mode in
-                    Text(mode.title)
-                        .fixedSize(horizontal: true, vertical: false)
-                }
-            } footer: {
-                Text("Choose which tasks the Home list should show.")
-            }
-        }
+            destination: .homeTaskType,
+            onPresent: onPresent
+        )
     }
 }
 
@@ -53,6 +61,7 @@ struct HomeFiltersVisibilitySection: View {
     @Binding var taskListViewMode: HomeTaskListViewMode
     @Binding var hideAssumedDoneTasks: Bool
     @Binding var showArchivedTasks: Bool
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -60,25 +69,8 @@ struct HomeFiltersVisibilitySection: View {
             title: "Show tasks",
             systemImage: "eye",
             value: visibilitySummary,
-            pickerTitle: "Visibility"
-        ) {
-            Section {
-                Toggle("Show blocked tasks", isOn: showBlockedTasksBinding)
-                    .toggleStyle(.switch)
-
-                Toggle("Hide assumed-done tasks", isOn: $hideAssumedDoneTasks)
-                    .toggleStyle(.switch)
-
-                Toggle("Show archived list", isOn: $showArchivedTasks)
-                    .toggleStyle(.switch)
-            }
-        }
-    }
-
-    private var showBlockedTasksBinding: Binding<Bool> {
-        Binding(
-            get: { taskListViewMode == .all },
-            set: { taskListViewMode = $0 ? .all : .actionable }
+            destination: .visibility,
+            onPresent: onPresent
         )
     }
 
@@ -96,7 +88,7 @@ struct HomeFiltersVisibilitySection: View {
 
 struct HomeFiltersGroupingSection: View {
     @Binding var routineListSectioningMode: RoutineListSectioningMode
-    @State private var isGroupingPickerPresented = false
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         Section("Group") {
@@ -105,19 +97,15 @@ struct HomeFiltersGroupingSection: View {
                 systemImage: "rectangle.3.group",
                 value: routineListSectioningMode.title
             ) {
-                isGroupingPickerPresented = true
+                onPresent(.grouping)
             }
-        }
-        .sheet(isPresented: $isGroupingPickerPresented) {
-            HomeFiltersGroupingPickerSheet(
-                routineListSectioningMode: $routineListSectioningMode
-            )
         }
     }
 }
 
 struct HomeFiltersCreatedSection: View {
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -125,23 +113,15 @@ struct HomeFiltersCreatedSection: View {
             title: "Created",
             systemImage: "calendar",
             value: createdDateFilter.title,
-            pickerTitle: "Created"
-        ) {
-            Section {
-                Picker("Created", selection: $createdDateFilter) {
-                    ForEach(HomeTaskCreatedDateFilter.allCases) { filter in
-                        Label(filter.title, systemImage: filter.systemImage).tag(filter)
-                    }
-                }
-                .pickerStyle(.inline)
-            }
-        }
+            destination: .created,
+            onPresent: onPresent
+        )
     }
 }
 
 struct HomeFiltersSortSection: View {
     @Binding var taskListSortOrder: HomeTaskListSortOrder
-    @State private var isSortPickerPresented = false
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         Section("Sort") {
@@ -150,11 +130,8 @@ struct HomeFiltersSortSection: View {
                 systemImage: "arrow.up.arrow.down",
                 value: taskListSortOrder.title
             ) {
-                isSortPickerPresented = true
+                onPresent(.sort)
             }
-        }
-        .sheet(isPresented: $isSortPickerPresented) {
-            HomeFiltersSortPickerSheet(taskListSortOrder: $taskListSortOrder)
         }
     }
 }
@@ -187,31 +164,13 @@ struct HomeFiltersDetailEntry: View {
     }
 }
 
-struct HomeFiltersPickerEntry<Content: View>: View {
+struct HomeFiltersPickerEntry: View {
     let sectionTitle: String
     let title: String
     let systemImage: String
     let value: String
-    let pickerTitle: String
-    private let content: () -> Content
-
-    @State private var isPresented = false
-
-    init(
-        sectionTitle: String,
-        title: String,
-        systemImage: String,
-        value: String,
-        pickerTitle: String,
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        self.sectionTitle = sectionTitle
-        self.title = title
-        self.systemImage = systemImage
-        self.value = value
-        self.pickerTitle = pickerTitle
-        self.content = content
-    }
+    let destination: IOSFilterDetailDestination
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         Section(sectionTitle) {
@@ -220,16 +179,13 @@ struct HomeFiltersPickerEntry<Content: View>: View {
                 systemImage: systemImage,
                 value: value
             ) {
-                isPresented = true
+                onPresent(destination)
             }
-        }
-        .sheet(isPresented: $isPresented) {
-            HomeFiltersDetailSheet(title: pickerTitle, content: content)
         }
     }
 }
 
-private struct HomeFiltersDetailSheet<Content: View>: View {
+struct HomeFiltersDetailSheet<Content: View>: View {
     let title: String
     let content: () -> Content
 
@@ -256,7 +212,7 @@ private struct HomeFiltersDetailSheet<Content: View>: View {
     }
 }
 
-private struct HomeFiltersGroupingPickerSheet: View {
+struct HomeFiltersGroupingPickerSheet: View {
     @Binding var routineListSectioningMode: RoutineListSectioningMode
 
     @Environment(\.dismiss) private var dismiss
@@ -291,7 +247,7 @@ private struct HomeFiltersGroupingPickerSheet: View {
     }
 }
 
-private struct HomeFiltersSortPickerSheet: View {
+struct HomeFiltersSortPickerSheet: View {
     @Binding var taskListSortOrder: HomeTaskListSortOrder
 
     @Environment(\.dismiss) private var dismiss
@@ -328,6 +284,7 @@ struct HomeFiltersStatusSection: View {
     let placeFilterPluralNoun: String
     let availableFilters: [RoutineListFilter]
     @Binding var selectedFilter: RoutineListFilter
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -335,23 +292,16 @@ struct HomeFiltersStatusSection: View {
             title: "Show \(placeFilterPluralNoun)",
             systemImage: "line.3.horizontal.decrease.circle",
             value: selectedFilter.rawValue,
-            pickerTitle: "Status"
-        ) {
-            Section {
-                Picker("Show \(placeFilterPluralNoun)", selection: $selectedFilter) {
-                    ForEach(availableFilters) { filter in
-                        Text(filter.rawValue).tag(filter)
-                    }
-                }
-                .pickerStyle(.inline)
-            }
-        }
+            destination: .status,
+            onPresent: onPresent
+        )
     }
 }
 
 struct HomeFiltersTodoStateSection: View {
     let taskListMode: HomeFeature.TaskListMode
     @Binding var selectedTodoStateFilter: TodoState?
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     @ViewBuilder
     var body: some View {
@@ -361,19 +311,16 @@ struct HomeFiltersTodoStateSection: View {
                 title: "Todo state",
                 systemImage: "checkmark.circle",
                 value: selectedTodoStateFilter?.displayTitle ?? "All",
-                pickerTitle: "Todo State"
-            ) {
-                Section {
-                    HomeTodoStateFilterChips(selectedTodoStateFilter: $selectedTodoStateFilter)
-                        .padding(.vertical, 4)
-                }
-            }
+                destination: .todoState,
+                onPresent: onPresent
+            )
         }
     }
 }
 
 struct HomeFiltersPressureSection: View {
     @Binding var selectedPressureFilter: RoutineTaskPressure?
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -381,27 +328,15 @@ struct HomeFiltersPressureSection: View {
             title: "Pressure",
             systemImage: "gauge.with.dots.needle.33percent",
             value: selectedPressureFilter?.title ?? "All",
-            pickerTitle: "Pressure"
-        ) {
-            Section {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Pressure",
-                    options: [Optional<RoutineTaskPressure>.none] + RoutineTaskPressure.allCases.map(Optional.some),
-                    selection: $selectedPressureFilter,
-                    horizontalPadding: 10,
-                    verticalPadding: 8,
-                    fillsAvailableWidth: true,
-                    maximumSegmentsPerRow: 3
-                ) { pressure in
-                    Text(pressure?.title ?? "All")
-                }
-            }
-        }
+            destination: .pressure,
+            onPresent: onPresent
+        )
     }
 }
 
 struct HomeFiltersThinkingNeededSection: View {
     @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -409,28 +344,15 @@ struct HomeFiltersThinkingNeededSection: View {
             title: "Thinking needed",
             systemImage: "brain.head.profile",
             value: selectedThinkingNeededFilter?.title ?? "All",
-            pickerTitle: "Thinking Needed"
-        ) {
-            Section {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Thinking needed",
-                    options: [Optional<RoutineTaskThinkingNeeded>.none]
-                        + RoutineTaskThinkingNeeded.allCases.map(Optional.some),
-                    selection: $selectedThinkingNeededFilter,
-                    horizontalPadding: 10,
-                    verticalPadding: 8,
-                    fillsAvailableWidth: true,
-                    maximumSegmentsPerRow: 3
-                ) { level in
-                    Text(level?.title ?? "All")
-                }
-            }
-        }
+            destination: .thinkingNeeded,
+            onPresent: onPresent
+        )
     }
 }
 
 struct HomeFiltersGoalSection: View {
     @Binding var selectedGoalFilter: HomeTaskGoalFilter
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -438,24 +360,15 @@ struct HomeFiltersGoalSection: View {
             title: "Goal",
             systemImage: "target",
             value: selectedGoalFilter.title,
-            pickerTitle: "Goal"
-        ) {
-            Section {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Goal",
-                    options: HomeTaskGoalFilter.allCases,
-                    selection: $selectedGoalFilter,
-                    fillsAvailableWidth: true
-                ) { filter in
-                    Text(filter.title)
-                }
-            }
-        }
+            destination: .goal,
+            onPresent: onPresent
+        )
     }
 }
 
 struct HomeFiltersMediaSection: View {
     @Binding var selectedMediaFilter: TaskMediaFilter
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -463,22 +376,15 @@ struct HomeFiltersMediaSection: View {
             title: "Media",
             systemImage: "paperclip",
             value: selectedMediaFilter.title,
-            pickerTitle: "Media"
-        ) {
-            Section {
-                Picker("Media", selection: $selectedMediaFilter) {
-                    ForEach(TaskMediaFilter.allCases) { filter in
-                        Label(filter.title, systemImage: filter.systemImage).tag(filter)
-                    }
-                }
-                .pickerStyle(.inline)
-            }
-        }
+            destination: .media,
+            onPresent: onPresent
+        )
     }
 }
 
 struct HomeFiltersEstimationSection: View {
     @Binding var selectedEstimationFilter: TaskEstimationFilter
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -486,29 +392,21 @@ struct HomeFiltersEstimationSection: View {
             title: "Duration estimate",
             systemImage: "timer",
             value: selectedEstimationFilter.title,
-            pickerTitle: "Estimation"
-        ) {
-            Section {
-                Picker("Duration estimate", selection: $selectedEstimationFilter) {
-                    ForEach(TaskEstimationFilter.allCases) { filter in
-                        Label(filter.title, systemImage: filter.systemImage).tag(filter)
-                    }
-                }
-                .pickerStyle(.inline)
-            }
-        }
+            destination: .estimation,
+            onPresent: onPresent
+        )
     }
 }
 
 struct HomeFiltersImportanceUrgencySection: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let summary: String
-    @State private var isPriorityPickerPresented = false
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         Section("Priority") {
             Button {
-                isPriorityPickerPresented = true
+                onPresent(.priority)
             } label: {
                 HStack(spacing: 12) {
                     Label("Filter priority", systemImage: "line.3.horizontal.decrease.circle")
@@ -528,12 +426,6 @@ struct HomeFiltersImportanceUrgencySection: View {
             .accessibilityValue(selectionAccessibilityValue)
             .accessibilityHint("Open the importance and urgency filter")
         }
-        .sheet(isPresented: $isPriorityPickerPresented) {
-            HomeFiltersPriorityPickerSheet(
-                selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
-                summary: summary
-            )
-        }
     }
 
     private var selectionSummary: String {
@@ -547,7 +439,7 @@ struct HomeFiltersImportanceUrgencySection: View {
     }
 }
 
-private struct HomeFiltersPriorityPickerSheet: View {
+struct HomeFiltersPriorityPickerSheet: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let summary: String
 
@@ -593,6 +485,7 @@ struct HomeFiltersPlaceSection: View {
     let configuration: HomeFiltersPlaceConfiguration
     @Binding var selectedPlaceID: UUID?
     @Binding var hideUnavailableRoutines: Bool
+    let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
         HomeFiltersPickerEntry(
@@ -600,35 +493,9 @@ struct HomeFiltersPlaceSection: View {
             title: "Place",
             systemImage: "mappin.and.ellipse",
             value: placeSummary,
-            pickerTitle: "Place"
-        ) {
-            Section {
-                if configuration.hasSavedPlaces {
-                    Picker("Show \(configuration.placeFilterPluralNoun)", selection: $selectedPlaceID) {
-                        Text(configuration.placeFilterAllTitle).tag(Optional<UUID>.none)
-                        ForEach(configuration.sortedRoutinePlaces) { place in
-                            Text(place.displayName).tag(Optional(place.id))
-                        }
-                    }
-                    .pickerStyle(.menu)
-                } else {
-                    Text("No saved places yet")
-                        .foregroundStyle(.secondary)
-                }
-
-                if configuration.hasPlaceLinkedRoutines && configuration.isLocationAuthorized {
-                    Toggle("Hide unavailable \(configuration.placeFilterPluralNoun)", isOn: $hideUnavailableRoutines)
-                }
-            } footer: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(configuration.placeFilterSectionDescription)
-
-                    if configuration.hasPlaceLinkedRoutines {
-                        Text(configuration.locationStatusText)
-                    }
-                }
-            }
-        }
+            destination: .place,
+            onPresent: onPresent
+        )
     }
 
     private var placeSummary: String {
