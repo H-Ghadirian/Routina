@@ -3,6 +3,7 @@ import SwiftUI
 
 enum RoutinaMacSceneID {
     static let home = "routina-home"
+    static let backlog = "routina-backlog"
     static let settings = "routina-settings"
     static let taskRelationshipReview = "routina-task-relationship-review"
 }
@@ -122,6 +123,11 @@ struct RoutineCommands: Commands {
                 RoutinaMacSearchOrCreateFocus.request()
             }
             .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.modifiers)
+
+            Button("Backlog") {
+                openWindow(id: RoutinaMacSceneID.backlog)
+            }
+            .keyboardShortcut("b", modifiers: [.command, .shift])
 
             Button("Show Task in List") {
                 RoutinaMacCommandNotification.post(

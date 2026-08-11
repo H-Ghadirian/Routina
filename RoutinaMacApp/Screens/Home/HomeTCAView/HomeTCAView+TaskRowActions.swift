@@ -554,13 +554,16 @@ extension NSMenu {
         var hasSectionItems = false
 
         for section in HomeCustomTaskSectionStorage.topLevelSections(in: customSections) {
+            let sectionTitle = section.surface == .backlog
+                ? "Backlog › \(section.title)"
+                : section.title
             let subsections = HomeCustomTaskSectionStorage.subsections(
                 of: section.id,
                 in: customSections
             )
             if subsections.isEmpty {
                 submenu.addActionItem(
-                    title: section.title,
+                    title: sectionTitle,
                     systemImage: "rectangle.stack",
                     isEnabled: currentCustomSectionID != section.id && !section.isPaused
                 ) {
@@ -568,17 +571,17 @@ extension NSMenu {
                 }
             } else {
                 let sectionItem = NSMenuItem(
-                    title: section.title,
+                    title: sectionTitle,
                     action: nil,
                     keyEquivalent: ""
                 )
                 sectionItem.image = NSImage(
                     systemSymbolName: "rectangle.stack",
-                    accessibilityDescription: section.title
+                    accessibilityDescription: sectionTitle
                 )
-                let sectionSubmenu = NSMenu(title: section.title)
+                let sectionSubmenu = NSMenu(title: sectionTitle)
                 sectionSubmenu.addActionItem(
-                    title: "In \(section.title)",
+                    title: "In \(sectionTitle)",
                     systemImage: "rectangle.stack",
                     isEnabled: currentCustomSectionID != section.id && !section.isPaused
                 ) {

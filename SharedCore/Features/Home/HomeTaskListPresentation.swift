@@ -778,13 +778,25 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         separateTodosAndRoutinesInTagSections: Bool = false,
         emptyState: HomeTaskListEmptyState
     ) -> Self {
-        let visibleArchivedDisplays = showArchivedTasks ? archivedRoutineDisplays : []
-        let activeDisplays = routineDisplays + awayRoutineDisplays
+        let sanitizedCustomSections = HomeCustomTaskSectionStorage.sanitized(customSections)
+        let backlogSectionIDs = Set(
+            sanitizedCustomSections
+                .filter { $0.surface == .backlog }
+                .map(\.id)
+        )
+        let isAssignedToBacklog: (Display) -> Bool = { display in
+            display.customTaskSectionID.map(backlogSectionIDs.contains) ?? false
+        }
+        let sidebarRoutineDisplays = routineDisplays.filter { !isAssignedToBacklog($0) }
+        let sidebarAwayDisplays = awayRoutineDisplays.filter { !isAssignedToBacklog($0) }
+        let sidebarArchivedDisplays = archivedRoutineDisplays.filter { !isAssignedToBacklog($0) }
+        let visibleArchivedDisplays = showArchivedTasks ? sidebarArchivedDisplays : []
+        let activeDisplays = sidebarRoutineDisplays + sidebarAwayDisplays
         var claimedTaskIDs: Set<UUID> = []
         let pinnedTasks = claimTasks(
             filtering.filteredPinnedTasks(
-                activeDisplays: routineDisplays,
-                awayDisplays: awayRoutineDisplays,
+                activeDisplays: sidebarRoutineDisplays,
+                awayDisplays: sidebarAwayDisplays,
                 archivedDisplays: visibleArchivedDisplays
             ),
             claimedTaskIDs: &claimedTaskIDs
@@ -808,7 +820,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             !$0.isPinned && !claimedTaskIDs.contains($0.taskID)
         }
         let customTaskSections = sidebarCustomTaskSections(
-            from: HomeCustomTaskSectionStorage.sanitized(customSections),
+            from: sanitizedCustomSections,
             displays: unpinnedActiveDisplays,
             filtering: filtering,
             claimedTaskIDs: &claimedTaskIDs
@@ -1034,7 +1046,10 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         filtering: HomeTaskListFiltering<Display>,
         claimedTaskIDs: inout Set<UUID>
     ) -> [SidebarCustomTaskSection] {
-        let topLevelSections = HomeCustomTaskSectionStorage.topLevelSections(in: sections)
+        let topLevelSections = HomeCustomTaskSectionStorage.topLevelSections(
+            in: sections,
+            surface: .radar
+        )
         return topLevelSections.compactMap { section in
             var taskGroups: [HomeTaskListPresentationTaskGroup<Display>] = []
             var allTasks: [Display] = []

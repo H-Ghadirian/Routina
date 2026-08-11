@@ -184,8 +184,17 @@ extension HomeTCAView {
         }
         sourceDisplays += store.boardTodoDisplays
 
+        let backlogSectionIDs = Set(
+            customTaskSections
+                .filter { $0.surface == .backlog }
+                .map(\.id)
+        )
+
         return sourceDisplays.filter { task in
-            seenTaskIDs.insert(task.taskID).inserted
+            guard !(task.customTaskSectionID.map(backlogSectionIDs.contains) ?? false) else {
+                return false
+            }
+            return seenTaskIDs.insert(task.taskID).inserted
         }
     }
 

@@ -77,6 +77,27 @@ enum RoutinaMacSceneFactory {
     }
 
     @MainActor
+    static func makeBacklogRoot(persistence: PersistenceController) -> AnyView {
+        let store = Store(initialState: BacklogFeature.State()) {
+            BacklogFeature()
+        } withDependencies: {
+            $0.modelContext = { @MainActor in persistence.container.mainContext }
+        }
+
+        return AnyView(
+            RoutinaMacAppThemeRoot {
+                AppLockGate {
+                    BacklogMacView(store: store)
+                        .frame(minWidth: 980, minHeight: 620)
+                        .modelContainer(persistence.container)
+                        .awayModeGate()
+                        .sleepModeGate()
+                }
+            }
+        )
+    }
+
+    @MainActor
     static func makeTaskRelationshipReviewRoot(persistence: PersistenceController) -> AnyView {
         let store = Store(initialState: TaskRelationshipReviewFeature.State()) {
             TaskRelationshipReviewFeature()

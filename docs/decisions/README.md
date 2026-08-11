@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0546](0546-separate-mac-backlog-from-the-radar-sidebar.md) refines [0394](0394-add-custom-mac-sidebar-task-sections.md), [0419](0419-nest-custom-subsections-under-super-sections.md), and [0498](0498-filter-task-lists-by-flags.md):** Mac Backlog is a separate window that keeps explicitly assigned sections and automatically surfaced Flag-hidden tasks off the everyday Home sidebar radar.
+
 - **[0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** iOS performance investigations use a validated Release production build on a physical device, numeric-PID or validated all-process Time Profiler traces, separate baseline/scenario windows, and mandatory profiling-artifact cleanup.
 
 - **[0541](0541-keep-ios-search-input-ahead-of-home-presentations.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md):** iOS Search keeps the tab host stable, accepts raw input immediately, and applies non-empty queries to Home presentations only after a short idle debounce; clearing remains immediate.
@@ -613,6 +615,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md) | Separate the Mac Backlog from the Radar Sidebar | Accepted | 2026-08-11 |
 | [0540](0540-group-ios-task-reviews-under-more-destination.md) | Group iOS Task Reviews Under More Destination | Accepted | 2026-08-11 |
 | [0539](0539-offer-ios-task-creation-from-home-empty-states.md) | Offer iOS Task Creation From Home Empty States | Accepted | 2026-08-11 |
 | [0536](0536-match-mac-task-detail-overflow-to-toolbar-chrome.md) | Match Mac Task Detail Overflow to Toolbar Chrome | Accepted | 2026-08-11 |

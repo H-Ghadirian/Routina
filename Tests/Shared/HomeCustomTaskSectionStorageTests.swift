@@ -78,10 +78,41 @@ struct HomeCustomTaskSectionStorageTests {
         #expect(sections.count == 1)
         #expect(sections.first?.id == sectionID)
         #expect(sections.first?.parentSectionID == nil)
+        #expect(sections.first?.surface == .radar)
         #expect(sections.first?.rules.isEmpty == true)
         #expect(sections.first?.colorHex == nil)
         #expect(sections.first?.isPaused == false)
         #expect(sections.first?.pausedTaskIDs == [])
+    }
+
+    @Test
+    func backlogSubsectionsInheritTheirParentSurface() throws {
+        let backlogID = UUID()
+        let subsectionID = UUID()
+        let sections = [
+            HomeCustomTaskSection(
+                id: backlogID,
+                surface: .backlog,
+                title: "Someday",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: subsectionID,
+                parentSectionID: backlogID,
+                surface: .radar,
+                title: "Research",
+                createdAt: nil
+            )
+        ]
+
+        let sanitized = HomeCustomTaskSectionStorage.sanitized(sections)
+        let subsection = try #require(sanitized.first { $0.id == subsectionID })
+
+        #expect(subsection.surface == .backlog)
+        #expect(
+            HomeCustomTaskSectionStorage.topLevelSections(in: sanitized, surface: .backlog)
+                .map(\.id) == [backlogID]
+        )
     }
 
     @Test

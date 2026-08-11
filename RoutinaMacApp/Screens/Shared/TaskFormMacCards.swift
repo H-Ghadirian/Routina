@@ -350,20 +350,23 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                     ForEach(
                         HomeCustomTaskSectionStorage.topLevelSections(in: customTaskSections)
                     ) { section in
+                        let sectionTitle = section.surface == .backlog
+                            ? "Backlog › \(section.title)"
+                            : section.title
                         let subsections = HomeCustomTaskSectionStorage.subsections(
                             of: section.id,
                             in: customTaskSections
                         )
                         if subsections.isEmpty {
                             sidebarPathButton(
-                                title: section.title,
+                                title: sectionTitle,
                                 sectionID: section.id,
                                 isEnabled: !section.isPaused
                             )
                         } else {
-                            Menu(section.title) {
+                            Menu(sectionTitle) {
                                 sidebarPathButton(
-                                    title: "Use \(section.title)",
+                                    title: "Use \(sectionTitle)",
                                     sectionID: section.id,
                                     isEnabled: !section.isPaused
                                 )

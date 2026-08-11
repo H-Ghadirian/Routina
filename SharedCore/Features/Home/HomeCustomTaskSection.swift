@@ -1,5 +1,13 @@
 import Foundation
 
+/// A custom path either keeps a task in the everyday sidebar or moves it to
+/// the separate Backlog workspace.  This is stored on the section rather than
+/// each task so a subsection always follows its parent workspace.
+enum HomeTaskSectionSurface: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case radar
+    case backlog
+}
+
 struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
     var tagNames: [String]
     var tagMatchMode: RoutineTagMatchMode
@@ -111,6 +119,7 @@ struct HomeCustomTaskSectionDraftState: Equatable, Sendable {
 struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendable {
     var id: UUID
     var parentSectionID: UUID?
+    var surface: HomeTaskSectionSurface
     var title: String
     var createdAt: Date?
     var rules: HomeCustomTaskSectionRules
@@ -123,6 +132,7 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
     init(
         id: UUID = UUID(),
         parentSectionID: UUID? = nil,
+        surface: HomeTaskSectionSurface = .radar,
         title: String,
         createdAt: Date? = Date(),
         rules: HomeCustomTaskSectionRules = HomeCustomTaskSectionRules(),
@@ -132,6 +142,7 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
     ) {
         self.id = id
         self.parentSectionID = parentSectionID
+        self.surface = surface
         self.title = HomeCustomTaskSectionStorage.sanitizedTitle(title) ?? "Section"
         self.createdAt = createdAt
         self.rules = rules
@@ -149,6 +160,7 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
     private enum CodingKeys: String, CodingKey {
         case id
         case parentSectionID
+        case surface
         case title
         case createdAt
         case rules
@@ -161,6 +173,7 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         parentSectionID = try container.decodeIfPresent(UUID.self, forKey: .parentSectionID)
+        surface = try container.decodeIfPresent(HomeTaskSectionSurface.self, forKey: .surface) ?? .radar
         title = HomeCustomTaskSectionStorage.sanitizedTitle(
             try container.decode(String.self, forKey: .title)
         ) ?? "Section"
@@ -238,7 +251,15 @@ enum HomeCustomTaskSectionStorage {
         var seenIDs: Set<UUID> = []
         var seenTitleKeysByParent: [UUID?: Set<String>] = [:]
         var sanitizedSections: [HomeCustomTaskSection] = []
-        let candidateTopLevelIDs = Set(sections.filter { $0.parentSectionID == nil }.map(\.id))
+        let candidateTopLevelSections = sections.reduce(into: [UUID: HomeTaskSectionSurface]()) {
+            partialResult,
+            section in
+            guard section.parentSectionID == nil,
+                  partialResult[section.id] == nil else {
+                return
+            }
+            partialResult[section.id] = section.surface
+        }
 
         for section in sections {
             guard seenIDs.insert(section.id).inserted,
@@ -246,8 +267,9 @@ enum HomeCustomTaskSectionStorage {
                 continue
             }
             let parentSectionID = section.parentSectionID.flatMap {
-                candidateTopLevelIDs.contains($0) && $0 != section.id ? $0 : nil
+                candidateTopLevelSections[$0] == nil || $0 == section.id ? nil : $0
             }
+            let surface = parentSectionID.flatMap { candidateTopLevelSections[$0] } ?? section.surface
             let titleKey = normalizedTitleKey(title)
             var siblingTitleKeys = seenTitleKeysByParent[parentSectionID] ?? []
             guard siblingTitleKeys.insert(titleKey).inserted else { continue }
@@ -256,6 +278,7 @@ enum HomeCustomTaskSectionStorage {
                 HomeCustomTaskSection(
                     id: section.id,
                     parentSectionID: parentSectionID,
+                    surface: surface,
                     title: title,
                     createdAt: section.createdAt,
                     rules: section.rules,
@@ -272,14 +295,22 @@ enum HomeCustomTaskSectionStorage {
     static func upsertingSection(
         title rawTitle: String,
         parentSectionID: UUID? = nil,
+        surface: HomeTaskSectionSurface = .radar,
         in sections: [HomeCustomTaskSection],
         now: Date = Date()
     ) -> (section: HomeCustomTaskSection, sections: [HomeCustomTaskSection])? {
         guard let title = sanitizedTitle(rawTitle) else { return nil }
         let sanitizedSections = sanitized(sections)
-        if let parentSectionID,
-           !sanitizedSections.contains(where: { $0.id == parentSectionID && $0.parentSectionID == nil }) {
-            return nil
+        let resolvedSurface: HomeTaskSectionSurface
+        if let parentSectionID {
+            guard let parent = sanitizedSections.first(where: {
+                $0.id == parentSectionID && $0.parentSectionID == nil
+            }) else {
+                return nil
+            }
+            resolvedSurface = parent.surface
+        } else {
+            resolvedSurface = surface
         }
         let titleKey = normalizedTitleKey(title)
 
@@ -291,6 +322,7 @@ enum HomeCustomTaskSectionStorage {
 
         let section = HomeCustomTaskSection(
             parentSectionID: parentSectionID,
+            surface: resolvedSurface,
             title: title,
             createdAt: now
         )
@@ -436,8 +468,13 @@ enum HomeCustomTaskSectionStorage {
         return sanitizedSections
     }
 
-    static func topLevelSections(in sections: [HomeCustomTaskSection]) -> [HomeCustomTaskSection] {
-        sanitized(sections).filter { $0.parentSectionID == nil }
+    static func topLevelSections(
+        in sections: [HomeCustomTaskSection],
+        surface: HomeTaskSectionSurface? = nil
+    ) -> [HomeCustomTaskSection] {
+        sanitized(sections).filter {
+            $0.parentSectionID == nil && (surface == nil || $0.surface == surface)
+        }
     }
 
     static func subsections(

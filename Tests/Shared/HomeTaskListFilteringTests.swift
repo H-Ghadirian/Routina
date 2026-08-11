@@ -1342,6 +1342,42 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationLeavesBacklogAssignedTasksOffTheRadar() {
+        let backlogSectionID = UUID()
+        let backlogTaskID = UUID()
+        let radarTaskID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: backlogTaskID,
+                    name: "Deferred",
+                    customTaskSectionID: backlogSectionID
+                ),
+                TestTaskDisplay(taskID: radarTaskID, name: "Now")
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(
+                    id: backlogSectionID,
+                    surface: .backlog,
+                    title: "Someday",
+                    createdAt: nil
+                )
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.flatMap(\.tasks).map(\.taskID) == [radarTaskID])
+        #expect(!presentation.sections.flatMap(\.tasks).contains(where: { $0.taskID == backlogTaskID }))
+    }
+
+    @Test
     func sidebarPresentationAppliesPersistentTopLevelSectionOrderAndReindexesRows() {
         let pinnedID = UUID()
         let regularID = UUID()
