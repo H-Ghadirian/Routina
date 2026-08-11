@@ -215,19 +215,18 @@ struct StatsFilterButton: View {
     }
 }
 
-struct StatsFiltersSheet: View {
+struct StatsFiltersSheet<TagPicker: View>: View {
     @Binding var advancedQuery: String
     let advancedQueryOptions: HomeAdvancedQueryOptions
     let showsTaskTypeFilter: Bool
     @Binding var taskTypeFilter: StatsTaskTypeFilter
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let importanceUrgencyFilterSummary: String
-    let tagRuleBindings: HomeTagRuleBindings
-    let tagRuleData: HomeTagFilterData
-    let tagRuleActions: HomeTagFilterActions
     let hasActiveFilters: Bool
-    let selectedTags: Set<String>
+    @Binding var selectedTags: Set<String>
+    @Binding var excludedTags: Set<String>
     let availableTags: [String]
+    let tagPicker: () -> TagPicker
     let onClearFilters: () -> Void
     let onClose: () -> Void
     let onSelectedTagsPruned: (Set<String>) -> Void
@@ -241,20 +240,36 @@ struct StatsFiltersSheet: View {
         NavigationStack {
             List {
                 if showsFilterQuerySections {
-                    Section("Query") {
-                        HomeAdvancedQueryBuilder(query: $advancedQuery, options: advancedQueryOptions)
+                    HomeFiltersPickerEntry(
+                        sectionTitle: "Query",
+                        title: "Advanced query",
+                        systemImage: "magnifyingglass",
+                        value: advancedQuery.isEmpty ? "None" : "Active",
+                        pickerTitle: "Advanced Query"
+                    ) {
+                        Section {
+                            HomeAdvancedQueryBuilder(query: $advancedQuery, options: advancedQueryOptions)
+                        }
                     }
                 }
 
                 if showsTaskTypeFilter {
-                    Section("Type") {
-                        Picker("Type", selection: $taskTypeFilter) {
-                            ForEach(StatsTaskTypeFilter.allCases) { filter in
-                                Label(filter.title, systemImage: filter.iosStatsIconName)
-                                    .tag(filter)
+                    HomeFiltersPickerEntry(
+                        sectionTitle: "Type",
+                        title: "Task type",
+                        systemImage: "checklist",
+                        value: taskTypeFilter.title,
+                        pickerTitle: "Task Type"
+                    ) {
+                        Section {
+                            Picker("Task type", selection: $taskTypeFilter) {
+                                ForEach(StatsTaskTypeFilter.allCases) { filter in
+                                    Label(filter.title, systemImage: filter.iosStatsIconName)
+                                        .tag(filter)
+                                }
                             }
+                            .pickerStyle(.inline)
                         }
-                        .pickerStyle(.inline)
                     }
                 }
 
@@ -263,16 +278,10 @@ struct StatsFiltersSheet: View {
                     summary: importanceUrgencyFilterSummary
                 )
 
-                HomeFiltersTagRulesSection(
-                    bindings: tagRuleBindings,
-                    data: tagRuleData,
-                    actions: tagRuleActions,
-                    labels: HomeTagFilterSectionLabels(
-                        includedTitle: "Show stats with",
-                        includedPickerTitle: "Show stats with",
-                        excludedTitle: "Hide stats with",
-                        excludedPickerTitle: "Hide stats with"
-                    )
+                HomeFiltersTagFilterEntrySection(
+                    selectedTags: $selectedTags,
+                    excludedTags: $excludedTags,
+                    tagPicker: tagPicker
                 )
 
                 HomeFiltersClearSection(

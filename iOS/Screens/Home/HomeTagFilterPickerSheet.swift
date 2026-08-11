@@ -1,13 +1,17 @@
 import SwiftUI
 
-struct HomeFiltersTagFilterEntrySection: View {
+struct HomeFiltersTagFilterEntrySection<TagPicker: View>: View {
     @Binding var selectedTags: Set<String>
     @Binding var excludedTags: Set<String>
-    let onShowTagPicker: () -> Void
+    let tagPicker: () -> TagPicker
+
+    @State private var isTagPickerPresented = false
 
     var body: some View {
         Section("Tags") {
-            Button(action: onShowTagPicker) {
+            Button {
+                isTagPickerPresented = true
+            } label: {
                 HStack(spacing: 12) {
                     Label("Filter tags", systemImage: "tag")
                     Spacer()
@@ -25,6 +29,9 @@ struct HomeFiltersTagFilterEntrySection: View {
             .accessibilityLabel("Filter tags")
             .accessibilityValue(selectionSummary)
             .accessibilityHint("Choose tags to show or hide")
+        }
+        .sheet(isPresented: $isTagPickerPresented) {
+            tagPicker()
         }
     }
 
@@ -53,6 +60,7 @@ struct HomeTagFilterPickerSheet: View {
     let data: HomeTagFilterData
     let bindings: HomeTagRuleBindings
     let actions: HomeTagFilterActions
+    let labels: HomeTagFilterPickerLabels
 
     @Environment(\.dismiss) private var dismiss
     @State private var rule: Rule
@@ -64,11 +72,13 @@ struct HomeTagFilterPickerSheet: View {
     init(
         data: HomeTagFilterData,
         bindings: HomeTagRuleBindings,
-        actions: HomeTagFilterActions
+        actions: HomeTagFilterActions,
+        labels: HomeTagFilterPickerLabels = .init()
     ) {
         self.data = data
         self.bindings = bindings
         self.actions = actions
+        self.labels = labels
         _rule = State(initialValue: data.excludedTags.isEmpty ? .include : .exclude)
     }
 
@@ -83,14 +93,9 @@ struct HomeTagFilterPickerSheet: View {
                     }
                     .pickerStyle(.segmented)
 
-                    Picker("Match", selection: matchModeBinding) {
-                        ForEach(RoutineTagMatchMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
+                    tagMatchModePicker
                 } footer: {
-                    Text(rule.footer)
+                    Text(currentRuleFooter)
                 }
 
                 if !selectedTagSelections.isEmpty {
@@ -101,18 +106,10 @@ struct HomeTagFilterPickerSheet: View {
                     }
                 }
 
-                if displayedTagSummaries.isEmpty {
-                    ContentUnavailableView.search(text: searchText)
-                } else {
-                    Section(rule.catalogTitle) {
-                        ForEach(displayedTagSummaries) { summary in
-                            tagRow(summary)
-                        }
-                    }
-                }
+                tagCatalogSection
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Filter Tags")
+            .navigationTitle(labels.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search tags")
             .toolbar {
@@ -226,6 +223,36 @@ struct HomeTagFilterPickerSheet: View {
         }
     }
 
+    private var tagMatchModePicker: some View {
+        Picker("Match", selection: matchModeBinding) {
+            ForEach(RoutineTagMatchMode.allCases) { mode in
+                Text(mode.rawValue).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    @ViewBuilder
+    private var tagCatalogSection: some View {
+        if displayedTagSummaries.isEmpty {
+            ContentUnavailableView.search(text: searchText)
+        } else {
+            Section(currentRuleCatalogTitle) {
+                ForEach(displayedTagSummaries) { summary in
+                    tagRow(summary)
+                }
+            }
+        }
+    }
+
+    private var currentRuleCatalogTitle: String {
+        rule == .include ? labels.includeCatalogTitle : labels.excludeCatalogTitle
+    }
+
+    private var currentRuleFooter: String {
+        rule == .include ? labels.includeFooter : labels.excludeFooter
+    }
+
     private var currentSelectedTags: Set<String> {
         switch rule {
         case .include:
@@ -311,6 +338,28 @@ struct HomeTagFilterPickerSheet: View {
     }
 }
 
+struct HomeTagFilterPickerLabels {
+    let navigationTitle: String
+    let includeCatalogTitle: String
+    let excludeCatalogTitle: String
+    let includeFooter: String
+    let excludeFooter: String
+
+    init(
+        navigationTitle: String = "Filter Tags",
+        includeCatalogTitle: String = "Show tasks with",
+        excludeCatalogTitle: String = "Hide tasks with",
+        includeFooter: String = "Select tags to include in the Home task list.",
+        excludeFooter: String = "Select tags to hide from the Home task list."
+    ) {
+        self.navigationTitle = navigationTitle
+        self.includeCatalogTitle = includeCatalogTitle
+        self.excludeCatalogTitle = excludeCatalogTitle
+        self.includeFooter = includeFooter
+        self.excludeFooter = excludeFooter
+    }
+}
+
 private enum Rule: CaseIterable, Identifiable {
     case include
     case exclude
@@ -321,20 +370,6 @@ private enum Rule: CaseIterable, Identifiable {
         switch self {
         case .include: "Show"
         case .exclude: "Hide"
-        }
-    }
-
-    var catalogTitle: String {
-        switch self {
-        case .include: "Show tasks with"
-        case .exclude: "Hide tasks with"
-        }
-    }
-
-    var footer: String {
-        switch self {
-        case .include: "Select tags to include in the Home task list."
-        case .exclude: "Select tags to hide from the Home task list."
         }
     }
 

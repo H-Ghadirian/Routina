@@ -216,6 +216,23 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func statsAndTimelineFilterControlsUseDedicatedSheets() throws {
+        let statsFilters = try Self.sourceFile("iOS/Screens/Stats/StatsFilterViews.swift")
+        let timeline = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
+
+        #expect(statsFilters.contains("sectionTitle: \"Query\""))
+        #expect(statsFilters.contains("sectionTitle: \"Type\""))
+        #expect(statsFilters.contains("HomeFiltersTagFilterEntrySection"))
+        #expect(!statsFilters.contains("HomeFiltersTagRulesSection("))
+
+        #expect(timeline.contains("sectionTitle: \"Range\""))
+        #expect(timeline.contains("sectionTitle: \"Type\""))
+        #expect(timeline.contains("HomeFiltersMediaSection(selectedMediaFilter: mediaFilterBinding)"))
+        #expect(timeline.contains("HomeFiltersTagFilterEntrySection"))
+        #expect(!timeline.contains("HomeFiltersTagRulesSection("))
+    }
+
+    @Test
     func homeFiltersHideGoalsWhenTheGoalsFeatureIsDisabled() throws {
         let home = try Self.sourceFile("iOS/Screens/Home/HomeTCAView.swift")
         let platform = try Self.sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")

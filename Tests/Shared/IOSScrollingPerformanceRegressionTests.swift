@@ -42,6 +42,9 @@ struct IOSScrollingPerformanceRegressionTests {
         let platform = try Self.sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")
         let filters = try Self.sourceFile("iOS/Screens/Home/HomeFiltersSheetView.swift")
         let picker = try Self.sourceFile("iOS/Screens/Home/HomeTagFilterPickerSheet.swift")
+        let statsFilters = try Self.sourceFile("iOS/Screens/Stats/StatsFilterViews.swift")
+        let stats = try Self.sourceFile("iOS/Screens/Stats/StatsView.swift")
+        let timeline = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
 
         #expect(!platform.contains("tagData: homeTagFilterData"))
         #expect(filters.contains("let tagPicker: () -> TagPicker"))
@@ -53,6 +56,13 @@ struct IOSScrollingPerformanceRegressionTests {
         #expect(picker.contains("data.excludedTags.isEmpty ? .include : .exclude"))
         #expect(picker.contains(".onChange(of: searchText)"))
         #expect(!picker.contains("ForEach(data.tagSummaries"))
+
+        #expect(statsFilters.contains("HomeFiltersTagFilterEntrySection"))
+        #expect(!statsFilters.contains("HomeFiltersTagRulesSection("))
+        #expect(stats.contains("tagPicker: {\n                HomeTagFilterPickerSheet("))
+        #expect(timeline.contains("HomeFiltersTagFilterEntrySection"))
+        #expect(!timeline.contains("HomeFiltersTagRulesSection("))
+        #expect(timeline.contains("tagPicker: {\n                            HomeTagFilterPickerSheet("))
     }
 
     @Test

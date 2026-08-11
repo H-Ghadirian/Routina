@@ -645,12 +645,29 @@ struct StatsView: View {
                 set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
             ),
             importanceUrgencyFilterSummary: importanceUrgencyFilterSummary,
-            tagRuleBindings: tagRuleBindings,
-            tagRuleData: tagRuleData,
-            tagRuleActions: tagRuleActions,
             hasActiveFilters: hasActiveFilters,
-            selectedTags: store.effectiveSelectedTags,
+            selectedTags: Binding(
+                get: { store.effectiveSelectedTags },
+                set: { store.send(.selectedTagsChanged($0)) }
+            ),
+            excludedTags: Binding(
+                get: { store.excludedTags },
+                set: { store.send(.excludedTagsChanged($0)) }
+            ),
             availableTags: availableTags,
+            tagPicker: {
+                HomeTagFilterPickerSheet(
+                    data: tagRuleData,
+                    bindings: tagRuleBindings,
+                    actions: tagRuleActions,
+                    labels: HomeTagFilterPickerLabels(
+                        includeCatalogTitle: "Show stats with",
+                        excludeCatalogTitle: "Hide stats with",
+                        includeFooter: "Select tags to include in Stats.",
+                        excludeFooter: "Select tags to hide from Stats."
+                    )
+                )
+            },
             onClearFilters: { store.send(.clearFilters) },
             onClose: { store.send(.setFilterSheet(false)) },
             onSelectedTagsPruned: { store.send(.selectedTagsChanged($0)) }

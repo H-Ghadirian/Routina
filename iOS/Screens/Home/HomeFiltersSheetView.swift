@@ -8,8 +8,6 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
     let tagPicker: () -> TagPicker
     let tagSuggestions: () -> [String]
 
-    @State private var isTagPickerPresented = false
-
     @AppStorage(
         UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
         store: SharedDefaults.app
@@ -75,9 +73,7 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                 HomeFiltersTagFilterEntrySection(
                     selectedTags: bindings.selectedTags,
                     excludedTags: bindings.excludedTags,
-                    onShowTagPicker: {
-                        isTagPickerPresented = true
-                    }
+                    tagPicker: tagPicker
                 )
                 HomeFiltersFlagSection(
                     includeFlagMatchMode: bindings.includeFlagMatchMode,
@@ -106,8 +102,5 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .sheet(isPresented: $isTagPickerPresented) {
-            tagPicker()
-        }
     }
 }
