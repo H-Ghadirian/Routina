@@ -684,12 +684,7 @@ private enum AppMoreDestination: Hashable {
     case goals
     case stats
     case settings
-    case taskChoice
-    case missingPressureData
-    case missingThinkingNeededData
-    case missingEstimatedDurationData
-    case missingImportanceData
-    case missingUrgencyData
+    case taskReview
 }
 
 private struct AppMoreNavigationView: View {
@@ -720,23 +715,8 @@ private struct AppMoreNavigationView: View {
                 .navigationDestination(isPresented: isDestinationPresented(.settings)) {
                     destinationView(for: .settings)
                 }
-                .navigationDestination(isPresented: isDestinationPresented(.taskChoice)) {
-                    destinationView(for: .taskChoice)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.missingPressureData)) {
-                    destinationView(for: .missingPressureData)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.missingThinkingNeededData)) {
-                    destinationView(for: .missingThinkingNeededData)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.missingEstimatedDurationData)) {
-                    destinationView(for: .missingEstimatedDurationData)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.missingImportanceData)) {
-                    destinationView(for: .missingImportanceData)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.missingUrgencyData)) {
-                    destinationView(for: .missingUrgencyData)
+                .navigationDestination(isPresented: isDestinationPresented(.taskReview)) {
+                    destinationView(for: .taskReview)
                 }
         }
         .onAppear {
@@ -756,57 +736,12 @@ private struct AppMoreNavigationView: View {
     private var moreList: some View {
         List {
             Section {
-                moreButton(destination: .taskChoice) {
+                moreButton(destination: .taskReview) {
                     SettingsNavigationRow(
-                        icon: "sparkles",
+                        icon: "checklist",
                         tint: .blue,
-                        title: "Help me choose",
-                        subtitle: "Learn the priority ties for your conditions"
-                    )
-                }
-
-                moreButton(destination: .missingPressureData) {
-                    SettingsNavigationRow(
-                        icon: "exclamationmark.circle",
-                        tint: .orange,
-                        title: "Add missing Pressure data",
-                        subtitle: "Fill in pressure for tasks"
-                    )
-                }
-
-                moreButton(destination: .missingThinkingNeededData) {
-                    SettingsNavigationRow(
-                        icon: "lightbulb",
-                        tint: .yellow,
-                        title: "Add missing Thinking needed data",
-                        subtitle: "Fill in thinking needed for tasks"
-                    )
-                }
-
-                moreButton(destination: .missingEstimatedDurationData) {
-                    SettingsNavigationRow(
-                        icon: "clock",
-                        tint: .teal,
-                        title: "Add missing time estimates",
-                        subtitle: "Estimate how long tasks will take"
-                    )
-                }
-
-                moreButton(destination: .missingImportanceData) {
-                    SettingsNavigationRow(
-                        icon: "arrow.up.circle",
-                        tint: .purple,
-                        title: "Review Importance",
-                        subtitle: "Set importance for tasks"
-                    )
-                }
-
-                moreButton(destination: .missingUrgencyData) {
-                    SettingsNavigationRow(
-                        icon: "arrow.right.circle",
-                        tint: .pink,
-                        title: "Review Urgency",
-                        subtitle: "Set urgency for tasks"
+                        title: "Review tasks",
+                        subtitle: "Choose what to do next or complete task details"
                     )
                 }
             }
@@ -844,6 +779,83 @@ private struct AppMoreNavigationView: View {
         }
         .listStyle(.insetGrouped)
         .navigationTitle(Tab.more.rawValue)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var taskReviewList: some View {
+        List {
+            Section {
+                NavigationLink {
+                    TaskChoiceView(store: taskChoiceStore)
+                } label: {
+                    SettingsNavigationRow(
+                        icon: "sparkles",
+                        tint: .blue,
+                        title: "Help me choose",
+                        subtitle: "Learn the priority ties for your conditions"
+                    )
+                }
+            }
+
+            Section("Add missing task details") {
+                NavigationLink {
+                    MissingTaskDataView(store: missingPressureDataStore)
+                } label: {
+                    SettingsNavigationRow(
+                        icon: "exclamationmark.circle",
+                        tint: .orange,
+                        title: "Add missing Pressure data",
+                        subtitle: "Fill in pressure for tasks"
+                    )
+                }
+
+                NavigationLink {
+                    MissingTaskDataView(store: missingThinkingNeededDataStore)
+                } label: {
+                    SettingsNavigationRow(
+                        icon: "lightbulb",
+                        tint: .yellow,
+                        title: "Add missing Thinking needed data",
+                        subtitle: "Fill in thinking needed for tasks"
+                    )
+                }
+
+                NavigationLink {
+                    MissingTaskDataView(store: missingEstimatedDurationDataStore)
+                } label: {
+                    SettingsNavigationRow(
+                        icon: "clock",
+                        tint: .teal,
+                        title: "Add missing time estimates",
+                        subtitle: "Estimate how long tasks will take"
+                    )
+                }
+
+                NavigationLink {
+                    MissingTaskMetadataView(store: missingImportanceDataStore)
+                } label: {
+                    SettingsNavigationRow(
+                        icon: "arrow.up.circle",
+                        tint: .purple,
+                        title: "Review Importance",
+                        subtitle: "Set importance for tasks"
+                    )
+                }
+
+                NavigationLink {
+                    MissingTaskMetadataView(store: missingUrgencyDataStore)
+                } label: {
+                    SettingsNavigationRow(
+                        icon: "arrow.right.circle",
+                        tint: .pink,
+                        title: "Review Urgency",
+                        subtitle: "Set urgency for tasks"
+                    )
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Review tasks")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -897,18 +909,8 @@ private struct AppMoreNavigationView: View {
                 .onAppear {
                     selectTabAfterNavigationGesture(.settings)
                 }
-        case .taskChoice:
-            TaskChoiceView(store: taskChoiceStore)
-        case .missingPressureData:
-            MissingTaskDataView(store: missingPressureDataStore)
-        case .missingThinkingNeededData:
-            MissingTaskDataView(store: missingThinkingNeededDataStore)
-        case .missingEstimatedDurationData:
-            MissingTaskDataView(store: missingEstimatedDurationDataStore)
-        case .missingImportanceData:
-            MissingTaskMetadataView(store: missingImportanceDataStore)
-        case .missingUrgencyData:
-            MissingTaskMetadataView(store: missingUrgencyDataStore)
+        case .taskReview:
+            taskReviewList
         }
     }
 

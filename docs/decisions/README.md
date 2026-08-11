@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0540](0540-group-ios-task-reviews-under-more-destination.md) refines [0033](0033-use-app-owned-ios-more-tab.md), [0473](0473-use-guided-ios-missing-metadata-procedures.md), [0475](0475-separate-guided-importance-and-urgency-reviews.md), [0478](0478-add-guided-ios-thinking-needed-review.md), [0480](0480-add-guided-ios-time-estimates.md), and [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md):** Compact iOS More contains one Review tasks entry, which groups Help me choose with the focused missing-detail procedures behind an app-owned navigation path.
+
 - **[0539](0539-offer-ios-task-creation-from-home-empty-states.md):** iOS Home keeps an `Add New Task` action on a truly empty list and offers `Create Task` from a no-match search, seeding Smart Add with the trimmed query only when no known task matches it.
 
 - **[0538](0538-gate-add-task-goals-with-feature-setting.md) supersedes the Add Task exception in [0212](0212-hide-goals-tab-by-default.md):** The Goals setting governs every Goal control, including iOS and macOS Add Task forms.
@@ -607,6 +609,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0540](0540-group-ios-task-reviews-under-more-destination.md) | Group iOS Task Reviews Under More Destination | Accepted | 2026-08-11 |
 | [0539](0539-offer-ios-task-creation-from-home-empty-states.md) | Offer iOS Task Creation From Home Empty States | Accepted | 2026-08-11 |
 | [0536](0536-match-mac-task-detail-overflow-to-toolbar-chrome.md) | Match Mac Task Detail Overflow to Toolbar Chrome | Accepted | 2026-08-11 |
 | [0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md) | Separate Confirmed Assumed Dones in Calendar List | Accepted | 2026-08-10 |

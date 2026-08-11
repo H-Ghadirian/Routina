@@ -2092,6 +2092,23 @@ Given two or more iOS New actions are available
 When the user taps the bottom-bar New action
 Then the feature-gated chooser opens with those available actions
 
+### iOS More Groups Task Reviews
+
+Area: Tasks / UI
+Decision links: [0540](../decisions/0540-group-ios-task-reviews-under-more-destination.md), [0033](../decisions/0033-use-app-owned-ios-more-tab.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/IOSMoreTaskReviewNavigationTests.swift`
+
+Given a person opens compact iOS More
+When they need task-choice or missing-task-detail help
+Then More shows one `Review tasks` entry instead of a separate top-level row for every review
+
+Given the person opens `Review tasks`
+Then `Help me choose` is available first
+And `Add missing task details` groups Pressure, Thinking needed, time estimates, Importance, and Urgency
+And selecting any action uses the same app-owned navigation stack with a normal back path to `Review tasks` and More
+
 ### iOS Home Empty States Offer Task Creation
 
 Area: Home / UI
@@ -2224,7 +2241,7 @@ Coverage:
 - `Tests/Shared/TaskChoiceFeatureTests.swift`
 - `Tests/iOS/AppFeatureTests.swift`
 
-Given a person opens More -> `Help me choose` on compact iOS
+Given a person opens More -> `Review tasks` -> `Help me choose` on compact iOS
 When they select available time, energy, and an immediate intent
 Then Routina finds currently selectable recurring tasks and unfinished,
 uncanceled one-off tasks
@@ -2304,7 +2321,7 @@ Coverage:
 - `Tests/Shared/MissingEstimatedDurationDataFeatureTests.swift`
 - `Tests/iOS/AppFeatureTests.swift`
 
-Given a person opens More -> `Add missing time estimates` on compact iOS
+Given a person opens More -> `Review tasks` -> `Add missing time estimates` on compact iOS
 When the procedure loads
 Then Routina includes repeating tasks with no estimated duration and unfinished,
 uncanceled one-off tasks with no estimate
@@ -2336,7 +2353,7 @@ Coverage:
 
 Given repeating tasks and one-off tasks with Pressure set to `None`, and tasks
 already set to Low, Medium, or High
-When the user opens More -> `Add missing Pressure data` on compact iOS
+When the user opens More -> `Review tasks` -> `Add missing Pressure data` on compact iOS
 Then the repeating `None` tasks and unfinished, uncanceled one-off `None` tasks
 are loaded in title order
 And completed or canceled one-off tasks do not appear
@@ -2395,7 +2412,7 @@ Coverage:
 
 Given repeating tasks and one-off tasks with Thinking needed set to `None`, and
 tasks already set to Low, Medium, or High
-When the user opens More -> `Add missing Thinking needed data` on compact iOS
+When the user opens More -> `Review tasks` -> `Add missing Thinking needed data` on compact iOS
 Then the repeating `None` tasks and unfinished, uncanceled one-off `None` tasks
 are loaded in title order
 And completed or canceled one-off tasks do not appear
@@ -2436,7 +2453,7 @@ Coverage:
 
 Given repeating tasks and unfinished one-off tasks whose own Importance or
 Urgency field is still legacy-default and not explicitly reviewed
-When the user opens More -> `Review Importance` or `Review Urgency` on compact iOS
+When the user opens More -> `Review tasks` -> `Review Importance` or `Review Urgency` on compact iOS
 Then only tasks missing that selected field are loaded in title order
 And completed or canceled one-off tasks do not appear
 And a task reviewed for Importance can still appear in Urgency, and vice versa

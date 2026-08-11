@@ -178,7 +178,8 @@ struct MissingThinkingNeededDataFeatureTests {
         #expect(!viewSource.contains("@Environment(\\.modelContext)"))
         #expect(!viewSource.contains("modelContext.save()"))
         #expect(!viewSource.contains("ScrollView"))
-        #expect(appViewSource.contains("case missingThinkingNeededData"))
+        #expect(appViewSource.contains("case taskReview"))
+        #expect(appViewSource.contains("Section(\"Add missing task details\")"))
         #expect(appViewSource.contains("Add missing Thinking needed data"))
         #expect(appViewSource.contains("MissingTaskDataView(store: missingThinkingNeededDataStore)"))
     }

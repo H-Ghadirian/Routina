@@ -229,7 +229,8 @@ struct MissingEstimatedDurationDataFeatureTests {
         #expect(!viewSource.contains("@Environment(\\.modelContext)"))
         #expect(!viewSource.contains("modelContext.save()"))
         #expect(!viewSource.contains("ScrollView"))
-        #expect(appViewSource.contains("case missingEstimatedDurationData"))
+        #expect(appViewSource.contains("case taskReview"))
+        #expect(appViewSource.contains("Section(\"Add missing task details\")"))
         #expect(appViewSource.contains("Add missing time estimates"))
         #expect(appViewSource.contains("MissingTaskDataView(store: missingEstimatedDurationDataStore)"))
     }
