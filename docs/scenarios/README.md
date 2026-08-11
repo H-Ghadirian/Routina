@@ -145,15 +145,21 @@ And the selected threshold retains its existing matching and persistence behavio
 ### iOS Home Filter Detail Pickers Keep The Main Sheet Compact
 
 Area: Tasks / UI
-Decision links: [0535](../decisions/0535-keep-ios-home-filter-details-in-dedicated-sheets.md), [0498](../decisions/0498-filter-task-lists-by-flags.md)
+Decision links: [0537](../decisions/0537-keep-all-ios-home-filter-options-in-persistent-sheets.md), [0535](../decisions/0535-keep-ios-home-filter-details-in-dedicated-sheets.md), [0498](../decisions/0498-filter-task-lists-by-flags.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
 
 Given iOS Home Filters is open
-When the person needs to change Group rows, Task order, or Filter flags
+When the person needs to change any available filter, including task type,
+visibility, status, tags, flags, or priority
 Then each control first shows its active value as a compact row
 And tapping it opens its dedicated picker sheet without closing Home Filters
+
+Given a Home filter detail picker is open
+When the person changes a picker, segmented control, chip, or toggle
+Then the change applies immediately
+And the detail picker remains open until the person taps Done or dismisses it
 
 Given one or more Flags are selected
 When the person opens Filter flags

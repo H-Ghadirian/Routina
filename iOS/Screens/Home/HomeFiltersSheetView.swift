@@ -21,12 +21,14 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                 if showsFilterQuerySections {
                     HomeFiltersQuerySection(
                         advancedQuery: bindings.advancedQuery,
-                        options: HomeAdvancedQueryOptions(
-                            tags: tagSuggestions(),
-                            places: configuration.place.isPlacesEnabled
-                                ? configuration.place.sortedRoutinePlaces.map(\.displayName)
-                                : []
-                        )
+                        options: {
+                            HomeAdvancedQueryOptions(
+                                tags: tagSuggestions(),
+                                places: configuration.place.isPlacesEnabled
+                                    ? configuration.place.sortedRoutinePlaces.map(\.displayName)
+                                    : []
+                            )
+                        }
                     )
                 }
                 HomeFiltersTaskListModeSection(taskListMode: bindings.taskListMode)

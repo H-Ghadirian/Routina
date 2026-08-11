@@ -2,11 +2,19 @@ import SwiftUI
 
 struct HomeFiltersQuerySection: View {
     @Binding var advancedQuery: String
-    let options: HomeAdvancedQueryOptions
+    let options: () -> HomeAdvancedQueryOptions
 
     var body: some View {
-        Section("Query") {
-            HomeAdvancedQueryBuilder(query: $advancedQuery, options: options)
+        HomeFiltersPickerEntry(
+            sectionTitle: "Query",
+            title: "Advanced query",
+            systemImage: "magnifyingglass",
+            value: advancedQuery.isEmpty ? "None" : "Active",
+            pickerTitle: "Advanced Query"
+        ) {
+            Section {
+                HomeAdvancedQueryBuilder(query: $advancedQuery, options: options())
+            }
         }
     }
 }
@@ -15,22 +23,28 @@ struct HomeFiltersTaskListModeSection: View {
     @Binding var taskListMode: HomeFeature.TaskListMode
 
     var body: some View {
-        Section("Task Type") {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Task type",
-                options: HomeFeature.TaskListMode.allCases,
-                selection: $taskListMode,
-                minimumSegmentWidth: 82,
-                horizontalPadding: 10,
-                fillsAvailableWidth: true
-            ) { mode in
-                Text(mode.title)
-                    .fixedSize(horizontal: true, vertical: false)
+        HomeFiltersPickerEntry(
+            sectionTitle: "Task Type",
+            title: "Task type",
+            systemImage: "checklist",
+            value: taskListMode.title,
+            pickerTitle: "Task Type"
+        ) {
+            Section {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Task type",
+                    options: HomeFeature.TaskListMode.allCases,
+                    selection: $taskListMode,
+                    minimumSegmentWidth: 82,
+                    horizontalPadding: 10,
+                    fillsAvailableWidth: true
+                ) { mode in
+                    Text(mode.title)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+            } footer: {
+                Text("Choose which tasks the Home list should show.")
             }
-
-            Text("Choose which tasks the Home list should show.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 }
@@ -41,15 +55,23 @@ struct HomeFiltersVisibilitySection: View {
     @Binding var showArchivedTasks: Bool
 
     var body: some View {
-        Section {
-            Toggle("Show blocked tasks", isOn: showBlockedTasksBinding)
-                .toggleStyle(.switch)
+        HomeFiltersPickerEntry(
+            sectionTitle: "Visibility",
+            title: "Show tasks",
+            systemImage: "eye",
+            value: visibilitySummary,
+            pickerTitle: "Visibility"
+        ) {
+            Section {
+                Toggle("Show blocked tasks", isOn: showBlockedTasksBinding)
+                    .toggleStyle(.switch)
 
-            Toggle("Hide assumed-done tasks", isOn: $hideAssumedDoneTasks)
-                .toggleStyle(.switch)
+                Toggle("Hide assumed-done tasks", isOn: $hideAssumedDoneTasks)
+                    .toggleStyle(.switch)
 
-            Toggle("Show archived list", isOn: $showArchivedTasks)
-                .toggleStyle(.switch)
+                Toggle("Show archived list", isOn: $showArchivedTasks)
+                    .toggleStyle(.switch)
+            }
         }
     }
 
@@ -60,6 +82,16 @@ struct HomeFiltersVisibilitySection: View {
         )
     }
 
+    private var visibilitySummary: String {
+        var selections = [taskListViewMode == .all ? "All tasks" : "Actionable"]
+        if hideAssumedDoneTasks {
+            selections.append("Assumed-done hidden")
+        }
+        if showArchivedTasks {
+            selections.append("Archived")
+        }
+        return selections.joined(separator: " • ")
+    }
 }
 
 struct HomeFiltersGroupingSection: View {
@@ -88,13 +120,21 @@ struct HomeFiltersCreatedSection: View {
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
 
     var body: some View {
-        Section("Created") {
-            Picker("Created", selection: $createdDateFilter) {
-                ForEach(HomeTaskCreatedDateFilter.allCases) { filter in
-                    Label(filter.title, systemImage: filter.systemImage).tag(filter)
+        HomeFiltersPickerEntry(
+            sectionTitle: "Created",
+            title: "Created",
+            systemImage: "calendar",
+            value: createdDateFilter.title,
+            pickerTitle: "Created"
+        ) {
+            Section {
+                Picker("Created", selection: $createdDateFilter) {
+                    ForEach(HomeTaskCreatedDateFilter.allCases) { filter in
+                        Label(filter.title, systemImage: filter.systemImage).tag(filter)
+                    }
                 }
+                .pickerStyle(.inline)
             }
-            .pickerStyle(.inline)
         }
     }
 }
@@ -144,6 +184,75 @@ struct HomeFiltersDetailEntry: View {
         .accessibilityLabel(title)
         .accessibilityValue(value)
         .accessibilityHint("Open picker")
+    }
+}
+
+struct HomeFiltersPickerEntry<Content: View>: View {
+    let sectionTitle: String
+    let title: String
+    let systemImage: String
+    let value: String
+    let pickerTitle: String
+    private let content: () -> Content
+
+    @State private var isPresented = false
+
+    init(
+        sectionTitle: String,
+        title: String,
+        systemImage: String,
+        value: String,
+        pickerTitle: String,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.sectionTitle = sectionTitle
+        self.title = title
+        self.systemImage = systemImage
+        self.value = value
+        self.pickerTitle = pickerTitle
+        self.content = content
+    }
+
+    var body: some View {
+        Section(sectionTitle) {
+            HomeFiltersDetailEntry(
+                title: title,
+                systemImage: systemImage,
+                value: value
+            ) {
+                isPresented = true
+            }
+        }
+        .sheet(isPresented: $isPresented) {
+            HomeFiltersDetailSheet(title: pickerTitle, content: content)
+        }
+    }
+}
+
+private struct HomeFiltersDetailSheet<Content: View>: View {
+    let title: String
+    let content: () -> Content
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                content()
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
 
@@ -221,13 +330,21 @@ struct HomeFiltersStatusSection: View {
     @Binding var selectedFilter: RoutineListFilter
 
     var body: some View {
-        Section("Status") {
-            Picker("Show \(placeFilterPluralNoun)", selection: $selectedFilter) {
-                ForEach(availableFilters) { filter in
-                    Text(filter.rawValue).tag(filter)
+        HomeFiltersPickerEntry(
+            sectionTitle: "Status",
+            title: "Show \(placeFilterPluralNoun)",
+            systemImage: "line.3.horizontal.decrease.circle",
+            value: selectedFilter.rawValue,
+            pickerTitle: "Status"
+        ) {
+            Section {
+                Picker("Show \(placeFilterPluralNoun)", selection: $selectedFilter) {
+                    ForEach(availableFilters) { filter in
+                        Text(filter.rawValue).tag(filter)
+                    }
                 }
+                .pickerStyle(.inline)
             }
-            .pickerStyle(.inline)
         }
     }
 }
@@ -239,9 +356,17 @@ struct HomeFiltersTodoStateSection: View {
     @ViewBuilder
     var body: some View {
         if taskListMode == .todos || taskListMode == .all {
-            Section("Todo State") {
-                HomeTodoStateFilterChips(selectedTodoStateFilter: $selectedTodoStateFilter)
-                    .padding(.vertical, 4)
+            HomeFiltersPickerEntry(
+                sectionTitle: "Todo State",
+                title: "Todo state",
+                systemImage: "checkmark.circle",
+                value: selectedTodoStateFilter?.displayTitle ?? "All",
+                pickerTitle: "Todo State"
+            ) {
+                Section {
+                    HomeTodoStateFilterChips(selectedTodoStateFilter: $selectedTodoStateFilter)
+                        .padding(.vertical, 4)
+                }
             }
         }
     }
@@ -251,17 +376,25 @@ struct HomeFiltersPressureSection: View {
     @Binding var selectedPressureFilter: RoutineTaskPressure?
 
     var body: some View {
-        Section("Pressure") {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Pressure",
-                options: [Optional<RoutineTaskPressure>.none] + RoutineTaskPressure.allCases.map(Optional.some),
-                selection: $selectedPressureFilter,
-                horizontalPadding: 10,
-                verticalPadding: 8,
-                fillsAvailableWidth: true,
-                maximumSegmentsPerRow: 3
-            ) { pressure in
-                Text(pressure?.title ?? "All")
+        HomeFiltersPickerEntry(
+            sectionTitle: "Pressure",
+            title: "Pressure",
+            systemImage: "gauge.with.dots.needle.33percent",
+            value: selectedPressureFilter?.title ?? "All",
+            pickerTitle: "Pressure"
+        ) {
+            Section {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Pressure",
+                    options: [Optional<RoutineTaskPressure>.none] + RoutineTaskPressure.allCases.map(Optional.some),
+                    selection: $selectedPressureFilter,
+                    horizontalPadding: 10,
+                    verticalPadding: 8,
+                    fillsAvailableWidth: true,
+                    maximumSegmentsPerRow: 3
+                ) { pressure in
+                    Text(pressure?.title ?? "All")
+                }
             }
         }
     }
@@ -271,18 +404,26 @@ struct HomeFiltersThinkingNeededSection: View {
     @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
 
     var body: some View {
-        Section("Thinking needed") {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Thinking needed",
-                options: [Optional<RoutineTaskThinkingNeeded>.none]
-                    + RoutineTaskThinkingNeeded.allCases.map(Optional.some),
-                selection: $selectedThinkingNeededFilter,
-                horizontalPadding: 10,
-                verticalPadding: 8,
-                fillsAvailableWidth: true,
-                maximumSegmentsPerRow: 3
-            ) { level in
-                Text(level?.title ?? "All")
+        HomeFiltersPickerEntry(
+            sectionTitle: "Thinking needed",
+            title: "Thinking needed",
+            systemImage: "brain.head.profile",
+            value: selectedThinkingNeededFilter?.title ?? "All",
+            pickerTitle: "Thinking Needed"
+        ) {
+            Section {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Thinking needed",
+                    options: [Optional<RoutineTaskThinkingNeeded>.none]
+                        + RoutineTaskThinkingNeeded.allCases.map(Optional.some),
+                    selection: $selectedThinkingNeededFilter,
+                    horizontalPadding: 10,
+                    verticalPadding: 8,
+                    fillsAvailableWidth: true,
+                    maximumSegmentsPerRow: 3
+                ) { level in
+                    Text(level?.title ?? "All")
+                }
             }
         }
     }
@@ -292,14 +433,22 @@ struct HomeFiltersGoalSection: View {
     @Binding var selectedGoalFilter: HomeTaskGoalFilter
 
     var body: some View {
-        Section("Goal") {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Goal",
-                options: HomeTaskGoalFilter.allCases,
-                selection: $selectedGoalFilter,
-                fillsAvailableWidth: true
-            ) { filter in
-                Text(filter.title)
+        HomeFiltersPickerEntry(
+            sectionTitle: "Goal",
+            title: "Goal",
+            systemImage: "target",
+            value: selectedGoalFilter.title,
+            pickerTitle: "Goal"
+        ) {
+            Section {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Goal",
+                    options: HomeTaskGoalFilter.allCases,
+                    selection: $selectedGoalFilter,
+                    fillsAvailableWidth: true
+                ) { filter in
+                    Text(filter.title)
+                }
             }
         }
     }
@@ -309,13 +458,21 @@ struct HomeFiltersMediaSection: View {
     @Binding var selectedMediaFilter: TaskMediaFilter
 
     var body: some View {
-        Section("Media") {
-            Picker("Media", selection: $selectedMediaFilter) {
-                ForEach(TaskMediaFilter.allCases) { filter in
-                    Label(filter.title, systemImage: filter.systemImage).tag(filter)
+        HomeFiltersPickerEntry(
+            sectionTitle: "Media",
+            title: "Media",
+            systemImage: "paperclip",
+            value: selectedMediaFilter.title,
+            pickerTitle: "Media"
+        ) {
+            Section {
+                Picker("Media", selection: $selectedMediaFilter) {
+                    ForEach(TaskMediaFilter.allCases) { filter in
+                        Label(filter.title, systemImage: filter.systemImage).tag(filter)
+                    }
                 }
+                .pickerStyle(.inline)
             }
-            .pickerStyle(.inline)
         }
     }
 }
@@ -324,13 +481,21 @@ struct HomeFiltersEstimationSection: View {
     @Binding var selectedEstimationFilter: TaskEstimationFilter
 
     var body: some View {
-        Section("Estimation") {
-            Picker("Duration estimate", selection: $selectedEstimationFilter) {
-                ForEach(TaskEstimationFilter.allCases) { filter in
-                    Label(filter.title, systemImage: filter.systemImage).tag(filter)
+        HomeFiltersPickerEntry(
+            sectionTitle: "Estimation",
+            title: "Duration estimate",
+            systemImage: "timer",
+            value: selectedEstimationFilter.title,
+            pickerTitle: "Estimation"
+        ) {
+            Section {
+                Picker("Duration estimate", selection: $selectedEstimationFilter) {
+                    ForEach(TaskEstimationFilter.allCases) { filter in
+                        Label(filter.title, systemImage: filter.systemImage).tag(filter)
+                    }
                 }
+                .pickerStyle(.inline)
             }
-            .pickerStyle(.inline)
         }
     }
 }
@@ -430,34 +595,51 @@ struct HomeFiltersPlaceSection: View {
     @Binding var hideUnavailableRoutines: Bool
 
     var body: some View {
-        Section("Place") {
-            if configuration.hasSavedPlaces {
-                Picker("Show \(configuration.placeFilterPluralNoun)", selection: $selectedPlaceID) {
-                    Text(configuration.placeFilterAllTitle).tag(Optional<UUID>.none)
-                    ForEach(configuration.sortedRoutinePlaces) { place in
-                        Text(place.displayName).tag(Optional(place.id))
+        HomeFiltersPickerEntry(
+            sectionTitle: "Place",
+            title: "Place",
+            systemImage: "mappin.and.ellipse",
+            value: placeSummary,
+            pickerTitle: "Place"
+        ) {
+            Section {
+                if configuration.hasSavedPlaces {
+                    Picker("Show \(configuration.placeFilterPluralNoun)", selection: $selectedPlaceID) {
+                        Text(configuration.placeFilterAllTitle).tag(Optional<UUID>.none)
+                        ForEach(configuration.sortedRoutinePlaces) { place in
+                            Text(place.displayName).tag(Optional(place.id))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                } else {
+                    Text("No saved places yet")
+                        .foregroundStyle(.secondary)
+                }
+
+                if configuration.hasPlaceLinkedRoutines && configuration.isLocationAuthorized {
+                    Toggle("Hide unavailable \(configuration.placeFilterPluralNoun)", isOn: $hideUnavailableRoutines)
+                }
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(configuration.placeFilterSectionDescription)
+
+                    if configuration.hasPlaceLinkedRoutines {
+                        Text(configuration.locationStatusText)
                     }
                 }
-                .pickerStyle(.menu)
-            } else {
-                Text("No saved places yet")
-                    .foregroundStyle(.secondary)
-            }
-
-            if configuration.hasPlaceLinkedRoutines && configuration.isLocationAuthorized {
-                Toggle("Hide unavailable \(configuration.placeFilterPluralNoun)", isOn: $hideUnavailableRoutines)
-            }
-
-            Text(configuration.placeFilterSectionDescription)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if configuration.hasPlaceLinkedRoutines {
-                Text(configuration.locationStatusText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var placeSummary: String {
+        var selections = [
+            configuration.sortedRoutinePlaces.first(where: { $0.id == selectedPlaceID })?.displayName
+                ?? configuration.placeFilterAllTitle
+        ]
+        if hideUnavailableRoutines {
+            selections.append("Hide unavailable")
+        }
+        return selections.joined(separator: " • ")
     }
 }
 

@@ -182,6 +182,40 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func allHomeFilterControlsUsePersistentDedicatedSheets() throws {
+        let filterSections = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersListSections.swift"
+        )
+        let sharedEntry = try Self.sourceSection(
+            startingAt: "struct HomeFiltersPickerEntry",
+            endingAt: "private struct HomeFiltersGroupingPickerSheet",
+            in: filterSections
+        )
+
+        for sectionTitle in [
+            "Query",
+            "Task Type",
+            "Visibility",
+            "Created",
+            "Status",
+            "Todo State",
+            "Pressure",
+            "Thinking needed",
+            "Goal",
+            "Media",
+            "Estimation",
+            "Place"
+        ] {
+            #expect(filterSections.contains("sectionTitle: \"\(sectionTitle)\""))
+        }
+
+        #expect(sharedEntry.contains(".sheet(isPresented: $isPresented)"))
+        #expect(sharedEntry.contains("private let content: () -> Content"))
+        #expect(sharedEntry.contains("Button(\"Done\")"))
+        #expect(sharedEntry.components(separatedBy: "dismiss()").count == 2)
+    }
+
+    @Test
     func homeFiltersHideGoalsWhenTheGoalsFeatureIsDisabled() throws {
         let home = try Self.sourceFile("iOS/Screens/Home/HomeTCAView.swift")
         let platform = try Self.sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")

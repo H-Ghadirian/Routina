@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md) refines [0535](0535-keep-ios-home-filter-details-in-dedicated-sheets.md), [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md), and [0533](0533-keep-active-ios-filter-tag-rules-visible.md):** iOS Home Filters puts every filter choice in a compact entry and a persistent dedicated sheet, leaving Clear Filters on the primary sheet.
+
 - **[0535](0535-keep-ios-home-filter-details-in-dedicated-sheets.md) refines [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md), [0498](0498-filter-task-lists-by-flags.md), and [0314](0314-remove-status-grouping-and-collapse-deadline-groups.md):** iOS Home Filters keeps Group, Sort, and Flags compact until their dedicated picker sheets open.
 
 - **[0534](0534-present-ios-priority-controls-in-dedicated-sheets.md) refines [0462](0462-use-a-compact-progressive-ios-task-editor.md) and [0424](0424-make-task-detail-priority-optional.md):** iOS task forms and filters keep priority compact until their dedicated Importance and Urgency picker opens.
@@ -104,6 +106,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md) refines [0535](0535-keep-ios-home-filter-details-in-dedicated-sheets.md), [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md), and [0533](0533-keep-active-ios-filter-tag-rules-visible.md):** iOS Home Filters shows each filtering control as a compact current-value entry whose dedicated sheet remains open until the person explicitly closes it; Clear Filters remains on the primary sheet.
 
 - **[0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md) refines [0529](0529-collapse-calendar-list-planned-task-sections.md) and [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` retains a confirmed assumed completion's origin in a distinct, persisted `Confirmed assumed done` section; existing `Dones` remain ordinary recorded completion review.
 
