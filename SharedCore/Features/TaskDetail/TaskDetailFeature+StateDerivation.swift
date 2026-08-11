@@ -7,7 +7,7 @@ extension TaskDetailFeature {
         state.task.resetStaleDailyChecklistProgressIfNeeded(referenceDate: now, calendar: calendar)
         state.refreshChecklistItemsCache()
 
-        if let lastDone = state.task.lastDone {
+        if let lastDone = state.latestRecordedCompletion {
             let lastDoneStart = calendar.startOfDay(for: lastDone)
             state.daysSinceLastRoutine = calendar.dateComponents([.day], from: lastDoneStart, to: nowStart).day ?? 0
         } else {
@@ -360,6 +360,28 @@ extension TaskDetailFeature {
 }
 
 extension TaskDetailFeature.State {
+    /// Uses completion history when a task's legacy summary field has not caught up yet.
+    /// `lastDone` remains the recurrence cursor; this value is presentation-only.
+    var latestRecordedCompletion: Date? {
+        let latestLogCompletion = logs
+            .compactMap { log -> Date? in
+                guard log.kind.resolvesDoneDate else { return nil }
+                return log.timestamp
+            }
+            .max()
+
+        switch (task.lastDone, latestLogCompletion) {
+        case let (taskCompletion?, logCompletion?):
+            return max(taskCompletion, logCompletion)
+        case let (taskCompletion?, nil):
+            return taskCompletion
+        case let (nil, logCompletion?):
+            return logCompletion
+        case (nil, nil):
+            return nil
+        }
+    }
+
     func hasPendingLocalRemoval(on date: Date, calendar: Calendar) -> Bool {
         pendingLocalRemovalDates.contains {
             if RoutineOccurrenceIdentity.isTimestampScoped(for: task),

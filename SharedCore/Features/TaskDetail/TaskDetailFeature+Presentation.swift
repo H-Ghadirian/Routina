@@ -852,7 +852,7 @@ extension TaskDetailFeature.State {
             if isDoneToday {
                 return "Done today"
             }
-            guard task.lastDone != nil else { return "Ready whenever" }
+            guard latestRecordedCompletion != nil else { return "Ready whenever" }
             if daysSinceLastRoutine == 1 {
                 return "1 day since last time"
             }

@@ -1350,6 +1350,43 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func logsLoaded_usesNewerCompletionHistoryForSoftRoutineElapsedTime() async {
+        let now = makeDate("2026-08-12T10:00:00Z")
+        let staleLastDone = makeDate("2026-07-30T09:00:00Z")
+        let recordedCompletion = makeDate("2026-08-10T16:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Call Mom",
+            scheduleMode: .softInterval,
+            interval: 3,
+            recurrenceRule: .interval(days: 3),
+            lastDone: staleLastDone,
+            scheduleAnchor: staleLastDone
+        )
+        let completionLog = RoutineLog(
+            timestamp: recordedCompletion,
+            taskID: task.id,
+            kind: .completed
+        )
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+
+        await store.send(.logsLoaded([completionLog])) {
+            $0.logs = [completionLog]
+            $0.daysSinceLastRoutine = 2
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+
+        #expect(store.state.summaryStatusTitle == "2 days since last time")
+        #expect(store.state.task.lastDone == staleLastDone)
+    }
+
+    @Test
     func logsLoaded_preservesPendingLocalUndoDuringStaleReload() async {
         let now = makeDate("2026-06-19T12:00:00Z")
         let calendar = makeTestCalendar()

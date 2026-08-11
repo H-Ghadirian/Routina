@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0146 — Derive elapsed completion status from recorded history](0146-derive-elapsed-completion-status-from-recorded-history.md)
 - [0145 — Own iOS filter details at stable sheet roots](0145-own-ios-filter-details-at-stable-sheet-roots.md)
 - [0144 — Route optional dashboard prompts through dashboard customization](0144-route-optional-dashboard-prompts-through-dashboard-customization.md)
 - [0143 — Treat device verification as revision-specific](0143-treat-device-verification-as-revision-specific.md)
