@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0550](0550-make-apple-health-stats-prompt-dismissible.md) refines [0096](0096-show-healthkit-movement-stats.md) and [0113](0113-allow-stats-dashboard-reordering.md):** the optional iOS Apple Health connection prompt participates in Stats dashboard customization, so it can be hidden and restored without changing Health permissions.
+
 - **[0549](0549-filter-stats-by-task-flags.md) refines [0498](0498-filter-task-lists-by-flags.md), [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Stats can independently include or exclude task Flags with `All` / `Any` matching through cached task-bound metric snapshots.
 
 - **[0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md) refines [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md) and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** iOS Stats and Timeline keep each available filter in a compact entry with a persistent detail sheet, deferring the full tag catalog to its searchable picker.

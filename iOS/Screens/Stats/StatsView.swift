@@ -266,7 +266,8 @@ struct StatsView: View {
 
     private var availableDashboardItems: [StatsDashboardItem] {
         StatsDashboardItem.allCases.filter { item in
-            (item != .notes || isNotesEnabled)
+            (item != .healthAccess || shouldShowHealthAccessCard)
+                && (item != .notes || isNotesEnabled)
                 && (item != .awayTime || isAwayEnabled)
                 && (item != .sleepTime || isAwayEnabled)
                 && (item != .sleepSessions || isAwayEnabled)
@@ -418,10 +419,6 @@ struct StatsView: View {
 
                 if isEditingDashboard {
                     dashboardEditControls
-                }
-
-                if shouldShowHealthAccessCard {
-                    healthAccessCard
                 }
 
                 if blocks.isEmpty {
@@ -751,6 +748,10 @@ struct StatsView: View {
     @ViewBuilder
     private func dashboardSection(_ item: StatsDashboardItem, metrics: Metrics) -> some View {
         switch item {
+        case .healthAccess:
+            editableDashboardSection(.healthAccess) {
+                healthAccessCard
+            }
         case .hero:
             editableDashboardSection(.hero) {
                 heroSection(metrics: metrics)

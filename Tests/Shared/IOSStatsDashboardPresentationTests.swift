@@ -3,6 +3,18 @@ import Testing
 
 struct IOSStatsDashboardPresentationTests {
     @Test
+    func healthAccessPromptCanBeRemovedFromIOSStats() throws {
+        let iOSStatsSource = try sourceFile("iOS/Screens/Stats/StatsView.swift")
+
+        #expect(iOSStatsSource.contains("(item != .healthAccess || shouldShowHealthAccessCard)"))
+        #expect(
+            iOSStatsSource.contains(
+                "case .healthAccess:\n            editableDashboardSection(.healthAccess) {\n                healthAccessCard\n            }"
+            )
+        )
+    }
+
+    @Test
     func secondaryComparisonReportsAreUnavailableOnIOS() throws {
         let source = try sourceFile("iOS/Screens/Stats/StatsDashboardSupport.swift")
 

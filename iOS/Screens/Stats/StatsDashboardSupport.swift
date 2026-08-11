@@ -15,6 +15,7 @@ enum StatsDashboardBlock: Identifiable {
 }
 
 enum StatsDashboardItem: String, CaseIterable, Identifiable {
+    case healthAccess
     case hero
     case dailyAverage
     case healthSteps
@@ -113,6 +114,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .healthAccess:
+            return "Apple Health"
         case .hero:
             return "Activity overview"
         case .dailyAverage:
@@ -194,6 +197,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
+        case .healthAccess:
+            return "Connect Apple Health to show movement stats."
         case .hero:
             return "The large stats summary at the top of the screen."
         case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
@@ -229,6 +234,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .healthAccess:
+            return "heart.text.square.fill"
         case .hero:
             return "chart.line.uptrend.xyaxis"
         case .dailyAverage:
@@ -318,6 +325,10 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
     }
 
     func isIncluded(in scope: StatsDashboardScope) -> Bool {
+        if self == .healthAccess {
+            return true
+        }
+
         switch scope {
         case .all:
             return true

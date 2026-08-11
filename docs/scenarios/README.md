@@ -2210,6 +2210,21 @@ Then Focus vs completed work and Estimated vs Actual time are unavailable
 And neither report appears in the dashboard or its Add controls
 And the macOS availability policy remains unchanged
 
+### iOS Apple Health Prompt Is Dismissible
+
+Area: Stats / UI
+Decision links: [0550](../decisions/0550-make-apple-health-stats-prompt-dismissible.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/iOS/StatsDashboardItemAvailabilityTests.swift`
+- `Tests/Shared/IOSStatsDashboardPresentationTests.swift`
+
+Given Apple Health has not been connected and Stats shows its connection prompt
+When the person enters Edit mode and removes the Apple Health item
+Then the prompt no longer occupies dashboard space
+And Add to Stats can restore it while it remains relevant
+And changing the prompt's visibility does not change Apple Health permissions
+
 ### iOS Focus 2048 Shows Only Progress-Relevant Details
 
 Area: Stats / UI

@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0144 — Route optional dashboard prompts through dashboard customization](0144-route-optional-dashboard-prompts-through-dashboard-customization.md)
 - [0143 — Treat device verification as revision-specific](0143-treat-device-verification-as-revision-specific.md)
 - [0142 — Bound iOS foreground CloudKit reconciliation](0142-bound-ios-foreground-cloudkit-reconciliation.md)
 - [0141 — Scope the iOS search field to its Search tab](0141-scope-ios-search-field-to-search-tab.md)
