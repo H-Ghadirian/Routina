@@ -129,6 +129,44 @@ extension FocusSession: Identifiable, Equatable {
     }
 }
 
+enum FocusSessionTagRecency {
+    static func orderedAvailableTags(
+        _ availableTags: [String],
+        focusSessions: [FocusSession]
+    ) -> [String] {
+        let latestStartByTag = focusSessions.reduce(into: [String: Date]()) { latestStartByTag, session in
+            guard
+                let tag = session.focusTagName,
+                let normalizedTag = RoutineTag.normalized(tag),
+                let startedAt = session.startedAt
+            else {
+                return
+            }
+
+            latestStartByTag[normalizedTag] = max(
+                latestStartByTag[normalizedTag] ?? .distantPast,
+                startedAt
+            )
+        }
+
+        return availableTags.sorted { lhs, rhs in
+            let lhsMostRecentStart = RoutineTag.normalized(lhs).flatMap { latestStartByTag[$0] }
+            let rhsMostRecentStart = RoutineTag.normalized(rhs).flatMap { latestStartByTag[$0] }
+
+            switch (lhsMostRecentStart, rhsMostRecentStart) {
+            case let (.some(lhsDate), .some(rhsDate)) where lhsDate != rhsDate:
+                return lhsDate > rhsDate
+            case (.some, .none):
+                return true
+            case (.none, .some):
+                return false
+            default:
+                return lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
+            }
+        }
+    }
+}
+
 enum FocusSessionFormatting {
     static func durationText(seconds: TimeInterval) -> String {
         let totalSeconds = max(0, Int(seconds.rounded()))

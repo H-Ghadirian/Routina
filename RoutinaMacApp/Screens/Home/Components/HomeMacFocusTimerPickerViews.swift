@@ -7,11 +7,15 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
     @Environment(\.modelContext) private var modelContext
     let duration: TimeInterval
     let tasks: [RoutineTask]
+    let focusSessions: [FocusSession]
     @State private var searchText = ""
     @State private var selectedTag: String?
 
     private var availableTags: [String] {
-        RoutineTag.allTags(from: tasks.map(\.tags))
+        FocusSessionTagRecency.orderedAvailableTags(
+            RoutineTag.allTags(from: tasks.map(\.tags)),
+            focusSessions: focusSessions
+        )
     }
 
     private var filteredTasks: [RoutineTask] {

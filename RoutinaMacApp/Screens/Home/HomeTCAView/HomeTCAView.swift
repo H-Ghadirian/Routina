@@ -433,7 +433,8 @@ homeContent
                 .sheet(isPresented: homeToolbarFocusPickerPresentedBinding) {
                     HomeMacFocusTimerTaskPickerSheet(
                         duration: homeToolbarFocusPickerDuration ?? 0,
-                        tasks: homeToolbarFocusStartTasks
+                        tasks: homeToolbarFocusStartTasks,
+                        focusSessions: focusSessions
                     )
                 }
                 .task {
