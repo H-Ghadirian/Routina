@@ -90,14 +90,78 @@ struct TaskFormIOSPlanningSection: View {
 struct TaskFormIOSImportanceUrgencySection: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation
+    @State private var isPriorityPickerPresented = false
 
     var body: some View {
-        Section(header: Text("Importance & Urgency")) {
-            ImportanceUrgencyMatrixPicker(importance: model.importance, urgency: model.urgency)
-            Text(presentation.importanceUrgencyDescription(includesDerivedPriority: true))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        Section("Priority") {
+            Button {
+                isPriorityPickerPresented = true
+            } label: {
+                HStack(spacing: 12) {
+                    Label("Set priority", systemImage: "flag")
+                    Spacer()
+                    Text(presentation.derivedPriority.title)
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Set priority")
+            .accessibilityValue(
+                presentation.importanceUrgencyDescription(includesDerivedPriority: true)
+            )
+            .accessibilityHint("Open the importance and urgency picker")
         }
+        .sheet(isPresented: $isPriorityPickerPresented) {
+            TaskFormIOSPriorityPickerSheet(
+                importance: model.importance,
+                urgency: model.urgency,
+                description: presentation.importanceUrgencyDescription(includesDerivedPriority: true)
+            )
+        }
+    }
+}
+
+private struct TaskFormIOSPriorityPickerSheet: View {
+    @Binding var importance: RoutineTaskImportance
+    @Binding var urgency: RoutineTaskUrgency
+    let description: String
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ImportanceUrgencyMatrixPicker(
+                        importance: $importance,
+                        urgency: $urgency,
+                        showsSummaryChip: false
+                    )
+                    .frame(maxWidth: 420, alignment: .leading)
+                } header: {
+                    Text("Importance & Urgency")
+                } footer: {
+                    Text(description)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Priority")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
 

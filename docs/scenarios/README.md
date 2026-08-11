@@ -124,6 +124,55 @@ When they open `Browse all tags`
 Then the searchable tag picker stays open above the task form
 And dismissing the picker returns to the still-open task form with its draft intact
 
+### iOS Priority Pickers Keep Task Forms And Filters Compact
+
+Area: Tasks / UI
+Decision links: [0534](../decisions/0534-present-ios-priority-controls-in-dedicated-sheets.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+
+Given iOS Add Task or Edit Task is open
+When the person needs to change Priority
+Then the main form shows a compact current-priority entry
+And tapping it opens the existing Importance and Urgency matrix in a dedicated sheet
+
+Given an iOS Home, Stats, or Timeline filter screen is open
+When the person opens Filter priority
+Then the filter matrix and `Show all priority levels` reset appear in a dedicated sheet
+And the selected threshold retains its existing matching and persistence behavior
+
+### iOS Home Filter Detail Pickers Keep The Main Sheet Compact
+
+Area: Tasks / UI
+Decision links: [0535](../decisions/0535-keep-ios-home-filter-details-in-dedicated-sheets.md), [0498](../decisions/0498-filter-task-lists-by-flags.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+
+Given iOS Home Filters is open
+When the person needs to change Group rows, Task order, or Filter flags
+Then each control first shows its active value as a compact row
+And tapping it opens its dedicated picker sheet without closing Home Filters
+
+Given one or more Flags are selected
+When the person opens Filter flags
+Then every selected Flag is visible at the top with direct removal
+And the remaining cached Flag options are searchable without filtering them from scrolling rows
+
+### iOS Goal Gate Hides The Home Goal Filter
+
+Area: Tasks / UI
+Decision links: [0212](../decisions/0212-hide-goals-tab-by-default.md), [0227](../decisions/0227-gate-stats-goal-event-reports.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+
+Given `Show Goals tab` is off in iOS Settings
+When the person opens Home Filters
+Then the Goal option is absent
+And enabling the setting restores the existing Goal filter without changing task or Goal data
+
 ### iOS Task Form Tags Preserve Full Labels
 
 Area: Tasks / UI
@@ -733,6 +782,21 @@ Given the iOS Home Filters sheet shows the `All`, `Routines`, and `Todos` task t
 When the Task Type segmented control is laid out at the sheet's compact width
 Then each segment prioritizes its complete text label
 And decorative symbols do not consume the space needed by `Routines`
+
+### iOS Home Tag Filtering Defers Catalog Work
+
+Area: Tasks / Performance
+Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0532](../decisions/0532-defer-ios-home-filter-tag-catalog.md), [0533](../decisions/0533-keep-active-ios-filter-tag-rules-visible.md)
+Coverage:
+- `Tests/Shared/IOSScrollingPerformanceRegressionTests.swift`
+
+Given the iOS Home Filters sheet is open with a large saved-tag catalog
+When the person scrolls its ordinary filter controls without opening Tags
+Then the sheet renders only the compact Tags entry and does not build the full catalog
+And an active hidden tag is named in that compact entry
+When the person opens Tags
+Then a searchable List-based picker prepares the catalog and lets them edit Show or Hide tag rules
+And every selected Show or Hide tag remains visible without changing tabs or searching
 
 ### iOS Collapsible Section Counts Stay Readable
 

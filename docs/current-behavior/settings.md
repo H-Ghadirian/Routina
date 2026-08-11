@@ -54,6 +54,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section. `Sync Now` verifies the manual iCloud download only; local uploads remain asynchronous and must not be reported as completed until CloudKit records a successful export.
 - iOS and macOS production archives compare the current persisted SwiftData model contract with `Config/CloudKit/production-schema.manifest`. A mismatch blocks the archive before TestFlight upload. After deploying the Development schema in CloudKit Dashboard, the release owner explicitly acknowledges it with `script/cloudkit_schema_guard.sh --acknowledge-production-deployment --yes-i-deployed-to-production` and commits the manifest.
 - Estimated iCloud Usage lists only categories whose user-facing feature is available. Tasks, logs, and images remain visible; Places, Goals, Events, Emotions, Notes, and Voice Notes follow their corresponding feature gates.
+- When `Show Goals tab` is off, iOS hides Goals navigation, New Goal, Goals Stats reports, the Goals iCloud category, and the Home Filters Goal option; existing task and goal data remains stored.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
 - Legacy `.json` backup remains compatibility-only for older task, place, goal, and log payloads.
 - Data-wide reset actions show backup/export first when possible.

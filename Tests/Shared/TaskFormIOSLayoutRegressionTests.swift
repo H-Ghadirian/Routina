@@ -109,6 +109,95 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func priorityMatricesOpenInDedicatedIOSSheets() throws {
+        let formSections = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSSections.swift"
+        )
+        let formPrioritySection = try Self.sourceSection(
+            startingAt: "struct TaskFormIOSImportanceUrgencySection",
+            endingAt: "private struct TaskFormIOSPriorityPickerSheet",
+            in: formSections
+        )
+        let homeFilters = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersListSections.swift"
+        )
+        let homePrioritySection = try Self.sourceSection(
+            startingAt: "struct HomeFiltersImportanceUrgencySection",
+            endingAt: "private struct HomeFiltersPriorityPickerSheet",
+            in: homeFilters
+        )
+
+        #expect(formPrioritySection.contains("@State private var isPriorityPickerPresented = false"))
+        #expect(formPrioritySection.contains("Section(\"Priority\")"))
+        #expect(formPrioritySection.contains(".sheet(isPresented: $isPriorityPickerPresented)"))
+        #expect(!formPrioritySection.contains("ImportanceUrgencyMatrixPicker(importance: model.importance"))
+        #expect(formSections.contains("private struct TaskFormIOSPriorityPickerSheet"))
+        #expect(formSections.contains("showsSummaryChip: false"))
+
+        #expect(homePrioritySection.contains("@State private var isPriorityPickerPresented = false"))
+        #expect(homePrioritySection.contains("Label(\"Filter priority\""))
+        #expect(homePrioritySection.contains(".sheet(isPresented: $isPriorityPickerPresented)"))
+        #expect(!homePrioritySection.contains("ImportanceUrgencyMatrixPicker(selectedFilter:"))
+        #expect(homeFilters.contains("private struct HomeFiltersPriorityPickerSheet"))
+    }
+
+    @Test
+    func homeGroupingSortingAndFlagsOpenInDedicatedSheets() throws {
+        let filterSections = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersListSections.swift"
+        )
+        let groupingSection = try Self.sourceSection(
+            startingAt: "struct HomeFiltersGroupingSection",
+            endingAt: "struct HomeFiltersCreatedSection",
+            in: filterSections
+        )
+        let sortSection = try Self.sourceSection(
+            startingAt: "struct HomeFiltersSortSection",
+            endingAt: "struct HomeFiltersDetailEntry",
+            in: filterSections
+        )
+        let flagSection = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersFlagSection.swift"
+        )
+
+        #expect(groupingSection.contains("@State private var isGroupingPickerPresented = false"))
+        #expect(groupingSection.contains(".sheet(isPresented: $isGroupingPickerPresented)"))
+        #expect(!groupingSection.contains(".pickerStyle(.inline)"))
+        #expect(filterSections.contains("private struct HomeFiltersGroupingPickerSheet"))
+
+        #expect(sortSection.contains("@State private var isSortPickerPresented = false"))
+        #expect(sortSection.contains(".sheet(isPresented: $isSortPickerPresented)"))
+        #expect(!sortSection.contains(".pickerStyle(.inline)"))
+        #expect(filterSections.contains("private struct HomeFiltersSortPickerSheet"))
+        #expect(filterSections.contains(".frame(maxWidth: .infinity, minHeight: 44"))
+
+        #expect(flagSection.contains("@State private var isFlagPickerPresented = false"))
+        #expect(flagSection.contains(".sheet(isPresented: $isFlagPickerPresented)"))
+        #expect(flagSection.contains("private struct HomeFiltersFlagPickerSheet"))
+        #expect(flagSection.contains("@State private var displayedFlagOptions"))
+        #expect(flagSection.contains("Section(\"Selected flags\")"))
+        #expect(flagSection.contains(".searchable(text: $searchText, prompt: \"Search flags\")"))
+        #expect(flagSection.contains("refreshDisplayedFlagOptions"))
+        #expect(!flagSection.contains("HomeFilterFlowLayout"))
+    }
+
+    @Test
+    func homeFiltersHideGoalsWhenTheGoalsFeatureIsDisabled() throws {
+        let home = try Self.sourceFile("iOS/Screens/Home/HomeTCAView.swift")
+        let platform = try Self.sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")
+        let configuration = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersSheetConfiguration.swift"
+        )
+        let filters = try Self.sourceFile("iOS/Screens/Home/HomeFiltersSheetView.swift")
+
+        #expect(home.contains("UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue"))
+        #expect(home.contains("var isGoalsEnabled = false"))
+        #expect(configuration.contains("let isGoalsEnabled: Bool"))
+        #expect(platform.contains("isGoalsEnabled: isGoalsEnabled"))
+        #expect(filters.contains("if configuration.isGoalsEnabled {\n                    HomeFiltersGoalSection("))
+    }
+
+    @Test
     func descriptionIsIndependentFromExperimentalNotesAndSupportsTargetedReveal() throws {
         let formSource = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormContentPlatform.swift"

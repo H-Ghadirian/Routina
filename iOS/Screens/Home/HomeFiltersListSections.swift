@@ -64,19 +64,22 @@ struct HomeFiltersVisibilitySection: View {
 
 struct HomeFiltersGroupingSection: View {
     @Binding var routineListSectioningMode: RoutineListSectioningMode
+    @State private var isGroupingPickerPresented = false
 
     var body: some View {
         Section("Group") {
-            Picker("Group rows", selection: $routineListSectioningMode) {
-                ForEach(RoutineListSectioningMode.allCases) { mode in
-                    Label(mode.title, systemImage: mode.systemImage).tag(mode)
-                }
+            HomeFiltersDetailEntry(
+                title: "Group rows",
+                systemImage: "rectangle.3.group",
+                value: routineListSectioningMode.title
+            ) {
+                isGroupingPickerPresented = true
             }
-            .pickerStyle(.inline)
-
-            Text(routineListSectioningMode.subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        }
+        .sheet(isPresented: $isGroupingPickerPresented) {
+            HomeFiltersGroupingPickerSheet(
+                routineListSectioningMode: $routineListSectioningMode
+            )
         }
     }
 }
@@ -98,16 +101,117 @@ struct HomeFiltersCreatedSection: View {
 
 struct HomeFiltersSortSection: View {
     @Binding var taskListSortOrder: HomeTaskListSortOrder
+    @State private var isSortPickerPresented = false
 
     var body: some View {
         Section("Sort") {
-            Picker("Task order", selection: $taskListSortOrder) {
-                ForEach(HomeTaskListSortOrder.allCases) { order in
-                    Label(order.title, systemImage: order.systemImage).tag(order)
+            HomeFiltersDetailEntry(
+                title: "Task order",
+                systemImage: "arrow.up.arrow.down",
+                value: taskListSortOrder.title
+            ) {
+                isSortPickerPresented = true
+            }
+        }
+        .sheet(isPresented: $isSortPickerPresented) {
+            HomeFiltersSortPickerSheet(taskListSortOrder: $taskListSortOrder)
+        }
+    }
+}
+
+struct HomeFiltersDetailEntry: View {
+    let title: String
+    let systemImage: String
+    let value: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Label(title, systemImage: systemImage)
+                Spacer()
+                Text(value)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(value)
+        .accessibilityHint("Open picker")
+    }
+}
+
+private struct HomeFiltersGroupingPickerSheet: View {
+    @Binding var routineListSectioningMode: RoutineListSectioningMode
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Picker("Group rows", selection: $routineListSectioningMode) {
+                        ForEach(RoutineListSectioningMode.allCases) { mode in
+                            Label(mode.title, systemImage: mode.systemImage).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                } footer: {
+                    Text(routineListSectioningMode.subtitle)
                 }
             }
-            .pickerStyle(.inline)
+            .listStyle(.insetGrouped)
+            .navigationTitle("Group rows")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
         }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+private struct HomeFiltersSortPickerSheet: View {
+    @Binding var taskListSortOrder: HomeTaskListSortOrder
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Picker("Task order", selection: $taskListSortOrder) {
+                        ForEach(HomeTaskListSortOrder.allCases) { order in
+                            Label(order.title, systemImage: order.systemImage).tag(order)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Task order")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 }
 
@@ -234,25 +338,89 @@ struct HomeFiltersEstimationSection: View {
 struct HomeFiltersImportanceUrgencySection: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let summary: String
+    @State private var isPriorityPickerPresented = false
 
     var body: some View {
-        Section("Importance & Urgency") {
-            VStack(alignment: .leading, spacing: 12) {
-                Button(selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
-                    selectedImportanceUrgencyFilter = nil
+        Section("Priority") {
+            Button {
+                isPriorityPickerPresented = true
+            } label: {
+                HStack(spacing: 12) {
+                    Label("Filter priority", systemImage: "line.3.horizontal.decrease.circle")
+                    Spacer()
+                    Text(selectionSummary)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                 }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
-
-                ImportanceUrgencyMatrixPicker(selectedFilter: $selectedImportanceUrgencyFilter)
-                    .frame(maxWidth: 420, alignment: .leading)
-
-                Text(summary)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(.rect)
             }
-            .padding(.vertical, 4)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Filter priority")
+            .accessibilityValue(selectionAccessibilityValue)
+            .accessibilityHint("Open the importance and urgency filter")
         }
+        .sheet(isPresented: $isPriorityPickerPresented) {
+            HomeFiltersPriorityPickerSheet(
+                selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
+                summary: summary
+            )
+        }
+    }
+
+    private var selectionSummary: String {
+        guard let selectedImportanceUrgencyFilter else { return "All levels" }
+        return "\(selectedImportanceUrgencyFilter.importance.shortTitle)/\(selectedImportanceUrgencyFilter.urgency.shortTitle)+"
+    }
+
+    private var selectionAccessibilityValue: String {
+        guard let selectedImportanceUrgencyFilter else { return "All priority levels" }
+        return "At least \(selectedImportanceUrgencyFilter.importance.title.lowercased()) importance and \(selectedImportanceUrgencyFilter.urgency.title.lowercased()) urgency"
+    }
+}
+
+private struct HomeFiltersPriorityPickerSheet: View {
+    @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    let summary: String
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button("Show all priority levels") {
+                        selectedImportanceUrgencyFilter = nil
+                    }
+                    .disabled(selectedImportanceUrgencyFilter == nil)
+
+                    ImportanceUrgencyMatrixPicker(
+                        selectedFilter: $selectedImportanceUrgencyFilter,
+                        showsSummaryChip: false
+                    )
+                    .frame(maxWidth: 420, alignment: .leading)
+                } header: {
+                    Text("Priority")
+                } footer: {
+                    Text(summary)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Filter Priority")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
 

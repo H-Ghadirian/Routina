@@ -41,6 +41,9 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0135 — Gate Home Goal filters with feature availability](0135-gate-home-goal-filter-with-feature-availability.md)
+- [0134 — Keep active tag filter rules identifiable](0134-keep-active-tag-filter-rules-identifiable.md)
+- [0133 — Defer large tag catalogs from iOS filter scrolls](0133-defer-large-tag-catalogs-from-ios-filter-scrolls.md)
 - [0132 — Let iOS Flag chips wrap before truncating](0132-let-ios-flag-chips-wrap-before-truncating.md)
 - [0131 — Let compact iOS tag chips wrap before truncating](0131-let-compact-ios-tag-chips-wrap-before-truncating.md)
 - [0130 — Anchor nested pickers to stable form roots](0130-anchor-nested-pickers-to-stable-form-roots.md)

@@ -143,9 +143,22 @@ detailContent
         HomeFiltersSheetView(
             configuration: homeFiltersSheetConfiguration,
             bindings: homeFilterBindings,
-            tagData: homeTagFilterData,
             flagData: homeFlagFilterData,
-            actions: homeFiltersSheetActions
+            actions: homeFiltersSheetActions,
+            tagPicker: {
+                homeTagFilterPicker
+            },
+            tagSuggestions: {
+                homeTagFilterData.tagSummaries.map(\.name)
+            }
+        )
+    }
+
+    private var homeTagFilterPicker: some View {
+        HomeTagFilterPickerSheet(
+            data: homeTagFilterData,
+            bindings: homeFilterBindings.tagRules,
+            actions: homeTagFilterActions
         )
     }
 
@@ -153,6 +166,7 @@ detailContent
         HomeFiltersSheetConfiguration(
             taskListMode: store.taskListMode,
             availableFilters: iOSAvailableFilters,
+            isGoalsEnabled: isGoalsEnabled,
             place: HomeFiltersPlaceConfiguration(
                 sortedRoutinePlaces: isPlacesEnabled ? sortedRoutinePlaces : [],
                 hasSavedPlaces: isPlacesEnabled && hasSavedPlaces,
@@ -171,7 +185,6 @@ detailContent
 
     var homeFiltersSheetActions: HomeFiltersSheetActions {
         HomeFiltersSheetActions(
-            tagActions: homeTagFilterActions,
             flagActions: homeFlagFilterActions,
             onClearOptionalFilters: {
                 store.send(.clearOptionalFilters)

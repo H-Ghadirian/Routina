@@ -196,6 +196,10 @@ extension HomeTCAView {
                 get: { store.hideAssumedDoneTasks },
                 set: { store.send(.hideAssumedDoneTasksChanged($0)) }
             ),
+            selectedTags: Binding(
+                get: { store.selectedTags },
+                set: { store.send(.selectedTagsChanged($0)) }
+            ),
             includeTagMatchMode: Binding(
                 get: { store.includeTagMatchMode },
                 set: { store.send(.includeTagMatchModeChanged($0)) }
@@ -203,6 +207,10 @@ extension HomeTCAView {
             includeFlagMatchMode: Binding(
                 get: { store.includeFlagMatchMode },
                 set: { store.send(.includeFlagMatchModeChanged($0)) }
+            ),
+            excludedTags: Binding(
+                get: { store.excludedTags },
+                set: { store.send(.excludedTagsChanged($0)) }
             ),
             excludeTagMatchMode: Binding(
                 get: { store.excludeTagMatchMode },

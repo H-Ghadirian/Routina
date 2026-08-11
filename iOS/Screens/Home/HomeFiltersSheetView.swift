@@ -1,11 +1,14 @@
 import SwiftUI
 
-struct HomeFiltersSheetView: View {
+struct HomeFiltersSheetView<TagPicker: View>: View {
     let configuration: HomeFiltersSheetConfiguration
     let bindings: HomeFilterBindings
-    let tagData: HomeTagFilterData
     let flagData: HomeFlagFilterData
     let actions: HomeFiltersSheetActions
+    let tagPicker: () -> TagPicker
+    let tagSuggestions: () -> [String]
+
+    @State private var isTagPickerPresented = false
 
     @AppStorage(
         UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
@@ -19,7 +22,7 @@ struct HomeFiltersSheetView: View {
                     HomeFiltersQuerySection(
                         advancedQuery: bindings.advancedQuery,
                         options: HomeAdvancedQueryOptions(
-                            tags: tagData.tagSummaries.map(\.name),
+                            tags: tagSuggestions(),
                             places: configuration.place.isPlacesEnabled
                                 ? configuration.place.sortedRoutinePlaces.map(\.displayName)
                                 : []
@@ -52,9 +55,11 @@ struct HomeFiltersSheetView: View {
                 HomeFiltersThinkingNeededSection(
                     selectedThinkingNeededFilter: bindings.selectedThinkingNeededFilter
                 )
-                HomeFiltersGoalSection(
-                    selectedGoalFilter: bindings.selectedGoalFilter
-                )
+                if configuration.isGoalsEnabled {
+                    HomeFiltersGoalSection(
+                        selectedGoalFilter: bindings.selectedGoalFilter
+                    )
+                }
                 HomeFiltersMediaSection(
                     selectedMediaFilter: bindings.selectedMediaFilter
                 )
@@ -65,10 +70,12 @@ struct HomeFiltersSheetView: View {
                     selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter,
                     summary: configuration.importanceUrgencySummary
                 )
-                HomeFiltersTagRulesSection(
-                    bindings: bindings.tagRules,
-                    data: tagData,
-                    actions: actions.tagActions
+                HomeFiltersTagFilterEntrySection(
+                    selectedTags: bindings.selectedTags,
+                    excludedTags: bindings.excludedTags,
+                    onShowTagPicker: {
+                        isTagPickerPresented = true
+                    }
                 )
                 HomeFiltersFlagSection(
                     includeFlagMatchMode: bindings.includeFlagMatchMode,
@@ -97,5 +104,8 @@ struct HomeFiltersSheetView: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $isTagPickerPresented) {
+            tagPicker()
+        }
     }
 }

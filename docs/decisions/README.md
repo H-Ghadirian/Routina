@@ -19,6 +19,14 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0535](0535-keep-ios-home-filter-details-in-dedicated-sheets.md) refines [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md), [0498](0498-filter-task-lists-by-flags.md), and [0314](0314-remove-status-grouping-and-collapse-deadline-groups.md):** iOS Home Filters keeps Group, Sort, and Flags compact until their dedicated picker sheets open.
+
+- **[0534](0534-present-ios-priority-controls-in-dedicated-sheets.md) refines [0462](0462-use-a-compact-progressive-ios-task-editor.md) and [0424](0424-make-task-detail-priority-optional.md):** iOS task forms and filters keep priority compact until their dedicated Importance and Urgency picker opens.
+
+- **[0533](0533-keep-active-ios-filter-tag-rules-visible.md) refines [0532](0532-defer-ios-home-filter-tag-catalog.md):** iOS Home Filters names active tag rules in its compact entry and keeps every selected Show/Hide tag visible at the top of the dedicated picker.
+
+- **[0532](0532-defer-ios-home-filter-tag-catalog.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** iOS Home Filters keeps tag selection compact and defers the searchable full catalog until the person opens its dedicated Tag picker.
+
 - **[0531](0531-keep-ios-task-tag-selection-compact-and-searchable.md) refines [0426](0426-collapse-mac-task-form-tag-suggestions.md):** iOS Add Task and Edit Task keep selected, related, and six top saved tags inline, while a deliberate searchable picker contains the full catalog without rebuilding it from the picker’s scrolling render path.
 
 - **[0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md) refines [0529](0529-collapse-calendar-list-planned-task-sections.md) and [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` keeps user-confirmed assumed completions in their own persisted `Confirmed assumed done` section instead of mixing them into `Dones`.

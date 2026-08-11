@@ -35,6 +35,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var isPlacesEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isGoalsEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
     ) var isNotesEnabled = false

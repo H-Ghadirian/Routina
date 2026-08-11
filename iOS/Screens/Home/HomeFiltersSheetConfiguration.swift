@@ -3,6 +3,7 @@ import Foundation
 struct HomeFiltersSheetConfiguration {
     let taskListMode: HomeFeature.TaskListMode
     let availableFilters: [RoutineListFilter]
+    let isGoalsEnabled: Bool
     let place: HomeFiltersPlaceConfiguration
     let importanceUrgencySummary: String
     let hasActiveOptionalFilters: Bool
@@ -21,7 +22,6 @@ struct HomeFiltersPlaceConfiguration {
 }
 
 struct HomeFiltersSheetActions {
-    let tagActions: HomeTagFilterActions
     let flagActions: HomeFlagFilterActions
     let onClearOptionalFilters: () -> Void
     let onDismiss: () -> Void

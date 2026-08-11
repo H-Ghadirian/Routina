@@ -21,6 +21,24 @@ struct IOSScrollingPerformanceRegressionTests {
     }
 
     @Test
+    func homeDefersItsTagCatalogUntilTheTagPickerOpens() throws {
+        let platform = try Self.sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")
+        let filters = try Self.sourceFile("iOS/Screens/Home/HomeFiltersSheetView.swift")
+        let picker = try Self.sourceFile("iOS/Screens/Home/HomeTagFilterPickerSheet.swift")
+
+        #expect(!platform.contains("tagData: homeTagFilterData"))
+        #expect(filters.contains("let tagPicker: () -> TagPicker"))
+        #expect(filters.contains("HomeFiltersTagFilterEntrySection"))
+        #expect(!filters.contains("HomeFiltersTagRulesSection("))
+        #expect(picker.contains("@State private var displayedTagSummaries"))
+        #expect(picker.contains("@State private var selectedTagSelections"))
+        #expect(picker.contains("Section(\"Selected tags\")"))
+        #expect(picker.contains("data.excludedTags.isEmpty ? .include : .exclude"))
+        #expect(picker.contains(".onChange(of: searchText)"))
+        #expect(!picker.contains("ForEach(data.tagSummaries"))
+    }
+
+    @Test
     func timelineRowsConsumeCachedRoutingAndLookupArtifacts() throws {
         let feature = try Self.sourceFile("SharedCore/Features/Timeline/TimelineFeature.swift")
         let view = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
