@@ -168,7 +168,11 @@ struct StatsView: View {
             selectedTags: store.effectiveSelectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
             excludedTags: store.excludedTags,
-            excludeTagMatchMode: store.excludeTagMatchMode
+            excludeTagMatchMode: store.excludeTagMatchMode,
+            selectedFlags: store.selectedFlags,
+            includeFlagMatchMode: store.includeFlagMatchMode,
+            excludedFlags: store.excludedFlags,
+            excludeFlagMatchMode: store.excludeFlagMatchMode
         )
         .filteredTasks(from: store.tasks)
     }

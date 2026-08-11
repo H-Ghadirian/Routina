@@ -34,6 +34,15 @@ struct HomeMacStatsSidebarView: View {
     let tagSelectionSummary: String
     let tagCount: (String) -> Int
     let onToggleExcludedTag: (String) -> Void
+    let availableFlags: [String]
+    let selectedFlags: Set<String>
+    let includeFlagMatchMode: RoutineTagMatchMode
+    let excludedFlags: Set<String>
+    let excludeFlagMatchMode: RoutineTagMatchMode
+    let onIncludeFlagMatchModeChange: (RoutineTagMatchMode) -> Void
+    let onExcludeFlagMatchModeChange: (RoutineTagMatchMode) -> Void
+    let onToggleIncludedFlag: (String) -> Void
+    let onToggleExcludedFlag: (String) -> Void
 
     var body: some View {
         ScrollView {
@@ -96,6 +105,20 @@ struct HomeMacStatsSidebarView: View {
                         tagCount: tagCount,
                         onToggleExcludedTag: onToggleExcludedTag,
                         onExcludeTagMatchModeChange: onExcludeTagMatchModeChange
+                    )
+                }
+
+                if !availableFlags.isEmpty {
+                    HomeMacStatsFlagFilterSection(
+                        availableFlags: availableFlags,
+                        selectedFlags: selectedFlags,
+                        includeFlagMatchMode: includeFlagMatchMode,
+                        excludedFlags: excludedFlags,
+                        excludeFlagMatchMode: excludeFlagMatchMode,
+                        onIncludeFlagMatchModeChange: onIncludeFlagMatchModeChange,
+                        onExcludeFlagMatchModeChange: onExcludeFlagMatchModeChange,
+                        onToggleIncludedFlag: onToggleIncludedFlag,
+                        onToggleExcludedFlag: onToggleExcludedFlag
                     )
                 }
             }

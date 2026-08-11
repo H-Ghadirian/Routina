@@ -20,6 +20,10 @@ struct StatsFilterPresentation {
     let includeTagMatchMode: RoutineTagMatchMode
     let excludedTags: Set<String>
     let excludeTagMatchMode: RoutineTagMatchMode
+    var selectedFlags: Set<String> = []
+    var includeFlagMatchMode: RoutineTagMatchMode = .all
+    var excludedFlags: Set<String> = []
+    var excludeFlagMatchMode: RoutineTagMatchMode = .any
     let selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let availableTags: [String]
     let relatedTagRules: [RoutineRelatedTagRule]
@@ -35,6 +39,8 @@ struct StatsFilterPresentation {
             advancedQuery: advancedQuery,
             selectedTags: selectedTags,
             excludedTags: excludedTags,
+            selectedFlags: selectedFlags,
+            excludedFlags: excludedFlags,
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
         )
     }
@@ -45,6 +51,8 @@ struct StatsFilterPresentation {
             advancedQuery: advancedQuery,
             selectedTags: selectedTags,
             excludedTags: excludedTags,
+            selectedFlags: selectedFlags,
+            excludedFlags: excludedFlags,
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
         )
     }

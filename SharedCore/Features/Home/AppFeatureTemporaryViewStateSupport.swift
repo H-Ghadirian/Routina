@@ -7,6 +7,10 @@ protocol AppStatsFeatureTemporaryViewState {
     var includeTagMatchMode: RoutineTagMatchMode { get set }
     var excludedTags: Set<String> { get set }
     var excludeTagMatchMode: RoutineTagMatchMode { get set }
+    var selectedFlags: Set<String> { get set }
+    var includeFlagMatchMode: RoutineTagMatchMode { get set }
+    var excludedFlags: Set<String> { get set }
+    var excludeFlagMatchMode: RoutineTagMatchMode { get set }
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? { get set }
     var taskTypeFilter: StatsTaskTypeFilter { get set }
     var advancedQuery: String { get set }
@@ -87,6 +91,10 @@ enum AppFeatureTemporaryViewStateSupport {
         state.stats.includeTagMatchMode = .all
         state.stats.excludedTags = []
         state.stats.excludeTagMatchMode = .any
+        state.stats.selectedFlags = []
+        state.stats.includeFlagMatchMode = .all
+        state.stats.excludedFlags = []
+        state.stats.excludeFlagMatchMode = .any
         state.stats.selectedImportanceUrgencyFilter = nil
         state.stats.taskTypeFilter = .all
         state.stats.advancedQuery = ""
@@ -144,6 +152,10 @@ enum AppFeatureTemporaryViewStateSupport {
             statsIncludeTagMatchMode: state.stats.includeTagMatchMode,
             statsExcludedTags: state.stats.excludedTags,
             statsExcludeTagMatchMode: state.stats.excludeTagMatchMode,
+            statsSelectedFlags: state.stats.selectedFlags,
+            statsIncludeFlagMatchMode: state.stats.includeFlagMatchMode,
+            statsExcludedFlags: state.stats.excludedFlags,
+            statsExcludeFlagMatchMode: state.stats.excludeFlagMatchMode,
             statsSelectedImportanceUrgencyFilter: state.stats.selectedImportanceUrgencyFilter,
             statsTaskTypeFilterRawValue: state.stats.taskTypeFilter.rawValue,
             statsAdvancedQuery: state.stats.advancedQuery
@@ -181,6 +193,10 @@ enum AppFeatureTemporaryViewStateSupport {
         state.includeTagMatchMode = persistedState.statsIncludeTagMatchMode
         state.excludedTags = persistedState.statsExcludedTags
         state.excludeTagMatchMode = persistedState.statsExcludeTagMatchMode
+        state.selectedFlags = persistedState.statsSelectedFlags
+        state.includeFlagMatchMode = persistedState.statsIncludeFlagMatchMode
+        state.excludedFlags = persistedState.statsExcludedFlags
+        state.excludeFlagMatchMode = persistedState.statsExcludeFlagMatchMode
         state.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(
             persistedState.statsSelectedImportanceUrgencyFilter
         )

@@ -98,6 +98,25 @@ struct TabFilterStateManagerTests {
     }
 
     @Test
+    func temporaryViewStateRoundTripPreservesStatsFlagFilters() throws {
+        var state = TemporaryViewState.default
+        state.statsSelectedFlags = ["Focus", "Tracking"]
+        state.statsIncludeFlagMatchMode = .all
+        state.statsExcludedFlags = ["Assumed done"]
+        state.statsExcludeFlagMatchMode = .any
+
+        let decoded = try JSONDecoder().decode(
+            TemporaryViewState.self,
+            from: JSONEncoder().encode(state)
+        )
+
+        #expect(decoded.statsSelectedFlags == ["Focus", "Tracking"])
+        #expect(decoded.statsIncludeFlagMatchMode == .all)
+        #expect(decoded.statsExcludedFlags == ["Assumed done"])
+        #expect(decoded.statsExcludeFlagMatchMode == .any)
+    }
+
+    @Test
     func saveAndRestore_preservesNilFieldsCorrectly() {
         var manager = TabFilterStateManager()
 

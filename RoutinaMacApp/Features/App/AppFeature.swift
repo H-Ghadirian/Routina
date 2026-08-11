@@ -187,6 +187,10 @@ struct AppFeature {
                  .stats(.selectedImportanceUrgencyFilterChanged),
                  .stats(.excludedTagsChanged),
                  .stats(.excludeTagMatchModeChanged),
+                 .stats(.selectedFlagsChanged),
+                 .stats(.includeFlagMatchModeChanged),
+                 .stats(.excludedFlagsChanged),
+                 .stats(.excludeFlagMatchModeChanged),
                  .stats(.clearFilters):
                 persistTemporaryViewState(state)
                 return .none
@@ -324,11 +328,17 @@ struct StatsFeature {
         var includeTagMatchMode: RoutineTagMatchMode = .all
         var excludedTags: Set<String> = []
         var excludeTagMatchMode: RoutineTagMatchMode = .any
+        var selectedFlags: Set<String> = []
+        var includeFlagMatchMode: RoutineTagMatchMode = .all
+        var excludedFlags: Set<String> = []
+        var excludeFlagMatchMode: RoutineTagMatchMode = .any
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var advancedQuery: String = ""
         var availableTags: [String] = []
         var tagSummaries: [RoutineTagSummary] = []
         var availableExcludeTags: [String] = []
+        var availableFlags: [String] = []
+        var availableExcludeFlags: [String] = []
         var tagColors: [String: String] = [:]
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var taskCountForSelectedTypeFilter: Int = 0
@@ -351,6 +361,8 @@ struct StatsFeature {
                 || !advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 || !effectiveSelectedTags.isEmpty
                 || !excludedTags.isEmpty
+                || !selectedFlags.isEmpty
+                || !excludedFlags.isEmpty
                 || selectedImportanceUrgencyFilter != nil
         }
 
@@ -402,6 +414,10 @@ struct StatsFeature {
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case excludedTagsChanged(Set<String>)
         case excludeTagMatchModeChanged(RoutineTagMatchMode)
+        case selectedFlagsChanged(Set<String>)
+        case includeFlagMatchModeChanged(RoutineTagMatchMode)
+        case excludedFlagsChanged(Set<String>)
+        case excludeFlagMatchModeChanged(RoutineTagMatchMode)
         case gitHubStatsRefreshRequested
         case gitHubStatsLoaded(GitHubStatsSnapshot)
         case gitHubStatsFailed(String)
@@ -582,6 +598,26 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .selectedFlagsChanged(flags):
+                state.selectedFlags = flags
+                refreshDerivedState(&state)
+                return .none
+
+            case let .includeFlagMatchModeChanged(mode):
+                state.includeFlagMatchMode = mode
+                refreshDerivedState(&state)
+                return .none
+
+            case let .excludedFlagsChanged(flags):
+                state.excludedFlags = flags
+                refreshDerivedState(&state)
+                return .none
+
+            case let .excludeFlagMatchModeChanged(mode):
+                state.excludeFlagMatchMode = mode
+                refreshDerivedState(&state)
+                return .none
+
             case .gitHubStatsRefreshRequested:
                 state.isGitFeaturesEnabled = appSettingsClient.gitFeaturesEnabled()
                 guard state.isGitFeaturesEnabled else {
@@ -618,6 +654,10 @@ struct StatsFeature {
                 state.includeTagMatchMode = .all
                 state.excludedTags = []
                 state.excludeTagMatchMode = .any
+                state.selectedFlags = []
+                state.includeFlagMatchMode = .all
+                state.excludedFlags = []
+                state.excludeFlagMatchMode = .any
                 state.selectedImportanceUrgencyFilter = nil
                 state.advancedQuery = ""
                 refreshDerivedState(&state)
@@ -759,6 +799,10 @@ struct StatsFeature {
             includeTagMatchMode: state.includeTagMatchMode,
             excludedTags: state.excludedTags,
             excludeTagMatchMode: state.excludeTagMatchMode,
+            selectedFlags: state.selectedFlags,
+            includeFlagMatchMode: state.includeFlagMatchMode,
+            excludedFlags: state.excludedFlags,
+            excludeFlagMatchMode: state.excludeFlagMatchMode,
             tagColors: state.tagColors,
             referenceDate: state.selectedRange.referenceDate(relativeTo: now),
             calendar: calendar
@@ -766,8 +810,12 @@ struct StatsFeature {
         state.availableTags = derivedState.availableTags
         state.setSelectedTags(derivedState.selectedTags)
         state.excludedTags = derivedState.excludedTags
+        state.selectedFlags = derivedState.selectedFlags
+        state.excludedFlags = derivedState.excludedFlags
         state.tagSummaries = derivedState.tagSummaries
         state.availableExcludeTags = derivedState.availableExcludeTags
+        state.availableFlags = derivedState.availableFlags
+        state.availableExcludeFlags = derivedState.availableExcludeFlags
         state.taskCountForSelectedTypeFilter = derivedState.taskCountForSelectedTypeFilter
         state.filteredTaskCount = derivedState.filteredTaskCount
         state.metrics = derivedState.metrics

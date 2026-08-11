@@ -151,6 +151,10 @@ struct StatsFeatureDerivedState: Equatable {
     var excludedTags: Set<String> = []
     var tagSummaries: [RoutineTagSummary] = []
     var availableExcludeTags: [String] = []
+    var availableFlags: [String] = []
+    var selectedFlags: Set<String> = []
+    var excludedFlags: Set<String> = []
+    var availableExcludeFlags: [String] = []
     var taskCountForSelectedTypeFilter: Int = 0
     var filteredTaskCount: Int = 0
     var metrics = StatsFeatureMetrics()
@@ -179,6 +183,10 @@ enum StatsFeatureDerivedStateBuilder {
         includeTagMatchMode: RoutineTagMatchMode,
         excludedTags: Set<String>,
         excludeTagMatchMode: RoutineTagMatchMode,
+        selectedFlags: Set<String> = [],
+        includeFlagMatchMode: RoutineTagMatchMode = .all,
+        excludedFlags: Set<String> = [],
+        excludeFlagMatchMode: RoutineTagMatchMode = .any,
         tagColors: [String: String],
         referenceDate: Date,
         calendar: Calendar
@@ -232,6 +240,12 @@ enum StatsFeatureDerivedStateBuilder {
             !sanitizedSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
         }
         let sanitizedExcludedTags = excludedTags.filter { RoutineTag.contains($0, in: availableExcludeTags) }
+        let availableFlags = RoutineFlag.allFlags(from: tasksMatchingQuery.map(\.flags))
+        let sanitizedSelectedFlags = selectedFlags.filter { RoutineFlag.contains($0, in: availableFlags) }
+        let availableExcludeFlags = availableFlags.filter { flag in
+            !sanitizedSelectedFlags.contains { RoutineFlag.contains($0, in: [flag]) }
+        }
+        let sanitizedExcludedFlags = excludedFlags.filter { RoutineFlag.contains($0, in: availableExcludeFlags) }
         let sidebarAvailableExcludeTags = RoutineTag.allTags(
             from: tasksMatchingTaskTypeAndMatrixFilters.filter { task in
                 HomeDisplayFilterSupport.matchesSelectedTags(
@@ -247,18 +261,25 @@ enum StatsFeatureDerivedStateBuilder {
             tagColors,
             to: RoutineTag.summaries(from: tasksMatchingTaskTypeAndMatrixFilters)
         )
-        let filteredTasks = tagFilteredTasks(
+        let filteredTasks = filteredTasks(
             tasksMatchingQuery,
             selectedTags: sanitizedSelectedTags,
             includeTagMatchMode: includeTagMatchMode,
             excludedTags: sanitizedExcludedTags,
-            excludeTagMatchMode: excludeTagMatchMode
+            excludeTagMatchMode: excludeTagMatchMode,
+            selectedFlags: sanitizedSelectedFlags,
+            includeFlagMatchMode: includeFlagMatchMode,
+            excludedFlags: sanitizedExcludedFlags,
+            excludeFlagMatchMode: excludeFlagMatchMode
         )
         let filteredTaskIDs = Set(filteredTasks.map(\.id))
         let filteredLogs = logs.filter { filteredTaskIDs.contains($0.taskID) }
         let filteredFocusSessions = focusSessions.filter { session in
             if session.isUnassigned {
-                return true
+                return sanitizedSelectedFlags.isEmpty
+            }
+            if !sanitizedSelectedFlags.isEmpty || !sanitizedExcludedFlags.isEmpty {
+                return filteredTaskIDs.contains(session.taskID)
             }
             if let tagName = session.focusTagName {
                 return HomeDisplayFilterSupport.matchesSelectedTags(
@@ -285,12 +306,16 @@ enum StatsFeatureDerivedStateBuilder {
                 referenceDate: referenceDate,
                 calendar: calendar
             )
-            createdChartFilteredTasks = tagFilteredTasks(
+            createdChartFilteredTasks = Self.filteredTasks(
                 tasksMatchingCreatedQuery,
                 selectedTags: sanitizedSelectedTags,
                 includeTagMatchMode: includeTagMatchMode,
                 excludedTags: sanitizedExcludedTags,
-                excludeTagMatchMode: excludeTagMatchMode
+                excludeTagMatchMode: excludeTagMatchMode,
+                selectedFlags: sanitizedSelectedFlags,
+                includeFlagMatchMode: includeFlagMatchMode,
+                excludedFlags: sanitizedExcludedFlags,
+                excludeFlagMatchMode: excludeFlagMatchMode
             )
         } else {
             createdChartFilteredTasks = []
@@ -527,6 +552,10 @@ enum StatsFeatureDerivedStateBuilder {
             excludedTags: sanitizedExcludedTags,
             tagSummaries: tagSummaries,
             availableExcludeTags: sidebarAvailableExcludeTags,
+            availableFlags: availableFlags,
+            selectedFlags: sanitizedSelectedFlags,
+            excludedFlags: sanitizedExcludedFlags,
+            availableExcludeFlags: availableExcludeFlags,
             taskCountForSelectedTypeFilter: tasksMatchingTaskTypeAndMatrixFilters.count,
             filteredTaskCount: filteredTasks.count,
             metrics: StatsFeatureMetrics(
@@ -634,12 +663,16 @@ enum StatsFeatureDerivedStateBuilder {
         return tasksMatchingMatrixFilter.filter { queryMatchedTaskIDs.contains($0.id) }
     }
 
-    private static func tagFilteredTasks(
+    private static func filteredTasks(
         _ tasks: [RoutineTask],
         selectedTags: Set<String>,
         includeTagMatchMode: RoutineTagMatchMode,
         excludedTags: Set<String>,
-        excludeTagMatchMode: RoutineTagMatchMode
+        excludeTagMatchMode: RoutineTagMatchMode,
+        selectedFlags: Set<String>,
+        includeFlagMatchMode: RoutineTagMatchMode,
+        excludedFlags: Set<String>,
+        excludeFlagMatchMode: RoutineTagMatchMode
     ) -> [RoutineTask] {
         let includeFilteredTasks = tasks.filter { task in
             HomeDisplayFilterSupport.matchesSelectedTags(
@@ -649,11 +682,27 @@ enum StatsFeatureDerivedStateBuilder {
             )
         }
 
-        return includeFilteredTasks.filter { task in
+        let tagFilteredTasks = includeFilteredTasks.filter { task in
             HomeDisplayFilterSupport.matchesExcludedTags(
                 excludedTags,
                 mode: excludeTagMatchMode,
                 in: task.tags
+            )
+        }
+
+        let includedFlagTasks = tagFilteredTasks.filter { task in
+            HomeDisplayFilterSupport.matchesSelectedFlags(
+                selectedFlags,
+                mode: includeFlagMatchMode,
+                in: task.flags
+            )
+        }
+
+        return includedFlagTasks.filter { task in
+            HomeDisplayFilterSupport.matchesExcludedFlags(
+                excludedFlags,
+                mode: excludeFlagMatchMode,
+                in: task.flags
             )
         }
     }

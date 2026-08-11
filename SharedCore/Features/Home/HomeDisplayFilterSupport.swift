@@ -62,6 +62,23 @@ enum HomeDisplayFilterSupport {
         }
     }
 
+    static func matchesExcludedFlags(
+        _ excludedFlags: Set<String>,
+        mode: RoutineTagMatchMode,
+        in flags: [String]
+    ) -> Bool {
+        guard !excludedFlags.isEmpty else { return true }
+
+        let shouldExclude: Bool
+        switch mode {
+        case .all:
+            shouldExclude = excludedFlags.allSatisfy { RoutineFlag.contains($0, in: flags) }
+        case .any:
+            shouldExclude = excludedFlags.contains { RoutineFlag.contains($0, in: flags) }
+        }
+        return !shouldExclude
+    }
+
     static func matchesExcludedTags(_ excludedTags: Set<String>, in tags: [String]) -> Bool {
         guard !excludedTags.isEmpty else { return true }
         return !excludedTags.contains { RoutineTag.contains($0, in: tags) }

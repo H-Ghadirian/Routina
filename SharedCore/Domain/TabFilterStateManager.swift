@@ -374,6 +374,10 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var statsIncludeTagMatchMode: RoutineTagMatchMode
     var statsExcludedTags: Set<String>
     var statsExcludeTagMatchMode: RoutineTagMatchMode
+    var statsSelectedFlags: Set<String>
+    var statsIncludeFlagMatchMode: RoutineTagMatchMode
+    var statsExcludedFlags: Set<String>
+    var statsExcludeFlagMatchMode: RoutineTagMatchMode
     var statsSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var statsTaskTypeFilterRawValue: String?
     var statsAdvancedQuery: String
@@ -431,6 +435,10 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         statsIncludeTagMatchMode: RoutineTagMatchMode = .all,
         statsExcludedTags: Set<String>,
         statsExcludeTagMatchMode: RoutineTagMatchMode = .any,
+        statsSelectedFlags: Set<String> = [],
+        statsIncludeFlagMatchMode: RoutineTagMatchMode = .all,
+        statsExcludedFlags: Set<String> = [],
+        statsExcludeFlagMatchMode: RoutineTagMatchMode = .any,
         statsSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         statsTaskTypeFilterRawValue: String?,
         statsAdvancedQuery: String = ""
@@ -487,6 +495,10 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.statsIncludeTagMatchMode = statsIncludeTagMatchMode
         self.statsExcludedTags = statsExcludedTags
         self.statsExcludeTagMatchMode = statsExcludeTagMatchMode
+        self.statsSelectedFlags = statsSelectedFlags
+        self.statsIncludeFlagMatchMode = statsIncludeFlagMatchMode
+        self.statsExcludedFlags = statsExcludedFlags
+        self.statsExcludeFlagMatchMode = statsExcludeFlagMatchMode
         self.statsSelectedImportanceUrgencyFilter = statsSelectedImportanceUrgencyFilter
         self.statsTaskTypeFilterRawValue = statsTaskTypeFilterRawValue
         self.statsAdvancedQuery = statsAdvancedQuery
@@ -545,6 +557,10 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case statsIncludeTagMatchMode
         case statsExcludedTags
         case statsExcludeTagMatchMode
+        case statsSelectedFlags
+        case statsIncludeFlagMatchMode
+        case statsExcludedFlags
+        case statsExcludeFlagMatchMode
         case statsSelectedImportanceUrgencyFilter
         case statsTaskTypeFilterRawValue
         case statsAdvancedQuery
@@ -608,6 +624,10 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             statsIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsIncludeTagMatchMode) ?? .all,
             statsExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .statsExcludedTags) ?? [],
             statsExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsExcludeTagMatchMode) ?? .any,
+            statsSelectedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .statsSelectedFlags) ?? [],
+            statsIncludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsIncludeFlagMatchMode) ?? .all,
+            statsExcludedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .statsExcludedFlags) ?? [],
+            statsExcludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsExcludeFlagMatchMode) ?? .any,
             statsSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .statsSelectedImportanceUrgencyFilter),
             statsTaskTypeFilterRawValue: try container.decodeIfPresent(String.self, forKey: .statsTaskTypeFilterRawValue),
             statsAdvancedQuery: try container.decodeIfPresent(String.self, forKey: .statsAdvancedQuery) ?? ""
@@ -667,6 +687,10 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         statsIncludeTagMatchMode: .all,
         statsExcludedTags: [],
         statsExcludeTagMatchMode: .any,
+        statsSelectedFlags: [],
+        statsIncludeFlagMatchMode: .all,
+        statsExcludedFlags: [],
+        statsExcludeFlagMatchMode: .any,
         statsSelectedImportanceUrgencyFilter: nil,
         statsTaskTypeFilterRawValue: nil,
         statsAdvancedQuery: ""

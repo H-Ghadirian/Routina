@@ -122,12 +122,16 @@ struct StatsActiveFilterChipBar: View {
     let selectedTags: Set<String>
     let selectedImportanceUrgencyFilterLabel: String?
     let excludedTags: Set<String>
+    let selectedFlags: Set<String>
+    let excludedFlags: Set<String>
     let onClearAll: () -> Void
     let onClearTaskType: () -> Void
     let onClearAdvancedQuery: () -> Void
     let onRemoveSelectedTag: (String) -> Void
     let onClearImportanceUrgency: () -> Void
     let onRemoveExcludedTag: (String) -> Void
+    let onRemoveSelectedFlag: (String) -> Void
+    let onRemoveExcludedFlag: (String) -> Void
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -163,6 +167,18 @@ struct StatsActiveFilterChipBar: View {
                 ForEach(excludedTags.sorted(), id: \.self) { tag in
                     compactFilterChip(title: "not #\(tag)", tintColor: .red) {
                         onRemoveExcludedTag(tag)
+                    }
+                }
+
+                ForEach(selectedFlags.sorted(), id: \.self) { flag in
+                    compactFilterChip(title: "flag: \(flag)", systemImage: "flag.fill") {
+                        onRemoveSelectedFlag(flag)
+                    }
+                }
+
+                ForEach(excludedFlags.sorted(), id: \.self) { flag in
+                    compactFilterChip(title: "not flag: \(flag)", systemImage: "flag.fill", tintColor: .red) {
+                        onRemoveExcludedFlag(flag)
                     }
                 }
             }
@@ -225,7 +241,12 @@ struct StatsFiltersSheet<TagPicker: View>: View {
     let hasActiveFilters: Bool
     @Binding var selectedTags: Set<String>
     @Binding var excludedTags: Set<String>
+    @Binding var selectedFlags: Set<String>
+    @Binding var includeFlagMatchMode: RoutineTagMatchMode
+    @Binding var excludedFlags: Set<String>
+    @Binding var excludeFlagMatchMode: RoutineTagMatchMode
     let availableTags: [String]
+    let availableFlags: [String]
     let tagPicker: () -> TagPicker
     let onClearFilters: () -> Void
     let onClose: () -> Void
@@ -284,6 +305,24 @@ struct StatsFiltersSheet<TagPicker: View>: View {
                     tagPicker: tagPicker
                 )
 
+                if !availableFlags.isEmpty {
+                    HomeFiltersPickerEntry(
+                        sectionTitle: "Flags",
+                        title: "Flags",
+                        systemImage: "flag.fill",
+                        value: flagSelectionSummary,
+                        pickerTitle: "Flags"
+                    ) {
+                        StatsFlagFilterPicker(
+                            selectedFlags: $selectedFlags,
+                            includeFlagMatchMode: $includeFlagMatchMode,
+                            excludedFlags: $excludedFlags,
+                            excludeFlagMatchMode: $excludeFlagMatchMode,
+                            availableFlags: availableFlags
+                        )
+                    }
+                }
+
                 HomeFiltersClearSection(
                     hasActiveOptionalFilters: hasActiveFilters,
                     onClearOptionalFilters: onClearFilters
@@ -303,6 +342,150 @@ struct StatsFiltersSheet<TagPicker: View>: View {
             let selected = selectedTags.filter { RoutineTag.contains($0, in: newValue) }
             onSelectedTagsPruned(selected)
         }
+    }
+
+    private var flagSelectionSummary: String {
+        let count = selectedFlags.count + excludedFlags.count
+        guard count > 0 else {
+            return "\(availableFlags.count) \(availableFlags.count == 1 ? "flag" : "flags") available"
+        }
+        return "\(count) active \(count == 1 ? "filter" : "filters")"
+    }
+}
+
+private struct StatsFlagFilterPicker: View {
+    @Binding var selectedFlags: Set<String>
+    @Binding var includeFlagMatchMode: RoutineTagMatchMode
+    @Binding var excludedFlags: Set<String>
+    @Binding var excludeFlagMatchMode: RoutineTagMatchMode
+    let availableFlags: [String]
+
+    var body: some View {
+        Section {
+            Picker("Show stats with", selection: $includeFlagMatchMode) {
+                ForEach(RoutineTagMatchMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if selectedFlags.isEmpty {
+                Text("All flags included")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(sortedSelectedFlags, id: \.self) { flag in
+                    Button("Remove \(flag)") {
+                        apply(StatsFlagFilterMutationSupport.toggledIncluded(
+                            flag,
+                            selectedFlags: selectedFlags,
+                            excludedFlags: excludedFlags
+                        ))
+                    }
+                }
+            }
+        } header: {
+            Text("Show stats with")
+        } footer: {
+            Text("Only task activity with every selected Flag or any selected Flag is included.")
+        }
+
+        Section {
+            Picker("Hide stats with", selection: $excludeFlagMatchMode) {
+                ForEach(RoutineTagMatchMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if excludedFlags.isEmpty {
+                Text("No flags excluded")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(sortedExcludedFlags, id: \.self) { flag in
+                    Button("Stop hiding \(flag)") {
+                        apply(StatsFlagFilterMutationSupport.toggledExcluded(
+                            flag,
+                            selectedFlags: selectedFlags,
+                            excludedFlags: excludedFlags
+                        ))
+                    }
+                }
+            }
+        } header: {
+            Text("Hide stats with")
+        } footer: {
+            Text("Exclude every task with any selected Flag, or only tasks that have all selected Flags.")
+        }
+
+        Section {
+            ForEach(availableFlags, id: \.self) { flag in
+                Menu {
+                    Button(isIncluded(flag) ? "Stop showing \(flag)" : "Show stats with \(flag)") {
+                        apply(StatsFlagFilterMutationSupport.toggledIncluded(
+                            flag,
+                            selectedFlags: selectedFlags,
+                            excludedFlags: excludedFlags
+                        ))
+                    }
+                    Button(isExcluded(flag) ? "Stop hiding \(flag)" : "Hide stats with \(flag)") {
+                        apply(StatsFlagFilterMutationSupport.toggledExcluded(
+                            flag,
+                            selectedFlags: selectedFlags,
+                            excludedFlags: excludedFlags
+                        ))
+                    }
+                    if isIncluded(flag) || isExcluded(flag) {
+                        Divider()
+                        Button("Clear \(flag) filter", role: .destructive) {
+                            if isIncluded(flag) {
+                                apply(StatsFlagFilterMutationSupport.toggledIncluded(
+                                    flag,
+                                    selectedFlags: selectedFlags,
+                                    excludedFlags: excludedFlags
+                                ))
+                            } else {
+                                apply(StatsFlagFilterMutationSupport.toggledExcluded(
+                                    flag,
+                                    selectedFlags: selectedFlags,
+                                    excludedFlags: excludedFlags
+                                ))
+                            }
+                        }
+                    }
+                } label: {
+                    Label(flag, systemImage: statusIcon(for: flag))
+                }
+            }
+        } header: {
+            Text("All Flags")
+        }
+    }
+
+    private var sortedSelectedFlags: [String] {
+        selectedFlags.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    private var sortedExcludedFlags: [String] {
+        excludedFlags.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    private func isIncluded(_ flag: String) -> Bool {
+        StatsFlagFilterMutationSupport.contains(flag, in: selectedFlags)
+    }
+
+    private func isExcluded(_ flag: String) -> Bool {
+        StatsFlagFilterMutationSupport.contains(flag, in: excludedFlags)
+    }
+
+    private func statusIcon(for flag: String) -> String {
+        if isIncluded(flag) { return "checkmark.circle.fill" }
+        if isExcluded(flag) { return "minus.circle.fill" }
+        return "flag"
+    }
+
+    private func apply(_ mutation: StatsFlagFilterMutation) {
+        selectedFlags = mutation.selectedFlags
+        excludedFlags = mutation.excludedFlags
     }
 }
 

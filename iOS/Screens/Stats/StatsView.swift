@@ -123,6 +123,10 @@ struct StatsView: View {
             includeTagMatchMode: store.includeTagMatchMode,
             excludedTags: store.excludedTags,
             excludeTagMatchMode: store.excludeTagMatchMode,
+            selectedFlags: store.selectedFlags,
+            includeFlagMatchMode: store.includeFlagMatchMode,
+            excludedFlags: store.excludedFlags,
+            excludeFlagMatchMode: store.excludeFlagMatchMode,
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             availableTags: availableTags,
             relatedTagRules: store.relatedTagRules,
@@ -518,6 +522,8 @@ struct StatsView: View {
             selectedTags: store.effectiveSelectedTags,
             selectedImportanceUrgencyFilterLabel: selectedImportanceUrgencyFilterLabel,
             excludedTags: store.excludedTags,
+            selectedFlags: store.selectedFlags,
+            excludedFlags: store.excludedFlags,
             onClearAll: { store.send(.clearFilters) },
             onClearTaskType: { store.send(.taskTypeFilterChanged(.all)) },
             onClearAdvancedQuery: { store.send(.advancedQueryChanged("")) },
@@ -529,6 +535,24 @@ struct StatsView: View {
             onClearImportanceUrgency: { store.send(.selectedImportanceUrgencyFilterChanged(nil)) },
             onRemoveExcludedTag: { tag in
                 store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
+            },
+            onRemoveSelectedFlag: { flag in
+                let mutation = StatsFlagFilterMutationSupport.toggledIncluded(
+                    flag,
+                    selectedFlags: store.selectedFlags,
+                    excludedFlags: store.excludedFlags
+                )
+                store.send(.selectedFlagsChanged(mutation.selectedFlags))
+                store.send(.excludedFlagsChanged(mutation.excludedFlags))
+            },
+            onRemoveExcludedFlag: { flag in
+                let mutation = StatsFlagFilterMutationSupport.toggledExcluded(
+                    flag,
+                    selectedFlags: store.selectedFlags,
+                    excludedFlags: store.excludedFlags
+                )
+                store.send(.selectedFlagsChanged(mutation.selectedFlags))
+                store.send(.excludedFlagsChanged(mutation.excludedFlags))
             }
         )
     }
@@ -654,7 +678,24 @@ struct StatsView: View {
                 get: { store.excludedTags },
                 set: { store.send(.excludedTagsChanged($0)) }
             ),
+            selectedFlags: Binding(
+                get: { store.selectedFlags },
+                set: { store.send(.selectedFlagsChanged($0)) }
+            ),
+            includeFlagMatchMode: Binding(
+                get: { store.includeFlagMatchMode },
+                set: { store.send(.includeFlagMatchModeChanged($0)) }
+            ),
+            excludedFlags: Binding(
+                get: { store.excludedFlags },
+                set: { store.send(.excludedFlagsChanged($0)) }
+            ),
+            excludeFlagMatchMode: Binding(
+                get: { store.excludeFlagMatchMode },
+                set: { store.send(.excludeFlagMatchModeChanged($0)) }
+            ),
             availableTags: availableTags,
+            availableFlags: store.availableFlags,
             tagPicker: {
                 HomeTagFilterPickerSheet(
                     data: tagRuleData,

@@ -259,6 +259,7 @@ let package = Package(
                 "SharedCore/Features/Home/StatsDashboardOrderSupport.swift",
                 "SharedCore/Features/Home/StatsFilterPresentation.swift",
                 "SharedCore/Features/Home/StatsFilterSummarySupport.swift",
+                "SharedCore/Features/Home/StatsFlagFilterSupport.swift",
                 "SharedCore/Features/Home/StatsFeatureDerivedStateSupport.swift",
                 "SharedCore/Features/Home/StatsSummaryItemPresentation.swift",
                 "SharedCore/Features/Home/StatsTaskFilterResolver.swift",

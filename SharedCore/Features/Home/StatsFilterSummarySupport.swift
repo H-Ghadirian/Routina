@@ -10,12 +10,16 @@ enum StatsFilterSummarySupport {
         advancedQuery: String,
         selectedTags: Set<String>,
         excludedTags: Set<String>,
+        selectedFlags: Set<String> = [],
+        excludedFlags: Set<String> = [],
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     ) -> Bool {
         taskTypeFilter != .all
             || !trimmedAdvancedQuery(advancedQuery).isEmpty
             || !selectedTags.isEmpty
             || !excludedTags.isEmpty
+            || !selectedFlags.isEmpty
+            || !excludedFlags.isEmpty
             || ImportanceUrgencyFilterCell.normalized(selectedImportanceUrgencyFilter) != nil
     }
 
@@ -24,6 +28,8 @@ enum StatsFilterSummarySupport {
         advancedQuery: String,
         selectedTags: Set<String>,
         excludedTags: Set<String>,
+        selectedFlags: Set<String> = [],
+        excludedFlags: Set<String> = [],
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     ) -> Int {
         var count = 0
@@ -31,6 +37,8 @@ enum StatsFilterSummarySupport {
         if !trimmedAdvancedQuery(advancedQuery).isEmpty { count += 1 }
         if !selectedTags.isEmpty { count += 1 }
         count += excludedTags.count
+        if !selectedFlags.isEmpty { count += 1 }
+        count += excludedFlags.count
         if ImportanceUrgencyFilterCell.normalized(selectedImportanceUrgencyFilter) != nil { count += 1 }
         return count
     }

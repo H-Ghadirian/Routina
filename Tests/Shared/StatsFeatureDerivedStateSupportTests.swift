@@ -10,6 +10,78 @@ import Testing
 
 struct StatsFeatureDerivedStateSupportTests {
     @Test
+    func build_filtersTaskActivityByIncludedAndExcludedFlags() {
+        let calendar = makeTestCalendar()
+        let autoAssumedTask = RoutineTask(
+            name: "Auto assumed",
+            flags: ["Assumed done", "Tracking"],
+            createdAt: makeDate("2026-05-01T08:00:00Z")
+        )
+        let focusTask = RoutineTask(
+            name: "Focused work",
+            flags: ["Focus", "Tracking"],
+            createdAt: makeDate("2026-05-01T08:00:00Z")
+        )
+        let ordinaryTask = RoutineTask(
+            name: "Ordinary work",
+            createdAt: makeDate("2026-05-01T08:00:00Z")
+        )
+        let logs = [autoAssumedTask, focusTask, ordinaryTask].map {
+            RoutineLog(
+                timestamp: makeDate("2026-05-07T18:00:00Z"),
+                taskID: $0.id,
+                kind: .completed
+            )
+        }
+
+        let excludingAssumedDone = StatsFeatureDerivedStateBuilder.build(
+            tasks: [autoAssumedTask, focusTask, ordinaryTask],
+            logs: logs,
+            focusSessions: [],
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: [],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            excludedFlags: [" assumed DONE "],
+            excludeFlagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: makeDate("2026-05-07T20:00:00Z"),
+            calendar: calendar
+        )
+        let requiringEveryFlag = StatsFeatureDerivedStateBuilder.build(
+            tasks: [autoAssumedTask, focusTask, ordinaryTask],
+            logs: logs,
+            focusSessions: [],
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: [],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            selectedFlags: ["Tracking", "Focus"],
+            includeFlagMatchMode: .all,
+            tagColors: [:],
+            referenceDate: makeDate("2026-05-07T20:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(excludingAssumedDone.availableFlags.contains("Assumed done"))
+        #expect(excludingAssumedDone.excludedFlags.contains {
+            RoutineFlag.contains("Assumed done", in: [$0])
+        })
+        #expect(excludingAssumedDone.filteredTaskCount == 2)
+        #expect(excludingAssumedDone.metrics.totalDoneCount == 2)
+        #expect(requiringEveryFlag.filteredTaskCount == 1)
+        #expect(requiringEveryFlag.metrics.totalDoneCount == 1)
+    }
+
+    @Test
     func build_usesInclusiveCustomDateBoundaries() {
         let calendar = makeTestCalendar()
         let task = RoutineTask(name: "Practice", createdAt: makeDate("2026-01-01T08:00:00Z"))

@@ -60,6 +60,35 @@ struct StatsFilterPresentationTests {
     }
 
     @Test
+    func flagMutationsKeepShowAndHideFiltersExclusive() {
+        let movedToHidden = StatsFlagFilterMutationSupport.toggledExcluded(
+            "Assumed done",
+            selectedFlags: ["Assumed Done", "Tracking"],
+            excludedFlags: ["Private"]
+        )
+        let removedHidden = StatsFlagFilterMutationSupport.toggledExcluded(
+            "private",
+            selectedFlags: movedToHidden.selectedFlags,
+            excludedFlags: movedToHidden.excludedFlags
+        )
+
+        #expect(movedToHidden.selectedFlags == ["Tracking"])
+        #expect(movedToHidden.excludedFlags == ["Assumed done", "Private"])
+        #expect(removedHidden.excludedFlags == ["Assumed done"])
+    }
+
+    @Test
+    func activeSheetFilterCountIncludesFlagRules() {
+        let presentation = makePresentation(
+            selectedFlags: ["Tracking"],
+            excludedFlags: ["Assumed done", "Private"]
+        )
+
+        #expect(presentation.hasActiveSheetFilters)
+        #expect(presentation.activeSheetFilterCount == 3)
+    }
+
+    @Test
     func relatedTagsAndSummariesUseSharedStatsCopy() {
         let presentation = makePresentation(
             selectedTags: ["Focus"],
@@ -154,6 +183,10 @@ struct StatsFilterPresentationTests {
         includeTagMatchMode: RoutineTagMatchMode = .all,
         excludedTags: Set<String> = [],
         excludeTagMatchMode: RoutineTagMatchMode = .any,
+        selectedFlags: Set<String> = [],
+        includeFlagMatchMode: RoutineTagMatchMode = .all,
+        excludedFlags: Set<String> = [],
+        excludeFlagMatchMode: RoutineTagMatchMode = .any,
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         availableTags: [String] = [],
         relatedTagRules: [RoutineRelatedTagRule] = [],
@@ -166,6 +199,10 @@ struct StatsFilterPresentationTests {
             includeTagMatchMode: includeTagMatchMode,
             excludedTags: excludedTags,
             excludeTagMatchMode: excludeTagMatchMode,
+            selectedFlags: selectedFlags,
+            includeFlagMatchMode: includeFlagMatchMode,
+            excludedFlags: excludedFlags,
+            excludeFlagMatchMode: excludeFlagMatchMode,
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             availableTags: availableTags,
             relatedTagRules: relatedTagRules,

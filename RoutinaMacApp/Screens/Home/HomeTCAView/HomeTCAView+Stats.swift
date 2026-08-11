@@ -106,6 +106,37 @@ extension HomeTCAView {
                 let mutation = filterPresentation.toggledExcludedTag(tag)
                 statsStore?.send(.selectedTagsChanged(mutation.selectedTags))
                 statsStore?.send(.excludedTagsChanged(mutation.excludedTags))
+            },
+            availableFlags: statsStore?.availableFlags ?? [],
+            selectedFlags: statsStore?.selectedFlags ?? [],
+            includeFlagMatchMode: statsStore?.includeFlagMatchMode ?? .all,
+            excludedFlags: statsStore?.excludedFlags ?? [],
+            excludeFlagMatchMode: statsStore?.excludeFlagMatchMode ?? .any,
+            onIncludeFlagMatchModeChange: { mode in
+                statsStore?.send(.includeFlagMatchModeChanged(mode))
+            },
+            onExcludeFlagMatchModeChange: { mode in
+                statsStore?.send(.excludeFlagMatchModeChanged(mode))
+            },
+            onToggleIncludedFlag: { flag in
+                guard let statsStore else { return }
+                let mutation = StatsFlagFilterMutationSupport.toggledIncluded(
+                    flag,
+                    selectedFlags: statsStore.selectedFlags,
+                    excludedFlags: statsStore.excludedFlags
+                )
+                statsStore.send(.selectedFlagsChanged(mutation.selectedFlags))
+                statsStore.send(.excludedFlagsChanged(mutation.excludedFlags))
+            },
+            onToggleExcludedFlag: { flag in
+                guard let statsStore else { return }
+                let mutation = StatsFlagFilterMutationSupport.toggledExcluded(
+                    flag,
+                    selectedFlags: statsStore.selectedFlags,
+                    excludedFlags: statsStore.excludedFlags
+                )
+                statsStore.send(.selectedFlagsChanged(mutation.selectedFlags))
+                statsStore.send(.excludedFlagsChanged(mutation.excludedFlags))
             }
         )
     }
@@ -118,6 +149,10 @@ extension HomeTCAView {
             includeTagMatchMode: statsStore?.includeTagMatchMode ?? .all,
             excludedTags: selectedStatsExcludedTags,
             excludeTagMatchMode: statsStore?.excludeTagMatchMode ?? .any,
+            selectedFlags: statsStore?.selectedFlags ?? [],
+            includeFlagMatchMode: statsStore?.includeFlagMatchMode ?? .all,
+            excludedFlags: statsStore?.excludedFlags ?? [],
+            excludeFlagMatchMode: statsStore?.excludeFlagMatchMode ?? .any,
             selectedImportanceUrgencyFilter: statsStore?.selectedImportanceUrgencyFilter,
             availableTags: statsAllTags,
             relatedTagRules: store.relatedTagRules,

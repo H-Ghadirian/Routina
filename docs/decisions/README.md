@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0549](0549-filter-stats-by-task-flags.md) refines [0498](0498-filter-task-lists-by-flags.md), [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Stats can independently include or exclude task Flags with `All` / `Any` matching through cached task-bound metric snapshots.
+
 - **[0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md) refines [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md) and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** iOS Stats and Timeline keep each available filter in a compact entry with a persistent detail sheet, deferring the full tag catalog to its searchable picker.
 
 - **[0547](0547-verify-final-ios-release-build-state.md) refines [0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md):** iOS device verification belongs only to the exact final worktree state and requires a complete, signed app product before installation.
@@ -195,7 +197,7 @@ These are ordered from newest resolver to oldest resolver.
 
 - **[0499](0499-explain-applied-flags-in-task-details.md) refines [0497](0497-use-flags-for-task-behavior-rules.md) and [0498](0498-filter-task-lists-by-flags.md):** Task Details show assigned Flags on both platforms, and a Mac breadcrumb for a selected `Hidden by flag` result identifies that task's hiding Flag or Flags while the shared result section stays generic.
 
-- **[0498](0498-filter-task-lists-by-flags.md) refines [0497](0497-use-flags-for-task-behavior-rules.md):** Home task lists support persisted `All` / `Any` Flag filtering. A deliberately selected tracking-style Flag reveals matching rule-hidden tasks only in the presentation-only `Hidden by flag` result section; Board, Planner, Timeline, and Stats are unchanged.
+- **[0498](0498-filter-task-lists-by-flags.md) refines [0497](0497-use-flags-for-task-behavior-rules.md), as refined by [0549](0549-filter-stats-by-task-flags.md):** Home task lists support persisted `All` / `Any` Flag filtering. A deliberately selected tracking-style Flag reveals matching rule-hidden tasks only in the presentation-only `Hidden by flag` result section; Board, Planner, and Timeline are unchanged, while Stats has its own independent Flag filters.
 
 - **[0497](0497-use-flags-for-task-behavior-rules.md) supersedes [0496](superseded/0496-use-extensible-per-tag-task-list-rules.md):** Task-only Flags hold extensible typed behavior rules, while tags remain organizational. The first rule hides matching tasks from ordinary task-list placement but text search can reveal them in a labelled presentation-only result section.
 

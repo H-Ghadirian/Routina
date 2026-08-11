@@ -288,6 +288,10 @@ enum HomeTemporaryViewStateMapper {
             statsIncludeTagMatchMode: existing.statsIncludeTagMatchMode,
             statsExcludedTags: existing.statsExcludedTags,
             statsExcludeTagMatchMode: existing.statsExcludeTagMatchMode,
+            statsSelectedFlags: existing.statsSelectedFlags,
+            statsIncludeFlagMatchMode: existing.statsIncludeFlagMatchMode,
+            statsExcludedFlags: existing.statsExcludedFlags,
+            statsExcludeFlagMatchMode: existing.statsExcludeFlagMatchMode,
             statsSelectedImportanceUrgencyFilter: existing.statsSelectedImportanceUrgencyFilter,
             statsTaskTypeFilterRawValue: existing.statsTaskTypeFilterRawValue,
             statsAdvancedQuery: existing.statsAdvancedQuery
