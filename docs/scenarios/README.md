@@ -29,6 +29,24 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### iOS Search Keeps Typing Ahead Of Home Results
+
+Area: Tasks / UI
+Decision links: [0541](../decisions/0541-keep-ios-search-input-ahead-of-home-presentations.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/IOSScrollingPerformanceRegressionTests.swift`
+
+Given a large iOS Home task list
+When the person opens Search and types several characters without pausing
+Then keyboard input remains immediate
+And Home result snapshots update only after a short idle debounce
+
+Given an active Search query
+When the person clears it
+Then the unfiltered Home presentation returns immediately
+
+
 ### TestFlight Archives Cannot Skip a CloudKit Production Schema Deployment
 
 Area: Settings / Other

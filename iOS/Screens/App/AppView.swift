@@ -19,6 +19,8 @@ struct AppView: View {
         order: .reverse
     ) private var activeSleepSessions: [SleepSession]
     @State private var searchText = ""
+    @State private var appliedSearchText = ""
+    @State private var searchPresentationUpdateTask: Task<Void, Never>?
     @State private var moreDestination: AppMoreDestination?
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
     @State private var isNewActionListPresented = false
@@ -53,7 +55,7 @@ let tabView = TabView(
     }
 
     SwiftUI.Tab(Tab.search.rawValue, systemImage: "magnifyingglass", value: AppTabBarItem.search, role: .search) {
-        platformSearchHomeView(searchText: $searchText)
+        platformSearchHomeView(searchText: $appliedSearchText)
     }
 
     if !usesCompactMoreTab && isGoalsTabEnabled {
@@ -124,31 +126,20 @@ let tabView = TabView(
     }
 }
 Group {
-    if store.selectedTab == .search {
-        AppLockGate {
-            tabView
-                .searchable(text: $searchText, prompt: "Search routines and todos")
-                .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
-                    PlatformSupport.applyAppIcon(.persistedSelection)
-                    store.send(.cloudSettingsChanged)
-                }
-                .task {
-                    store.send(.onAppear)
-                    handlePendingDeepLink()
-                }
-        }
-    } else {
-        AppLockGate {
-            tabView
-                .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
-                    PlatformSupport.applyAppIcon(.persistedSelection)
-                    store.send(.cloudSettingsChanged)
-                }
-                .task {
-                    store.send(.onAppear)
-                    handlePendingDeepLink()
-                }
-        }
+    AppLockGate {
+        tabView
+            .searchable(text: $searchText, prompt: "Search routines and todos")
+            .onChange(of: searchText) { _, rawSearchText in
+                scheduleSearchPresentationUpdate(for: rawSearchText)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                PlatformSupport.applyAppIcon(.persistedSelection)
+                store.send(.cloudSettingsChanged)
+            }
+            .task {
+                store.send(.onAppear)
+                handlePendingDeepLink()
+            }
     }
 }
 .preferredColorScheme(appColorScheme.preferredColorScheme)
@@ -190,6 +181,26 @@ Group {
 
     private var appColorScheme: AppColorScheme {
         AppColorScheme(rawValue: appColorSchemeRawValue) ?? .system
+    }
+
+    private func scheduleSearchPresentationUpdate(for rawSearchText: String) {
+        searchPresentationUpdateTask?.cancel()
+
+        guard !rawSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            appliedSearchText = rawSearchText
+            return
+        }
+
+        searchPresentationUpdateTask = Task { @MainActor in
+            do {
+                try await Task.sleep(for: IOSSearchPresentationPolicy.inputDebounce)
+            } catch {
+                return
+            }
+
+            guard !Task.isCancelled, searchText == rawSearchText else { return }
+            appliedSearchText = rawSearchText
+        }
     }
 
     private var selectedTabBinding: Binding<AppTabBarItem> {
@@ -537,6 +548,10 @@ Group {
             startedAt: session.startedAt
         )
     }
+}
+
+private enum IOSSearchPresentationPolicy {
+    static let inputDebounce: Duration = .milliseconds(120)
 }
 
 private enum AppTabBarItem: Hashable {

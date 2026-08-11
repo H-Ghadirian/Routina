@@ -21,6 +21,23 @@ struct IOSScrollingPerformanceRegressionTests {
     }
 
     @Test
+    func searchKeepsInputImmediateWhileDebouncingHomePresentationWork() throws {
+        let appView = try Self.sourceFile("iOS/Screens/App/AppView.swift")
+
+        #expect(appView.contains("@State private var appliedSearchText = \"\""))
+        #expect(appView.contains("platformSearchHomeView(searchText: $appliedSearchText)"))
+        #expect(appView.contains(".searchable(text: $searchText, prompt: \"Search routines and todos\")"))
+        #expect(appView.contains(".onChange(of: searchText)"))
+        #expect(appView.contains("scheduleSearchPresentationUpdate(for: rawSearchText)"))
+        #expect(appView.contains("searchPresentationUpdateTask?.cancel()"))
+        #expect(appView.contains("IOSSearchPresentationPolicy.inputDebounce"))
+        #expect(appView.contains("guard !rawSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else"))
+        #expect(appView.contains("appliedSearchText = rawSearchText"))
+        #expect(appView.contains("guard !Task.isCancelled, searchText == rawSearchText else { return }"))
+        #expect(!appView.contains("if store.selectedTab == .search"))
+    }
+
+    @Test
     func homeDefersItsTagCatalogUntilTheTagPickerOpens() throws {
         let platform = try Self.sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")
         let filters = try Self.sourceFile("iOS/Screens/Home/HomeFiltersSheetView.swift")

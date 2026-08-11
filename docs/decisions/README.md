@@ -19,6 +19,10 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** iOS performance investigations use a validated Release production build on a physical device, numeric-PID or validated all-process Time Profiler traces, separate baseline/scenario windows, and mandatory profiling-artifact cleanup.
+
+- **[0541](0541-keep-ios-search-input-ahead-of-home-presentations.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md):** iOS Search keeps the tab host stable, accepts raw input immediately, and applies non-empty queries to Home presentations only after a short idle debounce; clearing remains immediate.
+
 - **[0540](0540-group-ios-task-reviews-under-more-destination.md) refines [0033](0033-use-app-owned-ios-more-tab.md), [0473](0473-use-guided-ios-missing-metadata-procedures.md), [0475](0475-separate-guided-importance-and-urgency-reviews.md), [0478](0478-add-guided-ios-thinking-needed-review.md), [0480](0480-add-guided-ios-time-estimates.md), and [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md):** Compact iOS More contains one Review tasks entry, which groups Help me choose with the focused missing-detail procedures behind an app-owned navigation path.
 
 - **[0539](0539-offer-ios-task-creation-from-home-empty-states.md):** iOS Home keeps an `Add New Task` action on a truly empty list and offers `Create Task` from a no-match search, seeding Smart Add with the trimmed query only when no known task matches it.
