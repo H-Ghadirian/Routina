@@ -521,6 +521,28 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testBacklogUsesCoalescedSemanticRefreshes() throws {
+        let viewSource = try Self.sourceFile("RoutinaMacApp/Screens/Backlog/BacklogMacView.swift")
+        let featureSource = try Self.sourceFile("RoutinaMacApp/Features/Backlog/BacklogFeature.swift")
+
+        XCTAssertFalse(
+            viewSource.contains("ModelContext.didSave"),
+            "Backlog must not reload its complete presentation for every raw SwiftData save."
+        )
+        XCTAssertTrue(
+            viewSource.contains("publisher(for: .routineDidUpdate)"),
+            "Backlog should refresh through Routina's semantic update notification."
+        )
+        XCTAssertTrue(viewSource.contains("store.send(.routineDataChanged)"))
+        XCTAssertTrue(featureSource.contains("@Dependency(\\.continuousClock) private var continuousClock"))
+        XCTAssertTrue(featureSource.contains("try await continuousClock.sleep(for: .milliseconds(450))"))
+        XCTAssertTrue(
+            featureSource.contains(".cancellable(id: CancelID.automaticRefresh, cancelInFlight: true)"),
+            "A burst of semantic updates must keep one pending Backlog refresh."
+        )
+        XCTAssertTrue(featureSource.contains(".cancel(id: CancelID.automaticRefresh)"))
+    }
+
     func testCloudSyncFanInThrottlesSurfaceRefreshes() throws {
         let source = try Self.sourceFile("SharedCore/Sync/CloudSyncedSurfaceRefreshCoordinator.swift")
 

@@ -6,6 +6,7 @@ import SwiftData
 struct BacklogFeature {
     private enum CancelID: Hashable {
         case load
+        case automaticRefresh
         case taskDetail(UUID)
     }
 
@@ -25,6 +26,7 @@ struct BacklogFeature {
         case onAppear
         case onDisappear
         case refresh
+        case routineDataChanged
         case tasksLoaded([RoutineTask], [HomeCustomTaskSection], [RoutineFlagRule])
         case loadFailed(String)
         case customSectionsChanged([HomeCustomTaskSection])
@@ -36,6 +38,7 @@ struct BacklogFeature {
 
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Dependency(\.calendar) private var calendar
+    @Dependency(\.continuousClock) private var continuousClock
     @Dependency(\.date.now) private var now
     @Dependency(\.modelContext) private var modelContext
 
@@ -50,6 +53,7 @@ struct BacklogFeature {
             case .onDisappear:
                 return .merge(
                     .cancel(id: CancelID.load),
+                    .cancel(id: CancelID.automaticRefresh),
                     state.selectedTaskID.map { .cancel(id: CancelID.taskDetail($0)) } ?? .none
                 )
 
@@ -57,6 +61,13 @@ struct BacklogFeature {
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
                 return loadTasks()
+
+            case .routineDataChanged:
+                return .run { send in
+                    try await continuousClock.sleep(for: .milliseconds(450))
+                    await send(.refresh)
+                }
+                .cancellable(id: CancelID.automaticRefresh, cancelInFlight: true)
 
             case let .tasksLoaded(tasks, customSections, flagRules):
                 state.isLoading = false

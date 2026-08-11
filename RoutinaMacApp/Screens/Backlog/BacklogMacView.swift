@@ -1,5 +1,4 @@
 import ComposableArchitecture
-import SwiftData
 import SwiftUI
 
 struct BacklogMacView: View {
@@ -30,11 +29,8 @@ struct BacklogMacView: View {
         .onChange(of: customTaskSectionsRawValue) { _, rawValue in
             store.send(.customSectionsChanged(HomeCustomTaskSectionStorage.decoded(from: rawValue)))
         }
-        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
-            store.send(.refresh)
-        }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-            store.send(.refresh)
+            store.send(.routineDataChanged)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

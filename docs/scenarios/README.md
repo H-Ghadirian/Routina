@@ -29,6 +29,20 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Mac Backlog Coalesces Update Refreshes
+
+Area: Tasks / Mac Backlog
+Decision links: [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given the Mac Backlog window is open
+When CloudKit or another Routina surface produces a burst of persistence changes
+Then Backlog does not rebuild its task snapshot for every raw SwiftData save
+And it waits for the semantic update burst to settle before performing one refresh
+And the manual Refresh Backlog control remains immediately available when no refresh is in progress
+
 ### iOS Search Keeps Typing Ahead Of Home Results
 
 Area: Tasks / UI
