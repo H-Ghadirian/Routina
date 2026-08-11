@@ -77,6 +77,22 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func flagsUseIntrinsicWidthBeforeWrappingInTaskForms() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"
+        )
+        let flagEditor = try Self.sourceSection(
+            startingAt: "private var flagEditor",
+            endingAt: "private var unselectedAvailableFlags",
+            in: source
+        )
+
+        #expect(flagEditor.contains("HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8)"))
+        #expect(!flagEditor.contains("LazyVGrid"))
+        #expect(!flagEditor.contains("GridItem(.adaptive(minimum: 90)"))
+    }
+
+    @Test
     func tagPickerPresentationIsOwnedByTheStableFormRoot() throws {
         let formSource = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormContentPlatform.swift"

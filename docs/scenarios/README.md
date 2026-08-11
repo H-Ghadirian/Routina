@@ -95,13 +95,9 @@ Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - Tests/Shared/TaskDetailFlagPresentationTests.swift
 
-Given a Task Detail has one assigned Flag
-When the Flag chip is rendered in the available width of its section
-Then the chip retains its full label instead of being constrained to a narrow grid cell
-
-Given a Task Detail has several assigned Flags
+Given iOS Add Task, Edit Task, or Task Detail shows one or more Flags
 When the Flag chips are rendered
-Then each grid cell has enough minimum width for ordinary Flag labels
+Then each chip retains its intrinsic label width and wraps to a later row before truncating
 
 ### Task Detail Tags Use Their Intrinsic Width
 

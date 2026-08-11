@@ -424,20 +424,9 @@ struct TaskDetailHeaderFlagsView<FlagChipContent: View>: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            if flags.count == 1, let flag = flags.first {
-                HStack(spacing: 0) {
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(flags, id: \.self) { flag in
                     flagChip(flag)
-                    Spacer(minLength: 0)
-                }
-            } else {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 160), spacing: 8)],
-                    alignment: .leading,
-                    spacing: 8
-                ) {
-                    ForEach(flags, id: \.self) { flag in
-                        flagChip(flag)
-                    }
                 }
             }
         }

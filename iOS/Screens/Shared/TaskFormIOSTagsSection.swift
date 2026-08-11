@@ -183,11 +183,7 @@ struct TaskFormIOSTagsSection: View {
             }
 
             if !model.routineFlags.isEmpty {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
-                    alignment: .leading,
-                    spacing: 8
-                ) {
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(model.routineFlags, id: \.self) { flag in
                         Button { model.onRemoveFlag(flag) } label: {
                             HStack(spacing: 6) {
@@ -214,11 +210,7 @@ struct TaskFormIOSTagsSection: View {
             }
 
             if !unselectedAvailableFlags.isEmpty {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
-                    alignment: .leading,
-                    spacing: 8
-                ) {
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(visibleAvailableFlags, id: \.self) { flag in
                         availableFlagButton(flag)
                     }
