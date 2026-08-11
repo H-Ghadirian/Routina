@@ -32,6 +32,10 @@ struct TaskFormContent: View {
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
 
     init(model: TaskFormModel) {
         self.model = model
@@ -195,6 +199,8 @@ struct TaskFormContent: View {
                 return isPlacesEnabled
             case .notes, .voiceNote:
                 return isNotesEnabled
+            case .goals:
+                return isGoalsTabEnabled
             default:
                 return true
             }

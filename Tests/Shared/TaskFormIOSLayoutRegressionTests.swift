@@ -232,6 +232,20 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func addTaskHidesGoalsWhenTheGoalsFeatureIsDisabled() throws {
+        let source = try Self.sourceFile("iOS/Screens/Shared/TaskFormContentPlatform.swift")
+        let sectionFiltering = try Self.sourceSection(
+            startingAt: "private func filteredCompactSections(",
+            endingAt: "private func reveal(",
+            in: source
+        )
+
+        #expect(source.contains("UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue"))
+        #expect(source.contains("private var isGoalsTabEnabled = false"))
+        #expect(sectionFiltering.contains("case .goals:\n                return isGoalsTabEnabled"))
+    }
+
+    @Test
     func descriptionIsIndependentFromExperimentalNotesAndSupportsTargetedReveal() throws {
         let formSource = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormContentPlatform.swift"

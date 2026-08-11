@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0138 — Gate Add Task goals with feature availability](0138-gate-add-task-goals-with-feature-availability.md)
 - [0137 — Use a reliable glyph for the Mac overflow trigger](0137-use-reliable-glyph-for-mac-overflow-trigger.md)
 - [0136 — Give overflow controls visible idle chrome](0136-give-overflow-controls-visible-idle-chrome.md)
 - [0135 — Gate Home Goal filters with feature availability](0135-gate-home-goal-filter-with-feature-availability.md)
