@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) refines [0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md), [0529](0529-collapse-calendar-list-planned-task-sections.md), and [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` gives each day's Confirmed assumed done section its own disclosure, using the existing shared default without changing cached Planner presentation work.
+
 - **[0550](0550-make-apple-health-stats-prompt-dismissible.md) refines [0096](0096-show-healthkit-movement-stats.md) and [0113](0113-allow-stats-dashboard-reordering.md):** the optional iOS Apple Health connection prompt participates in Stats dashboard customization, so it can be hidden and restored without changing Health permissions.
 
 - **[0549](0549-filter-stats-by-task-flags.md) refines [0498](0498-filter-task-lists-by-flags.md), [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Stats can independently include or exclude task Flags with `All` / `Any` matching through cached task-bound metric snapshots.
@@ -132,6 +134,8 @@ Priority rules:
 ### Latest Conflict Priorities
 
 These are ordered from newest resolver to oldest resolver.
+
+- **[0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) refines [0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md), [0529](0529-collapse-calendar-list-planned-task-sections.md), and [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` keeps each day's Confirmed assumed done count visible in its own independent, initially collapsed disclosure, using the existing shared stored default without changing cached Planner presentation work.
 
 - **[0538](0538-gate-add-task-goals-with-feature-setting.md) supersedes the Add Task exception in [0212](0212-hide-goals-tab-by-default.md):** the Goals setting is the single availability gate for Goal controls, including task creation on both platforms.
 
@@ -629,6 +633,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) | Collapse Confirmed Assumed-Done Calendar List Sections | Accepted | 2026-08-11 |
 | [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md) | Keep iOS Stats and Timeline Filter Details in Sheets | Accepted | 2026-08-11 |
 | [0547](0547-verify-final-ios-release-build-state.md) | Verify the Final iOS Release Build State | Accepted | 2026-08-11 |
 | [0545](0545-bound-ios-foreground-focus-reconciliation.md) | Bound iOS Foreground Focus Reconciliation | Accepted | 2026-08-11 |

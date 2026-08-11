@@ -1212,6 +1212,7 @@ private struct DayPlanDayTaskColumnView: View {
     ) private var areCalendarListTaskSectionsCollapsedByDefault = true
     @State private var plannedTasksSectionCollapsedOverride: Bool?
     @State private var assumedDoneSectionCollapsedOverride: Bool?
+    @State private var confirmedAssumedDoneSectionCollapsedOverride: Bool?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1232,6 +1233,7 @@ private struct DayPlanDayTaskColumnView: View {
                     sectionSpacing: 12,
                     plannedTasksSectionCollapsed: plannedTasksSectionCollapsed,
                     assumedDoneSectionCollapsed: assumedDoneSectionCollapsed,
+                    confirmedAssumedDoneSectionCollapsed: confirmedAssumedDoneSectionCollapsed,
                     separatesConfirmedAssumedDone: true
                 )
             }
@@ -1274,6 +1276,18 @@ private struct DayPlanDayTaskColumnView: View {
         )
     }
 
+    private var confirmedAssumedDoneSectionCollapsed: Binding<Bool> {
+        Binding(
+            get: {
+                confirmedAssumedDoneSectionCollapsedOverride
+                    ?? areCalendarListTaskSectionsCollapsedByDefault
+            },
+            set: { isCollapsed in
+                confirmedAssumedDoneSectionCollapsedOverride = isCollapsed
+            }
+        )
+    }
+
     private var emptyState: some View {
         VStack(alignment: .center, spacing: 8) {
             Image(systemName: "list.bullet.rectangle")
@@ -1303,6 +1317,7 @@ struct DayPlanDayTaskListContentView: View {
     var sectionSpacing: CGFloat = 14
     var plannedTasksSectionCollapsed: Binding<Bool>? = nil
     var assumedDoneSectionCollapsed: Binding<Bool>? = nil
+    var confirmedAssumedDoneSectionCollapsed: Binding<Bool>? = nil
     var separatesConfirmedAssumedDone = false
     @AppStorage(
         UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue,
@@ -1369,7 +1384,7 @@ struct DayPlanDayTaskListContentView: View {
         case .assumedDone:
             assumedDoneSectionCollapsed
         case .confirmedAssumedDone:
-            nil
+            confirmedAssumedDoneSectionCollapsed
         case .done:
             nil
         }

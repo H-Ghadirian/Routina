@@ -233,7 +233,7 @@ SettingsMacDetailShell(
         }
         .pickerStyle(.segmented)
 
-        Text("Newly shown Planned tasks and Assumed done sections use this state. You can still open or collapse each section for a day directly in Calendar List.")
+        Text("Newly shown Planned tasks, Assumed done, and Confirmed assumed done sections use this state. You can still open or collapse each section for a day directly in Calendar List.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }

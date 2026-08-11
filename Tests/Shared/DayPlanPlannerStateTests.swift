@@ -194,9 +194,16 @@ struct DayPlanPlannerStateTests {
                 "var assumedDoneSectionCollapsed: Binding<Bool>? = nil"
             )
         )
+        #expect(
+            calendarSource.contains(
+                "var confirmedAssumedDoneSectionCollapsed: Binding<Bool>? = nil"
+            )
+        )
         #expect(calendarSource.contains("case .planned:"))
         #expect(calendarSource.contains("plannedTasksSectionCollapsed"))
         #expect(calendarSource.contains("case .assumedDone:"))
+        #expect(calendarSource.contains("case .confirmedAssumedDone:"))
+        #expect(calendarSource.contains("confirmedAssumedDoneSectionCollapsed"))
         #expect(calendarSource.contains("isCollapsed?.wrappedValue != true"))
         #expect(calendarSource.contains("accessibilityValue(isCollapsed.wrappedValue ? \"Collapsed\" : \"Expanded\")"))
         #expect(
@@ -206,7 +213,7 @@ struct DayPlanPlannerStateTests {
         )
         #expect(settingsSource.contains("Text(\"Collapsed\").tag(true)"))
         #expect(settingsSource.contains("Text(\"Expanded\").tag(false)"))
-        #expect(settingsSource.contains("Newly shown Planned tasks and Assumed done sections use this state."))
+        #expect(settingsSource.contains("Confirmed assumed done sections use this state."))
         #expect(
             defaultsSource.contains(
                 ".appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault: true"
