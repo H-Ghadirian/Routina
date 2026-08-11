@@ -55,9 +55,10 @@ struct TaskDetailPlatformActionParityTests {
         #expect(overflowMenu.contains("store.send(.cancelTodo)"))
         #expect(overflowMenu.contains("store.send(.setDeleteConfirmation(true))"))
         #expect(overflowMenu.contains("role: .destructive"))
-        #expect(overflowMenu.contains("Image(systemName: \"ellipsis.vertical\")"))
+        #expect(overflowMenu.contains("Text(\"⋮\")"))
         #expect(overflowMenu.contains("isTaskLifecycleActionsMenuPresented"))
-        #expect(overflowMenu.contains("Circle()"))
+        #expect(overflowMenu.contains("toolbarIconChrome(isActive: isTaskLifecycleActionsMenuPresented)"))
+        #expect(!overflowMenu.contains("Circle()"))
         #expect(source.contains("menu.popUp("))
         #expect(source.contains("NSColor.systemRed"))
     }

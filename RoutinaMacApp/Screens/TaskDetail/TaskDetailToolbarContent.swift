@@ -221,29 +221,13 @@ struct TaskDetailActionClusterView: View {
     }
 
     private var taskLifecycleActionsMenuLabel: some View {
-        Image(systemName: "ellipsis.vertical")
-            .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(isTaskLifecycleActionsMenuPresented ? Color.primary : Color.secondary)
-            .frame(width: Metrics.controlHeight, height: Metrics.controlHeight)
-            .background(
-                Circle()
-                    .fill(
-                        isTaskLifecycleActionsMenuPresented
-                            ? Color.accentColor.opacity(0.20)
-                            : Color.clear
-                    )
-            )
-            .overlay(
-                Circle()
-                    .stroke(
-                        Color.accentColor.opacity(
-                            isTaskLifecycleActionsMenuPresented ? 0.28 : 0
-                        ),
-                        lineWidth: 1
-                    )
-            )
-            .frame(width: Metrics.iconControlWidth, height: Metrics.controlHeight)
-            .contentShape(Rectangle())
+        toolbarIconChrome(isActive: isTaskLifecycleActionsMenuPresented) {
+            Text("⋮")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(
+                    isTaskLifecycleActionsMenuPresented ? Color.primary : Color.secondary
+                )
+        }
     }
 
     private var showsFullDetailActions: Bool {
@@ -316,17 +300,27 @@ struct TaskDetailActionClusterView: View {
     }
 
     private func toolbarIconChrome<Content: View>(
+        isActive: Bool = false,
         @ViewBuilder content: () -> Content
     ) -> some View {
         content()
             .frame(width: Metrics.iconControlWidth, height: Metrics.controlHeight)
             .background(
                 RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous)
-                    .fill(Color.secondary.opacity(0.10))
+                    .fill(
+                        isActive
+                            ? Color.accentColor.opacity(0.14)
+                            : Color.secondary.opacity(0.10)
+                    )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous)
-                    .stroke(Color.secondary.opacity(0.14), lineWidth: 1)
+                    .stroke(
+                        isActive
+                            ? Color.accentColor.opacity(0.24)
+                            : Color.secondary.opacity(0.14),
+                        lineWidth: 1
+                    )
             )
             .contentShape(RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous))
     }

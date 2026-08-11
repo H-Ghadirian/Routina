@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0137 — Use a reliable glyph for the Mac overflow trigger](0137-use-reliable-glyph-for-mac-overflow-trigger.md)
+- [0136 — Give overflow controls visible idle chrome](0136-give-overflow-controls-visible-idle-chrome.md)
 - [0135 — Gate Home Goal filters with feature availability](0135-gate-home-goal-filter-with-feature-availability.md)
 - [0134 — Keep active tag filter rules identifiable](0134-keep-active-tag-filter-rules-identifiable.md)
 - [0133 — Defer large tag catalogs from iOS filter scrolls](0133-defer-large-tag-catalogs-from-ios-filter-scrolls.md)
