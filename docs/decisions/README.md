@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0539](0539-offer-ios-task-creation-from-home-empty-states.md):** iOS Home keeps an `Add New Task` action on a truly empty list and offers `Create Task` from a no-match search, seeding Smart Add with the trimmed query only when no known task matches it.
+
 - **[0538](0538-gate-add-task-goals-with-feature-setting.md) supersedes the Add Task exception in [0212](0212-hide-goals-tab-by-default.md):** The Goals setting governs every Goal control, including iOS and macOS Add Task forms.
 
 - **[0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md) refines [0535](0535-keep-ios-home-filter-details-in-dedicated-sheets.md), [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md), and [0533](0533-keep-active-ios-filter-tag-rules-visible.md):** iOS Home Filters puts every filter choice in a compact entry and a persistent dedicated sheet, leaving Clear Filters on the primary sheet.
@@ -605,6 +607,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0539](0539-offer-ios-task-creation-from-home-empty-states.md) | Offer iOS Task Creation From Home Empty States | Accepted | 2026-08-11 |
 | [0536](0536-match-mac-task-detail-overflow-to-toolbar-chrome.md) | Match Mac Task Detail Overflow to Toolbar Chrome | Accepted | 2026-08-11 |
 | [0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md) | Separate Confirmed Assumed Dones in Calendar List | Accepted | 2026-08-10 |
 | [0529](0529-collapse-calendar-list-planned-task-sections.md) | Collapse Calendar List Planned Task Sections | Accepted | 2026-08-09 |

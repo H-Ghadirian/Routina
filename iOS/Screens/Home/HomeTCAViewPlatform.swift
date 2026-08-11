@@ -278,7 +278,9 @@ detailContent
             inlineEmptyStateRow(
                 title: emptyState.title,
                 message: emptyState.message,
-                systemImage: emptyState.systemImage
+                systemImage: emptyState.systemImage,
+                actionTitle: "Create Task",
+                action: searchTaskCreationText == nil ? nil : { openAddTask() }
             )
         } rowContent: { task, rowNumber, includeMarkDone, moveContext in
             routineNavigationRow(
@@ -392,7 +394,8 @@ detailContent
             emptyStateView(
                 title: "No tasks yet",
                 message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
-                systemImage: "checklist"
+                systemImage: "checklist",
+                actionTitle: "Add New Task"
             ) {
                 openAddTask()
             }

@@ -2092,6 +2092,27 @@ Given two or more iOS New actions are available
 When the user taps the bottom-bar New action
 Then the feature-gated chooser opens with those available actions
 
+### iOS Home Empty States Offer Task Creation
+
+Area: Home / UI
+Decision links: [0539](../decisions/0539-offer-ios-task-creation-from-home-empty-states.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/HomeIOSCreationEmptyStateTests.swift`
+
+Given iOS Home has finished loading and contains no tasks
+When the person opens Home
+Then the empty state shows an `Add New Task` button that opens Smart Add
+
+Given the person searches Home with a non-empty query that matches no known task
+When the search results are empty
+Then the no-results state shows `Create Task`
+And Smart Add opens with the trimmed query as its task text
+
+Given a known task matches the search but current filters hide it
+When the visible search results are empty
+Then Home omits the create action to avoid suggesting a duplicate
+
 ### iOS Stats Scrolls From Stable Lazy Snapshots
 
 Area: Stats / UI

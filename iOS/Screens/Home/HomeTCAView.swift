@@ -63,6 +63,7 @@ struct HomeTCAView: View {
         emptyState: nil
     )
     @State var taskListPresentationRevision: UInt = 0
+    @State var searchTaskCreationText: String?
 
     init(
         store: StoreOf<HomeFeature>,
@@ -126,8 +127,11 @@ homeContent
     }
 
     private func refreshTaskListPresentation() {
+        let filtering = taskListFiltering()
+        let searchSourceDisplays = taskListSearchSourceDisplays
+        let knownTaskSearchSourceDisplays = allTaskSearchSourceDisplays
         let presentation = HomeTaskListPresentation.iOS(
-            filtering: taskListFiltering(),
+            filtering: filtering,
             routineDisplays: store.routineDisplays,
             awayRoutineDisplays: store.awayRoutineDisplays,
             archivedRoutineDisplays: store.archivedRoutineDisplays,
@@ -136,15 +140,29 @@ homeContent
             taskListKind: store.taskListMode.filterTaskListKind
         )
         taskListPresentation = presentation.appendingFlagRuleRevealResults(
-            from: taskListSearchSourceDisplays,
-            filtering: taskListFiltering()
+            from: searchSourceDisplays,
+            filtering: filtering
         )
+        searchTaskCreationText = smartAddSeedText.isEmpty
+            || knownTaskSearchSourceDisplays.contains(where: filtering.matchesSearch)
+            ? nil
+            : smartAddSeedText
         taskListPresentationRevision &+= 1
     }
 
     private var taskListSearchSourceDisplays: [HomeFeature.RoutineDisplay] {
+        sourceDisplays(includingArchivedTasks: store.showArchivedTasks)
+    }
+
+    private var allTaskSearchSourceDisplays: [HomeFeature.RoutineDisplay] {
+        sourceDisplays(includingArchivedTasks: true)
+    }
+
+    private func sourceDisplays(
+        includingArchivedTasks: Bool
+    ) -> [HomeFeature.RoutineDisplay] {
         var seenTaskIDs: Set<UUID> = []
-        let archivedDisplays = store.showArchivedTasks ? store.archivedRoutineDisplays : []
+        let archivedDisplays = includingArchivedTasks ? store.archivedRoutineDisplays : []
         return (store.routineDisplays + store.awayRoutineDisplays + archivedDisplays)
             .filter { seenTaskIDs.insert($0.taskID).inserted }
     }
@@ -201,6 +219,10 @@ homeContent
         }
     }
 
+    var smartAddSeedText: String {
+        searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var routineListSectioningMode: RoutineListSectioningMode {
         get {
             RoutineListSectioningMode.preferenceValue(rawValue: routineListSectioningModeRawValue)
@@ -223,7 +245,7 @@ homeContent
 
     @ViewBuilder
     var addRoutineSheetContent: some View {
-        IOSSmartAddTaskSheet(homeStore: store) {
+        IOSSmartAddTaskSheet(homeStore: store, initialText: smartAddSeedText) {
             requestRefresh()
         }
     }
@@ -351,12 +373,14 @@ homeContent
         title: String,
         message: String,
         systemImage: String,
+        actionTitle: String = "Add Task",
         action: (() -> Void)? = nil
     ) -> some View {
         HomeEmptyStateView(
             title: title,
             message: message,
             systemImage: systemImage,
+            actionTitle: actionTitle,
             action: action
         )
     }
@@ -364,12 +388,16 @@ homeContent
     func inlineEmptyStateRow(
         title: String,
         message: String,
-        systemImage: String
+        systemImage: String,
+        actionTitle: String = "Add Task",
+        action: (() -> Void)? = nil
     ) -> some View {
         HomeInlineEmptyStateRowView(
             title: title,
             message: message,
-            systemImage: systemImage
+            systemImage: systemImage,
+            actionTitle: actionTitle,
+            action: action
         )
     }
 
@@ -412,10 +440,20 @@ private struct IOSSmartAddTaskSheet: View {
     @FocusState private var isInputFocused: Bool
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
-    @State private var text = ""
+    @State private var text: String
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var isShowingDetails = false
+
+    init(
+        homeStore: StoreOf<HomeFeature>,
+        initialText: String,
+        onCreated: @escaping () -> Void
+    ) {
+        self.homeStore = homeStore
+        self.onCreated = onCreated
+        _text = State(initialValue: initialText)
+    }
 
     private var draft: RoutinaQuickAddDraft? {
         RoutinaQuickAddParser.parse(text, calendar: calendar, includingPlaces: isPlacesEnabled)

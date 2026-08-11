@@ -286,6 +286,22 @@ struct HomeInlineEmptyStateRowView: View {
     let title: String
     let message: String
     let systemImage: String
+    let actionTitle: String
+    let action: (() -> Void)?
+
+    init(
+        title: String,
+        message: String,
+        systemImage: String,
+        actionTitle: String = "Add Task",
+        action: (() -> Void)? = nil
+    ) {
+        self.title = title
+        self.message = message
+        self.systemImage = systemImage
+        self.actionTitle = actionTitle
+        self.action = action
+    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -301,6 +317,11 @@ struct HomeInlineEmptyStateRowView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 320)
+
+            if let action {
+                Button(actionTitle, action: action)
+                    .buttonStyle(.borderedProminent)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 16)
