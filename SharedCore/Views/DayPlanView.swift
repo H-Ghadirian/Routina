@@ -16,6 +16,7 @@ enum RoutinaMacScrollInteractionGate {
 
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
             lastScrollEventAt = Date()
+            RoutinaPerformanceProfiler.shared.recordInteraction(.macScrollWheel)
             return event
         }
     }

@@ -80,6 +80,10 @@ struct AppFeature {
             MissingTaskMetadataFeature(field: .urgency)
         }
         Reduce { state, action in
+            if let interaction = performanceInteraction(for: action) {
+                RoutinaPerformanceProfiler.shared.recordInteraction(interaction)
+            }
+
             switch action {
             case .tabSelected(let tab):
                 state.selectedTab = tab
@@ -242,6 +246,147 @@ struct AppFeature {
             default:
                 return .none
             }
+        }
+    }
+
+    private func performanceInteraction(
+        for action: Action
+    ) -> RoutinaPerformanceInteraction? {
+        switch action {
+        case let .tabSelected(tab):
+            return RoutinaPerformanceInteraction.navigationTab(named: tab.rawValue)
+
+        case .homeFastFilterSelected:
+            return .homeFilterChanged
+
+        case let .home(homeAction):
+            return performanceInteraction(for: homeAction)
+
+        case let .timeline(timelineAction):
+            return performanceInteraction(for: timelineAction)
+
+        case let .stats(statsAction):
+            return performanceInteraction(for: statsAction)
+
+        case .settings(.syncNowTapped):
+            return .settingsSyncRequested
+        case .settings(.exportRoutineDataTapped):
+            return .settingsBackupExportRequested
+
+        default:
+            return nil
+        }
+    }
+
+    private func performanceInteraction(
+        for action: HomeFeature.Action
+    ) -> RoutinaPerformanceInteraction? {
+        switch action {
+        case .manualRefreshRequested:
+            return .manualRefreshRequested
+        case .setSelectedTask(.some):
+            return .taskDetailOpened
+        case .setSelectedTask(.none):
+            return .taskDetailClosed
+        case .setAddRoutineSheet(true), .setSmartAddTaskSheet(true), .prepareAddRoutineDetails:
+            return .taskComposerOpened
+        case .setAddRoutineSheet(false), .setSmartAddTaskSheet(false):
+            return .taskComposerClosed
+        case .taskListModeChanged:
+            return .taskListModeChanged
+        case .isFilterSheetPresentedChanged(true):
+            return .homeFilterOpened
+        case .isFilterSheetPresentedChanged(false):
+            return nil
+        case .clearOptionalFilters:
+            return .homeFilterCleared
+        case .selectedFilterChanged,
+             .advancedQueryChanged,
+             .selectedTagChanged,
+             .selectedTagsChanged,
+             .includeTagMatchModeChanged,
+             .selectedFlagsChanged,
+             .includeFlagMatchModeChanged,
+             .excludedTagsChanged,
+             .excludeTagMatchModeChanged,
+             .selectedManualPlaceFilterIDChanged,
+             .selectedImportanceUrgencyFilterChanged,
+             .selectedTodoStateFilterChanged,
+             .selectedPressureFilterChanged,
+             .selectedThinkingNeededFilterChanged,
+             .selectedGoalFilterChanged,
+             .selectedMediaFilterChanged,
+             .selectedEstimationFilterChanged,
+             .hideAssumedDoneTasksChanged,
+             .taskListViewModeChanged,
+             .taskListSortOrderChanged,
+             .createdDateFilterChanged,
+             .showArchivedTasksChanged:
+            return .homeFilterChanged
+        case .markTaskDone:
+            return .taskMarkedDone
+        case .markTaskMissed:
+            return .taskMarkedMissed
+        case .markTaskCanceled:
+            return .taskMarkedCanceled
+        case .pauseTask:
+            return .taskPaused
+        case .resumeTask:
+            return .taskResumed
+        case .planTask:
+            return .taskPlanned
+        default:
+            return nil
+        }
+    }
+
+    private func performanceInteraction(
+        for action: TimelineFeature.Action
+    ) -> RoutinaPerformanceInteraction? {
+        switch action {
+        case .setFilterSheet(true):
+            return .timelineFilterOpened
+        case .clearFilters:
+            return .timelineFilterCleared
+        case .selectedRangeChanged,
+             .filterTypeChanged,
+             .selectedTagChanged,
+             .selectedTagsChanged,
+             .includeTagMatchModeChanged,
+             .excludedTagsChanged,
+             .excludeTagMatchModeChanged,
+             .selectedImportanceUrgencyFilterChanged,
+             .mediaFilterChanged:
+            return .timelineFilterChanged
+        default:
+            return nil
+        }
+    }
+
+    private func performanceInteraction(
+        for action: StatsFeature.Action
+    ) -> RoutinaPerformanceInteraction? {
+        switch action {
+        case .setFilterSheet(true):
+            return .statsFilterOpened
+        case .clearFilters:
+            return .statsFilterCleared
+        case .selectedRangeChanged,
+             .taskTypeFilterChanged,
+             .selectedTagChanged,
+             .selectedTagsChanged,
+             .includeTagMatchModeChanged,
+             .advancedQueryChanged,
+             .selectedImportanceUrgencyFilterChanged,
+             .excludedTagsChanged,
+             .excludeTagMatchModeChanged,
+             .selectedFlagsChanged,
+             .includeFlagMatchModeChanged,
+             .excludedFlagsChanged,
+             .excludeFlagMatchModeChanged:
+            return .statsFilterChanged
+        default:
+            return nil
         }
     }
 

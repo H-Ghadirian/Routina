@@ -29,6 +29,33 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Debug Performance Profiles Survive The Next Launch
+
+Area: Other / Diagnostics
+Decision links: [0555](../decisions/0555-preserve-the-previous-debug-performance-run.md), [0554](../decisions/0554-correlate-debug-stalls-with-safe-interaction-trails.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/RoutinaPerformanceProfilerTests.swift`
+
+Given a Debug performance profile was flushed before the app stopped
+When Routina launches again and begins a new current profile
+Then the prior file remains available as the single previous run
+And Support & About offers a separate action to share that previous run
+And no UI claims the previous run was definitely a crash
+
+### Debug Performance Profiles Correlate Stalls With Safe Interactions
+
+Area: Other / Diagnostics
+Decision links: [0554](../decisions/0554-correlate-debug-stalls-with-safe-interaction-trails.md), [0553](../decisions/0553-record-debug-performance-symptoms-for-support.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/RoutinaPerformanceProfilerTests.swift`
+
+Given a Debug profile records a high-level interaction before a main-thread stall
+When the profile is shared
+Then the stall includes the recent fixed interaction category
+And the JSON includes no local path or user-provided task or search content
+
 ### Mac Backlog Coalesces Update Refreshes
 
 Area: Tasks / Mac Backlog

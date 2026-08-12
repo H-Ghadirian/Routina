@@ -118,6 +118,13 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         .onScrollGeometryChange(for: CGFloat.self) { geometry in
             max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
         } action: { oldOffset, newOffset in
+            if oldOffset != newOffset {
+                RoutinaPerformanceProfiler.shared.recordInteraction(
+                    isTaskSearchActive
+                        ? .searchResultsScrolled
+                        : .homeTaskListScrolled
+                )
+            }
             onScroll(oldOffset, newOffset)
         }
         .task(id: rowNumberCacheInvalidation) {

@@ -503,13 +503,13 @@ SettingsMacDetailShell(
         if RoutinaPerformanceProfiler.isEnabled,
            let profileURL = RoutinaPerformanceProfiler.shared.latestProfileURL {
             SettingsMacDetailCard(title: "Performance Profile") {
-                Text("This Debug run is recording CPU, memory, lifecycle events, and main-thread stalls. It never includes your tasks or account data.")
+                Text("This Debug run is recording CPU, memory, lifecycle events, interaction categories, and main-thread stalls. It never includes task names, search text, or account data.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 10) {
                     Button {
-                        RoutinaPerformanceProfiler.shared.addMarker("reproduction-ended")
+                        RoutinaPerformanceProfiler.shared.addMarker(.reproductionEnded)
                         didMarkPerformanceReproduction = true
                     } label: {
                         Label(
@@ -523,6 +523,17 @@ SettingsMacDetailShell(
                         Label("Share Performance Profile", systemImage: "square.and.arrow.up")
                     }
                     .buttonStyle(.bordered)
+                }
+
+                if let previousRunProfileURL = RoutinaPerformanceProfiler.shared.previousRunProfileURL {
+                    ShareLink(item: previousRunProfileURL) {
+                        Label("Share Previous Run Profile", systemImage: "clock.arrow.circlepath")
+                    }
+                    .buttonStyle(.bordered)
+
+                    Text("Use the previous run after reopening the app following a crash or force-quit. It contains the most recently saved data from that run.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
         }

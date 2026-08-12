@@ -34,7 +34,7 @@ struct RoutinaPerformanceProfilerTests {
     @Test
     func reportSummarizesSymptomsWithoutSerializingItsLocalPath() throws {
         let profile = RoutinaPerformanceProfile(
-            schemaVersion: 1,
+            schemaVersion: 2,
             sessionIdentifier: "session",
             platform: "macOS",
             startedAt: Date(timeIntervalSince1970: 1_713_456_789),
@@ -66,7 +66,10 @@ struct RoutinaPerformanceProfilerTests {
                 RoutinaPerformanceMainThreadHitch(
                     timestamp: Date(timeIntervalSince1970: 1_713_456_792),
                     uptimeSeconds: 3,
-                    delayMilliseconds: 1_200
+                    delayMilliseconds: 1_200,
+                    precedingInteractionNames: [
+                        RoutinaPerformanceInteraction.homeTaskListScrolled.rawValue,
+                    ]
                 ),
             ],
             lifecycleEvents: [
@@ -76,9 +79,17 @@ struct RoutinaPerformanceProfilerTests {
                     name: "app.launch"
                 ),
             ],
+            interactionEvents: [
+                RoutinaPerformanceInteractionEvent(
+                    timestamp: Date(timeIntervalSince1970: 1_713_456_791),
+                    uptimeSeconds: 2,
+                    name: RoutinaPerformanceInteraction.homeTaskListScrolled.rawValue
+                ),
+            ],
             droppedResourceSampleCount: 0,
             droppedMainThreadHitchCount: 0,
             droppedLifecycleEventCount: 0,
+            droppedInteractionEventCount: 0,
             fileURL: URL(fileURLWithPath: "/Users/example/private-profile.json")
         )
 
@@ -98,5 +109,52 @@ struct RoutinaPerformanceProfilerTests {
         #expect(document["fileURL"] == nil)
         #expect(document["resourceSamples"] != nil)
         #expect(document["mainThreadHitches"] != nil)
+        #expect(document["interactionEvents"] != nil)
+        #expect(
+            (document["mainThreadHitches"] as? [[String: Any]])?.first?["precedingInteractionNames"]
+                as? [String] == [RoutinaPerformanceInteraction.homeTaskListScrolled.rawValue]
+        )
+    }
+
+    @Test
+    func interactionLabelsRejectUnknownNavigationValues() {
+        #expect(RoutinaPerformanceInteraction.navigationTab(named: "Home") == .navigationHome)
+        #expect(RoutinaPerformanceInteraction.navigationTab(named: "Private task name") == nil)
+        #expect(RoutinaPerformanceInteraction.macSidebar(named: "Settings") == .macSidebarSettings)
+        #expect(RoutinaPerformanceInteraction.macSidebar(named: "Private section name") == nil)
+    }
+
+    @Test
+    func preservesCurrentProfileBeforeAReplacementRunStarts() throws {
+        let testDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent(".codex", isDirectory: true)
+            .appendingPathComponent(
+                "PerformanceProfilePreservationTests-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        defer { try? FileManager.default.removeItem(at: testDirectory) }
+
+        try FileManager.default.createDirectory(
+            at: testDirectory,
+            withIntermediateDirectories: true
+        )
+        let currentProfileURL = testDirectory.appendingPathComponent(
+            RoutinaPerformanceProfiler.fileName
+        )
+        let previousRunProfileURL = testDirectory.appendingPathComponent(
+            RoutinaPerformanceProfiler.previousRunFileName
+        )
+        let interruptedRunData = try #require("interrupted run".data(using: .utf8))
+        let olderRunData = try #require("older run".data(using: .utf8))
+        try interruptedRunData.write(to: currentProfileURL)
+        try olderRunData.write(to: previousRunProfileURL)
+
+        RoutinaPerformanceProfileFileStore.preserveCurrentProfileAsPreviousRun(
+            currentProfileURL: currentProfileURL,
+            previousRunProfileURL: previousRunProfileURL
+        )
+
+        #expect(try Data(contentsOf: previousRunProfileURL) == interruptedRunData)
+        #expect(try Data(contentsOf: currentProfileURL) == interruptedRunData)
     }
 }

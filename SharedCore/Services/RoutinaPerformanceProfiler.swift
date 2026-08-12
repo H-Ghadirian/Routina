@@ -10,14 +10,16 @@ import UIKit
 /// A lightweight, development-only symptom recorder for investigating a run
 /// without requiring the person reproducing it to attach Instruments.
 ///
-/// The profile intentionally records aggregate process health and app lifecycle
-/// events only. It never reads SwiftData, task content, account details, or
-/// network payloads. Use it to locate *when* a slowdown happened; use an
-/// Instruments trace to identify the responsible call stack.
+/// The profile intentionally records aggregate process health, app lifecycle,
+/// and a closed set of high-level interaction categories. It never reads
+/// SwiftData, task content, query text, account details, or network payloads.
+/// Use it to locate *when* a slowdown happened and what broad action preceded
+/// it; use an Instruments trace to identify the responsible call stack.
 final class RoutinaPerformanceProfiler: @unchecked Sendable {
     static let shared = RoutinaPerformanceProfiler()
 
     static let fileName = "RoutinaPerformanceProfile.json"
+    static let previousRunFileName = "RoutinaPerformanceProfile-PreviousRun.json"
 
     static let isEnabled = shouldEnable(
         isDebugBuild: isDebugBuild,
@@ -39,6 +41,10 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
     private static let maximumResourceSamples = 900
     private static let maximumHitches = 200
     private static let maximumLifecycleEvents = 80
+    private static let maximumInteractionEvents = 240
+    private static let interactionDeduplicationWindow: TimeInterval = 0.75
+    private static let hitchInteractionContextWindow: TimeInterval = 10
+    private static let maximumInteractionsPerHitch = 3
 
     private let stateLock = NSLock()
     private let samplingQueue = DispatchQueue(
@@ -60,6 +66,8 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
     func startIfNeeded() {
         guard Self.isEnabled else { return }
 
+        let profileURL = Self.defaultProfileURL()
+        let previousRunProfileURL = profileURL.map(Self.previousRunProfileURL(for:))
         let didStart = withStateLock { state in
             guard !state.isRunning else { return false }
 
@@ -69,7 +77,8 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
                 sessionIdentifier: UUID().uuidString,
                 startedAt: now,
                 startedUptime: ProcessInfo.processInfo.systemUptime,
-                profileURL: Self.defaultProfileURL()
+                profileURL: profileURL,
+                previousRunProfileURL: previousRunProfileURL
             )
             state.lifecycleEvents.append(
                 RoutinaPerformanceLifecycleEvent(
@@ -82,6 +91,13 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
         }
 
         guard didStart else { return }
+
+        if let profileURL, let previousRunProfileURL {
+            RoutinaPerformanceProfileFileStore.preserveCurrentProfileAsPreviousRun(
+                currentProfileURL: profileURL,
+                previousRunProfileURL: previousRunProfileURL
+            )
+        }
 
         installTerminationObserver()
         startTimers()
@@ -97,9 +113,42 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
         recordLifecycleEvent("scene.\(scenePhase)")
     }
 
-    func addMarker(_ name: String = "manual-marker") {
-        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        recordLifecycleEvent("marker.\(normalizedName.isEmpty ? "manual" : normalizedName)")
+    func addMarker(_ marker: RoutinaPerformanceMarker = .manual) {
+        recordLifecycleEvent("marker.\(marker.rawValue)")
+    }
+
+    /// Records only a fixed, privacy-safe interaction category. Callers cannot
+    /// attach task names, query text, identifiers, or other user content.
+    func recordInteraction(_ interaction: RoutinaPerformanceInteraction) {
+        guard Self.isEnabled else { return }
+
+        let now = Date()
+        let uptime = ProcessInfo.processInfo.systemUptime
+        let didRecord = withStateLock { state in
+            guard state.isRunning else { return false }
+
+            if let previous = state.interactionEvents.last,
+               previous.name == interaction.rawValue,
+               uptime - previous.uptimeSeconds < Self.interactionDeduplicationWindow {
+                return false
+            }
+
+            appendBounded(
+                RoutinaPerformanceInteractionEvent(
+                    timestamp: now,
+                    uptimeSeconds: uptime,
+                    name: interaction.rawValue
+                ),
+                to: &state.interactionEvents,
+                maximumCount: Self.maximumInteractionEvents,
+                droppedCount: &state.droppedInteractionEventCount
+            )
+            return true
+        }
+
+        if didRecord {
+            flush()
+        }
     }
 
     func flush() {
@@ -114,6 +163,16 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
     var latestProfileURL: URL? {
         withStateLock { state in
             state.profileURL
+        }
+    }
+
+    var previousRunProfileURL: URL? {
+        withStateLock { state in
+            guard let profileURL = state.previousRunProfileURL,
+                  FileManager.default.fileExists(atPath: profileURL.path) else {
+                return nil
+            }
+            return profileURL
         }
     }
 
@@ -233,7 +292,11 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
                 RoutinaPerformanceMainThreadHitch(
                     timestamp: Date(),
                     uptimeSeconds: observedUptime,
-                    delayMilliseconds: delay * 1_000
+                    delayMilliseconds: delay * 1_000,
+                    precedingInteractionNames: recentInteractionNames(
+                        before: observedUptime,
+                        state: state
+                    )
                 ),
                 to: &state.mainThreadHitches,
                 maximumCount: Self.maximumHitches,
@@ -283,7 +346,7 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
             }
 
             return RoutinaPerformanceProfile(
-                schemaVersion: 1,
+                schemaVersion: 2,
                 sessionIdentifier: state.sessionIdentifier,
                 platform: Self.platformName,
                 startedAt: startedAt,
@@ -296,9 +359,11 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
                 resourceSamples: state.resourceSamples,
                 mainThreadHitches: state.mainThreadHitches,
                 lifecycleEvents: state.lifecycleEvents,
+                interactionEvents: state.interactionEvents,
                 droppedResourceSampleCount: state.droppedResourceSampleCount,
                 droppedMainThreadHitchCount: state.droppedMainThreadHitchCount,
                 droppedLifecycleEventCount: state.droppedLifecycleEventCount,
+                droppedInteractionEventCount: state.droppedInteractionEventCount,
                 fileURL: profileURL
             )
         }
@@ -322,6 +387,12 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
         }
     }
 
+    private static func previousRunProfileURL(for currentProfileURL: URL) -> URL {
+        currentProfileURL
+            .deletingLastPathComponent()
+            .appendingPathComponent(previousRunFileName)
+    }
+
     private static var platformName: String {
         #if os(macOS)
         "macOS"
@@ -337,6 +408,18 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
         defer { stateLock.unlock() }
         return operation(&state)
     }
+
+    private func recentInteractionNames(
+        before uptime: TimeInterval,
+        state: State
+    ) -> [String] {
+        state.interactionEvents
+            .reversed()
+            .prefix(Self.maximumInteractionsPerHitch)
+            .filter { uptime - $0.uptimeSeconds <= Self.hitchInteractionContextWindow }
+            .reversed()
+            .map(\.name)
+    }
 }
 
 private struct State {
@@ -345,15 +428,18 @@ private struct State {
     var startedAt: Date?
     var startedUptime: TimeInterval = 0
     var profileURL: URL?
+    var previousRunProfileURL: URL?
     var previousCPUSeconds: TimeInterval?
     var previousSampleUptime: TimeInterval?
     var lastFlushUptime: TimeInterval = 0
     var resourceSamples: [RoutinaPerformanceResourceSample] = []
     var mainThreadHitches: [RoutinaPerformanceMainThreadHitch] = []
     var lifecycleEvents: [RoutinaPerformanceLifecycleEvent] = []
+    var interactionEvents: [RoutinaPerformanceInteractionEvent] = []
     var droppedResourceSampleCount = 0
     var droppedMainThreadHitchCount = 0
     var droppedLifecycleEventCount = 0
+    var droppedInteractionEventCount = 0
 }
 
 struct RoutinaPerformanceProfile: Codable {
@@ -370,9 +456,11 @@ struct RoutinaPerformanceProfile: Codable {
     var resourceSamples: [RoutinaPerformanceResourceSample]
     var mainThreadHitches: [RoutinaPerformanceMainThreadHitch]
     var lifecycleEvents: [RoutinaPerformanceLifecycleEvent]
+    var interactionEvents: [RoutinaPerformanceInteractionEvent]
     var droppedResourceSampleCount: Int
     var droppedMainThreadHitchCount: Int
     var droppedLifecycleEventCount: Int
+    var droppedInteractionEventCount: Int
     /// Kept out of the serialized report because an app-container path can
     /// disclose the local account name while adding no diagnostic value.
     var fileURL: URL = URL(fileURLWithPath: "/")
@@ -400,9 +488,11 @@ struct RoutinaPerformanceProfile: Codable {
         case resourceSamples
         case mainThreadHitches
         case lifecycleEvents
+        case interactionEvents
         case droppedResourceSampleCount
         case droppedMainThreadHitchCount
         case droppedLifecycleEventCount
+        case droppedInteractionEventCount
     }
 }
 
@@ -426,12 +516,112 @@ struct RoutinaPerformanceMainThreadHitch: Codable, Equatable {
     var timestamp: Date
     var uptimeSeconds: TimeInterval
     var delayMilliseconds: Double
+    var precedingInteractionNames: [String]
 }
 
 struct RoutinaPerformanceLifecycleEvent: Codable, Equatable {
     var timestamp: Date
     var uptimeSeconds: TimeInterval
     var name: String
+}
+
+struct RoutinaPerformanceInteractionEvent: Codable, Equatable {
+    var timestamp: Date
+    var uptimeSeconds: TimeInterval
+    var name: String
+}
+
+enum RoutinaPerformanceMarker: String, Sendable {
+    case manual
+    case reproductionEnded = "reproduction-ended"
+}
+
+/// The only user-behavior labels eligible for a shared performance profile.
+/// Keep this as a closed enum: free-form values could accidentally carry user
+/// content into a support artifact.
+enum RoutinaPerformanceInteraction: String, CaseIterable, Sendable {
+    case navigationHome = "navigation.home"
+    case navigationSearch = "navigation.search"
+    case navigationGoals = "navigation.goals"
+    case navigationTimeline = "navigation.timeline"
+    case navigationStats = "navigation.stats"
+    case navigationSettings = "navigation.settings"
+    case navigationMore = "navigation.more"
+    case navigationTaskReview = "navigation.task-review"
+    case macSidebarRoutines = "navigation.mac-sidebar.routines"
+    case macSidebarBoard = "navigation.mac-sidebar.board"
+    case macSidebarGoals = "navigation.mac-sidebar.goals"
+    case macSidebarAdventure = "navigation.mac-sidebar.adventure"
+    case macSidebarTimeline = "navigation.mac-sidebar.timeline"
+    case macSidebarStats = "navigation.mac-sidebar.stats"
+    case macSidebarSettings = "navigation.mac-sidebar.settings"
+    case macSidebarAddTask = "navigation.mac-sidebar.add-task"
+    case homeTaskListScrolled = "scroll.home-task-list"
+    case searchResultsScrolled = "scroll.search-results"
+    case timelineScrolled = "scroll.timeline"
+    case macScrollWheel = "scroll.mac"
+    case searchQueryEdited = "search.query-edited"
+    case searchQueryApplied = "search.query-applied"
+    case searchQueryCleared = "search.query-cleared"
+    case homeFilterOpened = "filter.home.opened"
+    case homeFilterChanged = "filter.home.changed"
+    case homeFilterCleared = "filter.home.cleared"
+    case timelineFilterOpened = "filter.timeline.opened"
+    case timelineFilterChanged = "filter.timeline.changed"
+    case timelineFilterCleared = "filter.timeline.cleared"
+    case statsFilterOpened = "filter.stats.opened"
+    case statsFilterChanged = "filter.stats.changed"
+    case statsFilterCleared = "filter.stats.cleared"
+    case taskListModeChanged = "home.task-list-mode.changed"
+    case taskDetailOpened = "task-detail.opened"
+    case taskDetailClosed = "task-detail.closed"
+    case taskComposerOpened = "task-composer.opened"
+    case taskComposerClosed = "task-composer.closed"
+    case taskMarkedDone = "task.marked-done"
+    case taskMarkedMissed = "task.marked-missed"
+    case taskMarkedCanceled = "task.marked-canceled"
+    case taskPaused = "task.paused"
+    case taskResumed = "task.resumed"
+    case taskPlanned = "task.planned"
+    case newActionMenuOpened = "new-action-menu.opened"
+    case newTaskRequested = "new.task.requested"
+    case newGoalRequested = "new.goal.requested"
+    case newEventRequested = "new.event.requested"
+    case newEmotionRequested = "new.emotion.requested"
+    case newNoteRequested = "new.note.requested"
+    case newCheckInRequested = "new.check-in.requested"
+    case newAwayRequested = "new.away.requested"
+    case newSleepRequested = "new.sleep.requested"
+    case manualRefreshRequested = "sync.manual-refresh.requested"
+    case settingsSyncRequested = "settings.sync.requested"
+    case settingsBackupExportRequested = "settings.backup-export.requested"
+
+    static func navigationTab(named tabName: String) -> Self? {
+        switch tabName {
+        case "Home": .navigationHome
+        case "Search": .navigationSearch
+        case "Goals": .navigationGoals
+        case "Timeline": .navigationTimeline
+        case "Stats": .navigationStats
+        case "Settings": .navigationSettings
+        case "More": .navigationMore
+        default: nil
+        }
+    }
+
+    static func macSidebar(named modeName: String) -> Self? {
+        switch modeName {
+        case "Routines": .macSidebarRoutines
+        case "Board": .macSidebarBoard
+        case "Goals": .macSidebarGoals
+        case "Adventure": .macSidebarAdventure
+        case "Timeline": .macSidebarTimeline
+        case "Stats": .macSidebarStats
+        case "Settings": .macSidebarSettings
+        case "Add Task": .macSidebarAddTask
+        default: nil
+        }
+    }
 }
 
 enum RoutinaPerformanceProfileWriter {
@@ -448,6 +638,27 @@ enum RoutinaPerformanceProfileWriter {
             try encoder.encode(profile).write(to: fileURL, options: [.atomic])
         } catch {
             NSLog("Failed to write the Routina performance profile: \(error.localizedDescription)")
+        }
+    }
+}
+
+enum RoutinaPerformanceProfileFileStore {
+    static func preserveCurrentProfileAsPreviousRun(
+        currentProfileURL: URL,
+        previousRunProfileURL: URL,
+        fileManager: FileManager = .default
+    ) {
+        guard fileManager.fileExists(atPath: currentProfileURL.path) else { return }
+
+        do {
+            try fileManager.createDirectory(
+                at: previousRunProfileURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            let currentProfileData = try Data(contentsOf: currentProfileURL)
+            try currentProfileData.write(to: previousRunProfileURL, options: [.atomic])
+        } catch {
+            NSLog("Failed to preserve the previous Routina performance profile: \(error.localizedDescription)")
         }
     }
 }

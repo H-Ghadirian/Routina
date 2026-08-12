@@ -592,6 +592,12 @@ struct TimelineView: View {
             }
         }
         .listStyle(.plain)
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
+        } action: { oldOffset, newOffset in
+            guard oldOffset != newOffset else { return }
+            RoutinaPerformanceProfiler.shared.recordInteraction(.timelineScrolled)
+        }
     }
 
     @ViewBuilder

@@ -91,11 +91,11 @@ List {
         if RoutinaPerformanceProfiler.isEnabled,
            let profileURL = RoutinaPerformanceProfiler.shared.latestProfileURL {
             Section("Performance Profile") {
-                Text("This Debug run is recording CPU, memory, lifecycle events, and main-thread stalls. It never includes your tasks or account data.")
+                Text("This Debug run is recording CPU, memory, lifecycle events, interaction categories, and main-thread stalls. It never includes task names, search text, or account data.")
                     .foregroundStyle(.secondary)
 
                 Button {
-                    RoutinaPerformanceProfiler.shared.addMarker("reproduction-ended")
+                    RoutinaPerformanceProfiler.shared.addMarker(.reproductionEnded)
                     didMarkPerformanceReproduction = true
                 } label: {
                     Label(
@@ -108,6 +108,17 @@ List {
                     Label("Share Performance Profile", systemImage: "square.and.arrow.up")
                 }
                 .accessibilityHint("Shares the current Debug performance profile JSON file")
+
+                if let previousRunProfileURL = RoutinaPerformanceProfiler.shared.previousRunProfileURL {
+                    ShareLink(item: previousRunProfileURL) {
+                        Label("Share Previous Run Profile", systemImage: "clock.arrow.circlepath")
+                    }
+                    .accessibilityHint("Shares the profile preserved before this Debug run started")
+
+                    Text("Use the previous run after reopening the app following a crash or force-quit. It contains the most recently saved data from that run.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }

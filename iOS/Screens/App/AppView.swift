@@ -188,9 +188,12 @@ Group {
         searchPresentationUpdateTask?.cancel()
 
         guard !rawSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            RoutinaPerformanceProfiler.shared.recordInteraction(.searchQueryCleared)
             appliedSearchText = rawSearchText
             return
         }
+
+        RoutinaPerformanceProfiler.shared.recordInteraction(.searchQueryEdited)
 
         searchPresentationUpdateTask = Task { @MainActor in
             do {
@@ -201,6 +204,7 @@ Group {
 
             guard !Task.isCancelled, searchText == rawSearchText else { return }
             appliedSearchText = rawSearchText
+            RoutinaPerformanceProfiler.shared.recordInteraction(.searchQueryApplied)
         }
     }
 
@@ -270,6 +274,9 @@ Group {
         }
 
         guard let appTab = tab.appTab else { return }
+        if let interaction = RoutinaPerformanceInteraction.navigationTab(named: appTab.rawValue) {
+            RoutinaPerformanceProfiler.shared.recordInteraction(interaction)
+        }
         store.send(.tabSelected(appTab))
     }
 
@@ -281,6 +288,7 @@ Group {
             performNewTabAction(action)
             return
         }
+        RoutinaPerformanceProfiler.shared.recordInteraction(.newActionMenuOpened)
         isNewActionListPresented = true
     }
 
@@ -298,6 +306,10 @@ Group {
 
     @MainActor
     private func performNewTabAction(_ action: NewTabAction) {
+        RoutinaPerformanceProfiler.shared.recordInteraction(
+            performanceInteraction(for: action)
+        )
+
         switch action {
         case .event:
             guard areEventEmotionActionsEnabled else { return }
@@ -322,6 +334,21 @@ Group {
         case .sleep:
             guard isNewSheetSleepActionEnabled else { return }
             requestSleepFromNewSheet()
+        }
+    }
+
+    private func performanceInteraction(
+        for action: NewTabAction
+    ) -> RoutinaPerformanceInteraction {
+        switch action {
+        case .event: return .newEventRequested
+        case .emotion: return .newEmotionRequested
+        case .note: return .newNoteRequested
+        case .goal: return .newGoalRequested
+        case .task: return .newTaskRequested
+        case .checkIn: return .newCheckInRequested
+        case .away: return .newAwayRequested
+        case .sleep: return .newSleepRequested
         }
     }
 
@@ -886,6 +913,9 @@ private struct AppMoreNavigationView: View {
         @ViewBuilder label: () -> Label
     ) -> some View {
         Button {
+            RoutinaPerformanceProfiler.shared.recordInteraction(
+                performanceInteraction(for: destination)
+            )
             self.destination = destination
         } label: {
             HStack(spacing: 8) {
@@ -899,6 +929,17 @@ private struct AppMoreNavigationView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    private func performanceInteraction(
+        for destination: AppMoreDestination
+    ) -> RoutinaPerformanceInteraction {
+        switch destination {
+        case .goals: return .navigationGoals
+        case .stats: return .navigationStats
+        case .settings: return .navigationSettings
+        case .taskReview: return .navigationTaskReview
+        }
     }
 
     @ViewBuilder

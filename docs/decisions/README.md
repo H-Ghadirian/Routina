@@ -19,6 +19,10 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0555](0555-preserve-the-previous-debug-performance-run.md) refines [0553](0553-record-debug-performance-symptoms-for-support.md) and [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md):** Before a new Debug profile begins, Routina preserves the most recently flushed current file as one bounded previous run that can be shared after reopening following a crash or force-quit.
+
+- **[0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md) refines [0553](0553-record-debug-performance-symptoms-for-support.md):** Debug profiles correlate stalls with a bounded trail of fixed navigation, scroll, filter, lifecycle, creation, and sync categories, never task content or identifiers.
+
 - **[0553](0553-record-debug-performance-symptoms-for-support.md) refines [0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md) and [0516](0516-make-support-diagnostics-copyable.md):** Debug runs write one bounded, privacy-safe JSON performance symptom profile with CPU, memory, main-thread-delay, and lifecycle signals; it supports handoff but does not replace a validated Release Time Profiler trace.
 
 - **[0552](0552-keep-ios-saved-tag-settings-compact.md):** iOS Settings -> Tags keeps saved-tag rows compact until a person selects one, then reveals that row's existing actions and editors without persisting the temporary selection.
@@ -637,6 +641,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0555](0555-preserve-the-previous-debug-performance-run.md) | Preserve the Previous Debug Performance Run | Accepted | 2026-08-12 |
+| [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md) | Correlate Debug Stalls With Safe Interaction Trails | Accepted | 2026-08-12 |
 | [0553](0553-record-debug-performance-symptoms-for-support.md) | Record Debug Performance Symptoms for Support | Accepted | 2026-08-12 |
 | [0552](0552-keep-ios-saved-tag-settings-compact.md) | Keep iOS Saved-Tag Settings Compact | Accepted | 2026-08-12 |
 | [0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) | Collapse Confirmed Assumed-Done Calendar List Sections | Accepted | 2026-08-11 |
