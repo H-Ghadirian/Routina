@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0559](0559-run-startup-data-maintenance-off-the-main-actor.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md):** one utility-priority SwiftData worker owns startup migrations and whole-history integrity repair, while Home loads its first visible snapshot without those repair scans on the main actor.
+
 - **[0558](0558-activate-ios-search-on-tab-selection.md) refines [0544](0544-scope-ios-search-field-to-dedicated-search-tab.md):** selecting or reselecting the dedicated iOS Search tab activates its native field and opens the keyboard in the same tap, while preserving the stable tab host and existing Search performance boundaries.
 
 - **[0557](0557-build-ios-search-presentations-off-main-actor.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0541](0541-keep-ios-search-input-ahead-of-home-presentations.md), and [0544](0544-scope-ios-search-field-to-dedicated-search-tab.md):** iOS Search reuses pre-normalized display indexes, builds non-actionable task-list presentations and row-number lookups in cancellable detached work, keeps one stable list host while empty results change, and formats visible metadata without reconstructing Home filtering state.

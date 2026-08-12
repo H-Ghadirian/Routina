@@ -335,15 +335,17 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
-    func testMacHomeRunsWholeHistoryMaintenanceOnlyForInitialLoad() throws {
+    func testMacHomeDefersWholeHistoryMaintenanceOffTheMainActor() throws {
         let featureSource = try Self.sourceFile("RoutinaMacApp/Features/Home/HomeFeature.swift")
         let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
         let querySource = try Self.sourceFile("SharedCore/Features/Home/HomeFeatureTaskLoadQuery.swift")
+        let persistenceSource = try Self.sourceFile("SharedCore/Persistence/PersistenceController.swift")
 
         XCTAssertTrue(
-            featureSource.contains("loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot)"),
-            "Home should run repair and deduplication passes only while establishing the initial task snapshot."
+            featureSource.contains("loadTasksEffect(),"),
+            "The first visible Home snapshot must not run whole-history repair on the UI executor."
         )
+        XCTAssertFalse(featureSource.contains("loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot)"))
         XCTAssertTrue(
             featureSource.contains("private func loadTasksEffect(performingMaintenance: Bool = false)"),
             "Ordinary Home refreshes and post-mutation reloads should skip whole-history maintenance."
@@ -351,6 +353,8 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(refreshSource.contains("guard !store.hasLoadedTaskSnapshot else { return }"))
         XCTAssertTrue(querySource.contains("if performingMaintenance {"))
         XCTAssertTrue(querySource.contains("RoutineLogHistory.backfillMissingLastDoneLogs"))
+        XCTAssertTrue(persistenceSource.contains("Task.detached(priority: .utility)"))
+        XCTAssertTrue(persistenceSource.contains("@ModelActor\nprivate actor RoutinaStartupDataMaintenanceWorker"))
     }
 
     func testMacStatsDoesNotReloadItsWholeSnapshotOnEveryAppearance() throws {

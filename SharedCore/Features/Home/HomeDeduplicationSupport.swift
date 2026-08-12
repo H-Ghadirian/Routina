@@ -31,7 +31,11 @@ enum HomeDeduplicationSupport {
         }
     }
 
-    static func enforceUniqueRoutineNames(in context: ModelContext) throws {
+    @discardableResult
+    static func enforceUniqueRoutineNames(
+        in context: ModelContext,
+        postsUpdateNotification: Bool = true
+    ) throws -> Bool {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         var tasksByNormalizedName: [String: [RoutineTask]] = [:]
         var removedAny = false
@@ -86,11 +90,18 @@ enum HomeDeduplicationSupport {
 
         if removedAny {
             try context.save()
-            NotificationCenter.default.postRoutineDidUpdate()
+            if postsUpdateNotification {
+                NotificationCenter.default.postRoutineDidUpdate()
+            }
         }
+        return removedAny
     }
 
-    static func enforceUniquePlaceNames(in context: ModelContext) throws {
+    @discardableResult
+    static func enforceUniquePlaceNames(
+        in context: ModelContext,
+        postsUpdateNotification: Bool = true
+    ) throws -> Bool {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
@@ -122,8 +133,11 @@ enum HomeDeduplicationSupport {
 
         if removedAny {
             try context.save()
-            NotificationCenter.default.postRoutineDidUpdate()
+            if postsUpdateNotification {
+                NotificationCenter.default.postRoutineDidUpdate()
+            }
         }
+        return removedAny
     }
 
     private static func preferredTaskToKeep(from tasks: [RoutineTask]) -> RoutineTask {

@@ -25,7 +25,6 @@ enum CloudKitDirectPullMergeHousekeeping {
         }
     }
 
-    @MainActor
     static func deleteOrphanedTaskRows(in context: ModelContext) throws {
         let taskIDs = Set(try context.fetch(FetchDescriptor<RoutineTask>()).map(\.id))
         let orphanedLogTaskIDs = try context.fetch(FetchDescriptor<RoutineLog>())
@@ -150,7 +149,6 @@ enum CloudKitDirectPullMergeHousekeeping {
         }
     }
 
-    @MainActor
     static func deleteRows(
         forTaskIDs taskIDs: Set<UUID>,
         in context: ModelContext

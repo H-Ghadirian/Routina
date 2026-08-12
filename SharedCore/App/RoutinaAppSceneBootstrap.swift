@@ -5,10 +5,15 @@ enum RoutinaAppSceneBootstrap {
     static func preparePersistence() -> PersistenceController {
         RoutinaAppBootstrap.configure()
         let persistence = PersistenceController.shared
-        PersistenceController.runPostOpenMigrations(in: persistence.container)
+        RoutinaUserPreferencesStore.migrateDefaultsIfNeeded(in: persistence.container.mainContext)
         RoutinaUserPreferencesStore.startDefaultsMirror()
         RoutinaUITestSeeder.seedIfRequested(in: persistence.container.mainContext)
         RoutinaScreenshotDataSeeder.seedIfRequested(in: persistence.container.mainContext)
+        if !AppEnvironment.isAutomatedTestMode {
+            PersistenceController.startBackgroundStartupMaintenanceIfNeeded(
+                in: persistence.container
+            )
+        }
         scheduleDuplicateIDCleanup(using: persistence)
         return persistence
     }

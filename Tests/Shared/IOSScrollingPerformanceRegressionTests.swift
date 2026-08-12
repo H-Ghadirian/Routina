@@ -56,13 +56,15 @@ struct IOSScrollingPerformanceRegressionTests {
     }
 
     @Test
-    func activeIOSSurfaceOwnsRefreshWorkAndHomeMaintenanceRunsOnce() throws {
+    func activeIOSSurfaceOwnsRefreshWorkAndStartupMaintenanceStaysOffMainActor() throws {
         let appView = try Self.sourceFile("iOS/Screens/App/AppView.swift")
         let appPlatform = try Self.sourceFile("iOS/Screens/App/AppViewPlatform.swift")
         let home = try Self.sourceFile("iOS/Screens/Home/HomeTCAView.swift")
         let homeFeature = try Self.sourceFile("iOS/Features/Home/HomeFeature.swift")
         let homeRefresh = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
         let timeline = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
+        let persistence = try Self.sourceFile("SharedCore/Persistence/PersistenceController.swift")
+        let bootstrap = try Self.sourceFile("SharedCore/App/RoutinaAppSceneBootstrap.swift")
 
         #expect(appView.contains("isActive: store.selectedTab == .timeline"))
         #expect(appPlatform.contains("isActive: store.selectedTab == .home"))
@@ -73,11 +75,17 @@ struct IOSScrollingPerformanceRegressionTests {
         #expect(home.contains("guard isActive else { return }\n                    await refreshTaskListPresentation()"))
         #expect(homeRefresh.contains(".onChange(of: isActive)"))
         #expect(homeRefresh.contains("needsRefreshWhenActive = true"))
-        #expect(homeFeature.contains("loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot)"))
+        #expect(homeFeature.contains("loadTasksEffect(),"))
+        #expect(!homeFeature.contains("loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot)"))
         #expect(homeFeature.contains("private func loadTasksEffect(performingMaintenance: Bool = false)"))
         #expect(timeline.contains("let isActive: Bool"))
         #expect(timeline.contains(".task(id: isActive)"))
         #expect(timeline.contains("guard isActive else { return }\n                refreshTimelineDataSnapshot()"))
+        #expect(bootstrap.contains("RoutinaUserPreferencesStore.migrateDefaultsIfNeeded"))
+        #expect(bootstrap.contains("PersistenceController.startBackgroundStartupMaintenanceIfNeeded"))
+        #expect(persistence.contains("Task.detached(priority: .utility)"))
+        #expect(persistence.contains("@ModelActor\nprivate actor RoutinaStartupDataMaintenanceWorker"))
+        #expect(!persistence.contains("Task { @MainActor in\n            Self.runPostOpenMigrations"))
     }
 
     @Test

@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0154 — Keep startup data maintenance off the main actor](0154-keep-startup-data-maintenance-off-the-main-actor.md)
 - [0153 — Link Search-tab selection to search activation](0153-link-search-tab-selection-to-search-activation.md)
 - [0152 — Keep large Search restoration off the main actor](0152-keep-large-search-restoration-off-main-actor.md)
 - [0151 — Move large Search presentations off the main actor](0151-move-large-search-presentations-off-main-actor.md)

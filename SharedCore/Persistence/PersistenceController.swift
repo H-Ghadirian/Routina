@@ -41,7 +41,6 @@ public struct PersistenceController {
                 RoutinaUserPreferences.self,
                 configurations: primaryConfiguration
             )
-            Self.schedulePostOpenMigrations(in: container)
         } catch {
             NSLog(
                 "Primary ModelContainer init failed: \(error.localizedDescription)."
@@ -93,7 +92,6 @@ public struct PersistenceController {
                         RoutinaUserPreferences.self,
                         configurations: retriedConfiguration
                     )
-                    Self.schedulePostOpenMigrations(in: container)
                     return
                 } catch {
                     NSLog("Retry with the same persistent-store configuration failed: \(error.localizedDescription). Falling back to local-only store.")
@@ -130,7 +128,6 @@ public struct PersistenceController {
                     RoutinaUserPreferences.self,
                     configurations: localFallback
                 )
-                Self.schedulePostOpenMigrations(in: container)
             } catch {
                 NSLog("Local-only ModelContainer init failed: \(error.localizedDescription). Falling back to in-memory store.")
 
@@ -162,7 +159,6 @@ public struct PersistenceController {
                         RoutinaUserPreferences.self,
                         configurations: memoryFallback
                     )
-                    Self.schedulePostOpenMigrations(in: container)
                 } catch {
                     fatalError("Failed to initialize in-memory ModelContainer: \(error.localizedDescription)")
                 }
@@ -207,12 +203,10 @@ public struct PersistenceController {
             RoutinaUserPreferences.self,
             configurations: configuration
         )
-        Self.schedulePostOpenMigrations(in: container)
         return container
     }
 
     @discardableResult
-    @MainActor
     static func migrateLegacyRecurrenceRules(in context: ModelContext) throws -> Int {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         var migratedCount = 0
@@ -227,7 +221,6 @@ public struct PersistenceController {
     }
 
     @discardableResult
-    @MainActor
     static func normalizeChecklistItemIntervals(in context: ModelContext) throws -> Int {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         var normalizedCount = 0
@@ -273,27 +266,9 @@ public struct PersistenceController {
         return .private(cloudContainerIdentifier)
     }
 
-    private static func schedulePostOpenMigrations(in container: ModelContainer) {
-        Task { @MainActor in
-            Self.runPostOpenMigrations(in: container)
-        }
-    }
-
     @MainActor
-    static func runPostOpenMigrations(in container: ModelContainer) {
-        do {
-            let migratedCount = try migrateLegacyRecurrenceRules(in: container.mainContext)
-            let normalizedChecklistCount = try normalizeChecklistItemIntervals(in: container.mainContext)
-            RoutinaUserPreferencesStore.migrateDefaultsIfNeeded(in: container.mainContext)
-            if migratedCount > 0 {
-                NSLog("Migrated \(migratedCount) routine recurrence rule(s) from legacy JSON storage.")
-            }
-            if normalizedChecklistCount > 0 {
-                NSLog("Normalized checklist item intervals for \(normalizedChecklistCount) routine(s).")
-            }
-        } catch {
-            NSLog("Post-open persistence migration failed: \(error.localizedDescription)")
-        }
+    static func startBackgroundStartupMaintenanceIfNeeded(in container: ModelContainer) {
+        RoutinaStartupDataMaintenance.startIfNeeded(in: container)
     }
 
     private static func makeConfiguration(
@@ -449,3 +424,104 @@ public struct PersistenceController {
 }
 
 extension PersistenceController: @unchecked Sendable {}
+
+/// Keeps startup-only integrity work off the UI executor. The worker owns a
+/// private SwiftData context, so it can scan historical records without
+/// delaying scene activation or the first Home snapshot.
+@MainActor
+private enum RoutinaStartupDataMaintenance {
+    private static var task: Task<Void, Never>?
+
+    static func startIfNeeded(in container: ModelContainer) {
+        guard task == nil else { return }
+
+        task = Task.detached(priority: .utility) {
+            let worker = RoutinaStartupDataMaintenanceWorker(modelContainer: container)
+
+            do {
+                let result = try await worker.run()
+                await MainActor.run {
+                    result.reportToMainActor()
+                }
+            } catch {
+                NSLog("Background startup data maintenance failed: \(error.localizedDescription)")
+            }
+        }
+    }
+}
+
+private struct RoutinaStartupDataMaintenanceResult: Sendable {
+    let migratedRecurrenceRuleCount: Int
+    let normalizedChecklistCount: Int
+    let didDeduplicateRoutineNames: Bool
+    let didDeduplicatePlaceNames: Bool
+    let didDeduplicateLogs: Bool
+    let didBackfillLastDoneLogs: Bool
+    let didDeleteOrphanedRows: Bool
+
+    var didChangeData: Bool {
+        migratedRecurrenceRuleCount > 0
+            || normalizedChecklistCount > 0
+            || didDeduplicateRoutineNames
+            || didDeduplicatePlaceNames
+            || didDeduplicateLogs
+            || didBackfillLastDoneLogs
+            || didDeleteOrphanedRows
+    }
+
+    @MainActor
+    func reportToMainActor() {
+        if migratedRecurrenceRuleCount > 0 {
+            NSLog("Migrated \(migratedRecurrenceRuleCount) routine recurrence rule(s) from legacy JSON storage.")
+        }
+        if normalizedChecklistCount > 0 {
+            NSLog("Normalized checklist item intervals for \(normalizedChecklistCount) routine(s).")
+        }
+        if didChangeData {
+            NotificationCenter.default.postRoutineDidUpdate()
+        }
+    }
+}
+
+@ModelActor
+private actor RoutinaStartupDataMaintenanceWorker {
+    func run() throws -> RoutinaStartupDataMaintenanceResult {
+        let migratedRecurrenceRuleCount = try PersistenceController.migrateLegacyRecurrenceRules(
+            in: modelContext
+        )
+        let normalizedChecklistCount = try PersistenceController.normalizeChecklistItemIntervals(
+            in: modelContext
+        )
+        let didDeduplicateRoutineNames = try HomeDeduplicationSupport.enforceUniqueRoutineNames(
+            in: modelContext,
+            postsUpdateNotification: false
+        )
+        let didDeduplicatePlaceNames = try HomeDeduplicationSupport.enforceUniquePlaceNames(
+            in: modelContext,
+            postsUpdateNotification: false
+        )
+        let didDeduplicateLogs = try RoutineLogHistory.deduplicateRedundantSameDayLogs(
+            in: modelContext,
+            calendar: .current
+        )
+        let didBackfillLastDoneLogs = try RoutineLogHistory.backfillMissingLastDoneLogs(
+            in: modelContext
+        )
+
+        try CloudKitDirectPullMergeHousekeeping.deleteOrphanedTaskRows(in: modelContext)
+        let didDeleteOrphanedRows = modelContext.hasChanges
+        if modelContext.hasChanges {
+            try modelContext.save()
+        }
+
+        return RoutinaStartupDataMaintenanceResult(
+            migratedRecurrenceRuleCount: migratedRecurrenceRuleCount,
+            normalizedChecklistCount: normalizedChecklistCount,
+            didDeduplicateRoutineNames: didDeduplicateRoutineNames,
+            didDeduplicatePlaceNames: didDeduplicatePlaceNames,
+            didDeduplicateLogs: didDeduplicateLogs,
+            didBackfillLastDoneLogs: didBackfillLastDoneLogs,
+            didDeleteOrphanedRows: didDeleteOrphanedRows
+        )
+    }
+}

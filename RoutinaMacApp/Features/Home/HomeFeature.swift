@@ -1045,7 +1045,7 @@ struct HomeFeature {
             },
             loadOnAppearEffect: { state in
                 .concatenate(
-                    loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot),
+                    loadTasksEffect(),
                     loadSprintBoardEffect(revision: state.board.sprintBoardRevision),
                     .run { @MainActor send in
                         let snapshot = await self.locationClient.snapshot(false)

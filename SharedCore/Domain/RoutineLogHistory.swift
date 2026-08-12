@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 
 enum RoutineLogHistory {
-    @MainActor
     static func deduplicateRedundantSameDayLogs(
         in context: ModelContext,
         calendar: Calendar = .current
@@ -52,7 +51,6 @@ enum RoutineLogHistory {
         return true
     }
 
-    @MainActor
     static func backfillMissingLastDoneLogs(in context: ModelContext) throws -> Bool {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
