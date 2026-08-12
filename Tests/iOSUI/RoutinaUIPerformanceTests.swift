@@ -25,7 +25,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let app = makeApp(seedProfile: "performance")
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
 
         warmUpTabs(in: app)
 
@@ -221,7 +221,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let app = makeApp()
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
 
         openAndCloseAddTaskSheet(in: app)
         measureInteraction {
@@ -233,7 +233,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let app = makeApp(seedProfile: "performance")
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
         XCTAssertTrue(seedTask(named: "Seed Task 21", in: app).waitForExistence(timeout: 90))
 
         openAndCloseFilterSheet(in: app)
@@ -362,7 +362,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let app = makeApp()
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
 
         measureInteraction {
             addRoutine(in: app)
@@ -373,10 +373,11 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let app = makeApp()
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
 
         let routineName = "PerfDetail-\(UUID().uuidString.prefix(6))"
         addRoutine(named: String(routineName), in: app)
+        tapTab("Home", in: app)
 
         let row = app.staticTexts.containing(
             NSPredicate(format: "label CONTAINS %@", String(routineName))
@@ -387,6 +388,26 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         measureInteraction {
             openAndCloseTaskDetail(forRow: row, in: app)
         }
+    }
+
+    func testCreateAndRemoveTaskFlow() {
+        let app = makeApp()
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+
+        let routineName = "PerfRemove-\(UUID().uuidString.prefix(6))"
+        addRoutine(named: String(routineName), in: app)
+
+        let row = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", String(routineName))
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.swipeLeft()
+
+        let deleteButton = app.buttons["Delete"].firstMatch
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 10))
+        deleteButton.tap()
+        XCTAssertTrue(waitForElementToBecomeNonHittable(row, timeout: 10))
     }
 
     private func makeApp(seedProfile: String? = nil) -> XCUIApplication {
@@ -481,8 +502,8 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         statsButton.tap()
     }
 
-    private func homeAddTaskButton(in app: XCUIApplication) -> XCUIElement {
-        app.navigationBars.buttons["Add Task"].firstMatch
+    private func newTaskTab(in app: XCUIApplication) -> XCUIElement {
+        app.tabBars.buttons["New"].firstMatch
     }
 
     private func seedTask(named taskName: String, in app: XCUIApplication) -> XCUIElement {
@@ -495,10 +516,10 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     private func backToHome(in app: XCUIApplication) {
-        let homeBackButton = app.navigationBars.buttons["Routina"].firstMatch
+        let homeBackButton = homeBackButton(in: app)
         XCTAssertTrue(homeBackButton.waitForExistence(timeout: 10))
         homeBackButton.tap()
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
     }
 
     private func openImportanceReview(in app: XCUIApplication) {
@@ -527,15 +548,13 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     private func openAndCloseAddTaskSheet(in app: XCUIApplication) {
-        let addTaskButton = homeAddTaskButton(in: app)
-        XCTAssertTrue(addTaskButton.waitForExistence(timeout: 10))
-        addTaskButton.tap()
+        openNewTask(in: app)
 
         let cancelButton = app.navigationBars.buttons["Cancel"].firstMatch
         XCTAssertTrue(cancelButton.waitForExistence(timeout: 10))
         cancelButton.tap()
 
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
     }
 
     private func openAndCloseFilterSheet(in app: XCUIApplication) {
@@ -570,7 +589,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         XCTAssertTrue(doneButton.waitForExistence(timeout: 10))
         doneButton.tap()
 
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
     }
 
     private func openTimelineFilterSheetAndScroll(in app: XCUIApplication) {
@@ -624,30 +643,48 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     private func addRoutine(named routineName: String, in app: XCUIApplication) {
-        let addTaskButton = homeAddTaskButton(in: app)
-        XCTAssertTrue(addTaskButton.waitForExistence(timeout: 10))
-        addTaskButton.tap()
+        openNewTask(in: app)
 
-        let nameField = app.textFields["Task name"]
+        let nameField = app.textFields["water plants every Sat at 9 #home"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         nameField.tap()
         nameField.typeText(routineName)
 
-        let saveButton = app.navigationBars.buttons["Save"].firstMatch
+        let saveButton = app.navigationBars.buttons["Add"].firstMatch
         XCTAssertTrue(saveButton.waitForExistence(timeout: 10))
         saveButton.tap()
 
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
+    }
+
+    private func openNewTask(in app: XCUIApplication) {
+        let tab = newTaskTab(in: app)
+        XCTAssertTrue(tab.waitForExistence(timeout: 10))
+        tab.tap()
+
+        XCTAssertTrue(
+            app.navigationBars["New Task"].waitForExistence(timeout: 10),
+            "Selecting New did not open Smart Add"
+        )
     }
 
     private func openAndCloseTaskDetail(forRow row: XCUIElement, in app: XCUIApplication) {
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         row.tap()
 
-        let backButton = app.navigationBars.buttons["Routina"].firstMatch
-        XCTAssertTrue(backButton.waitForExistence(timeout: 10))
+        let backButton = homeBackButton(in: app)
+        XCTAssertTrue(
+            backButton.waitForExistence(timeout: 10),
+            "Missing task-detail back control. Navigation bars:\n\(app.navigationBars.debugDescription)"
+        )
         backButton.tap()
 
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(newTaskTab(in: app).waitForExistence(timeout: 10))
+    }
+
+    private func homeBackButton(in app: XCUIApplication) -> XCUIElement {
+        app.navigationBars.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Back", "All", "Routina"])
+        ).firstMatch
     }
 }

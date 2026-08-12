@@ -225,6 +225,29 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacSidebarFilterSummaryUsesCachedTaskListPresentation() throws {
+        let sidebarSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift"
+        )
+        let presentationSource = try Self.sourceFile(
+            "SharedCore/Features/Home/HomeTaskListPresentation.swift"
+        )
+
+        XCTAssertTrue(sidebarSource.contains("macTaskListPresentation("))
+        XCTAssertTrue(sidebarSource.contains(".visibleTaskCount"))
+        XCTAssertFalse(
+            sidebarSource.contains("sidebarVisibleTaskCount("),
+            "A SwiftUI sidebar summary must not rescan every task while the list is rendering or scrolling."
+        )
+        XCTAssertTrue(presentationSource.contains("let visibleTaskCount: Int"))
+        XCTAssertTrue(
+            presentationSource.contains(
+                "self.visibleTaskCount = sections.reduce(0) { $0 + $1.tasks.count }"
+            ),
+            "The immutable task-list snapshot must cache its visible count for sidebar summaries."
+        )
+    }
+
     func testMacCustomSubsectionsUseTagStyleSurfaceAndPersistedCollapseState() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"

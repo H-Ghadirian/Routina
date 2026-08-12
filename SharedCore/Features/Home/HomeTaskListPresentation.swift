@@ -455,6 +455,7 @@ struct HomeTaskListEmptyState: Equatable {
 
 struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
     let sections: [HomeTaskListPresentationSection<Display>]
+    let visibleTaskCount: Int
     let hiddenUnavailableTaskCount: Int
     let emptyState: HomeTaskListEmptyState?
     let datePlannedTodayTaskIDs: Set<UUID>
@@ -466,13 +467,10 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         datePlannedTodayTaskIDs: Set<UUID> = []
     ) {
         self.sections = sections
+        self.visibleTaskCount = sections.reduce(0) { $0 + $1.tasks.count }
         self.hiddenUnavailableTaskCount = hiddenUnavailableTaskCount
         self.emptyState = emptyState
         self.datePlannedTodayTaskIDs = datePlannedTodayTaskIDs
-    }
-
-    var visibleTaskCount: Int {
-        sections.reduce(0) { $0 + $1.tasks.count }
     }
 
     func showsPlannedTodayLabel(
