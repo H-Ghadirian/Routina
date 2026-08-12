@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0552](0552-keep-ios-saved-tag-settings-compact.md):** iOS Settings -> Tags keeps saved-tag rows compact until a person selects one, then reveals that row's existing actions and editors without persisting the temporary selection.
+
 - **[0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) refines [0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md), [0529](0529-collapse-calendar-list-planned-task-sections.md), and [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` gives each day's Confirmed assumed done section its own disclosure, using the existing shared default without changing cached Planner presentation work.
 
 - **[0550](0550-make-apple-health-stats-prompt-dismissible.md) refines [0096](0096-show-healthkit-movement-stats.md) and [0113](0113-allow-stats-dashboard-reordering.md):** the optional iOS Apple Health connection prompt participates in Stats dashboard customization, so it can be hidden and restored without changing Health permissions.
@@ -633,6 +635,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0552](0552-keep-ios-saved-tag-settings-compact.md) | Keep iOS Saved-Tag Settings Compact | Accepted | 2026-08-12 |
 | [0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) | Collapse Confirmed Assumed-Done Calendar List Sections | Accepted | 2026-08-11 |
 | [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md) | Keep iOS Stats and Timeline Filter Details in Sheets | Accepted | 2026-08-11 |
 | [0547](0547-verify-final-ios-release-build-state.md) | Verify the Final iOS Release Build State | Accepted | 2026-08-11 |

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SettingsTagsDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @State private var selectedTagID: String?
     @AppStorage(
         UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
         store: SharedDefaults.app
@@ -32,7 +33,13 @@ struct SettingsTagsDetailView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(store.tags.savedTags) { tag in
-                        SettingsTagRow(store: store, tag: tag, isRelatedTagRulesEnabled: isRelatedTagRulesEnabled)
+                        SettingsTagRow(
+                            store: store,
+                            tag: tag,
+                            isRelatedTagRulesEnabled: isRelatedTagRulesEnabled,
+                            isSelected: selectedTagID == tag.id,
+                            select: { selectTag(tag.id) }
+                        )
                     }
                 }
             }
@@ -64,6 +71,10 @@ struct SettingsTagsDetailView: View {
             SettingsTagRenameSheet(store: store)
                 .presentationDetents([.height(240)])
         }
+        .onChange(of: store.tags.savedTags.map(\.id)) { tagIDs in
+            guard let selectedTagID, !tagIDs.contains(selectedTagID) else { return }
+            self.selectedTagID = nil
+        }
     }
 
     private var emptyTagsText: String {
@@ -91,6 +102,12 @@ struct SettingsTagsDetailView: View {
             get: { store.tags.isTagRenameSheetPresented },
             set: { store.send(.setTagRenameSheet($0)) }
         )
+    }
+
+    private func selectTag(_ tagID: String) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            selectedTagID = selectedTagID == tagID ? nil : tagID
+        }
     }
 }
 
@@ -220,27 +237,37 @@ private struct SettingsTagRow: View {
     let store: StoreOf<SettingsFeature>
     let tag: RoutineTagSummary
     let isRelatedTagRulesEnabled: Bool
+    let isSelected: Bool
+    let select: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    RoutineTagPill(tag: tag)
-                    Text(tag.settingsSubtitle)
-                        .font(.footnote)
+            Button(action: select) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        RoutineTagPill(tag: tag)
+                        Text(tag.settingsSubtitle)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: isSelected ? "chevron.up" : "chevron.down")
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
-
-                Spacer()
-
-                fastFilterButton
-                tagActionsMenu
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(.rect)
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(tag.name), \(tag.settingsSubtitle)")
+            .accessibilityHint(isSelected ? "Hide tag options" : "Show tag options")
 
-            if isRelatedTagRulesEnabled {
-                relatedTagsEditor
+            if isSelected {
+                tagOptions
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            tagColorEditor
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button {
@@ -258,17 +285,40 @@ private struct SettingsTagRow: View {
         }
     }
 
+    private var tagOptions: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 16) {
+                fastFilterButton
+                tagActionsMenu
+            }
+
+            if isRelatedTagRulesEnabled {
+                relatedTagsEditor
+            }
+            tagColorEditor
+        }
+        .padding(.bottom, 4)
+    }
+
     private var fastFilterButton: some View {
         Button {
             store.send(.fastFilterTagToggled(tag.name))
         } label: {
-            Image(systemName: isFastFilterTag ? "bolt.fill" : "bolt")
-                .font(.title3)
+            Label(
+                isFastFilterTag ? "In quick filters" : "Add to quick filters",
+                systemImage: isFastFilterTag ? "bolt.fill" : "bolt"
+            )
+                .font(.body.weight(.medium))
                 .foregroundStyle(isFastFilterTag ? Color.accentColor : Color.secondary)
         }
         .buttonStyle(.borderless)
         .disabled(store.tags.isTagOperationInProgress)
-        .accessibilityLabel("Toggle fast filter")
+        .accessibilityLabel(
+            isFastFilterTag
+                ? "Remove \(tag.name) from quick filters"
+                : "Add \(tag.name) to quick filters"
+        )
+        .accessibilityHint("Quick filters make this tag easier to reach when filtering tasks.")
     }
 
     private var tagActionsMenu: some View {
