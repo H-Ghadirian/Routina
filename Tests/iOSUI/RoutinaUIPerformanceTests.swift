@@ -34,6 +34,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
             tapTab("Settings", in: app)
             tapTab("Timeline", in: app)
             tapTab("Search", in: app)
+            closeSearch(in: app)
             tapTab("Home", in: app)
         }
     }
@@ -131,6 +132,11 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         newTaskCancel.tap()
 
         tapTab("Search", in: app)
+        XCTAssertTrue(
+            app.keyboards.firstMatch.waitForExistence(timeout: 5),
+            "Selecting Search did not open the keyboard"
+        )
+        closeSearch(in: app)
         scrollToBothEdges(in: app, swipeCount: 40)
     }
 
@@ -259,13 +265,26 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let app = makeApp()
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            app.tabBars.buttons["Search"].firstMatch.waitForExistence(timeout: 30),
+            "The Search tab did not become available"
+        )
 
         tapTab("Search", in: app)
+        XCTAssertTrue(
+            app.keyboards.firstMatch.waitForExistence(timeout: 5),
+            "Selecting Search did not open the keyboard"
+        )
+        closeSearch(in: app)
         tapTab("Home", in: app)
 
         measureInteraction {
             tapTab("Search", in: app)
+            XCTAssertTrue(
+                app.keyboards.firstMatch.waitForExistence(timeout: 5),
+                "Selecting Search did not open the keyboard"
+            )
+            closeSearch(in: app)
             tapTab("Home", in: app)
         }
     }
@@ -287,10 +306,12 @@ final class RoutinaUIPerformanceTests: XCTestCase {
             var cycleDurations: [TimeInterval] = []
             for cycle in 1...4 {
                 let cycleStartTime = ProcessInfo.processInfo.systemUptime
-                searchField.tap()
+                if cycle > 1 {
+                    tapTab("Search", in: app)
+                }
                 XCTAssertTrue(
                     app.keyboards.firstMatch.waitForExistence(timeout: 5),
-                    "The keyboard did not open for Search cycle \(cycle)"
+                    "Selecting Search did not open the keyboard for cycle \(cycle)"
                 )
                 searchField.typeText(
                     "this deliberately long query cannot match seeded task \(cycle) 987654321"
@@ -401,6 +422,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         tapTab("Settings", in: app)
         tapTab("Timeline", in: app)
         tapTab("Search", in: app)
+        closeSearch(in: app)
         tapTab("Home", in: app)
     }
 
@@ -408,6 +430,19 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let tab = app.tabBars.buttons[label].firstMatch
         XCTAssertTrue(tab.waitForExistence(timeout: 10), "Missing \(label) tab")
         tab.tap()
+    }
+
+    private func closeSearch(in app: XCUIApplication) {
+        let closeSearchButton = app.buttons["Close"].firstMatch
+        XCTAssertTrue(
+            closeSearchButton.waitForExistence(timeout: 5),
+            "Active Search did not expose its native Close action"
+        )
+        closeSearchButton.tap()
+        XCTAssertTrue(
+            waitForKeyboardToDisappear(in: app, timeout: 5),
+            "The keyboard did not close with Search"
+        )
     }
 
     private func waitForKeyboardToDisappear(

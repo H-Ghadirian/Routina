@@ -73,7 +73,7 @@ And the manual Refresh Backlog control remains immediately available when no ref
 ### iOS Search Keeps Typing Ahead Of Home Results
 
 Area: Tasks / UI
-Decision links: [0541](../decisions/0541-keep-ios-search-input-ahead-of-home-presentations.md), [0557](../decisions/0557-build-ios-search-presentations-off-main-actor.md)
+Decision links: [0541](../decisions/0541-keep-ios-search-input-ahead-of-home-presentations.md), [0557](../decisions/0557-build-ios-search-presentations-off-main-actor.md), [0558](../decisions/0558-activate-ios-search-on-tab-selection.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/IOSScrollingPerformanceRegressionTests.swift`
@@ -104,6 +104,7 @@ Then it does not display the task Search field
 Given the person selects the dedicated bottom Search tab
 When Search appears
 Then its native Search field is available without replacing the tab host
+And the field is focused and the keyboard opens from that single tab tap
 
 ### Inactive iOS Tabs Do Not Compete With Search And Home
 

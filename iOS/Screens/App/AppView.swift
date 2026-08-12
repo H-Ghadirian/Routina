@@ -133,6 +133,7 @@ let tabView = TabView(
 Group {
     AppLockGate {
         tabView
+            .tabViewSearchActivation(.searchTabSelection)
             .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
                 PlatformSupport.applyAppIcon(.persistedSelection)
                 store.send(.cloudSettingsChanged)

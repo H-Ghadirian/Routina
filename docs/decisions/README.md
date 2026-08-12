@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0558](0558-activate-ios-search-on-tab-selection.md) refines [0544](0544-scope-ios-search-field-to-dedicated-search-tab.md):** selecting or reselecting the dedicated iOS Search tab activates its native field and opens the keyboard in the same tap, while preserving the stable tab host and existing Search performance boundaries.
+
 - **[0557](0557-build-ios-search-presentations-off-main-actor.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0541](0541-keep-ios-search-input-ahead-of-home-presentations.md), and [0544](0544-scope-ios-search-field-to-dedicated-search-tab.md):** iOS Search reuses pre-normalized display indexes, builds non-actionable task-list presentations and row-number lookups in cancellable detached work, keeps one stable list host while empty results change, and formats visible metadata without reconstructing Home filtering state.
 
 - **[0556](0556-use-crashlytics-for-production-crash-stacks.md) refines [0553](0553-record-debug-performance-symptoms-for-support.md), [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md), and [0555](0555-preserve-the-previous-debug-performance-run.md):** iOS and macOS use Firebase Crashlytics for automatic symbolicated production crash stacks, with no Analytics or user IDs and only throttled fixed-category Routina breadcrumbs.
@@ -645,6 +647,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0558](0558-activate-ios-search-on-tab-selection.md) | Activate iOS Search on Tab Selection | Accepted | 2026-08-12 |
 | [0555](0555-preserve-the-previous-debug-performance-run.md) | Preserve the Previous Debug Performance Run | Accepted | 2026-08-12 |
 | [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md) | Correlate Debug Stalls With Safe Interaction Trails | Accepted | 2026-08-12 |
 | [0553](0553-record-debug-performance-symptoms-for-support.md) | Record Debug Performance Symptoms for Support | Accepted | 2026-08-12 |
