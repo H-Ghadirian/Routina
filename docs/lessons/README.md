@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0149 — Gate iOS task-row appearance controls](0149-gate-ios-task-row-appearance-controls.md)
 - [0148 — Coalesce Backlog refreshes](0148-coalesce-backlog-refreshes.md)
 - [0147 — Keep Flag assignment aligned with auto-assume eligibility](0147-keep-flag-assignment-aligned-with-auto-assume-eligibility.md)
 - [0146 — Derive elapsed completion status from recorded history](0146-derive-elapsed-completion-status-from-recorded-history.md)

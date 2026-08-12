@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsTaskRowPreviewView: View {
     let visibility: HomeTaskRowVisibility
     var showsTaskTypeBadge = true
+    var showsGoals = true
+    var showsPlaces = true
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -124,7 +126,7 @@ struct SettingsTaskRowPreviewView: View {
             visibility.shows(.progress) ? "Step 2 of 4" : nil,
             visibility.shows(.pressure) ? "High pressure" : nil,
             visibility.shows(.steps) ? "Next: Draft response" : nil,
-            visibility.shows(.place) ? "At Office" : nil
+            showsPlaces && visibility.shows(.place) ? "At Office" : nil
         ].compactMap { $0 }
 
         guard !items.isEmpty else { return nil }
@@ -144,7 +146,7 @@ struct SettingsTaskRowPreviewView: View {
 
     @ViewBuilder
     private var goals: some View {
-        if visibility.shows(.goals) {
+        if showsGoals && visibility.shows(.goals) {
             Label("Less stress at work", systemImage: "target")
                 .font(.caption2)
                 .foregroundStyle(.secondary)

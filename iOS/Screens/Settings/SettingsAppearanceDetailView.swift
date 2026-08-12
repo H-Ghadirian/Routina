@@ -4,6 +4,14 @@ import ComposableArchitecture
 struct SettingsAppearanceDetailView: View {
     let store: StoreOf<SettingsFeature>
     @State private var resetFeedbackTrigger = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     private let columns = [
         GridItem(.adaptive(minimum: 108), spacing: 12)
@@ -46,11 +54,13 @@ List {
     Section("Task Row") {
         SettingsTaskRowPreviewView(
             visibility: store.appearance.taskRowVisibility,
-            showsTaskTypeBadge: true
+            showsTaskTypeBadge: true,
+            showsGoals: isGoalsTabEnabled,
+            showsPlaces: isPlacesEnabled
         )
         .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
 
-        ForEach(HomeTaskRowField.allCases) { field in
+        ForEach(availableTaskRowFields) { field in
             Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(field.title)
@@ -63,7 +73,7 @@ List {
             }
         }
 
-        Text("Shown: \(store.appearance.taskRowVisibility.summaryText)")
+        Text("Shown: \(taskRowSummaryText)")
             .foregroundStyle(.secondary)
     }
 
@@ -136,6 +146,22 @@ List {
             get: { store.appearance.taskRowVisibility.shows(field) },
             set: { store.send(.taskRowFieldVisibilityChanged(field, $0)) }
         )
+    }
+
+    private var availableTaskRowFields: [HomeTaskRowField] {
+        HomeTaskRowField.availableAppearanceFields(
+            showsTaskTypeBadge: true,
+            showsGoals: isGoalsTabEnabled,
+            showsPlaces: isPlacesEnabled
+        )
+    }
+
+    private var taskRowSummaryText: String {
+        let hiddenCount = availableTaskRowFields.filter {
+            !store.appearance.taskRowVisibility.shows($0)
+        }.count
+        guard hiddenCount > 0 else { return "All fields" }
+        return "\(availableTaskRowFields.count - hiddenCount) of \(availableTaskRowFields.count) fields"
     }
 
     private func timelineRowFieldVisibilityBinding(_ field: HomeTimelineRowField) -> Binding<Bool> {

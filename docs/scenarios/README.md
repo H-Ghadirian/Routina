@@ -2077,13 +2077,14 @@ Given the map is showing an unsaved location, an away saved place, or the curren
 When the action panel is derived
 Then Add Place and Check In appear only for the contexts where they make sense
 
-### Mac Task Row Appearance Respects The Places Beta Toggle
+### Task Row Appearance Respects Optional Feature Toggles
 
-Area: Tasks, Places
-Decision links: [0275](../decisions/0275-hide-places-behind-beta-toggle.md), [0254](../decisions/0254-move-mac-task-row-appearance-to-home-filter-detail.md)
+Area: Tasks, Places, Settings
+Decision links: [0538](../decisions/0538-gate-add-task-goals-with-feature-setting.md), [0275](../decisions/0275-hide-places-behind-beta-toggle.md), [0254](../decisions/0254-move-mac-task-row-appearance-to-home-filter-detail.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [Places](../current-behavior/places.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/Shared/SettingsAppearanceFeatureAvailabilityTests.swift`
 
 Given Support & About -> Beta Experiments -> `Show Places` is off
 When the user opens the Mac Home filter companion pane's `Task List` -> `Appearance` tab
@@ -2092,6 +2093,11 @@ Then the Task Row card does not expose a `Places` option or count it in the show
 Given `Show Places` is on
 When the user opens the same Appearance tab
 Then the Task Row card includes the `Places` option even if no current task has place-aware content
+
+Given `Show Goals tab` or `Show Places` is off in iOS Settings
+When the user opens Settings -> Appearance -> Task Row
+Then the matching Goals or Places option is absent, including from the preview and shown-fields count
+And enabling the feature restores the option without changing its stored visibility choice
 
 ### Mac Task Form Section Titles Stay Consistent
 

@@ -55,6 +55,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - iOS and macOS production archives compare the current persisted SwiftData model contract with `Config/CloudKit/production-schema.manifest`. A mismatch blocks the archive before TestFlight upload. After deploying the Development schema in CloudKit Dashboard, the release owner explicitly acknowledges it with `script/cloudkit_schema_guard.sh --acknowledge-production-deployment --yes-i-deployed-to-production` and commits the manifest.
 - Estimated iCloud Usage lists only categories whose user-facing feature is available. Tasks, logs, and images remain visible; Places, Goals, Events, Emotions, Notes, and Voice Notes follow their corresponding feature gates.
 - When `Show Goals tab` is off, iOS hides Goals navigation, New Goal, Goals Stats reports, the Goals iCloud category, and the Home Filters Goal option; existing task and goal data remains stored.
+- iOS Settings -> Appearance hides the Task Row `Goals` and `Places` controls, their preview content, and their shown-fields count from the respective disabled Goal and Places feature gates. Their stored row-visibility choices remain intact and return when the feature is enabled again.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
 - Legacy `.json` backup remains compatibility-only for older task, place, goal, and log payloads.
 - Data-wide reset actions show backup/export first when possible.
