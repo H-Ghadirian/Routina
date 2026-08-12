@@ -73,15 +73,25 @@ And the manual Refresh Backlog control remains immediately available when no ref
 ### iOS Search Keeps Typing Ahead Of Home Results
 
 Area: Tasks / UI
-Decision links: [0541](../decisions/0541-keep-ios-search-input-ahead-of-home-presentations.md)
+Decision links: [0541](../decisions/0541-keep-ios-search-input-ahead-of-home-presentations.md), [0557](../decisions/0557-build-ios-search-presentations-off-main-actor.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/IOSScrollingPerformanceRegressionTests.swift`
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/iOSUI/RoutinaUIPerformanceTests.swift`
 
 Given a large iOS Home task list
 When the person opens Search and types several characters without pausing
 Then keyboard input remains immediate
 And Home result snapshots update only after a short idle debounce
+And full-catalog filtering, sorting, and section construction do not block the main actor
+
+Given 12,000 tasks and a long query that matches none of them
+When the person repeatedly opens the keyboard, types the query rapidly, clears it, and closes the keyboard
+Then superseded presentation work is cancellable
+And the latest empty result keeps the native list host stable while only its empty overlay fades
+And clearing does not rebuild full-catalog row-number lookup on the main actor
+And Search still matches names, emoji, descriptions, notes, places, tags, Flags, and Goals
 
 Given an active Search query
 When the person clears it

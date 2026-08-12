@@ -34,6 +34,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
     private var sectionBuilder: HomeTaskListSectionBuilder<Display>
     private var metrics: HomeTaskListMetrics<Display>
 
+    var referenceDate: Date {
+        metrics.configuration.referenceDate
+    }
+
     init(
         configuration: HomeTaskListFilteringConfiguration,
         matchesCurrentTaskListMode: @escaping (Display) -> Bool

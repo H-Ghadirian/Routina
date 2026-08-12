@@ -76,7 +76,7 @@ extension HomeRoutineDisplayMetadataPresenter {
                     : nil
             }
         }
-        let dueIn = filtering.dueInDays(for: task)
+        let dueIn = dueInDays(for: task)
 
         if task.scheduleMode.isChecklistDrivenMode {
             if task.isSoftIntervalRoutine && !task.surfacesSoftIntervalNudges {
@@ -116,7 +116,7 @@ extension HomeRoutineDisplayMetadataPresenter {
             return nil
         }
 
-        if filtering.hasMissedExactTimedOccurrence(for: task) {
+        if hasMissedExactTimedOccurrence(for: task) {
             return badge("Missed", "exclamationmark.triangle.fill", .yellow, Color.yellow.opacity(0.18))
         }
 
@@ -129,7 +129,7 @@ extension HomeRoutineDisplayMetadataPresenter {
         if dueIn == 1 {
             return badge("Tomorrow", "calendar", .orange, Color.orange.opacity(0.14))
         }
-        if filtering.isYellowUrgency(task) {
+        if isYellowUrgency(task) {
             return badge("\(dueIn)d left", "calendar.badge.clock", .orange, Color.orange.opacity(0.12))
         }
 

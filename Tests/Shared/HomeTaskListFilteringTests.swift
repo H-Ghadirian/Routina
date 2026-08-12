@@ -52,6 +52,28 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func searchIndexPreservesAllTaskMetadataMatches() {
+        let task = TestTaskDisplay(
+            name: "Write update",
+            emoji: "📝",
+            taskDescription: "Replacement shipment",
+            notes: "Résumé draft",
+            placeName: "North Office",
+            tags: ["Deep Work"],
+            flags: ["Waiting"],
+            goalTitles: ["Launch Project"]
+        )
+
+        for query in [
+            "write", "📝", "replacement shipment", "resume", "north office",
+            "deep work", "waiting", "launch project"
+        ] {
+            #expect(makeFiltering(searchText: query).matchesSearch(task))
+        }
+        #expect(!makeFiltering(searchText: "definitely absent").matchesSearch(task))
+    }
+
+    @Test
     func placeFilterMatchesAnyLinkedPlace() {
         let homeID = UUID()
         let gymID = UUID()

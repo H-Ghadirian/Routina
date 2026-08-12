@@ -15,6 +15,7 @@ protocol HomeTaskListDisplay {
     var flags: [String] { get }
     var taskListTagSectionDescriptor: HomeTaskListTagSectionDescriptor { get }
     var goalTitles: [String] { get }
+    var indexedSearchText: String? { get }
     var interval: Int { get }
     var recurrenceRule: RoutineRecurrenceRule { get }
     var scheduleMode: RoutineScheduleMode { get }
@@ -53,6 +54,10 @@ protocol HomeTaskListDisplay {
 }
 
 extension HomeTaskListDisplay {
+    var indexedSearchText: String? {
+        nil
+    }
+
     /// A completion the person explicitly recorded, as distinct from a provisional assumed completion.
     var isCompletedByUser: Bool {
         isCompletedOneOff || (isDoneToday && !isAssumedDoneToday)
@@ -160,6 +165,52 @@ extension HomeTaskListDisplay {
     func hasSatisfiedScheduledOccurrence(on day: Date, calendar: Calendar) -> Bool {
         guard let lastSatisfiedScheduledOccurrenceAt else { return false }
         return calendar.isDate(lastSatisfiedScheduledOccurrenceAt, inSameDayAs: day)
+    }
+}
+
+enum HomeTaskSearchIndex {
+    static func make<Display: HomeTaskListDisplay>(for task: Display) -> String {
+        make(
+            name: task.name,
+            emoji: task.emoji,
+            taskDescription: task.taskDescription,
+            notes: task.notes,
+            placeName: task.placeName,
+            tags: task.tags,
+            flags: task.flags,
+            goalTitles: task.goalTitles
+        )
+    }
+
+    static func make(
+        name: String,
+        emoji: String,
+        taskDescription: String?,
+        notes: String?,
+        placeName: String?,
+        tags: [String],
+        flags: [String],
+        goalTitles: [String]
+    ) -> String {
+        ([name, emoji, taskDescription, notes, placeName].compactMap(\.self)
+            + tags
+            + flags
+            + goalTitles)
+            .map(normalized)
+            .joined(separator: "\u{0}")
+    }
+
+    static func query(_ value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return normalized(trimmed)
+    }
+
+    private static func normalized(_ value: String) -> String {
+        value.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: .current
+        )
     }
 }
 

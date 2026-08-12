@@ -6,7 +6,7 @@ extension HomeFeature.RoutineDisplay: HomeRoutineMetadataDisplay {}
 extension HomeTCAView {
     private var routineMetadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay> {
         HomeRoutineDisplayMetadataPresenter(
-            filtering: taskListFiltering(),
+            referenceDate: Date(),
             showPersianDates: showPersianDates,
             badgeMode: .compact,
             rowVisibility: taskRowVisibility

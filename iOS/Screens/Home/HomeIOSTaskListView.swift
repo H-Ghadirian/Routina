@@ -65,10 +65,19 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            if let emptyState = presentation.emptyState {
-                emptyRowContent(emptyState)
-            } else {
+            ZStack(alignment: .top) {
                 taskList
+                    .opacity(presentation.emptyState == nil ? 1 : 0)
+                    .allowsHitTesting(presentation.emptyState == nil)
+                    .accessibilityHidden(presentation.emptyState != nil)
+
+                Group {
+                    if let emptyState = presentation.emptyState {
+                        emptyRowContent(emptyState)
+                            .transition(.opacity)
+                    }
+                }
+                .animation(.easeOut(duration: 0.18), value: presentation.emptyState)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -128,11 +137,21 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
             onScroll(oldOffset, newOffset)
         }
         .task(id: rowNumberCacheInvalidation) {
-            rowNumberCache = HomeIOSTaskListRowNumberCache.make(
+            let request = HomeIOSTaskListRowNumberCacheRequest(
                 presentation: presentation,
                 expansionState: currentExpansionState,
                 isTaskSearchActive: isTaskSearchActive
             )
+            let buildTask = Task.detached(priority: .userInitiated) {
+                request.build()
+            }
+            let cache = await withTaskCancellationHandler {
+                await buildTask.value
+            } onCancel: {
+                buildTask.cancel()
+            }
+            guard !Task.isCancelled, let cache else { return }
+            rowNumberCache = cache
         }
         .navigationDestination(for: UUID.self) { taskID in
             destinationContent(taskID)
@@ -370,7 +389,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
     }
 }
 
-private struct HomeIOSTaskListExpansionState {
+private struct HomeIOSTaskListExpansionState: Sendable {
     let isDailyRoutinesSectionCollapsed: Bool
     let isArchivedSectionCollapsed: Bool
     let collapsedSectionIDs: Set<String>
@@ -411,30 +430,34 @@ private struct HomeIOSTaskListRowNumberCacheInvalidation: Equatable {
     let isTaskSearchActive: Bool
 }
 
-private struct HomeIOSTaskListRowNumberCache {
+private struct HomeIOSTaskListRowNumberCache: Sendable {
     var values: [UUID: Int] = [:]
+}
 
-    static func make(
-        presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
-        expansionState: HomeIOSTaskListExpansionState,
-        isTaskSearchActive: Bool
-    ) -> Self {
+private struct HomeIOSTaskListRowNumberCacheRequest: @unchecked Sendable {
+    let presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    let expansionState: HomeIOSTaskListExpansionState
+    let isTaskSearchActive: Bool
+
+    func build() -> HomeIOSTaskListRowNumberCache? {
         var values: [UUID: Int] = [:]
         values.reserveCapacity(presentation.visibleTaskCount)
         var rowNumber = 1
 
         for section in presentation.sections where expansionState.isSectionExpanded(section) {
+            guard !Task.isCancelled else { return nil }
             for group in section.taskGroups where expansionState.isTaskGroupExpanded(
                 group,
                 isTaskSearchActive: isTaskSearchActive
             ) {
                 for task in group.tasks {
+                    guard !Task.isCancelled else { return nil }
                     values[task.taskID] = rowNumber
                     rowNumber += 1
                 }
             }
         }
 
-        return Self(values: values)
+        return HomeIOSTaskListRowNumberCache(values: values)
     }
 }

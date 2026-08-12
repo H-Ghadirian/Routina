@@ -4,9 +4,22 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
     var configuration: HomeTaskListFilteringConfiguration
     var metrics: HomeTaskListMetrics<Display>
     var matchesCurrentTaskListMode: (Display) -> Bool
+    private let normalizedSearchQuery: String?
+
+    init(
+        configuration: HomeTaskListFilteringConfiguration,
+        metrics: HomeTaskListMetrics<Display>,
+        matchesCurrentTaskListMode: @escaping (Display) -> Bool
+    ) {
+        self.configuration = configuration
+        self.metrics = metrics
+        self.matchesCurrentTaskListMode = matchesCurrentTaskListMode
+        self.normalizedSearchQuery = HomeTaskSearchIndex.query(configuration.searchText)
+    }
 
     func matchesVisibleTask(_ task: Display) -> Bool {
-        matchesCurrentTaskListMode(task)
+        !Task.isCancelled
+            && matchesCurrentTaskListMode(task)
             && matchesTaskListVisibilityRules(task)
             && matchesSearch(task)
             && matchesAdvancedQuery(task)
@@ -28,7 +41,8 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
     }
 
     func matchesSearchFallbackTask(_ task: Display) -> Bool {
-        matchesCurrentTaskListMode(task)
+        !Task.isCancelled
+            && matchesCurrentTaskListMode(task)
             && matchesSearch(task)
             && matchesAdvancedQuery(task)
             && matchesFilter(task)
@@ -49,7 +63,8 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
     }
 
     func matchesArchivedTask(_ task: Display, includePinned: Bool) -> Bool {
-        matchesCurrentTaskListMode(task)
+        !Task.isCancelled
+            && matchesCurrentTaskListMode(task)
             && !task.isCompletedOneOff
             && !task.isCanceledOneOff
             && (includePinned || !task.isPinned)
@@ -73,16 +88,10 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
     }
 
     func matchesSearch(_ task: Display) -> Bool {
-        let trimmedSearch = configuration.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedSearch.isEmpty else { return true }
-        return task.name.localizedCaseInsensitiveContains(trimmedSearch)
-            || task.emoji.localizedCaseInsensitiveContains(trimmedSearch)
-            || (task.taskDescription?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
-            || (task.notes?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
-            || (task.placeName?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
-            || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)
-            || RoutineFlag.matchesQuery(trimmedSearch, in: task.flags)
-            || task.goalTitles.contains { $0.localizedCaseInsensitiveContains(trimmedSearch) }
+        guard !Task.isCancelled else { return false }
+        guard let normalizedSearchQuery else { return true }
+        return (task.indexedSearchText ?? HomeTaskSearchIndex.make(for: task))
+            .contains(normalizedSearchQuery)
     }
 
     func matchesTaskListVisibilityRules(_ task: Display) -> Bool {
@@ -93,12 +102,13 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
     }
 
     func matchesFlagRuleRevealTask(_ task: Display) -> Bool {
-        guard !matchesTaskListVisibilityRules(task),
+        guard !Task.isCancelled,
+              !matchesTaskListVisibilityRules(task),
               matchesSearchFallbackTask(task) else {
             return false
         }
 
-        return !configuration.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return normalizedSearchQuery != nil
             || !configuration.selectedFlags.isEmpty
     }
 

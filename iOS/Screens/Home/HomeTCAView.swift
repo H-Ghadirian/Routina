@@ -112,7 +112,7 @@ homeContent
                 }
                 .task(id: taskListPresentationRefreshToken) {
                     guard isActive else { return }
-                    refreshTaskListPresentation()
+                    await refreshTaskListPresentation()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
                     guard isActive else {
@@ -138,45 +138,36 @@ homeContent
         )
     }
 
-    private func refreshTaskListPresentation() {
-        let filtering = taskListFiltering()
-        let searchSourceDisplays = taskListSearchSourceDisplays
-        let knownTaskSearchSourceDisplays = allTaskSearchSourceDisplays
-        let presentation = HomeTaskListPresentation.iOS(
-            filtering: filtering,
+    private func refreshTaskListPresentation() async {
+        let request = HomeIOSPresentationSnapshotRequest(
+            filteringConfiguration: taskListFilteringConfiguration(),
+            taskListMode: store.taskListMode,
             routineDisplays: store.routineDisplays,
             awayRoutineDisplays: store.awayRoutineDisplays,
             archivedRoutineDisplays: store.archivedRoutineDisplays,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
-            showArchivedTasks: store.showArchivedTasks,
-            taskListKind: store.taskListMode.filterTaskListKind
+            showArchivedTasks: store.showArchivedTasks
         )
-        taskListPresentation = presentation.appendingFlagRuleRevealResults(
-            from: searchSourceDisplays,
-            filtering: filtering
-        )
-        searchTaskCreationText = smartAddSeedText.isEmpty
-            || knownTaskSearchSourceDisplays.contains(where: filtering.matchesSearch)
-            ? nil
-            : smartAddSeedText
+
+        let result: HomeIOSPresentationSnapshotResult?
+        if request.requiresMainActorBuild {
+            result = request.build()
+        } else {
+            let detachedRequest = request.preparedForDetachedBuild()
+            let buildTask = Task.detached(priority: .userInitiated) {
+                detachedRequest.build()
+            }
+            result = await withTaskCancellationHandler {
+                await buildTask.value
+            } onCancel: {
+                buildTask.cancel()
+            }
+        }
+
+        guard !Task.isCancelled, let result else { return }
+        taskListPresentation = result.presentation
+        searchTaskCreationText = result.searchTaskCreationText
         taskListPresentationRevision &+= 1
-    }
-
-    private var taskListSearchSourceDisplays: [HomeFeature.RoutineDisplay] {
-        sourceDisplays(includingArchivedTasks: store.showArchivedTasks)
-    }
-
-    private var allTaskSearchSourceDisplays: [HomeFeature.RoutineDisplay] {
-        sourceDisplays(includingArchivedTasks: true)
-    }
-
-    private func sourceDisplays(
-        includingArchivedTasks: Bool
-    ) -> [HomeFeature.RoutineDisplay] {
-        var seenTaskIDs: Set<UUID> = []
-        let archivedDisplays = includingArchivedTasks ? store.archivedRoutineDisplays : []
-        return (store.routineDisplays + store.awayRoutineDisplays + archivedDisplays)
-            .filter { seenTaskIDs.insert($0.taskID).inserted }
     }
 
     private func refreshFileAttachmentTaskIDs() {

@@ -17,6 +17,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var taskListTagSectionDescriptor: HomeTaskListTagSectionDescriptor
     var goalIDs: [UUID]
     var goalTitles: [String]
+    var indexedSearchText: String
     var steps: [String]
     var interval: Int
     var recurrenceRule: RoutineRecurrenceRule

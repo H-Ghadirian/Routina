@@ -2,11 +2,41 @@ import Foundation
 import SwiftUI
 
 struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> {
-    let filtering: HomeTaskListFiltering<Display>
+    let referenceDate: Date
     let showPersianDates: Bool
     let badgeMode: HomeRoutineMetadataBadgeMode
     var rowVisibility: HomeTaskRowVisibility = .defaultValue
     var showsRoutineCompletionCount = true
+
+    init(
+        referenceDate: Date,
+        showPersianDates: Bool,
+        badgeMode: HomeRoutineMetadataBadgeMode,
+        rowVisibility: HomeTaskRowVisibility = .defaultValue,
+        showsRoutineCompletionCount: Bool = true
+    ) {
+        self.referenceDate = referenceDate
+        self.showPersianDates = showPersianDates
+        self.badgeMode = badgeMode
+        self.rowVisibility = rowVisibility
+        self.showsRoutineCompletionCount = showsRoutineCompletionCount
+    }
+
+    init(
+        filtering: HomeTaskListFiltering<Display>,
+        showPersianDates: Bool,
+        badgeMode: HomeRoutineMetadataBadgeMode,
+        rowVisibility: HomeTaskRowVisibility = .defaultValue,
+        showsRoutineCompletionCount: Bool = true
+    ) {
+        self.init(
+            referenceDate: filtering.referenceDate,
+            showPersianDates: showPersianDates,
+            badgeMode: badgeMode,
+            rowVisibility: rowVisibility,
+            showsRoutineCompletionCount: showsRoutineCompletionCount
+        )
+    }
 
     func rowMetadataText(for task: Display) -> String? {
         let items = task.isOneOffTask
@@ -130,18 +160,18 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             }
             guard task.lastDone != nil else { return "Not completed yet" }
 
-            let elapsedDays = filtering.daysSinceLastRoutine(task)
+            let elapsedDays = daysSinceLastRoutine(task)
             if elapsedDays == 0 { return "Completed today" }
             if elapsedDays == 1 { return "Completed yesterday" }
             return "Completed \(elapsedDays) days ago"
         }
         if task.scheduleMode.isChecklistDrivenMode {
-            if task.isDoneToday && filtering.overdueDays(for: task) == 0 {
+            if task.isDoneToday && overdueDays(for: task) == 0 {
                 return "Updated today"
             }
             guard task.lastDone != nil else { return "Never updated" }
 
-            let elapsedDays = filtering.daysSinceLastRoutine(task)
+            let elapsedDays = daysSinceLastRoutine(task)
             if elapsedDays == 0 { return "Updated today" }
             if elapsedDays == 1 { return "Updated yesterday" }
             return "Updated \(elapsedDays) days ago"
@@ -158,7 +188,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             }
             if !task.surfacesSoftIntervalNudges {
                 guard task.lastDone != nil else { return "Not recorded yet" }
-                let elapsedDays = filtering.daysSinceLastRoutine(task)
+                let elapsedDays = daysSinceLastRoutine(task)
                 if elapsedDays == 0 { return "Recorded today" }
                 if elapsedDays == 1 { return "Recorded yesterday" }
                 return "Recorded \(elapsedDays) days ago"
@@ -175,7 +205,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
         }
         guard task.lastDone != nil else { return "Never completed" }
 
-        let elapsedDays = filtering.daysSinceLastRoutine(task)
+        let elapsedDays = daysSinceLastRoutine(task)
         if elapsedDays == 0 { return "Completed today" }
         if elapsedDays == 1 { return "Completed yesterday" }
         return "Completed \(elapsedDays) days ago"
@@ -307,6 +337,45 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             from: calendar.startOfDay(for: date),
             to: calendar.startOfDay(for: Date())
         ).day ?? 0
+    }
+
+    func dueInDays(for task: Display) -> Int {
+        task.daysUntilDue
+    }
+
+    func hasMissedExactTimedOccurrence(for task: Display) -> Bool {
+        task.hasMissedExactTimedOccurrence
+    }
+
+    func isYellowUrgency(_ task: Display) -> Bool {
+        if hasMissedExactTimedOccurrence(for: task)
+            || !task.trackingCadenceEnabled
+            || task.isOneOffTask
+            || task.isInProgress
+            || task.scheduleMode.isChecklistDrivenMode
+            || (task.scheduleMode.isChecklistCompletionMode && task.completedChecklistItemCount > 0) {
+            return false
+        }
+        if task.recurrenceRule.isFixedCalendar {
+            return dueInDays(for: task) == 1
+        }
+        let elapsedDays = RoutineDateMath.elapsedDaysSinceLastDone(
+            from: task.scheduleAnchor ?? task.lastDone,
+            referenceDate: referenceDate
+        )
+        let progress = Double(elapsedDays) / Double(task.interval)
+        return progress >= 0.75 && progress < 0.90
+    }
+
+    private func daysSinceLastRoutine(_ task: Display) -> Int {
+        RoutineDateMath.elapsedDaysSinceLastDone(
+            from: task.lastDone,
+            referenceDate: referenceDate
+        )
+    }
+
+    private func overdueDays(for task: Display) -> Int {
+        task.hasMissedExactTimedOccurrence ? 0 : max(-task.daysUntilDue, 0)
     }
 
     private func ongoingDescription(for task: Display) -> String {

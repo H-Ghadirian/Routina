@@ -270,6 +270,73 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         }
     }
 
+    func testLargeSeededRapidNoMatchSearchPerformance() {
+        let app = makeApp(seedProfile: "search-performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+        XCTAssertTrue(
+            seedTask(named: "Search Stress Task", in: app).waitForExistence(timeout: 180),
+            "The large Search performance store did not finish loading"
+        )
+
+        XCTContext.runActivity(named: "Rapid long no-match Search interaction") { activity in
+            let startTime = ProcessInfo.processInfo.systemUptime
+            tapTab("Search", in: app)
+            let searchField = app.searchFields.firstMatch
+            XCTAssertTrue(searchField.waitForExistence(timeout: 10), "Missing Search field")
+            var cycleDurations: [TimeInterval] = []
+            for cycle in 1...4 {
+                let cycleStartTime = ProcessInfo.processInfo.systemUptime
+                searchField.tap()
+                XCTAssertTrue(
+                    app.keyboards.firstMatch.waitForExistence(timeout: 5),
+                    "The keyboard did not open for Search cycle \(cycle)"
+                )
+                searchField.typeText(
+                    "this deliberately long query cannot match seeded task \(cycle) 987654321"
+                )
+
+                XCTAssertTrue(
+                    app.staticTexts["No matching todos"].waitForExistence(timeout: 30),
+                    "Search cycle \(cycle) did not settle on the expected no-match result"
+                )
+
+                let clearButton = searchField.buttons.firstMatch
+                XCTAssertTrue(
+                    clearButton.waitForExistence(timeout: 5),
+                    "Search cycle \(cycle) did not expose its clear button"
+                )
+                clearButton.tap()
+                XCTAssertTrue(
+                    seedTask(named: "Search Stress Task", in: app).waitForExistence(timeout: 30),
+                    "Search cycle \(cycle) did not restore the full task presentation"
+                )
+
+                let closeSearchButton = app.buttons["Close"].firstMatch
+                XCTAssertTrue(
+                    closeSearchButton.waitForExistence(timeout: 5),
+                    "Search cycle \(cycle) did not expose the native Close action"
+                )
+                closeSearchButton.tap()
+                XCTAssertTrue(
+                    waitForKeyboardToDisappear(in: app, timeout: 5),
+                    "The keyboard did not close after Search cycle \(cycle)"
+                )
+                cycleDurations.append(ProcessInfo.processInfo.systemUptime - cycleStartTime)
+            }
+            let duration = ProcessInfo.processInfo.systemUptime - startTime
+            activity.add(
+                XCTAttachment(
+                    string: String(
+                        format: "Search interaction duration: %.3f seconds; cycles: %@",
+                        duration,
+                        cycleDurations.map { String(format: "%.3f", $0) }.joined(separator: ", ")
+                    )
+                )
+            )
+        }
+    }
+
     func testAddRoutineSaveFlowPerformance() {
         let app = makeApp()
         app.launch()
@@ -341,6 +408,27 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let tab = app.tabBars.buttons[label].firstMatch
         XCTAssertTrue(tab.waitForExistence(timeout: 10), "Missing \(label) tab")
         tab.tap()
+    }
+
+    private func waitForKeyboardToDisappear(
+        in app: XCUIApplication,
+        timeout: TimeInterval
+    ) -> Bool {
+        let keyboard = app.keyboards.firstMatch
+        return waitForElementToBecomeNonHittable(keyboard, timeout: timeout)
+    }
+
+    private func waitForElementToBecomeNonHittable(
+        _ element: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = ProcessInfo.processInfo.systemUptime + timeout
+        while element.exists,
+              element.isHittable,
+              ProcessInfo.processInfo.systemUptime < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+        return !element.exists || !element.isHittable
     }
 
     private func openStats(in app: XCUIApplication) {

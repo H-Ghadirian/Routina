@@ -18,6 +18,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var taskListTagSectionDescriptor: HomeTaskListTagSectionDescriptor
     var goalIDs: [UUID] = []
     var goalTitles: [String] = []
+    var indexedSearchText: String? = nil
     var steps: [String]
     var interval: Int
     var recurrenceRule: RoutineRecurrenceRule

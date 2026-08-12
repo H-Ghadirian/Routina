@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0152 — Keep large Search restoration off the main actor](0152-keep-large-search-restoration-off-main-actor.md)
+- [0151 — Move large Search presentations off the main actor](0151-move-large-search-presentations-off-main-actor.md)
 - [0150 — Defer unreachable tag configuration](0150-defer-unreachable-tag-configuration.md)
 - [0149 — Gate iOS task-row appearance controls](0149-gate-ios-task-row-appearance-controls.md)
 - [0148 — Coalesce Backlog refreshes](0148-coalesce-backlog-refreshes.md)

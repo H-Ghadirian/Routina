@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0557](0557-build-ios-search-presentations-off-main-actor.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0541](0541-keep-ios-search-input-ahead-of-home-presentations.md), and [0544](0544-scope-ios-search-field-to-dedicated-search-tab.md):** iOS Search reuses pre-normalized display indexes, builds non-actionable task-list presentations and row-number lookups in cancellable detached work, keeps one stable list host while empty results change, and formats visible metadata without reconstructing Home filtering state.
+
 - **[0556](0556-use-crashlytics-for-production-crash-stacks.md) refines [0553](0553-record-debug-performance-symptoms-for-support.md), [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md), and [0555](0555-preserve-the-previous-debug-performance-run.md):** iOS and macOS use Firebase Crashlytics for automatic symbolicated production crash stacks, with no Analytics or user IDs and only throttled fixed-category Routina breadcrumbs.
 
 - **[0555](0555-preserve-the-previous-debug-performance-run.md) refines [0553](0553-record-debug-performance-symptoms-for-support.md) and [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md):** Before a new Debug profile begins, Routina preserves the most recently flushed current file as one bounded previous run that can be shared after reopening following a crash or force-quit.

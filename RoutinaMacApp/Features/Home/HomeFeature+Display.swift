@@ -144,6 +144,7 @@ private extension HomeFeature.RoutineDisplay {
             taskListTagSectionDescriptor: core.taskListTagSectionDescriptor,
             goalIDs: core.goalIDs,
             goalTitles: core.goalTitles,
+            indexedSearchText: core.indexedSearchText,
             steps: core.steps,
             interval: core.interval,
             recurrenceRule: core.recurrenceRule,

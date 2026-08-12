@@ -88,12 +88,18 @@ struct HomeRoutineDisplayFactory {
             )
         }
 
+        let taskName = task.name ?? "Unnamed task"
+        let taskEmoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
+        let taskDescription = task.taskDescription
+        let taskNotes = CalendarTaskImportSupport.displayNotes(from: task.notes)
+        let goalTitles = task.goalIDs.compactMap { goalsByID[$0]?.displayTitle }
+
         return HomeRoutineDisplayCore(
             taskID: task.id,
-            name: task.name ?? "Unnamed task",
-            emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨",
-            taskDescription: task.taskDescription,
-            notes: CalendarTaskImportSupport.displayNotes(from: task.notes),
+            name: taskName,
+            emoji: taskEmoji,
+            taskDescription: taskDescription,
+            notes: taskNotes,
             hasImage: task.hasImage,
             hasFileAttachment: fileAttachmentTaskIDs.contains(task.id),
             placeID: showsPlaces ? task.placeID : nil,
@@ -104,7 +110,17 @@ struct HomeRoutineDisplayFactory {
             flags: task.flags,
             taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(for: taskTags),
             goalIDs: task.goalIDs,
-            goalTitles: task.goalIDs.compactMap { goalsByID[$0]?.displayTitle },
+            goalTitles: goalTitles,
+            indexedSearchText: HomeTaskSearchIndex.make(
+                name: taskName,
+                emoji: taskEmoji,
+                taskDescription: taskDescription,
+                notes: taskNotes,
+                placeName: displayPlaceName,
+                tags: taskTags,
+                flags: task.flags,
+                goalTitles: goalTitles
+            ),
             steps: task.steps.map(\.title),
             interval: max(Int(task.interval), 1),
             recurrenceRule: task.recurrenceRule,

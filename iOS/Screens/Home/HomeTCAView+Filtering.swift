@@ -6,37 +6,43 @@ extension HomeTCAView {
         referenceDate: Date = Date()
     ) -> HomeTaskListFiltering<HomeFeature.RoutineDisplay> {
         HomeTaskListFiltering(
-            configuration: HomeTaskListFilteringConfiguration(
-                selectedFilter: store.selectedFilter,
-                advancedQuery: store.advancedQuery,
-                selectedManualPlaceFilterID: store.selectedManualPlaceFilterID,
-                selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
-                selectedTodoStateFilter: store.selectedTodoStateFilter,
-                selectedPressureFilter: store.selectedPressureFilter,
-                selectedThinkingNeededFilter: store.selectedThinkingNeededFilter,
-                selectedGoalFilter: store.selectedGoalFilter,
-                selectedMediaFilter: store.selectedMediaFilter,
-                selectedEstimationFilter: store.selectedEstimationFilter,
-                hideAssumedDoneTasks: store.hideAssumedDoneTasks,
-                taskListViewMode: store.taskListViewMode,
-                taskListSortOrder: store.taskListSortOrder,
-                createdDateFilter: store.createdDateFilter,
-                selectedTags: store.selectedTags,
-                includeTagMatchMode: store.includeTagMatchMode,
-                selectedFlags: store.selectedFlags,
-                includeFlagMatchMode: store.includeFlagMatchMode,
-                excludedTags: store.excludedTags,
-                excludeTagMatchMode: store.excludeTagMatchMode,
-                searchText: searchTextBinding.wrappedValue,
-                routineListSectioningMode: routineListSectioningMode,
-                flagRules: store.flagRules,
-                routineTasks: store.routineTasks,
-                referenceDate: referenceDate,
-                calendar: calendar
-            ),
+            configuration: taskListFilteringConfiguration(referenceDate: referenceDate),
             matchesCurrentTaskListMode: { task in
                 matchesCurrentTaskListMode(task)
             }
+        )
+    }
+
+    func taskListFilteringConfiguration(
+        referenceDate: Date = Date()
+    ) -> HomeTaskListFilteringConfiguration {
+        HomeTaskListFilteringConfiguration(
+            selectedFilter: store.selectedFilter,
+            advancedQuery: store.advancedQuery,
+            selectedManualPlaceFilterID: store.selectedManualPlaceFilterID,
+            selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
+            selectedTodoStateFilter: store.selectedTodoStateFilter,
+            selectedPressureFilter: store.selectedPressureFilter,
+            selectedThinkingNeededFilter: store.selectedThinkingNeededFilter,
+            selectedGoalFilter: store.selectedGoalFilter,
+            selectedMediaFilter: store.selectedMediaFilter,
+            selectedEstimationFilter: store.selectedEstimationFilter,
+            hideAssumedDoneTasks: store.hideAssumedDoneTasks,
+            taskListViewMode: store.taskListViewMode,
+            taskListSortOrder: store.taskListSortOrder,
+            createdDateFilter: store.createdDateFilter,
+            selectedTags: store.selectedTags,
+            includeTagMatchMode: store.includeTagMatchMode,
+            selectedFlags: store.selectedFlags,
+            includeFlagMatchMode: store.includeFlagMatchMode,
+            excludedTags: store.excludedTags,
+            excludeTagMatchMode: store.excludeTagMatchMode,
+            searchText: searchTextBinding.wrappedValue,
+            routineListSectioningMode: routineListSectioningMode,
+            flagRules: store.flagRules,
+            routineTasks: store.routineTasks,
+            referenceDate: referenceDate,
+            calendar: calendar
         )
     }
 

@@ -3,6 +3,7 @@ import SwiftData
 
 enum RoutinaUITestSeeder {
     private static let performanceTaskCount = 360
+    private static let searchPerformanceTaskCount = 12_000
     private static let guidedReviewPerformanceTaskCount = 360
     private static let guidedReviewPerformanceTimelineEntryCount = 1_200
 
@@ -14,6 +15,8 @@ enum RoutinaUITestSeeder {
             switch profile {
             case "performance":
                 try seedPerformanceProfile(in: context)
+            case "search-performance":
+                try seedSearchPerformanceProfile(in: context)
             case "stats-performance":
                 try seedStatsPerformanceProfile(in: context)
             case "guided-review-performance":
@@ -42,6 +45,34 @@ enum RoutinaUITestSeeder {
 
         for task in performanceTasks(referenceDate: Date()) {
             context.insert(task)
+        }
+        try context.save()
+    }
+
+    @MainActor
+    private static func seedSearchPerformanceProfile(in context: ModelContext) throws {
+        var descriptor = FetchDescriptor<RoutineTask>()
+        descriptor.fetchLimit = 1
+        guard try context.fetch(descriptor).isEmpty else { return }
+
+        let referenceDate = Date()
+        for index in 1...searchPerformanceTaskCount {
+            context.insert(
+                RoutineTask(
+                    name: String(format: "Search Stress Task %05d", index),
+                    emoji: "square.and.pencil",
+                    notes: "Large search performance fixture with deliberately varied metadata \(index)",
+                    priority: priority(for: index),
+                    importance: importance(for: index),
+                    urgency: urgency(for: index),
+                    tags: tags(for: index),
+                    scheduleMode: .oneOff,
+                    createdAt: referenceDate.addingTimeInterval(TimeInterval(-index * 30)),
+                    todoStateRawValue: todoStateRawValue(for: index),
+                    estimatedDurationMinutes: 15 + (index % 6) * 10,
+                    storyPoints: (index % 8) + 1
+                )
+            )
         }
         try context.save()
     }
