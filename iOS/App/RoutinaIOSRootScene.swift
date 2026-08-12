@@ -30,6 +30,7 @@ struct RoutinaIOSRootScene: Scene {
             AppView(store: store)
                 .routinaAppRootWindowFrame()
                 .modelContainer(persistence.container)
+                .background(RoutinaPerformanceProfilingLifecycleView())
                 .onAppear {
                     guard !AppEnvironment.isAutomatedTestMode else { return }
                     DeviceActivityRecorder.recordCurrentDeviceSession(

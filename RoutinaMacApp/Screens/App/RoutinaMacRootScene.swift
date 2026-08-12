@@ -50,6 +50,7 @@ struct RoutinaMacRootScene: Scene {
                 .background(RoutinaMacWindowRouterInstaller())
                 .background(RoutinaMacHomeWindowConfigurator())
                 .background(RoutinaMacUndoBridge(persistence: persistence))
+                .background(RoutinaPerformanceProfilingLifecycleView())
                 .onAppear {
                     RoutinaMacSelectedTaskSidebarShortcutMonitor.installIfNeeded()
                     MacMenuCleanup.removeUnneededMenus()

@@ -4,6 +4,7 @@ import ComposableArchitecture
 struct SettingsAboutDetailView: View {
     let store: StoreOf<SettingsFeature>
     @State private var didCopyDiagnostics = false
+    @State private var didMarkPerformanceReproduction = false
 
     var body: some View {
 List {
@@ -85,6 +86,29 @@ List {
                 )
             }
             .accessibilityHint("Copies the complete diagnostic report for sharing with support")
+        }
+
+        if RoutinaPerformanceProfiler.isEnabled,
+           let profileURL = RoutinaPerformanceProfiler.shared.latestProfileURL {
+            Section("Performance Profile") {
+                Text("This Debug run is recording CPU, memory, lifecycle events, and main-thread stalls. It never includes your tasks or account data.")
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    RoutinaPerformanceProfiler.shared.addMarker("reproduction-ended")
+                    didMarkPerformanceReproduction = true
+                } label: {
+                    Label(
+                        didMarkPerformanceReproduction ? "Reproduction Marked" : "Mark End of Reproduction",
+                        systemImage: didMarkPerformanceReproduction ? "checkmark" : "flag"
+                    )
+                }
+
+                ShareLink(item: profileURL) {
+                    Label("Share Performance Profile", systemImage: "square.and.arrow.up")
+                }
+                .accessibilityHint("Shares the current Debug performance profile JSON file")
+            }
         }
     }
 }

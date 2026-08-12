@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0553](0553-record-debug-performance-symptoms-for-support.md) refines [0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md) and [0516](0516-make-support-diagnostics-copyable.md):** Debug runs write one bounded, privacy-safe JSON performance symptom profile with CPU, memory, main-thread-delay, and lifecycle signals; it supports handoff but does not replace a validated Release Time Profiler trace.
+
 - **[0552](0552-keep-ios-saved-tag-settings-compact.md):** iOS Settings -> Tags keeps saved-tag rows compact until a person selects one, then reveals that row's existing actions and editors without persisting the temporary selection.
 
 - **[0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) refines [0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md), [0529](0529-collapse-calendar-list-planned-task-sections.md), and [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` gives each day's Confirmed assumed done section its own disclosure, using the existing shared default without changing cached Planner presentation work.
@@ -635,6 +637,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0553](0553-record-debug-performance-symptoms-for-support.md) | Record Debug Performance Symptoms for Support | Accepted | 2026-08-12 |
 | [0552](0552-keep-ios-saved-tag-settings-compact.md) | Keep iOS Saved-Tag Settings Compact | Accepted | 2026-08-12 |
 | [0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) | Collapse Confirmed Assumed-Done Calendar List Sections | Accepted | 2026-08-11 |
 | [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md) | Keep iOS Stats and Timeline Filter Details in Sheets | Accepted | 2026-08-11 |

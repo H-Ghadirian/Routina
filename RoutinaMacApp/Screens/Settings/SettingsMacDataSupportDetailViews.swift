@@ -422,6 +422,7 @@ private struct SettingsMacShortcutKeyCluster: View {
 struct SettingsMacAboutDetailView: View {
     let store: StoreOf<SettingsFeature>
     @State private var didCopyDiagnostics = false
+    @State private var didMarkPerformanceReproduction = false
 
     var body: some View {
 SettingsMacDetailShell(
@@ -497,6 +498,33 @@ SettingsMacDetailShell(
             }
             .buttonStyle(.bordered)
             .accessibilityHint("Copies the complete diagnostic report for sharing with support")
+        }
+
+        if RoutinaPerformanceProfiler.isEnabled,
+           let profileURL = RoutinaPerformanceProfiler.shared.latestProfileURL {
+            SettingsMacDetailCard(title: "Performance Profile") {
+                Text("This Debug run is recording CPU, memory, lifecycle events, and main-thread stalls. It never includes your tasks or account data.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 10) {
+                    Button {
+                        RoutinaPerformanceProfiler.shared.addMarker("reproduction-ended")
+                        didMarkPerformanceReproduction = true
+                    } label: {
+                        Label(
+                            didMarkPerformanceReproduction ? "Reproduction Marked" : "Mark End of Reproduction",
+                            systemImage: didMarkPerformanceReproduction ? "checkmark" : "flag"
+                        )
+                    }
+                    .buttonStyle(.bordered)
+
+                    ShareLink(item: profileURL) {
+                        Label("Share Performance Profile", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
         }
     }
 }
