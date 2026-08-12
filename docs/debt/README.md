@@ -6,4 +6,5 @@ state, migration scope, and safeguards required before the debt is closed.
 
 ## Tickets
 
+- [0002 — Implement saved-tag quick filters](0002-implement-saved-tag-quick-filters.md)
 - [0001 — Make Importance and Urgency explicitly optional](0001-make-importance-and-urgency-explicitly-optional.md)

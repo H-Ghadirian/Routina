@@ -287,10 +287,7 @@ private struct SettingsTagRow: View {
 
     private var tagOptions: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 16) {
-                fastFilterButton
-                tagActionsMenu
-            }
+            tagActionsMenu
 
             if isRelatedTagRulesEnabled {
                 relatedTagsEditor
@@ -298,27 +295,6 @@ private struct SettingsTagRow: View {
             tagColorEditor
         }
         .padding(.bottom, 4)
-    }
-
-    private var fastFilterButton: some View {
-        Button {
-            store.send(.fastFilterTagToggled(tag.name))
-        } label: {
-            Label(
-                isFastFilterTag ? "In quick filters" : "Add to quick filters",
-                systemImage: isFastFilterTag ? "bolt.fill" : "bolt"
-            )
-                .font(.body.weight(.medium))
-                .foregroundStyle(isFastFilterTag ? Color.accentColor : Color.secondary)
-        }
-        .buttonStyle(.borderless)
-        .disabled(store.tags.isTagOperationInProgress)
-        .accessibilityLabel(
-            isFastFilterTag
-                ? "Remove \(tag.name) from quick filters"
-                : "Add \(tag.name) to quick filters"
-        )
-        .accessibilityHint("Quick filters make this tag easier to reach when filtering tasks.")
     }
 
     private var tagActionsMenu: some View {
@@ -384,10 +360,6 @@ private struct SettingsTagRow: View {
                 .disabled(store.tags.isTagOperationInProgress)
             }
         }
-    }
-
-    private var isFastFilterTag: Bool {
-        store.tags.fastFilterTags.contains(where: { RoutineTag.contains($0, in: [tag.name]) })
     }
 
     private var relatedTagDraftBinding: Binding<String> {

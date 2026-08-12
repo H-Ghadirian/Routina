@@ -647,18 +647,16 @@ extension SettingsDiagnosticsState {
 
 extension SettingsTagsState {
     var overviewSubtitle: String {
-        let fastFilterSuffix = fastFilterTags.isEmpty ? "" : " • \(fastFilterTags.count) fast"
-
         switch savedTags.count {
         case 0:
             let sources = SharedDefaults.app[.appSettingNotesEnabled]
                 ? "tasks, goals, notes, and events"
                 : "tasks, goals, and events"
-            return "Review and manage tags across \(sources)\(fastFilterSuffix)"
+            return "Review and manage tags across \(sources)"
         case 1:
-            return "1 saved tag\(fastFilterSuffix)"
+            return "1 saved tag"
         default:
-            return "\(savedTags.count) saved tags\(fastFilterSuffix)"
+            return "\(savedTags.count) saved tags"
         }
     }
 

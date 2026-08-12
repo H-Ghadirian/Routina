@@ -56,6 +56,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Estimated iCloud Usage lists only categories whose user-facing feature is available. Tasks, logs, and images remain visible; Places, Goals, Events, Emotions, Notes, and Voice Notes follow their corresponding feature gates.
 - When `Show Goals tab` is off, iOS hides Goals navigation, New Goal, Goals Stats reports, the Goals iCloud category, and the Home Filters Goal option; existing task and goal data remains stored.
 - iOS Settings -> Appearance hides the Task Row `Goals` and `Places` controls, their preview content, and their shown-fields count from the respective disabled Goal and Places feature gates. Their stored row-visibility choices remain intact and return when the feature is enabled again.
+- iOS Settings -> Tags does not expose saved-tag quick-filter configuration until the app provides a discoverable shortcut surface. The deferred implementation is tracked in [Product Debt 0002](../debt/0002-implement-saved-tag-quick-filters.md).
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
 - Legacy `.json` backup remains compatibility-only for older task, place, goal, and log payloads.
 - Data-wide reset actions show backup/export first when possible.

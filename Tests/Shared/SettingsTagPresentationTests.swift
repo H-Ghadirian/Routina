@@ -10,9 +10,8 @@ struct SettingsTagPresentationTests {
         #expect(source.contains("isSelected: selectedTagID == tag.id"))
         #expect(source.contains("if isSelected {\n                tagOptions"))
         #expect(source.contains("selectedTagID = selectedTagID == tagID ? nil : tagID"))
-        #expect(source.contains("fastFilterButton\n                tagActionsMenu"))
-        #expect(source.contains("\"In quick filters\" : \"Add to quick filters\""))
-        #expect(source.contains("Quick filters make this tag easier to reach when filtering tasks."))
+        #expect(!source.contains("fastFilterButton"))
+        #expect(!source.localizedCaseInsensitiveContains("quick filter"))
         #expect(source.contains(".frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)"))
         #expect(source.contains(".contentShape(.rect)"))
     }
