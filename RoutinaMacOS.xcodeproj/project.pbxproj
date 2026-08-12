@@ -23,6 +23,10 @@
 		6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001082E5F000100000001 /* ConcurrencyExtras */; };
 		AA000101PLUGINKIT00000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63D2F965A91009F0331 /* WidgetKit.framework */; };
 		AA000102PLUGINKIT00000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63F2F965A91009F0331 /* SwiftUI.framework */; };
+		F20000012FA0000100000001 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F20002012FA0000100000001 /* FirebaseCore */; };
+		F20000022FA0000100000001 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = F20002022FA0000100000001 /* FirebaseCrashlytics */; };
+		F20000032FA0000100000001 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F20002012FA0000100000001 /* FirebaseCore */; };
+		F20000042FA0000100000001 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = F20002022FA0000100000001 /* FirebaseCrashlytics */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -153,6 +157,8 @@
 				2C0000112E60000100000001 /* Dependencies in Frameworks */,
 				2C0000122E60000100000001 /* CasePaths in Frameworks */,
 				2C0000142E60000100000001 /* ConcurrencyExtras in Frameworks */,
+				F20000012FA0000100000001 /* FirebaseCore in Frameworks */,
+				F20000022FA0000100000001 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -164,6 +170,8 @@
 				4E0000112E80000100000001 /* Dependencies in Frameworks */,
 				4E0000122E80000100000001 /* CasePaths in Frameworks */,
 				4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */,
+				F20000032FA0000100000001 /* FirebaseCore in Frameworks */,
+				F20000042FA0000100000001 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,8 +273,10 @@
 				2C0000052E60000100000001 /* Sources */,
 				2C0000032E60000100000001 /* Frameworks */,
 				2C0000042E60000100000001 /* Resources */,
+				F20003012FA0000100000001 /* Copy Firebase Configuration */,
 				C20000102F90000100000001 /* Verify CloudKit Production Schema */,
 				7D00000130A0000100000001 /* Embed Routina AI MCP Helper */,
+				F20003022FA0000100000001 /* Upload Crashlytics Symbols */,
 			);
 			buildRules = (
 			);
@@ -284,6 +294,8 @@
 				2B1001012E5F000100000001 /* Dependencies */,
 				2B1001022E5F000100000001 /* CasePaths */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				F20002012FA0000100000001 /* FirebaseCore */,
+				F20002022FA0000100000001 /* FirebaseCrashlytics */,
 			);
 			productName = Routina;
 			productReference = 2C0000022E60000100000001 /* Routinam.app */;
@@ -296,7 +308,9 @@
 				4E0000052E80000100000001 /* Sources */,
 				4E0000032E80000100000001 /* Frameworks */,
 				4E0000042E80000100000001 /* Resources */,
+				F20003032FA0000100000001 /* Copy Firebase Configuration */,
 				7D00000230A0000100000001 /* Embed Routina AI MCP Helper */,
+				F20003042FA0000100000001 /* Upload Crashlytics Symbols */,
 			);
 			buildRules = (
 			);
@@ -314,6 +328,8 @@
 				2B1001012E5F000100000001 /* Dependencies */,
 				2B1001022E5F000100000001 /* CasePaths */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				F20002012FA0000100000001 /* FirebaseCore */,
+				F20002022FA0000100000001 /* FirebaseCrashlytics */,
 			);
 			productName = RoutinaMacOSDev;
 			productReference = 4E0000022E80000100000001 /* RoutinaMacOSDev.app */;
@@ -411,6 +427,7 @@
 				2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 				2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */,
 				2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */,
+				F20001012FA0000100000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2A5A74BE2D7B92F600E91075 /* Products */;
@@ -465,6 +482,104 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		F20003012FA0000100000001 /* Copy Firebase Configuration */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/copy_firebase_configuration.sh",
+				"$(SRCROOT)/Config/Firebase",
+			);
+			name = "Copy Firebase Configuration";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/copy_firebase_configuration.sh\"\n";
+		};
+		F20003022FA0000100000001 /* Upload Crashlytics Symbols */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/upload_crashlytics_symbols.sh",
+				"$(BUILD_DIR)/../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(PRODUCT_NAME)",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(PRODUCT_NAME).debug.dylib",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Upload Crashlytics Symbols";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/upload_crashlytics_symbols.sh\"\n";
+		};
+		F20003032FA0000100000001 /* Copy Firebase Configuration */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/copy_firebase_configuration.sh",
+				"$(SRCROOT)/Config/Firebase",
+			);
+			name = "Copy Firebase Configuration";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/copy_firebase_configuration.sh\"\n";
+		};
+		F20003042FA0000100000001 /* Upload Crashlytics Symbols */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/upload_crashlytics_symbols.sh",
+				"$(BUILD_DIR)/../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(PRODUCT_NAME)",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(PRODUCT_NAME).debug.dylib",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Upload Crashlytics Symbols";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/upload_crashlytics_symbols.sh\"\n";
+		};
 		7D00000130A0000100000001 /* Embed Routina AI MCP Helper */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -795,6 +910,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 10;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_APP_SANDBOX = YES;
@@ -820,6 +936,10 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.3.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam;
 				PRODUCT_NAME = Routinam;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -875,6 +995,10 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.3.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam;
 				PRODUCT_NAME = Routinam;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -903,6 +1027,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 10;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
@@ -915,6 +1040,10 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.3.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
 				PRODUCT_MODULE_NAME = RoutinaMacOSDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -950,6 +1079,10 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.3.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
 				PRODUCT_MODULE_NAME = RoutinaMacOSDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1194,6 +1327,14 @@
 				minimumVersion = 1.3.2;
 			};
 		};
+		F20001012FA0000100000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.17.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1236,6 +1377,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
 			productName = ConcurrencyExtras;
+		};
+		F20002012FA0000100000001 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F20001012FA0000100000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		F20002022FA0000100000001 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F20001012FA0000100000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

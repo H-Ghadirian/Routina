@@ -10,6 +10,7 @@ enum RoutinaAppBootstrap {
     }
 
     static func configure() {
+        RoutinaCrashReporter.configureIfAvailable()
         let cloudContainer = AppEnvironment.cloudKitContainerIdentifier ?? "disabled"
         NSLog(
             "Routina data mode: \(AppEnvironment.dataModeLabel), defaults suite: \(AppEnvironment.userDefaultsSuiteName), cloud container: \(cloudContainer)"

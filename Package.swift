@@ -398,6 +398,7 @@ let package = Package(
                 "SharedCore/Services/FocusSessionSupport.swift",
                 "SharedCore/Services/AwaySessionSupport.swift",
                 "SharedCore/Services/SleepSessionSupport.swift",
+                "SharedCore/Services/RoutinaCrashReporter.swift",
                 "SharedCore/Services/RoutinaPerformanceProfiler.swift",
                 "SharedCore/Services/PlaceCheckInSupport.swift",
                 "SharedCore/Services/WidgetStatsService.swift",

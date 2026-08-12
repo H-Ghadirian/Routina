@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0556](0556-use-crashlytics-for-production-crash-stacks.md) refines [0553](0553-record-debug-performance-symptoms-for-support.md), [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md), and [0555](0555-preserve-the-previous-debug-performance-run.md):** iOS and macOS use Firebase Crashlytics for automatic symbolicated production crash stacks, with no Analytics or user IDs and only throttled fixed-category Routina breadcrumbs.
+
 - **[0555](0555-preserve-the-previous-debug-performance-run.md) refines [0553](0553-record-debug-performance-symptoms-for-support.md) and [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md):** Before a new Debug profile begins, Routina preserves the most recently flushed current file as one bounded previous run that can be shared after reopening following a crash or force-quit.
 
 - **[0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md) refines [0553](0553-record-debug-performance-symptoms-for-support.md):** Debug profiles correlate stalls with a bounded trail of fixed navigation, scroll, filter, lifecycle, creation, and sync categories, never task content or identifiers.

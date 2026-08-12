@@ -31,6 +31,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIBackgroundModes</key>
@@ -43,6 +45,8 @@
 	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSApplicationCrashOnExceptions</key>
+	<true/>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Routina reads selected calendars only when you review events to add as tasks.</string>
 	<key>NSCalendarsUsageDescription</key>

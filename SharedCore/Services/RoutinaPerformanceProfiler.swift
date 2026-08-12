@@ -120,17 +120,18 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
     /// Records only a fixed, privacy-safe interaction category. Callers cannot
     /// attach task names, query text, identifiers, or other user content.
     func recordInteraction(_ interaction: RoutinaPerformanceInteraction) {
+        RoutinaCrashReporter.recordInteraction(interaction)
         guard Self.isEnabled else { return }
 
         let now = Date()
         let uptime = ProcessInfo.processInfo.systemUptime
-        let didRecord = withStateLock { state in
-            guard state.isRunning else { return false }
+        withStateLock { state in
+            guard state.isRunning else { return }
 
             if let previous = state.interactionEvents.last,
                previous.name == interaction.rawValue,
                uptime - previous.uptimeSeconds < Self.interactionDeduplicationWindow {
-                return false
+                return
             }
 
             appendBounded(
@@ -143,11 +144,6 @@ final class RoutinaPerformanceProfiler: @unchecked Sendable {
                 maximumCount: Self.maximumInteractionEvents,
                 droppedCount: &state.droppedInteractionEventCount
             )
-            return true
-        }
-
-        if didRecord {
-            flush()
         }
     }
 

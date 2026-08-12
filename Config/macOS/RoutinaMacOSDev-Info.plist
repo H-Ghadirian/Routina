@@ -31,6 +31,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
@@ -41,6 +43,8 @@
 	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSApplicationCrashOnExceptions</key>
+	<true/>
 	<key>NSLocationUsageDescription</key>
 	<string>Routina uses your location to show place-based routines when you are at the right place.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

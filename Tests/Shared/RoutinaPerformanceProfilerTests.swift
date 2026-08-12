@@ -125,6 +125,34 @@ struct RoutinaPerformanceProfilerTests {
     }
 
     @Test
+    func crashBreadcrumbsCoalesceOnlyRapidRepeatedCategories() {
+        #expect(
+            !RoutinaCrashReporter.shouldRecordInteraction(
+                previousName: RoutinaPerformanceInteraction.timelineScrolled.rawValue,
+                previousUptime: 10,
+                interactionName: RoutinaPerformanceInteraction.timelineScrolled.rawValue,
+                uptime: 10.5
+            )
+        )
+        #expect(
+            RoutinaCrashReporter.shouldRecordInteraction(
+                previousName: RoutinaPerformanceInteraction.timelineScrolled.rawValue,
+                previousUptime: 10,
+                interactionName: RoutinaPerformanceInteraction.taskDetailOpened.rawValue,
+                uptime: 10.1
+            )
+        )
+        #expect(
+            RoutinaCrashReporter.shouldRecordInteraction(
+                previousName: RoutinaPerformanceInteraction.timelineScrolled.rawValue,
+                previousUptime: 10,
+                interactionName: RoutinaPerformanceInteraction.timelineScrolled.rawValue,
+                uptime: 10.75
+            )
+        )
+    }
+
+    @Test
     func preservesCurrentProfileBeforeAReplacementRunStarts() throws {
         let testDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent(".codex", isDirectory: true)

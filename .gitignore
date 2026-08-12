@@ -6,3 +6,6 @@
 /build/XCBuildData/
 *.xcresult/
 .xcresulttmp/
+
+# Per-app Firebase registration files (provided outside source control)
+Config/Firebase/GoogleService-Info-*.plist
