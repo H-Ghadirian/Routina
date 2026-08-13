@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0159 — Keep shared task-detail priority controls visible for routines](0159-keep-shared-task-detail-priority-controls-visible-for-routines.md)
 - [0158 — Preserve pressure timestamps during ranking](0158-preserve-pressure-timestamps-during-ranking.md)
 - [0157 — Keep Home elapsed status aligned with completion history](0157-keep-home-elapsed-status-aligned-with-completion-history.md)
 - [0156 — Keep iOS performance flows aligned with compact navigation](0156-keep-ios-performance-flows-aligned-with-compact-navigation.md)

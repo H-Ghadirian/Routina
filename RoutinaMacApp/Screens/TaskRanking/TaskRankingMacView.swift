@@ -7,6 +7,7 @@ struct TaskRankingMacView: View {
         UserDefaultStringValueKey.appSettingMacTaskRankingReversedMetrics.rawValue,
         store: SharedDefaults.app
     ) private var reversedMetricsRawValue = ""
+    @State private var collapsedSectionIDs = Set<String>()
 
     var body: some View {
         HSplitView {
@@ -129,30 +130,47 @@ struct TaskRankingMacView: View {
     }
 
     private func rankingSection(_ section: TaskRankingPresentation.Section) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(section.title)
-                    .font(.headline)
-                Text("\(section.tasks.count)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                if !section.supportsManualOrdering {
-                    Text(section.isMissingValue ? "Separate" : "Read only")
-                        .font(.caption2.weight(.medium))
+        let isCollapsed = collapsedSectionIDs.contains(section.id)
+
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                toggleRankingSection(section)
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(section.title)
+                        .font(.headline)
+                    Text("\(section.tasks.count)")
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                    if !section.supportsManualOrdering {
+                        Text(section.isMissingValue ? "Separate" : "Read only")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isCollapsed ? -90 : 0))
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(isCollapsed ? "Expand" : "Collapse") \(section.title)")
+            .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
             .background(section.isMissingValue ? Color.secondary.opacity(0.08) : Color.accentColor.opacity(0.09))
 
-            Divider()
+            if !isCollapsed {
+                Divider()
 
-            ForEach(section.tasks) { task in
-                rankingRow(task, in: section)
-                if task.id != section.tasks.last?.id {
-                    Divider().padding(.leading, 12)
+                ForEach(section.tasks) { task in
+                    rankingRow(task, in: section)
+                    if task.id != section.tasks.last?.id {
+                        Divider().padding(.leading, 12)
+                    }
                 }
             }
         }
@@ -164,6 +182,16 @@ struct TaskRankingMacView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(section.isMissingValue ? Color.secondary.opacity(0.2) : Color.accentColor.opacity(0.25), lineWidth: 1)
         )
+    }
+
+    private func toggleRankingSection(_ section: TaskRankingPresentation.Section) {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            if collapsedSectionIDs.contains(section.id) {
+                collapsedSectionIDs.remove(section.id)
+            } else {
+                collapsedSectionIDs.insert(section.id)
+            }
+        }
     }
 
     private func rankingRow(

@@ -467,6 +467,7 @@ struct TaskDetailTCAView: View {
                 todoTimeSpentHeaderBox
             }
             taskDetailStatusControls
+            taskDetailPrioritySection
         }
     }
 

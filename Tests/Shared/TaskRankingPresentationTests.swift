@@ -202,6 +202,20 @@ struct TaskRankingPresentationTests {
         #expect(!thinkingNeededSource.contains("No thinking value"))
     }
 
+    @Test
+    func taskLadderValueSectionsHaveIndependentCollapsibleHeaders() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+
+        #expect(source.contains("@State private var collapsedSectionIDs = Set<String>()"))
+        #expect(source.contains("let isCollapsed = collapsedSectionIDs.contains(section.id)"))
+        #expect(source.contains("toggleRankingSection(section)"))
+        #expect(source.contains("collapsedSectionIDs.insert(section.id)"))
+        #expect(source.contains("collapsedSectionIDs.remove(section.id)"))
+        #expect(source.contains("accessibilityValue(isCollapsed ? \"Collapsed\" : \"Expanded\")"))
+    }
+
     private static func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

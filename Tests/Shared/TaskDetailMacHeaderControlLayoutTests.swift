@@ -3,13 +3,16 @@ import Testing
 
 struct TaskDetailMacHeaderControlLayoutTests {
     @Test
-    func pressureAndThinkingNeededShareOneAdaptiveLayoutForEveryTaskType() throws {
+    func priorityControlsShareOneExpandableSectionForEveryTaskType() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
         )
-        let sharedControls = try Self.sourceSection(
-            startingAt: "private var taskDetailStatusControls: some View",
-            endingAt: "private var shouldShowTaskDetailStatusControls: Bool",
+        let actionControls = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+        let prioritySection = try Self.sourceSection(
+            startingAt: "private var taskDetailPrioritySection: some View",
+            endingAt: "private var shouldShowTimeControl: Bool",
             in: source
         )
         let todoControls = try Self.sourceSection(
@@ -23,14 +26,18 @@ struct TaskDetailMacHeaderControlLayoutTests {
             in: source
         )
 
-        #expect(sharedControls.contains("ViewThatFits(in: .horizontal)"))
-        #expect(sharedControls.contains("TaskDetailPressureSegmentedPicker(store: store)"))
-        #expect(sharedControls.contains("TaskDetailThinkingNeededSegmentedPicker(store: store)"))
-        #expect(sharedControls.contains(".frame(minWidth: 300)"))
+        #expect(prioritySection.contains("TaskDetailPriorityDisclosureBox("))
+        #expect(prioritySection.contains("TaskDetailPriorityControlsGrid(store: store)"))
+        #expect(actionControls.contains("struct TaskDetailPriorityControlsGrid"))
+        #expect(actionControls.contains("ViewThatFits(in: .horizontal)"))
+        #expect(actionControls.contains("TaskDetailPressureSegmentedPicker("))
+        #expect(actionControls.contains("TaskDetailThinkingNeededSegmentedPicker("))
+        #expect(actionControls.contains("TaskDetailImportanceSegmentedPicker("))
+        #expect(actionControls.contains("TaskDetailUrgencySegmentedPicker("))
         #expect(todoControls.contains("taskDetailStatusControls"))
+        #expect(todoControls.contains("taskDetailPrioritySection"))
         #expect(routineControls.contains("taskDetailStatusControls"))
-        #expect(!routineControls.contains("TaskDetailPressureSegmentedPicker"))
-        #expect(!routineControls.contains("TaskDetailThinkingNeededSegmentedPicker"))
+        #expect(routineControls.contains("taskDetailPrioritySection"))
     }
 
     private static func sourceSection(
