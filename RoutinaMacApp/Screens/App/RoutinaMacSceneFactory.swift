@@ -98,6 +98,27 @@ enum RoutinaMacSceneFactory {
     }
 
     @MainActor
+    static func makeTaskRankingRoot(persistence: PersistenceController) -> AnyView {
+        let store = Store(initialState: TaskRankingFeature.State()) {
+            TaskRankingFeature()
+        } withDependencies: {
+            $0.modelContext = { @MainActor in persistence.container.mainContext }
+        }
+
+        return AnyView(
+            RoutinaMacAppThemeRoot {
+                AppLockGate {
+                    TaskRankingMacView(store: store)
+                        .frame(minWidth: 980, minHeight: 620)
+                        .modelContainer(persistence.container)
+                        .awayModeGate()
+                        .sleepModeGate()
+                }
+            }
+        )
+    }
+
+    @MainActor
     static func makeTaskRelationshipReviewRoot(persistence: PersistenceController) -> AnyView {
         let store = Store(initialState: TaskRelationshipReviewFeature.State()) {
             TaskRelationshipReviewFeature()

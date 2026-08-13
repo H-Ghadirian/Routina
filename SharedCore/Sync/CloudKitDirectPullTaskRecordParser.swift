@@ -161,6 +161,10 @@ enum CloudKitDirectPullTaskRecordParser {
             in: record,
             keys: ["pinnedAt", "PINNEDAT", "zpinnedat", "ZPINNEDAT", "cd_pinnedat"]
         )
+        let taskRankingOrderStorageValue = stringValue(
+            in: record,
+            keys: storageKeys("taskRankingOrderStorage")
+        )
         let completedStepCountValue = intValue(
             in: record,
             keys: ["completedStepCount", "COMPLETEDSTEPCOUNT", "zcompletedstepcount", "ZCOMPLETEDSTEPCOUNT", "cd_completedstepcount"]
@@ -321,6 +325,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || pauseUntilValue != nil
                 || snoozedUntilValue != nil
                 || pinnedAtValue != nil
+                || taskRankingOrderStorageValue != nil
                 || completedStepCountValue != nil
                 || sequenceStartedAtValue != nil
                 || activityStateRawValueValue != nil
@@ -396,6 +401,7 @@ enum CloudKitDirectPullTaskRecordParser {
             pauseUntil: pauseUntilValue,
             snoozedUntil: snoozedUntilValue,
             pinnedAt: pinnedAtValue,
+            taskRankingOrderStorage: taskRankingOrderStorageValue,
             completedStepCount: Int16(clamping: completedStepCountValue ?? 0),
             sequenceStartedAt: sequenceStartedAtValue,
             createdAt: createdAtValue,

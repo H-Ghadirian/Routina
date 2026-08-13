@@ -4,6 +4,7 @@ import SwiftUI
 enum RoutinaMacSceneID {
     static let home = "routina-home"
     static let backlog = "routina-backlog"
+    static let taskRanking = "routina-task-ranking"
     static let settings = "routina-settings"
     static let taskRelationshipReview = "routina-task-relationship-review"
 }
@@ -128,6 +129,11 @@ struct RoutineCommands: Commands {
                 openWindow(id: RoutinaMacSceneID.backlog)
             }
             .keyboardShortcut("b", modifiers: [.command, .shift])
+
+            Button("Task Ladder") {
+                openWindow(id: RoutinaMacSceneID.taskRanking)
+            }
+            .keyboardShortcut("r", modifiers: [.command, .shift])
 
             Button("Show Task in List") {
                 RoutinaMacCommandNotification.post(

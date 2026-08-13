@@ -251,6 +251,32 @@ enum RoutineSectionOrderStorage {
     }
 }
 
+enum TaskRankingOrderStorage {
+    static func key(metric: TaskRankingMetric, value: TaskRankingMetricValue) -> String {
+        "\(metric.rawValue):\(value.storageComponent)"
+    }
+
+    static func serialize(_ orders: [String: Int64]) -> String {
+        guard !orders.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(orders),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> [String: Int64] {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String: Int64].self, from: data) else {
+            return [:]
+        }
+        return decoded
+    }
+}
+
 enum RoutineRecurrenceRuleStorage {
     static func serialize(_ recurrenceRule: RoutineRecurrenceRule) -> String {
         let encoder = JSONEncoder()

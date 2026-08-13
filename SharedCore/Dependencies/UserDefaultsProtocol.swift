@@ -114,6 +114,7 @@ enum AppSettingsDefaults {
         UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue: "",
         UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue: "",
         UserDefaultStringValueKey.appSettingMacHomeTaskListSectionOrder.rawValue: "",
+        UserDefaultStringValueKey.appSettingMacTaskRankingReversedMetrics.rawValue: "",
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue: "",
         UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue: "",
@@ -149,6 +150,7 @@ enum AppSettingsDefaults {
         .appSettingTemporaryViewState,
         .appSettingCustomTaskSections,
         .appSettingMacHomeTaskListSectionOrder,
+        .appSettingMacTaskRankingReversedMetrics,
         .appSettingBlockingWebsiteDomains,
         .appSettingFocusShieldSelection,
         .appSettingMacFocusBlockedApps,
@@ -280,6 +282,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingCollapsedTagTaskListSections
     case appSettingCustomTaskSections
     case appSettingMacHomeTaskListSectionOrder
+    case appSettingMacTaskRankingReversedMetrics
     case appSettingTagCounterDisplayMode
     case appSettingHomeTaskRowHiddenFields
     case appSettingHomeTimelineRowHiddenFields

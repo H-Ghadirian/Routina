@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0561](0561-add-separate-mac-task-ranking-ladder.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Task Ladder is a separate active-task ranking workspace with independently persisted categorical tie-break ladders and a read-only estimated-time sort.
+
 - **[0560](0560-cache-sidebar-filter-summary-counts.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Home filter summaries reuse the visible count stored with the cached task-list presentation instead of scanning the whole task catalog from the sidebar render path.
 
 - **[0559](0559-run-startup-data-maintenance-off-the-main-actor.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md):** one utility-priority SwiftData worker owns startup migrations and whole-history integrity repair, while Home loads its first visible snapshot without those repair scans on the main actor.

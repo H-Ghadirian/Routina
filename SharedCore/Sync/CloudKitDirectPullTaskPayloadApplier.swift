@@ -78,6 +78,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
         task.pauseUntil = payload.pauseUntil
         task.snoozedUntil = payload.snoozedUntil
         task.pinnedAt = payload.pinnedAt
+        if let taskRankingOrderStorage = payload.taskRankingOrderStorage {
+            task.taskRankingOrderStorage = taskRankingOrderStorage
+        }
         task.completedStepCount = payload.completedStepCount
         task.sequenceStartedAt = payload.sequenceStartedAt
         if let createdAt = payload.createdAt {
@@ -191,6 +194,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             storyPoints: payload.storyPoints,
             comments: payload.comments ?? []
         )
+        task.taskRankingOrderStorage = payload.taskRankingOrderStorage ?? ""
         task.linkItems = payload.linkItems
             ?? payload.links?.map { RoutineTaskLink(title: nil, url: $0) }
             ?? payload.link.map { [RoutineTaskLink(title: nil, url: $0)] }

@@ -42,6 +42,7 @@ extension CloudKitDirectPullService {
         var pauseUntil: Date?
         var snoozedUntil: Date?
         var pinnedAt: Date?
+        var taskRankingOrderStorage: String? = nil
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
         var createdAt: Date?

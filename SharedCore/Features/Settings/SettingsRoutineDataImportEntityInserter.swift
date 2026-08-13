@@ -331,6 +331,7 @@ enum SettingsRoutineDataImportEntityInserter {
             if let linkItems = task.linkItems {
                 importedTask.linkItems = linkItems
             }
+            importedTask.taskRankingOrderStorage = task.taskRankingOrderStorage ?? ""
             context.insert(importedTask)
             importedCount += 1
         }
@@ -1071,6 +1072,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.tagCounterDisplayMode = backupPreferences.tagCounterDisplayMode
         preferences.customTaskSections = backupPreferences.customTaskSections
         preferences.macHomeTaskListSectionOrder = backupPreferences.macHomeTaskListSectionOrder
+        preferences.macTaskRankingReversedMetrics = backupPreferences.macTaskRankingReversedMetrics
         preferences.homeTaskRowHiddenFields = backupPreferences.homeTaskRowHiddenFields
         preferences.dayPlanCalendarListRowHiddenFields =
             backupPreferences.dayPlanCalendarListRowHiddenFields

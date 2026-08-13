@@ -234,6 +234,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeSelectionSupport.swift",
                 "SharedCore/Features/Home/HomeCustomTaskSection.swift",
                 "SharedCore/Features/Home/BacklogTaskListPresentation.swift",
+                "SharedCore/Features/Home/TaskRankingPresentation.swift",
                 "SharedCore/Features/Home/HomeTaskDeletionSupport.swift",
                 "SharedCore/Features/Home/HomeTaskListDisplay.swift",
                 "SharedCore/Features/Home/HomeTaskAdvancedQuery.swift",

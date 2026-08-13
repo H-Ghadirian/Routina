@@ -12,6 +12,7 @@ final class RoutinaUserPreferences {
     var tagCounterDisplayMode: String?
     var customTaskSections: String?
     var macHomeTaskListSectionOrder: String?
+    var macTaskRankingReversedMetrics: String?
     var homeTaskRowHiddenFields: String?
     var homeTimelineRowHiddenFields: String?
     var dayPlanCalendarListRowHiddenFields: String?
@@ -168,6 +169,7 @@ enum RoutinaUserPreferencesStore {
         preferences.tagCounterDisplayMode = defaults[.appSettingTagCounterDisplayMode]
         preferences.customTaskSections = defaults[.appSettingCustomTaskSections]
         preferences.macHomeTaskListSectionOrder = defaults[.appSettingMacHomeTaskListSectionOrder]
+        preferences.macTaskRankingReversedMetrics = defaults[.appSettingMacTaskRankingReversedMetrics]
         preferences.homeTaskRowHiddenFields = defaults[.appSettingHomeTaskRowHiddenFields]
         preferences.homeTimelineRowHiddenFields = defaults[.appSettingHomeTimelineRowHiddenFields]
         preferences.dayPlanCalendarListRowHiddenFields = defaults[
@@ -242,6 +244,7 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingTagCounterDisplayMode] = preferences.tagCounterDisplayMode
         defaults[.appSettingCustomTaskSections] = preferences.customTaskSections
         defaults[.appSettingMacHomeTaskListSectionOrder] = preferences.macHomeTaskListSectionOrder
+        defaults[.appSettingMacTaskRankingReversedMetrics] = preferences.macTaskRankingReversedMetrics
         defaults[.appSettingHomeTaskRowHiddenFields] = preferences.homeTaskRowHiddenFields
         defaults[.appSettingHomeTimelineRowHiddenFields] = preferences.homeTimelineRowHiddenFields
         defaults[.appSettingDayPlanCalendarListRowHiddenFields] =

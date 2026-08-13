@@ -95,6 +95,7 @@ extension SettingsRoutineDataPersistence {
             var pauseUntil: Date?
             var snoozedUntil: Date?
             var pinnedAt: Date?
+            var taskRankingOrderStorage: String?
             var completedStepCount: Int?
             var sequenceStartedAt: Date?
             var createdAt: Date?
@@ -357,6 +358,7 @@ extension SettingsRoutineDataPersistence {
             var tagCounterDisplayMode: String?
             var customTaskSections: String?
             var macHomeTaskListSectionOrder: String?
+            var macTaskRankingReversedMetrics: String?
             var homeTaskRowHiddenFields: String?
             var dayPlanCalendarListRowHiddenFields: String?
             var relatedTagRules: String?

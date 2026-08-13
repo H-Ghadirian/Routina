@@ -65,6 +65,8 @@ final class RoutineTask {
     var snoozedUntil: Date?
     var pinnedAt: Date?
     var manualSectionOrderStorage: String = ""
+    /// Per-metric manual tie-break order used only by the Mac task-ranking workspace.
+    var taskRankingOrderStorage: String = ""
     var completedStepCount: Int16 = 0
     var sequenceStartedAt: Date?
     var colorRawValue: String = RoutineTaskColor.none.rawValue
@@ -304,6 +306,30 @@ final class RoutineTask {
         var updated = manualSectionOrders
         updated[sectionKey] = max(order, 0)
         manualSectionOrders = updated
+    }
+
+    var taskRankingOrders: [String: Int64] {
+        get { TaskRankingOrderStorage.deserialize(taskRankingOrderStorage) }
+        set { taskRankingOrderStorage = TaskRankingOrderStorage.serialize(newValue) }
+    }
+
+    func taskRankingOrder(
+        for metric: TaskRankingMetric,
+        value: TaskRankingMetricValue
+    ) -> Int64? {
+        guard value.metric == metric else { return nil }
+        return taskRankingOrders[TaskRankingOrderStorage.key(metric: metric, value: value)]
+    }
+
+    func setTaskRankingOrder(
+        _ order: Int64,
+        for metric: TaskRankingMetric,
+        value: TaskRankingMetricValue
+    ) {
+        guard value.metric == metric else { return }
+        var updated = taskRankingOrders
+        updated[TaskRankingOrderStorage.key(metric: metric, value: value)] = order
+        taskRankingOrders = updated
     }
 
     var relationships: [RoutineTaskRelationship] {
@@ -571,6 +597,7 @@ final class RoutineTask {
         self.snoozedUntil = snoozedUntil
         self.pinnedAt = pinnedAt
         self.manualSectionOrderStorage = ""
+        self.taskRankingOrderStorage = ""
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))
         self.sequenceStartedAt = sequenceStartedAt
         self.colorRawValue = color.rawValue
@@ -941,6 +968,7 @@ final class RoutineTask {
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.completedChecklistProgressStartedAt = completedChecklistProgressStartedAt
         copy.manualSectionOrderStorage = manualSectionOrderStorage
+        copy.taskRankingOrderStorage = taskRankingOrderStorage
         copy.linkItems = linkItems
         copy.commentsStorage = commentsStorage
         copy.changeLogStorage = changeLogStorage

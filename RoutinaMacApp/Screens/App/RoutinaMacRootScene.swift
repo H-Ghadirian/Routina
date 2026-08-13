@@ -6,6 +6,7 @@ struct RoutinaMacRootScene: Scene {
     private let persistence: PersistenceController
     private let homeRoot: AnyView
     private let backlogRoot: AnyView
+    private let taskRankingRoot: AnyView
     private let settingsRoot: AnyView
     private let taskRelationshipReviewRoot: AnyView
     private let focusTimerStatusStore: RoutinaMacFocusTimerStatusStore
@@ -20,6 +21,7 @@ struct RoutinaMacRootScene: Scene {
         self.persistence = persistence
         self.homeRoot = homeRoot
         self.backlogRoot = RoutinaMacSceneFactory.makeBacklogRoot(persistence: persistence)
+        self.taskRankingRoot = RoutinaMacSceneFactory.makeTaskRankingRoot(persistence: persistence)
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
         self.taskRelationshipReviewRoot = RoutinaMacSceneFactory.makeTaskRelationshipReviewRoot(
             persistence: persistence
@@ -85,6 +87,18 @@ struct RoutinaMacRootScene: Scene {
 
         Window("Backlog", id: RoutinaMacSceneID.backlog) {
             backlogRoot
+                .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
+                .background(RoutinaMacUndoBridge(persistence: persistence))
+        }
+        .defaultSize(width: 1120, height: 720)
+        .windowResizability(.contentMinSize)
+        .defaultLaunchBehavior(.suppressed)
+        .commands {
+            RoutineCommands()
+        }
+
+        Window("Task Ladder", id: RoutinaMacSceneID.taskRanking) {
+            taskRankingRoot
                 .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
                 .background(RoutinaMacUndoBridge(persistence: persistence))
         }
