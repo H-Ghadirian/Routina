@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0564](0564-group-mac-task-priority-controls.md) refines [0563](0563-present-importance-and-urgency-as-independent-task-controls.md):** Mac Task Detail groups its independently editable Importance, Urgency, Pressure, and Thinking needed controls inside the expandable Priority card, preserving their separate values and derived-priority behavior.
+
 - **[0563](0563-present-importance-and-urgency-as-independent-task-controls.md) refines [0424](0424-make-task-detail-priority-optional.md) and [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md):** Task editors and details present Importance and Urgency as independent controls, while derived Priority remains for sorting and filter matrices retain their combined-threshold semantics.
 
 - **[0562](0562-exclude-blocked-tasks-from-mac-task-ladder.md) refines [0561](0561-add-separate-mac-task-ranking-ladder.md):** Mac Task Ladder contains actionable tasks only, excluding blocked tickets alongside other unavailable work.

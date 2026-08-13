@@ -7,15 +7,29 @@ enum TaskDetailPrioritySummaryLayout {
     case overallOnly
 }
 
-struct TaskDetailPriorityDisclosureBox: View {
+struct TaskDetailPriorityDisclosureBox<ExpandedContent: View>: View {
     let priority: RoutineTaskPriority
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
     @Binding var isExpanded: Bool
     var summaryLayout: TaskDetailPrioritySummaryLayout = .adaptive
-    var matrixMaxWidth: CGFloat?
-    let onImportanceChanged: (RoutineTaskImportance) -> Void
-    let onUrgencyChanged: (RoutineTaskUrgency) -> Void
+    @ViewBuilder let expandedContent: () -> ExpandedContent
+
+    init(
+        priority: RoutineTaskPriority,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
+        isExpanded: Binding<Bool>,
+        summaryLayout: TaskDetailPrioritySummaryLayout = .adaptive,
+        @ViewBuilder expandedContent: @escaping () -> ExpandedContent
+    ) {
+        self.priority = priority
+        self.importance = importance
+        self.urgency = urgency
+        _isExpanded = isExpanded
+        self.summaryLayout = summaryLayout
+        self.expandedContent = expandedContent
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -32,7 +46,7 @@ struct TaskDetailPriorityDisclosureBox: View {
                 Divider()
                     .padding(.top, 10)
                     .padding(.bottom, 12)
-                matrixPicker
+                expandedContent()
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -182,30 +196,6 @@ struct TaskDetailPriorityDisclosureBox: View {
         .overlay(
             Capsule()
                 .stroke(tint.opacity(0.18), lineWidth: 1)
-        )
-    }
-
-    @ViewBuilder
-    private var matrixPicker: some View {
-        if let matrixMaxWidth {
-            priorityMatrixPicker
-                .frame(maxWidth: matrixMaxWidth, alignment: .leading)
-        } else {
-            priorityMatrixPicker
-        }
-    }
-
-    private var priorityMatrixPicker: some View {
-        ImportanceUrgencyMatrixPicker(
-            importance: Binding(
-                get: { importance },
-                set: { onImportanceChanged($0) }
-            ),
-            urgency: Binding(
-                get: { urgency },
-                set: { onUrgencyChanged($0) }
-            ),
-            showsSummaryChip: false
         )
     }
 

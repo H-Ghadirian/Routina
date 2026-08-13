@@ -54,8 +54,7 @@ struct TaskDetailTCAView: View {
     @State private var isCommentComposerVisible = false
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
-    @State private var isPressureControlRevealed = false
-    @State private var isThinkingNeededControlRevealed = false
+    @State private var isPrioritySectionExpanded = false
     @State private var isChecklistSectionRevealed = false
     @State private var inlineEditSections: [FormSection] = []
     @State private var isTimeSectionExpanded = false
@@ -247,11 +246,6 @@ struct TaskDetailTCAView: View {
             .onChange(of: store.task.actualDurationMinutes) { _, _ in
                 isTimeControlRevealed = false
             }
-            .onChange(of: store.task.pressure) { oldValue, newValue in
-                if oldValue != newValue {
-                    isPressureControlRevealed = false
-                }
-            }
             .onChange(of: store.task.todoStateRawValue) { _, newValue in
                 if newValue != nil {
                     isTodoStateControlRevealed = false
@@ -362,71 +356,30 @@ struct TaskDetailTCAView: View {
             }
 
             taskDetailStatusControls
+            taskDetailPrioritySection
         }
     }
 
     @ViewBuilder
     private var taskDetailStatusControls: some View {
-        if shouldShowTaskDetailStatusControls {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 8) {
-                    if shouldShowTodoStateControl {
-                        TaskDetailTodoStateSegmentedPicker(
-                            store: store,
-                            timingSummary: todoStateTimingSummary,
-                            showPersianDates: showPersianDates
-                        )
-                            .frame(minWidth: 380)
-                    }
-                    if shouldShowPressureControl {
-                        TaskDetailPressureSegmentedPicker(store: store)
-                            .frame(minWidth: 300)
-                    }
-                    if shouldShowThinkingNeededControl {
-                        TaskDetailThinkingNeededSegmentedPicker(store: store)
-                            .frame(minWidth: 300)
-                    }
-                    if shouldShowImportanceControl {
-                        TaskDetailImportanceSegmentedPicker(store: store)
-                            .frame(minWidth: 300)
-                    }
-                    if shouldShowUrgencyControl {
-                        TaskDetailUrgencySegmentedPicker(store: store)
-                            .frame(minWidth: 300)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    if shouldShowTodoStateControl {
-                        TaskDetailTodoStateSegmentedPicker(
-                            store: store,
-                            timingSummary: todoStateTimingSummary,
-                            showPersianDates: showPersianDates
-                        )
-                    }
-                    if shouldShowPressureControl {
-                        TaskDetailPressureSegmentedPicker(store: store)
-                    }
-                    if shouldShowThinkingNeededControl {
-                        TaskDetailThinkingNeededSegmentedPicker(store: store)
-                    }
-                    if shouldShowImportanceControl {
-                        TaskDetailImportanceSegmentedPicker(store: store)
-                    }
-                    if shouldShowUrgencyControl {
-                        TaskDetailUrgencySegmentedPicker(store: store)
-                    }
-                }
-            }
+        if shouldShowTodoStateControl {
+            TaskDetailTodoStateSegmentedPicker(
+                store: store,
+                timingSummary: todoStateTimingSummary,
+                showPersianDates: showPersianDates
+            )
         }
     }
 
-    private var shouldShowTaskDetailStatusControls: Bool {
-        shouldShowTodoStateControl
-            || shouldShowPressureControl
-            || shouldShowThinkingNeededControl
-            || shouldShowImportanceControl
-            || shouldShowUrgencyControl
+    private var taskDetailPrioritySection: some View {
+        TaskDetailPriorityDisclosureBox(
+            priority: store.task.priority,
+            importance: store.task.importance,
+            urgency: store.task.urgency,
+            isExpanded: $isPrioritySectionExpanded
+        ) {
+            TaskDetailPriorityControlsGrid(store: store)
+        }
     }
 
     private var shouldShowTimeControl: Bool {
@@ -454,45 +407,12 @@ struct TaskDetailTCAView: View {
             && (isTodoStateControlRevealed || TaskDetailOptionalControlVisibility.showsTodoState(for: store.task))
     }
 
-    private var shouldShowPressureControl: Bool {
-        isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
-    }
-
-    private var shouldShowThinkingNeededControl: Bool {
-        isThinkingNeededControlRevealed
-            || TaskDetailOptionalControlVisibility.showsThinkingNeeded(for: store.task)
-    }
-
-    private var shouldShowImportanceControl: Bool {
-        TaskDetailOptionalControlVisibility.showsImportance(for: store.task)
-    }
-
-    private var shouldShowUrgencyControl: Bool {
-        TaskDetailOptionalControlVisibility.showsUrgency(for: store.task)
-    }
-
     private var shouldShowChecklistSection: Bool {
         isChecklistSectionRevealed || store.hasStoredChecklistItems
     }
 
     private var shouldShowTodoStateAddAction: Bool {
         canShowTodoStateControl && !shouldShowTodoStateControl
-    }
-
-    private var shouldShowPressureAddAction: Bool {
-        !shouldShowPressureControl
-    }
-
-    private var shouldShowThinkingNeededAddAction: Bool {
-        !shouldShowThinkingNeededControl
-    }
-
-    private var shouldShowImportanceAddAction: Bool {
-        !shouldShowImportanceControl
-    }
-
-    private var shouldShowUrgencyAddAction: Bool {
-        !shouldShowUrgencyControl
     }
 
     private var shouldShowTimeAddAction: Bool {
@@ -718,39 +638,6 @@ struct TaskDetailTCAView: View {
             })
         }
 
-        if shouldShowPressureAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Pressure", systemImage: "gauge.with.dots.needle.50percent") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    isPressureControlRevealed = true
-                }
-            })
-        }
-
-
-        if shouldShowThinkingNeededAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Thinking needed", systemImage: "lightbulb") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    isThinkingNeededControlRevealed = true
-                }
-            })
-        }
-
-        if shouldShowImportanceAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Importance", systemImage: "arrow.up.circle") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    _ = store.send(.revealImportanceInTaskDetail)
-                }
-            })
-        }
-
-        if shouldShowUrgencyAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Urgency", systemImage: "clock") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    _ = store.send(.revealUrgencyInTaskDetail)
-                }
-            })
-        }
-
         if shouldShowEstimationAddAction {
             actions.append(inlineEditSectionAction(title: "Estimate", section: .estimation))
         }
@@ -967,8 +854,7 @@ struct TaskDetailTCAView: View {
     private func resetRevealedOptionalControls() {
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
-        isPressureControlRevealed = false
-        isThinkingNeededControlRevealed = false
+        isPrioritySectionExpanded = false
         isChecklistSectionRevealed = false
         inlineEditSections.removeAll()
     }

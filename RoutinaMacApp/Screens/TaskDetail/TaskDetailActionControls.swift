@@ -60,8 +60,19 @@ struct TaskDetailPrimaryActionButton: View {
 
 struct TaskDetailPressureSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    var isEmbeddedInPrioritySection = false
 
     var body: some View {
+        Group {
+            if isEmbeddedInPrioritySection {
+                control
+            } else {
+                control.detailHeaderBoxStyle()
+            }
+        }
+    }
+
+    private var control: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("PRESSURE")
                 .font(.caption2.weight(.semibold))
@@ -77,14 +88,24 @@ struct TaskDetailPressureSegmentedPicker: View {
             )
         }
         .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle()
     }
 }
 
 struct TaskDetailThinkingNeededSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    var isEmbeddedInPrioritySection = false
 
     var body: some View {
+        Group {
+            if isEmbeddedInPrioritySection {
+                control
+            } else {
+                control.detailHeaderBoxStyle()
+            }
+        }
+    }
+
+    private var control: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("THINKING NEEDED")
                 .font(.caption2.weight(.semibold))
@@ -100,14 +121,24 @@ struct TaskDetailThinkingNeededSegmentedPicker: View {
             )
         }
         .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle()
     }
 }
 
 struct TaskDetailImportanceSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    var isEmbeddedInPrioritySection = false
 
     var body: some View {
+        Group {
+            if isEmbeddedInPrioritySection {
+                control
+            } else {
+                control.detailHeaderBoxStyle()
+            }
+        }
+    }
+
+    private var control: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("IMPORTANCE")
                 .font(.caption2.weight(.semibold))
@@ -123,14 +154,24 @@ struct TaskDetailImportanceSegmentedPicker: View {
             )
         }
         .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle()
     }
 }
 
 struct TaskDetailUrgencySegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    var isEmbeddedInPrioritySection = false
 
     var body: some View {
+        Group {
+            if isEmbeddedInPrioritySection {
+                control
+            } else {
+                control.detailHeaderBoxStyle()
+            }
+        }
+    }
+
+    private var control: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("URGENCY")
                 .font(.caption2.weight(.semibold))
@@ -146,7 +187,49 @@ struct TaskDetailUrgencySegmentedPicker: View {
             )
         }
         .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle()
+    }
+}
+
+struct TaskDetailPriorityControlsGrid: View {
+    let store: StoreOf<TaskDetailFeature>
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 12) {
+                priorityControls
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                priorityControls
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var priorityControls: some View {
+        TaskDetailImportanceSegmentedPicker(
+            store: store,
+            isEmbeddedInPrioritySection: true
+        )
+        .frame(minWidth: 220)
+
+        TaskDetailUrgencySegmentedPicker(
+            store: store,
+            isEmbeddedInPrioritySection: true
+        )
+        .frame(minWidth: 220)
+
+        TaskDetailPressureSegmentedPicker(
+            store: store,
+            isEmbeddedInPrioritySection: true
+        )
+        .frame(minWidth: 220)
+
+        TaskDetailThinkingNeededSegmentedPicker(
+            store: store,
+            isEmbeddedInPrioritySection: true
+        )
+        .frame(minWidth: 220)
     }
 }
 
