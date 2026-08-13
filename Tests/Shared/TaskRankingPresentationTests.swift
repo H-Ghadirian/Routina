@@ -189,4 +189,27 @@ struct TaskRankingPresentationTests {
         #expect(TaskRankingDirectionStorage.decode(rawValue) == [.pressure, .thinkingNeeded])
         #expect(TaskRankingDirectionStorage.decode("pressure,unknown") == [.pressure])
     }
+
+    @Test
+    func missingThinkingNeededRowsShowTagsInsteadOfARepeatedFallback() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+        let thinkingNeededStart = try #require(source.range(of: "case .thinkingNeeded:"))
+        let thinkingNeededSource = String(source[thinkingNeededStart.lowerBound...])
+
+        #expect(thinkingNeededSource.contains("task.tags.map { \"#\\($0)\" }"))
+        #expect(!thinkingNeededSource.contains("No thinking value"))
+    }
+
+    private static func sourceFile(_ relativePath: String) throws -> String {
+        let testsDirectory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let projectRoot = testsDirectory.deletingLastPathComponent()
+        return try String(
+            contentsOf: projectRoot.appendingPathComponent(relativePath),
+            encoding: .utf8
+        )
+    }
 }

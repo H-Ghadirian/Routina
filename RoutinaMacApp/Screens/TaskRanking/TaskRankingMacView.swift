@@ -287,7 +287,9 @@ struct TaskRankingMacView: View {
         case .importance:
             return task.hasExplicitImportance ? ["\(task.importance.title) importance"] : ["No importance value"]
         case .thinkingNeeded:
-            return task.thinkingNeeded == .none ? ["No thinking value"] : [task.thinkingNeeded.metadataLabel ?? ""]
+            return task.thinkingNeeded == .none
+                ? task.tags.map { "#\($0)" }
+                : [task.thinkingNeeded.metadataLabel ?? ""]
         }
     }
 
