@@ -13,7 +13,7 @@ struct TaskRankingPresentationTests {
     private let calendar = Calendar(identifier: .gregorian)
 
     @Test
-    func categoricalMetricUsesSeparateValueAndMissingSectionsAndExcludesInactiveTasks() {
+    func categoricalMetricUsesSeparateValueAndMissingSectionsAndExcludesIneligibleTasks() {
         let high = RoutineTask(
             name: "High",
             pressure: .high,
@@ -42,9 +42,15 @@ struct TaskRankingPresentationTests {
             scheduleMode: .oneOff,
             canceledAt: Date(timeIntervalSince1970: 500)
         )
+        let blocked = RoutineTask(
+            name: "Blocked",
+            pressure: .high,
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.blocked.rawValue
+        )
 
         let presentation = TaskRankingPresentation.make(
-            tasks: [high, medium, unknown, paused, completed, canceled],
+            tasks: [high, medium, unknown, paused, completed, canceled, blocked],
             metric: .pressure,
             isReversed: false,
             referenceDate: referenceDate,
@@ -55,6 +61,9 @@ struct TaskRankingPresentationTests {
         #expect(presentation.sections.map(\.tasks.count) == [1, 1, 1])
         #expect(presentation.sections.last?.tasks.map(\.id) == [unknown.id])
         #expect(presentation.taskCount == 3)
+        #expect(!presentation.sections.contains { section in
+            section.tasks.contains(where: { $0.id == blocked.id })
+        })
     }
 
     @Test

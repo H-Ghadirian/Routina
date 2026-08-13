@@ -244,6 +244,7 @@ struct TaskRankingPresentation: Equatable {
             !$0.isArchived(referenceDate: referenceDate, calendar: calendar)
                 && !$0.isCompletedOneOff
                 && !$0.isCanceledOneOff
+                && $0.todoState != .blocked
         }
 
         guard metric.supportsManualLadder else {

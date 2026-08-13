@@ -110,7 +110,7 @@ struct TaskRankingMacView: View {
                 ContentUnavailableView(
                     "No active tasks",
                     systemImage: "line.3.horizontal.decrease.circle",
-                    description: Text("Paused, completed, canceled, and archived tasks stay out of the task ladder.")
+                    description: Text("Paused, blocked, completed, canceled, and archived tasks stay out of the task ladder.")
                 )
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
