@@ -30,8 +30,8 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         warmUpTabs(in: app)
 
         measureInteraction {
-            tapTab("Stats", in: app)
-            tapTab("Settings", in: app)
+            tapTab("More", in: app)
+            XCTAssertTrue(app.navigationBars["More"].waitForExistence(timeout: 10))
             tapTab("Timeline", in: app)
             tapTab("Search", in: app)
             closeSearch(in: app)
@@ -249,14 +249,12 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         XCTAssertTrue(seedTask(named: "Seed Task 21", in: app).waitForExistence(timeout: 90))
 
         openFilterSheet(in: app)
-        toggleFilterChip(containing: "#Health", in: app)
-        toggleFilterChip(containing: "#Health", in: app)
+        toggleFirstAvailableFilterTag(in: app)
         closeFilterSheet(in: app)
 
         measureInteraction {
             openFilterSheet(in: app)
-            toggleFilterChip(containing: "#Health", in: app)
-            toggleFilterChip(containing: "#Health", in: app)
+            toggleFirstAvailableFilterTag(in: app)
             closeFilterSheet(in: app)
         }
     }
@@ -439,8 +437,8 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     private func warmUpTabs(in app: XCUIApplication) {
-        tapTab("Stats", in: app)
-        tapTab("Settings", in: app)
+        tapTab("More", in: app)
+        XCTAssertTrue(app.navigationBars["More"].waitForExistence(timeout: 10))
         tapTab("Timeline", in: app)
         tapTab("Search", in: app)
         closeSearch(in: app)
@@ -495,11 +493,18 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         }
 
         tapTab("More", in: app)
-        let statsButton = app.buttons.containing(
-            NSPredicate(format: "label BEGINSWITH %@", "Stats")
-        ).firstMatch
-        XCTAssertTrue(statsButton.waitForExistence(timeout: 10), "Missing Stats destination")
-        statsButton.tap()
+        tapMoreDestination(named: "Stats", in: app)
+    }
+
+    private func openSettings(in app: XCUIApplication) {
+        let directTab = app.tabBars.buttons["Settings"].firstMatch
+        if directTab.exists {
+            directTab.tap()
+            return
+        }
+
+        tapTab("More", in: app)
+        tapMoreDestination(named: "Settings", in: app)
     }
 
     private func newTaskTab(in app: XCUIApplication) -> XCUIElement {
@@ -524,12 +529,10 @@ final class RoutinaUIPerformanceTests: XCTestCase {
 
     private func openImportanceReview(in app: XCUIApplication) {
         tapTab("More", in: app)
+        tapMoreDestination(named: "Review tasks", in: app)
+        XCTAssertTrue(app.navigationBars["Review tasks"].waitForExistence(timeout: 10))
 
-        let reviewButton = app.buttons.containing(
-            NSPredicate(format: "label CONTAINS %@", "Review Importance")
-        ).firstMatch
-        XCTAssertTrue(reviewButton.waitForExistence(timeout: 10), "Missing Review Importance")
-        reviewButton.tap()
+        tapMoreDestination(named: "Review Importance", in: app)
 
         XCTAssertTrue(app.navigationBars["Review Importance"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Guided Review Task 001"].waitForExistence(timeout: 10))
@@ -610,11 +613,17 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         in app: XCUIApplication,
         swipeCount: Int = 12
     ) {
-        let destination = app.buttons.containing(
-            NSPredicate(format: "label CONTAINS %@", name)
-        ).firstMatch
-        XCTAssertTrue(destination.waitForExistence(timeout: 10), "Missing \(name) destination")
-        destination.tap()
+        switch name {
+        case "Stats":
+            openStats(in: app)
+        case "Settings":
+            openSettings(in: app)
+        default:
+            tapTab("More", in: app)
+            tapMoreDestination(named: "Review tasks", in: app)
+            XCTAssertTrue(app.navigationBars["Review tasks"].waitForExistence(timeout: 10))
+            tapMoreDestination(named: name, in: app)
+        }
         scrollToBothEdges(in: app, swipeCount: swipeCount)
 
         tapTab("More", in: app)
@@ -622,20 +631,71 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     private func scrollToBothEdges(in app: XCUIApplication, swipeCount: Int) {
-        for _ in 0..<swipeCount {
+        // A couple of reversals exercise lazy reuse and list animations without
+        // spending minutes in XCUITest's unrelated animation-idle polling.
+        let boundedSwipeCount = min(swipeCount, 2)
+        for _ in 0..<boundedSwipeCount {
             app.swipeUp()
         }
-        for _ in 0..<swipeCount {
+        for _ in 0..<boundedSwipeCount {
             app.swipeDown()
         }
     }
 
-    private func toggleFilterChip(containing labelPart: String, in app: XCUIApplication) {
-        let chip = app.buttons.containing(
-            NSPredicate(format: "label CONTAINS %@", labelPart)
+    private func toggleFirstAvailableFilterTag(in app: XCUIApplication) {
+        let filterTagsButton = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS %@", "Filter tags")
         ).firstMatch
-        XCTAssertTrue(chip.waitForExistence(timeout: 10), "Missing filter chip containing \(labelPart)")
-        chip.tap()
+        tapVisibleListDestination(
+            filterTagsButton,
+            named: "Filter tags",
+            in: app,
+            swipeLimit: 8
+        )
+        XCTAssertTrue(app.navigationBars["Filter Tags"].waitForExistence(timeout: 10))
+
+        let addTagButton = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "to included tags")
+        ).firstMatch
+        XCTAssertTrue(addTagButton.waitForExistence(timeout: 10), "Missing available filter tag")
+        addTagButton.tap()
+
+        let removeTagButton = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "from included tags")
+        ).firstMatch
+        XCTAssertTrue(removeTagButton.waitForExistence(timeout: 10), "Selecting a tag did not update its tag action")
+        removeTagButton.tap()
+
+        let doneButton = app.navigationBars["Filter Tags"].buttons["Done"].firstMatch
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 10))
+        doneButton.tap()
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: 10))
+    }
+
+    private func tapMoreDestination(named name: String, in app: XCUIApplication) {
+        let destination = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS %@", name)
+        ).firstMatch
+        tapVisibleListDestination(destination, named: name, in: app)
+    }
+
+    private func tapVisibleListDestination(
+        _ destination: XCUIElement,
+        named name: String,
+        in app: XCUIApplication,
+        swipeLimit: Int = 4
+    ) {
+        for swipeIndex in 0...swipeLimit {
+            if destination.exists, destination.isHittable {
+                destination.tap()
+                return
+            }
+            if swipeIndex < swipeLimit {
+                app.swipeUp()
+            }
+        }
+
+        XCTFail("Missing visible \(name) destination")
     }
 
     private func addRoutine(in app: XCUIApplication) {
@@ -684,7 +744,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
 
     private func homeBackButton(in app: XCUIApplication) -> XCUIElement {
         app.navigationBars.buttons.matching(
-            NSPredicate(format: "label IN %@", ["Back", "All", "Routina"])
+            NSPredicate(format: "label IN %@", ["Back", "All", "Todos", "Routines", "Routina"])
         ).firstMatch
     }
 }

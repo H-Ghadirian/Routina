@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0156 — Keep iOS performance flows aligned with compact navigation](0156-keep-ios-performance-flows-aligned-with-compact-navigation.md)
 - [0155 — Cache sidebar filter-summary counts](0155-cache-sidebar-filter-summary-counts.md)
 - [0154 — Keep startup data maintenance off the main actor](0154-keep-startup-data-maintenance-off-the-main-actor.md)
 - [0153 — Link Search-tab selection to search activation](0153-link-search-tab-selection-to-search-activation.md)
