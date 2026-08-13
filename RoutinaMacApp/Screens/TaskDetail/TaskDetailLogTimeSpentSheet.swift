@@ -3,6 +3,8 @@ import SwiftUI
 struct TaskDetailLogTimeSpentSheet: View {
     @Binding var minutes: Int
 
+    let title: String
+    let message: String
     let showsClearButton: Bool
     let onClear: () -> Void
     let onCancel: () -> Void
@@ -11,9 +13,9 @@ struct TaskDetailLogTimeSpentSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Time Spent")
+                Text(title)
                     .font(.title3.weight(.semibold))
-                Text("Record the actual time for this completion.")
+                Text(message)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

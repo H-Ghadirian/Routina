@@ -39,6 +39,30 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func macTaskDetailTimeEditorCanReplaceAnExistingTaskTotal() throws {
+        let detailSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let headerSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
+        )
+        let editActionStart = try #require(detailSource.range(of: "private func beginEditingTaskTime()"))
+        let editActionEnd = try #require(
+            detailSource.range(
+                of: "private func addCompletedFocusToTimeSpent",
+                range: editActionStart.upperBound..<detailSource.endIndex
+            )
+        )
+        let editActionSource = String(detailSource[editActionStart.lowerBound..<editActionEnd.lowerBound])
+
+        #expect(detailSource.contains(".sheet(isPresented: $timeEditing.isEditingTaskTimeSpent)"))
+        #expect(detailSource.contains("store.send(.updateTaskDuration(timeEditing.editingMinutes))"))
+        #expect(editActionSource.contains("timeEditing.beginEditingTask(store.task)"))
+        #expect(headerSource.contains("let onEditTotal: () -> Void"))
+        #expect(headerSource.contains("Label(\"Edit total\", systemImage: \"pencil\")"))
+    }
+
+    @Test
     func durationTextFormatsMinutesHoursAndMixedDurations() {
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 1) == "1 minute")
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 25) == "25 minutes")

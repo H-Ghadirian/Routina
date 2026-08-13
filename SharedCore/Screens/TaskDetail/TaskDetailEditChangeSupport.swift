@@ -8,6 +8,7 @@ struct TaskDetailEditChangeRequest {
     let notes: String
     let link: String
     let estimatedDurationMinutes: Int?
+    let actualDurationMinutes: Int?
     let storyPoints: Int?
     let deadline: Date?
     let isAllDay: Bool
@@ -75,6 +76,7 @@ struct TaskDetailEditChangeRequest {
         self.notes = state.editRoutineNotes
         self.link = state.editRoutineLink
         self.estimatedDurationMinutes = state.editEstimatedDurationMinutes
+        self.actualDurationMinutes = state.editActualDurationMinutes
         self.storyPoints = state.editStoryPoints
         self.deadline = state.editDeadline
         self.isAllDay = state.editIsAllDay
@@ -192,6 +194,7 @@ enum TaskDetailEditChangeDetector {
             || request.notes != currentNotes
             || RoutineTask.linkEditorText(for: RoutineTask.sanitizedLinkItems(fromEditorText: request.link)) != currentLink
             || request.estimatedDurationMinutes != task.estimatedDurationMinutes
+            || request.actualDurationMinutes != task.actualDurationMinutes
             || request.storyPoints != task.storyPoints
             || request.deadline != currentDeadline
             || request.isAllDay != task.isAllDay

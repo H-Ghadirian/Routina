@@ -2255,6 +2255,29 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editActualDurationChangeEnablesSave() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Read Slack thread",
+            scheduleMode: .oneOff,
+            actualDurationMinutes: 61
+        )
+        var state = TaskDetailFeature.State(task: task)
+
+        withDependencies {
+            setTestDateDependencies(&$0, calendar: calendar)
+        } operation: {
+            TaskDetailFeature().syncEditFormFromTask(&state)
+        }
+
+        #expect(!TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+
+        state.editActualDurationMinutes = 1
+
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+    }
+
+    @Test
     func editSaveTapped_roundTripsMultipleMonthlyDatesAfterUnrelatedEdit() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

@@ -188,6 +188,8 @@ struct TaskDetailTCAView: View {
             .sheet(item: $timeEditing.editingLog) { log in
                 TaskDetailLogTimeSpentSheet(
                     minutes: $timeEditing.editingMinutes,
+                    title: "Time Spent",
+                    message: "Record the actual time for this completion.",
                     showsClearButton: log.actualDurationMinutes != nil,
                     onClear: {
                         store.send(.updateLogDuration(log.id, nil))
@@ -199,6 +201,25 @@ struct TaskDetailTCAView: View {
                     onSave: {
                         store.send(.updateLogDuration(log.id, timeEditing.editingMinutes))
                         timeEditing.dismissLog()
+                    }
+                )
+            }
+            .sheet(isPresented: $timeEditing.isEditingTaskTimeSpent) {
+                TaskDetailLogTimeSpentSheet(
+                    minutes: $timeEditing.editingMinutes,
+                    title: "Actual Time Spent",
+                    message: "Set the total actual time for this task.",
+                    showsClearButton: store.task.actualDurationMinutes != nil,
+                    onClear: {
+                        store.send(.updateTaskDuration(nil))
+                        timeEditing.dismissTask()
+                    },
+                    onCancel: {
+                        timeEditing.dismissTask()
+                    },
+                    onSave: {
+                        store.send(.updateTaskDuration(timeEditing.editingMinutes))
+                        timeEditing.dismissTask()
                     }
                 )
             }
@@ -456,6 +477,7 @@ struct TaskDetailTCAView: View {
             entryHours: $taskTimeEntryHours,
             entryMinutes: $taskTimeEntryMinutes,
             onApplyMinutes: { store.send(.updateTaskDuration($0)) },
+            onEditTotal: beginEditingTaskTime,
             onCompletedFocusDuration: addCompletedFocusToTimeSpent
         )
     }
@@ -1423,8 +1445,7 @@ struct TaskDetailTCAView: View {
     }
 
     private func beginEditingTaskTime() {
-        isTimeSectionExpanded = true
-        taskTimeEntryResetToken += 1
+        timeEditing.beginEditingTask(store.task)
     }
 
     private func addCompletedFocusToTimeSpent(_ seconds: TimeInterval) {

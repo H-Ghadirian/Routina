@@ -868,6 +868,24 @@ Then the Time action disappears and the expanded Effort editor appears in the ro
 And stored estimate or story-point metadata cannot make Time unreachable
 And normal routines do not acquire the record-only task-level time editor
 
+### Task Detail Actual Time Can Be Corrected
+
+Area: Tasks
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailEditSaveTests.swift`
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+
+Given a task already has actual time spent recorded
+When the person selects `Edit total` in Mac Task Details and saves a lower value
+Then the stored actual-time total is replaced by that lower value rather than increased
+And clearing the value removes the task-level actual time
+And the separate `Add` action remains available for logging additional time
+
+Given the person changes Actual in Edit Task
+When the value differs from the saved value
+Then Save becomes enabled and persists the correction
+
 ### Custom Buttons Use Full Visual Hit Areas
 
 Area: Other

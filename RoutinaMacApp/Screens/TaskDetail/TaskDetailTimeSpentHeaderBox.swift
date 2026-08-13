@@ -33,6 +33,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
     @Binding var entryHours: Int
     @Binding var entryMinutes: Int
     let onApplyMinutes: (Int) -> Void
+    let onEditTotal: () -> Void
     let onCompletedFocusDuration: (TimeInterval) -> Void
 
     private let quickEntryMinutes = [25, 45, 60]
@@ -252,7 +253,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
             Button {
                 applyEntry()
             } label: {
-                Label("Log", systemImage: "plus.circle.fill")
+                Label(task.actualDurationMinutes == nil ? "Log" : "Add", systemImage: "plus.circle.fill")
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
@@ -261,6 +262,18 @@ struct TaskDetailTimeSpentHeaderBox: View {
             .tint(.cyan)
             .disabled(!canApplyEntry)
             .accessibilityLabel(compactApplyTitle)
+
+            if task.actualDurationMinutes != nil {
+                Button(action: onEditTotal) {
+                    Label("Edit total", systemImage: "pencil")
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .tint(.cyan)
+                .accessibilityLabel("Edit total time spent")
+            }
 
             if task.focusModeEnabled {
                 Button {
