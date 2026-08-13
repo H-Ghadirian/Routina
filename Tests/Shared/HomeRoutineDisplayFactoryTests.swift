@@ -153,6 +153,36 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
+    func displayUsesNewerRecordedCompletionForElapsedPresentation() {
+        let now = makeDate("2026-08-13T10:00:00Z")
+        let staleLastDone = makeDate("2026-07-30T09:00:00Z")
+        let recordedCompletion = makeDate("2026-08-10T16:00:00Z")
+        let task = RoutineTask(
+            name: "Call Mom",
+            scheduleMode: .softInterval,
+            interval: 3,
+            recurrenceRule: .interval(days: 3),
+            lastDone: staleLastDone,
+            scheduleAnchor: staleLastDone
+        )
+
+        let display = makeDisplay(
+            task: task,
+            now: now,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050),
+            doneStats: HomeDoneStats(
+                totalCount: 1,
+                countsByTaskID: [task.id: 1],
+                completedDatesByTaskID: [task.id: [recordedCompletion]]
+            )
+        )
+
+        #expect(display.lastDone == recordedCompletion)
+        #expect(task.lastDone == staleLastDone)
+    }
+
+    @Test
     func missedExactTimedDisplaySkipsAcknowledgedEarlierMissedOccurrence() {
         let firstMissed = makeDate("2026-05-07T18:30:00Z")
         let task = RoutineTask(

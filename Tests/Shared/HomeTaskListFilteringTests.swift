@@ -2696,6 +2696,27 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func gentleElapsedStatusUsesTheHomeSnapshotReferenceDate() {
+        let task = TestTaskDisplay(
+            name: "Call Mom",
+            interval: 3,
+            recurrenceRule: .interval(days: 3),
+            scheduleMode: .softInterval,
+            lastDone: makeDate("2024-08-10T16:00:00Z"),
+            isSoftIntervalRoutine: true,
+            hasPassedSoftThreshold: true
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter<TestTaskDisplay>(
+            referenceDate: makeDate("2024-08-13T10:00:00Z"),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        #expect(presenter.completionDescription(for: task) == "3 days ago since last time")
+        #expect(presenter.badgeStyle(for: task)?.title == "3 days ago")
+    }
+
+    @Test
     func trackingRowsUseRoutineStyleGentleBadges() {
         let task = TestTaskDisplay(
             name: "Clean coffee machine",

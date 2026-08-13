@@ -29,6 +29,22 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Home And Task Detail Use The Latest Recorded Completion
+
+Area: Tasks / Home
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+
+Given a repeating task's legacy `lastDone` summary is older than a recorded
+completion log
+When Home and Task Detail present the elapsed time since the task was last done
+Then both use the newest recorded completion
+And Home's elapsed text uses its presentation snapshot's reference date
+And the stale summary remains unchanged as the recurrence cursor
+
 ### Debug Performance Profiles Survive The Next Launch
 
 Area: Other / Diagnostics

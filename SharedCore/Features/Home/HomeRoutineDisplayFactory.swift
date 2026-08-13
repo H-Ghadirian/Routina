@@ -13,12 +13,16 @@ struct HomeRoutineDisplayFactory {
         fileAttachmentTaskIDs: Set<UUID> = [],
         showsPlaces: Bool = true
     ) -> HomeRoutineDisplayCore {
+        // Completion logs can arrive before the task's legacy `lastDone` summary catches up.
+        // Home presentation follows recorded history, while `task.lastDone` remains the
+        // recurrence cursor used by the domain calculations below.
+        let latestRecordedCompletion = latestRecordedCompletion(for: task, doneStats: doneStats)
         let currentOccurrenceDay = RoutineAssumedCompletion.currentOccurrenceDay(
             for: task,
             referenceDate: now,
             calendar: calendar
         )
-        let doneTodayFromLastDone = task.lastDone.flatMap {
+        let doneTodayFromLastDone = latestRecordedCompletion.flatMap {
             RoutineDateMath.completionDisplayDay(
                 for: task,
                 completionDate: $0,
@@ -130,7 +134,7 @@ struct HomeRoutineDisplayFactory {
             createdAt: task.createdAt,
             isSoftIntervalRoutine: task.isSoftIntervalRoutine,
             surfacesSoftIntervalNudges: task.surfacesSoftIntervalNudges,
-            lastDone: task.lastDone,
+            lastDone: latestRecordedCompletion,
             lastSatisfiedScheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
             canceledAt: task.canceledAt,
             dueDate: dueDate(for: task, isArchived: isArchived),
@@ -199,6 +203,24 @@ struct HomeRoutineDisplayFactory {
             return calendar.isDate(displayDay, inSameDayAs: day)
         }
         return calendar.isDate(date, inSameDayAs: day)
+    }
+
+    private func latestRecordedCompletion(
+        for task: RoutineTask,
+        doneStats: HomeDoneStats
+    ) -> Date? {
+        let latestLogCompletion = doneStats.completedDatesByTaskID[task.id]?.max()
+
+        switch (task.lastDone, latestLogCompletion) {
+        case let (taskCompletion?, logCompletion?):
+            return max(taskCompletion, logCompletion)
+        case let (taskCompletion?, nil):
+            return taskCompletion
+        case let (nil, logCompletion?):
+            return logCompletion
+        case (nil, nil):
+            return nil
+        }
     }
 
     private func makeLocationAvailability(

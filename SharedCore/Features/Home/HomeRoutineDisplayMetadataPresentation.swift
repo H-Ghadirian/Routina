@@ -335,7 +335,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
         return calendar.dateComponents(
             [.day],
             from: calendar.startOfDay(for: date),
-            to: calendar.startOfDay(for: Date())
+            to: calendar.startOfDay(for: referenceDate)
         ).day ?? 0
     }
 
