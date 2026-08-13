@@ -42,6 +42,24 @@ enum TaskDetailPriorityPresentation {
         }
     }
 
+    static func importanceSelectedForeground(for importance: RoutineTaskImportance) -> Color {
+        switch importance {
+        case .level2:
+            return .black.opacity(0.84)
+        case .level1, .level3, .level4:
+            return .white
+        }
+    }
+
+    static func urgencySelectedForeground(for urgency: RoutineTaskUrgency) -> Color {
+        switch urgency {
+        case .level2:
+            return .black.opacity(0.84)
+        case .level1, .level3, .level4:
+            return .white
+        }
+    }
+
     static func pressureTint(for pressure: RoutineTaskPressure, style: TaskDetailPressureTintStyle) -> Color {
         switch (style, pressure) {
         case (_, .none):

@@ -302,6 +302,30 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func taskDetailsPresentImportanceAndUrgencyAsIndependentControls() throws {
+        let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let iosControls = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
+        let macDetail = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let macControls = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift")
+
+        #expect(iosDetail.contains("TaskDetailImportancePickerPill(store: store)"))
+        #expect(iosDetail.contains("TaskDetailUrgencyPickerPill(store: store)"))
+        #expect(iosDetail.contains(".revealImportanceInTaskDetail"))
+        #expect(iosDetail.contains(".revealUrgencyInTaskDetail"))
+        #expect(!iosDetail.contains("TaskDetailPriorityDisclosureBox"))
+        #expect(iosControls.contains("struct TaskDetailImportancePickerPill"))
+        #expect(iosControls.contains("struct TaskDetailUrgencyPickerPill"))
+
+        #expect(macDetail.contains("TaskDetailImportanceSegmentedPicker(store: store)"))
+        #expect(macDetail.contains("TaskDetailUrgencySegmentedPicker(store: store)"))
+        #expect(macDetail.contains(".revealImportanceInTaskDetail"))
+        #expect(macDetail.contains(".revealUrgencyInTaskDetail"))
+        #expect(!macDetail.contains("TaskDetailPriorityDisclosureBox"))
+        #expect(macControls.contains("struct TaskDetailImportanceSegmentedPicker"))
+        #expect(macControls.contains("struct TaskDetailUrgencySegmentedPicker"))
+    }
+
+    @Test
     func addEventsActionRequiresEventActionsEnabledAndNoLinkedEvents() {
         #expect(TaskDetailEventActionVisibility.shouldShowAddEventsAction(
             hasLinkedEvents: false,

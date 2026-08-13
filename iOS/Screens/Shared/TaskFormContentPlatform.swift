@@ -373,7 +373,7 @@ struct TaskFormContent: View {
     }
 
     private var importanceUrgencySection: some View {
-        TaskFormIOSImportanceUrgencySection(model: model, presentation: presentation)
+        TaskFormIOSImportanceUrgencySection(model: model)
     }
 
     private var pressureSection: some View {

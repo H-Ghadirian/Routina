@@ -104,6 +104,52 @@ struct TaskDetailThinkingNeededSegmentedPicker: View {
     }
 }
 
+struct TaskDetailImportanceSegmentedPicker: View {
+    let store: StoreOf<TaskDetailFeature>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("IMPORTANCE")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 2)
+            TaskDetailColoredSegmentedControl(
+                options: RoutineTaskImportance.allCases,
+                selection: store.task.importance,
+                title: { $0.title },
+                tint: { TaskDetailPriorityPresentation.importanceTint(for: $0) },
+                selectedForeground: { TaskDetailPriorityPresentation.importanceSelectedForeground(for: $0) },
+                action: { store.send(.importanceChanged($0)) }
+            )
+        }
+        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        .detailHeaderBoxStyle()
+    }
+}
+
+struct TaskDetailUrgencySegmentedPicker: View {
+    let store: StoreOf<TaskDetailFeature>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("URGENCY")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 2)
+            TaskDetailColoredSegmentedControl(
+                options: RoutineTaskUrgency.allCases,
+                selection: store.task.urgency,
+                title: { $0.title },
+                tint: { TaskDetailPriorityPresentation.urgencyTint(for: $0) },
+                selectedForeground: { TaskDetailPriorityPresentation.urgencySelectedForeground(for: $0) },
+                action: { store.send(.urgencyChanged($0)) }
+            )
+        }
+        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        .detailHeaderBoxStyle()
+    }
+}
+
 struct TaskDetailTodoStateSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
     let timingSummary: TodoStateTimingSummary?

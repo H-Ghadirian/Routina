@@ -89,79 +89,35 @@ struct TaskFormIOSPlanningSection: View {
 
 struct TaskFormIOSImportanceUrgencySection: View {
     let model: TaskFormModel
-    let presentation: TaskFormPresentation
-    @State private var isPriorityPickerPresented = false
 
     var body: some View {
-        Section("Priority") {
-            Button {
-                isPriorityPickerPresented = true
-            } label: {
-                HStack(spacing: 12) {
-                    Label("Set priority", systemImage: "flag")
-                    Spacer()
-                    Text(presentation.derivedPriority.title)
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(.rect)
+        Section(header: Text("Importance")) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Importance",
+                options: RoutineTaskImportance.allCases,
+                selection: model.importance,
+                fillsAvailableWidth: true
+            ) { importance in
+                Text(importance.title)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Set priority")
-            .accessibilityValue(
-                presentation.importanceUrgencyDescription(includesDerivedPriority: true)
-            )
-            .accessibilityHint("Open the importance and urgency picker")
+            Text("How much this task matters to your goals and commitments.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .sheet(isPresented: $isPriorityPickerPresented) {
-            TaskFormIOSPriorityPickerSheet(
-                importance: model.importance,
-                urgency: model.urgency,
-                description: presentation.importanceUrgencyDescription(includesDerivedPriority: true)
-            )
-        }
-    }
-}
 
-private struct TaskFormIOSPriorityPickerSheet: View {
-    @Binding var importance: RoutineTaskImportance
-    @Binding var urgency: RoutineTaskUrgency
-    let description: String
-
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    ImportanceUrgencyMatrixPicker(
-                        importance: $importance,
-                        urgency: $urgency,
-                        showsSummaryChip: false
-                    )
-                    .frame(maxWidth: 420, alignment: .leading)
-                } header: {
-                    Text("Importance & Urgency")
-                } footer: {
-                    Text(description)
-                }
+        Section(header: Text("Urgency")) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Urgency",
+                options: RoutineTaskUrgency.allCases,
+                selection: model.urgency,
+                fillsAvailableWidth: true
+            ) { urgency in
+                Text(urgency.title)
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Priority")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
+            Text("How soon this task needs attention.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
     }
 }
 

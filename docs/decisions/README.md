@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0563](0563-present-importance-and-urgency-as-independent-task-controls.md) refines [0424](0424-make-task-detail-priority-optional.md) and [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md):** Task editors and details present Importance and Urgency as independent controls, while derived Priority remains for sorting and filter matrices retain their combined-threshold semantics.
+
 - **[0562](0562-exclude-blocked-tasks-from-mac-task-ladder.md) refines [0561](0561-add-separate-mac-task-ranking-ladder.md):** Mac Task Ladder contains actionable tasks only, excluding blocked tickets alongside other unavailable work.
 
 - **[0561](0561-add-separate-mac-task-ranking-ladder.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Task Ladder is a separate active-task ranking workspace with independently persisted categorical tie-break ladders and a read-only estimated-time sort.

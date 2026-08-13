@@ -56,7 +56,6 @@ struct TaskDetailTCAView: View {
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
     @State private var isThinkingNeededControlRevealed = false
-    @State private var isPriorityControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var inlineEditSections: [FormSection] = []
     @State private var isTimeSectionExpanded = false
@@ -70,7 +69,6 @@ struct TaskDetailTCAView: View {
     @State private var isRelationshipGraphPresented = false
     @State private var isExistingTaskLinkerPresented = false
     @State private var selectedLinkedEventPresentation: TaskDetailLinkedEventPresentation?
-    @State private var isMatrixExpanded = false
     @State private var isCalendarExpanded = false
     @State private var referenceDate = Date()
     @State private var activeBlockingTask: RoutineTask?
@@ -337,19 +335,6 @@ struct TaskDetailTCAView: View {
         )
     }
 
-    private var priorityDisclosureBox: some View {
-        TaskDetailPriorityDisclosureBox(
-            priority: store.task.priority,
-            importance: store.task.importance,
-            urgency: store.task.urgency,
-            isExpanded: $isMatrixExpanded,
-            summaryLayout: presentation == .companionPane ? .overallOnly : .horizontal,
-            matrixMaxWidth: 420,
-            onImportanceChanged: { store.send(.importanceChanged($0)) },
-            onUrgencyChanged: { store.send(.urgencyChanged($0)) }
-        )
-    }
-
     private var headerSupplementaryContent: some View {
         headerSupplementaryContent(dueDate: store.resolvedDueDate)
     }
@@ -372,9 +357,6 @@ struct TaskDetailTCAView: View {
     @ViewBuilder
     private var todoHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if shouldShowPriorityControl {
-                priorityDisclosureBox
-            }
             if shouldShowTimeSpentHeaderBox {
                 todoTimeSpentHeaderBox
             }
@@ -404,6 +386,14 @@ struct TaskDetailTCAView: View {
                         TaskDetailThinkingNeededSegmentedPicker(store: store)
                             .frame(minWidth: 300)
                     }
+                    if shouldShowImportanceControl {
+                        TaskDetailImportanceSegmentedPicker(store: store)
+                            .frame(minWidth: 300)
+                    }
+                    if shouldShowUrgencyControl {
+                        TaskDetailUrgencySegmentedPicker(store: store)
+                            .frame(minWidth: 300)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -420,13 +410,23 @@ struct TaskDetailTCAView: View {
                     if shouldShowThinkingNeededControl {
                         TaskDetailThinkingNeededSegmentedPicker(store: store)
                     }
+                    if shouldShowImportanceControl {
+                        TaskDetailImportanceSegmentedPicker(store: store)
+                    }
+                    if shouldShowUrgencyControl {
+                        TaskDetailUrgencySegmentedPicker(store: store)
+                    }
                 }
             }
         }
     }
 
     private var shouldShowTaskDetailStatusControls: Bool {
-        shouldShowTodoStateControl || shouldShowPressureControl || shouldShowThinkingNeededControl
+        shouldShowTodoStateControl
+            || shouldShowPressureControl
+            || shouldShowThinkingNeededControl
+            || shouldShowImportanceControl
+            || shouldShowUrgencyControl
     }
 
     private var shouldShowTimeControl: Bool {
@@ -463,8 +463,12 @@ struct TaskDetailTCAView: View {
             || TaskDetailOptionalControlVisibility.showsThinkingNeeded(for: store.task)
     }
 
-    private var shouldShowPriorityControl: Bool {
-        isPriorityControlRevealed || TaskDetailOptionalControlVisibility.showsPriority(for: store.task)
+    private var shouldShowImportanceControl: Bool {
+        TaskDetailOptionalControlVisibility.showsImportance(for: store.task)
+    }
+
+    private var shouldShowUrgencyControl: Bool {
+        TaskDetailOptionalControlVisibility.showsUrgency(for: store.task)
     }
 
     private var shouldShowChecklistSection: Bool {
@@ -483,8 +487,12 @@ struct TaskDetailTCAView: View {
         !shouldShowThinkingNeededControl
     }
 
-    private var shouldShowPriorityAddAction: Bool {
-        !shouldShowPriorityControl
+    private var shouldShowImportanceAddAction: Bool {
+        !shouldShowImportanceControl
+    }
+
+    private var shouldShowUrgencyAddAction: Bool {
+        !shouldShowUrgencyControl
     }
 
     private var shouldShowTimeAddAction: Bool {
@@ -535,9 +543,6 @@ struct TaskDetailTCAView: View {
     @ViewBuilder
     private var routineHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if shouldShowPriorityControl {
-                priorityDisclosureBox
-            }
             if shouldShowTimeSpentHeaderBox {
                 todoTimeSpentHeaderBox
             }
@@ -730,12 +735,18 @@ struct TaskDetailTCAView: View {
             })
         }
 
-        if shouldShowPriorityAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Priority", systemImage: "flag") {
+        if shouldShowImportanceAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Importance", systemImage: "arrow.up.circle") {
                 withAnimation(.easeInOut(duration: 0.18)) {
-                    _ = store.send(.revealPriorityInTaskDetail)
-                    isPriorityControlRevealed = true
-                    isMatrixExpanded = true
+                    _ = store.send(.revealImportanceInTaskDetail)
+                }
+            })
+        }
+
+        if shouldShowUrgencyAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Urgency", systemImage: "clock") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    _ = store.send(.revealUrgencyInTaskDetail)
                 }
             })
         }
@@ -958,7 +969,6 @@ struct TaskDetailTCAView: View {
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
         isThinkingNeededControlRevealed = false
-        isPriorityControlRevealed = false
         isChecklistSectionRevealed = false
         inlineEditSections.removeAll()
     }
@@ -1107,7 +1117,6 @@ struct TaskDetailTCAView: View {
     }
 
     private func collapseDefaultSections() {
-        isMatrixExpanded = false
         isTimeSectionExpanded = false
         isCalendarExpanded = false
         isRoutineLogsExpanded = false

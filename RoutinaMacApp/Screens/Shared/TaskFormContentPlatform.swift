@@ -456,18 +456,42 @@ struct TaskFormContent: View {
         .id(FormSection.places)
     }
 
-    // MARK: Importance
+    // MARK: Importance & Urgency
 
     private var importanceCard: some View {
         macSectionCard(
             title: "Importance & Urgency"
         ) {
-            macControlBlock(title: "Priority matrix") {
-                ImportanceUrgencyMatrixPicker(
-                    importance: model.importance,
-                    urgency: model.urgency
-                )
-                .frame(maxWidth: 420, alignment: .leading)
+            macControlBlock(
+                title: "Importance",
+                caption: "How much this task matters to your goals and commitments."
+            ) {
+                HStack(spacing: 0) {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Importance",
+                        options: RoutineTaskImportance.allCases,
+                        selection: model.importance
+                    ) { importance in
+                        Text(importance.title)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+
+            macControlBlock(
+                title: "Urgency",
+                caption: "How soon this task needs attention."
+            ) {
+                HStack(spacing: 0) {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Urgency",
+                        options: RoutineTaskUrgency.allCases,
+                        selection: model.urgency
+                    ) { urgency in
+                        Text(urgency.title)
+                    }
+                    Spacer(minLength: 0)
+                }
             }
         }
         .id(FormSection.importanceUrgency)

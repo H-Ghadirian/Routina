@@ -18,7 +18,6 @@ struct TaskDetailTCAView: View {
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
     @State private var isThinkingNeededControlRevealed = false
-    @State private var isPriorityControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var requestedEditSection: TaskFormCompactSection?
     @State private var timeEditing = TaskDetailTimeEditingState()
@@ -29,7 +28,6 @@ struct TaskDetailTCAView: View {
     @State private var isCloudSharingPresented = false
     @State private var isRelationshipGraphPresented = false
     @State private var selectedLinkedEventPresentation: TaskDetailLinkedEventPresentation?
-    @State private var isMatrixExpanded = false
     @State private var referenceDate = Date()
     @State private var activeBlockingTask: RoutineTask?
     @State private var sprintBlockingFocusTitle: String?
@@ -447,12 +445,18 @@ detailBody
             })
         }
 
-        if shouldShowPriorityAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Priority", systemImage: "flag") {
+        if shouldShowImportanceAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Importance", systemImage: "arrow.up.circle") {
                 withAnimation(.easeInOut(duration: 0.18)) {
-                    _ = store.send(.revealPriorityInTaskDetail)
-                    isPriorityControlRevealed = true
-                    isMatrixExpanded = true
+                    _ = store.send(.revealImportanceInTaskDetail)
+                }
+            })
+        }
+
+        if shouldShowUrgencyAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Urgency", systemImage: "clock") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    _ = store.send(.revealUrgencyInTaskDetail)
                 }
             })
         }
@@ -518,8 +522,12 @@ detailBody
             || TaskDetailOptionalControlVisibility.showsThinkingNeeded(for: store.task)
     }
 
-    private var shouldShowPriorityControl: Bool {
-        isPriorityControlRevealed || TaskDetailOptionalControlVisibility.showsPriority(for: store.task)
+    private var shouldShowImportanceControl: Bool {
+        TaskDetailOptionalControlVisibility.showsImportance(for: store.task)
+    }
+
+    private var shouldShowUrgencyControl: Bool {
+        TaskDetailOptionalControlVisibility.showsUrgency(for: store.task)
     }
 
     private var shouldShowChecklistSection: Bool {
@@ -538,8 +546,12 @@ detailBody
         !shouldShowThinkingNeededControl
     }
 
-    private var shouldShowPriorityAddAction: Bool {
-        !shouldShowPriorityControl
+    private var shouldShowImportanceAddAction: Bool {
+        !shouldShowImportanceControl
+    }
+
+    private var shouldShowUrgencyAddAction: Bool {
+        !shouldShowUrgencyControl
     }
 
     private var shouldShowTimeAddAction: Bool {
@@ -575,7 +587,6 @@ detailBody
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
         isThinkingNeededControlRevealed = false
-        isPriorityControlRevealed = false
         isChecklistSectionRevealed = false
     }
 
@@ -733,8 +744,11 @@ detailBody
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                if shouldShowPriorityControl {
-                    priorityDisclosureBox
+                if shouldShowImportanceControl {
+                    TaskDetailImportancePickerPill(store: store)
+                }
+                if shouldShowUrgencyControl {
+                    TaskDetailUrgencyPickerPill(store: store)
                 }
                 if shouldShowPressureControl {
                     TaskDetailPressurePickerPill(store: store)
@@ -768,8 +782,11 @@ detailBody
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                if shouldShowPriorityControl {
-                    priorityDisclosureBox
+                if shouldShowImportanceControl {
+                    TaskDetailImportancePickerPill(store: store)
+                }
+                if shouldShowUrgencyControl {
+                    TaskDetailUrgencyPickerPill(store: store)
                 }
                 if shouldShowPressureControl {
                     TaskDetailPressurePickerPill(store: store)
@@ -792,18 +809,6 @@ detailBody
         TaskDetailTimeSpentHeaderBox(
             actualDurationMinutes: store.task.actualDurationMinutes,
             onEdit: beginEditingTaskTime
-        )
-    }
-
-    private var priorityDisclosureBox: some View {
-        TaskDetailPriorityDisclosureBox(
-            priority: store.task.priority,
-            importance: store.task.importance,
-            urgency: store.task.urgency,
-            isExpanded: $isMatrixExpanded,
-            summaryLayout: .stacked,
-            onImportanceChanged: { store.send(.importanceChanged($0)) },
-            onUrgencyChanged: { store.send(.urgencyChanged($0)) }
         )
     }
 

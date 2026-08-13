@@ -3,6 +3,24 @@ import Testing
 
 struct TaskFormMacLayoutRegressionTests {
     @Test
+    func importanceAndUrgencyUseIndependentMacControls() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"
+        )
+        let importanceCard = try Self.sourceSection(
+            startingAt: "private var importanceCard: some View",
+            endingAt: "// MARK: Tags",
+            in: source
+        )
+
+        #expect(importanceCard.contains("title: \"Importance\""))
+        #expect(importanceCard.contains("accessibilityLabel: \"Importance\""))
+        #expect(importanceCard.contains("title: \"Urgency\""))
+        #expect(importanceCard.contains("accessibilityLabel: \"Urgency\""))
+        #expect(!importanceCard.contains("ImportanceUrgencyMatrixPicker"))
+    }
+
+    @Test
     func eligibleOneOffTasksShowAutoAssumeDoneBesideTheirAvailabilityControls() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/Shared/TaskFormMacCards.swift"

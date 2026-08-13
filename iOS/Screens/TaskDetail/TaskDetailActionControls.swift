@@ -299,6 +299,74 @@ struct TaskDetailPressurePickerPill: View {
     }
 }
 
+struct TaskDetailImportancePickerPill: View {
+    let store: StoreOf<TaskDetailFeature>
+    @State private var isPresented = false
+
+    var body: some View {
+        let importance = store.task.importance
+        let tint = TaskDetailPriorityPresentation.importanceTint(for: importance)
+
+        Button {
+            isPresented = true
+        } label: {
+            Label("Importance: \(importance.title)", systemImage: "arrow.up.circle.fill")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(tint)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(tint.opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .confirmationDialog("Set Importance", isPresented: $isPresented) {
+            ForEach(RoutineTaskImportance.allCases, id: \.self) { option in
+                if option != importance {
+                    Button(option.title) {
+                        store.send(.importanceChanged(option))
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Current: \(importance.title)")
+        }
+    }
+}
+
+struct TaskDetailUrgencyPickerPill: View {
+    let store: StoreOf<TaskDetailFeature>
+    @State private var isPresented = false
+
+    var body: some View {
+        let urgency = store.task.urgency
+        let tint = TaskDetailPriorityPresentation.urgencyTint(for: urgency)
+
+        Button {
+            isPresented = true
+        } label: {
+            Label("Urgency: \(urgency.title)", systemImage: "clock.fill")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(tint)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(tint.opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .confirmationDialog("Set Urgency", isPresented: $isPresented) {
+            ForEach(RoutineTaskUrgency.allCases, id: \.self) { option in
+                if option != urgency {
+                    Button(option.title) {
+                        store.send(.urgencyChanged(option))
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Current: \(urgency.title)")
+        }
+    }
+}
+
 struct TaskDetailThinkingNeededPickerPill: View {
     let store: StoreOf<TaskDetailFeature>
     @State private var isPresented = false

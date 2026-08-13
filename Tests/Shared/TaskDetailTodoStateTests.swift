@@ -76,7 +76,7 @@ struct TodoStateFeatureTests {
     // MARK: - Reducer: todoStateChanged
 
     @Test
-    func revealPriorityInTaskDetailPersistsVisibilityWithoutChangingPriority() async throws {
+    func revealImportanceInTaskDetailPersistsOnlyImportanceVisibility() async throws {
         let context = makeInMemoryContext()
         let task = RoutineTask(name: "Write report", priority: .medium)
         context.insert(task)
@@ -89,19 +89,44 @@ struct TodoStateFeatureTests {
         }
         store.exhaustivity = .off
 
-        await store.send(.revealPriorityInTaskDetail) {
-            $0.task.showsTaskDetailPriority = true
+        await store.send(.revealImportanceInTaskDetail) {
             $0.task.hasExplicitImportance = true
+            $0.taskRefreshID = 1
+        }
+
+        let saved = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(saved.hasExplicitImportance)
+        #expect(!saved.hasExplicitUrgency)
+        #expect(saved.priority == .medium)
+        #expect(TaskDetailOptionalControlVisibility.showsImportance(for: saved))
+        #expect(!TaskDetailOptionalControlVisibility.showsUrgency(for: saved))
+    }
+
+    @Test
+    func revealUrgencyInTaskDetailPersistsOnlyUrgencyVisibility() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Write report", priority: .medium)
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.revealUrgencyInTaskDetail) {
             $0.task.hasExplicitUrgency = true
             $0.taskRefreshID = 1
         }
 
         let saved = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
-        #expect(saved.showsTaskDetailPriority)
-        #expect(saved.hasExplicitImportance)
+        #expect(!saved.hasExplicitImportance)
         #expect(saved.hasExplicitUrgency)
         #expect(saved.priority == .medium)
-        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: saved))
+        #expect(!TaskDetailOptionalControlVisibility.showsImportance(for: saved))
+        #expect(TaskDetailOptionalControlVisibility.showsUrgency(for: saved))
     }
 
     @Test

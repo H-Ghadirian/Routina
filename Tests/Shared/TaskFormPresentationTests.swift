@@ -143,7 +143,7 @@ struct TaskFormPresentationTests {
     }
 
     @Test
-    func goalPlaceAndPriorityTextAreSharedAcrossPlatforms() {
+    func goalPlaceAndGeneralHelpTextAreSharedAcrossPlatforms() {
         let value = presentation(
             importance: .level4,
             urgency: .level3,
@@ -158,9 +158,6 @@ struct TaskFormPresentationTests {
         #expect(value.tagSectionHelpText == "Separate multiple tags with commas.")
         #expect(value.goalSectionHelpText == "Press return or Add. Separate multiple goals with commas.")
         #expect(value.linkHelpText == "Add as many websites as you need. URLs without a scheme will use https.")
-        #expect(value.importanceUrgencyDescription(includesDerivedPriority: true) == "Critical importance and high urgency map to high priority for sorting.")
-        #expect(value.importanceUrgencyDescription(includesDerivedPriority: true, priority: .urgent) == "Critical importance and high urgency map to urgent priority for sorting.")
-        #expect(value.importanceUrgencyDescription(includesDerivedPriority: false) == "Critical importance and high urgency.")
     }
 
     @Test

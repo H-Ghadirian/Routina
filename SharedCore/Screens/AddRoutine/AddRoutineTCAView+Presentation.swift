@@ -68,13 +68,6 @@ extension AddRoutineTCAView {
         formPresentation.placeSelectionDescription
     }
 
-    var importanceUrgencyDescription: String {
-        formPresentation.importanceUrgencyDescription(
-            includesDerivedPriority: true,
-            priority: store.basics.priority
-        )
-    }
-
     var stepsSectionDescription: String {
         formPresentation.stepsSectionDescription
     }

@@ -362,7 +362,8 @@ struct TaskDetailFeature: Reducer {
         case updateTaskDuration(Int?)
         case updateLogDuration(UUID, Int?)
         case revealTodoStateInTaskDetail
-        case revealPriorityInTaskDetail
+        case revealImportanceInTaskDetail
+        case revealUrgencyInTaskDetail
         case revealHeatmapInTaskDetail
         case revealHistoryInTaskDetail
         case pauseTapped
@@ -1238,13 +1239,17 @@ struct TaskDetailFeature: Reducer {
             refreshTaskView(&state)
             return handleTodoStateDetailRevealed(taskID: state.task.id)
 
-        case .revealPriorityInTaskDetail:
-            guard !state.task.showsTaskDetailPriority else { return .none }
-            state.task.showsTaskDetailPriority = true
+        case .revealImportanceInTaskDetail:
+            guard !state.task.hasExplicitImportance else { return .none }
             state.task.hasExplicitImportance = true
+            refreshTaskView(&state)
+            return handleTaskDetailImportanceRevealed(taskID: state.task.id)
+
+        case .revealUrgencyInTaskDetail:
+            guard !state.task.hasExplicitUrgency else { return .none }
             state.task.hasExplicitUrgency = true
             refreshTaskView(&state)
-            return handleTaskDetailPriorityRevealed(taskID: state.task.id)
+            return handleTaskDetailUrgencyRevealed(taskID: state.task.id)
 
         case .revealHeatmapInTaskDetail:
             guard state.task.supportsTaskDetailHeatmap else { return .none }

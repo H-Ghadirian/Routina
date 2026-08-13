@@ -472,18 +472,30 @@ extension TaskDetailFeature {
         }
     }
 
-    func handleTaskDetailPriorityRevealed(taskID: UUID) -> Effect<Action> {
+    func handleTaskDetailImportanceRevealed(taskID: UUID) -> Effect<Action> {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
-                task.showsTaskDetailPriority = true
                 task.hasExplicitImportance = true
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error saving task detail importance visibility: \(error)")
+            }
+        }
+    }
+
+    func handleTaskDetailUrgencyRevealed(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.hasExplicitUrgency = true
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Error saving task detail priority visibility: \(error)")
+                print("Error saving task detail urgency visibility: \(error)")
             }
         }
     }

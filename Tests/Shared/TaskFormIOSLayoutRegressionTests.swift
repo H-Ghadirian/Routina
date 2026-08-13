@@ -109,13 +109,13 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
-    func priorityMatricesOpenInDedicatedIOSSheets() throws {
+    func importanceAndUrgencyUseIndependentIOSControls() throws {
         let formSections = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormIOSSections.swift"
         )
         let formPrioritySection = try Self.sourceSection(
             startingAt: "struct TaskFormIOSImportanceUrgencySection",
-            endingAt: "private struct TaskFormIOSPriorityPickerSheet",
+            endingAt: "struct TaskFormIOSPressureSection",
             in: formSections
         )
         let homeFilters = try Self.sourceFile(
@@ -130,12 +130,13 @@ struct TaskFormIOSLayoutRegressionTests {
             "iOS/Screens/Home/HomeFiltersSheetView.swift"
         )
 
-        #expect(formPrioritySection.contains("@State private var isPriorityPickerPresented = false"))
-        #expect(formPrioritySection.contains("Section(\"Priority\")"))
-        #expect(formPrioritySection.contains(".sheet(isPresented: $isPriorityPickerPresented)"))
-        #expect(!formPrioritySection.contains("ImportanceUrgencyMatrixPicker(importance: model.importance"))
-        #expect(formSections.contains("private struct TaskFormIOSPriorityPickerSheet"))
-        #expect(formSections.contains("showsSummaryChip: false"))
+        #expect(formPrioritySection.contains("Section(header: Text(\"Importance\"))"))
+        #expect(formPrioritySection.contains("accessibilityLabel: \"Importance\""))
+        #expect(formPrioritySection.contains("Section(header: Text(\"Urgency\"))"))
+        #expect(formPrioritySection.contains("accessibilityLabel: \"Urgency\""))
+        #expect(!formPrioritySection.contains("ImportanceUrgencyMatrixPicker"))
+        #expect(!formPrioritySection.contains(".sheet("))
+        #expect(!formSections.contains("TaskFormIOSPriorityPickerSheet"))
 
         #expect(homePrioritySection.contains("Label(\"Filter priority\""))
         #expect(homePrioritySection.contains("onPresent(.priority)"))

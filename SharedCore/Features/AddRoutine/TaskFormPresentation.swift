@@ -369,16 +369,6 @@ struct TaskFormPresentation {
         }
     }
 
-    func importanceUrgencyDescription(
-        includesDerivedPriority: Bool,
-        priority: RoutineTaskPriority? = nil
-    ) -> String {
-        let base = "\(importance.title) importance and \(urgency.title.lowercased()) urgency"
-        guard includesDerivedPriority else { return "\(base)." }
-        let resolvedPriority = priority ?? derivedPriority
-        return "\(base) map to \(resolvedPriority.title.lowercased()) priority for sorting."
-    }
-
     var linkHelpText: String {
         "Add as many websites as you need. URLs without a scheme will use https."
     }
