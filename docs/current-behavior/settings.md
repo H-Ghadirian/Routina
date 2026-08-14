@@ -38,10 +38,11 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0518](../decisions/0518-scope-signed-cloudkit-diagnostics-to-macos.md)
 - [0525](../decisions/0525-gate-testflight-archives-on-cloudkit-schema-deployment.md)
 - [0526](../decisions/0526-identify-exact-builds-in-support.md)
+- [0569](../decisions/0569-suppress-no-op-preference-sync-refresh-loops.md)
 
 ## Current Contract
 
-- User-owned preferences that should back up, restore, reset, and sync belong in SwiftData.
+- User-owned preferences that should back up, restore, reset, and sync belong in SwiftData. The `UserDefaults` compatibility bridge saves and advances the synchronized preference record only when a durable value changes and applies only changed remote values back to defaults. Device-local temporary view state never schedules that durable mirror and equivalent state is not rewritten.
 - The standalone Mac Settings surface uses a launch-suppressed, single-instance standard window. It retains the system Settings command and Command-comma routing while supporting minimize, free resizing and zoom above its 640 by 560 minimum, and native full screen.
 - Purchase entitlement is resolved from StoreKit rather than backed up in user data. Weekly, monthly, annual, and lifetime products unlock unlimited active tasks. The paywall shows renewal disclosure plus Privacy Policy and Terms of Use links, and Support & About exposes the same legal links. Settings -> Support & About -> Beta Experiments includes the temporary unlimited-task override only in development apps; production ignores persisted and configured testing overrides.
 - Calendar task import always supports Apple Calendar. Outlook appears only when the app bundle has a nonempty Microsoft Graph client ID, so unconfigured release builds do not advertise a nonfunctional sign-in path.

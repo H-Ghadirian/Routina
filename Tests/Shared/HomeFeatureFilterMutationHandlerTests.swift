@@ -96,13 +96,33 @@ struct HomeFeatureFilterMutationHandlerTests {
         let recorder = TestFilterMutationRecorder()
         let handler = makeHandler(recorder)
 
-        handler.validateFilterState(&state)
+        let didChangeFilters = handler.validateFilterState(&state)
 
+        #expect(didChangeFilters)
         #expect(state.taskFilters.effectiveSelectedTags == ["Focus"])
         #expect(state.taskFilters.excludedTags == ["Admin"])
         #expect(state.taskFilters.selectedManualPlaceFilterID == nil)
         #expect(recorder.persistedStates.isEmpty)
         #expect(recorder.hiddenPreferenceWrites.isEmpty)
+    }
+
+    @Test
+    func validateFilterStateReportsWhenFiltersAreAlreadyValid() {
+        var state = TestFilterMutationState(
+            taskFilters: HomeTaskFiltersState(
+                selectedTag: "Focus",
+                selectedTags: ["Focus"]
+            ),
+            routineDisplays: [
+                TestFilterRoutineDisplay(name: "Write", tags: ["Focus"])
+            ]
+        )
+        let recorder = TestFilterMutationRecorder()
+        let handler = makeHandler(recorder)
+
+        #expect(!handler.validateFilterState(&state))
+        #expect(state.taskFilters.effectiveSelectedTags == ["Focus"])
+        #expect(recorder.persistedStates.isEmpty)
     }
 
     private func makeHandler(_ recorder: TestFilterMutationRecorder) -> HomeFeatureFilterMutationHandler<TestFilterMutationState, Never> {

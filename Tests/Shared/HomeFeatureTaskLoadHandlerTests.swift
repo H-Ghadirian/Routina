@@ -80,6 +80,7 @@ struct HomeFeatureTaskLoadHandlerTests {
                 recorder.events.append("validate")
                 state.tagColors.removeValue(forKey: "refresh")
                 state.tagColors["validated"] = "true"
+                return true
             },
             persistTemporaryViewState: { state in
                 recorder.events.append("persist")
@@ -91,6 +92,29 @@ struct HomeFeatureTaskLoadHandlerTests {
             },
             addRoutineAction: { .addRoutine($0) }
         )
+    }
+
+    @Test
+    func applyLoadedTasksSkipsTemporaryStatePersistenceWhenValidationDoesNotChangeFilters() {
+        var state = TestTaskLoadState(isLoading: true)
+        let recorder = TestTaskLoadRecorder()
+        var handler = makeHandler(recorder)
+        handler.validateFilterState = { _ in
+            recorder.events.append("validate")
+            return false
+        }
+
+        _ = handler.applyLoadedTasks(
+            tasks: [],
+            places: [],
+            goals: [],
+            logs: [],
+            doneStats: HomeDoneStats(),
+            state: &state
+        )
+
+        #expect(recorder.events == ["refresh", "sync", "validate", "detail"])
+        #expect(recorder.persistedStates.isEmpty)
     }
 }
 

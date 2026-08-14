@@ -109,17 +109,23 @@ enum RoutinaUserPreferencesStore {
     }
 
     static func fetchOrCreate(in context: ModelContext) throws -> RoutinaUserPreferences {
+        try fetchOrCreateResult(in: context).preferences
+    }
+
+    private static func fetchOrCreateResult(
+        in context: ModelContext
+    ) throws -> (preferences: RoutinaUserPreferences, wasInserted: Bool) {
         let singletonID = RoutinaUserPreferences.singletonID
         let descriptor = FetchDescriptor<RoutinaUserPreferences>(
             predicate: #Predicate { $0.id == singletonID }
         )
         if let existing = try context.fetch(descriptor).first {
-            return existing
+            return (existing, false)
         }
 
         let preferences = RoutinaUserPreferences()
         context.insert(preferences)
-        return preferences
+        return (preferences, true)
     }
 
     static func migrateDefaultsIfNeeded(in context: ModelContext) {
@@ -129,185 +135,300 @@ enum RoutinaUserPreferencesStore {
         }
 
         do {
-            let preferences = try fetchOrCreate(in: context)
-            copyDefaults(to: preferences)
-            preferences.updatedAt = Date()
-            try context.save()
+            let result = try fetchOrCreateResult(in: context)
+            let didChange = copyDefaults(to: result.preferences, from: SharedDefaults.app)
+            if result.wasInserted || didChange {
+                result.preferences.updatedAt = Date()
+                try context.save()
+            }
             SharedDefaults.app.set(true, forKey: migratedDefaultsKey)
         } catch {
             NSLog("User preference migration failed: \(error.localizedDescription)")
         }
     }
 
-    static func mirrorDefaultsToStore(in context: ModelContext) {
+    @discardableResult
+    static func mirrorDefaultsToStore(
+        in context: ModelContext,
+        defaults: UserDefaults = SharedDefaults.app
+    ) -> Bool {
         do {
-            let preferences = try fetchOrCreate(in: context)
-            copyDefaults(to: preferences)
-            preferences.updatedAt = Date()
+            let result = try fetchOrCreateResult(in: context)
+            let didChange = copyDefaults(to: result.preferences, from: defaults)
+            guard result.wasInserted || didChange else { return false }
+            result.preferences.updatedAt = Date()
             try context.save()
+            return true
         } catch {
             NSLog("User preference defaults mirror failed: \(error.localizedDescription)")
+            return false
         }
     }
 
-    static func applyToDefaults(from context: ModelContext) {
+    @discardableResult
+    static func applyToDefaults(
+        from context: ModelContext,
+        defaults: UserDefaults = SharedDefaults.app
+    ) -> Bool {
         do {
-            guard let preferences = try context.fetch(FetchDescriptor<RoutinaUserPreferences>()).first else { return }
-            copy(preferences, to: SharedDefaults.app)
+            let singletonID = RoutinaUserPreferences.singletonID
+            let descriptor = FetchDescriptor<RoutinaUserPreferences>(
+                predicate: #Predicate { $0.id == singletonID }
+            )
+            guard let preferences = try context.fetch(descriptor).first else { return false }
+            return copy(preferences, to: defaults)
         } catch {
             NSLog("User preference defaults apply failed: \(error.localizedDescription)")
+            return false
         }
     }
 
-    private static func copyDefaults(to preferences: RoutinaUserPreferences) {
-        let defaults = SharedDefaults.app
-        preferences.selectedAppIcon = defaults[.selectedMacAppIcon]
-        preferences.appColorScheme = defaults[.appSettingAppColorScheme]
-        preferences.routineListSectioningMode = RoutineListSectioningMode.preferenceValue(
-            rawValue: defaults[.appSettingRoutineListSectioningMode]
-        ).rawValue
-        preferences.tagCounterDisplayMode = defaults[.appSettingTagCounterDisplayMode]
-        preferences.customTaskSections = defaults[.appSettingCustomTaskSections]
-        preferences.macHomeTaskListSectionOrder = defaults[.appSettingMacHomeTaskListSectionOrder]
-        preferences.macTaskRankingReversedMetrics = defaults[.appSettingMacTaskRankingReversedMetrics]
-        preferences.homeTaskRowHiddenFields = defaults[.appSettingHomeTaskRowHiddenFields]
-        preferences.homeTimelineRowHiddenFields = defaults[.appSettingHomeTimelineRowHiddenFields]
-        preferences.dayPlanCalendarListRowHiddenFields = defaults[
-            .appSettingDayPlanCalendarListRowHiddenFields
-        ]
-        preferences.relatedTagRules = defaults[.appSettingRelatedTagRules]
-        preferences.tagRules = defaults[.appSettingTagRules]
-        preferences.flagRules = defaults[.appSettingFlagRules]
-        preferences.definedFlags = defaults[.appSettingDefinedFlags]
-        preferences.tagColors = defaults[.appSettingTagColors]
-        preferences.fastFilterTags = defaults[.appSettingFastFilterTags]
-        preferences.iOSStatsDashboardHiddenItemIDs = defaults[.appSettingIOSStatsDashboardHiddenItemIDs]
-        preferences.iOSStatsDashboardItemOrderIDs = defaults[.appSettingIOSStatsDashboardItemOrderIDs]
-        preferences.iOSStatsSummaryDisplayMode = defaults[.appSettingIOSStatsSummaryDisplayMode]
-        preferences.macStatsDashboardHiddenItemIDs = defaults[.appSettingMacStatsDashboardHiddenItemIDs]
-        preferences.macStatsDashboardItemOrderIDs = defaults[.appSettingMacStatsDashboardItemOrderIDs]
-        preferences.macStatsSummaryDisplayMode = defaults[.appSettingMacStatsSummaryDisplayMode]
-        preferences.hiddenDayPlanTimelineActivityIDs = defaults[.appSettingHiddenDayPlanTimelineActivityIDs]
-        preferences.protectionBlockingEnabledModes = defaults[.appSettingProtectionBlockingEnabledModes]
-        preferences.blockingWebsiteDomains = defaults[.appSettingBlockingWebsiteDomains]
-        preferences.focusShieldSelection = defaults[.appSettingFocusShieldSelection]
-        preferences.macFocusBlockedApps = defaults[.appSettingMacFocusBlockedApps]
-        preferences.macFormSectionOrder = defaults.data(forKey: UserDefaultStringValueKey.macFormSectionOrder.rawValue)?.base64EncodedString()
-        preferences.macQuickAddShortcut = defaults[.macQuickAddShortcut]
-        preferences.macAdventureOwnedItemIDs = defaults[.appSettingMacAdventureOwnedItemIDs]
-        preferences.macAdventureUnlockedWorldIDs = defaults[.appSettingMacAdventureUnlockedWorldIDs]
-        preferences.macAdventureUnlockedStageIDs = defaults[.appSettingMacAdventureUnlockedStageIDs]
-        preferences.notificationsEnabled = defaults[.appSettingNotificationsEnabled]
-        preferences.showHomeTaskListModeTabsVisible = defaults[.appSettingHomeTaskListModeTabsVisible]
-        preferences.hideUnavailableRoutines = defaults[.appSettingHideUnavailableRoutines]
-        preferences.appLockEnabled = defaults[.appSettingAppLockEnabled]
-        preferences.gitFeaturesEnabled = defaults[.appSettingGitFeaturesEnabled]
-        preferences.taskSharingEnabled = defaults[.appSettingTaskSharingEnabled]
-        preferences.taskRelationshipVisualizerEnabled = defaults[.appSettingTaskRelationshipVisualizerEnabled]
-        preferences.placesEnabled = defaults[.appSettingPlacesEnabled]
-        preferences.notesEnabled = defaults[.appSettingNotesEnabled]
-        preferences.awayEnabled = defaults[.appSettingAwayEnabled]
-        preferences.filterQuerySectionsEnabled = defaults[.appSettingFilterQuerySectionsEnabled]
-        preferences.unlockUnlimitedTasks = defaults[.appSettingUnlockUnlimitedTasks]
-        preferences.showPersianDates = defaults[.appSettingShowPersianDates]
-        preferences.batteryRoutineMonitoringEnabled = BatteryRoutinePreferences.isMonitoringEnabled
-        preferences.sleepHomeActionEnabled = defaults[.appSettingSleepHomeActionEnabled]
-        preferences.sleepHomeMenuEnabled = defaults[.appSettingSleepHomeMenuEnabled]
-        preferences.shakeToStartSleepEnabled = defaults[.appSettingShakeToStartSleepEnabled]
-        preferences.focusShieldEnabled = defaults[.appSettingFocusShieldEnabled]
-        preferences.macFocusAppBlockingEnabled = defaults[.appSettingMacFocusAppBlockingEnabled]
-        preferences.automaticPlaceCheckInEnabled = defaults[.appSettingAutomaticPlaceCheckInEnabled]
-        preferences.showTimelineTasksInDayPlanner = defaults[.appSettingShowTimelineTasksInDayPlanner]
-        preferences.dayPlanCalendarListAssumedDoneCollapsedByDefault = defaults[
-            .appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault
-        ]
-        preferences.separateDailyRoutinesInTaskList = defaults[.appSettingSeparateDailyRoutinesInTaskList]
-        preferences.showTomorrowInTaskList = defaults[.appSettingShowTomorrowInTaskList]
-        preferences.macShowDoneCountInToolbar = defaults[.appSettingMacShowDoneCountInToolbar]
-        preferences.separateTodosAndRoutinesInTagTaskListSections = defaults[
-            .appSettingSeparateTodosAndRoutinesInTagTaskListSections
-        ]
-        preferences.separateDeadlineStatusInTagTaskListSections = defaults[
-            .appSettingSeparateDeadlineStatusInTagTaskListSections
-        ]
-        preferences.notificationReminderHour = defaults.integer(forKey: NotificationPreferences.reminderHourDefaultsKey)
-        preferences.notificationReminderMinute = defaults.integer(forKey: NotificationPreferences.reminderMinuteDefaultsKey)
-        preferences.batteryRoutineThresholdPercent = BatteryRoutinePreferences.thresholdPercent
+    private static func copyDefaults(
+        to preferences: RoutinaUserPreferences,
+        from defaults: UserDefaults
+    ) -> Bool {
+        var didChange = false
+        func store<Value: Equatable>(
+            _ value: Value,
+            at keyPath: ReferenceWritableKeyPath<RoutinaUserPreferences, Value>
+        ) {
+            guard preferences[keyPath: keyPath] != value else { return }
+            preferences[keyPath: keyPath] = value
+            didChange = true
+        }
+
+        store(defaults[.selectedMacAppIcon], at: \.selectedAppIcon)
+        store(defaults[.appSettingAppColorScheme], at: \.appColorScheme)
+        store(
+            RoutineListSectioningMode.preferenceValue(
+                rawValue: defaults[.appSettingRoutineListSectioningMode]
+            ).rawValue,
+            at: \.routineListSectioningMode
+        )
+        store(defaults[.appSettingTagCounterDisplayMode], at: \.tagCounterDisplayMode)
+        store(defaults[.appSettingCustomTaskSections], at: \.customTaskSections)
+        store(defaults[.appSettingMacHomeTaskListSectionOrder], at: \.macHomeTaskListSectionOrder)
+        store(defaults[.appSettingMacTaskRankingReversedMetrics], at: \.macTaskRankingReversedMetrics)
+        store(defaults[.appSettingHomeTaskRowHiddenFields], at: \.homeTaskRowHiddenFields)
+        store(defaults[.appSettingHomeTimelineRowHiddenFields], at: \.homeTimelineRowHiddenFields)
+        store(
+            defaults[.appSettingDayPlanCalendarListRowHiddenFields],
+            at: \.dayPlanCalendarListRowHiddenFields
+        )
+        store(defaults[.appSettingRelatedTagRules], at: \.relatedTagRules)
+        store(defaults[.appSettingTagRules], at: \.tagRules)
+        store(defaults[.appSettingFlagRules], at: \.flagRules)
+        store(defaults[.appSettingDefinedFlags], at: \.definedFlags)
+        store(defaults[.appSettingTagColors], at: \.tagColors)
+        store(defaults[.appSettingFastFilterTags], at: \.fastFilterTags)
+        store(defaults[.appSettingIOSStatsDashboardHiddenItemIDs], at: \.iOSStatsDashboardHiddenItemIDs)
+        store(defaults[.appSettingIOSStatsDashboardItemOrderIDs], at: \.iOSStatsDashboardItemOrderIDs)
+        store(defaults[.appSettingIOSStatsSummaryDisplayMode], at: \.iOSStatsSummaryDisplayMode)
+        store(defaults[.appSettingMacStatsDashboardHiddenItemIDs], at: \.macStatsDashboardHiddenItemIDs)
+        store(defaults[.appSettingMacStatsDashboardItemOrderIDs], at: \.macStatsDashboardItemOrderIDs)
+        store(defaults[.appSettingMacStatsSummaryDisplayMode], at: \.macStatsSummaryDisplayMode)
+        store(defaults[.appSettingHiddenDayPlanTimelineActivityIDs], at: \.hiddenDayPlanTimelineActivityIDs)
+        store(defaults[.appSettingProtectionBlockingEnabledModes], at: \.protectionBlockingEnabledModes)
+        store(defaults[.appSettingBlockingWebsiteDomains], at: \.blockingWebsiteDomains)
+        store(defaults[.appSettingFocusShieldSelection], at: \.focusShieldSelection)
+        store(defaults[.appSettingMacFocusBlockedApps], at: \.macFocusBlockedApps)
+        store(
+            defaults.data(forKey: UserDefaultStringValueKey.macFormSectionOrder.rawValue)?
+                .base64EncodedString(),
+            at: \.macFormSectionOrder
+        )
+        store(defaults[.macQuickAddShortcut], at: \.macQuickAddShortcut)
+        store(defaults[.appSettingMacAdventureOwnedItemIDs], at: \.macAdventureOwnedItemIDs)
+        store(defaults[.appSettingMacAdventureUnlockedWorldIDs], at: \.macAdventureUnlockedWorldIDs)
+        store(defaults[.appSettingMacAdventureUnlockedStageIDs], at: \.macAdventureUnlockedStageIDs)
+        store(defaults[.appSettingNotificationsEnabled], at: \.notificationsEnabled)
+        store(defaults[.appSettingHomeTaskListModeTabsVisible], at: \.showHomeTaskListModeTabsVisible)
+        store(defaults[.appSettingHideUnavailableRoutines], at: \.hideUnavailableRoutines)
+        store(defaults[.appSettingAppLockEnabled], at: \.appLockEnabled)
+        store(defaults[.appSettingGitFeaturesEnabled], at: \.gitFeaturesEnabled)
+        store(defaults[.appSettingTaskSharingEnabled], at: \.taskSharingEnabled)
+        store(
+            defaults[.appSettingTaskRelationshipVisualizerEnabled],
+            at: \.taskRelationshipVisualizerEnabled
+        )
+        store(defaults[.appSettingPlacesEnabled], at: \.placesEnabled)
+        store(defaults[.appSettingNotesEnabled], at: \.notesEnabled)
+        store(defaults[.appSettingAwayEnabled], at: \.awayEnabled)
+        store(defaults[.appSettingFilterQuerySectionsEnabled], at: \.filterQuerySectionsEnabled)
+        store(defaults[.appSettingUnlockUnlimitedTasks], at: \.unlockUnlimitedTasks)
+        store(defaults[.appSettingShowPersianDates], at: \.showPersianDates)
+        store(defaults[.appSettingBatteryRoutineMonitoringEnabled], at: \.batteryRoutineMonitoringEnabled)
+        store(defaults[.appSettingSleepHomeActionEnabled], at: \.sleepHomeActionEnabled)
+        store(defaults[.appSettingSleepHomeMenuEnabled], at: \.sleepHomeMenuEnabled)
+        store(defaults[.appSettingShakeToStartSleepEnabled], at: \.shakeToStartSleepEnabled)
+        store(defaults[.appSettingFocusShieldEnabled], at: \.focusShieldEnabled)
+        store(defaults[.appSettingMacFocusAppBlockingEnabled], at: \.macFocusAppBlockingEnabled)
+        store(defaults[.appSettingAutomaticPlaceCheckInEnabled], at: \.automaticPlaceCheckInEnabled)
+        store(defaults[.appSettingShowTimelineTasksInDayPlanner], at: \.showTimelineTasksInDayPlanner)
+        store(
+            defaults[.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault],
+            at: \.dayPlanCalendarListAssumedDoneCollapsedByDefault
+        )
+        store(defaults[.appSettingSeparateDailyRoutinesInTaskList], at: \.separateDailyRoutinesInTaskList)
+        store(defaults[.appSettingShowTomorrowInTaskList], at: \.showTomorrowInTaskList)
+        store(defaults[.appSettingMacShowDoneCountInToolbar], at: \.macShowDoneCountInToolbar)
+        store(
+            defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections],
+            at: \.separateTodosAndRoutinesInTagTaskListSections
+        )
+        store(
+            defaults[.appSettingSeparateDeadlineStatusInTagTaskListSections],
+            at: \.separateDeadlineStatusInTagTaskListSections
+        )
+        store(
+            defaults.integer(forKey: NotificationPreferences.reminderHourDefaultsKey),
+            at: \.notificationReminderHour
+        )
+        store(
+            defaults.integer(forKey: NotificationPreferences.reminderMinuteDefaultsKey),
+            at: \.notificationReminderMinute
+        )
+        store(
+            defaults.integer(forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey),
+            at: \.batteryRoutineThresholdPercent
+        )
+        return didChange
     }
 
-    private static func copy(_ preferences: RoutinaUserPreferences, to defaults: UserDefaults) {
-        defaults[.selectedMacAppIcon] = preferences.selectedAppIcon
-        defaults[.appSettingAppColorScheme] = preferences.appColorScheme
-        defaults[.appSettingRoutineListSectioningMode] = RoutineListSectioningMode.preferenceValue(
-            rawValue: preferences.routineListSectioningMode
-        ).rawValue
-        defaults[.appSettingTagCounterDisplayMode] = preferences.tagCounterDisplayMode
-        defaults[.appSettingCustomTaskSections] = preferences.customTaskSections
-        defaults[.appSettingMacHomeTaskListSectionOrder] = preferences.macHomeTaskListSectionOrder
-        defaults[.appSettingMacTaskRankingReversedMetrics] = preferences.macTaskRankingReversedMetrics
-        defaults[.appSettingHomeTaskRowHiddenFields] = preferences.homeTaskRowHiddenFields
-        defaults[.appSettingHomeTimelineRowHiddenFields] = preferences.homeTimelineRowHiddenFields
-        defaults[.appSettingDayPlanCalendarListRowHiddenFields] =
-            preferences.dayPlanCalendarListRowHiddenFields
-        defaults[.appSettingRelatedTagRules] = preferences.relatedTagRules
-        defaults[.appSettingTagRules] = preferences.tagRules
-        defaults[.appSettingFlagRules] = preferences.flagRules
-        defaults[.appSettingDefinedFlags] = preferences.definedFlags
-        defaults[.appSettingTagColors] = preferences.tagColors
-        defaults[.appSettingFastFilterTags] = preferences.fastFilterTags
-        defaults[.appSettingIOSStatsDashboardHiddenItemIDs] = preferences.iOSStatsDashboardHiddenItemIDs
-        defaults[.appSettingIOSStatsDashboardItemOrderIDs] = preferences.iOSStatsDashboardItemOrderIDs
-        defaults[.appSettingIOSStatsSummaryDisplayMode] = preferences.iOSStatsSummaryDisplayMode
-        defaults[.appSettingMacStatsDashboardHiddenItemIDs] = preferences.macStatsDashboardHiddenItemIDs
-        defaults[.appSettingMacStatsDashboardItemOrderIDs] = preferences.macStatsDashboardItemOrderIDs
-        defaults[.appSettingMacStatsSummaryDisplayMode] = preferences.macStatsSummaryDisplayMode
-        defaults[.appSettingHiddenDayPlanTimelineActivityIDs] = preferences.hiddenDayPlanTimelineActivityIDs
-        defaults[.appSettingProtectionBlockingEnabledModes] = preferences.protectionBlockingEnabledModes
-        defaults[.appSettingBlockingWebsiteDomains] = preferences.blockingWebsiteDomains
-        defaults[.appSettingFocusShieldSelection] = preferences.focusShieldSelection
-        defaults[.appSettingMacFocusBlockedApps] = preferences.macFocusBlockedApps
-        if let macFormSectionOrder = preferences.macFormSectionOrder,
-           let data = Data(base64Encoded: macFormSectionOrder) {
-            defaults.set(data, forKey: UserDefaultStringValueKey.macFormSectionOrder.rawValue)
-        } else {
-            defaults.removeObject(forKey: UserDefaultStringValueKey.macFormSectionOrder.rawValue)
+    private static func copy(
+        _ preferences: RoutinaUserPreferences,
+        to defaults: UserDefaults
+    ) -> Bool {
+        var didChange = false
+        func store(_ value: String?, at key: UserDefaultStringValueKey) {
+            guard defaults[key] != value else { return }
+            defaults[key] = value
+            didChange = true
         }
-        defaults[.macQuickAddShortcut] = preferences.macQuickAddShortcut
-        defaults[.appSettingMacAdventureOwnedItemIDs] = preferences.macAdventureOwnedItemIDs
-        defaults[.appSettingMacAdventureUnlockedWorldIDs] = preferences.macAdventureUnlockedWorldIDs
-        defaults[.appSettingMacAdventureUnlockedStageIDs] = preferences.macAdventureUnlockedStageIDs
-        defaults[.appSettingNotificationsEnabled] = preferences.notificationsEnabled
-        defaults[.appSettingHomeTaskListModeTabsVisible] = preferences.showHomeTaskListModeTabsVisible
-        defaults[.appSettingHideUnavailableRoutines] = preferences.hideUnavailableRoutines
-        defaults[.appSettingAppLockEnabled] = preferences.appLockEnabled
-        defaults[.appSettingGitFeaturesEnabled] = preferences.gitFeaturesEnabled
-        defaults[.appSettingTaskSharingEnabled] = preferences.taskSharingEnabled
-        defaults[.appSettingTaskRelationshipVisualizerEnabled] = preferences.taskRelationshipVisualizerEnabled
-        defaults[.appSettingPlacesEnabled] = preferences.placesEnabled
-        defaults[.appSettingNotesEnabled] = preferences.notesEnabled
-        defaults[.appSettingAwayEnabled] = preferences.awayEnabled
-        defaults[.appSettingFilterQuerySectionsEnabled] = preferences.filterQuerySectionsEnabled
-        defaults[.appSettingUnlockUnlimitedTasks] = preferences.unlockUnlimitedTasks
-        defaults[.appSettingShowPersianDates] = preferences.showPersianDates
-        defaults[.appSettingBatteryRoutineMonitoringEnabled] = preferences.batteryRoutineMonitoringEnabled
-        defaults[.appSettingSleepHomeActionEnabled] = preferences.sleepHomeActionEnabled
-        defaults[.appSettingSleepHomeMenuEnabled] = preferences.sleepHomeMenuEnabled
-        defaults[.appSettingShakeToStartSleepEnabled] = preferences.shakeToStartSleepEnabled
-        defaults[.appSettingFocusShieldEnabled] = preferences.focusShieldEnabled
-        defaults[.appSettingMacFocusAppBlockingEnabled] = preferences.macFocusAppBlockingEnabled
-        defaults[.appSettingAutomaticPlaceCheckInEnabled] = preferences.automaticPlaceCheckInEnabled
-        defaults[.appSettingShowTimelineTasksInDayPlanner] = preferences.showTimelineTasksInDayPlanner
-        defaults[.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault] = preferences
-            .dayPlanCalendarListAssumedDoneCollapsedByDefault
-        defaults[.appSettingSeparateDailyRoutinesInTaskList] = preferences.separateDailyRoutinesInTaskList
-        defaults[.appSettingShowTomorrowInTaskList] = preferences.showTomorrowInTaskList
-        defaults[.appSettingMacShowDoneCountInToolbar] = preferences.macShowDoneCountInToolbar
-        defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] = preferences
-            .separateTodosAndRoutinesInTagTaskListSections
-        defaults[.appSettingSeparateDeadlineStatusInTagTaskListSections] = preferences
-            .separateDeadlineStatusInTagTaskListSections
-        defaults.set(preferences.notificationReminderHour, forKey: NotificationPreferences.reminderHourDefaultsKey)
-        defaults.set(preferences.notificationReminderMinute, forKey: NotificationPreferences.reminderMinuteDefaultsKey)
-        defaults.set(preferences.batteryRoutineThresholdPercent, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)
+        func store(_ value: Bool, at key: UserDefaultBoolValueKey) {
+            let resolvedValue = RoutinaExperimentalFeaturePolicy.resolvedValue(
+                for: key,
+                storedValue: value
+            )
+            guard defaults[key] != resolvedValue else { return }
+            defaults[key] = resolvedValue
+            didChange = true
+        }
+        func store(_ value: Int, at key: String) {
+            guard defaults.integer(forKey: key) != value else { return }
+            defaults.set(value, forKey: key)
+            didChange = true
+        }
+        func store(_ value: Data?, at key: String) {
+            guard defaults.data(forKey: key) != value else { return }
+            if let value {
+                defaults.set(value, forKey: key)
+            } else {
+                defaults.removeObject(forKey: key)
+            }
+            didChange = true
+        }
+
+        store(preferences.selectedAppIcon, at: .selectedMacAppIcon)
+        store(preferences.appColorScheme, at: .appSettingAppColorScheme)
+        store(
+            RoutineListSectioningMode.preferenceValue(
+                rawValue: preferences.routineListSectioningMode
+            ).rawValue,
+            at: .appSettingRoutineListSectioningMode
+        )
+        store(preferences.tagCounterDisplayMode, at: .appSettingTagCounterDisplayMode)
+        store(preferences.customTaskSections, at: .appSettingCustomTaskSections)
+        store(preferences.macHomeTaskListSectionOrder, at: .appSettingMacHomeTaskListSectionOrder)
+        store(preferences.macTaskRankingReversedMetrics, at: .appSettingMacTaskRankingReversedMetrics)
+        store(preferences.homeTaskRowHiddenFields, at: .appSettingHomeTaskRowHiddenFields)
+        store(preferences.homeTimelineRowHiddenFields, at: .appSettingHomeTimelineRowHiddenFields)
+        store(
+            preferences.dayPlanCalendarListRowHiddenFields,
+            at: .appSettingDayPlanCalendarListRowHiddenFields
+        )
+        store(preferences.relatedTagRules, at: .appSettingRelatedTagRules)
+        store(preferences.tagRules, at: .appSettingTagRules)
+        store(preferences.flagRules, at: .appSettingFlagRules)
+        store(preferences.definedFlags, at: .appSettingDefinedFlags)
+        store(preferences.tagColors, at: .appSettingTagColors)
+        store(preferences.fastFilterTags, at: .appSettingFastFilterTags)
+        store(preferences.iOSStatsDashboardHiddenItemIDs, at: .appSettingIOSStatsDashboardHiddenItemIDs)
+        store(preferences.iOSStatsDashboardItemOrderIDs, at: .appSettingIOSStatsDashboardItemOrderIDs)
+        store(preferences.iOSStatsSummaryDisplayMode, at: .appSettingIOSStatsSummaryDisplayMode)
+        store(preferences.macStatsDashboardHiddenItemIDs, at: .appSettingMacStatsDashboardHiddenItemIDs)
+        store(preferences.macStatsDashboardItemOrderIDs, at: .appSettingMacStatsDashboardItemOrderIDs)
+        store(preferences.macStatsSummaryDisplayMode, at: .appSettingMacStatsSummaryDisplayMode)
+        store(preferences.hiddenDayPlanTimelineActivityIDs, at: .appSettingHiddenDayPlanTimelineActivityIDs)
+        store(preferences.protectionBlockingEnabledModes, at: .appSettingProtectionBlockingEnabledModes)
+        store(preferences.blockingWebsiteDomains, at: .appSettingBlockingWebsiteDomains)
+        store(preferences.focusShieldSelection, at: .appSettingFocusShieldSelection)
+        store(preferences.macFocusBlockedApps, at: .appSettingMacFocusBlockedApps)
+        store(
+            preferences.macFormSectionOrder.flatMap { Data(base64Encoded: $0) },
+            at: UserDefaultStringValueKey.macFormSectionOrder.rawValue
+        )
+        store(preferences.macQuickAddShortcut, at: .macQuickAddShortcut)
+        store(preferences.macAdventureOwnedItemIDs, at: .appSettingMacAdventureOwnedItemIDs)
+        store(preferences.macAdventureUnlockedWorldIDs, at: .appSettingMacAdventureUnlockedWorldIDs)
+        store(preferences.macAdventureUnlockedStageIDs, at: .appSettingMacAdventureUnlockedStageIDs)
+        store(preferences.notificationsEnabled, at: .appSettingNotificationsEnabled)
+        store(preferences.showHomeTaskListModeTabsVisible, at: .appSettingHomeTaskListModeTabsVisible)
+        store(preferences.hideUnavailableRoutines, at: .appSettingHideUnavailableRoutines)
+        store(preferences.appLockEnabled, at: .appSettingAppLockEnabled)
+        store(preferences.gitFeaturesEnabled, at: .appSettingGitFeaturesEnabled)
+        store(preferences.taskSharingEnabled, at: .appSettingTaskSharingEnabled)
+        store(
+            preferences.taskRelationshipVisualizerEnabled,
+            at: .appSettingTaskRelationshipVisualizerEnabled
+        )
+        store(preferences.placesEnabled, at: .appSettingPlacesEnabled)
+        store(preferences.notesEnabled, at: .appSettingNotesEnabled)
+        store(preferences.awayEnabled, at: .appSettingAwayEnabled)
+        store(preferences.filterQuerySectionsEnabled, at: .appSettingFilterQuerySectionsEnabled)
+        store(preferences.unlockUnlimitedTasks, at: .appSettingUnlockUnlimitedTasks)
+        store(preferences.showPersianDates, at: .appSettingShowPersianDates)
+        store(
+            preferences.batteryRoutineMonitoringEnabled,
+            at: .appSettingBatteryRoutineMonitoringEnabled
+        )
+        store(preferences.sleepHomeActionEnabled, at: .appSettingSleepHomeActionEnabled)
+        store(preferences.sleepHomeMenuEnabled, at: .appSettingSleepHomeMenuEnabled)
+        store(preferences.shakeToStartSleepEnabled, at: .appSettingShakeToStartSleepEnabled)
+        store(preferences.focusShieldEnabled, at: .appSettingFocusShieldEnabled)
+        store(preferences.macFocusAppBlockingEnabled, at: .appSettingMacFocusAppBlockingEnabled)
+        store(preferences.automaticPlaceCheckInEnabled, at: .appSettingAutomaticPlaceCheckInEnabled)
+        store(preferences.showTimelineTasksInDayPlanner, at: .appSettingShowTimelineTasksInDayPlanner)
+        store(
+            preferences.dayPlanCalendarListAssumedDoneCollapsedByDefault,
+            at: .appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault
+        )
+        store(
+            preferences.separateDailyRoutinesInTaskList,
+            at: .appSettingSeparateDailyRoutinesInTaskList
+        )
+        store(preferences.showTomorrowInTaskList, at: .appSettingShowTomorrowInTaskList)
+        store(preferences.macShowDoneCountInToolbar, at: .appSettingMacShowDoneCountInToolbar)
+        store(
+            preferences.separateTodosAndRoutinesInTagTaskListSections,
+            at: .appSettingSeparateTodosAndRoutinesInTagTaskListSections
+        )
+        store(
+            preferences.separateDeadlineStatusInTagTaskListSections,
+            at: .appSettingSeparateDeadlineStatusInTagTaskListSections
+        )
+        store(
+            preferences.notificationReminderHour,
+            at: NotificationPreferences.reminderHourDefaultsKey
+        )
+        store(
+            preferences.notificationReminderMinute,
+            at: NotificationPreferences.reminderMinuteDefaultsKey
+        )
+        store(
+            preferences.batteryRoutineThresholdPercent,
+            at: BatteryRoutinePreferences.thresholdPercentDefaultsKey
+        )
+        return didChange
     }
 }

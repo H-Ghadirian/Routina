@@ -24,7 +24,7 @@ struct HomeFeatureTaskLoadHandler<State: HomeFeatureTaskLoadState, Action> {
     var calendar: () -> Calendar = { .current }
     var refreshDisplays: (inout State) -> Void
     var syncSelectedTaskDetailState: (inout State) -> Void
-    var validateFilterState: (inout State) -> Void
+    var validateFilterState: (inout State) -> Bool
     var persistTemporaryViewState: (State) -> Void
     var refreshSelectedTaskDetailEffect: (State) -> Effect<Action>
     var addRoutineAction: (AddRoutineFeature.Action) -> Action
@@ -62,8 +62,9 @@ struct HomeFeatureTaskLoadHandler<State: HomeFeatureTaskLoadState, Action> {
         state.hasLoadedTaskSnapshot = true
         refreshDisplays(&state)
         syncSelectedTaskDetailState(&state)
-        validateFilterState(&state)
-        persistTemporaryViewState(state)
+        if validateFilterState(&state) {
+            persistTemporaryViewState(state)
+        }
 
         let detailRefreshEffect = refreshSelectedTaskDetailEffect(state)
         guard state.presentation.addRoutineState != nil else { return detailRefreshEffect }

@@ -18,7 +18,9 @@ struct HomeFeatureFilterMutationHandler<State: HomeFeatureFilterMutationState, A
     var setHideUnavailableRoutines: (Bool) -> Void
     var persistTemporaryViewState: (State) -> Void
 
-    func validateFilterState(_ state: inout State) {
+    @discardableResult
+    func validateFilterState(_ state: inout State) -> Bool {
+        let previousTaskFilters = state.taskFilters
         HomeDisplayFilterSupport.validateTaskFilters(
             taskFilters: &state.taskFilters,
             routineDisplays: state.routineDisplays,
@@ -28,6 +30,7 @@ struct HomeFeatureFilterMutationHandler<State: HomeFeatureFilterMutationState, A
             tags: \.tags,
             flags: \.flags
         )
+        return state.taskFilters != previousTaskFilters
     }
 
     func applyTaskFilterMutation(

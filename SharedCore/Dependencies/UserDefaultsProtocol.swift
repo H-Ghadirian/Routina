@@ -531,6 +531,39 @@ private final class CloudSettingsObserverBox: @unchecked Sendable {
     }
 }
 
+enum TemporaryViewStateDefaultsStore {
+    static func load(from defaults: UserDefaults = SharedDefaults.app) -> TemporaryViewState? {
+        guard let rawValue = defaults[.appSettingTemporaryViewState],
+              let data = rawValue.data(using: .utf8)
+        else {
+            return nil
+        }
+
+        return try? JSONDecoder().decode(TemporaryViewState.self, from: data)
+    }
+
+    @discardableResult
+    static func storeIfChanged(
+        _ state: TemporaryViewState?,
+        in defaults: UserDefaults = SharedDefaults.app
+    ) -> Bool {
+        if let state {
+            guard load(from: defaults) != state else { return false }
+            guard let data = try? JSONEncoder().encode(state),
+                  let rawValue = String(data: data, encoding: .utf8)
+            else {
+                return false
+            }
+            defaults[.appSettingTemporaryViewState] = rawValue
+            return true
+        }
+
+        guard defaults[.appSettingTemporaryViewState] != nil else { return false }
+        defaults[.appSettingTemporaryViewState] = nil
+        return true
+    }
+}
+
 extension AppSettingsClient {
     static let live = AppSettingsClient(
         notificationsEnabled: {
@@ -839,29 +872,10 @@ extension AppSettingsClient {
             )
         },
         temporaryViewState: {
-            guard let rawValue = SharedDefaults.app[.appSettingTemporaryViewState],
-                  let data = rawValue.data(using: .utf8)
-            else {
-                return nil
-            }
-
-            return try? JSONDecoder().decode(TemporaryViewState.self, from: data)
+            TemporaryViewStateDefaultsStore.load()
         },
         setTemporaryViewState: { state in
-            guard let state else {
-                SharedDefaults.app[.appSettingTemporaryViewState] = nil
-                AppSettingsPersistenceMirror.schedule()
-                return
-            }
-
-            guard let data = try? JSONEncoder().encode(state),
-                  let rawValue = String(data: data, encoding: .utf8)
-            else {
-                return
-            }
-
-            SharedDefaults.app[.appSettingTemporaryViewState] = rawValue
-            AppSettingsPersistenceMirror.schedule()
+            TemporaryViewStateDefaultsStore.storeIfChanged(state)
         },
         resetTemporaryViewState: {
             SharedDefaults.app[.appSettingHideUnavailableRoutines] = false

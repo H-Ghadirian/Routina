@@ -121,6 +121,22 @@ struct IOSScrollingPerformanceRegressionTests {
     }
 
     @Test
+    func homeTemporaryStateCannotScheduleDurablePreferenceSync() throws {
+        let settings = try Self.sourceFile("SharedCore/Dependencies/UserDefaultsProtocol.swift")
+        let setterStart = try #require(settings.range(of: "setTemporaryViewState: { state in"))
+        let resetStart = try #require(
+            settings.range(
+                of: "resetTemporaryViewState:",
+                range: setterStart.upperBound..<settings.endIndex
+            )
+        )
+        let setter = settings[setterStart.lowerBound..<resetStart.lowerBound]
+
+        #expect(setter.contains("TemporaryViewStateDefaultsStore.storeIfChanged(state)"))
+        #expect(!setter.contains("AppSettingsPersistenceMirror.schedule()"))
+    }
+
+    @Test
     func homeDefersItsTagCatalogUntilTheTagPickerOpens() throws {
         let platform = try Self.sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")
         let filters = try Self.sourceFile("iOS/Screens/Home/HomeFiltersSheetView.swift")
