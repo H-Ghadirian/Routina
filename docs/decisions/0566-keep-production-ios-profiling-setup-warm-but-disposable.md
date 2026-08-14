@@ -13,7 +13,7 @@
 A production iOS profiling launch took about 12 minutes before the app was
 ready on the physical device. Most of that delay came from a cold, isolated
 Release build that had to resolve package support, compile the application and
-Watch extension, sign the products, and generate matching symbols. An initial
+then-bundled Watch extension, sign the products, and generate matching symbols. An initial
 build invocation also lacked the Xcode filesystem access it needed, and the
 command wrapper returned before the underlying `xcodebuild` process finished.
 

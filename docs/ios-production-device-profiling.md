@@ -37,7 +37,7 @@ The warm-but-disposable setup is defined by
 
 The first fully isolated Release build can be slow because a new Derived Data
 folder has no package checkouts, compiled dependencies, module cache, iOS app,
-or Watch extension. A 2026-08-14 production profiling session took about 12
+or production widget extension. A 2026-08-14 production profiling session took about 12
 minutes to reach the launched app after it also made an avoidable sandboxed
 build attempt and treated a command-wrapper return as possible build
 completion while `xcodebuild` was still running.

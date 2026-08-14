@@ -16,8 +16,10 @@ struct RoutinaIOSRootScene: Scene {
             platformClients: .iOSLive
         )
         if !AppEnvironment.isAutomatedTestMode {
-            WatchRoutineSyncBridge.shared.startIfNeeded {
-                persistence.container.mainContext
+            if AppEnvironment.isDevelopmentAppVariant {
+                WatchRoutineSyncBridge.shared.startIfNeeded {
+                    persistence.container.mainContext
+                }
             }
             LocalBatteryRoutineMonitor.shared.startIfNeeded {
                 persistence.container.mainContext

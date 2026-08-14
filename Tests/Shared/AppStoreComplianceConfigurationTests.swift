@@ -207,6 +207,22 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
+    func iOSProductionDefersTheWatchCompanionUntilItsReleasePhase() throws {
+        let project = try Self.sourceFile("RoutinaiOS.xcodeproj/project.pbxproj")
+        let productionTarget = try Self.nativeTarget(named: "RoutinaiOSProd", in: project)
+
+        #expect(!productionTarget.contains("Embed Watch Content"))
+        #expect(!productionTarget.contains("5F1000192E90000100000001"))
+        #expect(project.contains("5F1000132E90000100000001 /* RoutinaWatchApp */ = {"))
+        #expect(project.contains("5F1000142E90000100000001 /* RoutinaWatchExtension */ = {"))
+
+        let rootScene = try Self.sourceFile("iOS/App/RoutinaIOSRootScene.swift")
+        #expect(rootScene.contains(
+            "if AppEnvironment.isDevelopmentAppVariant {\n                WatchRoutineSyncBridge.shared.startIfNeeded"
+        ))
+    }
+
+    @Test
     func productionDisablesEveryExperimentalPreference() {
         for key in RoutinaExperimentalFeaturePolicy.preferenceKeys {
             #expect(
@@ -266,6 +282,14 @@ struct AppStoreComplianceConfigurationTests {
             contentsOf: projectRoot.appendingPathComponent(relativePath),
             encoding: .utf8
         )
+    }
+
+    private static func nativeTarget(named name: String, in project: String) throws -> String {
+        let marker = "/* \(name) */ = {\n\t\t\tisa = PBXNativeTarget;"
+        let start = try #require(project.range(of: marker))
+        let suffix = project[start.lowerBound...]
+        let end = try #require(suffix.range(of: "\n\t\t};"))
+        return String(suffix[..<end.upperBound])
     }
 
     private static let projectRoot = URL(fileURLWithPath: #filePath)

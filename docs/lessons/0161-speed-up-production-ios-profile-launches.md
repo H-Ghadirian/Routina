@@ -12,7 +12,7 @@ Launching the production iOS app on a physical device for profiling took about
 The profiling build correctly used fresh isolated Derived Data, but that also
 put package checkout and artifact setup inside the disposable session folder.
 Xcode therefore performed a cold package and optimized Release build,
-including the Watch extension. An initial restricted invocation failed on
+including the then-bundled Watch extension. An initial restricted invocation failed on
 Xcode cache permissions, and the command wrapper returned while the real
 `xcodebuild` process was still active, leading to premature product checks and
 manual polling.
