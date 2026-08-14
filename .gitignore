@@ -6,6 +6,7 @@
 /build/XCBuildData/
 *.xcresult/
 .xcresulttmp/
+.codex/IOSBuildPackageCache/
 
 # Per-app Firebase registration files (provided outside source control)
 Config/Firebase/GoogleService-Info-*.plist

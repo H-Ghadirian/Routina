@@ -56,6 +56,8 @@ struct HomeTCAView: View {
     @State var isCompactHeaderHidden = false
     @State var areTaskListModeActionsExpanded = false
     @State var isRefreshScheduled = false
+    @State var hasDeferredRoutineUpdateRefresh = false
+    @State var deferredRoutineUpdateRefreshTask: Task<Void, Never>?
     @State var needsRefreshWhenActive = false
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var planningDateTaskID: UUID?
@@ -106,20 +108,9 @@ homeContent
                         onSave: savePlanningDatePicker
                     )
                 }
-                .task {
-                    guard isActive else { return }
-                    refreshFileAttachmentTaskIDs()
-                }
                 .task(id: taskListPresentationRefreshToken) {
                     guard isActive else { return }
                     await refreshTaskListPresentation()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-                    guard isActive else {
-                        needsRefreshWhenActive = true
-                        return
-                    }
-                    refreshFileAttachmentTaskIDs()
                 }
         )
     }
@@ -170,7 +161,7 @@ homeContent
         taskListPresentationRevision &+= 1
     }
 
-    private func refreshFileAttachmentTaskIDs() {
+    func refreshFileAttachmentTaskIDs() {
         do {
             let attachments = try modelContext.fetch(FetchDescriptor<RoutineAttachment>())
             store.send(.fileAttachmentTaskIDsChanged(Set(attachments.map(\.taskID))))

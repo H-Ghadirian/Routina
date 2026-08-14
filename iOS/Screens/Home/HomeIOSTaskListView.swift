@@ -128,6 +128,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
             max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
         } action: { oldOffset, newOffset in
             if oldOffset != newOffset {
+                RoutinaIOSHomeScrollInteractionGate.recordScrollEvent()
                 RoutinaPerformanceProfiler.shared.recordInteraction(
                     isTaskSearchActive
                         ? .searchResultsScrolled

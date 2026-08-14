@@ -5,6 +5,9 @@ shipping iOS app on a physical device. It records the safeguards that avoid
 profiling a development build, attaching to the wrong process, or interpreting
 an empty trace.
 
+The warm-but-disposable setup is defined by
+[Decision 0566](decisions/0566-keep-production-ios-profiling-setup-warm-but-disposable.md).
+
 ## Guardrails
 
 - Ask the device owner before taking a screenshot, screen recording, or screen
@@ -25,6 +28,50 @@ an empty trace.
 - Keep every build product, trace, export, and temporary analysis helper under
   a uniquely named project-local `.codex/` profiling path, and delete them
   after the investigation.
+- A shared project-local Swift package cache may persist at
+  `.codex/IOSBuildPackageCache`. It must contain package download/repository
+  cache data only—never app products, dSYMs, traces, exports, or analysis
+  helpers.
+
+## Fast start without weakening verification
+
+The first fully isolated Release build can be slow because a new Derived Data
+folder has no package checkouts, compiled dependencies, module cache, iOS app,
+or Watch extension. A 2026-08-14 production profiling session took about 12
+minutes to reach the launched app after it also made an avoidable sandboxed
+build attempt and treated a command-wrapper return as possible build
+completion while `xcodebuild` was still running.
+
+Use these rules on later sessions:
+
+1. Give `xcodebuild`, `devicectl`, and `xctrace` their required Xcode cache,
+   signing, and device-service access on the first invocation. Do not make a
+   restricted build attempt that is expected to fail and then repeat it.
+2. Keep the session's Derived Data fresh, but pass the persistent
+   `.codex/IOSBuildPackageCache` through `-packageCachePath`. Also pass
+   `-skipPackageUpdates` and `-disableAutomaticPackageResolution` so the build
+   follows the checked-in `Package.resolved` state without a speculative
+   update.
+3. Do not point `-clonedSourcePackagesDirPath` at a separate shared folder.
+   Routina's Crashlytics build phase currently resolves its upload helper from
+   the session Derived Data's `SourcePackages` directory. A separate checkout
+   directory needs an independently implemented and verified build-system
+   change before it is safe.
+4. Wait for the actual `xcodebuild` PID or the original execution session to
+   exit. A tool wrapper returning early is not completion. Do not probe for a
+   partial `.app` while the build is still compiling.
+5. As soon as the build exits successfully, validate, install, launch, and
+   query the numeric PID without an idle gap.
+6. Reuse that one validated app and matching dSYM for every baseline and
+   scenario trace in the same unchanged-worktree session. Rebuild only after a
+   source, configuration, dependency, signing, or relevant worktree change.
+
+The shared package cache removes repeated dependency download/repository work;
+it does not remove the clean optimized Release compilation required by this
+runbook. If timing output still shows compilation as the dominant delay, do
+not retain profiling Derived Data as an undocumented shortcut. Improving that
+step requires a deliberate compiler-cache/build-system decision that preserves
+the exact-binary and cleanup guarantees below.
 
 ## 1. Identify the exact production target and device
 
@@ -46,6 +93,7 @@ device:
 DEVICE_CONTROL_ID='<devicectl identifier>'
 DEVICE_TRACE_UDID='<xctrace UDID>'
 PROFILE_ROOT='/Users/ghadirianh/Routina/.codex/IOSProductionProfile'
+PACKAGE_CACHE_ROOT='/Users/ghadirianh/Routina/.codex/IOSBuildPackageCache'
 APP_PATH="$PROFILE_ROOT/Build/Products/Release-iphoneos/Routinam.app"
 ```
 
@@ -64,17 +112,25 @@ building. Do not silently remove, edit, or exclude untracked work.
 Build the production scheme into a fresh, profiling-only Derived Data folder:
 
 ```zsh
+mkdir -p "$PACKAGE_CACHE_ROOT"
+
 xcodebuild build -quiet \
   -project /Users/ghadirianh/Routina/RoutinaiOS.xcodeproj \
   -scheme RoutinaiOSProd \
   -configuration Release \
   -destination "id=$DEVICE_TRACE_UDID" \
-  -derivedDataPath "$PROFILE_ROOT"
+  -derivedDataPath "$PROFILE_ROOT" \
+  -packageCachePath "$PACKAGE_CACHE_ROOT" \
+  -skipPackageUpdates \
+  -disableAutomaticPackageResolution \
+  -showBuildTimingSummary
 ```
 
 Do not assume a command wrapper returning means the build is finished. Wait for
-the actual `xcodebuild` process to end, then verify the product before
-installing it:
+the actual `xcodebuild` process or its original execution session to end. If a
+wrapper detaches, find the exact build PID once and wait on it instead of
+repeatedly guessing from the presence of partial output. Then verify the
+product before installing it:
 
 ```zsh
 test -x "$APP_PATH/Routinam"
@@ -128,6 +184,12 @@ xcrun xctrace record \
   --time-limit 30s \
   --no-prompt
 ```
+
+Retain the execution session and wait for the actual `xctrace` process to exit.
+`Reached specified time limit, ending recording` means sampling has stopped,
+not that the trace bundle is ready. Do not export until the process reports
+`Output file saved` and exits successfully; exporting during the save phase can
+produce a missing-template document or an invalid empty stream.
 
 ## 5. Validate the trace before interpreting it
 
@@ -202,3 +264,5 @@ test ! -e /Users/ghadirianh/Routina/.codex/IOSProductionProfile
 
 The final command must succeed. Keep every session artifact under this one
 dedicated directory; do not scan for or remove another investigation's files.
+Do not remove `.codex/IOSBuildPackageCache` as part of session cleanup because
+it contains no build product, symbol, trace, export, or investigation result.

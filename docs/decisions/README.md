@@ -19,6 +19,10 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0567](0567-defer-ios-home-refreshes-until-scrolling-is-quiet.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md), and [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md):** Active iOS Home coalesces persistence notifications, retains one pending invalidation while its list is moving, and reloads tasks plus attachment IDs only after the scroll-quiet window.
+
+- **[0566](0566-keep-production-ios-profiling-setup-warm-but-disposable.md) refines [0542](0542-standardize-production-ios-profiling-on-a-physical-device.md) and [0547](0547-require-trustworthy-artifacts-for-physical-ios-profiling.md):** Production iOS profiling keeps session build products and traces disposable while retaining only a shared package-support cache, waits for actual build completion, and reuses one validated build across unchanged-worktree traces.
+
 - **[0565](0565-collapse-mac-task-ladder-value-sections.md) refines [0561](0561-add-separate-mac-task-ranking-ladder.md):** Mac Task Ladder gives each metric-value section an independent, window-local disclosure without changing the cached ranking presentation or task ranking data.
 
 - **[0564](0564-group-mac-task-priority-controls.md) refines [0563](0563-present-importance-and-urgency-as-independent-task-controls.md):** Mac Task Detail groups its independently editable Importance, Urgency, Pressure, and Thinking needed controls inside the expandable Priority card, preserving their separate values and derived-priority behavior.
@@ -661,6 +665,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0567](0567-defer-ios-home-refreshes-until-scrolling-is-quiet.md) | Defer iOS Home Refreshes Until Scrolling Is Quiet | Accepted | 2026-08-14 |
+| [0566](0566-keep-production-ios-profiling-setup-warm-but-disposable.md) | Keep Production iOS Profiling Setup Warm but Disposable | Accepted | 2026-08-14 |
 | [0558](0558-activate-ios-search-on-tab-selection.md) | Activate iOS Search on Tab Selection | Accepted | 2026-08-12 |
 | [0555](0555-preserve-the-previous-debug-performance-run.md) | Preserve the Previous Debug Performance Run | Accepted | 2026-08-12 |
 | [0554](0554-correlate-debug-stalls-with-safe-interaction-trails.md) | Correlate Debug Stalls With Safe Interaction Trails | Accepted | 2026-08-12 |
