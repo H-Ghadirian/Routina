@@ -656,7 +656,8 @@ extension TaskDetailFeature {
             storyPoints: request.storyPoints,
             focusModeEnabled: request.focusModeEnabled,
             trackingCadenceEnabled: request.trackingCadenceEnabled,
-            trackingNudgesEnabled: request.trackingNudgesEnabled
+            trackingNudgesEnabled: request.trackingNudgesEnabled,
+            taskLadderGroupEnabled: request.taskLadderGroupEnabled
         )
     }
 
@@ -706,7 +707,8 @@ extension TaskDetailFeature {
         storyPoints: Int?,
         focusModeEnabled: Bool,
         trackingCadenceEnabled: Bool,
-        trackingNudgesEnabled: Bool
+        trackingNudgesEnabled: Bool,
+        taskLadderGroupEnabled: Bool
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -869,6 +871,10 @@ extension TaskDetailFeature {
                     in: context
                 )
                 try context.save()
+                var organization = appSettingsClient.taskLadderOrganization()
+                if organization.setTaskGroupEnabled(taskLadderGroupEnabled, taskID: taskID) {
+                    appSettingsClient.setTaskLadderOrganization(organization)
+                }
                 NotificationCenter.default.postRoutineDidUpdate()
                 if !NotificationCoordinator.shouldScheduleNotification(
                     for: task,

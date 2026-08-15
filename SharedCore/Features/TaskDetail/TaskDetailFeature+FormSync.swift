@@ -2,7 +2,15 @@ import ComposableArchitecture
 import Foundation
 
 extension TaskDetailFeature {
+    func syncTaskLadderGroupState(_ state: inout State) {
+        let organization = appSettingsClient.taskLadderOrganization()
+        state.taskLadderGroupHasChildren = !organization.childTaskIDs(of: .task(state.task.id)).isEmpty
+        state.taskLadderGroupEnabled = organization.isTaskGroup(taskID: state.task.id)
+        state.editTaskLadderGroupEnabled = state.taskLadderGroupEnabled
+    }
+
     func syncEditFormFromTask(_ state: inout State) {
+        syncTaskLadderGroupState(&state)
         state.editRoutineName = state.task.name ?? ""
         state.editCustomTaskSectionID = state.task.customTaskSectionID
         state.editRoutineEmoji = CalendarTaskImportSupport.displayEmoji(for: state.task.emoji) ?? "✨"

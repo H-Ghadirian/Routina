@@ -243,13 +243,15 @@ struct TaskRankingPresentation: Equatable {
         let isRepeating: Bool
         let childCount: Int
         let isGroup: Bool
+        let isTaskGroup: Bool
         let inheritsMetricValue: Bool
 
-        init(task: RoutineTask, childCount: Int) {
+        init(task: RoutineTask, childCount: Int, isTaskGroup: Bool = false) {
             tagLabels = task.tags.map { "#\($0)" }
             isRepeating = !task.isOneOffTask
             self.childCount = childCount
             isGroup = false
+            self.isTaskGroup = isTaskGroup
             inheritsMetricValue = false
         }
 
@@ -258,6 +260,7 @@ struct TaskRankingPresentation: Equatable {
             isRepeating = false
             self.childCount = childCount
             isGroup = true
+            isTaskGroup = false
             inheritsMetricValue = group.inheritsValue(for: metric)
         }
     }
@@ -277,6 +280,7 @@ struct TaskRankingPresentation: Equatable {
     let scopePath: [UUID]
     let sections: [Section]
     let rowMetadataByTaskID: [UUID: RowMetadata]
+    let eligibleTaskIDs: Set<UUID>
 
     var scopeParentTaskID: UUID? {
         scopePath.last
@@ -296,7 +300,8 @@ struct TaskRankingPresentation: Equatable {
             isReversed: isReversed,
             scopePath: [],
             sections: [],
-            rowMetadataByTaskID: [:]
+            rowMetadataByTaskID: [:],
+            eligibleTaskIDs: []
         )
     }
 
@@ -330,6 +335,7 @@ struct TaskRankingPresentation: Equatable {
             eligibleTasks.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
+        let eligibleTaskIDs = Set(eligibleTasksByID.keys)
         let groupByID = Dictionary(
             uniqueKeysWithValues: organization.groups.map { ($0.id, $0) }
         )
@@ -370,7 +376,6 @@ struct TaskRankingPresentation: Equatable {
                 )
             }
         }
-        let eligibleTaskIDs = Set(eligibleTasks.map(\.id))
         let rowMetadataByTaskID = Dictionary(
             uniqueKeysWithValues: activeTasks.map { task in
                 let nodeID: TaskLadderNodeID = groupByID[task.id] == nil
@@ -394,7 +399,8 @@ struct TaskRankingPresentation: Equatable {
                     task.id,
                     RowMetadata(
                         task: task,
-                        childCount: childCount
+                        childCount: childCount,
+                        isTaskGroup: organization.isTaskGroup(taskID: task.id)
                     )
                 )
             }
@@ -406,7 +412,8 @@ struct TaskRankingPresentation: Equatable {
                 metric: metric,
                 isReversed: isReversed,
                 scopePath: scopePath,
-                rowMetadataByTaskID: rowMetadataByTaskID
+                rowMetadataByTaskID: rowMetadataByTaskID,
+                eligibleTaskIDs: eligibleTaskIDs
             )
         }
 
@@ -469,7 +476,8 @@ struct TaskRankingPresentation: Equatable {
             isReversed: isReversed,
             scopePath: scopePath,
             sections: sections + missingSection,
-            rowMetadataByTaskID: rowMetadataByTaskID
+            rowMetadataByTaskID: rowMetadataByTaskID,
+            eligibleTaskIDs: eligibleTaskIDs
         )
     }
 
@@ -478,7 +486,8 @@ struct TaskRankingPresentation: Equatable {
         metric: TaskRankingMetric,
         isReversed: Bool,
         scopePath: [UUID],
-        rowMetadataByTaskID: [UUID: RowMetadata]
+        rowMetadataByTaskID: [UUID: RowMetadata],
+        eligibleTaskIDs: Set<UUID>
     ) -> Self {
         let knownTasks = activeTasks.compactMap { task -> (RoutineTask, Int)? in
             task.estimatedDurationMinutes.map { (task, $0) }
@@ -531,7 +540,8 @@ struct TaskRankingPresentation: Equatable {
             isReversed: isReversed,
             scopePath: scopePath,
             sections: sections,
-            rowMetadataByTaskID: rowMetadataByTaskID
+            rowMetadataByTaskID: rowMetadataByTaskID,
+            eligibleTaskIDs: eligibleTaskIDs
         )
     }
 

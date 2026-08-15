@@ -356,7 +356,7 @@ struct TaskLadderPlacementEditorSheet: View {
         .buttonStyle(.plain)
     }
 
-    private static func completionBehavior(
+    fileprivate static func completionBehavior(
         for task: RoutineTask,
         parent: TaskLadderNodeID?,
         tasks: [RoutineTask]
@@ -370,6 +370,225 @@ struct TaskLadderPlacementEditorSheet: View {
             return TaskLadderCompletionBehavior(relationshipKind: inverse.kind.inverse)
         }
         return .none
+    }
+}
+
+struct TaskLadderRepeatingTaskGroupEditorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let tasks: [RoutineTask]
+    let organization: TaskLadderOrganization
+    let eligibleTaskIDs: Set<UUID>
+    let onSave: (UUID, UUID, TaskLadderCompletionBehavior) -> Void
+
+    @State private var selectedParentTaskID: UUID?
+    @State private var selectedChildTaskID: UUID?
+    @State private var completionBehavior = TaskLadderCompletionBehavior.none
+    @State private var searchText = ""
+
+    init(
+        tasks: [RoutineTask],
+        organization: TaskLadderOrganization,
+        eligibleTaskIDs: Set<UUID>,
+        initialParentTaskID: UUID? = nil,
+        onSave: @escaping (UUID, UUID, TaskLadderCompletionBehavior) -> Void
+    ) {
+        self.tasks = tasks
+        self.organization = organization
+        self.eligibleTaskIDs = eligibleTaskIDs
+        self.onSave = onSave
+        _selectedParentTaskID = State(initialValue: initialParentTaskID)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Use a Repeating Task as a Group")
+                .font(.title2.weight(.semibold))
+
+            Text("The repeating task keeps its schedule, completion action, and history. Choose a task to compare inside it, then decide separately whether that task can complete the repeating task.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            if repeatingTasks.isEmpty {
+                ContentUnavailableView(
+                    "No repeating tasks",
+                    systemImage: "repeat",
+                    description: Text("Create a repeating task before using one as a Task Ladder group.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Form {
+                    Picker("Repeating task", selection: $selectedParentTaskID) {
+                        Text("Choose a repeating task")
+                            .tag(nil as UUID?)
+                        ForEach(repeatingTasks) { task in
+                            Text("\(task.emoji ?? "✨") \(task.name ?? "Untitled task")")
+                                .tag(task.id as UUID?)
+                        }
+                    }
+                }
+                .formStyle(.grouped)
+                .frame(height: 86)
+
+                TextField("Search tasks to add", text: $searchText)
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(selectedParentTask == nil)
+
+                if let parentTask = selectedParentTask {
+                    if filteredChildTasks.isEmpty {
+                        ContentUnavailableView(
+                            "No tasks to add",
+                            systemImage: "square.stack.3d.up.slash",
+                            description: Text("Every valid task is already inside \(parentTask.name ?? "this repeating task"), or no task matches the search.")
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        List(filteredChildTasks) { candidate in
+                            childTaskRow(candidate, parentTask: parentTask)
+                        }
+                        .listStyle(.inset)
+                    }
+                } else {
+                    ContentUnavailableView(
+                        "Choose a repeating task",
+                        systemImage: "repeat.circle",
+                        description: Text("It will remain a real repeating task while also containing its own nested Task Ladder.")
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+
+                if let parentTask = selectedParentTask,
+                   let childTask = selectedChildTask {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("When \(childTask.name ?? "this task") is completed")
+                            .font(.headline)
+                        Picker("Completion behavior", selection: $completionBehavior) {
+                            Text("Does not complete \(parentTask.name ?? "repeating task")")
+                                .tag(TaskLadderCompletionBehavior.none)
+                            Text("Can complete \(parentTask.name ?? "repeating task") — ask me")
+                                .tag(TaskLadderCompletionBehavior.canComplete)
+                            Text("Completes \(parentTask.name ?? "repeating task") automatically")
+                                .tag(TaskLadderCompletionBehavior.completes)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.radioGroup)
+                    }
+                    .padding(12)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                }
+            }
+
+            HStack {
+                Spacer()
+                Button("Cancel", role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Add Task") {
+                    guard let parentTaskID = selectedParentTaskID,
+                          let childTaskID = selectedChildTaskID else { return }
+                    onSave(childTaskID, parentTaskID, completionBehavior)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(selectedParentTaskID == nil || selectedChildTaskID == nil)
+            }
+        }
+        .padding(20)
+        .frame(width: 620, height: 700)
+        .onChange(of: selectedParentTaskID) { _, _ in
+            selectedChildTaskID = nil
+            completionBehavior = .none
+            searchText = ""
+        }
+    }
+
+    private var repeatingTasks: [RoutineTask] {
+        tasks
+            .filter { !$0.isOneOffTask && eligibleTaskIDs.contains($0.id) }
+            .sorted(by: taskNameSort)
+    }
+
+    private var selectedParentTask: RoutineTask? {
+        guard let selectedParentTaskID else { return nil }
+        return repeatingTasks.first(where: { $0.id == selectedParentTaskID })
+    }
+
+    private var selectedChildTask: RoutineTask? {
+        guard let selectedChildTaskID else { return nil }
+        return tasks.first(where: { $0.id == selectedChildTaskID })
+    }
+
+    private var filteredChildTasks: [RoutineTask] {
+        guard let parentTask = selectedParentTask else { return [] }
+        let validTaskIDs = Set(tasks.map(\.id))
+        let parentNodeID = TaskLadderNodeID.task(parentTask.id)
+        return tasks
+            .filter { candidate in
+                candidate.id != parentTask.id
+                    && eligibleTaskIDs.contains(candidate.id)
+                    && organization.parent(of: candidate.id) != parentNodeID
+                    && organization.validParents(
+                        for: candidate.id,
+                        validTaskIDs: validTaskIDs
+                    ).contains(parentNodeID)
+                    && matchesSearch(candidate.name ?? "")
+            }
+            .sorted(by: taskNameSort)
+    }
+
+    private func childTaskRow(
+        _ candidate: RoutineTask,
+        parentTask: RoutineTask
+    ) -> some View {
+        Button {
+            selectedChildTaskID = candidate.id
+            completionBehavior = TaskLadderPlacementEditorSheet.completionBehavior(
+                for: candidate,
+                parent: .task(parentTask.id),
+                tasks: tasks
+            )
+        } label: {
+            HStack(spacing: 10) {
+                Text(candidate.emoji ?? "✨")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(candidate.name ?? "Untitled task")
+                    Text(childLocationDescription(for: candidate))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if selectedChildTaskID == candidate.id {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.tint)
+                }
+            }
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func childLocationDescription(for task: RoutineTask) -> String {
+        guard let parent = organization.parent(of: task.id) else {
+            return "Currently in the general Task Ladder"
+        }
+        switch parent {
+        case let .group(groupID):
+            let groupName = organization.group(id: groupID)?.displayName ?? "another group"
+            return "Move from \(groupName)"
+        case let .task(taskID):
+            let taskName = tasks.first(where: { $0.id == taskID })?.name ?? "another task"
+            return "Move from \(taskName)"
+        }
+    }
+
+    private func matchesSearch(_ value: String) -> Bool {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return query.isEmpty || value.localizedCaseInsensitiveContains(query)
+    }
+
+    private func taskNameSort(_ lhs: RoutineTask, _ rhs: RoutineTask) -> Bool {
+        (lhs.name ?? "").localizedCaseInsensitiveCompare(rhs.name ?? "") == .orderedAscending
     }
 }
 

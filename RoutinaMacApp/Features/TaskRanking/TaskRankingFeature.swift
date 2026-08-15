@@ -166,7 +166,7 @@ struct TaskRankingFeature {
             case let .childLadderOpened(nodeID):
                 guard !state.scopePath.contains(nodeID),
                       let metadata = state.presentation.rowMetadataByTaskID[nodeID],
-                      metadata.childCount > 0 || metadata.isGroup else {
+                      metadata.childCount > 0 || metadata.isGroup || metadata.isTaskGroup else {
                     return .none
                 }
                 state.scopePath.append(nodeID)
@@ -232,6 +232,7 @@ struct TaskRankingFeature {
                     return .none
                 }
                 if case let .task(parentTaskID)? = parent {
+                    state.organization.setTaskGroupEnabled(true, taskID: parentTaskID)
                     updateCompletionBehavior(
                         behavior,
                         sourceTaskID: taskID,
@@ -256,6 +257,8 @@ struct TaskRankingFeature {
                     .map(Action.taskDetail)
                     .cancellable(id: CancelID.taskDetail(taskID))
                 state.taskDetailState = taskDetailState
+                state.organization = appSettingsClient.taskLadderOrganization()
+                    .sanitized(validTaskIDs: Set(state.tasks.map(\.id)))
                 if let taskIndex = state.tasks.firstIndex(where: { $0.id == taskID }) {
                     state.tasks[taskIndex] = taskDetailState.task.detachedCopy()
                     rebuildPresentation(&state)

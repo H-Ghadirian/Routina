@@ -62,6 +62,7 @@ struct TaskRankingPresentationTests {
         #expect(presentation.sections.map(\.tasks.count) == [1, 1, 1])
         #expect(presentation.sections.last?.tasks.map(\.id) == [unknown.id])
         #expect(presentation.taskCount == 3)
+        #expect(presentation.eligibleTaskIDs == Set([high.id, medium.id, unknown.id]))
         #expect(!presentation.sections.contains { section in
             section.tasks.contains(where: { $0.id == blocked.id })
         })
@@ -160,6 +161,25 @@ struct TaskRankingPresentationTests {
         #expect(Set(nested.sections.flatMap(\.tasks).map(\.id)) == Set([walk.id, gym.id, run.id]))
         #expect(nested.scopeParentTaskID == exercise.id)
         #expect(nested.taskCount == 3)
+    }
+
+    @Test
+    func explicitlyEnabledRepeatingTaskGroupIsOpenableBeforeItHasChildren() {
+        let routine = RoutineTask(name: "Exercise", pressure: .medium)
+        let organization = TaskLadderOrganization(taskGroupIDs: [routine.id])
+
+        let presentation = TaskRankingPresentation.make(
+            tasks: [routine],
+            organization: organization,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(presentation.rowMetadataByTaskID[routine.id]?.isTaskGroup == true)
+        #expect(presentation.rowMetadataByTaskID[routine.id]?.childCount == 0)
     }
 
     @Test
@@ -515,6 +535,26 @@ struct TaskRankingPresentationTests {
         #expect(source.contains("Inherit (highest task value)"))
         #expect(source.contains("group.setInheritsValue(true, for: metric)"))
         #expect(source.contains("group's actionable tasks"))
+    }
+
+    @Test
+    func taskLadderOffersDirectRepeatingTaskGroupFlow() throws {
+        let rankingSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+        let organizationSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
+        )
+
+        #expect(rankingSource.contains("Use Repeating Task as Group…"))
+        #expect(rankingSource.contains("Add Task to This Group…"))
+        #expect(rankingSource.contains("if !task.isOneOffTask"))
+        #expect(rankingSource.contains(".taskPlacementSaved("))
+        #expect(rankingSource.contains(".task(parentTaskID)"))
+        #expect(rankingSource.contains(".childLadderOpened(parentTaskID)"))
+        #expect(organizationSource.contains("The repeating task keeps its schedule, completion action, and history."))
+        #expect(organizationSource.contains("organization.validParents("))
+        #expect(organizationSource.contains("TaskLadderPlacementEditorSheet.completionBehavior("))
     }
 
     @Test

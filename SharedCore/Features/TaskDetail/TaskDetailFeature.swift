@@ -128,6 +128,9 @@ struct TaskDetailFeature: Reducer {
         var editFocusModeEnabled: Bool = false
         var editTrackingCadenceEnabled: Bool = true
         var editTrackingNudgesEnabled: Bool = true
+        var taskLadderGroupEnabled: Bool = false
+        var taskLadderGroupHasChildren: Bool = false
+        var editTaskLadderGroupEnabled: Bool = false
         var isDeleteConfirmationPresented: Bool = false
         var isUndoCompletionConfirmationPresented: Bool = false
         var isManualCompletionConfirmationPresented: Bool = false
@@ -464,6 +467,8 @@ struct TaskDetailFeature: Reducer {
         case editFocusModeEnabledChanged(Bool)
         case editTrackingCadenceEnabledChanged(Bool)
         case editTrackingNudgesEnabledChanged(Bool)
+        case taskLadderGroupEnabledChanged(Bool)
+        case editTaskLadderGroupEnabledChanged(Bool)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editRecurrenceEditorModeChanged(RoutineRecurrenceEditorMode)
@@ -1748,6 +1753,23 @@ struct TaskDetailFeature: Reducer {
             state.editTrackingNudgesEnabled = isEnabled
             return .none
 
+        case let .taskLadderGroupEnabledChanged(isEnabled):
+            var organization = appSettingsClient.taskLadderOrganization()
+            guard organization.setTaskGroupEnabled(isEnabled, taskID: state.task.id) else {
+                state.taskLadderGroupEnabled = organization.isTaskGroup(taskID: state.task.id)
+                state.editTaskLadderGroupEnabled = state.taskLadderGroupEnabled
+                return .none
+            }
+            appSettingsClient.setTaskLadderOrganization(organization)
+            state.taskLadderGroupEnabled = organization.isTaskGroup(taskID: state.task.id)
+            state.editTaskLadderGroupEnabled = state.taskLadderGroupEnabled
+            return .none
+
+        case let .editTaskLadderGroupEnabledChanged(isEnabled):
+            guard isEnabled || !state.taskLadderGroupHasChildren else { return .none }
+            state.editTaskLadderGroupEnabled = isEnabled
+            return .none
+
         case let .editFrequencyChanged(frequency):
             return recurrenceEditActionHandler().editFrequencyChanged(frequency, state: &state)
 
@@ -1942,6 +1964,7 @@ struct TaskDetailFeature: Reducer {
             if state.selectedDate == nil {
                 state.selectedDate = calendar.startOfDay(for: now)
             }
+            syncTaskLadderGroupState(&state)
             updateDerivedState(&state)
             return .concatenate(
                 state.hasPreloadedEditContext

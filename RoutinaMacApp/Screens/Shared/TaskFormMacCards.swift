@@ -817,6 +817,34 @@ struct TaskFormMacBehaviorCard: View {
         }
         .animation(.easeInOut(duration: 0.18), value: hasScheduleDetails)
         .animation(.easeInOut(duration: 0.18), value: planningPlacement)
+
+        Divider()
+        taskLadderGroupControl
+    }
+
+    private var taskLadderGroupControl: some View {
+        TaskFormMacControlBlock(title: "Task Ladder") {
+            VStack(alignment: .leading, spacing: 7) {
+                Toggle("Use as Task Ladder group", isOn: model.taskLadderGroupEnabled)
+                    .toggleStyle(.switch)
+                    .disabled(
+                        model.taskLadderGroupEnabled.wrappedValue
+                            && !model.canDisableTaskLadderGroup
+                    )
+
+                Text(taskLadderGroupHelpText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var taskLadderGroupHelpText: String {
+        if model.taskLadderGroupEnabled.wrappedValue && !model.canDisableTaskLadderGroup {
+            return "Move its nested tasks elsewhere before turning this group off."
+        }
+        return "Give this repeating task its own nested ladder without changing how it repeats or completes."
     }
 
     private var scheduleDetailsDisclosure: some View {

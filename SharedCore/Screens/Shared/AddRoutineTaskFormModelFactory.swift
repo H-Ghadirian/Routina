@@ -46,6 +46,10 @@ struct AddRoutineTaskFormModelFactory {
             nameValidationMessage: store.organization.nameValidationMessage,
             onApplySmartName: { store.send(.applyQuickAddDraftFromName) },
             taskType: binding(get: { store.taskType }, send: AddRoutineFeature.Action.taskTypeChanged),
+            taskLadderGroupEnabled: binding(
+                get: { store.basics.taskLadderGroupEnabled },
+                send: AddRoutineFeature.Action.taskLadderGroupEnabledChanged
+            ),
             customTaskSectionID: binding(
                 get: { store.organization.customTaskSectionID },
                 send: AddRoutineFeature.Action.customTaskSectionChanged

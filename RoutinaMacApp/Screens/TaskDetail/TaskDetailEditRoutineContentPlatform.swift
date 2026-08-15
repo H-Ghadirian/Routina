@@ -46,6 +46,11 @@ struct TaskDetailEditRoutineContent: View {
             ),
             nameValidationMessage: nil,
             taskType: taskTypeBinding,
+            taskLadderGroupEnabled: Binding(
+                get: { store.editTaskLadderGroupEnabled },
+                set: { store.send(.editTaskLadderGroupEnabledChanged($0)) }
+            ),
+            canDisableTaskLadderGroup: !store.taskLadderGroupHasChildren,
             customTaskSectionID: Binding(
                 get: { store.editCustomTaskSectionID },
                 set: { store.send(.editCustomTaskSectionChanged($0)) }

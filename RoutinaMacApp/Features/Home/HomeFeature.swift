@@ -875,6 +875,11 @@ struct HomeFeature {
                 await self.notificationClient.schedule(payload)
             },
             savedAction: { .routineSavedSuccessfully($0) },
+            updateTaskLadderGroup: { taskID, isEnabled in
+                var organization = appSettingsClient.taskLadderOrganization()
+                guard organization.setTaskGroupEnabled(isEnabled, taskID: taskID) else { return }
+                appSettingsClient.setTaskLadderOrganization(organization)
+            },
             subscriptionRequiredAction: { snapshot, request in
                 .subscriptionRequired(snapshot, request)
             },

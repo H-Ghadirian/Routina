@@ -68,6 +68,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled = false
+    var taskLadderGroupEnabled: Bool?
     var routineTags: [String] = []
     var routineFlags: [String]?
     var routineGoals: [RoutineGoalSummary] = []
@@ -143,6 +144,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         actualDurationMinutes = basics.actualDurationMinutes
         storyPoints = basics.storyPoints
         focusModeEnabled = basics.focusModeEnabled
+        taskLadderGroupEnabled = basics.taskLadderGroupEnabled ? true : nil
         routineTags = organization.routineTags
         routineFlags = organization.routineFlags
         routineGoals = organization.routineGoals
@@ -207,6 +209,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             || actualDurationMinutes != nil
             || storyPoints != nil
             || focusModeEnabled
+            || taskLadderGroupEnabled == true
             || !routineTags.isEmpty
             || !(routineFlags ?? []).isEmpty
             || !routineGoals.isEmpty
@@ -279,6 +282,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         state.basics.actualDurationMinutes = actualDurationMinutes
         state.basics.storyPoints = storyPoints
         state.basics.focusModeEnabled = focusModeEnabled
+        state.basics.taskLadderGroupEnabled = scheduleMode.taskType == .todo
+            ? false
+            : (taskLadderGroupEnabled ?? false)
         state.organization.routineTags = RoutineTag.deduplicated(
             routineTags,
             preferredTags: state.organization.availableTags

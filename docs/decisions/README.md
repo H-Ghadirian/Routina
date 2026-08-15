@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0576](0576-offer-direct-repeating-task-ladder-grouping.md) refines [0574](0574-separate-task-ladder-placement-from-completion.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** A repeating task can be explicitly activated as a Task Ladder group from Add Task, Edit Task, Task Details, or the Ladder itself, including before it has children, while remaining a real repeating task.
+
 - **[0575](0575-inherit-task-ladder-group-values-from-actionable-tasks.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0574](0574-separate-task-ladder-placement-from-completion.md):** Each categorical Task Ladder group value can independently inherit the highest explicit value among its currently actionable direct tasks, with the result derived in the cached presentation snapshot.
 
 - **[0574](0574-separate-task-ladder-placement-from-completion.md) supersedes [0572](0572-nest-completion-options-in-mac-task-ladder.md) and refines [0409](0409-add-manual-can-complete-task-links.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0571](0571-show-task-identity-metadata-in-mac-task-ladder.md):** Task Ladder placement is independent from completion rules; normal tasks can be parents, container-only groups such as Company never complete, and `Can complete` / `Completes` retain manual / automatic fulfillment without implying nesting.
@@ -683,6 +685,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0576](0576-offer-direct-repeating-task-ladder-grouping.md) | Offer Direct Repeating-Task Ladder Activation | Accepted | 2026-08-15 |
 | [0575](0575-inherit-task-ladder-group-values-from-actionable-tasks.md) | Inherit Task Ladder Group Values From Actionable Tasks | Accepted | 2026-08-15 |
 | [0574](0574-separate-task-ladder-placement-from-completion.md) | Separate Task Ladder Placement From Completion | Accepted | 2026-08-15 |
 | [0573](0573-centralize-user-perspective-product-documentation.md) | Centralize User-Perspective Product Documentation | Accepted | 2026-08-15 |

@@ -370,6 +370,42 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func taskLadderGroupCanBeEnabledForRepeatingTaskAndClearsForTodo() async {
+        let store = TestStore(
+            initialState: makeState(
+                schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
+            )
+        ) {
+            makeFeature()
+        }
+
+        await store.send(.taskLadderGroupEnabledChanged(true)) {
+            $0.basics.taskLadderGroupEnabled = true
+        }
+        await store.send(.taskTypeChanged(.todo)) {
+            $0.basics.taskLadderGroupEnabled = false
+            $0.basics.routineDurationMode = .oneDay
+            $0.schedule.scheduleMode = .oneOff
+        }
+        await store.send(.taskLadderGroupEnabledChanged(true))
+    }
+
+    @Test
+    func saveRequestCarriesRepeatingTaskLadderGroupActivation() throws {
+        let state = makeState(
+            basics: AddRoutineBasicsState(
+                routineName: "Exercise",
+                taskLadderGroupEnabled: true
+            ),
+            schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
+        )
+
+        let request = try #require(AddRoutineSaveRequest(state: state))
+
+        #expect(request.taskLadderGroupEnabled)
+    }
+
+    @Test
     func deadlineDisabled_preservesTodoAllDayFlag() async {
         let deadline = makeDate("2026-04-10T08:30:00Z")
         let store = TestStore(

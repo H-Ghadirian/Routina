@@ -47,6 +47,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var focusModeEnabled: Bool
     var trackingCadenceEnabled: Bool
     var trackingNudgesEnabled: Bool
+    var taskLadderGroupEnabled: Bool
 }
 
 struct TaskDetailEditSaveRequestBuilder {
@@ -206,7 +207,8 @@ struct TaskDetailEditSaveRequestBuilder {
             trackingCadenceEnabled: trackingCadenceEnabled,
             trackingNudgesEnabled: scheduleMode.usesRoutineCadence
                 ? trackingCadenceEnabled && state.editTrackingNudgesEnabled
-                : true
+                : true,
+            taskLadderGroupEnabled: state.editTaskLadderGroupEnabled
         )
     }
 

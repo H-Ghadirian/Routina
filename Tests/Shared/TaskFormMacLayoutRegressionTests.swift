@@ -45,6 +45,22 @@ struct TaskFormMacLayoutRegressionTests {
         )
     }
 
+    @Test
+    func repeatingTaskFormsExposeTaskLadderGroupActivationInBehavior() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Shared/TaskFormMacCards.swift"
+        )
+        let controls = try Self.sourceSection(
+            startingAt: "private var routineBehaviorControls: some View",
+            endingAt: "private var scheduleDetailsDisclosure: some View",
+            in: source
+        )
+
+        #expect(controls.contains("taskLadderGroupControl"))
+        #expect(controls.contains("Toggle(\"Use as Task Ladder group\""))
+        #expect(controls.contains("model.taskLadderGroupEnabled"))
+    }
+
     private static func sourceSection(
         startingAt startMarker: String,
         endingAt endMarker: String,

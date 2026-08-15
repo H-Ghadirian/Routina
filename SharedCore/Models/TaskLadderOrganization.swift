@@ -176,13 +176,18 @@ struct TaskLadderPlacement: Codable, Equatable, Hashable, Identifiable, Sendable
 struct TaskLadderOrganization: Codable, Equatable, Sendable {
     var groups: [TaskLadderGroup]
     var placements: [TaskLadderPlacement]
+    /// Explicitly enabled task-backed groups. Optional storage preserves decoding
+    /// for organization payloads written before task-backed groups could be empty.
+    var taskGroupIDs: [UUID]?
 
     init(
         groups: [TaskLadderGroup] = [],
-        placements: [TaskLadderPlacement] = []
+        placements: [TaskLadderPlacement] = [],
+        taskGroupIDs: [UUID] = []
     ) {
         self.groups = groups
         self.placements = placements
+        self.taskGroupIDs = Self.storedTaskGroupIDs(taskGroupIDs)
     }
 
     func parent(of taskID: UUID) -> TaskLadderNodeID? {
@@ -191,6 +196,30 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
 
     func childTaskIDs(of parent: TaskLadderNodeID) -> Set<UUID> {
         Set(placements.lazy.filter { $0.parent == parent }.map(\.taskID))
+    }
+
+    func isExplicitTaskGroup(taskID: UUID) -> Bool {
+        (taskGroupIDs ?? []).contains(taskID)
+    }
+
+    func isTaskGroup(taskID: UUID) -> Bool {
+        isExplicitTaskGroup(taskID: taskID)
+            || !childTaskIDs(of: .task(taskID)).isEmpty
+    }
+
+    /// Disabling an in-use group is rejected so its nested tasks do not become
+    /// detached from a group that still visibly owns them.
+    @discardableResult
+    mutating func setTaskGroupEnabled(_ isEnabled: Bool, taskID: UUID) -> Bool {
+        var taskGroupIDs = Set(self.taskGroupIDs ?? [])
+        if isEnabled {
+            taskGroupIDs.insert(taskID)
+        } else {
+            guard childTaskIDs(of: .task(taskID)).isEmpty else { return false }
+            taskGroupIDs.remove(taskID)
+        }
+        self.taskGroupIDs = Self.storedTaskGroupIDs(Array(taskGroupIDs))
+        return true
     }
 
     func group(id: UUID) -> TaskLadderGroup? {
@@ -264,7 +293,11 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
             uniqueGroupsByID[group.id] = sanitizedGroup
         }
 
-        var result = Self(groups: Array(uniqueGroupsByID.values), placements: [])
+        var result = Self(
+            groups: Array(uniqueGroupsByID.values),
+            placements: [],
+            taskGroupIDs: (taskGroupIDs ?? []).filter(validTaskIDs.contains)
+        )
         result.groups.sort { lhs, rhs in
             let comparison = lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName)
             return comparison == .orderedSame
@@ -302,6 +335,11 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
         }
         return false
     }
+
+    private static func storedTaskGroupIDs(_ taskGroupIDs: [UUID]) -> [UUID]? {
+        let values = Array(Set(taskGroupIDs)).sorted { $0.uuidString < $1.uuidString }
+        return values.isEmpty ? nil : values
+    }
 }
 
 enum TaskLadderCompletionBehavior: String, CaseIterable, Equatable, Hashable, Sendable {
@@ -336,7 +374,9 @@ enum TaskLadderCompletionBehavior: String, CaseIterable, Equatable, Hashable, Se
 
 enum TaskLadderOrganizationStorage {
     static func encode(_ organization: TaskLadderOrganization) -> String? {
-        guard !organization.groups.isEmpty || !organization.placements.isEmpty else { return nil }
+        guard !organization.groups.isEmpty
+            || !organization.placements.isEmpty
+            || organization.taskGroupIDs?.isEmpty == false else { return nil }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         guard let data = try? encoder.encode(organization),

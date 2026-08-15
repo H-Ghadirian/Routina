@@ -18,6 +18,8 @@ struct TaskFormModel {
 
     // MARK: Task Type
     var taskType: Binding<RoutineTaskType>
+    var taskLadderGroupEnabled: Binding<Bool> = .constant(false)
+    var canDisableTaskLadderGroup: Bool = true
 
     // MARK: Sidebar Path
     var customTaskSectionID: Binding<UUID?> = .constant(nil)

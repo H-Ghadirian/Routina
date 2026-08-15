@@ -19,6 +19,8 @@ struct TaskRankingMacView: View {
     @State private var isGroupEditorPresented = false
     @State private var editingGroupID: UUID?
     @State private var placementTaskID: UUID?
+    @State private var isRepeatingTaskGroupEditorPresented = false
+    @State private var repeatingTaskGroupParentID: UUID?
 
     var body: some View {
         HSplitView {
@@ -66,15 +68,26 @@ struct TaskRankingMacView: View {
             }
 
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    editingGroupID = nil
-                    isGroupEditorPresented = true
+                Menu {
+                    Button("New Container Group…") {
+                        editingGroupID = nil
+                        isGroupEditorPresented = true
+                    }
+
+                    Button("Use Repeating Task as Group…") {
+                        repeatingTaskGroupParentID = nil
+                        isRepeatingTaskGroupEditorPresented = true
+                    }
+                    .disabled(!store.tasks.contains {
+                        !$0.isOneOffTask
+                            && store.presentation.eligibleTaskIDs.contains($0.id)
+                    })
                 } label: {
-                    Label("New Task Ladder Group", systemImage: "folder.badge.plus")
+                    Label("Add Task Ladder Group", systemImage: "folder.badge.plus")
                         .frame(minWidth: 22, minHeight: 22)
                         .contentShape(Rectangle())
                 }
-                .help("Create a non-completable Task Ladder group")
+                .help("Create a container group or use a repeating task as a group")
             }
 
             ToolbarItem(placement: .primaryAction) {
@@ -131,6 +144,27 @@ struct TaskRankingMacView: View {
                     }
                 )
             }
+        }
+        .sheet(
+            isPresented: $isRepeatingTaskGroupEditorPresented,
+            onDismiss: { repeatingTaskGroupParentID = nil }
+        ) {
+            TaskLadderRepeatingTaskGroupEditorSheet(
+                tasks: store.tasks,
+                organization: store.organization,
+                eligibleTaskIDs: store.presentation.eligibleTaskIDs,
+                initialParentTaskID: repeatingTaskGroupParentID,
+                onSave: { childTaskID, parentTaskID, behavior in
+                    store.send(
+                        .taskPlacementSaved(
+                            childTaskID,
+                            .task(parentTaskID),
+                            behavior
+                        )
+                    )
+                    store.send(.childLadderOpened(parentTaskID))
+                }
+            )
         }
     }
 
@@ -272,11 +306,12 @@ struct TaskRankingMacView: View {
     ) -> some View {
         let metadata = store.presentation.rowMetadataByTaskID[task.id]
         let isGroup = metadata?.isGroup == true
+        let isTaskGroup = metadata?.isTaskGroup == true
         let childCount = metadata?.childCount ?? 0
         let isSelected = !isGroup && store.selectedTaskID == task.id
         return HStack(spacing: 9) {
             Button {
-                if isGroup || childCount > 0 {
+                if isGroup || isTaskGroup || childCount > 0 {
                     store.send(.childLadderOpened(task.id))
                 } else {
                     store.send(.taskSelected(task.id))
@@ -299,7 +334,7 @@ struct TaskRankingMacView: View {
 
                     Spacer(minLength: 2)
 
-                    if isGroup || childCount > 0 {
+                    if isGroup || isTaskGroup || childCount > 0 {
                         Image(systemName: "chevron.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.tertiary)
@@ -355,7 +390,17 @@ struct TaskRankingMacView: View {
                 Button("Organize in Task Ladder…") {
                     placementTaskID = task.id
                 }
-                if childCount > 0 {
+                if !task.isOneOffTask {
+                    Button(
+                        isTaskGroup || childCount > 0
+                            ? "Add Task to This Group…"
+                            : "Use as Task Ladder Group…"
+                    ) {
+                        repeatingTaskGroupParentID = task.id
+                        isRepeatingTaskGroupEditorPresented = true
+                    }
+                }
+                if isTaskGroup || childCount > 0 {
                     Button("Show Nested Tasks") {
                         store.send(.childLadderOpened(task.id))
                     }
@@ -371,7 +416,7 @@ struct TaskRankingMacView: View {
 
     @ViewBuilder
     private func rowMetadata(_ metadata: TaskRankingPresentation.RowMetadata) -> some View {
-        if metadata.isGroup || metadata.inheritsMetricValue || !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.childCount > 0 {
+        if metadata.isGroup || metadata.isTaskGroup || metadata.inheritsMetricValue || !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.childCount > 0 {
             HStack(spacing: 6) {
                 if metadata.isGroup {
                     Label("Group", systemImage: "folder")
@@ -384,6 +429,12 @@ struct TaskRankingMacView: View {
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                         .accessibilityLabel("Value inherited from tasks")
+                }
+
+                if metadata.isTaskGroup {
+                    Label("Task group", systemImage: "square.stack.3d.up")
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
 
                 if !metadata.tagLabels.isEmpty {

@@ -124,6 +124,7 @@ struct AddRoutineSaveRequest: Equatable {
     let focusModeEnabled: Bool
     let trackingCadenceEnabled: Bool
     let trackingNudgesEnabled: Bool
+    let taskLadderGroupEnabled: Bool
 
     init(
         name: String,
@@ -172,7 +173,8 @@ struct AddRoutineSaveRequest: Equatable {
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false,
         trackingCadenceEnabled: Bool = true,
-        trackingNudgesEnabled: Bool = true
+        trackingNudgesEnabled: Bool = true,
+        taskLadderGroupEnabled: Bool = false
     ) {
         self.name = name
         self.customTaskSectionID = customTaskSectionID
@@ -269,6 +271,9 @@ struct AddRoutineSaveRequest: Equatable {
         self.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
             ? self.trackingCadenceEnabled && trackingNudgesEnabled
             : true
+        self.taskLadderGroupEnabled = scheduleMode.taskType == .todo
+            ? false
+            : taskLadderGroupEnabled
     }
 
     init?(state: AddRoutineFeature.State, calendar: Calendar = .current) {
@@ -387,6 +392,9 @@ struct AddRoutineSaveRequest: Equatable {
         self.trackingNudgesEnabled = schedule.scheduleMode.usesRoutineCadence
             ? trackingCadenceEnabled && basics.trackingNudgesEnabled
             : true
+        self.taskLadderGroupEnabled = schedule.scheduleMode.taskType == .todo
+            ? false
+            : basics.taskLadderGroupEnabled
         let hasAutoAssumeDoneFlag = RoutineFlagRules.enablesAutoAssumeDone(
             flags: self.flags,
             rules: organization.flagRules

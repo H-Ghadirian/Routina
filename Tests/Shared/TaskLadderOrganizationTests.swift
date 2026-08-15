@@ -61,6 +61,59 @@ struct TaskLadderOrganizationTests {
     }
 
     @Test
+    func explicitlyEnabledTaskGroupRoundTripsWithoutChildrenAndLegacyPayloadStillDecodes() throws {
+        let taskID = UUID()
+        var organization = TaskLadderOrganization()
+        let enabled = organization.setTaskGroupEnabled(true, taskID: taskID)
+        #expect(enabled)
+
+        let rawValue = try #require(TaskLadderOrganizationStorage.encode(organization))
+        let decoded = TaskLadderOrganizationStorage.decode(rawValue)
+        let legacy = TaskLadderOrganizationStorage.decode("{\"groups\":[],\"placements\":[]}")
+
+        #expect(decoded.isExplicitTaskGroup(taskID: taskID))
+        #expect(decoded.isTaskGroup(taskID: taskID))
+        #expect(decoded.childTaskIDs(of: .task(taskID)).isEmpty)
+        #expect(legacy.taskGroupIDs == nil)
+    }
+
+    @Test
+    func disablingTaskGroupPreservesAnInUseGroupUntilChildrenAreMoved() {
+        let parentID = UUID()
+        let childID = UUID()
+        var organization = TaskLadderOrganization(
+            placements: [TaskLadderPlacement(taskID: childID, parent: .task(parentID))],
+            taskGroupIDs: [parentID]
+        )
+
+        let disabledWhileInUse = organization.setTaskGroupEnabled(false, taskID: parentID)
+        #expect(!disabledWhileInUse)
+        #expect(organization.isTaskGroup(taskID: parentID))
+
+        let movedToRoot = organization.place(
+            taskID: childID,
+            inside: nil,
+            validTaskIDs: [parentID, childID]
+        )
+        let disabledAfterMove = organization.setTaskGroupEnabled(false, taskID: parentID)
+        #expect(movedToRoot)
+        #expect(disabledAfterMove)
+        #expect(!organization.isTaskGroup(taskID: parentID))
+    }
+
+    @Test
+    func sanitizingOrganizationRemovesTaskGroupIDsForDeletedTasks() {
+        let retainedID = UUID()
+        let deletedID = UUID()
+        let organization = TaskLadderOrganization(taskGroupIDs: [retainedID, deletedID])
+
+        let sanitized = organization.sanitized(validTaskIDs: [retainedID])
+
+        #expect(sanitized.isTaskGroup(taskID: retainedID))
+        #expect(!sanitized.isTaskGroup(taskID: deletedID))
+    }
+
+    @Test
     func placementRejectsCyclesWithoutDiscardingTheExistingParent() {
         let exerciseID = UUID()
         let walkID = UUID()

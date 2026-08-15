@@ -126,11 +126,30 @@ Coverage:
 - `Tests/Shared/TaskLadderOrganizationTests.swift`
 - `Tests/Shared/TaskRankingPresentationTests.swift`
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+- `Tests/Shared/AddRoutineFeatureTests.swift`
+- `Tests/Shared/TaskLadderGroupActivationFeatureTests.swift`
 
 Given Walk and Gym are placed inside the task Exercise
 When the root Task Ladder builds any metric presentation
 Then Exercise appears once and Walk and Gym do not appear as root rows
 And the Exercise row reports its actionable nested-task count
+
+Given Exercise is an existing repeating task with no nested tasks
+When the person chooses `Use Repeating Task as Group…` from the group-add control or Exercise row
+And adds Walk with a separately chosen completion behavior
+Then Exercise keeps its repeating-task schedule and history
+And Walk is placed inside Exercise without creating a container-only group
+And the Task Ladder opens Exercise's nested ladder
+
+Given Exercise is being created or edited as a repeating task, or is open in Task Details
+When the person turns on `Use as Task Ladder group`
+Then Exercise keeps its repeating-task schedule, completion behavior, and history
+And its empty nested ladder can be opened before any task is placed inside it
+And the activation is synchronized with the rest of the Task Ladder organization
+
+Given Exercise already has nested tasks
+When the person views the Task Ladder group switch
+Then it remains on and cannot be turned off until those tasks are moved elsewhere
 
 When the person opens Exercise
 Then the nested ladder contains only its actionable placed tasks

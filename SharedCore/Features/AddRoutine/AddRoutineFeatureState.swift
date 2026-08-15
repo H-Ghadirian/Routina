@@ -31,6 +31,7 @@ struct AddRoutineBasicsState: Equatable {
     var focusModeEnabled: Bool = false
     var trackingCadenceEnabled: Bool = true
     var trackingNudgesEnabled: Bool = true
+    var taskLadderGroupEnabled: Bool = false
 }
 
 struct AddRoutineOrganizationState: Equatable {

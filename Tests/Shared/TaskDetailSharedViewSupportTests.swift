@@ -63,6 +63,17 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func macRepeatingTaskDetailsExposeTaskLadderGroupActivation() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+
+        #expect(source.contains("taskLadderGroupSection"))
+        #expect(source.contains("Label(\"Use as Task Ladder group\""))
+        #expect(source.contains("store.send(.taskLadderGroupEnabledChanged($0))"))
+    }
+
+    @Test
     func durationTextFormatsMinutesHoursAndMixedDurations() {
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 1) == "1 minute")
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 25) == "25 minutes")

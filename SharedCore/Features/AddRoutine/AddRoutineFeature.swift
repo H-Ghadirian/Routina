@@ -32,6 +32,7 @@ struct AddRoutineFeature: Reducer {
         case attachmentPicked(Data, String)
         case removeAttachment(UUID)
         case taskTypeChanged(RoutineTaskType)
+        case taskLadderGroupEnabledChanged(Bool)
         case customTaskSectionChanged(UUID?)
         case availableTagsChanged([String])
         case availableFlagsChanged([String])
@@ -411,6 +412,13 @@ struct AddRoutineFeature: Reducer {
 
         case let .taskTypeChanged(taskType):
             scheduleMutationHandler().setTaskType(taskType, state: &state)
+            if taskType == .todo {
+                state.basics.taskLadderGroupEnabled = false
+            }
+            return .none
+
+        case let .taskLadderGroupEnabledChanged(isEnabled):
+            state.basics.taskLadderGroupEnabled = state.taskType == .todo ? false : isEnabled
             return .none
 
         case let .availableTagsChanged(tags):
@@ -523,6 +531,9 @@ struct AddRoutineFeature: Reducer {
 
         case let .scheduleModeChanged(mode):
             scheduleMutationHandler().setScheduleMode(mode, state: &state)
+            if mode.taskType == .todo {
+                state.basics.taskLadderGroupEnabled = false
+            }
             if state.checklist.checklistValidationMessage != nil {
                 AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
             }
