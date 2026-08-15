@@ -22,7 +22,8 @@ struct TaskLadderOrganizationTests {
             pressure: .high,
             urgency: .level3,
             importance: .level4,
-            thinkingNeeded: .medium
+            thinkingNeeded: .medium,
+            inheritedMetrics: [.pressure, .thinkingNeeded]
         )
         company.setTaskRankingOrder(
             42,
@@ -41,7 +42,22 @@ struct TaskLadderOrganizationTests {
 
         #expect(decoded == organization)
         #expect(decoded.group(id: company.id)?.pressure == .high)
+        #expect(decoded.group(id: company.id)?.inheritedMetrics == [.pressure, .thinkingNeeded])
         #expect(decoded.parent(of: taskID) == .group(company.id))
+    }
+
+    @Test
+    func storageDecodesGroupsSavedBeforeInheritedValuesWereAdded() throws {
+        let groupID = UUID()
+        let rawValue = """
+        {"groups":[{"createdAt":0,"emoji":"🏢","id":"\(groupID.uuidString)","name":"Company","pressureRawValue":"High","taskRankingOrders":{}}],"placements":[]}
+        """
+
+        let decoded = TaskLadderOrganizationStorage.decode(rawValue)
+        let group = try #require(decoded.group(id: groupID))
+
+        #expect(group.pressure == .high)
+        #expect(group.inheritedMetrics.isEmpty)
     }
 
     @Test
@@ -218,6 +234,94 @@ struct TaskLadderOrganizationTests {
             value: .pressure(.high)
         ) != 1_000_000)
         #expect(callMom.taskRankingOrder(for: .pressure, value: .pressure(.high)) == 0)
+    }
+
+    @Test
+    func movingInheritedGroupWithinItsValuePreservesInheritance() throws {
+        var company = TaskLadderGroup(
+            name: "Company",
+            inheritedMetrics: [.pressure]
+        )
+        company.setTaskRankingOrder(1_000_000, for: .pressure, value: .pressure(.high))
+        let ticket = RoutineTask(name: "Ticket", pressure: .high)
+        let callMom = RoutineTask(name: "Call Mom", pressure: .high)
+        callMom.setTaskRankingOrder(0, for: .pressure, value: .pressure(.high))
+        var tasks = [ticket, callMom]
+        var organization = TaskLadderOrganization(
+            groups: [company],
+            placements: [
+                TaskLadderPlacement(taskID: ticket.id, parent: .group(company.id))
+            ]
+        )
+        let presentation = TaskRankingPresentation.make(
+            tasks: tasks,
+            organization: organization,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let update = try #require(
+            TaskRankingOrderingSupport.moveTask(
+                taskID: company.id,
+                direction: .up,
+                in: presentation
+            )
+        )
+        TaskRankingOrderingSupport.apply(
+            update,
+            to: &tasks,
+            organization: &organization
+        )
+
+        #expect(!update.changesMetricValue)
+        #expect(organization.group(id: company.id)?.inheritsValue(for: .pressure) == true)
+    }
+
+    @Test
+    func movingInheritedGroupAcrossValuesMakesTheDestinationExplicit() throws {
+        let company = TaskLadderGroup(
+            name: "Company",
+            inheritedMetrics: [.pressure]
+        )
+        let ticket = RoutineTask(name: "Ticket", pressure: .medium)
+        let callMom = RoutineTask(name: "Call Mom", pressure: .high)
+        var tasks = [ticket, callMom]
+        var organization = TaskLadderOrganization(
+            groups: [company],
+            placements: [
+                TaskLadderPlacement(taskID: ticket.id, parent: .group(company.id))
+            ]
+        )
+        let presentation = TaskRankingPresentation.make(
+            tasks: tasks,
+            organization: organization,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let update = try #require(
+            TaskRankingOrderingSupport.moveTask(
+                taskID: company.id,
+                direction: .up,
+                in: presentation
+            )
+        )
+        TaskRankingOrderingSupport.apply(
+            update,
+            to: &tasks,
+            organization: &organization
+        )
+        let movedGroup = try #require(organization.group(id: company.id))
+
+        #expect(update.changesMetricValue)
+        #expect(!movedGroup.inheritsValue(for: .pressure))
+        #expect(movedGroup.pressure == .high)
     }
 
     @Test @MainActor

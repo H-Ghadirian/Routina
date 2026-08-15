@@ -152,6 +152,32 @@ When it contains placed tasks
 Then those tasks return to the root
 And no task data or history is deleted
 
+### Mac Task Ladder Groups Can Inherit Categorical Values
+
+Area: Tasks / Mac Task Ladder / Groups
+Decision links: [0575](../decisions/0575-inherit-task-ladder-group-values-from-actionable-tasks.md), [0574](../decisions/0574-separate-task-ladder-placement-from-completion.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskLadderOrganizationTests.swift`
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+
+Given Company inherits Pressure, Urgency, Importance, or Thinking needed
+And its actionable direct tasks have different explicit values
+When the root Task Ladder presentation is rebuilt
+Then Company uses the highest explicit child value for that metric
+And excluded or missing-value tasks do not determine the inherited value
+And Company appears under `No value` when no actionable direct child has an explicit value
+And the cached row metadata explains that the displayed group value is inherited
+
+Given an inherited Company group is reordered inside its current value section
+When its tie-break rank changes
+Then inheritance remains enabled
+
+Given the inherited Company group is moved across a value-section boundary
+When the move is saved
+Then the destination becomes Company's explicit value
+And inheritance turns off only for that metric
+
 ### Mac Task Ladder Lazily Lays Out Individual Rows
 
 Area: Tasks / Mac Task Ladder / Performance

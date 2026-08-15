@@ -29,6 +29,7 @@ struct TaskLadderGroup: Codable, Equatable, Hashable, Identifiable, Sendable {
     var urgencyRawValue: String?
     var importanceRawValue: String?
     var thinkingNeededRawValue: String?
+    var inheritedMetricRawValues: [String]?
     var taskRankingOrders: [String: Int64]
     var createdAt: Date
 
@@ -40,6 +41,7 @@ struct TaskLadderGroup: Codable, Equatable, Hashable, Identifiable, Sendable {
         urgency: RoutineTaskUrgency? = nil,
         importance: RoutineTaskImportance? = nil,
         thinkingNeeded: RoutineTaskThinkingNeeded? = nil,
+        inheritedMetrics: Set<TaskRankingMetric> = [],
         taskRankingOrders: [String: Int64] = [:],
         createdAt: Date = Date()
     ) {
@@ -50,6 +52,7 @@ struct TaskLadderGroup: Codable, Equatable, Hashable, Identifiable, Sendable {
         urgencyRawValue = urgency?.rawValue
         importanceRawValue = importance?.rawValue
         thinkingNeededRawValue = thinkingNeeded.flatMap { $0 == .none ? nil : $0.rawValue }
+        inheritedMetricRawValues = Self.storedInheritedMetrics(inheritedMetrics)
         self.taskRankingOrders = taskRankingOrders
         self.createdAt = createdAt
     }
@@ -94,6 +97,35 @@ struct TaskLadderGroup: Codable, Equatable, Hashable, Identifiable, Sendable {
         set { thinkingNeededRawValue = newValue.flatMap { $0 == .none ? nil : $0.rawValue } }
     }
 
+    var inheritedMetrics: Set<TaskRankingMetric> {
+        Set(
+            (inheritedMetricRawValues ?? []).compactMap { rawValue in
+                guard let metric = TaskRankingMetric(rawValue: rawValue),
+                      metric.supportsManualLadder else { return nil }
+                return metric
+            }
+        )
+    }
+
+    func inheritsValue(for metric: TaskRankingMetric) -> Bool {
+        inheritedMetrics.contains(metric)
+    }
+
+    mutating func setInheritsValue(_ inherits: Bool, for metric: TaskRankingMetric) {
+        guard metric.supportsManualLadder else { return }
+        var metrics = inheritedMetrics
+        if inherits {
+            metrics.insert(metric)
+        } else {
+            metrics.remove(metric)
+        }
+        inheritedMetricRawValues = Self.storedInheritedMetrics(metrics)
+    }
+
+    mutating func normalizeInheritedMetrics() {
+        inheritedMetricRawValues = Self.storedInheritedMetrics(inheritedMetrics)
+    }
+
     func taskRankingOrder(
         for metric: TaskRankingMetric,
         value: TaskRankingMetricValue,
@@ -121,6 +153,16 @@ struct TaskLadderGroup: Codable, Equatable, Hashable, Identifiable, Sendable {
                 scopeNodeID: scopeNodeID
             )
         ] = order
+    }
+
+    private static func storedInheritedMetrics(
+        _ metrics: Set<TaskRankingMetric>
+    ) -> [String]? {
+        let rawValues = metrics
+            .filter(\.supportsManualLadder)
+            .map(\.rawValue)
+            .sorted()
+        return rawValues.isEmpty ? nil : rawValues
     }
 }
 
@@ -159,6 +201,7 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
         var sanitizedGroup = group
         sanitizedGroup.name = group.displayName
         sanitizedGroup.emoji = group.displayEmoji
+        sanitizedGroup.normalizeInheritedMetrics()
         if let index = groups.firstIndex(where: { $0.id == group.id }) {
             groups[index] = sanitizedGroup
         } else {
@@ -217,6 +260,7 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
             var sanitizedGroup = group
             sanitizedGroup.name = group.displayName
             sanitizedGroup.emoji = group.displayEmoji
+            sanitizedGroup.normalizeInheritedMetrics()
             uniqueGroupsByID[group.id] = sanitizedGroup
         }
 

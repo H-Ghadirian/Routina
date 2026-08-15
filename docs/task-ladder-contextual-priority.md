@@ -10,6 +10,7 @@ remain proposals and do not describe current behavior.
 Implemented foundation:
 
 - [Decision 0574: Separate Task Ladder Placement From Completion](decisions/0574-separate-task-ladder-placement-from-completion.md)
+- [Decision 0575: Inherit Task Ladder Group Values From Actionable Tasks](decisions/0575-inherit-task-ladder-group-values-from-actionable-tasks.md)
 - [Current task behavior](current-behavior/tasks.md)
 
 ## Product Problem
@@ -53,6 +54,10 @@ and an experiment review. Completing one ticket does not complete Company.
 
 Container-only groups and one-parent task placement are implemented by Decision
 0574. Groups remain Task Ladder-specific and do not reuse Home Paths.
+
+Each categorical group value may also inherit the highest explicit value among
+the group's currently actionable direct tasks. This implemented aggregation is
+field-specific and does not copy values into the group or its children.
 
 ### Temporary group focus
 

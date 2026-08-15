@@ -163,6 +163,116 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func groupInheritsHighestCategoricalValuesFromItsActionableDirectTasks() throws {
+        let company = TaskLadderGroup(
+            name: "Company",
+            inheritedMetrics: [.pressure, .urgency, .importance, .thinkingNeeded]
+        )
+        let lower = RoutineTask(
+            name: "Lower",
+            importance: .level1,
+            urgency: .level1,
+            pressure: .low,
+            thinkingNeeded: .low,
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
+        )
+        let highestActionable = RoutineTask(
+            name: "Highest actionable",
+            importance: .level3,
+            urgency: .level3,
+            pressure: .medium,
+            thinkingNeeded: .medium,
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
+        )
+        let blockedHigher = RoutineTask(
+            name: "Blocked higher",
+            importance: .level4,
+            urgency: .level4,
+            pressure: .high,
+            thinkingNeeded: .high,
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.blocked.rawValue,
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
+        )
+        let organization = TaskLadderOrganization(
+            groups: [company],
+            placements: [lower, highestActionable, blockedHigher].map {
+                TaskLadderPlacement(taskID: $0.id, parent: .group(company.id))
+            }
+        )
+        let expectedValues: [TaskRankingMetric: TaskRankingMetricValue] = [
+            .pressure: .pressure(.medium),
+            .urgency: .urgency(.level3),
+            .importance: .importance(.level3),
+            .thinkingNeeded: .thinkingNeeded(.medium)
+        ]
+
+        for (metric, expectedValue) in expectedValues {
+            let presentation = TaskRankingPresentation.make(
+                tasks: [lower, highestActionable, blockedHigher],
+                organization: organization,
+                flagRules: [],
+                metric: metric,
+                isReversed: false,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            let groupSection = try #require(
+                presentation.sections.first(where: { section in
+                    section.tasks.contains(where: { $0.id == company.id })
+                })
+            )
+
+            #expect(groupSection.value == expectedValue)
+            #expect(presentation.rowMetadataByTaskID[company.id]?.inheritsMetricValue == true)
+            #expect(presentation.rowMetadataByTaskID[company.id]?.childCount == 2)
+        }
+    }
+
+    @Test
+    func inheritedGroupStaysMissingWhenNoActionableChildHasAnExplicitValue() throws {
+        let company = TaskLadderGroup(
+            name: "Company",
+            inheritedMetrics: [.pressure, .urgency, .importance, .thinkingNeeded]
+        )
+        let missing = RoutineTask(name: "Missing")
+        let organization = TaskLadderOrganization(
+            groups: [company],
+            placements: [
+                TaskLadderPlacement(taskID: missing.id, parent: .group(company.id))
+            ]
+        )
+
+        for metric in [
+            TaskRankingMetric.pressure,
+            .urgency,
+            .importance,
+            .thinkingNeeded
+        ] {
+            let presentation = TaskRankingPresentation.make(
+                tasks: [missing],
+                organization: organization,
+                flagRules: [],
+                metric: metric,
+                isReversed: false,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            let groupSection = try #require(
+                presentation.sections.first(where: { section in
+                    section.tasks.contains(where: { $0.id == company.id })
+                })
+            )
+
+            #expect(groupSection.isMissingValue)
+            #expect(groupSection.value == nil)
+        }
+    }
+
+    @Test
     func nestedLadderTieBreakRanksAreScopedToTheParent() throws {
         let walk = RoutineTask(name: "Walk", pressure: .medium)
         let gym = RoutineTask(name: "Gym", pressure: .medium)
@@ -390,8 +500,21 @@ struct TaskRankingPresentationTests {
         #expect(source.contains("Label(\"Repeating\", systemImage: \"repeat\")"))
         #expect(source.contains("Show Nested Tasks"))
         #expect(source.contains("metadata.childCount"))
+        #expect(source.contains("metadata.inheritsMetricValue"))
+        #expect(source.contains("Label(\"Inherited\", systemImage: \"arrow.triangle.branch\")"))
         #expect(!source.contains("private func metadataLabels"))
         #expect(!source.contains("No pressure value"))
+    }
+
+    @Test
+    func taskLadderGroupEditorOffersInheritedValues() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
+        )
+
+        #expect(source.contains("Inherit (highest task value)"))
+        #expect(source.contains("group.setInheritsValue(true, for: metric)"))
+        #expect(source.contains("group's actionable tasks"))
     }
 
     @Test

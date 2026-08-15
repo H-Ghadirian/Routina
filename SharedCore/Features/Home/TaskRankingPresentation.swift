@@ -118,6 +118,7 @@ enum TaskRankingMetric: String, CaseIterable, Codable, Equatable, Hashable, Iden
     }
 
     func apply(_ value: TaskRankingMetricValue?, to group: inout TaskLadderGroup) {
+        group.setInheritsValue(false, for: self)
         switch self {
         case .pressure:
             group.pressure = value?.pressureValue
@@ -242,19 +243,22 @@ struct TaskRankingPresentation: Equatable {
         let isRepeating: Bool
         let childCount: Int
         let isGroup: Bool
+        let inheritsMetricValue: Bool
 
         init(task: RoutineTask, childCount: Int) {
             tagLabels = task.tags.map { "#\($0)" }
             isRepeating = !task.isOneOffTask
             self.childCount = childCount
             isGroup = false
+            inheritsMetricValue = false
         }
 
-        init(group: TaskLadderGroup, childCount: Int) {
+        init(group: TaskLadderGroup, childCount: Int, metric: TaskRankingMetric) {
             tagLabels = []
             isRepeating = false
             self.childCount = childCount
             isGroup = true
+            inheritsMetricValue = group.inheritsValue(for: metric)
         }
     }
 
@@ -329,13 +333,17 @@ struct TaskRankingPresentation: Equatable {
         let groupByID = Dictionary(
             uniqueKeysWithValues: organization.groups.map { ($0.id, $0) }
         )
+        let childTaskIDsByParent = Dictionary(
+            grouping: organization.placements,
+            by: \.parent
+        ).mapValues { Set($0.map(\.taskID)) }
         let ancestorTaskIDs = Set(scopePath.filter { groupByID[$0] == nil })
         let activeTasks: [RoutineTask]
         if let scopeParentTaskID = scopePath.last {
             let parentNodeID: TaskLadderNodeID = groupByID[scopeParentTaskID] == nil
                 ? .task(scopeParentTaskID)
                 : .group(scopeParentTaskID)
-            activeTasks = organization.childTaskIDs(of: parentNodeID)
+            activeTasks = (childTaskIDsByParent[parentNodeID] ?? [])
                 .subtracting(ancestorTaskIDs)
                 .compactMap { eligibleTasksByID[$0] }
         } else {
@@ -348,7 +356,19 @@ struct TaskRankingPresentation: Equatable {
                     return eligibleTasksByID[parentID] == nil
                 }
             }
-            activeTasks = rootTasks + organization.groups.map { syntheticTask(for: $0) }
+            activeTasks = rootTasks + organization.groups.map { group in
+                let effectiveValue = effectiveValue(
+                    for: group,
+                    metric: metric,
+                    childTaskIDs: childTaskIDsByParent[.group(group.id)] ?? [],
+                    eligibleTasksByID: eligibleTasksByID
+                )
+                return syntheticTask(
+                    for: group,
+                    metric: metric,
+                    effectiveValue: effectiveValue
+                )
+            }
         }
         let eligibleTaskIDs = Set(eligibleTasks.map(\.id))
         let rowMetadataByTaskID = Dictionary(
@@ -356,12 +376,19 @@ struct TaskRankingPresentation: Equatable {
                 let nodeID: TaskLadderNodeID = groupByID[task.id] == nil
                     ? .task(task.id)
                     : .group(task.id)
-                let childCount = organization.childTaskIDs(of: nodeID)
+                let childCount = (childTaskIDsByParent[nodeID] ?? [])
                     .intersection(eligibleTaskIDs)
                     .subtracting(ancestorTaskIDs)
                     .count
                 if let group = groupByID[task.id] {
-                    return (task.id, RowMetadata(group: group, childCount: childCount))
+                    return (
+                        task.id,
+                        RowMetadata(
+                            group: group,
+                            childCount: childCount,
+                            metric: metric
+                        )
+                    )
                 }
                 return (
                     task.id,
@@ -568,7 +595,26 @@ struct TaskRankingPresentation: Equatable {
             : lhs.id.uuidString < rhs.id.uuidString
     }
 
-    private static func syntheticTask(for group: TaskLadderGroup) -> RoutineTask {
+    private static func effectiveValue(
+        for group: TaskLadderGroup,
+        metric: TaskRankingMetric,
+        childTaskIDs: Set<UUID>,
+        eligibleTasksByID: [UUID: RoutineTask]
+    ) -> TaskRankingMetricValue? {
+        guard group.inheritsValue(for: metric) else {
+            return metric.value(for: group)
+        }
+        return childTaskIDs
+            .compactMap { eligibleTasksByID[$0] }
+            .compactMap { metric.value(for: $0) }
+            .max { $0.sortOrder < $1.sortOrder }
+    }
+
+    private static func syntheticTask(
+        for group: TaskLadderGroup,
+        metric: TaskRankingMetric,
+        effectiveValue: TaskRankingMetricValue?
+    ) -> RoutineTask {
         let task = RoutineTask(
             id: group.id,
             name: group.displayName,
@@ -582,6 +628,7 @@ struct TaskRankingPresentation: Equatable {
             hasExplicitImportance: group.importance != nil,
             hasExplicitUrgency: group.urgency != nil
         )
+        metric.apply(effectiveValue, to: task)
         task.taskRankingOrderStorage = TaskRankingOrderStorage.serialize(group.taskRankingOrders)
         return task
     }
@@ -607,6 +654,7 @@ struct TaskRankingOrderUpdate: Equatable, Sendable {
     let scopeTaskID: UUID?
     let nodeID: TaskLadderNodeID
     let destinationValue: TaskRankingMetricValue?
+    let changesMetricValue: Bool
     let rankUpdates: [TaskRankingRankUpdate]
 
     var taskID: UUID { nodeID.rawID }
@@ -668,6 +716,7 @@ enum TaskRankingOrderingSupport {
                         scopeTaskID: presentation.scopeParentTaskID,
                         nodeID: sourceNodeID,
                         destinationValue: nil,
+                        changesMetricValue: true,
                         rankUpdates: []
                     )
                 } else {
@@ -704,6 +753,7 @@ enum TaskRankingOrderingSupport {
             scopeTaskID: presentation.scopeParentTaskID,
             nodeID: sourceNodeID,
             destinationValue: destinationValue,
+            changesMetricValue: sourceSection.id != destination.section.id,
             rankUpdates: rankUpdates
         )
     }
@@ -713,13 +763,15 @@ enum TaskRankingOrderingSupport {
         to tasks: inout [RoutineTask],
         organization: inout TaskLadderOrganization
     ) {
-        switch update.nodeID {
-        case let .task(taskID):
-            guard let movedTaskIndex = tasks.firstIndex(where: { $0.id == taskID }) else { return }
-            update.metric.apply(update.destinationValue, to: tasks[movedTaskIndex])
-        case let .group(groupID):
-            guard let groupIndex = organization.groups.firstIndex(where: { $0.id == groupID }) else { return }
-            update.metric.apply(update.destinationValue, to: &organization.groups[groupIndex])
+        if update.changesMetricValue {
+            switch update.nodeID {
+            case let .task(taskID):
+                guard let movedTaskIndex = tasks.firstIndex(where: { $0.id == taskID }) else { return }
+                update.metric.apply(update.destinationValue, to: tasks[movedTaskIndex])
+            case let .group(groupID):
+                guard let groupIndex = organization.groups.firstIndex(where: { $0.id == groupID }) else { return }
+                update.metric.apply(update.destinationValue, to: &organization.groups[groupIndex])
+            }
         }
 
         for rankUpdate in update.rankUpdates {

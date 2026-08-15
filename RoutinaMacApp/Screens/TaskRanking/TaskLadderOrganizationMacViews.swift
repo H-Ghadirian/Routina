@@ -1,5 +1,11 @@
 import SwiftUI
 
+private enum TaskLadderGroupMetricSelection<Value: Hashable>: Hashable {
+    case inherit
+    case noValue
+    case value(Value)
+}
+
 struct TaskLadderGroupEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -32,42 +38,74 @@ struct TaskLadderGroupEditorSheet: View {
                     .frame(maxWidth: 120)
 
                 Section("Task Ladder values") {
-                    optionalPicker(
+                    metricPicker(
                         "Pressure",
                         selection: Binding(
-                            get: { group.pressure },
-                            set: { group.pressure = $0 }
+                            get: {
+                                metricSelection(
+                                    for: .pressure,
+                                    value: group.pressure
+                                )
+                            },
+                            set: { selection in
+                                apply(selection, for: .pressure) { group.pressure = $0 }
+                            }
                         ),
                         values: RoutineTaskPressure.allCases.filter { $0 != .none },
                         titleForValue: { $0.title }
                     )
-                    optionalPicker(
+                    metricPicker(
                         "Urgency",
                         selection: Binding(
-                            get: { group.urgency },
-                            set: { group.urgency = $0 }
+                            get: {
+                                metricSelection(
+                                    for: .urgency,
+                                    value: group.urgency
+                                )
+                            },
+                            set: { selection in
+                                apply(selection, for: .urgency) { group.urgency = $0 }
+                            }
                         ),
                         values: RoutineTaskUrgency.allCases,
                         titleForValue: { $0.title }
                     )
-                    optionalPicker(
+                    metricPicker(
                         "Importance",
                         selection: Binding(
-                            get: { group.importance },
-                            set: { group.importance = $0 }
+                            get: {
+                                metricSelection(
+                                    for: .importance,
+                                    value: group.importance
+                                )
+                            },
+                            set: { selection in
+                                apply(selection, for: .importance) { group.importance = $0 }
+                            }
                         ),
                         values: RoutineTaskImportance.allCases,
                         titleForValue: { $0.title }
                     )
-                    optionalPicker(
+                    metricPicker(
                         "Thinking needed",
                         selection: Binding(
-                            get: { group.thinkingNeeded },
-                            set: { group.thinkingNeeded = $0 }
+                            get: {
+                                metricSelection(
+                                    for: .thinkingNeeded,
+                                    value: group.thinkingNeeded
+                                )
+                            },
+                            set: { selection in
+                                apply(selection, for: .thinkingNeeded) { group.thinkingNeeded = $0 }
+                            }
                         ),
                         values: RoutineTaskThinkingNeeded.allCases.filter { $0 != .none },
                         titleForValue: { $0.title }
                     )
+
+                    Text("Inherit uses the highest value set on the group's actionable tasks. If none has a value, the group appears under No value.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             .formStyle(.grouped)
@@ -108,17 +146,48 @@ struct TaskLadderGroupEditorSheet: View {
         }
     }
 
-    private func optionalPicker<Value: Hashable>(
+    private func metricPicker<Value: Hashable>(
         _ title: String,
-        selection: Binding<Value?>,
+        selection: Binding<TaskLadderGroupMetricSelection<Value>>,
         values: [Value],
         titleForValue: @escaping (Value) -> String
     ) -> some View {
         Picker(title, selection: selection) {
-            Text("No value").tag(Value?.none)
+            Text("Inherit (highest task value)")
+                .tag(TaskLadderGroupMetricSelection<Value>.inherit)
+            Text("No value")
+                .tag(TaskLadderGroupMetricSelection<Value>.noValue)
             ForEach(values, id: \.self) { value in
-                Text(titleForValue(value)).tag(Optional(value))
+                Text(titleForValue(value))
+                    .tag(TaskLadderGroupMetricSelection<Value>.value(value))
             }
+        }
+    }
+
+    private func metricSelection<Value: Hashable>(
+        for metric: TaskRankingMetric,
+        value: Value?
+    ) -> TaskLadderGroupMetricSelection<Value> {
+        if group.inheritsValue(for: metric) {
+            return .inherit
+        }
+        return value.map(TaskLadderGroupMetricSelection.value) ?? .noValue
+    }
+
+    private func apply<Value: Hashable>(
+        _ selection: TaskLadderGroupMetricSelection<Value>,
+        for metric: TaskRankingMetric,
+        setValue: (Value?) -> Void
+    ) {
+        switch selection {
+        case .inherit:
+            group.setInheritsValue(true, for: metric)
+        case .noValue:
+            group.setInheritsValue(false, for: metric)
+            setValue(nil)
+        case let .value(value):
+            group.setInheritsValue(false, for: metric)
+            setValue(value)
         }
     }
 }

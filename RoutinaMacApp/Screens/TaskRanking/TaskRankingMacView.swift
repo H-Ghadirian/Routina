@@ -371,12 +371,19 @@ struct TaskRankingMacView: View {
 
     @ViewBuilder
     private func rowMetadata(_ metadata: TaskRankingPresentation.RowMetadata) -> some View {
-        if metadata.isGroup || !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.childCount > 0 {
+        if metadata.isGroup || metadata.inheritsMetricValue || !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.childCount > 0 {
             HStack(spacing: 6) {
                 if metadata.isGroup {
                     Label("Group", systemImage: "folder")
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
+                }
+
+                if metadata.inheritsMetricValue {
+                    Label("Inherited", systemImage: "arrow.triangle.branch")
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .accessibilityLabel("Value inherited from tasks")
                 }
 
                 if !metadata.tagLabels.isEmpty {
