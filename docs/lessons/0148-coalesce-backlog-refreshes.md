@@ -20,6 +20,9 @@ Backlog now uses Routina's semantic routine-update notification, which already
 receives coalesced CloudKit updates, then applies its own cancel-in-flight
 450-millisecond debounce before refreshing its snapshot.
 
+[Lesson 0165](0165-keep-automatic-backlog-refreshes-silent.md) later separates
+that coalesced automatic refresh from the user-visible manual loading state.
+
 ## Prevention Rule
 
 Do not connect an unbounded task presentation directly to raw SwiftData save

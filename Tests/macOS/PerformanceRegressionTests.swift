@@ -604,6 +604,11 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(viewSource.contains("store.send(.routineDataChanged)"))
         XCTAssertTrue(featureSource.contains("@Dependency(\\.continuousClock) private var continuousClock"))
         XCTAssertTrue(featureSource.contains("try await continuousClock.sleep(for: .milliseconds(450))"))
+        XCTAssertTrue(featureSource.contains("await send(.automaticRefresh)"))
+        XCTAssertTrue(
+            featureSource.contains("case .automaticRefresh:\n                guard !state.isLoading else { return .none }\n                return loadTasks()"),
+            "Automatic Backlog refreshes must update silently without entering the user-visible loading state."
+        )
         XCTAssertTrue(
             featureSource.contains(".cancellable(id: CancelID.automaticRefresh, cancelInFlight: true)"),
             "A burst of semantic updates must keep one pending Backlog refresh."

@@ -84,6 +84,7 @@ Given the Mac Backlog window is open
 When CloudKit or another Routina surface produces a burst of persistence changes
 Then Backlog does not rebuild its task snapshot for every raw SwiftData save
 And it waits for the semantic update burst to settle before performing one refresh
+And an automatic refresh does not enter the user-visible loading state
 And the manual Refresh Backlog control remains immediately available when no refresh is in progress
 
 ### Flag Rules Can Keep Tasks Out Of The Mac Task Ladder

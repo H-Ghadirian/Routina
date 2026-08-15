@@ -27,6 +27,7 @@ struct BacklogFeature {
         case onDisappear
         case refresh
         case routineDataChanged
+        case automaticRefresh
         case tasksLoaded([RoutineTask], [HomeCustomTaskSection], [RoutineFlagRule])
         case loadFailed(String)
         case customSectionsChanged([HomeCustomTaskSection])
@@ -65,9 +66,13 @@ struct BacklogFeature {
             case .routineDataChanged:
                 return .run { send in
                     try await continuousClock.sleep(for: .milliseconds(450))
-                    await send(.refresh)
+                    await send(.automaticRefresh)
                 }
                 .cancellable(id: CancelID.automaticRefresh, cancelInFlight: true)
+
+            case .automaticRefresh:
+                guard !state.isLoading else { return .none }
+                return loadTasks()
 
             case let .tasksLoaded(tasks, customSections, flagRules):
                 state.isLoading = false
