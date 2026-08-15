@@ -408,6 +408,19 @@ struct TaskRankingPresentationTests {
         #expect(source.contains("accessibilityValue(isCollapsed ? \"Collapsed\" : \"Expanded\")"))
     }
 
+    @Test
+    func taskLadderKeepsRowsAsDirectLazySectionContent() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+
+        #expect(source.contains("LazyVStack(alignment: .leading, spacing: 0)"))
+        #expect(source.contains("Section {"))
+        #expect(source.contains("ForEach(section.tasks)"))
+        #expect(source.contains("rankingSectionHeader(section, isCollapsed: isCollapsed)"))
+        #expect(!source.contains("private func rankingSection(_ section"))
+    }
+
     private static func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

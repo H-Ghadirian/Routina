@@ -152,6 +152,19 @@ When it contains placed tasks
 Then those tasks return to the root
 And no task data or history is deleted
 
+### Mac Task Ladder Lazily Lays Out Individual Rows
+
+Area: Tasks / Mac Task Ladder / Performance
+Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+
+Given a Task Ladder has enough tasks to extend well beyond the visible window
+When the person scrolls to its final rows
+Then each task row remains an independently lazy section child
+And a metric section does not force SwiftUI to repeatedly measure all of its rows as one tall eager child
+
 ### iOS Search Keeps Typing Ahead Of Home Results
 
 Area: Tasks / UI

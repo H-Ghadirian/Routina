@@ -181,9 +181,29 @@ struct TaskRankingMacView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 12) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(store.presentation.sections) { section in
-                            rankingSection(section)
+                            let isCollapsed = collapsedSectionIDs.contains(section.id)
+
+                            Section {
+                                if !isCollapsed {
+                                    ForEach(section.tasks) { task in
+                                        VStack(spacing: 0) {
+                                            rankingRow(task, in: section)
+                                            if task.id != section.tasks.last?.id {
+                                                Divider().padding(.leading, 12)
+                                            }
+                                        }
+                                        .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
+                                    }
+                                }
+
+                                Color.clear
+                                    .frame(height: 12)
+                                    .accessibilityHidden(true)
+                            } header: {
+                                rankingSectionHeader(section, isCollapsed: isCollapsed)
+                            }
                         }
                     }
                     .padding(12)
@@ -193,51 +213,39 @@ struct TaskRankingMacView: View {
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.42))
     }
 
-    private func rankingSection(_ section: TaskRankingPresentation.Section) -> some View {
-        let isCollapsed = collapsedSectionIDs.contains(section.id)
-
-        return VStack(alignment: .leading, spacing: 0) {
-            Button {
-                toggleRankingSection(section)
-            } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(section.title)
-                        .font(.headline)
-                    Text("\(section.tasks.count)")
-                        .font(.caption.weight(.semibold))
+    private func rankingSectionHeader(
+        _ section: TaskRankingPresentation.Section,
+        isCollapsed: Bool
+    ) -> some View {
+        Button {
+            toggleRankingSection(section)
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(section.title)
+                    .font(.headline)
+                Text("\(section.tasks.count)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                if !section.supportsManualOrdering {
+                    Text(section.isMissingValue ? "Separate" : "Read only")
+                        .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
-                    Spacer(minLength: 0)
-                    if !section.supportsManualOrdering {
-                        Text(section.isMissingValue ? "Separate" : "Read only")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(.secondary)
-                    }
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isCollapsed ? -90 : 0))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isCollapsed ? -90 : 0))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(isCollapsed ? "Expand" : "Collapse") \(section.title)")
-            .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
-            .background(section.isMissingValue ? Color.secondary.opacity(0.08) : Color.accentColor.opacity(0.09))
-
-            if !isCollapsed {
-                Divider()
-
-                ForEach(section.tasks) { task in
-                    rankingRow(task, in: section)
-                    if task.id != section.tasks.last?.id {
-                        Divider().padding(.leading, 12)
-                    }
-                }
-            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(isCollapsed ? "Expand" : "Collapse") \(section.title)")
+        .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
+        .background(section.isMissingValue ? Color.secondary.opacity(0.08) : Color.accentColor.opacity(0.09))
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color(nsColor: .textBackgroundColor).opacity(0.62))
