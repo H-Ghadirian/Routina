@@ -78,6 +78,71 @@ struct TaskLadderOrganizationTests {
     }
 
     @Test
+    func linkedTaskChildSuggestionRejectionsRoundTripAndSanitizeDeletedTasks() throws {
+        let parentID = UUID()
+        let linkedTaskID = UUID()
+        let deletedLinkedTaskID = UUID()
+        let organization = TaskLadderOrganization(
+            taskGroupIDs: [parentID],
+            rejectedLinkedTaskChildSuggestions: [
+                TaskLadderLinkedTaskSuggestionRejection(
+                    parentTaskID: parentID,
+                    linkedTaskID: linkedTaskID
+                ),
+                TaskLadderLinkedTaskSuggestionRejection(
+                    parentTaskID: parentID,
+                    linkedTaskID: deletedLinkedTaskID
+                )
+            ]
+        )
+
+        let rawValue = try #require(TaskLadderOrganizationStorage.encode(organization))
+        let decoded = TaskLadderOrganizationStorage.decode(rawValue)
+        let sanitized = decoded.sanitized(validTaskIDs: [parentID, linkedTaskID])
+
+        #expect(decoded.isLinkedTaskChildSuggestionRejected(
+            parentTaskID: parentID,
+            linkedTaskID: linkedTaskID
+        ))
+        #expect(sanitized.isLinkedTaskChildSuggestionRejected(
+            parentTaskID: parentID,
+            linkedTaskID: linkedTaskID
+        ))
+        #expect(!sanitized.isLinkedTaskChildSuggestionRejected(
+            parentTaskID: parentID,
+            linkedTaskID: deletedLinkedTaskID
+        ))
+    }
+
+    @Test
+    func placingARejectedLinkedTaskInsideItsParentAcceptsTheSuggestion() {
+        let parentID = UUID()
+        let linkedTaskID = UUID()
+        var organization = TaskLadderOrganization(
+            taskGroupIDs: [parentID],
+            rejectedLinkedTaskChildSuggestions: [
+                TaskLadderLinkedTaskSuggestionRejection(
+                    parentTaskID: parentID,
+                    linkedTaskID: linkedTaskID
+                )
+            ]
+        )
+
+        let placed = organization.place(
+            taskID: linkedTaskID,
+            inside: .task(parentID),
+            validTaskIDs: [parentID, linkedTaskID]
+        )
+
+        #expect(placed)
+        #expect(organization.parent(of: linkedTaskID) == .task(parentID))
+        #expect(!organization.isLinkedTaskChildSuggestionRejected(
+            parentTaskID: parentID,
+            linkedTaskID: linkedTaskID
+        ))
+    }
+
+    @Test
     func disablingTaskGroupPreservesAnInUseGroupUntilChildrenAreMoved() {
         let parentID = UUID()
         let childID = UUID()

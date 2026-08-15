@@ -216,6 +216,25 @@ struct TaskRankingMacView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
+                        if !store.presentation.linkedTaskChildSuggestions.isEmpty {
+                            linkedTaskChildSuggestionsHeader
+
+                            ForEach(store.presentation.linkedTaskChildSuggestions) { suggestion in
+                                VStack(spacing: 0) {
+                                    linkedTaskChildSuggestionRow(suggestion)
+
+                                    if suggestion.id != store.presentation.linkedTaskChildSuggestions.last?.id {
+                                        Divider().padding(.leading, 12)
+                                    }
+                                }
+                                .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
+                            }
+
+                            Color.clear
+                                .frame(height: 12)
+                                .accessibilityHidden(true)
+                        }
+
                         ForEach(store.presentation.sections) { section in
                             let isCollapsed = collapsedSectionIDs.contains(section.id)
 
@@ -245,6 +264,90 @@ struct TaskRankingMacView: View {
             }
         }
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.42))
+    }
+
+    private var linkedTaskChildSuggestionsHeader: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Label("Linked task suggestions", systemImage: "link.badge.plus")
+                    .font(.headline)
+
+                Text("\(store.presentation.linkedTaskChildSuggestions.count)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 0)
+            }
+
+            Text("Accept a linked task to place it in this group. Rejecting only hides the suggestion; either choice keeps the task link and its completion behavior unchanged.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .background(Color.accentColor.opacity(0.09))
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(nsColor: .textBackgroundColor).opacity(0.62))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
+        )
+    }
+
+    private func linkedTaskChildSuggestionRow(
+        _ suggestion: TaskRankingPresentation.LinkedTaskChildSuggestion
+    ) -> some View {
+        HStack(spacing: 10) {
+            Text(suggestion.taskEmoji)
+                .font(.body)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(suggestion.taskName)
+                    .font(.subheadline)
+                    .lineLimit(2)
+
+                HStack(spacing: 6) {
+                    Label(
+                        suggestion.relationshipKind.title,
+                        systemImage: suggestion.relationshipKind.systemImage
+                    )
+
+                    if suggestion.willMoveFromAnotherPlacement {
+                        Text("Moves from its current Ladder location")
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 6)
+
+            Button {
+                store.send(.linkedTaskChildSuggestionRejected(
+                    parentTaskID: suggestion.parentTaskID,
+                    childTaskID: suggestion.taskID
+                ))
+            } label: {
+                Label("Reject", systemImage: "xmark")
+            }
+            .buttonStyle(.bordered)
+            .help("Hide this child suggestion without removing the task link")
+
+            Button {
+                store.send(.linkedTaskChildSuggestionAccepted(
+                    parentTaskID: suggestion.parentTaskID,
+                    childTaskID: suggestion.taskID
+                ))
+            } label: {
+                Label("Accept", systemImage: "checkmark")
+            }
+            .buttonStyle(.borderedProminent)
+            .help("Place this linked task inside the group")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 
     private func rankingSectionHeader(

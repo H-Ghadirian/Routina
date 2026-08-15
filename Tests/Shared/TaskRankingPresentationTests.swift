@@ -183,6 +183,116 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func taskGroupSuggestsEligibleBidirectionallyLinkedTasksThatCanBecomeChildren() throws {
+        let exercise = RoutineTask(name: "Exercise", pressure: .low)
+        let gym = RoutineTask(name: "Gym", pressure: .medium)
+        let walk = RoutineTask(name: "Walk", pressure: .medium)
+        let placed = RoutineTask(name: "Already placed", pressure: .medium)
+        let rejected = RoutineTask(name: "Rejected", pressure: .medium)
+        let hidden = RoutineTask(name: "Hidden", pressure: .medium, flags: ["Someday"])
+        let cycle = RoutineTask(name: "Cycle", pressure: .medium)
+        let moveMe = RoutineTask(name: "Move me", pressure: .medium)
+        exercise.replaceRelationships([
+            RoutineTaskRelationship(targetTaskID: gym.id, kind: .related),
+            RoutineTaskRelationship(targetTaskID: placed.id, kind: .blocks),
+            RoutineTaskRelationship(targetTaskID: rejected.id, kind: .related),
+            RoutineTaskRelationship(targetTaskID: hidden.id, kind: .related),
+            RoutineTaskRelationship(targetTaskID: cycle.id, kind: .related),
+            RoutineTaskRelationship(targetTaskID: moveMe.id, kind: .blockedBy)
+        ])
+        walk.replaceRelationships([
+            RoutineTaskRelationship(targetTaskID: exercise.id, kind: .canComplete)
+        ])
+        let company = TaskLadderGroup(name: "Company")
+        let organization = TaskLadderOrganization(
+            groups: [company],
+            placements: [
+                TaskLadderPlacement(taskID: placed.id, parent: .task(exercise.id)),
+                TaskLadderPlacement(taskID: exercise.id, parent: .task(cycle.id)),
+                TaskLadderPlacement(taskID: moveMe.id, parent: .group(company.id))
+            ],
+            taskGroupIDs: [exercise.id],
+            rejectedLinkedTaskChildSuggestions: [
+                TaskLadderLinkedTaskSuggestionRejection(
+                    parentTaskID: exercise.id,
+                    linkedTaskID: rejected.id
+                )
+            ]
+        )
+
+        let presentation = TaskRankingPresentation.make(
+            tasks: [exercise, gym, walk, placed, rejected, hidden, cycle, moveMe],
+            organization: organization,
+            flagRules: [RoutineFlagRule(flag: "Someday", kind: .hideFromTaskLadder)],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            scopePath: [exercise.id]
+        )
+
+        #expect(presentation.linkedTaskChildSuggestions.map(\.taskName) == ["Gym", "Move me", "Walk"])
+        #expect(presentation.linkedTaskChildSuggestions.map(\.relationshipKind) == [
+            .related,
+            .blockedBy,
+            .canBeCompletedBy
+        ])
+        #expect(presentation.linkedTaskChildSuggestions.first {
+            $0.taskID == moveMe.id
+        }?.willMoveFromAnotherPlacement == true)
+        #expect(!presentation.linkedTaskChildSuggestions.contains { $0.taskID == placed.id })
+        #expect(!presentation.linkedTaskChildSuggestions.contains { $0.taskID == rejected.id })
+        #expect(!presentation.linkedTaskChildSuggestions.contains { $0.taskID == hidden.id })
+        #expect(!presentation.linkedTaskChildSuggestions.contains { $0.taskID == cycle.id })
+    }
+
+    @Test
+    func linkedTaskSuggestionsOnlyAppearInsideTaskBackedGroups() {
+        let exercise = RoutineTask(name: "Exercise", pressure: .low)
+        let walk = RoutineTask(
+            name: "Walk",
+            pressure: .medium,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: exercise.id, kind: .canComplete)
+            ]
+        )
+
+        let root = TaskRankingPresentation.make(
+            tasks: [exercise, walk],
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let inactiveNested = TaskRankingPresentation.make(
+            tasks: [exercise, walk],
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            scopePath: [exercise.id]
+        )
+        let activeNested = TaskRankingPresentation.make(
+            tasks: [exercise, walk],
+            organization: TaskLadderOrganization(taskGroupIDs: [exercise.id]),
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            scopePath: [exercise.id]
+        )
+
+        #expect(root.linkedTaskChildSuggestions.isEmpty)
+        #expect(inactiveNested.linkedTaskChildSuggestions.isEmpty)
+        #expect(activeNested.taskCount == 0)
+        #expect(activeNested.linkedTaskChildSuggestions.map(\.taskID) == [walk.id])
+        #expect(!activeNested.isEmpty)
+    }
+
+    @Test
     func groupInheritsHighestCategoricalValuesFromItsActionableDirectTasks() throws {
         let company = TaskLadderGroup(
             name: "Company",
@@ -555,6 +665,21 @@ struct TaskRankingPresentationTests {
         #expect(organizationSource.contains("The repeating task keeps its schedule, completion action, and history."))
         #expect(organizationSource.contains("organization.validParents("))
         #expect(organizationSource.contains("TaskLadderPlacementEditorSheet.completionBehavior("))
+    }
+
+    @Test
+    func taskLadderLetsPeopleAcceptOrRejectLinkedTaskChildSuggestions() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+
+        #expect(source.contains("Linked task suggestions"))
+        #expect(source.contains("Label(\"Reject\", systemImage: \"xmark\")"))
+        #expect(source.contains("Label(\"Accept\", systemImage: \"checkmark\")"))
+        #expect(source.contains(".linkedTaskChildSuggestionRejected("))
+        #expect(source.contains(".linkedTaskChildSuggestionAccepted("))
+        #expect(source.contains("keeps the task link and its completion behavior unchanged"))
+        #expect(source.contains("ForEach(store.presentation.linkedTaskChildSuggestions)"))
     }
 
     @Test

@@ -238,6 +238,17 @@ enum TaskRankingMetricValue: Equatable, Hashable, Sendable {
 
 /// A stable, feature-owned snapshot consumed directly by the scrolling Mac task-ranking view.
 struct TaskRankingPresentation: Equatable {
+    struct LinkedTaskChildSuggestion: Identifiable, Equatable, Sendable {
+        let parentTaskID: UUID
+        let taskID: UUID
+        let taskName: String
+        let taskEmoji: String
+        let relationshipKind: RoutineTaskRelationshipKind
+        let willMoveFromAnotherPlacement: Bool
+
+        var id: UUID { taskID }
+    }
+
     struct RowMetadata: Equatable, Sendable {
         let tagLabels: [String]
         let isRepeating: Bool
@@ -281,6 +292,7 @@ struct TaskRankingPresentation: Equatable {
     let sections: [Section]
     let rowMetadataByTaskID: [UUID: RowMetadata]
     let eligibleTaskIDs: Set<UUID>
+    let linkedTaskChildSuggestions: [LinkedTaskChildSuggestion]
 
     var scopeParentTaskID: UUID? {
         scopePath.last
@@ -291,7 +303,7 @@ struct TaskRankingPresentation: Equatable {
     }
 
     var isEmpty: Bool {
-        taskCount == 0
+        taskCount == 0 && linkedTaskChildSuggestions.isEmpty
     }
 
     static func empty(metric: TaskRankingMetric = .pressure, isReversed: Bool = false) -> Self {
@@ -301,7 +313,8 @@ struct TaskRankingPresentation: Equatable {
             scopePath: [],
             sections: [],
             rowMetadataByTaskID: [:],
-            eligibleTaskIDs: []
+            eligibleTaskIDs: [],
+            linkedTaskChildSuggestions: []
         )
     }
 
@@ -405,6 +418,15 @@ struct TaskRankingPresentation: Equatable {
                 )
             }
         )
+        let linkedTaskChildSuggestions = linkedTaskChildSuggestions(
+            tasks: tasks,
+            organization: organization,
+            eligibleTasksByID: eligibleTasksByID,
+            scopePath: scopePath,
+            groupByID: groupByID,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
 
         guard metric.supportsManualLadder else {
             return estimatedTimePresentation(
@@ -413,7 +435,8 @@ struct TaskRankingPresentation: Equatable {
                 isReversed: isReversed,
                 scopePath: scopePath,
                 rowMetadataByTaskID: rowMetadataByTaskID,
-                eligibleTaskIDs: eligibleTaskIDs
+                eligibleTaskIDs: eligibleTaskIDs,
+                linkedTaskChildSuggestions: linkedTaskChildSuggestions
             )
         }
 
@@ -477,7 +500,8 @@ struct TaskRankingPresentation: Equatable {
             scopePath: scopePath,
             sections: sections + missingSection,
             rowMetadataByTaskID: rowMetadataByTaskID,
-            eligibleTaskIDs: eligibleTaskIDs
+            eligibleTaskIDs: eligibleTaskIDs,
+            linkedTaskChildSuggestions: linkedTaskChildSuggestions
         )
     }
 
@@ -487,7 +511,8 @@ struct TaskRankingPresentation: Equatable {
         isReversed: Bool,
         scopePath: [UUID],
         rowMetadataByTaskID: [UUID: RowMetadata],
-        eligibleTaskIDs: Set<UUID>
+        eligibleTaskIDs: Set<UUID>,
+        linkedTaskChildSuggestions: [LinkedTaskChildSuggestion]
     ) -> Self {
         let knownTasks = activeTasks.compactMap { task -> (RoutineTask, Int)? in
             task.estimatedDurationMinutes.map { (task, $0) }
@@ -541,8 +566,71 @@ struct TaskRankingPresentation: Equatable {
             scopePath: scopePath,
             sections: sections,
             rowMetadataByTaskID: rowMetadataByTaskID,
-            eligibleTaskIDs: eligibleTaskIDs
+            eligibleTaskIDs: eligibleTaskIDs,
+            linkedTaskChildSuggestions: linkedTaskChildSuggestions
         )
+    }
+
+    private static func linkedTaskChildSuggestions(
+        tasks: [RoutineTask],
+        organization: TaskLadderOrganization,
+        eligibleTasksByID: [UUID: RoutineTask],
+        scopePath: [UUID],
+        groupByID: [UUID: TaskLadderGroup],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [LinkedTaskChildSuggestion] {
+        guard let parentTaskID = scopePath.last,
+              groupByID[parentTaskID] == nil,
+              organization.isTaskGroup(taskID: parentTaskID),
+              let parentTask = eligibleTasksByID[parentTaskID] else {
+            return []
+        }
+
+        let eligibleTaskIDs = Set(eligibleTasksByID.keys)
+        let directChildTaskIDs = organization.childTaskIDs(of: .task(parentTaskID))
+        let candidates = RoutineTaskRelationshipCandidate.from(
+            tasks,
+            excluding: parentTaskID,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let resolvedRelationships = RoutineTask.resolvedRelationships(
+            for: parentTask,
+            within: candidates
+        )
+        var suggestionsByTaskID: [UUID: LinkedTaskChildSuggestion] = [:]
+
+        for relationship in resolvedRelationships {
+            guard eligibleTaskIDs.contains(relationship.taskID),
+                  !directChildTaskIDs.contains(relationship.taskID),
+                  !organization.isLinkedTaskChildSuggestionRejected(
+                    parentTaskID: parentTaskID,
+                    linkedTaskID: relationship.taskID
+                  ),
+                  organization.validParents(
+                    for: relationship.taskID,
+                    validTaskIDs: eligibleTaskIDs
+                  ).contains(.task(parentTaskID)),
+                  suggestionsByTaskID[relationship.taskID] == nil else {
+                continue
+            }
+            suggestionsByTaskID[relationship.taskID] = LinkedTaskChildSuggestion(
+                parentTaskID: parentTaskID,
+                taskID: relationship.taskID,
+                taskName: relationship.taskName,
+                taskEmoji: relationship.taskEmoji,
+                relationshipKind: relationship.kind,
+                willMoveFromAnotherPlacement: organization.parent(of: relationship.taskID) != nil
+            )
+        }
+
+        return suggestionsByTaskID.values.sorted { lhs, rhs in
+            let comparison = lhs.taskName.localizedCaseInsensitiveCompare(rhs.taskName)
+            return comparison == .orderedSame
+                ? lhs.taskID.uuidString < rhs.taskID.uuidString
+                : comparison == .orderedAscending
+        }
     }
 
     private static func sortedLadderTasks(

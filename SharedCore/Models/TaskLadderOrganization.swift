@@ -173,21 +173,33 @@ struct TaskLadderPlacement: Codable, Equatable, Hashable, Identifiable, Sendable
     var id: UUID { taskID }
 }
 
+struct TaskLadderLinkedTaskSuggestionRejection: Codable, Equatable, Hashable, Sendable {
+    var parentTaskID: UUID
+    var linkedTaskID: UUID
+}
+
 struct TaskLadderOrganization: Codable, Equatable, Sendable {
     var groups: [TaskLadderGroup]
     var placements: [TaskLadderPlacement]
     /// Explicitly enabled task-backed groups. Optional storage preserves decoding
     /// for organization payloads written before task-backed groups could be empty.
     var taskGroupIDs: [UUID]?
+    /// Parent/link pairs that the person explicitly rejected as child-placement
+    /// suggestions. This remains separate from the task relationship itself.
+    var rejectedLinkedTaskChildSuggestions: [TaskLadderLinkedTaskSuggestionRejection]?
 
     init(
         groups: [TaskLadderGroup] = [],
         placements: [TaskLadderPlacement] = [],
-        taskGroupIDs: [UUID] = []
+        taskGroupIDs: [UUID] = [],
+        rejectedLinkedTaskChildSuggestions: [TaskLadderLinkedTaskSuggestionRejection] = []
     ) {
         self.groups = groups
         self.placements = placements
         self.taskGroupIDs = Self.storedTaskGroupIDs(taskGroupIDs)
+        self.rejectedLinkedTaskChildSuggestions = Self.storedLinkedTaskSuggestionRejections(
+            rejectedLinkedTaskChildSuggestions
+        )
     }
 
     func parent(of taskID: UUID) -> TaskLadderNodeID? {
@@ -205,6 +217,32 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
     func isTaskGroup(taskID: UUID) -> Bool {
         isExplicitTaskGroup(taskID: taskID)
             || !childTaskIDs(of: .task(taskID)).isEmpty
+    }
+
+    func isLinkedTaskChildSuggestionRejected(parentTaskID: UUID, linkedTaskID: UUID) -> Bool {
+        (rejectedLinkedTaskChildSuggestions ?? []).contains {
+            $0.parentTaskID == parentTaskID && $0.linkedTaskID == linkedTaskID
+        }
+    }
+
+    mutating func setLinkedTaskChildSuggestionRejected(
+        _ isRejected: Bool,
+        parentTaskID: UUID,
+        linkedTaskID: UUID
+    ) {
+        var rejections = Set(rejectedLinkedTaskChildSuggestions ?? [])
+        let rejection = TaskLadderLinkedTaskSuggestionRejection(
+            parentTaskID: parentTaskID,
+            linkedTaskID: linkedTaskID
+        )
+        if isRejected {
+            rejections.insert(rejection)
+        } else {
+            rejections.remove(rejection)
+        }
+        rejectedLinkedTaskChildSuggestions = Self.storedLinkedTaskSuggestionRejections(
+            Array(rejections)
+        )
     }
 
     /// Disabling an in-use group is rejected so its nested tasks do not become
@@ -270,6 +308,13 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
         }
         placements.removeAll { $0.taskID == taskID }
         placements.append(TaskLadderPlacement(taskID: taskID, parent: parent))
+        if case let .task(parentTaskID) = parent {
+            setLinkedTaskChildSuggestionRejected(
+                false,
+                parentTaskID: parentTaskID,
+                linkedTaskID: taskID
+            )
+        }
         return true
     }
 
@@ -296,7 +341,10 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
         var result = Self(
             groups: Array(uniqueGroupsByID.values),
             placements: [],
-            taskGroupIDs: (taskGroupIDs ?? []).filter(validTaskIDs.contains)
+            taskGroupIDs: (taskGroupIDs ?? []).filter(validTaskIDs.contains),
+            rejectedLinkedTaskChildSuggestions: (rejectedLinkedTaskChildSuggestions ?? []).filter {
+                validTaskIDs.contains($0.parentTaskID) && validTaskIDs.contains($0.linkedTaskID)
+            }
         )
         result.groups.sort { lhs, rhs in
             let comparison = lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName)
@@ -340,6 +388,18 @@ struct TaskLadderOrganization: Codable, Equatable, Sendable {
         let values = Array(Set(taskGroupIDs)).sorted { $0.uuidString < $1.uuidString }
         return values.isEmpty ? nil : values
     }
+
+    private static func storedLinkedTaskSuggestionRejections(
+        _ rejections: [TaskLadderLinkedTaskSuggestionRejection]
+    ) -> [TaskLadderLinkedTaskSuggestionRejection]? {
+        let values = Array(Set(rejections)).sorted { lhs, rhs in
+            if lhs.parentTaskID != rhs.parentTaskID {
+                return lhs.parentTaskID.uuidString < rhs.parentTaskID.uuidString
+            }
+            return lhs.linkedTaskID.uuidString < rhs.linkedTaskID.uuidString
+        }
+        return values.isEmpty ? nil : values
+    }
 }
 
 enum TaskLadderCompletionBehavior: String, CaseIterable, Equatable, Hashable, Sendable {
@@ -376,7 +436,8 @@ enum TaskLadderOrganizationStorage {
     static func encode(_ organization: TaskLadderOrganization) -> String? {
         guard !organization.groups.isEmpty
             || !organization.placements.isEmpty
-            || organization.taskGroupIDs?.isEmpty == false else { return nil }
+            || organization.taskGroupIDs?.isEmpty == false
+            || organization.rejectedLinkedTaskChildSuggestions?.isEmpty == false else { return nil }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         guard let data = try? encoder.encode(organization),

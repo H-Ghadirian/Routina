@@ -64,6 +64,8 @@ struct TaskRankingFeature {
         case groupSaved(TaskLadderGroup)
         case groupDeleted(UUID)
         case taskPlacementSaved(UUID, TaskLadderNodeID?, TaskLadderCompletionBehavior)
+        case linkedTaskChildSuggestionAccepted(parentTaskID: UUID, childTaskID: UUID)
+        case linkedTaskChildSuggestionRejected(parentTaskID: UUID, childTaskID: UUID)
         case taskDetail(TaskDetailFeature.Action)
     }
 
@@ -248,6 +250,41 @@ struct TaskRankingFeature {
                     parent: parent,
                     behavior: behavior
                 )
+
+            case let .linkedTaskChildSuggestionAccepted(parentTaskID, childTaskID):
+                guard state.presentation.linkedTaskChildSuggestions.contains(where: {
+                    $0.parentTaskID == parentTaskID && $0.taskID == childTaskID
+                }) else {
+                    return .none
+                }
+                let validTaskIDs = Set(state.tasks.map(\.id))
+                guard state.organization.place(
+                    taskID: childTaskID,
+                    inside: .task(parentTaskID),
+                    validTaskIDs: validTaskIDs
+                ) else {
+                    state.errorMessage = "That placement would create an invalid Task Ladder hierarchy."
+                    return .none
+                }
+                state.organization.setTaskGroupEnabled(true, taskID: parentTaskID)
+                rebuildPresentation(&state)
+                appSettingsClient.setTaskLadderOrganization(state.organization)
+                return .none
+
+            case let .linkedTaskChildSuggestionRejected(parentTaskID, childTaskID):
+                guard state.presentation.linkedTaskChildSuggestions.contains(where: {
+                    $0.parentTaskID == parentTaskID && $0.taskID == childTaskID
+                }) else {
+                    return .none
+                }
+                state.organization.setLinkedTaskChildSuggestionRejected(
+                    true,
+                    parentTaskID: parentTaskID,
+                    linkedTaskID: childTaskID
+                )
+                rebuildPresentation(&state)
+                appSettingsClient.setTaskLadderOrganization(state.organization)
+                return .none
 
             case let .taskDetail(taskDetailAction):
                 guard var taskDetailState = state.taskDetailState else { return .none }

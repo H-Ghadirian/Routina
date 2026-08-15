@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0577](0577-suggest-linked-tasks-as-task-ladder-children.md) refines [0576](0576-offer-direct-repeating-task-ladder-grouping.md), [0574](0574-separate-task-ladder-placement-from-completion.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** A task-backed group's nested Mac Task Ladder offers eligible bidirectionally linked tasks as explicit Accept/Reject child suggestions while preserving the relationship and its completion meaning.
+
 - **[0576](0576-offer-direct-repeating-task-ladder-grouping.md) refines [0574](0574-separate-task-ladder-placement-from-completion.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** A repeating task can be explicitly activated as a Task Ladder group from Add Task, Edit Task, Task Details, or the Ladder itself, including before it has children, while remaining a real repeating task.
 
 - **[0575](0575-inherit-task-ladder-group-values-from-actionable-tasks.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0574](0574-separate-task-ladder-placement-from-completion.md):** Each categorical Task Ladder group value can independently inherit the highest explicit value among its currently actionable direct tasks, with the result derived in the cached presentation snapshot.

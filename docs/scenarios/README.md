@@ -151,6 +151,17 @@ Given Exercise already has nested tasks
 When the person views the Task Ladder group switch
 Then it remains on and cannot be turned off until those tasks are moved elsewhere
 
+Given Exercise is a task-backed Task Ladder group
+And Walk is an actionable task linked to Exercise in either relationship direction
+And Walk is not already a direct child and can be placed there without a cycle
+When the person opens Exercise's nested ladder
+Then Walk appears as a linked-task child suggestion with its existing relationship type
+When the person accepts the suggestion
+Then Walk is placed inside Exercise without changing or removing its task relationship
+When the person instead rejects the suggestion
+Then the synchronized parent/task dismissal hides it without unlinking either task
+And manually placing Walk inside Exercise clears that dismissal
+
 When the person opens Exercise
 Then the nested ladder contains only its actionable placed tasks
 And its manual tie-break order is independent of the root and another parent
