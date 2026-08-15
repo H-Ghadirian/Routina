@@ -220,7 +220,9 @@ struct TaskRankingMacView: View {
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
 
-                        rowMetadata(task)
+                        if let metadata = store.presentation.rowMetadataByTaskID[task.id] {
+                            rowMetadata(metadata)
+                        }
                     }
 
                     Spacer(minLength: 2)
@@ -272,13 +274,23 @@ struct TaskRankingMacView: View {
     }
 
     @ViewBuilder
-    private func rowMetadata(_ task: RoutineTask) -> some View {
-        let labels = metadataLabels(task)
-        if !labels.isEmpty {
-            Text(labels.joined(separator: " • "))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+    private func rowMetadata(_ metadata: TaskRankingPresentation.RowMetadata) -> some View {
+        if !metadata.tagLabels.isEmpty || metadata.isRepeating {
+            HStack(spacing: 6) {
+                if !metadata.tagLabels.isEmpty {
+                    Text(metadata.tagLabels.joined(separator: " • "))
+                        .lineLimit(1)
+                }
+
+                if metadata.isRepeating {
+                    Label("Repeating", systemImage: "repeat")
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .accessibilityLabel("Repeating task")
+                }
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -311,28 +323,4 @@ struct TaskRankingMacView: View {
         return "\(store.metric.directionTitle(isReversed: store.isReversed)) • move tasks within or between values"
     }
 
-    private func metadataLabels(_ task: RoutineTask) -> [String] {
-        switch store.metric {
-        case .pressure:
-            return task.pressure == .none ? ["No pressure value"] : [task.pressure.metadataLabel ?? ""]
-        case .urgency:
-            return task.hasExplicitUrgency ? ["\(task.urgency.title) urgency"] : ["No urgency value"]
-        case .estimatedTime:
-            return task.estimatedDurationMinutes.map { [durationLabel($0)] } ?? ["No estimate"]
-        case .importance:
-            return task.hasExplicitImportance ? ["\(task.importance.title) importance"] : ["No importance value"]
-        case .thinkingNeeded:
-            return task.thinkingNeeded == .none
-                ? task.tags.map { "#\($0)" }
-                : [task.thinkingNeeded.metadataLabel ?? ""]
-        }
-    }
-
-    private func durationLabel(_ minutes: Int) -> String {
-        let hours = minutes / 60
-        let remainingMinutes = minutes % 60
-        if hours == 0 { return "\(minutes) min" }
-        if remainingMinutes == 0 { return hours == 1 ? "1 hour" : "\(hours) hours" }
-        return "\(hours)h \(remainingMinutes)m"
-    }
 }

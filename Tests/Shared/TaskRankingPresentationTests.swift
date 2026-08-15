@@ -227,15 +227,48 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
-    func missingThinkingNeededRowsShowTagsInsteadOfARepeatedFallback() throws {
+    func rowMetadataShowsTagsAndRepeatingStateAcrossMetrics() throws {
+        let repeating = RoutineTask(
+            name: "Repeating",
+            pressure: .medium,
+            tags: ["Work", "Writing"],
+            estimatedDurationMinutes: 30
+        )
+        let oneOff = RoutineTask(
+            name: "One-off",
+            pressure: .medium,
+            tags: ["Admin"],
+            scheduleMode: .oneOff,
+            estimatedDurationMinutes: 15
+        )
+
+        for metric in TaskRankingMetric.allCases {
+            let presentation = TaskRankingPresentation.make(
+                tasks: [repeating, oneOff],
+                flagRules: [],
+                metric: metric,
+                isReversed: false,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+
+            #expect(presentation.rowMetadataByTaskID[repeating.id]?.tagLabels == ["#Work", "#Writing"])
+            #expect(presentation.rowMetadataByTaskID[repeating.id]?.isRepeating == true)
+            #expect(presentation.rowMetadataByTaskID[oneOff.id]?.tagLabels == ["#Admin"])
+            #expect(presentation.rowMetadataByTaskID[oneOff.id]?.isRepeating == false)
+        }
+    }
+
+    @Test
+    func taskLadderRowsRenderRepeatingLabelWithoutMetricFallbacks() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
-        let thinkingNeededStart = try #require(source.range(of: "case .thinkingNeeded:"))
-        let thinkingNeededSource = String(source[thinkingNeededStart.lowerBound...])
 
-        #expect(thinkingNeededSource.contains("task.tags.map { \"#\\($0)\" }"))
-        #expect(!thinkingNeededSource.contains("No thinking value"))
+        #expect(source.contains("metadata.tagLabels.joined(separator: \" • \")"))
+        #expect(source.contains("Label(\"Repeating\", systemImage: \"repeat\")"))
+        #expect(!source.contains("private func metadataLabels"))
+        #expect(!source.contains("No pressure value"))
     }
 
     @Test

@@ -103,6 +103,20 @@ Then the task does not appear or contribute to the ladder count
 And the task remains unchanged in Home, Backlog, Planner, Timeline, and Stats
 And a Flag that only hides tasks from normal task lists does not hide them from Task Ladder
 
+### Mac Task Ladder Rows Show Task Identity Metadata
+
+Area: Tasks / Mac Task Ladder
+Decision links: [0571](../decisions/0571-show-task-identity-metadata-in-mac-task-ladder.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+
+Given tagged one-off and repeating tasks appear in a Task Ladder value section
+When the person compares their rows in any ladder metric
+Then each row shows its assigned tags instead of repeating the section's metric value
+And each non-one-off row shows a visible `Repeating` label with the repeat symbol
+And a one-off task without tags does not reserve an empty metadata line
+
 ### iOS Search Keeps Typing Ahead Of Home Results
 
 Area: Tasks / UI

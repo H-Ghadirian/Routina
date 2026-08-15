@@ -207,6 +207,16 @@ enum TaskRankingMetricValue: Equatable, Hashable, Sendable {
 
 /// A stable, feature-owned snapshot consumed directly by the scrolling Mac task-ranking view.
 struct TaskRankingPresentation: Equatable {
+    struct RowMetadata: Equatable, Sendable {
+        let tagLabels: [String]
+        let isRepeating: Bool
+
+        init(task: RoutineTask) {
+            tagLabels = task.tags.map { "#\($0)" }
+            isRepeating = !task.isOneOffTask
+        }
+    }
+
     struct Section: Identifiable, Equatable {
         let id: String
         let title: String
@@ -220,6 +230,7 @@ struct TaskRankingPresentation: Equatable {
     let metric: TaskRankingMetric
     let isReversed: Bool
     let sections: [Section]
+    let rowMetadataByTaskID: [UUID: RowMetadata]
 
     var taskCount: Int {
         sections.reduce(0) { $0 + $1.tasks.count }
@@ -230,7 +241,12 @@ struct TaskRankingPresentation: Equatable {
     }
 
     static func empty(metric: TaskRankingMetric = .pressure, isReversed: Bool = false) -> Self {
-        Self(metric: metric, isReversed: isReversed, sections: [])
+        Self(
+            metric: metric,
+            isReversed: isReversed,
+            sections: [],
+            rowMetadataByTaskID: [:]
+        )
     }
 
     static func make(
@@ -255,12 +271,18 @@ struct TaskRankingPresentation: Equatable {
                 && task.todoState != .blocked
                 && !isHiddenFromTaskLadder
         }
+        let rowMetadataByTaskID = Dictionary(
+            uniqueKeysWithValues: activeTasks.map { task in
+                (task.id, RowMetadata(task: task))
+            }
+        )
 
         guard metric.supportsManualLadder else {
             return estimatedTimePresentation(
                 activeTasks,
                 metric: metric,
-                isReversed: isReversed
+                isReversed: isReversed,
+                rowMetadataByTaskID: rowMetadataByTaskID
             )
         }
 
@@ -309,13 +331,19 @@ struct TaskRankingPresentation: Equatable {
             ]
         }
 
-        return Self(metric: metric, isReversed: isReversed, sections: sections + missingSection)
+        return Self(
+            metric: metric,
+            isReversed: isReversed,
+            sections: sections + missingSection,
+            rowMetadataByTaskID: rowMetadataByTaskID
+        )
     }
 
     private static func estimatedTimePresentation(
         _ activeTasks: [RoutineTask],
         metric: TaskRankingMetric,
-        isReversed: Bool
+        isReversed: Bool,
+        rowMetadataByTaskID: [UUID: RowMetadata]
     ) -> Self {
         let knownTasks = activeTasks.compactMap { task -> (RoutineTask, Int)? in
             task.estimatedDurationMinutes.map { (task, $0) }
@@ -355,7 +383,12 @@ struct TaskRankingPresentation: Equatable {
                 )
             )
         }
-        return Self(metric: metric, isReversed: isReversed, sections: sections)
+        return Self(
+            metric: metric,
+            isReversed: isReversed,
+            sections: sections,
+            rowMetadataByTaskID: rowMetadataByTaskID
+        )
     }
 
     private static func sortedLadderTasks(
