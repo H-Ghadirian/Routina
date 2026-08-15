@@ -733,7 +733,6 @@ struct TimelineView: View {
         NavigationStack {
             List {
                 HomeFiltersPickerEntry(
-                    sectionTitle: "Range",
                     title: "Range",
                     systemImage: "calendar",
                     value: selectedRangeBinding.wrappedValue.rawValue,
@@ -743,7 +742,6 @@ struct TimelineView: View {
 
                 if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || (isNotesEnabled && !notes.isEmpty) || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || (isAwayEnabled && !awaySessions.isEmpty) || (isPlacesEnabled && !placeCheckInSessions.isEmpty) {
                     HomeFiltersPickerEntry(
-                        sectionTitle: "Type",
                         title: "Type",
                         systemImage: "line.3.horizontal.decrease.circle",
                         value: filterTypeBinding.wrappedValue.title,
@@ -822,6 +820,7 @@ struct TimelineView: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .timelineType:
@@ -838,6 +837,7 @@ struct TimelineView: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .priority:
@@ -857,6 +857,7 @@ struct TimelineView: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .tags:

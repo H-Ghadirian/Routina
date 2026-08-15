@@ -138,7 +138,7 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(!formPrioritySection.contains(".sheet("))
         #expect(!formSections.contains("TaskFormIOSPriorityPickerSheet"))
 
-        #expect(homePrioritySection.contains("Label(\"Filter priority\""))
+        #expect(homePrioritySection.contains("title: \"Filter priority\""))
         #expect(homePrioritySection.contains("onPresent(.priority)"))
         #expect(!homePrioritySection.contains(".sheet("))
         #expect(!homePrioritySection.contains("ImportanceUrgencyMatrixPicker(selectedFilter:"))
@@ -202,23 +202,27 @@ struct TaskFormIOSLayoutRegressionTests {
             "iOS/Screens/Home/HomeFiltersSheetView.swift"
         )
 
-        for sectionTitle in [
-            "Query",
-            "Task Type",
-            "Visibility",
-            "Created",
-            "Status",
-            "Todo State",
-            "Pressure",
-            "Thinking needed",
-            "Goal",
-            "Media",
-            "Estimation",
-            "Place"
+        for destination in [
+            "advancedQuery",
+            "homeTaskType",
+            "visibility",
+            "created",
+            "status",
+            "todoState",
+            "pressure",
+            "thinkingNeeded",
+            "goal",
+            "media",
+            "estimation",
+            "place"
         ] {
-            #expect(filterSections.contains("sectionTitle: \"\(sectionTitle)\""))
+            #expect(filterSections.contains("destination: .\(destination)"))
         }
 
+        #expect(!filterSections.contains("sectionTitle:"))
+        #expect(!filterSections.contains("Section(\"Group\")"))
+        #expect(!filterSections.contains("Section(\"Sort\")"))
+        #expect(!filterSections.contains("Section(\"Priority\")"))
         #expect(filterSheet.contains("@State private var presentedDetail: IOSFilterDetailDestination?"))
         #expect(filterSheet.contains(".sheet(item: $presentedDetail, content: detailSheet)"))
         #expect(filterSheet.contains("private func detailSheet("))
@@ -230,22 +234,54 @@ struct TaskFormIOSLayoutRegressionTests {
         let statsFilters = try Self.sourceFile("iOS/Screens/Stats/StatsFilterViews.swift")
         let timeline = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
 
-        #expect(statsFilters.contains("sectionTitle: \"Query\""))
-        #expect(statsFilters.contains("sectionTitle: \"Type\""))
+        #expect(statsFilters.contains("destination: .advancedQuery"))
+        #expect(statsFilters.contains("destination: .statsTaskType"))
+        #expect(!statsFilters.contains("sectionTitle:"))
         #expect(statsFilters.contains("HomeFiltersTagFilterEntrySection"))
         #expect(!statsFilters.contains("HomeFiltersTagRulesSection("))
         #expect(statsFilters.contains("@State private var presentedDetail: IOSFilterDetailDestination?"))
         #expect(statsFilters.contains(".sheet(item: $presentedDetail, content: detailSheet)"))
         #expect(statsFilters.contains("case .tags:"))
 
-        #expect(timeline.contains("sectionTitle: \"Range\""))
-        #expect(timeline.contains("sectionTitle: \"Type\""))
+        #expect(timeline.contains("destination: .timelineRange"))
+        #expect(timeline.contains("destination: .timelineType"))
+        #expect(!timeline.contains("sectionTitle:"))
         #expect(timeline.contains("HomeFiltersMediaSection(\n                    selectedMediaFilter: mediaFilterBinding,"))
         #expect(timeline.contains("HomeFiltersTagFilterEntrySection"))
         #expect(!timeline.contains("HomeFiltersTagRulesSection("))
         #expect(timeline.contains("@State private var presentedFilterDetail: IOSFilterDetailDestination?"))
         #expect(timeline.contains(".sheet(item: $presentedFilterDetail, content: timelineFilterDetailSheet)"))
         #expect(timeline.contains("case .tags:\n            HomeTagFilterPickerSheet("))
+    }
+
+    @Test
+    func iosFilterListsDoNotRepeatNavigationOrEntryTitles() throws {
+        let filterSections = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersListSections.swift"
+        )
+        let homeFilterSheet = try Self.sourceFile(
+            "iOS/Screens/Home/HomeFiltersSheetView.swift"
+        )
+        let tagFilter = try Self.sourceSection(
+            startingAt: "struct HomeFiltersTagFilterEntrySection",
+            endingAt: "struct HomeTagFilterPickerSheet",
+            in: try Self.sourceFile("iOS/Screens/Home/HomeTagFilterPickerSheet.swift")
+        )
+        let flagFilter = try Self.sourceSection(
+            startingAt: "struct HomeFiltersFlagSection",
+            endingAt: "struct HomeFiltersFlagPickerSheet",
+            in: try Self.sourceFile("iOS/Screens/Home/HomeFiltersFlagSection.swift")
+        )
+        let mediaDetail = try Self.sourceSection(
+            startingAt: "case .media:",
+            endingAt: "case .estimation:",
+            in: homeFilterSheet
+        )
+
+        #expect(!filterSections.contains("Section(sectionTitle)"))
+        #expect(!tagFilter.contains("Section(\"Tags\")"))
+        #expect(!flagFilter.contains("Section(\"Flags\")"))
+        #expect(mediaDetail.contains(".labelsHidden()"))
     }
 
     @Test

@@ -6,28 +6,14 @@ struct HomeFiltersTagFilterEntrySection: View {
     let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
-        Section("Tags") {
-            Button {
-                onPresent(.tags)
-            } label: {
-                HStack(spacing: 12) {
-                    Label("Filter tags", systemImage: "tag")
-                    Spacer()
-                    Text(selectionSummary)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Filter tags")
-            .accessibilityValue(selectionSummary)
-            .accessibilityHint("Choose tags to show or hide")
+        HomeFiltersDetailEntry(
+            title: "Filter tags",
+            systemImage: "tag",
+            value: selectionSummary
+        ) {
+            onPresent(.tags)
         }
+        .accessibilityHint("Choose tags to show or hide")
     }
 
     private var selectionSummary: String {

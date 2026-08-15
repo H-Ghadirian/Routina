@@ -63,7 +63,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** See a calm, scannable set of relevant work.
 
-**Desired experience:** Today, planned work, recurring responsibilities, future work, and intentionally hidden or backlogged work have understandable places. Important context is visible without opening every item. Optional grouping and filters reduce noise without deleting anything.
+**Desired experience:** Today, planned work, recurring responsibilities, future work, and intentionally hidden or backlogged work have understandable places. Important context is visible without opening every item. Optional grouping and filters reduce noise without deleting anything, and compact filter screens name each choice once instead of making the person scan repeated headings.
 
 **Successful outcome:** The person can identify a useful next action without first reorganizing the whole system.
 

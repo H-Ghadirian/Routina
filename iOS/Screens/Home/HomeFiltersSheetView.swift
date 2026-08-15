@@ -189,6 +189,7 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .status:
@@ -203,6 +204,7 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .todoState:
@@ -270,6 +272,7 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .estimation:
@@ -281,6 +284,7 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .priority:

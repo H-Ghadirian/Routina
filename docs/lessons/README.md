@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0167 — Name each iOS filter choice once](0167-name-each-ios-filter-choice-once.md)
 - [0166 — Keep Task Ladder rows individually lazy](0166-keep-task-ladder-rows-individually-lazy.md)
 - [0165 — Keep automatic Backlog refreshes silent](0165-keep-automatic-backlog-refreshes-silent.md)
 - [0164 — Cache task-detail sidebar locations](0164-cache-task-detail-sidebar-locations.md)

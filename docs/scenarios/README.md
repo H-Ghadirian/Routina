@@ -2753,3 +2753,22 @@ When the user chooses one of the four always-visible values
 Then that field, its explicitness marker, and the derived Priority persist
 And Task Details treats Priority as visible
 And the procedure advances without showing that task again
+
+### iOS Filter Sheets Name Each Choice Once
+
+Area: Tasks / Stats / Timeline / UI
+Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0537](../decisions/0537-keep-all-ios-home-filter-options-in-persistent-sheets.md), [0548](../decisions/0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+
+Given the person opens the Home, Stats, or Timeline Filters sheet on iOS
+When they scan the available filter choices
+Then each choice appears as one compact current-value row
+And no separate section heading repeats that row's name
+
+Given the person opens an inline filter picker such as Media
+When the detail sheet appears
+Then its navigation title identifies the filter
+And the picker options begin without repeating the same visible title
+And assistive technologies retain a useful control label

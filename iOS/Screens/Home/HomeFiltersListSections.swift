@@ -31,7 +31,6 @@ struct HomeFiltersQuerySection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Query",
             title: "Advanced query",
             systemImage: "magnifyingglass",
             value: advancedQuery.isEmpty ? "None" : "Active",
@@ -47,7 +46,6 @@ struct HomeFiltersTaskListModeSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Task Type",
             title: "Task type",
             systemImage: "checklist",
             value: taskListMode.title,
@@ -65,7 +63,6 @@ struct HomeFiltersVisibilitySection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Visibility",
             title: "Show tasks",
             systemImage: "eye",
             value: visibilitySummary,
@@ -91,14 +88,12 @@ struct HomeFiltersGroupingSection: View {
     let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
-        Section("Group") {
-            HomeFiltersDetailEntry(
-                title: "Group rows",
-                systemImage: "rectangle.3.group",
-                value: routineListSectioningMode.title
-            ) {
-                onPresent(.grouping)
-            }
+        HomeFiltersDetailEntry(
+            title: "Group rows",
+            systemImage: "rectangle.3.group",
+            value: routineListSectioningMode.title
+        ) {
+            onPresent(.grouping)
         }
     }
 }
@@ -109,7 +104,6 @@ struct HomeFiltersCreatedSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Created",
             title: "Created",
             systemImage: "calendar",
             value: createdDateFilter.title,
@@ -124,14 +118,12 @@ struct HomeFiltersSortSection: View {
     let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
-        Section("Sort") {
-            HomeFiltersDetailEntry(
-                title: "Task order",
-                systemImage: "arrow.up.arrow.down",
-                value: taskListSortOrder.title
-            ) {
-                onPresent(.sort)
-            }
+        HomeFiltersDetailEntry(
+            title: "Task order",
+            systemImage: "arrow.up.arrow.down",
+            value: taskListSortOrder.title
+        ) {
+            onPresent(.sort)
         }
     }
 }
@@ -165,7 +157,6 @@ struct HomeFiltersDetailEntry: View {
 }
 
 struct HomeFiltersPickerEntry: View {
-    let sectionTitle: String
     let title: String
     let systemImage: String
     let value: String
@@ -173,14 +164,12 @@ struct HomeFiltersPickerEntry: View {
     let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
-        Section(sectionTitle) {
-            HomeFiltersDetailEntry(
-                title: title,
-                systemImage: systemImage,
-                value: value
-            ) {
-                onPresent(destination)
-            }
+        HomeFiltersDetailEntry(
+            title: title,
+            systemImage: systemImage,
+            value: value
+        ) {
+            onPresent(destination)
         }
     }
 }
@@ -227,6 +216,7 @@ struct HomeFiltersGroupingPickerSheet: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 } footer: {
                     Text(routineListSectioningMode.subtitle)
                 }
@@ -262,6 +252,7 @@ struct HomeFiltersSortPickerSheet: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
             .listStyle(.insetGrouped)
@@ -288,7 +279,6 @@ struct HomeFiltersStatusSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Status",
             title: "Show \(placeFilterPluralNoun)",
             systemImage: "line.3.horizontal.decrease.circle",
             value: selectedFilter.rawValue,
@@ -307,7 +297,6 @@ struct HomeFiltersTodoStateSection: View {
     var body: some View {
         if taskListMode == .todos || taskListMode == .all {
             HomeFiltersPickerEntry(
-                sectionTitle: "Todo State",
                 title: "Todo state",
                 systemImage: "checkmark.circle",
                 value: selectedTodoStateFilter?.displayTitle ?? "All",
@@ -324,7 +313,6 @@ struct HomeFiltersPressureSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Pressure",
             title: "Pressure",
             systemImage: "gauge.with.dots.needle.33percent",
             value: selectedPressureFilter?.title ?? "All",
@@ -340,7 +328,6 @@ struct HomeFiltersThinkingNeededSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Thinking needed",
             title: "Thinking needed",
             systemImage: "brain.head.profile",
             value: selectedThinkingNeededFilter?.title ?? "All",
@@ -356,7 +343,6 @@ struct HomeFiltersGoalSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Goal",
             title: "Goal",
             systemImage: "target",
             value: selectedGoalFilter.title,
@@ -372,7 +358,6 @@ struct HomeFiltersMediaSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Media",
             title: "Media",
             systemImage: "paperclip",
             value: selectedMediaFilter.title,
@@ -388,7 +373,6 @@ struct HomeFiltersEstimationSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Estimation",
             title: "Duration estimate",
             systemImage: "timer",
             value: selectedEstimationFilter.title,
@@ -404,28 +388,15 @@ struct HomeFiltersImportanceUrgencySection: View {
     let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
-        Section("Priority") {
-            Button {
-                onPresent(.priority)
-            } label: {
-                HStack(spacing: 12) {
-                    Label("Filter priority", systemImage: "line.3.horizontal.decrease.circle")
-                    Spacer()
-                    Text(selectionSummary)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Filter priority")
-            .accessibilityValue(selectionAccessibilityValue)
-            .accessibilityHint("Open the importance and urgency filter")
+        HomeFiltersDetailEntry(
+            title: "Filter priority",
+            systemImage: "line.3.horizontal.decrease.circle",
+            value: selectionSummary
+        ) {
+            onPresent(.priority)
         }
+        .accessibilityValue(selectionAccessibilityValue)
+        .accessibilityHint("Open the importance and urgency filter")
     }
 
     private var selectionSummary: String {
@@ -459,8 +430,6 @@ struct HomeFiltersPriorityPickerSheet: View {
                         showsSummaryChip: false
                     )
                     .frame(maxWidth: 420, alignment: .leading)
-                } header: {
-                    Text("Priority")
                 } footer: {
                     Text(summary)
                 }
@@ -489,7 +458,6 @@ struct HomeFiltersPlaceSection: View {
 
     var body: some View {
         HomeFiltersPickerEntry(
-            sectionTitle: "Place",
             title: "Place",
             systemImage: "mappin.and.ellipse",
             value: placeSummary,

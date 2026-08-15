@@ -9,14 +9,12 @@ struct HomeFiltersFlagSection: View {
     @ViewBuilder
     var body: some View {
         if data.hasFlags {
-            Section("Flags") {
-                HomeFiltersDetailEntry(
-                    title: "Filter flags",
-                    systemImage: "flag",
-                    value: selectionSummary
-                ) {
-                    onPresent(.flags)
-                }
+            HomeFiltersDetailEntry(
+                title: "Filter flags",
+                systemImage: "flag",
+                value: selectionSummary
+            ) {
+                onPresent(.flags)
             }
         }
     }

@@ -263,7 +263,6 @@ struct StatsFiltersSheet<TagPicker: View>: View {
             List {
                 if showsFilterQuerySections {
                     HomeFiltersPickerEntry(
-                        sectionTitle: "Query",
                         title: "Advanced query",
                         systemImage: "magnifyingglass",
                         value: advancedQuery.isEmpty ? "None" : "Active",
@@ -274,7 +273,6 @@ struct StatsFiltersSheet<TagPicker: View>: View {
 
                 if showsTaskTypeFilter {
                     HomeFiltersPickerEntry(
-                        sectionTitle: "Type",
                         title: "Task type",
                         systemImage: "checklist",
                         value: taskTypeFilter.title,
@@ -297,7 +295,6 @@ struct StatsFiltersSheet<TagPicker: View>: View {
 
                 if !availableFlags.isEmpty {
                     HomeFiltersPickerEntry(
-                        sectionTitle: "Flags",
                         title: "Flags",
                         systemImage: "flag.fill",
                         value: flagSelectionSummary,
@@ -364,6 +361,7 @@ struct StatsFiltersSheet<TagPicker: View>: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .priority:
