@@ -13,6 +13,14 @@
 - After making a change that introduces or revises long-term decisions, add a new decision record or supersede an existing one.
 - Decision records should capture why a choice was made, not every small implementation detail. Use them for architecture, conventions, data model, dependencies, product behavior, build setup, and other choices future contributors should preserve or understand.
 
+## User Experience Documentation
+
+- Before changing product behavior or a user journey, read `docs/user-experience/README.md` and the relevant user needs and use cases in that directory, then check the related current-behavior and decision documents.
+- Whenever the user describes a new or revised use case, record it in `docs/user-experience/` as part of the same work. When implementation changes that use case, update its situation, desired experience, outcome, example, limitations, and availability as applicable.
+- Update the user-experience documentation in the same change whenever app work materially changes what a person needs to understand, choose, do, recover from, or trust. Purely internal changes do not require a user-experience edit when the perceived journey and outcome remain unchanged.
+- Write user-experience documents from the person's perspective and keep implementation details in current-behavior, decision, scenario, or code documentation. Clearly distinguish working assumptions from evidence-backed user needs.
+- If a request conflicts with an existing documented user need or use case, pause before implementation, explain the conflict, and ask for explicit user permission just as with a current-behavior or decision conflict.
+
 ## Bug-Fix Lessons
 
 - After every bug fix, add a separate numbered lesson-learned note under `docs/lessons/` and update `docs/lessons/README.md`, following the format and naming convention documented there.

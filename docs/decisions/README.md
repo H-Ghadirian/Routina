@@ -4,6 +4,7 @@ This directory contains Routina's project decision records. These records are th
 
 ## How to Use This Log
 
+- For product and UX work, start with the relevant page in `docs/user-experience/`, then check current behavior and follow decision links when rationale matters.
 - Read this index and relevant decision records before making meaningful project changes.
 - For a faster summary of active product behavior, read the relevant page in `docs/current-behavior/` first, then follow decision links when rationale or tradeoffs matter.
 - If a requested change contradicts current behavior or an existing decision, pause before implementation, explain the conflict briefly, and get explicit user permission before proceeding.
@@ -15,9 +16,11 @@ This directory contains Routina's project decision records. These records are th
 
 Use decision records for architecture, conventions, data model, dependencies, product behavior, build setup, and other choices future contributors should preserve or understand. Tiny fixes, copy edits, and purely mechanical cleanup usually do not need a decision record.
 
-Decision records explain why. Current-behavior pages state what is true now. Regression scenarios define concrete Given/When/Then expectations that should be protected by tests.
+User-experience documents explain who needs what and what success looks like. Decision records explain why. Current-behavior pages state what is true now. Regression scenarios define concrete Given/When/Then expectations that should be protected by tests.
 
 ## Recent Decisions
+
+- **[0573](0573-centralize-user-perspective-product-documentation.md) refines [0250](0250-split-current-behavior-and-regression-scenarios.md) and [0251](0251-require-decision-conflict-check-before-implementation.md):** `docs/user-experience/` is the source of truth for user needs, UX principles, use cases, examples, and experience intent; user-described use cases and app changes that affect them update those documents in the same work.
 
 - **[0572](0572-nest-completion-options-in-mac-task-ladder.md) refines [0409](0409-add-manual-can-complete-task-links.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0571](0571-show-task-identity-metadata-in-mac-task-ladder.md):** Explicit completion-option relationships keep alternative ways out of the root Mac Task Ladder, open them in a nested cached ladder, preserve manual parent fulfillment, and scope tie-break ranks to that parent.
 
@@ -676,6 +679,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0573](0573-centralize-user-perspective-product-documentation.md) | Centralize User-Perspective Product Documentation | Accepted | 2026-08-15 |
 | [0572](0572-nest-completion-options-in-mac-task-ladder.md) | Nest Completion Options in the Mac Task Ladder | Accepted | 2026-08-15 |
 | [0571](0571-show-task-identity-metadata-in-mac-task-ladder.md) | Show Task Identity Metadata in the Mac Task Ladder | Accepted | 2026-08-15 |
 | [0570](0570-exclude-flagged-tasks-from-mac-task-ladder.md) | Exclude Flagged Tasks from the Mac Task Ladder | Accepted | 2026-08-15 |
