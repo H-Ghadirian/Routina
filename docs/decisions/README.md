@@ -19,6 +19,8 @@ Decision records explain why. Current-behavior pages state what is true now. Reg
 
 ## Recent Decisions
 
+- **[0570](0570-exclude-flagged-tasks-from-mac-task-ladder.md) refines [0497](0497-use-flags-for-task-behavior-rules.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0562](0562-exclude-blocked-tasks-from-mac-task-ladder.md):** A synced `Hide tasks from Task Ladder` Flag rule independently excludes matching tasks from every Mac Task Ladder metric.
+
 - **[0569](0569-suppress-no-op-preference-sync-refresh-loops.md) refines [0210](0210-store-durable-preferences-in-swiftdata.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md), and [0567](0567-defer-ios-home-refreshes-until-scrolling-is-quiet.md):** Equivalent temporary and durable preference values perform no defaults write, SwiftData save, timestamp advance, or sync feedback; Home persists load-time view state only when validation changes it.
 
 - **[0568](0568-defer-watch-companion-from-first-production-release.md) refines [0032](0032-sync-active-sleep-mode-across-devices.md), [0106](0106-support-unassigned-watch-focus-sessions.md), [0416](0416-use-semantic-release-versions.md), and [0519](0519-maintain-platform-versioned-release-notes.md):** The first production iOS phase neither embeds the Watch companion nor starts its connectivity relay, while retaining the Watch targets and implementation for a later explicit release phase.
@@ -669,6 +671,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0570](0570-exclude-flagged-tasks-from-mac-task-ladder.md) | Exclude Flagged Tasks from the Mac Task Ladder | Accepted | 2026-08-15 |
 | [0569](0569-suppress-no-op-preference-sync-refresh-loops.md) | Suppress No-op Preference Sync Refresh Loops | Accepted | 2026-08-14 |
 | [0568](0568-defer-watch-companion-from-first-production-release.md) | Defer the Watch Companion from the First Production Release | Accepted | 2026-08-14 |
 | [0567](0567-defer-ios-home-refreshes-until-scrolling-is-quiet.md) | Defer iOS Home Refreshes Until Scrolling Is Quiet | Accepted | 2026-08-14 |

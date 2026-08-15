@@ -153,6 +153,7 @@ enum RoutineFlag {
 /// kind, allowing future behavior to be added without changing persisted data.
 enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case hideFromTaskLists
+    case hideFromTaskLadder
     case autoAssumeDone
 
     var id: String { rawValue }
@@ -161,6 +162,8 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
         switch self {
         case .hideFromTaskLists:
             return "Hide tasks from normal task lists"
+        case .hideFromTaskLadder:
+            return "Hide tasks from Task Ladder"
         case .autoAssumeDone:
             return "Enable auto-assume done"
         }
@@ -170,6 +173,8 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
         switch self {
         case .hideFromTaskLists:
             return "Tasks remain available when you search for them."
+        case .hideFromTaskLadder:
+            return "Tasks remain available in other task views."
         case .autoAssumeDone:
             return "Eligible tasks are automatically marked done after their scheduled time."
         }
@@ -221,6 +226,18 @@ enum RoutineFlagRules {
         }
     }
 
+    static func normalizedFlagIDs(
+        for kind: RoutineFlagRuleKind,
+        in rules: [RoutineFlagRule]
+    ) -> Set<String> {
+        Set(
+            sanitized(rules)
+                .lazy
+                .filter { $0.kind == kind }
+                .compactMap { RoutineFlag.normalized($0.flag) }
+        )
+    }
+
     static func hidesFromTaskLists(
         flags: [String],
         rules: [RoutineFlagRule]
@@ -233,6 +250,13 @@ enum RoutineFlagRules {
         rules: [RoutineFlagRule]
     ) -> Bool {
         containsConfiguredFlag(.autoAssumeDone, in: flags, rules: rules)
+    }
+
+    static func hidesFromTaskLadder(
+        flags: [String],
+        rules: [RoutineFlagRule]
+    ) -> Bool {
+        containsConfiguredFlag(.hideFromTaskLadder, in: flags, rules: rules)
     }
 
     /// Returns the assigned Flags whose configured behavior hides a task from
@@ -259,12 +283,7 @@ enum RoutineFlagRules {
         in flags: [String],
         rules: [RoutineFlagRule]
     ) -> Bool {
-        let configuredFlagIDs = Set(
-            sanitized(rules)
-                .lazy
-                .filter { $0.kind == kind }
-                .compactMap { RoutineFlag.normalized($0.flag) }
-        )
+        let configuredFlagIDs = normalizedFlagIDs(for: kind, in: rules)
         return flags.contains { flag in
             RoutineFlag.normalized(flag).map(configuredFlagIDs.contains) ?? false
         }

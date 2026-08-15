@@ -222,7 +222,14 @@ struct SettingsFlagsDetailView: View {
     }
 
     private func ruleSystemImage(for kind: RoutineFlagRuleKind) -> String {
-        kind == .hideFromTaskLists ? "eye.slash" : "checkmark.circle"
+        switch kind {
+        case .hideFromTaskLists:
+            return "eye.slash"
+        case .hideFromTaskLadder:
+            return "list.number"
+        case .autoAssumeDone:
+            return "checkmark.circle"
+        }
     }
 
     private var draftBinding: Binding<String> {

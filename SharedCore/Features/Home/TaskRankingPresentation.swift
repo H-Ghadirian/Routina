@@ -235,16 +235,25 @@ struct TaskRankingPresentation: Equatable {
 
     static func make(
         tasks: [RoutineTask],
+        flagRules: [RoutineFlagRule],
         metric: TaskRankingMetric,
         isReversed: Bool,
         referenceDate: Date,
         calendar: Calendar
     ) -> Self {
-        let activeTasks = tasks.filter {
-            !$0.isArchived(referenceDate: referenceDate, calendar: calendar)
-                && !$0.isCompletedOneOff
-                && !$0.isCanceledOneOff
-                && $0.todoState != .blocked
+        let taskLadderExclusionFlagIDs = RoutineFlagRules.normalizedFlagIDs(
+            for: .hideFromTaskLadder,
+            in: flagRules
+        )
+        let activeTasks = tasks.filter { task in
+            let isHiddenFromTaskLadder = task.flags.contains { flag in
+                RoutineFlag.normalized(flag).map(taskLadderExclusionFlagIDs.contains) ?? false
+            }
+            return !task.isArchived(referenceDate: referenceDate, calendar: calendar)
+                && !task.isCompletedOneOff
+                && !task.isCanceledOneOff
+                && task.todoState != .blocked
+                && !isHiddenFromTaskLadder
         }
 
         guard metric.supportsManualLadder else {

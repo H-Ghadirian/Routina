@@ -229,6 +229,20 @@ struct RoutineTagTests {
             ) == ["TRACKING"]
         )
 
+        let taskLadderRules = RoutineFlagRules.adding(
+            .hideFromTaskLadder,
+            for: "Someday",
+            in: rules
+        )
+        #expect(RoutineFlagRules.hidesFromTaskLadder(
+            flags: ["someday"],
+            rules: taskLadderRules
+        ))
+        #expect(!RoutineFlagRules.hidesFromTaskLadder(
+            flags: ["Tracking"],
+            rules: taskLadderRules
+        ))
+
         let removed = RoutineFlagRules.removing("tracking", from: rules)
         #expect(removed.isEmpty)
     }

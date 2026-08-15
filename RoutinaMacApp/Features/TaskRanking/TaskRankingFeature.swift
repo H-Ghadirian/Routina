@@ -13,6 +13,7 @@ struct TaskRankingFeature {
     @ObservableState
     struct State: Equatable {
         var tasks: [RoutineTask] = []
+        var flagRules: [RoutineFlagRule] = []
         var metric: TaskRankingMetric = .pressure
         var reversedMetrics: Set<TaskRankingMetric> = []
         var presentation = TaskRankingPresentation.empty()
@@ -31,7 +32,8 @@ struct TaskRankingFeature {
         case onDisappear
         case refresh
         case routineDataChanged
-        case tasksLoaded([RoutineTask])
+        case tasksLoaded([RoutineTask], [RoutineFlagRule])
+        case flagRulesChanged
         case loadFailed(String)
         case errorDismissed
         case reversedMetricsChanged(Set<TaskRankingMetric>)
@@ -42,6 +44,7 @@ struct TaskRankingFeature {
         case taskDetail(TaskDetailFeature.Action)
     }
 
+    @Dependency(\.appSettingsClient) private var appSettingsClient
     @Dependency(\.calendar) private var calendar
     @Dependency(\.continuousClock) private var continuousClock
     @Dependency(\.date.now) private var now
@@ -74,8 +77,9 @@ struct TaskRankingFeature {
                 }
                 .cancellable(id: CancelID.automaticRefresh, cancelInFlight: true)
 
-            case let .tasksLoaded(tasks):
+            case let .tasksLoaded(tasks, flagRules):
                 state.tasks = tasks
+                state.flagRules = RoutineFlagRules.sanitized(flagRules)
                 state.isLoading = false
                 state.errorMessage = nil
                 rebuildPresentation(&state)
@@ -84,6 +88,11 @@ struct TaskRankingFeature {
                     state.selectedTaskID = nil
                     state.taskDetailState = nil
                 }
+                return .none
+
+            case .flagRulesChanged:
+                state.flagRules = RoutineFlagRules.sanitized(appSettingsClient.flagRules())
+                rebuildPresentation(&state)
                 return .none
 
             case let .loadFailed(message):
@@ -157,6 +166,7 @@ struct TaskRankingFeature {
     private func rebuildPresentation(_ state: inout State) {
         state.presentation = TaskRankingPresentation.make(
             tasks: state.tasks,
+            flagRules: state.flagRules,
             metric: state.metric,
             isReversed: state.isReversed,
             referenceDate: now,
@@ -168,7 +178,7 @@ struct TaskRankingFeature {
         .run { @MainActor send in
             do {
                 let tasks = try modelContext().fetch(FetchDescriptor<RoutineTask>())
-                await send(.tasksLoaded(tasks))
+                await send(.tasksLoaded(tasks, appSettingsClient.flagRules()))
             } catch {
                 await send(.loadFailed("Couldn’t load task ranking. \(error.localizedDescription)"))
             }

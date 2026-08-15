@@ -86,6 +86,22 @@ Then Backlog does not rebuild its task snapshot for every raw SwiftData save
 And it waits for the semantic update burst to settle before performing one refresh
 And the manual Refresh Backlog control remains immediately available when no refresh is in progress
 
+### Flag Rules Can Keep Tasks Out Of The Mac Task Ladder
+
+Area: Tasks / Settings / Mac Task Ladder
+Decision links: [0570](../decisions/0570-exclude-flagged-tasks-from-mac-task-ladder.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/RoutineTagTests.swift`
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+
+Given a Flag has the `Hide tasks from Task Ladder` rule
+And a task carries that Flag
+When any Task Ladder metric builds its presentation
+Then the task does not appear or contribute to the ladder count
+And the task remains unchanged in Home, Backlog, Planner, Timeline, and Stats
+And a Flag that only hides tasks from normal task lists does not hide them from Task Ladder
+
 ### iOS Search Keeps Typing Ahead Of Home Results
 
 Area: Tasks / UI

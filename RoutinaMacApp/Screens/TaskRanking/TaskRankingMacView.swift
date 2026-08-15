@@ -7,6 +7,10 @@ struct TaskRankingMacView: View {
         UserDefaultStringValueKey.appSettingMacTaskRankingReversedMetrics.rawValue,
         store: SharedDefaults.app
     ) private var reversedMetricsRawValue = ""
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingFlagRules.rawValue,
+        store: SharedDefaults.app
+    ) private var flagRulesRawValue = ""
     @State private var collapsedSectionIDs = Set<String>()
 
     var body: some View {
@@ -30,6 +34,9 @@ struct TaskRankingMacView: View {
         .onChange(of: store.reversedMetrics) { _, reversedMetrics in
             reversedMetricsRawValue = TaskRankingDirectionStorage.encode(reversedMetrics)
             AppSettingsPersistenceMirror.schedule()
+        }
+        .onChange(of: flagRulesRawValue) { _, _ in
+            store.send(.flagRulesChanged)
         }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             store.send(.routineDataChanged)
@@ -109,9 +116,9 @@ struct TaskRankingMacView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if store.presentation.isEmpty {
                 ContentUnavailableView(
-                    "No active tasks",
+                    "No tasks in Task Ladder",
                     systemImage: "line.3.horizontal.decrease.circle",
-                    description: Text("Paused, blocked, completed, canceled, and archived tasks stay out of the task ladder.")
+                    description: Text("Paused, blocked, completed, canceled, archived, and Flag-hidden tasks stay out of the task ladder.")
                 )
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

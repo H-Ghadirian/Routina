@@ -51,6 +51,7 @@ struct TaskRankingPresentationTests {
 
         let presentation = TaskRankingPresentation.make(
             tasks: [high, medium, unknown, paused, completed, canceled, blocked],
+            flagRules: [],
             metric: .pressure,
             isReversed: false,
             referenceDate: referenceDate,
@@ -67,6 +68,35 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func taskLadderFlagRuleExcludesOnlyTasksWithTheMatchingFlag() {
+        let excluded = RoutineTask(name: "Excluded", pressure: .high, flags: ["Someday"])
+        let included = RoutineTask(name: "Included", pressure: .high, flags: ["Current"])
+        let hiddenFromHomeOnly = RoutineTask(
+            name: "Hidden from Home only",
+            pressure: .high,
+            flags: ["Off radar"]
+        )
+
+        let presentation = TaskRankingPresentation.make(
+            tasks: [excluded, included, hiddenFromHomeOnly],
+            flagRules: [
+                RoutineFlagRule(flag: "someday", kind: .hideFromTaskLadder),
+                RoutineFlagRule(flag: "Off radar", kind: .hideFromTaskLists)
+            ],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(Set(presentation.sections.flatMap(\.tasks).map(\.id)) == Set([
+            included.id,
+            hiddenFromHomeOnly.id
+        ]))
+        #expect(presentation.taskCount == 2)
+    }
+
+    @Test
     func movingAcrossPressureSectionsThenUpPreservesNeighboursAndUsesOnlyLocalRanks() throws {
         let d = RoutineTask(name: "D", pressure: .medium, createdAt: Date(timeIntervalSince1970: 100))
         let c = RoutineTask(name: "C", pressure: .medium, createdAt: Date(timeIntervalSince1970: 90))
@@ -80,6 +110,7 @@ struct TaskRankingPresentationTests {
 
         var presentation = TaskRankingPresentation.make(
             tasks: tasks,
+            flagRules: [],
             metric: .pressure,
             isReversed: false,
             referenceDate: referenceDate,
@@ -92,6 +123,7 @@ struct TaskRankingPresentationTests {
 
         presentation = TaskRankingPresentation.make(
             tasks: tasks,
+            flagRules: [],
             metric: .pressure,
             isReversed: false,
             referenceDate: referenceDate,
@@ -105,6 +137,7 @@ struct TaskRankingPresentationTests {
 
         let finalPresentation = TaskRankingPresentation.make(
             tasks: tasks,
+            flagRules: [],
             metric: .pressure,
             isReversed: false,
             referenceDate: referenceDate,
@@ -130,6 +163,7 @@ struct TaskRankingPresentationTests {
 
         let shortestFirst = TaskRankingPresentation.make(
             tasks: [sixteen, unknown, fifteen],
+            flagRules: [],
             metric: .estimatedTime,
             isReversed: false,
             referenceDate: referenceDate,
@@ -137,6 +171,7 @@ struct TaskRankingPresentationTests {
         )
         let longestFirst = TaskRankingPresentation.make(
             tasks: [sixteen, unknown, fifteen],
+            flagRules: [],
             metric: .estimatedTime,
             isReversed: true,
             referenceDate: referenceDate,
@@ -169,6 +204,7 @@ struct TaskRankingPresentationTests {
 
         let presentation = TaskRankingPresentation.make(
             tasks: tasks,
+            flagRules: [],
             metric: .pressure,
             isReversed: false,
             referenceDate: referenceDate,
