@@ -97,6 +97,132 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func rootLadderNestsOnlyExplicitCompletionOptionsUnderTheirParent() {
+        let walk = RoutineTask(name: "Walk", pressure: .medium)
+        let gym = RoutineTask(name: "Gym", pressure: .medium)
+        let run = RoutineTask(name: "Run", pressure: .medium)
+        let blockedSwim = RoutineTask(
+            name: "Swim",
+            pressure: .medium,
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.blocked.rawValue
+        )
+        let exercise = RoutineTask(
+            name: "Exercise",
+            pressure: .low,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: walk.id, kind: .hasCompletionOption),
+                RoutineTaskRelationship(targetTaskID: gym.id, kind: .hasCompletionOption),
+                RoutineTaskRelationship(targetTaskID: blockedSwim.id, kind: .hasCompletionOption)
+            ]
+        )
+        run.relationships = [
+            RoutineTaskRelationship(targetTaskID: exercise.id, kind: .optionFor)
+        ]
+        let legacyTarget = RoutineTask(name: "Movement", pressure: .low)
+        let cycle = RoutineTask(
+            name: "Cycle",
+            pressure: .medium,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: legacyTarget.id, kind: .canComplete)
+            ]
+        )
+        let callMom = RoutineTask(name: "Call Mom", pressure: .low)
+        let tasks = [exercise, walk, gym, run, blockedSwim, legacyTarget, cycle, callMom]
+
+        let root = TaskRankingPresentation.make(
+            tasks: tasks,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let rootTaskIDs = Set(root.sections.flatMap(\.tasks).map(\.id))
+
+        #expect(rootTaskIDs.contains(exercise.id))
+        #expect(rootTaskIDs.contains(callMom.id))
+        #expect(rootTaskIDs.contains(cycle.id))
+        #expect(rootTaskIDs.contains(legacyTarget.id))
+        #expect(!rootTaskIDs.contains(walk.id))
+        #expect(!rootTaskIDs.contains(gym.id))
+        #expect(!rootTaskIDs.contains(run.id))
+        #expect(!rootTaskIDs.contains(blockedSwim.id))
+        #expect(root.rowMetadataByTaskID[exercise.id]?.completionOptionCount == 3)
+
+        let nested = TaskRankingPresentation.make(
+            tasks: tasks,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            scopePath: [exercise.id]
+        )
+
+        #expect(Set(nested.sections.flatMap(\.tasks).map(\.id)) == Set([walk.id, gym.id, run.id]))
+        #expect(nested.scopeParentTaskID == exercise.id)
+        #expect(nested.taskCount == 3)
+    }
+
+    @Test
+    func nestedLadderTieBreakRanksAreScopedToTheParent() throws {
+        let walk = RoutineTask(name: "Walk", pressure: .medium)
+        let gym = RoutineTask(name: "Gym", pressure: .medium)
+        let exercise = RoutineTask(
+            name: "Exercise",
+            pressure: .low,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: walk.id, kind: .hasCompletionOption),
+                RoutineTaskRelationship(targetTaskID: gym.id, kind: .hasCompletionOption)
+            ]
+        )
+        walk.setTaskRankingOrder(0, for: .pressure, value: .pressure(.medium))
+        gym.setTaskRankingOrder(1_000_000, for: .pressure, value: .pressure(.medium))
+        walk.setTaskRankingOrder(
+            1_000_000,
+            for: .pressure,
+            value: .pressure(.medium),
+            scopeTaskID: exercise.id
+        )
+        gym.setTaskRankingOrder(
+            0,
+            for: .pressure,
+            value: .pressure(.medium),
+            scopeTaskID: exercise.id
+        )
+        var tasks = [exercise, walk, gym]
+
+        let nested = TaskRankingPresentation.make(
+            tasks: tasks,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            scopePath: [exercise.id]
+        )
+        #expect(nested.sections.first?.tasks.map(\.id) == [gym.id, walk.id])
+
+        let update = try #require(
+            TaskRankingOrderingSupport.moveTask(taskID: walk.id, direction: .up, in: nested)
+        )
+        TaskRankingOrderingSupport.apply(update, to: &tasks)
+
+        let movedWalk = try #require(tasks.first(where: { $0.id == walk.id }))
+        #expect(update.scopeTaskID == exercise.id)
+        #expect(movedWalk.taskRankingOrder(
+            for: .pressure,
+            value: .pressure(.medium)
+        ) == 0)
+        #expect(movedWalk.taskRankingOrder(
+            for: .pressure,
+            value: .pressure(.medium),
+            scopeTaskID: exercise.id
+        ) != 1_000_000)
+    }
+
+    @Test
     func movingAcrossPressureSectionsThenUpPreservesNeighboursAndUsesOnlyLocalRanks() throws {
         let d = RoutineTask(name: "D", pressure: .medium, createdAt: Date(timeIntervalSince1970: 100))
         let c = RoutineTask(name: "C", pressure: .medium, createdAt: Date(timeIntervalSince1970: 90))
@@ -267,6 +393,8 @@ struct TaskRankingPresentationTests {
 
         #expect(source.contains("metadata.tagLabels.joined(separator: \" • \")"))
         #expect(source.contains("Label(\"Repeating\", systemImage: \"repeat\")"))
+        #expect(source.contains("Show Completion Options"))
+        #expect(source.contains("metadata.completionOptionCount"))
         #expect(!source.contains("private func metadataLabels"))
         #expect(!source.contains("No pressure value"))
     }

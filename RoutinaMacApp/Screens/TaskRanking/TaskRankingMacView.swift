@@ -93,7 +93,19 @@ struct TaskRankingMacView: View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Task Ladder")
+                    if store.scopeParentTask != nil {
+                        Button {
+                            store.send(.scopeBackTapped)
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .frame(width: 22, height: 22)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Back to previous ladder")
+                    }
+
+                    Text(ladderTitle)
                         .font(.title2.weight(.semibold))
 
                     Spacer(minLength: 8)
@@ -116,9 +128,9 @@ struct TaskRankingMacView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if store.presentation.isEmpty {
                 ContentUnavailableView(
-                    "No tasks in Task Ladder",
+                    emptyStateTitle,
                     systemImage: "line.3.horizontal.decrease.circle",
-                    description: Text("Paused, blocked, completed, canceled, archived, and Flag-hidden tasks stay out of the task ladder.")
+                    description: Text(emptyStateDescription)
                 )
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -206,9 +218,15 @@ struct TaskRankingMacView: View {
         in section: TaskRankingPresentation.Section
     ) -> some View {
         let isSelected = store.selectedTaskID == task.id
+        let metadata = store.presentation.rowMetadataByTaskID[task.id]
+        let completionOptionCount = metadata?.completionOptionCount ?? 0
         return HStack(spacing: 9) {
             Button {
-                store.send(.taskSelected(task.id))
+                if completionOptionCount > 0 {
+                    store.send(.completionOptionsOpened(task.id))
+                } else {
+                    store.send(.taskSelected(task.id))
+                }
             } label: {
                 HStack(spacing: 9) {
                     Text(task.emoji ?? "✨")
@@ -220,12 +238,18 @@ struct TaskRankingMacView: View {
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
 
-                        if let metadata = store.presentation.rowMetadataByTaskID[task.id] {
+                        if let metadata {
                             rowMetadata(metadata)
                         }
                     }
 
                     Spacer(minLength: 2)
+
+                    if completionOptionCount > 0 {
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
                 }
                 .padding(.vertical, 9)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -265,6 +289,11 @@ struct TaskRankingMacView: View {
             Button("Open Task") {
                 store.send(.taskSelected(task.id))
             }
+            if completionOptionCount > 0 {
+                Button("Show Completion Options") {
+                    store.send(.completionOptionsOpened(task.id))
+                }
+            }
             if section.supportsManualOrdering {
                 Divider()
                 Button("Move Up") { store.send(.moveTask(task.id, .up)) }
@@ -275,7 +304,7 @@ struct TaskRankingMacView: View {
 
     @ViewBuilder
     private func rowMetadata(_ metadata: TaskRankingPresentation.RowMetadata) -> some View {
-        if !metadata.tagLabels.isEmpty || metadata.isRepeating {
+        if !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.completionOptionCount > 0 {
             HStack(spacing: 6) {
                 if !metadata.tagLabels.isEmpty {
                     Text(metadata.tagLabels.joined(separator: " • "))
@@ -287,6 +316,17 @@ struct TaskRankingMacView: View {
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                         .accessibilityLabel("Repeating task")
+                }
+
+                if metadata.completionOptionCount > 0 {
+                    Label(
+                        metadata.completionOptionCount == 1
+                            ? "1 option"
+                            : "\(metadata.completionOptionCount) options",
+                        systemImage: "square.stack.3d.up"
+                    )
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
                 }
             }
             .font(.caption2)
@@ -313,14 +353,38 @@ struct TaskRankingMacView: View {
 
     private var taskCountLabel: String {
         let count = store.presentation.taskCount
+        if store.scopeParentTask != nil {
+            return count == 1 ? "1 option" : "\(count) options"
+        }
         return count == 1 ? "1 task" : "\(count) tasks"
     }
 
     private var listSubtitle: String {
+        let rankingDescription: String
         if store.metric == .estimatedTime {
-            return "\(store.metric.directionTitle(isReversed: store.isReversed)) • factual sort"
+            rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • factual sort"
+        } else {
+            rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • move tasks within or between values"
         }
-        return "\(store.metric.directionTitle(isReversed: store.isReversed)) • move tasks within or between values"
+        guard store.scopeParentTask != nil else { return rankingDescription }
+        return "Completion options • \(rankingDescription)"
+    }
+
+    private var ladderTitle: String {
+        store.scopeParentTask?.name ?? "Task Ladder"
+    }
+
+    private var emptyStateTitle: String {
+        store.scopeParentTask == nil
+            ? "No tasks in Task Ladder"
+            : "No actionable completion options"
+    }
+
+    private var emptyStateDescription: String {
+        if let parentName = store.scopeParentTask?.name {
+            return "\(parentName) has no completion options available in Task Ladder right now."
+        }
+        return "Paused, blocked, completed, canceled, archived, completion-option, and Flag-hidden tasks stay out of the root task ladder."
     }
 
 }

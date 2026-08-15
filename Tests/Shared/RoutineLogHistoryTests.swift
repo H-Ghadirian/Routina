@@ -357,6 +357,52 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func completionOptionRelationshipFulfillsParentWhenManuallySelected() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let walk = makeTask(
+            in: context,
+            name: "Walk",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let exercise = makeTask(
+            in: context,
+            name: "Exercise",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        exercise.relationships = [
+            RoutineTaskRelationship(targetTaskID: walk.id, kind: .hasCompletionOption)
+        ]
+        try context.save()
+
+        let completedAt = makeDate("2026-05-01T10:00:00Z")
+        _ = try RoutineLogHistory.advanceTask(
+            taskID: walk.id,
+            completedAt: completedAt,
+            context: context,
+            calendar: calendar
+        )
+        try RoutineLogHistory.fulfillManuallySelectedLinkedTasks(
+            fromSourceTaskID: walk.id,
+            targetTaskIDs: [exercise.id],
+            completedAt: completedAt,
+            context: context,
+            calendar: calendar
+        )
+        try context.save()
+
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let exerciseLog = try #require(logs.first { $0.taskID == exercise.id })
+        #expect(exercise.lastDone == completedAt)
+        #expect(exerciseLog.kind == .fulfilled)
+        #expect(exerciseLog.sourceTaskID == walk.id)
+    }
+
+    @Test
     func removeCompletion_keepsLinkedRoutineFulfilledWhenAnotherSourceCompletedSameDay() throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

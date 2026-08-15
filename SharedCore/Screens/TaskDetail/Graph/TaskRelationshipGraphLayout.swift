@@ -32,7 +32,13 @@ struct TaskRelationshipGraphLayout {
         let blockedBy = relationships.filter { $0.kind == .blockedBy }
         let blocks = relationships.filter { $0.kind == .blocks }
         let related = relationships.filter {
-            $0.kind == .related || $0.kind == .doneWhen || $0.kind == .completes
+            $0.kind == .related
+                || $0.kind == .doneWhen
+                || $0.kind == .completes
+                || $0.kind == .canBeCompletedBy
+                || $0.kind == .canComplete
+                || $0.kind == .hasCompletionOption
+                || $0.kind == .optionFor
         }
 
         let centerNode = TaskRelationshipGraphNode(

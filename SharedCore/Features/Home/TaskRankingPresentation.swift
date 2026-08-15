@@ -210,10 +210,12 @@ struct TaskRankingPresentation: Equatable {
     struct RowMetadata: Equatable, Sendable {
         let tagLabels: [String]
         let isRepeating: Bool
+        let completionOptionCount: Int
 
-        init(task: RoutineTask) {
+        init(task: RoutineTask, completionOptionCount: Int) {
             tagLabels = task.tags.map { "#\($0)" }
             isRepeating = !task.isOneOffTask
+            self.completionOptionCount = completionOptionCount
         }
     }
 
@@ -229,8 +231,13 @@ struct TaskRankingPresentation: Equatable {
 
     let metric: TaskRankingMetric
     let isReversed: Bool
+    let scopePath: [UUID]
     let sections: [Section]
     let rowMetadataByTaskID: [UUID: RowMetadata]
+
+    var scopeParentTaskID: UUID? {
+        scopePath.last
+    }
 
     var taskCount: Int {
         sections.reduce(0) { $0 + $1.tasks.count }
@@ -244,6 +251,7 @@ struct TaskRankingPresentation: Equatable {
         Self(
             metric: metric,
             isReversed: isReversed,
+            scopePath: [],
             sections: [],
             rowMetadataByTaskID: [:]
         )
@@ -255,13 +263,16 @@ struct TaskRankingPresentation: Equatable {
         metric: TaskRankingMetric,
         isReversed: Bool,
         referenceDate: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        scopePath: [UUID] = []
     ) -> Self {
+        let optionTaskIDsByParentID = completionOptionTaskIDsByParentID(tasks: tasks)
+        let allOptionTaskIDs = Set(optionTaskIDsByParentID.values.flatMap { $0 })
         let taskLadderExclusionFlagIDs = RoutineFlagRules.normalizedFlagIDs(
             for: .hideFromTaskLadder,
             in: flagRules
         )
-        let activeTasks = tasks.filter { task in
+        let eligibleTasks = tasks.filter { task in
             let isHiddenFromTaskLadder = task.flags.contains { flag in
                 RoutineFlag.normalized(flag).map(taskLadderExclusionFlagIDs.contains) ?? false
             }
@@ -271,9 +282,33 @@ struct TaskRankingPresentation: Equatable {
                 && task.todoState != .blocked
                 && !isHiddenFromTaskLadder
         }
+        let eligibleTasksByID = Dictionary(
+            eligibleTasks.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let ancestorTaskIDs = Set(scopePath)
+        let activeTasks: [RoutineTask]
+        if let scopeParentTaskID = scopePath.last {
+            activeTasks = optionTaskIDsByParentID[scopeParentTaskID, default: []]
+                .subtracting(ancestorTaskIDs)
+                .compactMap { eligibleTasksByID[$0] }
+        } else {
+            activeTasks = eligibleTasks.filter { !allOptionTaskIDs.contains($0.id) }
+        }
+        let eligibleTaskIDs = Set(eligibleTasks.map(\.id))
         let rowMetadataByTaskID = Dictionary(
             uniqueKeysWithValues: activeTasks.map { task in
-                (task.id, RowMetadata(task: task))
+                let completionOptionCount = optionTaskIDsByParentID[task.id, default: []]
+                    .intersection(eligibleTaskIDs)
+                    .subtracting(ancestorTaskIDs)
+                    .count
+                return (
+                    task.id,
+                    RowMetadata(
+                        task: task,
+                        completionOptionCount: completionOptionCount
+                    )
+                )
             }
         )
 
@@ -282,6 +317,7 @@ struct TaskRankingPresentation: Equatable {
                 activeTasks,
                 metric: metric,
                 isReversed: isReversed,
+                scopePath: scopePath,
                 rowMetadataByTaskID: rowMetadataByTaskID
             )
         }
@@ -300,14 +336,19 @@ struct TaskRankingPresentation: Equatable {
                 .map(\.0)
             guard !sectionTasks.isEmpty else { return nil }
             return Section(
-                id: "\(metric.rawValue):\(value.storageComponent)",
+                id: sectionID(
+                    metric: metric,
+                    component: value.storageComponent,
+                    scopeTaskID: scopePath.last
+                ),
                 title: value.title,
                 value: value,
                 tasks: sortedLadderTasks(
                     sectionTasks,
                     metric: metric,
                     value: value,
-                    isReversed: isReversed
+                    isReversed: isReversed,
+                    scopeTaskID: scopePath.last
                 ),
                 isMissingValue: false,
                 supportsManualOrdering: true
@@ -321,7 +362,11 @@ struct TaskRankingPresentation: Equatable {
         } else {
             missingSection = [
                 Section(
-                    id: "\(metric.rawValue):missing",
+                    id: sectionID(
+                        metric: metric,
+                        component: "missing",
+                        scopeTaskID: scopePath.last
+                    ),
                     title: metric.missingValueTitle,
                     value: nil,
                     tasks: sortedFallbackTasks(missingTasks, isReversed: false),
@@ -334,6 +379,7 @@ struct TaskRankingPresentation: Equatable {
         return Self(
             metric: metric,
             isReversed: isReversed,
+            scopePath: scopePath,
             sections: sections + missingSection,
             rowMetadataByTaskID: rowMetadataByTaskID
         )
@@ -343,6 +389,7 @@ struct TaskRankingPresentation: Equatable {
         _ activeTasks: [RoutineTask],
         metric: TaskRankingMetric,
         isReversed: Bool,
+        scopePath: [UUID],
         rowMetadataByTaskID: [UUID: RowMetadata]
     ) -> Self {
         let knownTasks = activeTasks.compactMap { task -> (RoutineTask, Int)? in
@@ -360,7 +407,11 @@ struct TaskRankingPresentation: Equatable {
         if !knownTasks.isEmpty {
             sections.append(
                 Section(
-                    id: "estimated-time:known",
+                    id: sectionID(
+                        metric: metric,
+                        component: "known",
+                        scopeTaskID: scopePath.last
+                    ),
                     title: metric.directionTitle(isReversed: isReversed),
                     value: nil,
                     tasks: knownTasks,
@@ -374,7 +425,11 @@ struct TaskRankingPresentation: Equatable {
         if !missingTasks.isEmpty {
             sections.append(
                 Section(
-                    id: "estimated-time:missing",
+                    id: sectionID(
+                        metric: metric,
+                        component: "missing",
+                        scopeTaskID: scopePath.last
+                    ),
                     title: metric.missingValueTitle,
                     value: nil,
                     tasks: sortedFallbackTasks(missingTasks, isReversed: false),
@@ -386,6 +441,7 @@ struct TaskRankingPresentation: Equatable {
         return Self(
             metric: metric,
             isReversed: isReversed,
+            scopePath: scopePath,
             sections: sections,
             rowMetadataByTaskID: rowMetadataByTaskID
         )
@@ -395,11 +451,20 @@ struct TaskRankingPresentation: Equatable {
         _ tasks: [RoutineTask],
         metric: TaskRankingMetric,
         value: TaskRankingMetricValue,
-        isReversed: Bool
+        isReversed: Bool,
+        scopeTaskID: UUID?
     ) -> [RoutineTask] {
         tasks.sorted { lhs, rhs in
-            let lhsOrder = lhs.taskRankingOrder(for: metric, value: value)
-            let rhsOrder = rhs.taskRankingOrder(for: metric, value: value)
+            let lhsOrder = lhs.taskRankingOrder(
+                for: metric,
+                value: value,
+                scopeTaskID: scopeTaskID
+            )
+            let rhsOrder = rhs.taskRankingOrder(
+                for: metric,
+                value: value,
+                scopeTaskID: scopeTaskID
+            )
             switch (lhsOrder, rhsOrder) {
             case let (.some(lhsOrder), .some(rhsOrder)) where lhsOrder != rhsOrder:
                 return isReversed ? lhsOrder > rhsOrder : lhsOrder < rhsOrder
@@ -441,6 +506,37 @@ struct TaskRankingPresentation: Equatable {
             ? lhs.id.uuidString > rhs.id.uuidString
             : lhs.id.uuidString < rhs.id.uuidString
     }
+
+    private static func completionOptionTaskIDsByParentID(
+        tasks: [RoutineTask]
+    ) -> [UUID: Set<UUID>] {
+        let taskIDs = Set(tasks.map(\.id))
+        var taskIDsByParentID: [UUID: Set<UUID>] = [:]
+        for task in tasks {
+            for relationship in task.relationships {
+                switch relationship.kind {
+                case .hasCompletionOption:
+                    guard taskIDs.contains(relationship.targetTaskID) else { continue }
+                    taskIDsByParentID[task.id, default: []].insert(relationship.targetTaskID)
+                case .optionFor:
+                    guard taskIDs.contains(relationship.targetTaskID) else { continue }
+                    taskIDsByParentID[relationship.targetTaskID, default: []].insert(task.id)
+                default:
+                    continue
+                }
+            }
+        }
+        return taskIDsByParentID
+    }
+
+    private static func sectionID(
+        metric: TaskRankingMetric,
+        component: String,
+        scopeTaskID: UUID?
+    ) -> String {
+        let scopeComponent = scopeTaskID?.uuidString ?? "root"
+        return "\(scopeComponent):\(metric.rawValue):\(component)"
+    }
 }
 
 struct TaskRankingRankUpdate: Equatable, Sendable {
@@ -451,6 +547,7 @@ struct TaskRankingRankUpdate: Equatable, Sendable {
 
 struct TaskRankingOrderUpdate: Equatable, Sendable {
     let metric: TaskRankingMetric
+    let scopeTaskID: UUID?
     let taskID: UUID
     let destinationValue: TaskRankingMetricValue?
     let rankUpdates: [TaskRankingRankUpdate]
@@ -506,6 +603,7 @@ enum TaskRankingOrderingSupport {
                 } else if destinationSection.isMissingValue {
                     return TaskRankingOrderUpdate(
                         metric: presentation.metric,
+                        scopeTaskID: presentation.scopeParentTaskID,
                         taskID: taskID,
                         destinationValue: nil,
                         rankUpdates: []
@@ -530,11 +628,13 @@ enum TaskRankingOrderingSupport {
             existingTargetTasks: targetTasks,
             metric: presentation.metric,
             value: destinationValue,
-            isReversed: presentation.isReversed
+            isReversed: presentation.isReversed,
+            scopeTaskID: presentation.scopeParentTaskID
         )
 
         return TaskRankingOrderUpdate(
             metric: presentation.metric,
+            scopeTaskID: presentation.scopeParentTaskID,
             taskID: taskID,
             destinationValue: destinationValue,
             rankUpdates: rankUpdates
@@ -550,7 +650,8 @@ enum TaskRankingOrderingSupport {
             tasks[taskIndex].setTaskRankingOrder(
                 rankUpdate.order,
                 for: update.metric,
-                value: rankUpdate.value
+                value: rankUpdate.value,
+                scopeTaskID: update.scopeTaskID
             )
         }
     }
@@ -561,7 +662,8 @@ enum TaskRankingOrderingSupport {
         existingTargetTasks: [RoutineTask],
         metric: TaskRankingMetric,
         value: TaskRankingMetricValue,
-        isReversed: Bool
+        isReversed: Bool,
+        scopeTaskID: UUID?
     ) -> [TaskRankingRankUpdate] {
         guard !visualTasks.isEmpty else { return [] }
 
@@ -569,7 +671,11 @@ enum TaskRankingOrderingSupport {
         // its current tasks. Later moves update only the moved task unless the
         // gap between its neighbours is exhausted.
         if existingTargetTasks.contains(where: {
-            $0.taskRankingOrder(for: metric, value: value) == nil
+            $0.taskRankingOrder(
+                for: metric,
+                value: value,
+                scopeTaskID: scopeTaskID
+            ) == nil
         }) {
             return normalizedRankUpdates(
                 visualTasks: visualTasks,
@@ -582,10 +688,18 @@ enum TaskRankingOrderingSupport {
             return []
         }
         let previousRank = visualTasks.indices.contains(movedTaskIndex - 1)
-            ? visualTasks[movedTaskIndex - 1].taskRankingOrder(for: metric, value: value)
+            ? visualTasks[movedTaskIndex - 1].taskRankingOrder(
+                for: metric,
+                value: value,
+                scopeTaskID: scopeTaskID
+            )
             : nil
         let nextRank = visualTasks.indices.contains(movedTaskIndex + 1)
-            ? visualTasks[movedTaskIndex + 1].taskRankingOrder(for: metric, value: value)
+            ? visualTasks[movedTaskIndex + 1].taskRankingOrder(
+                for: metric,
+                value: value,
+                scopeTaskID: scopeTaskID
+            )
             : nil
 
         let order: Int64

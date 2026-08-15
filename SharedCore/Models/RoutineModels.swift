@@ -315,20 +315,34 @@ final class RoutineTask {
 
     func taskRankingOrder(
         for metric: TaskRankingMetric,
-        value: TaskRankingMetricValue
+        value: TaskRankingMetricValue,
+        scopeTaskID: UUID? = nil
     ) -> Int64? {
         guard value.metric == metric else { return nil }
-        return taskRankingOrders[TaskRankingOrderStorage.key(metric: metric, value: value)]
+        return taskRankingOrders[
+            TaskRankingOrderStorage.key(
+                metric: metric,
+                value: value,
+                scopeTaskID: scopeTaskID
+            )
+        ]
     }
 
     func setTaskRankingOrder(
         _ order: Int64,
         for metric: TaskRankingMetric,
-        value: TaskRankingMetricValue
+        value: TaskRankingMetricValue,
+        scopeTaskID: UUID? = nil
     ) {
         guard value.metric == metric else { return }
         var updated = taskRankingOrders
-        updated[TaskRankingOrderStorage.key(metric: metric, value: value)] = order
+        updated[
+            TaskRankingOrderStorage.key(
+                metric: metric,
+                value: value,
+                scopeTaskID: scopeTaskID
+            )
+        ] = order
         taskRankingOrders = updated
     }
 

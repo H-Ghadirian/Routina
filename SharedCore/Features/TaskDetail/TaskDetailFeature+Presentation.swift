@@ -461,7 +461,10 @@ extension TaskDetailFeature.State {
         var resolvedByTaskID: [UUID: RoutineTaskResolvedRelationship] = [:]
         let candidateByID = RoutineTaskRelationshipCandidate.lookupByID(availableRelationshipTasks)
 
-        func appendCandidate(_ candidate: RoutineTaskRelationshipCandidate) {
+        func appendCandidate(
+            _ candidate: RoutineTaskRelationshipCandidate,
+            kind: RoutineTaskRelationshipKind
+        ) {
             guard candidate.canBeFulfilledByLinkedTask,
                   candidate.status.allowsManualFulfillmentPrompt else {
                 return
@@ -470,22 +473,34 @@ extension TaskDetailFeature.State {
                 taskID: candidate.id,
                 taskName: candidate.displayName,
                 taskEmoji: candidate.emoji,
-                kind: .canComplete,
+                kind: kind,
                 status: candidate.status
             )
         }
 
-        for relationship in task.relationships where relationship.kind == .canComplete {
+        for relationship in task.relationships
+        where relationship.kind == .canComplete || relationship.kind == .optionFor {
             guard let candidate = candidateByID[relationship.targetTaskID] else { continue }
-            appendCandidate(candidate)
+            appendCandidate(candidate, kind: relationship.kind)
         }
 
         for candidate in availableRelationshipTasks {
-            let canBeCompletedBySource = candidate.relationships.contains { relationship in
-                relationship.targetTaskID == task.id && relationship.kind == .canBeCompletedBy
+            var inverseSourceKind: RoutineTaskRelationshipKind?
+            for relationship in candidate.relationships where relationship.targetTaskID == task.id {
+                switch relationship.kind {
+                case .canBeCompletedBy:
+                    inverseSourceKind = .canComplete
+                case .hasCompletionOption:
+                    inverseSourceKind = .optionFor
+                default:
+                    continue
+                }
+                break
             }
-            guard canBeCompletedBySource else { continue }
-            appendCandidate(candidate)
+            guard let inverseSourceKind else {
+                continue
+            }
+            appendCandidate(candidate, kind: inverseSourceKind)
         }
 
         return resolvedByTaskID.values.sorted {

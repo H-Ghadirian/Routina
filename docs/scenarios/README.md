@@ -117,6 +117,29 @@ Then each row shows its assigned tags instead of repeating the section's metric 
 And each non-one-off row shows a visible `Repeating` label with the repeat symbol
 And a one-off task without tags does not reserve an empty metadata line
 
+### Mac Task Ladder Nests Completion Options
+
+Area: Tasks / Mac Task Ladder / Relationships
+Decision links: [0572](../decisions/0572-nest-completion-options-in-mac-task-ladder.md), [0409](../decisions/0409-add-manual-can-complete-task-links.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+- `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+
+Given Exercise has Walk and Gym as explicit completion options
+When the root Task Ladder builds any metric presentation
+Then Exercise appears once and Walk and Gym do not appear as root rows
+And the Exercise row reports its actionable option count
+
+When the person opens Exercise
+Then the nested ladder contains only its actionable completion options
+And its manual tie-break order is independent of the root and another parent
+And completing an option from Task Detail can explicitly fulfill Exercise
+
+Given a legacy task only has a `Can complete` relationship
+When the root Task Ladder builds
+Then that source task remains a standalone root row
+
 ### iOS Search Keeps Typing Ahead Of Home Results
 
 Area: Tasks / UI

@@ -252,8 +252,14 @@ enum RoutineSectionOrderStorage {
 }
 
 enum TaskRankingOrderStorage {
-    static func key(metric: TaskRankingMetric, value: TaskRankingMetricValue) -> String {
-        "\(metric.rawValue):\(value.storageComponent)"
+    static func key(
+        metric: TaskRankingMetric,
+        value: TaskRankingMetricValue,
+        scopeTaskID: UUID? = nil
+    ) -> String {
+        let metricKey = "\(metric.rawValue):\(value.storageComponent)"
+        guard let scopeTaskID else { return metricKey }
+        return "scope:\(scopeTaskID.uuidString):\(metricKey)"
     }
 
     static func serialize(_ orders: [String: Int64]) -> String {

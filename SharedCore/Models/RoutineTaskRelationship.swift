@@ -8,6 +8,8 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
     case completes
     case canBeCompletedBy
     case canComplete
+    case hasCompletionOption
+    case optionFor
 
     var title: String {
         switch self {
@@ -25,6 +27,10 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return "Can be completed by"
         case .canComplete:
             return "Can complete"
+        case .hasCompletionOption:
+            return "Has completion option"
+        case .optionFor:
+            return "Option for"
         }
     }
 
@@ -42,6 +48,8 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return "arrow.triangle.2.circlepath"
         case .canBeCompletedBy, .canComplete:
             return "questionmark.circle"
+        case .hasCompletionOption, .optionFor:
+            return "square.stack.3d.up"
         }
     }
 
@@ -61,6 +69,10 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return .canComplete
         case .canComplete:
             return .canBeCompletedBy
+        case .hasCompletionOption:
+            return .optionFor
+        case .optionFor:
+            return .hasCompletionOption
         }
     }
 
@@ -78,8 +90,12 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return 4
         case .canComplete:
             return 5
-        case .related:
+        case .hasCompletionOption:
             return 6
+        case .optionFor:
+            return 7
+        case .related:
+            return 8
         }
     }
 }

@@ -16,6 +16,7 @@ struct TaskRankingFeature {
         var flagRules: [RoutineFlagRule] = []
         var metric: TaskRankingMetric = .pressure
         var reversedMetrics: Set<TaskRankingMetric> = []
+        var scopePath: [UUID] = []
         var presentation = TaskRankingPresentation.empty()
         var selectedTaskID: UUID?
         var taskDetailState: TaskDetailFeature.State?
@@ -24,6 +25,11 @@ struct TaskRankingFeature {
 
         var isReversed: Bool {
             reversedMetrics.contains(metric)
+        }
+
+        var scopeParentTask: RoutineTask? {
+            guard let scopeParentTaskID = scopePath.last else { return nil }
+            return tasks.first(where: { $0.id == scopeParentTaskID })
         }
     }
 
@@ -40,6 +46,8 @@ struct TaskRankingFeature {
         case metricChanged(TaskRankingMetric)
         case directionToggled
         case taskSelected(UUID)
+        case completionOptionsOpened(UUID)
+        case scopeBackTapped
         case moveTask(UUID, TaskRankingMoveDirection)
         case taskDetail(TaskDetailFeature.Action)
     }
@@ -82,6 +90,10 @@ struct TaskRankingFeature {
                 state.flagRules = RoutineFlagRules.sanitized(flagRules)
                 state.isLoading = false
                 state.errorMessage = nil
+                let loadedTaskIDs = Set(tasks.map(\.id))
+                if state.scopePath.contains(where: { !loadedTaskIDs.contains($0) }) {
+                    state.scopePath = []
+                }
                 rebuildPresentation(&state)
                 if let selectedTaskID = state.selectedTaskID,
                    !tasks.contains(where: { $0.id == selectedTaskID }) {
@@ -126,13 +138,25 @@ struct TaskRankingFeature {
 
             case let .taskSelected(taskID):
                 guard let task = state.tasks.first(where: { $0.id == taskID }) else { return .none }
-                state.selectedTaskID = taskID
-                state.taskDetailState = HomeTaskSupport.makeTaskDetailState(
-                    for: task,
-                    now: now,
-                    calendar: calendar
-                )
+                selectTask(task, state: &state)
                 return .send(.taskDetail(.onAppear))
+
+            case let .completionOptionsOpened(taskID):
+                guard !state.scopePath.contains(taskID),
+                      (state.presentation.rowMetadataByTaskID[taskID]?.completionOptionCount ?? 0) > 0,
+                      let task = state.tasks.first(where: { $0.id == taskID }) else {
+                    return .none
+                }
+                state.scopePath.append(taskID)
+                selectTask(task, state: &state)
+                rebuildPresentation(&state)
+                return .send(.taskDetail(.onAppear))
+
+            case .scopeBackTapped:
+                guard !state.scopePath.isEmpty else { return .none }
+                state.scopePath.removeLast()
+                rebuildPresentation(&state)
+                return .none
 
             case let .moveTask(taskID, direction):
                 guard let update = TaskRankingOrderingSupport.moveTask(
@@ -170,6 +194,16 @@ struct TaskRankingFeature {
             metric: state.metric,
             isReversed: state.isReversed,
             referenceDate: now,
+            calendar: calendar,
+            scopePath: state.scopePath
+        )
+    }
+
+    private func selectTask(_ task: RoutineTask, state: inout State) {
+        state.selectedTaskID = task.id
+        state.taskDetailState = HomeTaskSupport.makeTaskDetailState(
+            for: task,
+            now: now,
             calendar: calendar
         )
     }
