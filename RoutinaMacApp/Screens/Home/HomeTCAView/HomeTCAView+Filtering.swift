@@ -109,8 +109,7 @@ extension HomeTCAView {
             routineListSectioningMode: routineListSectioningMode,
             flagRules: store.flagRules,
             calendar: calendar,
-            referenceDate: referenceDate,
-            routineTasks: store.routineTasks
+            referenceDate: referenceDate
         )
 
         return macTaskListPresentationCache.presentation(for: signature) {
@@ -281,6 +280,7 @@ extension HomeTCAView {
 final class HomeMacTaskListPresentationCache: ObservableObject {
     private var cachedSignature: HomeMacTaskListPresentationSignature?
     private var cachedPresentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>?
+    private var cachedSidebarLocationsByTaskID: [UUID: HomeMacTaskListSidebarLocationSnapshot] = [:]
 
     func presentation(
         for signature: HomeMacTaskListPresentationSignature,
@@ -293,8 +293,64 @@ final class HomeMacTaskListPresentationCache: ObservableObject {
         let presentation = build()
         cachedSignature = signature
         cachedPresentation = presentation
+        cachedSidebarLocationsByTaskID = Self.sidebarLocations(in: presentation)
         return presentation
     }
+
+    func sidebarLocation(for taskID: UUID) -> HomeMacTaskListSidebarLocationSnapshot? {
+        cachedSidebarLocationsByTaskID[taskID]
+    }
+
+    private static func sidebarLocations(
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    ) -> [UUID: HomeMacTaskListSidebarLocationSnapshot] {
+        var locations: [UUID: HomeMacTaskListSidebarLocationSnapshot] = [:]
+
+        for section in presentation.sections {
+            let groupTitlesByTaskID = sidebarGroupTitles(in: section.taskGroups)
+            for task in section.tasks where locations[task.taskID] == nil {
+                locations[task.taskID] = HomeMacTaskListSidebarLocationSnapshot(
+                    sectionTitle: section.title,
+                    sectionIdentityKey: section.identityKey,
+                    groupTitles: groupTitlesByTaskID[task.taskID] ?? [],
+                    taskFlags: task.flags
+                )
+            }
+        }
+
+        return locations
+    }
+
+    private static func sidebarGroupTitles(
+        in groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
+    ) -> [UUID: [String]] {
+        var titlesByTaskID: [UUID: [String]] = [:]
+
+        for group in groups {
+            let groupTitle = group.title.map { [$0] } ?? []
+            var titlesWithinGroup: [UUID: [String]] = [:]
+            for task in group.tasks {
+                titlesWithinGroup[task.taskID] = groupTitle
+            }
+
+            for (taskID, childTitles) in sidebarGroupTitles(in: group.childGroups) {
+                titlesWithinGroup[taskID] = groupTitle + childTitles
+            }
+
+            for (taskID, titles) in titlesWithinGroup where titlesByTaskID[taskID] == nil {
+                titlesByTaskID[taskID] = titles
+            }
+        }
+
+        return titlesByTaskID
+    }
+}
+
+struct HomeMacTaskListSidebarLocationSnapshot: Equatable {
+    let sectionTitle: String
+    let sectionIdentityKey: String
+    let groupTitles: [String]
+    let taskFlags: [String]
 }
 
 struct HomeMacTaskListPresentationSignature: Equatable {
@@ -338,7 +394,6 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let calendarFirstWeekday: Int
     let calendarMinimumDaysInFirstWeek: Int
     let referenceDate: Date
-    let relationshipTasks: [HomeMacTaskListRelationshipTaskSignature]
 
     init(
         routineDisplays: [HomeFeature.RoutineDisplay],
@@ -378,8 +433,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         routineListSectioningMode: RoutineListSectioningMode,
         flagRules: [RoutineFlagRule],
         calendar: Calendar,
-        referenceDate: Date,
-        routineTasks: [RoutineTask]
+        referenceDate: Date
     ) {
         self.routineDisplays = HomeMacTaskListDisplayCollectionSignature(
             routineDisplays,
@@ -430,12 +484,6 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.calendarFirstWeekday = calendar.firstWeekday
         self.calendarMinimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
         self.referenceDate = referenceDate
-        if taskListViewMode == .actionable {
-            relationshipTasks = routineTasks.map(HomeMacTaskListRelationshipTaskSignature.init(task:))
-                .sorted { $0.id.uuidString < $1.id.uuidString }
-        } else {
-            relationshipTasks = []
-        }
     }
 
     static func referenceMinute(for date: Date, calendar: Calendar) -> Date {
@@ -454,75 +502,5 @@ struct HomeMacTaskListDisplayCollectionSignature: Equatable {
         count = displays.count
         firstTaskID = displays.first?.taskID
         lastTaskID = displays.last?.taskID
-    }
-}
-
-struct HomeMacTaskListRelationshipTaskSignature: Equatable {
-    let id: UUID
-    let relationshipsStorage: String
-    let scheduleModeRawValue: String
-    let recurrenceStorageVersion: Int16
-    let recurrenceKindRawValue: String
-    let recurrenceTimeOfDayHour: Int?
-    let recurrenceTimeOfDayMinute: Int?
-    let recurrenceTimeRangeStartHour: Int?
-    let recurrenceTimeRangeStartMinute: Int?
-    let recurrenceTimeRangeEndHour: Int?
-    let recurrenceTimeRangeEndMinute: Int?
-    let recurrenceWeekday: Int?
-    let recurrenceDayOfMonth: Int?
-    let recurrenceRuleStorage: String
-    let interval: Int16
-    let lastDone: Date?
-    let canceledAt: Date?
-    let deadline: Date?
-    let availabilityStartDate: Date?
-    let scheduleAnchor: Date?
-    let pausedAt: Date?
-    let snoozedUntil: Date?
-    let stepsStorage: String
-    let completedStepCount: Int16
-    let checklistItemsStorage: String
-    let completedChecklistItemIDsStorage: String
-    let completedChecklistProgressStartedAt: Date?
-    let createdAt: Date?
-    let autoAssumeDailyDone: Bool
-    let autoAssumeDoneTimeOfDayHour: Int?
-    let autoAssumeDoneTimeOfDayMinute: Int?
-    let trackingCadenceEnabled: Bool
-
-    init(task: RoutineTask) {
-        id = task.id
-        relationshipsStorage = task.relationshipsStorage
-        scheduleModeRawValue = task.scheduleModeRawValue
-        recurrenceStorageVersion = task.recurrenceStorageVersion
-        recurrenceKindRawValue = task.recurrenceKindRawValue
-        recurrenceTimeOfDayHour = task.recurrenceTimeOfDayHour
-        recurrenceTimeOfDayMinute = task.recurrenceTimeOfDayMinute
-        recurrenceTimeRangeStartHour = task.recurrenceTimeRangeStartHour
-        recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
-        recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
-        recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
-        recurrenceWeekday = task.recurrenceWeekday
-        recurrenceDayOfMonth = task.recurrenceDayOfMonth
-        recurrenceRuleStorage = task.recurrenceRuleStorage
-        interval = task.interval
-        lastDone = task.lastDone
-        canceledAt = task.canceledAt
-        deadline = task.deadline
-        availabilityStartDate = task.availabilityStartDate
-        scheduleAnchor = task.scheduleAnchor
-        pausedAt = task.pausedAt
-        snoozedUntil = task.snoozedUntil
-        stepsStorage = task.stepsStorage
-        completedStepCount = task.completedStepCount
-        checklistItemsStorage = task.checklistItemsStorage
-        completedChecklistItemIDsStorage = task.completedChecklistItemIDsStorage
-        completedChecklistProgressStartedAt = task.completedChecklistProgressStartedAt
-        createdAt = task.createdAt
-        autoAssumeDailyDone = task.autoAssumeDailyDone
-        autoAssumeDoneTimeOfDayHour = task.autoAssumeDoneTimeOfDayHour
-        autoAssumeDoneTimeOfDayMinute = task.autoAssumeDoneTimeOfDayMinute
-        trackingCadenceEnabled = task.trackingCadenceEnabled
     }
 }

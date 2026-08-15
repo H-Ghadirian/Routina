@@ -248,6 +248,30 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacTaskListSignatureDoesNotWalkRoutineTasksFromRenderPath() throws {
+        let filteringSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Filtering.swift"
+        )
+        let displaySource = try Self.sourceFile(
+            "RoutinaMacApp/Features/Home/HomeFeature+Display.swift"
+        )
+        let predicateSource = try Self.sourceFile(
+            "SharedCore/Features/Home/HomeTaskListPredicate.swift"
+        )
+
+        XCTAssertFalse(filteringSource.contains("HomeMacTaskListRelationshipTaskSignature"))
+        XCTAssertFalse(filteringSource.contains("routineTasks.map("))
+        XCTAssertTrue(
+            displaySource.contains("HomeDisplayFilterSupport.activeRelationshipBlockedTaskIDs("),
+            "Relationship availability must be derived at the Home display refresh boundary."
+        )
+        XCTAssertTrue(predicateSource.contains("return !task.hasActiveRelationshipBlocker"))
+        XCTAssertFalse(
+            predicateSource.contains("tasks: configuration.routineTasks"),
+            "Filtering a presentation row must not search the full SwiftData task collection."
+        )
+    }
+
     func testMacCustomSubsectionsUseTagStyleSurfaceAndPersistedCollapseState() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"
@@ -313,7 +337,24 @@ final class PerformanceRegressionTests: XCTestCase {
             "The live sidebar location should appear directly below the task title."
         )
         XCTAssertTrue(taskListSource.contains("func macTaskSourceListSidebarLocation(_ taskID: UUID)"))
-        XCTAssertTrue(taskListSource.contains("macTaskSourceListLocation(of: taskID, in: presentation)"))
+        XCTAssertTrue(
+            taskListSource.contains("macTaskListPresentationCache.sidebarLocation(for: taskID)"),
+            "Task Detail must read its breadcrumb from the presentation snapshot instead of rebuilding whole-history presentation inputs during a transition."
+        )
+        let sidebarLocationFunctionStart = try XCTUnwrap(
+            taskListSource.range(of: "func macTaskSourceListSidebarLocation(_ taskID: UUID)")
+        )
+        let sidebarLocationFunctionEnd = try XCTUnwrap(
+            taskListSource.range(
+                of: "private func macTaskSourceListSidebarSectionTitle",
+                range: sidebarLocationFunctionStart.upperBound..<taskListSource.endIndex
+            )
+        )
+        let sidebarLocationFunction = taskListSource[
+            sidebarLocationFunctionStart.lowerBound..<sidebarLocationFunctionEnd.lowerBound
+        ]
+        XCTAssertFalse(sidebarLocationFunction.contains("macTaskListPresentation("))
+        XCTAssertFalse(sidebarLocationFunction.contains("store.routineTasks"))
         XCTAssertTrue(taskListSource.contains("location.groups.forEach(expandTaskListGroup)"))
         XCTAssertEqual(
             taskListSource.components(

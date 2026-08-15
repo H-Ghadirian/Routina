@@ -1835,39 +1835,31 @@ extension HomeTCAView {
     }
 
     func macTaskSourceListSidebarLocation(_ taskID: UUID) -> TaskDetailSidebarLocation? {
-        let presentation = macTaskListPresentation(
-            routineDisplays: store.routineDisplays,
-            awayRoutineDisplays: store.awayRoutineDisplays,
-            archivedRoutineDisplays: store.archivedRoutineDisplays
-        )
-        guard let location = macTaskSourceListLocation(of: taskID, in: presentation) else {
+        guard let location = macTaskListPresentationCache.sidebarLocation(for: taskID) else {
             return nil
         }
 
         let sectionTitle = macTaskSourceListSidebarSectionTitle(
-            for: taskID,
             location: location
         )
 
         return TaskDetailSidebarLocation(
-            titles: [sectionTitle] + location.groups.compactMap(\.title)
+            titles: [sectionTitle] + location.groupTitles
         )
     }
 
     private func macTaskSourceListSidebarSectionTitle(
-        for taskID: UUID,
-        location: MacTaskSourceListTaskLocation
+        location: HomeMacTaskListSidebarLocationSnapshot
     ) -> String {
-        guard location.section.identityKey == "hiddenByFlagRule",
-              let task = store.routineTasks.first(where: { $0.id == taskID }) else {
-            return location.section.title
+        guard location.sectionIdentityKey == "hiddenByFlagRule" else {
+            return location.sectionTitle
         }
 
         let hidingFlags = RoutineFlagRules.flagsHidingFromTaskLists(
-            task.flags,
+            location.taskFlags,
             rules: store.flagRules
         )
-        guard !hidingFlags.isEmpty else { return location.section.title }
+        guard !hidingFlags.isEmpty else { return location.sectionTitle }
 
         let noun = hidingFlags.count == 1 ? "Flag" : "Flags"
         return "Hidden by \(noun): \(hidingFlags.joined(separator: ", "))"

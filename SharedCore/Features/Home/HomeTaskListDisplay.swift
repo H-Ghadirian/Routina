@@ -46,6 +46,7 @@ protocol HomeTaskListDisplay {
     var isPaused: Bool { get }
     var isPinned: Bool { get }
     var isInProgress: Bool { get }
+    var hasActiveRelationshipBlocker: Bool { get }
     var blocksManualCompletionForIncompleteChecklist: Bool { get }
     var completedChecklistItemCount: Int { get }
     var hasDailyRunoutChecklistItem: Bool { get }
@@ -85,6 +86,10 @@ extension HomeTaskListDisplay {
 
     var trackingCadenceEnabled: Bool {
         true
+    }
+
+    var hasActiveRelationshipBlocker: Bool {
+        false
     }
 
     var estimatedDurationMinutes: Int? {

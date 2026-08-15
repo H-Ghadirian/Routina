@@ -59,6 +59,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var hasPassedSoftThreshold: Bool
     var completedStepCount: Int
     var isInProgress: Bool
+    var hasActiveRelationshipBlocker: Bool = false
     var blocksManualCompletionForIncompleteChecklist: Bool = false
     var nextStepTitle: String?
     var checklistItemCount: Int

@@ -218,12 +218,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
         case .all:
             return true
         case .actionable:
-            return !HomeDisplayFilterSupport.hasActiveRelationshipBlocker(
-                taskID: task.taskID,
-                tasks: configuration.routineTasks,
-                referenceDate: configuration.referenceDate,
-                calendar: configuration.calendar
-            )
+            return !task.hasActiveRelationshipBlocker
         }
     }
 

@@ -92,21 +92,16 @@ struct HomeTaskListFilteringTests {
     func actionableFilterHidesTasksWithUnfinishedBlockers() {
         let blockedTaskID = UUID()
         let blockerID = UUID()
-        let blockedTask = RoutineTask(
-            id: blockedTaskID,
-            name: "Submit report",
-            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)]
-        )
-        let blocker = RoutineTask(id: blockerID, name: "Draft report")
         let displays = [
-            TestTaskDisplay(taskID: blockedTaskID, name: "Submit report"),
+            TestTaskDisplay(
+                taskID: blockedTaskID,
+                name: "Submit report",
+                hasActiveRelationshipBlocker: true
+            ),
             TestTaskDisplay(taskID: blockerID, name: "Draft report")
         ]
 
-        let result = makeFiltering(
-            taskListViewMode: .actionable,
-            routineTasks: [blockedTask, blocker]
-        )
+        let result = makeFiltering(taskListViewMode: .actionable)
         .filteredTasks(displays)
 
         #expect(result.map(\.name) == ["Draft report"])
@@ -2869,7 +2864,6 @@ private func makeFiltering(
     routineListSectioningMode: RoutineListSectioningMode = .status,
     separateDeadlineStatusInTagSections: Bool = false,
     flagRules: [RoutineFlagRule] = [],
-    routineTasks: [RoutineTask] = [],
     referenceDate: Date = Date(timeIntervalSince1970: 1_714_608_000)
 ) -> HomeTaskListFiltering<TestTaskDisplay> {
     var calendar = Calendar(identifier: .gregorian)
@@ -2901,7 +2895,7 @@ private func makeFiltering(
             routineListSectioningMode: routineListSectioningMode,
             separateDeadlineStatusInTagSections: separateDeadlineStatusInTagSections,
             flagRules: flagRules,
-            routineTasks: routineTasks,
+            routineTasks: [],
             referenceDate: referenceDate,
             calendar: calendar
         ),
@@ -2963,6 +2957,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var hasPassedSoftThreshold: Bool = false
     var completedStepCount: Int = 0
     var isInProgress: Bool = false
+    var hasActiveRelationshipBlocker: Bool = false
     var nextStepTitle: String?
     var checklistItemCount: Int = 0
     var completedChecklistItemCount: Int = 0

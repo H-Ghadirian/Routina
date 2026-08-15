@@ -192,31 +192,48 @@ enum HomeDisplayFilterSupport {
         referenceDate: Date,
         calendar: Calendar
     ) -> Bool {
-        guard let task = tasks.first(where: { $0.id == taskID }) else { return false }
+        activeRelationshipBlockedTaskIDs(
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ).contains(taskID)
+    }
 
-        var blockerIDs = Set(
-            task.relationships
-                .filter { $0.kind == .blockedBy }
-                .map(\.targetTaskID)
-        )
+    static func activeRelationshipBlockedTaskIDs(
+        tasks: [RoutineTask],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Set<UUID> {
+        let tasksByID = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var blockerIDsByBlockedTaskID: [UUID: Set<UUID>] = [:]
 
-        for candidate in tasks where candidate.id != taskID {
-            if candidate.relationships.contains(where: { $0.targetTaskID == taskID && $0.kind == .blocks }) {
-                blockerIDs.insert(candidate.id)
+        for task in tasks {
+            for relationship in task.relationships {
+                switch relationship.kind {
+                case .blockedBy:
+                    blockerIDsByBlockedTaskID[task.id, default: []].insert(relationship.targetTaskID)
+                case .blocks:
+                    blockerIDsByBlockedTaskID[relationship.targetTaskID, default: []].insert(task.id)
+                case .related, .doneWhen, .completes, .canComplete, .canBeCompletedBy:
+                    break
+                }
             }
         }
 
-        return tasks.contains { candidate in
-            guard blockerIDs.contains(candidate.id) else { return false }
-            let status = RoutineTaskRelationshipStatus.resolved(
-                for: candidate,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-            return status != .doneToday
-                && status != .completedOneOff
-                && status != .canceledOneOff
-        }
+        return Set(blockerIDsByBlockedTaskID.compactMap { blockedTaskID, blockerIDs in
+            let hasActiveBlocker = blockerIDs.contains { blockerID in
+                guard let blocker = tasksByID[blockerID] else { return false }
+                let status = RoutineTaskRelationshipStatus.resolved(
+                    for: blocker,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
+                return status != .doneToday
+                    && status != .completedOneOff
+                    && status != .canceledOneOff
+            }
+            return hasActiveBlocker ? blockedTaskID : nil
+        })
     }
 
     static func validateTaskFilters<T>(

@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0164 — Cache task-detail sidebar locations](0164-cache-task-detail-sidebar-locations.md)
 - [0163 — Do not sync unchanged preferences](0163-do-not-sync-unchanged-preferences.md)
 - [0162 — Defer iOS Home refreshes during scrolling](0162-defer-ios-home-refreshes-during-scrolling.md)
 - [0161 — Keep production iOS profiling setup warm but disposable](0161-speed-up-production-ios-profile-launches.md)
