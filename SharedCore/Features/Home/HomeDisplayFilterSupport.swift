@@ -214,8 +214,7 @@ enum HomeDisplayFilterSupport {
                     blockerIDsByBlockedTaskID[task.id, default: []].insert(relationship.targetTaskID)
                 case .blocks:
                     blockerIDsByBlockedTaskID[relationship.targetTaskID, default: []].insert(task.id)
-                case .related, .doneWhen, .completes, .canComplete, .canBeCompletedBy,
-                     .hasCompletionOption, .optionFor:
+                case .related, .doneWhen, .completes, .canComplete, .canBeCompletedBy:
                     break
                 }
             }

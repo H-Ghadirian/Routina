@@ -20,9 +20,11 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0574](0574-separate-task-ladder-placement-from-completion.md) supersedes [0572](0572-nest-completion-options-in-mac-task-ladder.md) and refines [0409](0409-add-manual-can-complete-task-links.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0571](0571-show-task-identity-metadata-in-mac-task-ladder.md):** Task Ladder placement is independent from completion rules; normal tasks can be parents, container-only groups such as Company never complete, and `Can complete` / `Completes` retain manual / automatic fulfillment without implying nesting.
+
 - **[0573](0573-centralize-user-perspective-product-documentation.md) refines [0250](0250-split-current-behavior-and-regression-scenarios.md) and [0251](0251-require-decision-conflict-check-before-implementation.md):** `docs/user-experience/` is the source of truth for user needs, UX principles, use cases, examples, and experience intent; user-described use cases and app changes that affect them update those documents in the same work.
 
-- **[0572](0572-nest-completion-options-in-mac-task-ladder.md) refines [0409](0409-add-manual-can-complete-task-links.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0571](0571-show-task-identity-metadata-in-mac-task-ladder.md):** Explicit completion-option relationships keep alternative ways out of the root Mac Task Ladder, open them in a nested cached ladder, preserve manual parent fulfillment, and scope tie-break ranks to that parent.
+- **[0572](0572-nest-completion-options-in-mac-task-ladder.md), superseded by [0574](0574-separate-task-ladder-placement-from-completion.md):** The development-only completion-option relationship bundled nesting with manual fulfillment; 0574 replaces it before release.
 
 - **[0571](0571-show-task-identity-metadata-in-mac-task-ladder.md) refines [0561](0561-add-separate-mac-task-ranking-ladder.md) and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Task Ladder rows show cached tag labels and repeating-task status instead of repeating the metric value already named by their section header.
 
@@ -667,7 +669,7 @@ These are ordered from newest resolver to oldest resolver.
 
 ## Open Questions
 
-- [Contextual Task Ladder Product Exploration](../task-ladder-contextual-priority.md) preserves the proposed Company/Family/Travel Areas, temporary focus periods, and bounded `What should I do now?` finalists that extend the completion-option foundation in [0572](0572-nest-completion-options-in-mac-task-ladder.md). Which Area ownership model, exception precedence, and platform scope should a later numbered decision accept?
+- [Contextual Task Ladder Product Exploration](../task-ladder-contextual-priority.md) preserves proposed temporary Company/Family/Travel focus periods and bounded `What should I do now?` finalists that extend the independent placement foundation in [0574](0574-separate-task-ladder-placement-from-completion.md). Which focus persistence, exception precedence, and platform scope should a later numbered decision accept?
 - `docs/routina-features-web.html` is older than the decision log entries for missed outcomes, sleep sessions, and place sessions. Should the public feature guide be updated to describe timeline activity as done, missed, canceled, sleep, and place/session history instead of only completed and canceled work?
 - `docs/recurring-window-routines.md` proposes recurring-window and flexible-gap schedules, but no accepted decision record currently adopts that model. Should this be promoted into a numbered decision before implementation?
 - [0199](0199-support-multiday-routine-start-flow.md) adds routine multi-day duration while keeping one-off todos on date-window availability. Should one-off todos also get a first-class multi-day duration distinct from date availability?
@@ -679,8 +681,9 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0574](0574-separate-task-ladder-placement-from-completion.md) | Separate Task Ladder Placement From Completion | Accepted | 2026-08-15 |
 | [0573](0573-centralize-user-perspective-product-documentation.md) | Centralize User-Perspective Product Documentation | Accepted | 2026-08-15 |
-| [0572](0572-nest-completion-options-in-mac-task-ladder.md) | Nest Completion Options in the Mac Task Ladder | Accepted | 2026-08-15 |
+| [0572](0572-nest-completion-options-in-mac-task-ladder.md) | Nest Completion Options in the Mac Task Ladder | Superseded by 0574 | 2026-08-15 |
 | [0571](0571-show-task-identity-metadata-in-mac-task-ladder.md) | Show Task Identity Metadata in the Mac Task Ladder | Accepted | 2026-08-15 |
 | [0570](0570-exclude-flagged-tasks-from-mac-task-ladder.md) | Exclude Flagged Tasks from the Mac Task Ladder | Accepted | 2026-08-15 |
 | [0569](0569-suppress-no-op-preference-sync-refresh-loops.md) | Suppress No-op Preference Sync Refresh Loops | Accepted | 2026-08-14 |

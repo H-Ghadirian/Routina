@@ -14,6 +14,7 @@ struct TaskRankingFeature {
     struct State: Equatable {
         var tasks: [RoutineTask] = []
         var flagRules: [RoutineFlagRule] = []
+        var organization = TaskLadderOrganization()
         var metric: TaskRankingMetric = .pressure
         var reversedMetrics: Set<TaskRankingMetric> = []
         var scopePath: [UUID] = []
@@ -29,7 +30,17 @@ struct TaskRankingFeature {
 
         var scopeParentTask: RoutineTask? {
             guard let scopeParentTaskID = scopePath.last else { return nil }
+            guard organization.group(id: scopeParentTaskID) == nil else { return nil }
             return tasks.first(where: { $0.id == scopeParentTaskID })
+        }
+
+        var scopeParentGroup: TaskLadderGroup? {
+            guard let scopeParentID = scopePath.last else { return nil }
+            return organization.group(id: scopeParentID)
+        }
+
+        var scopeParentName: String? {
+            scopeParentGroup?.displayName ?? scopeParentTask?.name
         }
     }
 
@@ -38,17 +49,21 @@ struct TaskRankingFeature {
         case onDisappear
         case refresh
         case routineDataChanged
-        case tasksLoaded([RoutineTask], [RoutineFlagRule])
+        case tasksLoaded([RoutineTask], [RoutineFlagRule], TaskLadderOrganization)
         case flagRulesChanged
+        case organizationChanged
         case loadFailed(String)
         case errorDismissed
         case reversedMetricsChanged(Set<TaskRankingMetric>)
         case metricChanged(TaskRankingMetric)
         case directionToggled
         case taskSelected(UUID)
-        case completionOptionsOpened(UUID)
+        case childLadderOpened(UUID)
         case scopeBackTapped
         case moveTask(UUID, TaskRankingMoveDirection)
+        case groupSaved(TaskLadderGroup)
+        case groupDeleted(UUID)
+        case taskPlacementSaved(UUID, TaskLadderNodeID?, TaskLadderCompletionBehavior)
         case taskDetail(TaskDetailFeature.Action)
     }
 
@@ -85,13 +100,14 @@ struct TaskRankingFeature {
                 }
                 .cancellable(id: CancelID.automaticRefresh, cancelInFlight: true)
 
-            case let .tasksLoaded(tasks, flagRules):
+            case let .tasksLoaded(tasks, flagRules, organization):
                 state.tasks = tasks
                 state.flagRules = RoutineFlagRules.sanitized(flagRules)
+                state.organization = organization.sanitized(validTaskIDs: Set(tasks.map(\.id)))
                 state.isLoading = false
                 state.errorMessage = nil
-                let loadedTaskIDs = Set(tasks.map(\.id))
-                if state.scopePath.contains(where: { !loadedTaskIDs.contains($0) }) {
+                let loadedNodeIDs = Set(tasks.map(\.id)).union(state.organization.groups.map(\.id))
+                if state.scopePath.contains(where: { !loadedNodeIDs.contains($0) }) {
                     state.scopePath = []
                 }
                 rebuildPresentation(&state)
@@ -104,6 +120,12 @@ struct TaskRankingFeature {
 
             case .flagRulesChanged:
                 state.flagRules = RoutineFlagRules.sanitized(appSettingsClient.flagRules())
+                rebuildPresentation(&state)
+                return .none
+
+            case .organizationChanged:
+                state.organization = appSettingsClient.taskLadderOrganization()
+                    .sanitized(validTaskIDs: Set(state.tasks.map(\.id)))
                 rebuildPresentation(&state)
                 return .none
 
@@ -141,16 +163,21 @@ struct TaskRankingFeature {
                 selectTask(task, state: &state)
                 return .send(.taskDetail(.onAppear))
 
-            case let .completionOptionsOpened(taskID):
-                guard !state.scopePath.contains(taskID),
-                      (state.presentation.rowMetadataByTaskID[taskID]?.completionOptionCount ?? 0) > 0,
-                      let task = state.tasks.first(where: { $0.id == taskID }) else {
+            case let .childLadderOpened(nodeID):
+                guard !state.scopePath.contains(nodeID),
+                      let metadata = state.presentation.rowMetadataByTaskID[nodeID],
+                      metadata.childCount > 0 || metadata.isGroup else {
                     return .none
                 }
-                state.scopePath.append(taskID)
-                selectTask(task, state: &state)
+                state.scopePath.append(nodeID)
+                if let task = state.tasks.first(where: { $0.id == nodeID }) {
+                    selectTask(task, state: &state)
+                } else {
+                    state.selectedTaskID = nil
+                    state.taskDetailState = nil
+                }
                 rebuildPresentation(&state)
-                return .send(.taskDetail(.onAppear))
+                return state.taskDetailState == nil ? .none : .send(.taskDetail(.onAppear))
 
             case .scopeBackTapped:
                 guard !state.scopePath.isEmpty else { return .none }
@@ -166,9 +193,60 @@ struct TaskRankingFeature {
                 ) else {
                     return .none
                 }
-                TaskRankingOrderingSupport.apply(update, to: &state.tasks)
+                var tasks = state.tasks
+                var organization = state.organization
+                TaskRankingOrderingSupport.apply(
+                    update,
+                    to: &tasks,
+                    organization: &organization
+                )
+                state.tasks = tasks
+                state.organization = organization
                 rebuildPresentation(&state)
                 return persist(update)
+
+            case let .groupSaved(group):
+                state.organization.upsert(group)
+                state.organization = state.organization.sanitized(validTaskIDs: Set(state.tasks.map(\.id)))
+                rebuildPresentation(&state)
+                appSettingsClient.setTaskLadderOrganization(state.organization)
+                return .none
+
+            case let .groupDeleted(groupID):
+                state.organization.deleteGroup(id: groupID)
+                if state.scopePath.contains(groupID) {
+                    state.scopePath = []
+                }
+                rebuildPresentation(&state)
+                appSettingsClient.setTaskLadderOrganization(state.organization)
+                return .none
+
+            case let .taskPlacementSaved(taskID, parent, behavior):
+                let validTaskIDs = Set(state.tasks.map(\.id))
+                guard state.organization.place(
+                    taskID: taskID,
+                    inside: parent,
+                    validTaskIDs: validTaskIDs
+                ) else {
+                    state.errorMessage = "That placement would create an invalid Task Ladder hierarchy."
+                    return .none
+                }
+                if case let .task(parentTaskID)? = parent {
+                    updateCompletionBehavior(
+                        behavior,
+                        sourceTaskID: taskID,
+                        parentTaskID: parentTaskID,
+                        tasks: &state.tasks
+                    )
+                }
+                rebuildPresentation(&state)
+                let organization = state.organization
+                appSettingsClient.setTaskLadderOrganization(organization)
+                return persistPlacement(
+                    taskID: taskID,
+                    parent: parent,
+                    behavior: behavior
+                )
 
             case let .taskDetail(taskDetailAction):
                 guard var taskDetailState = state.taskDetailState else { return .none }
@@ -190,6 +268,7 @@ struct TaskRankingFeature {
     private func rebuildPresentation(_ state: inout State) {
         state.presentation = TaskRankingPresentation.make(
             tasks: state.tasks,
+            organization: state.organization,
             flagRules: state.flagRules,
             metric: state.metric,
             isReversed: state.isReversed,
@@ -212,7 +291,11 @@ struct TaskRankingFeature {
         .run { @MainActor send in
             do {
                 let tasks = try modelContext().fetch(FetchDescriptor<RoutineTask>())
-                await send(.tasksLoaded(tasks, appSettingsClient.flagRules()))
+                await send(.tasksLoaded(
+                    tasks,
+                    appSettingsClient.flagRules(),
+                    appSettingsClient.taskLadderOrganization()
+                ))
             } catch {
                 await send(.loadFailed("Couldn’t load task ranking. \(error.localizedDescription)"))
             }
@@ -225,12 +308,69 @@ struct TaskRankingFeature {
             do {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 var tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                TaskRankingOrderingSupport.apply(update, to: &tasks)
+                var organization = appSettingsClient.taskLadderOrganization()
+                TaskRankingOrderingSupport.apply(
+                    update,
+                    to: &tasks,
+                    organization: &organization
+                )
                 try context.save()
+                appSettingsClient.setTaskLadderOrganization(organization)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 await send(.loadFailed("Couldn’t update task ranking. \(error.localizedDescription)"))
             }
         }
+    }
+
+    private func persistPlacement(
+        taskID: UUID,
+        parent: TaskLadderNodeID?,
+        behavior: TaskLadderCompletionBehavior
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            guard case let .task(parentTaskID)? = parent else { return }
+            do {
+                _ = try RoutineTaskRelationshipMutationSupport.setCompletionBehavior(
+                    sourceTaskID: taskID,
+                    targetTaskID: parentTaskID,
+                    behavior: behavior,
+                    timestamp: now,
+                    calendar: calendar,
+                    context: modelContext()
+                )
+            } catch {
+                await send(.loadFailed("Couldn’t update completion behavior. \(error.localizedDescription)"))
+            }
+        }
+    }
+
+    private func updateCompletionBehavior(
+        _ behavior: TaskLadderCompletionBehavior,
+        sourceTaskID: UUID,
+        parentTaskID: UUID,
+        tasks: inout [RoutineTask]
+    ) {
+        guard let sourceIndex = tasks.firstIndex(where: { $0.id == sourceTaskID }) else { return }
+        let candidates = RoutineTaskRelationshipCandidate.from(
+            tasks,
+            excluding: sourceTaskID,
+            referenceDate: now,
+            calendar: calendar
+        )
+        var relationships = RoutineTask.editableRelationships(
+            for: tasks[sourceIndex],
+            within: candidates
+        )
+        relationships.removeAll { relationship in
+            relationship.targetTaskID == parentTaskID
+                && (relationship.kind == .canComplete || relationship.kind == .completes)
+        }
+        if let kind = behavior.relationshipKind {
+            relationships.removeAll { $0.targetTaskID == parentTaskID }
+            relationships.append(RoutineTaskRelationship(targetTaskID: parentTaskID, kind: kind))
+        }
+        tasks[sourceIndex].replaceRelationships(relationships)
+        RoutineTask.removeInverseRelationships(targeting: sourceTaskID, from: tasks)
     }
 }

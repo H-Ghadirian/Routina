@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0574: Separate Task Ladder Placement From Completion](0574-separate-task-ladder-placement-from-completion.md)
 
 ## Date
 

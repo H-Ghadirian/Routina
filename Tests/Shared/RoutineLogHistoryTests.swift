@@ -357,7 +357,7 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
-    func completionOptionRelationshipFulfillsParentWhenManuallySelected() throws {
+    func canCompleteRelationshipFulfillsParentWhenManuallySelected() throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let walk = makeTask(
@@ -375,7 +375,7 @@ struct RoutineLogHistoryTests {
             emoji: nil
         )
         exercise.relationships = [
-            RoutineTaskRelationship(targetTaskID: walk.id, kind: .hasCompletionOption)
+            RoutineTaskRelationship(targetTaskID: walk.id, kind: .canBeCompletedBy)
         ]
         try context.save()
 

@@ -258,7 +258,7 @@ struct TaskDetailFeatureCompletionTests {
         let walk = RoutineTask(
             name: "Walk",
             relationships: [
-                RoutineTaskRelationship(targetTaskID: exercise.id, kind: .optionFor)
+                RoutineTaskRelationship(targetTaskID: exercise.id, kind: .canComplete)
             ],
             scheduleMode: .oneOff
         )
@@ -291,7 +291,7 @@ struct TaskDetailFeatureCompletionTests {
 
         #expect(store.state.isManualCompletionConfirmationPresented)
         #expect(store.state.pendingManualCompletionTargets.map(\.taskID) == [exercise.id])
-        #expect(store.state.pendingManualCompletionTargets.first?.kind == .optionFor)
+        #expect(store.state.pendingManualCompletionTargets.first?.kind == .canComplete)
         #expect(store.state.task.lastDone == nil)
     }
 

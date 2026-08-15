@@ -478,8 +478,7 @@ extension TaskDetailFeature.State {
             )
         }
 
-        for relationship in task.relationships
-        where relationship.kind == .canComplete || relationship.kind == .optionFor {
+        for relationship in task.relationships where relationship.kind == .canComplete {
             guard let candidate = candidateByID[relationship.targetTaskID] else { continue }
             appendCandidate(candidate, kind: relationship.kind)
         }
@@ -490,8 +489,6 @@ extension TaskDetailFeature.State {
                 switch relationship.kind {
                 case .canBeCompletedBy:
                     inverseSourceKind = .canComplete
-                case .hasCompletionOption:
-                    inverseSourceKind = .optionFor
                 default:
                     continue
                 }

@@ -2,13 +2,14 @@
 
 ## Status
 
-Future product exploration. This document is not an accepted decision and does
-not describe current behavior. Any section beyond the implemented completion-
-option foundation requires a later numbered decision before implementation.
+Mixed product exploration. Independent Task Ladder placement and container-only
+groups are implemented by the accepted decision below. Temporary focus,
+cross-group finalists, available-time filtering, and `What should I do now?`
+remain proposals and do not describe current behavior.
 
 Implemented foundation:
 
-- [Decision 0572: Nest Completion Options in the Mac Task Ladder](decisions/0572-nest-completion-options-in-mac-task-ladder.md)
+- [Decision 0574: Separate Task Ladder Placement From Completion](decisions/0574-separate-task-ladder-placement-from-completion.md)
 - [Current task behavior](current-behavior/tasks.md)
 
 ## Product Problem
@@ -30,29 +31,30 @@ cross-area exceptions or requiring an opaque priority formula.
 
 ## Distinct Concepts
 
-### Commitment with completion options
+### Completable parent with placed tasks
 
 An actionable parent represents the commitment that participates in the general
-ladder. Its children are alternative ways to satisfy it. One suitable option may
-fulfill the parent occurrence.
+ladder. Its children are placed inside it for comparison. Each child's separate
+completion rule determines whether it does nothing to the parent, may fulfill
+the parent after confirmation, or fulfills the parent automatically.
 
 Example: `Exercise` with `Walk`, `Gym`, `Swim`, `Running`, and `Hiking`.
 
-This concept is implemented by Decision 0572.
+Independent placement is implemented by Decision 0574. The person's choice of
+`Can complete` retains the manual fulfillment behavior from Decision 0409.
 
-### Area or container
+### Container-only group
 
-An Area organizes separate obligations that may all still need to be completed.
-The Area itself is not a fake completable task.
+A Task Ladder group organizes separate obligations that may all still need to be
+completed. The group itself is not a fake completable task.
 
 Example: `Company` containing an Amplitude tracking ticket, a customer report,
 and an experiment review. Completing one ticket does not complete Company.
 
-Areas are not implemented by Decision 0572. They require a later decision about
-ownership, persistence, interaction with Home Paths, and whether one task can
-belong to more than one Area.
+Container-only groups and one-parent task placement are implemented by Decision
+0574. Groups remain Task Ladder-specific and do not reuse Home Paths.
 
-### Temporary Area focus
+### Temporary group focus
 
 The relative attention given to Company, Family, and Travel changes by day or
 period. A temporary focus order should express that allocation without rewriting
@@ -75,7 +77,7 @@ a selected date. Expired focus should not silently remain authoritative.
 
 Routina does not need to compare every leaf task globally to find the next useful
 choice. It can compare the best currently actionable candidate from each relevant
-Area or commitment.
+Group or commitment.
 
 If Company is ordered `A > B > C`, Family is `F > G`, and Travel is `T`, the
 global finalists are `A`, `F`, and `T`. `B` and `C` do not need global comparison
@@ -95,10 +97,10 @@ duration. The root ladder shows one row:
 Medium importance · Low urgency
 
 🏃 Exercise
-   Flexible duration · 5 options                         ›
+   Flexible duration · 5 tasks                           ›
 ```
 
-Opening it presents only actionable completion options:
+Opening it presents only actionable placed tasks:
 
 ```text
 ‹ Task Ladder    Exercise
@@ -133,11 +135,11 @@ The root view may show one navigable Company row rather than every work ticket:
 
 Opening Company presents its task ladder. Unlike Exercise, the children are not
 alternatives and completing one does not satisfy the container. Company should
-therefore be visibly identified as an Area, not as a repeating task.
+therefore be visibly identified as a Group, not as a repeating task.
 
 ### Company, Family, and Travel: focus changes over time
 
-Area focus is temporary attention allocation. It must not cascade values into
+Group focus is temporary attention allocation. It must not cascade values into
 children. Making Family primary today does not lower the saved Importance of an
 Amplitude ticket, and making Company primary does not make every Company task
 more urgent than every Family task.
@@ -166,8 +168,8 @@ precision numeric score.
 
 ## Proposed UI and Interaction Principles
 
-- Root rows must distinguish actionable tasks, completion-option parents, and
-  non-completable Areas through labels, icons, and completion affordances.
+- Root rows must distinguish actionable tasks, completable task parents, and
+  non-completable Groups through labels, icons, and completion affordances.
 - A row with nested content opens that ladder across its full intended hit area.
   Task Details remains available through an explicit action or adjacent detail
   presentation.
@@ -182,7 +184,7 @@ precision numeric score.
   matching scope.
 - Temporary focus has an explicit duration such as Today, This week, or Until a
   date. The UI makes expiration visible.
-- A lower-focus Area can still contribute a finalist when it contains a scheduled,
+- A lower-focus Group can still contribute a finalist when it contains a scheduled,
   due, overdue, in-progress, or otherwise explicitly time-constrained task.
 - Context such as available time filters or reorders candidates transparently.
   Longer options remain discoverable under a clear `Doesn't fit` state rather
@@ -197,18 +199,18 @@ precision numeric score.
 - Routina moves from being only a task catalog toward being an explainable
   decision system: choose an area or commitment, then choose its next action.
 - The product value is reduced cognitive load, not automatic judgment. People
-  retain control over Area focus, task order, and final selection.
-- Onboarding must teach the difference between an Area, a completable parent,
-  and a completion option. Reusing one generic `Group` term would obscure
-  different completion behavior.
-- Existing tasks and relationships must not be auto-converted. Migration guesses
-  could hide standalone work or create false fulfillment behavior.
-- The feature must remain useful with partial organization. An `Unsorted` or
-  root-task path prevents mandatory setup before Task Ladder provides value.
-- Candidate derivation must reuse cached immutable presentations. Area expansion,
+  retain control over Group focus, task order, and final selection.
+- Onboarding must teach that a Group is container-only while a task parent can
+  have nested work with an independent completion rule.
+- The superseded completion-option relationship was never shipped or used, so it
+  is removed without migration. Existing `Can complete` and `Completes` rules
+  retain their established fulfillment meanings and never imply placement.
+- The feature must remain useful with partial organization. The general/root
+  ladder prevents mandatory setup before Task Ladder provides value.
+- Candidate derivation must reuse cached immutable presentations. Group expansion,
   global finalists, and context changes cannot introduce whole-history work into
   scrolling render paths.
-- Sync and backup must preserve Area identity, temporary focus expiration,
+- Sync and backup must preserve Group identity, temporary focus expiration,
   membership, and scope-specific ranks before the feature can be considered
   durable.
 - Product validation should focus on whether people reach a confident next action
@@ -217,20 +219,25 @@ precision numeric score.
   privacy decision; structured usability studies and direct feedback are the
   default validation path.
 
-## Decision Scenarios for a Later Accepted Record
+## Product Scenarios
+
+The placement, completion, and deletion scenarios below are accepted current
+behavior. Temporary focus, finalists, available-time context, and hierarchy-aware
+search remain inputs for later decisions.
 
 ### Completion alternatives stay local
 
 Given Exercise participates in the root ladder
-And Walk, Gym, Swim, Running, and Hiking are its completion options
+And Walk, Gym, Swim, Running, and Hiking are placed inside it
 When the root ladder is shown
 Then Exercise appears once
-And its options appear only after opening Exercise
-And completing a selected option can explicitly fulfill Exercise once.
+And its placed tasks appear only after opening Exercise
+And a selected task's independent `Can complete` rule can explicitly fulfill
+Exercise once.
 
 ### Containers do not inherit completion semantics
 
-Given Company is an Area containing several tickets
+Given Company is a Group containing several tickets
 When one ticket is completed
 Then the ticket leaves or advances according to its own lifecycle
 And Company remains available while other actionable work exists
@@ -240,19 +247,19 @@ And no Company completion is recorded.
 
 Given Company is primary today
 When Family is made primary tomorrow
-Then the Area order changes for tomorrow
+Then the Group order changes for tomorrow
 And task-level Importance, Urgency, Pressure, estimates, and history do not change.
 
 ### Global finalists remain bounded
 
-Given several Areas each have locally ordered tasks
+Given several Groups each have locally ordered tasks
 When Routina builds the `What should I do now?` view
-Then it shows only the best eligible candidate from each relevant Area
+Then it shows only the best eligible candidate from each relevant Group
 And it does not compare or render every lower-ranked task globally.
 
 ### Explicit constraints can override focus
 
-Given Company is the primary Area
+Given Company is the primary Group
 And Call Mom in Family is due today
 When Routina recommends a next action
 Then Call Mom remains a visible finalist
@@ -282,40 +289,37 @@ root comparison.
 
 ### Deleting organization never deletes work
 
-Given an Area is deleted
+Given a Group is deleted
 When it still owns tasks
-Then those tasks move to an explicit Unsorted/root destination
-And their task data, history, relationships, and non-Area metadata remain intact.
+Then those tasks return to the general/root ladder
+And their task data, history, relationships, and non-Group metadata remain intact.
 
-### Shared options do not create ambiguous ranking
+### Placement and multiple fulfillment targets stay independent
 
-Given one completion option can fulfill more than one parent
-When it is ranked inside each parent
-Then each parent retains its own tie-break order
-And completing the option asks which eligible parent commitments to fulfill.
+Given one task can fulfill more than one commitment
+And it has one Task Ladder placement
+When the task is ranked
+Then it has only the placed parent's local tie-break order
+And completing it asks which eligible commitments to fulfill.
 
 ## Staged Decision Boundaries
 
-1. **Implemented:** explicit completion options, root suppression, nested Mac
-   ladders, scope-specific tie-break ranks, and manual parent fulfillment.
-2. **Later decision:** durable Areas/containers and their relationship to Home
-   Paths, tags, Goals, and unassigned tasks.
-3. **Later decision:** temporary Area focus, expiration, persistence, sync, and
+1. **Implemented:** independent placement, container-only Groups, root
+   suppression, nested Mac ladders, scope-specific tie-break ranks, and separate
+   none/manual/automatic completion rules.
+2. **Later decision:** temporary Group focus, expiration, persistence, sync, and
    whether focus applies per device or across devices.
-4. **Later decision:** the bounded `What should I do now?` finalist surface,
+3. **Later decision:** the bounded `What should I do now?` finalist surface,
    explainable exception precedence, and available-time context.
-5. **Later decision:** iOS presentation and parity after the product semantics are
+4. **Later decision:** iOS presentation and parity after the product semantics are
    validated on the Mac Task Ladder.
 
 ## Open Questions
 
-- Should an Area be a new entity, a ladder-only catalog, or a projection of an
-  existing Home Path? Reusing Home Path would couple Ladder organization to Home
-  placement, which may violate user expectations.
-- Does each task have one primary Area, or can it belong to several? Multiple
-  ownership requires independent rank and deduplication semantics.
-- Is the Area overview navigational only, or can Areas themselves be temporarily
-  ordered without pretending they have task Importance/Urgency?
+- Should Groups eventually nest inside other Groups, or is a root Group plus
+  nested task hierarchy enough?
+- Should Group focus be a temporary ordering layer independent from saved
+  Pressure, Importance, Urgency, and Thinking needed values?
 - Which conditions are hard exceptions in `What should I do now?`: scheduled now,
   due today, overdue, in progress, blocking other tasks, or user pinning?
 - Should the recommendation choose one finalist automatically or present a small

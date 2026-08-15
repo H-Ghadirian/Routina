@@ -74,6 +74,21 @@ enum TaskRankingMetric: String, CaseIterable, Codable, Equatable, Hashable, Iden
         }
     }
 
+    func value(for group: TaskLadderGroup) -> TaskRankingMetricValue? {
+        switch self {
+        case .pressure:
+            return group.pressure.map(TaskRankingMetricValue.pressure)
+        case .urgency:
+            return group.urgency.map(TaskRankingMetricValue.urgency)
+        case .estimatedTime:
+            return nil
+        case .importance:
+            return group.importance.map(TaskRankingMetricValue.importance)
+        case .thinkingNeeded:
+            return group.thinkingNeeded.map(TaskRankingMetricValue.thinkingNeeded)
+        }
+    }
+
     func apply(_ value: TaskRankingMetricValue?, to task: RoutineTask) {
         switch self {
         case .pressure:
@@ -99,6 +114,21 @@ enum TaskRankingMetric: String, CaseIterable, Codable, Equatable, Hashable, Iden
             }
         case .thinkingNeeded:
             task.thinkingNeeded = value?.thinkingNeededValue ?? .none
+        }
+    }
+
+    func apply(_ value: TaskRankingMetricValue?, to group: inout TaskLadderGroup) {
+        switch self {
+        case .pressure:
+            group.pressure = value?.pressureValue
+        case .urgency:
+            group.urgency = value?.urgencyValue
+        case .estimatedTime:
+            break
+        case .importance:
+            group.importance = value?.importanceValue
+        case .thinkingNeeded:
+            group.thinkingNeeded = value?.thinkingNeededValue
         }
     }
 
@@ -210,12 +240,21 @@ struct TaskRankingPresentation: Equatable {
     struct RowMetadata: Equatable, Sendable {
         let tagLabels: [String]
         let isRepeating: Bool
-        let completionOptionCount: Int
+        let childCount: Int
+        let isGroup: Bool
 
-        init(task: RoutineTask, completionOptionCount: Int) {
+        init(task: RoutineTask, childCount: Int) {
             tagLabels = task.tags.map { "#\($0)" }
             isRepeating = !task.isOneOffTask
-            self.completionOptionCount = completionOptionCount
+            self.childCount = childCount
+            isGroup = false
+        }
+
+        init(group: TaskLadderGroup, childCount: Int) {
+            tagLabels = []
+            isRepeating = false
+            self.childCount = childCount
+            isGroup = true
         }
     }
 
@@ -259,6 +298,7 @@ struct TaskRankingPresentation: Equatable {
 
     static func make(
         tasks: [RoutineTask],
+        organization: TaskLadderOrganization = TaskLadderOrganization(),
         flagRules: [RoutineFlagRule],
         metric: TaskRankingMetric,
         isReversed: Bool,
@@ -266,8 +306,8 @@ struct TaskRankingPresentation: Equatable {
         calendar: Calendar,
         scopePath: [UUID] = []
     ) -> Self {
-        let optionTaskIDsByParentID = completionOptionTaskIDsByParentID(tasks: tasks)
-        let allOptionTaskIDs = Set(optionTaskIDsByParentID.values.flatMap { $0 })
+        let taskIDs = Set(tasks.map(\.id))
+        let organization = organization.sanitized(validTaskIDs: taskIDs)
         let taskLadderExclusionFlagIDs = RoutineFlagRules.normalizedFlagIDs(
             for: .hideFromTaskLadder,
             in: flagRules
@@ -286,27 +326,48 @@ struct TaskRankingPresentation: Equatable {
             eligibleTasks.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
-        let ancestorTaskIDs = Set(scopePath)
+        let groupByID = Dictionary(
+            uniqueKeysWithValues: organization.groups.map { ($0.id, $0) }
+        )
+        let ancestorTaskIDs = Set(scopePath.filter { groupByID[$0] == nil })
         let activeTasks: [RoutineTask]
         if let scopeParentTaskID = scopePath.last {
-            activeTasks = optionTaskIDsByParentID[scopeParentTaskID, default: []]
+            let parentNodeID: TaskLadderNodeID = groupByID[scopeParentTaskID] == nil
+                ? .task(scopeParentTaskID)
+                : .group(scopeParentTaskID)
+            activeTasks = organization.childTaskIDs(of: parentNodeID)
                 .subtracting(ancestorTaskIDs)
                 .compactMap { eligibleTasksByID[$0] }
         } else {
-            activeTasks = eligibleTasks.filter { !allOptionTaskIDs.contains($0.id) }
+            let rootTasks = eligibleTasks.filter { task in
+                guard let parent = organization.parent(of: task.id) else { return true }
+                switch parent {
+                case let .group(parentID):
+                    return groupByID[parentID] == nil
+                case let .task(parentID):
+                    return eligibleTasksByID[parentID] == nil
+                }
+            }
+            activeTasks = rootTasks + organization.groups.map { syntheticTask(for: $0) }
         }
         let eligibleTaskIDs = Set(eligibleTasks.map(\.id))
         let rowMetadataByTaskID = Dictionary(
             uniqueKeysWithValues: activeTasks.map { task in
-                let completionOptionCount = optionTaskIDsByParentID[task.id, default: []]
+                let nodeID: TaskLadderNodeID = groupByID[task.id] == nil
+                    ? .task(task.id)
+                    : .group(task.id)
+                let childCount = organization.childTaskIDs(of: nodeID)
                     .intersection(eligibleTaskIDs)
                     .subtracting(ancestorTaskIDs)
                     .count
+                if let group = groupByID[task.id] {
+                    return (task.id, RowMetadata(group: group, childCount: childCount))
+                }
                 return (
                     task.id,
                     RowMetadata(
                         task: task,
-                        completionOptionCount: completionOptionCount
+                        childCount: childCount
                     )
                 )
             }
@@ -507,26 +568,22 @@ struct TaskRankingPresentation: Equatable {
             : lhs.id.uuidString < rhs.id.uuidString
     }
 
-    private static func completionOptionTaskIDsByParentID(
-        tasks: [RoutineTask]
-    ) -> [UUID: Set<UUID>] {
-        let taskIDs = Set(tasks.map(\.id))
-        var taskIDsByParentID: [UUID: Set<UUID>] = [:]
-        for task in tasks {
-            for relationship in task.relationships {
-                switch relationship.kind {
-                case .hasCompletionOption:
-                    guard taskIDs.contains(relationship.targetTaskID) else { continue }
-                    taskIDsByParentID[task.id, default: []].insert(relationship.targetTaskID)
-                case .optionFor:
-                    guard taskIDs.contains(relationship.targetTaskID) else { continue }
-                    taskIDsByParentID[relationship.targetTaskID, default: []].insert(task.id)
-                default:
-                    continue
-                }
-            }
-        }
-        return taskIDsByParentID
+    private static func syntheticTask(for group: TaskLadderGroup) -> RoutineTask {
+        let task = RoutineTask(
+            id: group.id,
+            name: group.displayName,
+            emoji: group.displayEmoji,
+            importance: group.importance ?? .level2,
+            urgency: group.urgency ?? .level2,
+            pressure: group.pressure ?? .none,
+            thinkingNeeded: group.thinkingNeeded ?? .none,
+            scheduleMode: .oneOff,
+            createdAt: group.createdAt,
+            hasExplicitImportance: group.importance != nil,
+            hasExplicitUrgency: group.urgency != nil
+        )
+        task.taskRankingOrderStorage = TaskRankingOrderStorage.serialize(group.taskRankingOrders)
+        return task
     }
 
     private static func sectionID(
@@ -540,7 +597,7 @@ struct TaskRankingPresentation: Equatable {
 }
 
 struct TaskRankingRankUpdate: Equatable, Sendable {
-    let taskID: UUID
+    let nodeID: TaskLadderNodeID
     let value: TaskRankingMetricValue
     let order: Int64
 }
@@ -548,9 +605,11 @@ struct TaskRankingRankUpdate: Equatable, Sendable {
 struct TaskRankingOrderUpdate: Equatable, Sendable {
     let metric: TaskRankingMetric
     let scopeTaskID: UUID?
-    let taskID: UUID
+    let nodeID: TaskLadderNodeID
     let destinationValue: TaskRankingMetricValue?
     let rankUpdates: [TaskRankingRankUpdate]
+
+    var taskID: UUID { nodeID.rawID }
 }
 
 enum TaskRankingMoveDirection: Equatable, Sendable {
@@ -577,6 +636,9 @@ enum TaskRankingOrderingSupport {
         }
 
         let sourceSection = presentation.sections[sourceSectionIndex]
+        let sourceNodeID: TaskLadderNodeID = presentation.rowMetadataByTaskID[taskID]?.isGroup == true
+            ? .group(taskID)
+            : .task(taskID)
         let destination: (section: TaskRankingPresentation.Section, index: Int)
         switch direction {
         case .up:
@@ -604,7 +666,7 @@ enum TaskRankingOrderingSupport {
                     return TaskRankingOrderUpdate(
                         metric: presentation.metric,
                         scopeTaskID: presentation.scopeParentTaskID,
-                        taskID: taskID,
+                        nodeID: sourceNodeID,
                         destinationValue: nil,
                         rankUpdates: []
                     )
@@ -629,31 +691,61 @@ enum TaskRankingOrderingSupport {
             metric: presentation.metric,
             value: destinationValue,
             isReversed: presentation.isReversed,
-            scopeTaskID: presentation.scopeParentTaskID
+            scopeTaskID: presentation.scopeParentTaskID,
+            groupIDs: Set(
+                presentation.rowMetadataByTaskID.compactMap { id, metadata in
+                    metadata.isGroup ? id : nil
+                }
+            )
         )
 
         return TaskRankingOrderUpdate(
             metric: presentation.metric,
             scopeTaskID: presentation.scopeParentTaskID,
-            taskID: taskID,
+            nodeID: sourceNodeID,
             destinationValue: destinationValue,
             rankUpdates: rankUpdates
         )
     }
 
-    static func apply(_ update: TaskRankingOrderUpdate, to tasks: inout [RoutineTask]) {
-        guard let movedTaskIndex = tasks.firstIndex(where: { $0.id == update.taskID }) else { return }
-        update.metric.apply(update.destinationValue, to: tasks[movedTaskIndex])
+    static func apply(
+        _ update: TaskRankingOrderUpdate,
+        to tasks: inout [RoutineTask],
+        organization: inout TaskLadderOrganization
+    ) {
+        switch update.nodeID {
+        case let .task(taskID):
+            guard let movedTaskIndex = tasks.firstIndex(where: { $0.id == taskID }) else { return }
+            update.metric.apply(update.destinationValue, to: tasks[movedTaskIndex])
+        case let .group(groupID):
+            guard let groupIndex = organization.groups.firstIndex(where: { $0.id == groupID }) else { return }
+            update.metric.apply(update.destinationValue, to: &organization.groups[groupIndex])
+        }
 
         for rankUpdate in update.rankUpdates {
-            guard let taskIndex = tasks.firstIndex(where: { $0.id == rankUpdate.taskID }) else { continue }
-            tasks[taskIndex].setTaskRankingOrder(
-                rankUpdate.order,
-                for: update.metric,
-                value: rankUpdate.value,
-                scopeTaskID: update.scopeTaskID
-            )
+            switch rankUpdate.nodeID {
+            case let .task(taskID):
+                guard let taskIndex = tasks.firstIndex(where: { $0.id == taskID }) else { continue }
+                tasks[taskIndex].setTaskRankingOrder(
+                    rankUpdate.order,
+                    for: update.metric,
+                    value: rankUpdate.value,
+                    scopeTaskID: update.scopeTaskID
+                )
+            case let .group(groupID):
+                guard let groupIndex = organization.groups.firstIndex(where: { $0.id == groupID }) else { continue }
+                organization.groups[groupIndex].setTaskRankingOrder(
+                    rankUpdate.order,
+                    for: update.metric,
+                    value: rankUpdate.value
+                )
+            }
         }
+    }
+
+    static func apply(_ update: TaskRankingOrderUpdate, to tasks: inout [RoutineTask]) {
+        var organization = TaskLadderOrganization()
+        apply(update, to: &tasks, organization: &organization)
     }
 
     private static func rankUpdatesForInsertion(
@@ -663,7 +755,8 @@ enum TaskRankingOrderingSupport {
         metric: TaskRankingMetric,
         value: TaskRankingMetricValue,
         isReversed: Bool,
-        scopeTaskID: UUID?
+        scopeTaskID: UUID?,
+        groupIDs: Set<UUID>
     ) -> [TaskRankingRankUpdate] {
         guard !visualTasks.isEmpty else { return [] }
 
@@ -680,7 +773,8 @@ enum TaskRankingOrderingSupport {
             return normalizedRankUpdates(
                 visualTasks: visualTasks,
                 value: value,
-                isReversed: isReversed
+                isReversed: isReversed,
+                groupIDs: groupIDs
             )
         }
 
@@ -711,7 +805,8 @@ enum TaskRankingOrderingSupport {
                 return normalizedRankUpdates(
                     visualTasks: visualTasks,
                     value: value,
-                    isReversed: isReversed
+                    isReversed: isReversed,
+                    groupIDs: groupIDs
                 )
             }
             order = lower + (upper - lower) / 2
@@ -723,19 +818,23 @@ enum TaskRankingOrderingSupport {
             order = 0
         }
 
-        return [TaskRankingRankUpdate(taskID: movingTask.id, value: value, order: order)]
+        let nodeID: TaskLadderNodeID = groupIDs.contains(movingTask.id)
+            ? .group(movingTask.id)
+            : .task(movingTask.id)
+        return [TaskRankingRankUpdate(nodeID: nodeID, value: value, order: order)]
     }
 
     private static func normalizedRankUpdates(
         visualTasks: [RoutineTask],
         value: TaskRankingMetricValue,
-        isReversed: Bool
+        isReversed: Bool,
+        groupIDs: Set<UUID>
     ) -> [TaskRankingRankUpdate] {
         let count = visualTasks.count
         return visualTasks.enumerated().map { index, task in
             let position = isReversed ? count - index : index
             return TaskRankingRankUpdate(
-                taskID: task.id,
+                nodeID: groupIDs.contains(task.id) ? .group(task.id) : .task(task.id),
                 value: value,
                 order: Int64(position) * rankSpacing
             )

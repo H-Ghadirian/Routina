@@ -97,7 +97,7 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
-    func rootLadderNestsOnlyExplicitCompletionOptionsUnderTheirParent() {
+    func rootLadderUsesPlacementIndependentlyFromCompletionRelationships() {
         let walk = RoutineTask(name: "Walk", pressure: .medium)
         let gym = RoutineTask(name: "Gym", pressure: .medium)
         let run = RoutineTask(name: "Run", pressure: .medium)
@@ -107,18 +107,7 @@ struct TaskRankingPresentationTests {
             scheduleMode: .oneOff,
             todoStateRawValue: TodoState.blocked.rawValue
         )
-        let exercise = RoutineTask(
-            name: "Exercise",
-            pressure: .low,
-            relationships: [
-                RoutineTaskRelationship(targetTaskID: walk.id, kind: .hasCompletionOption),
-                RoutineTaskRelationship(targetTaskID: gym.id, kind: .hasCompletionOption),
-                RoutineTaskRelationship(targetTaskID: blockedSwim.id, kind: .hasCompletionOption)
-            ]
-        )
-        run.relationships = [
-            RoutineTaskRelationship(targetTaskID: exercise.id, kind: .optionFor)
-        ]
+        let exercise = RoutineTask(name: "Exercise", pressure: .low)
         let legacyTarget = RoutineTask(name: "Movement", pressure: .low)
         let cycle = RoutineTask(
             name: "Cycle",
@@ -129,9 +118,16 @@ struct TaskRankingPresentationTests {
         )
         let callMom = RoutineTask(name: "Call Mom", pressure: .low)
         let tasks = [exercise, walk, gym, run, blockedSwim, legacyTarget, cycle, callMom]
+        let organization = TaskLadderOrganization(placements: [
+            TaskLadderPlacement(taskID: walk.id, parent: .task(exercise.id)),
+            TaskLadderPlacement(taskID: gym.id, parent: .task(exercise.id)),
+            TaskLadderPlacement(taskID: run.id, parent: .task(exercise.id)),
+            TaskLadderPlacement(taskID: blockedSwim.id, parent: .task(exercise.id))
+        ])
 
         let root = TaskRankingPresentation.make(
             tasks: tasks,
+            organization: organization,
             flagRules: [],
             metric: .pressure,
             isReversed: false,
@@ -148,10 +144,11 @@ struct TaskRankingPresentationTests {
         #expect(!rootTaskIDs.contains(gym.id))
         #expect(!rootTaskIDs.contains(run.id))
         #expect(!rootTaskIDs.contains(blockedSwim.id))
-        #expect(root.rowMetadataByTaskID[exercise.id]?.completionOptionCount == 3)
+        #expect(root.rowMetadataByTaskID[exercise.id]?.childCount == 3)
 
         let nested = TaskRankingPresentation.make(
             tasks: tasks,
+            organization: organization,
             flagRules: [],
             metric: .pressure,
             isReversed: false,
@@ -169,14 +166,11 @@ struct TaskRankingPresentationTests {
     func nestedLadderTieBreakRanksAreScopedToTheParent() throws {
         let walk = RoutineTask(name: "Walk", pressure: .medium)
         let gym = RoutineTask(name: "Gym", pressure: .medium)
-        let exercise = RoutineTask(
-            name: "Exercise",
-            pressure: .low,
-            relationships: [
-                RoutineTaskRelationship(targetTaskID: walk.id, kind: .hasCompletionOption),
-                RoutineTaskRelationship(targetTaskID: gym.id, kind: .hasCompletionOption)
-            ]
-        )
+        let exercise = RoutineTask(name: "Exercise", pressure: .low)
+        let organization = TaskLadderOrganization(placements: [
+            TaskLadderPlacement(taskID: walk.id, parent: .task(exercise.id)),
+            TaskLadderPlacement(taskID: gym.id, parent: .task(exercise.id))
+        ])
         walk.setTaskRankingOrder(0, for: .pressure, value: .pressure(.medium))
         gym.setTaskRankingOrder(1_000_000, for: .pressure, value: .pressure(.medium))
         walk.setTaskRankingOrder(
@@ -195,6 +189,7 @@ struct TaskRankingPresentationTests {
 
         let nested = TaskRankingPresentation.make(
             tasks: tasks,
+            organization: organization,
             flagRules: [],
             metric: .pressure,
             isReversed: false,
@@ -393,8 +388,8 @@ struct TaskRankingPresentationTests {
 
         #expect(source.contains("metadata.tagLabels.joined(separator: \" • \")"))
         #expect(source.contains("Label(\"Repeating\", systemImage: \"repeat\")"))
-        #expect(source.contains("Show Completion Options"))
-        #expect(source.contains("metadata.completionOptionCount"))
+        #expect(source.contains("Show Nested Tasks"))
+        #expect(source.contains("metadata.childCount"))
         #expect(!source.contains("private func metadataLabels"))
         #expect(!source.contains("No pressure value"))
     }

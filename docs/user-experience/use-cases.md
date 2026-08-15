@@ -99,6 +99,20 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Availability:** Mixed. Guided choice is currently iOS-oriented; macOS also provides a separate task-ranking workspace.
 
+### UC-06A — Compare meaningful peers without losing the overall picture
+
+**Situation:** The person has tasks from unrelated parts of life and several possible ways to satisfy some recurring commitments. Comparing every leaf task directly—such as calling Mom against fixing an analytics ticket—creates noise.
+
+**Need:** Compare broad commitments or groups at the general level, then compare only the relevant tasks inside the chosen context, without changing what task completion means.
+
+**Desired experience:** Task Ladder placement and completion remain separate. A container-only group such as Company opens its own ladder but never completes. A real commitment such as Exercise can contain Walk, Gym, or Swim, while each option independently does nothing to Exercise, asks whether it can complete Exercise, or completes Exercise automatically. The person can return any nested task to the general ladder without losing it.
+
+**Successful outcome:** The root ladder stays small enough to compare, nested ladders contain meaningful peers, and the person can explain both where a task appears and what completing it will do.
+
+**Example:** The root compares Company, Exercise, Family, and an independent “Call Mom” task. Company opens independent work obligations. Exercise opens activity choices; completing Walk asks whether today’s Exercise commitment should also be fulfilled.
+
+**Availability:** Development experiment on macOS. Temporary group focus and a cross-group “What should I do now?” recommendation remain proposed.
+
 ### UC-07 — Keep someday or hidden work without daily noise
 
 **Situation:** Some work is worth keeping but should not compete with everyday priorities.

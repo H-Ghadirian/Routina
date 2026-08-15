@@ -13,6 +13,7 @@ final class RoutinaUserPreferences {
     var customTaskSections: String?
     var macHomeTaskListSectionOrder: String?
     var macTaskRankingReversedMetrics: String?
+    var macTaskLadderOrganization: String?
     var homeTaskRowHiddenFields: String?
     var homeTimelineRowHiddenFields: String?
     var dayPlanCalendarListRowHiddenFields: String?
@@ -209,6 +210,7 @@ enum RoutinaUserPreferencesStore {
         store(defaults[.appSettingCustomTaskSections], at: \.customTaskSections)
         store(defaults[.appSettingMacHomeTaskListSectionOrder], at: \.macHomeTaskListSectionOrder)
         store(defaults[.appSettingMacTaskRankingReversedMetrics], at: \.macTaskRankingReversedMetrics)
+        store(defaults[.appSettingMacTaskLadderOrganization], at: \.macTaskLadderOrganization)
         store(defaults[.appSettingHomeTaskRowHiddenFields], at: \.homeTaskRowHiddenFields)
         store(defaults[.appSettingHomeTimelineRowHiddenFields], at: \.homeTimelineRowHiddenFields)
         store(
@@ -341,6 +343,7 @@ enum RoutinaUserPreferencesStore {
         store(preferences.customTaskSections, at: .appSettingCustomTaskSections)
         store(preferences.macHomeTaskListSectionOrder, at: .appSettingMacHomeTaskListSectionOrder)
         store(preferences.macTaskRankingReversedMetrics, at: .appSettingMacTaskRankingReversedMetrics)
+        store(preferences.macTaskLadderOrganization, at: .appSettingMacTaskLadderOrganization)
         store(preferences.homeTaskRowHiddenFields, at: .appSettingHomeTaskRowHiddenFields)
         store(preferences.homeTimelineRowHiddenFields, at: .appSettingHomeTimelineRowHiddenFields)
         store(

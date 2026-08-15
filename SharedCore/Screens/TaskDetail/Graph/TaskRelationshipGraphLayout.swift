@@ -37,8 +37,6 @@ struct TaskRelationshipGraphLayout {
                 || $0.kind == .completes
                 || $0.kind == .canBeCompletedBy
                 || $0.kind == .canComplete
-                || $0.kind == .hasCompletionOption
-                || $0.kind == .optionFor
         }
 
         let centerNode = TaskRelationshipGraphNode(

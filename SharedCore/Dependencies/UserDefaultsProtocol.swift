@@ -151,6 +151,7 @@ enum AppSettingsDefaults {
         .appSettingCustomTaskSections,
         .appSettingMacHomeTaskListSectionOrder,
         .appSettingMacTaskRankingReversedMetrics,
+        .appSettingMacTaskLadderOrganization,
         .appSettingBlockingWebsiteDomains,
         .appSettingFocusShieldSelection,
         .appSettingMacFocusBlockedApps,
@@ -283,6 +284,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingCustomTaskSections
     case appSettingMacHomeTaskListSectionOrder
     case appSettingMacTaskRankingReversedMetrics
+    case appSettingMacTaskLadderOrganization
     case appSettingTagCounterDisplayMode
     case appSettingHomeTaskRowHiddenFields
     case appSettingHomeTimelineRowHiddenFields
@@ -370,6 +372,8 @@ struct AppSettingsClient: Sendable {
     var setTagRules: @Sendable ([RoutineTagRule]) -> Void
     var flagRules: @Sendable () -> [RoutineFlagRule] = { [] }
     var setFlagRules: @Sendable ([RoutineFlagRule]) -> Void = { _ in }
+    var taskLadderOrganization: @Sendable () -> TaskLadderOrganization = { TaskLadderOrganization() }
+    var setTaskLadderOrganization: @Sendable (TaskLadderOrganization) -> Void = { _ in }
     var definedFlags: @Sendable () -> [String] = { [] }
     var setDefinedFlags: @Sendable ([String]) -> Void = { _ in }
     var tagColors: @Sendable () -> [String: String]
@@ -407,7 +411,8 @@ enum CloudSettingsKeyValueSync {
         .appSettingMacStatsDashboardHiddenItemIDs,
         .appSettingMacStatsDashboardItemOrderIDs,
         .appSettingMacStatsSummaryDisplayMode,
-        .appSettingHiddenDayPlanTimelineActivityIDs
+        .appSettingHiddenDayPlanTimelineActivityIDs,
+        .appSettingMacTaskLadderOrganization
     ]
 
     static func startIfNeeded() {
@@ -795,6 +800,17 @@ extension AppSettingsClient {
                 return
             }
             CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingFlagRules)
+        },
+        taskLadderOrganization: {
+            TaskLadderOrganizationStorage.decode(
+                CloudSettingsKeyValueSync.string(for: .appSettingMacTaskLadderOrganization)
+            )
+        },
+        setTaskLadderOrganization: { organization in
+            CloudSettingsKeyValueSync.setString(
+                TaskLadderOrganizationStorage.encode(organization),
+                for: .appSettingMacTaskLadderOrganization
+            )
         },
         definedFlags: {
             RoutineFlag.deserialize(

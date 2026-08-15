@@ -359,6 +359,7 @@ extension SettingsRoutineDataPersistence {
             var customTaskSections: String?
             var macHomeTaskListSectionOrder: String?
             var macTaskRankingReversedMetrics: String?
+            var macTaskLadderOrganization: String?
             var homeTaskRowHiddenFields: String?
             var dayPlanCalendarListRowHiddenFields: String?
             var relatedTagRules: String?

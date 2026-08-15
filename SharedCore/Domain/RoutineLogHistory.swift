@@ -1440,13 +1440,11 @@ enum RoutineLogHistory {
 
             let candidateCanBeCompletedBySource = candidate.relationships.contains { relationship in
                 relationship.targetTaskID == sourceTask.id
-                    && (relationship.kind == .canBeCompletedBy
-                        || relationship.kind == .hasCompletionOption)
+                    && relationship.kind == .canBeCompletedBy
             }
             let sourceCanCompleteCandidate = sourceTask.relationships.contains { relationship in
                 relationship.targetTaskID == candidate.id
-                    && (relationship.kind == .canComplete
-                        || relationship.kind == .optionFor)
+                    && relationship.kind == .canComplete
             }
             return candidateCanBeCompletedBySource || sourceCanCompleteCandidate
         }

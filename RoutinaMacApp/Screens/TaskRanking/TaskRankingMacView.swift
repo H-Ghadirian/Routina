@@ -11,7 +11,14 @@ struct TaskRankingMacView: View {
         UserDefaultStringValueKey.appSettingFlagRules.rawValue,
         store: SharedDefaults.app
     ) private var flagRulesRawValue = ""
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingMacTaskLadderOrganization.rawValue,
+        store: SharedDefaults.app
+    ) private var taskLadderOrganizationRawValue = ""
     @State private var collapsedSectionIDs = Set<String>()
+    @State private var isGroupEditorPresented = false
+    @State private var editingGroupID: UUID?
+    @State private var placementTaskID: UUID?
 
     var body: some View {
         HSplitView {
@@ -38,6 +45,9 @@ struct TaskRankingMacView: View {
         .onChange(of: flagRulesRawValue) { _, _ in
             store.send(.flagRulesChanged)
         }
+        .onChange(of: taskLadderOrganizationRawValue) { _, _ in
+            store.send(.organizationChanged)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             store.send(.routineDataChanged)
         }
@@ -53,6 +63,18 @@ struct TaskRankingMacView: View {
                 }
                 .labelsHidden()
                 .frame(width: 170)
+            }
+
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    editingGroupID = nil
+                    isGroupEditorPresented = true
+                } label: {
+                    Label("New Task Ladder Group", systemImage: "folder.badge.plus")
+                        .frame(minWidth: 22, minHeight: 22)
+                        .contentShape(Rectangle())
+                }
+                .help("Create a non-completable Task Ladder group")
             }
 
             ToolbarItem(placement: .primaryAction) {
@@ -87,13 +109,36 @@ struct TaskRankingMacView: View {
             },
             message: { Text(store.errorMessage ?? "") }
         )
+        .sheet(isPresented: $isGroupEditorPresented) {
+            TaskLadderGroupEditorSheet(
+                group: editingGroupID.flatMap { store.organization.group(id: $0) },
+                onSave: { store.send(.groupSaved($0)) },
+                onDelete: { store.send(.groupDeleted($0)) }
+            )
+        }
+        .sheet(isPresented: Binding(
+            get: { placementTaskID != nil },
+            set: { if !$0 { placementTaskID = nil } }
+        )) {
+            if let taskID = placementTaskID,
+               let task = store.tasks.first(where: { $0.id == taskID }) {
+                TaskLadderPlacementEditorSheet(
+                    task: task,
+                    tasks: store.tasks,
+                    organization: store.organization,
+                    onSave: { parent, behavior in
+                        store.send(.taskPlacementSaved(taskID, parent, behavior))
+                    }
+                )
+            }
+        }
     }
 
     private var rankingList: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
-                    if store.scopeParentTask != nil {
+                    if !store.scopePath.isEmpty {
                         Button {
                             store.send(.scopeBackTapped)
                         } label: {
@@ -217,13 +262,14 @@ struct TaskRankingMacView: View {
         _ task: RoutineTask,
         in section: TaskRankingPresentation.Section
     ) -> some View {
-        let isSelected = store.selectedTaskID == task.id
         let metadata = store.presentation.rowMetadataByTaskID[task.id]
-        let completionOptionCount = metadata?.completionOptionCount ?? 0
+        let isGroup = metadata?.isGroup == true
+        let childCount = metadata?.childCount ?? 0
+        let isSelected = !isGroup && store.selectedTaskID == task.id
         return HStack(spacing: 9) {
             Button {
-                if completionOptionCount > 0 {
-                    store.send(.completionOptionsOpened(task.id))
+                if isGroup || childCount > 0 {
+                    store.send(.childLadderOpened(task.id))
                 } else {
                     store.send(.taskSelected(task.id))
                 }
@@ -245,7 +291,7 @@ struct TaskRankingMacView: View {
 
                     Spacer(minLength: 2)
 
-                    if completionOptionCount > 0 {
+                    if isGroup || childCount > 0 {
                         Image(systemName: "chevron.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.tertiary)
@@ -286,12 +332,25 @@ struct TaskRankingMacView: View {
         .padding(.trailing, 8)
         .background(isSelected ? Color.accentColor.opacity(0.14) : .clear)
         .contextMenu {
-            Button("Open Task") {
-                store.send(.taskSelected(task.id))
-            }
-            if completionOptionCount > 0 {
-                Button("Show Completion Options") {
-                    store.send(.completionOptionsOpened(task.id))
+            if isGroup {
+                Button("Open Group") {
+                    store.send(.childLadderOpened(task.id))
+                }
+                Button("Edit Group…") {
+                    editingGroupID = task.id
+                    isGroupEditorPresented = true
+                }
+            } else {
+                Button("Open Task") {
+                    store.send(.taskSelected(task.id))
+                }
+                Button("Organize in Task Ladder…") {
+                    placementTaskID = task.id
+                }
+                if childCount > 0 {
+                    Button("Show Nested Tasks") {
+                        store.send(.childLadderOpened(task.id))
+                    }
                 }
             }
             if section.supportsManualOrdering {
@@ -304,8 +363,14 @@ struct TaskRankingMacView: View {
 
     @ViewBuilder
     private func rowMetadata(_ metadata: TaskRankingPresentation.RowMetadata) -> some View {
-        if !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.completionOptionCount > 0 {
+        if metadata.isGroup || !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.childCount > 0 {
             HStack(spacing: 6) {
+                if metadata.isGroup {
+                    Label("Group", systemImage: "folder")
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+
                 if !metadata.tagLabels.isEmpty {
                     Text(metadata.tagLabels.joined(separator: " • "))
                         .lineLimit(1)
@@ -318,11 +383,11 @@ struct TaskRankingMacView: View {
                         .accessibilityLabel("Repeating task")
                 }
 
-                if metadata.completionOptionCount > 0 {
+                if metadata.childCount > 0 {
                     Label(
-                        metadata.completionOptionCount == 1
-                            ? "1 option"
-                            : "\(metadata.completionOptionCount) options",
+                        metadata.childCount == 1
+                            ? "1 task"
+                            : "\(metadata.childCount) tasks",
                         systemImage: "square.stack.3d.up"
                     )
                     .lineLimit(1)
@@ -341,6 +406,15 @@ struct TaskRankingMacView: View {
             action: \.taskDetail
         ) {
             TaskDetailTCAView(store: detailStore)
+        } else if let group = store.scopeParentGroup {
+            TaskLadderGroupDetailView(
+                group: group,
+                childCount: store.presentation.taskCount,
+                onEdit: {
+                    editingGroupID = group.id
+                    isGroupEditorPresented = true
+                }
+            )
         } else {
             ContentUnavailableView(
                 "Select a task",
@@ -353,8 +427,8 @@ struct TaskRankingMacView: View {
 
     private var taskCountLabel: String {
         let count = store.presentation.taskCount
-        if store.scopeParentTask != nil {
-            return count == 1 ? "1 option" : "\(count) options"
+        if !store.scopePath.isEmpty {
+            return count == 1 ? "1 task" : "\(count) tasks"
         }
         return count == 1 ? "1 task" : "\(count) tasks"
     }
@@ -366,25 +440,25 @@ struct TaskRankingMacView: View {
         } else {
             rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • move tasks within or between values"
         }
-        guard store.scopeParentTask != nil else { return rankingDescription }
-        return "Completion options • \(rankingDescription)"
+        guard !store.scopePath.isEmpty else { return rankingDescription }
+        return "Nested tasks • \(rankingDescription)"
     }
 
     private var ladderTitle: String {
-        store.scopeParentTask?.name ?? "Task Ladder"
+        store.scopeParentName ?? "Task Ladder"
     }
 
     private var emptyStateTitle: String {
-        store.scopeParentTask == nil
+        store.scopePath.isEmpty
             ? "No tasks in Task Ladder"
-            : "No actionable completion options"
+            : "No actionable nested tasks"
     }
 
     private var emptyStateDescription: String {
-        if let parentName = store.scopeParentTask?.name {
-            return "\(parentName) has no completion options available in Task Ladder right now."
+        if let parentName = store.scopeParentName {
+            return "\(parentName) has no nested tasks available in Task Ladder right now."
         }
-        return "Paused, blocked, completed, canceled, archived, completion-option, and Flag-hidden tasks stay out of the root task ladder."
+        return "Paused, blocked, completed, canceled, archived, nested, and Flag-hidden tasks stay out of the root task ladder."
     }
 
 }

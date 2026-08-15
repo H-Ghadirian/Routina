@@ -1073,6 +1073,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.customTaskSections = backupPreferences.customTaskSections
         preferences.macHomeTaskListSectionOrder = backupPreferences.macHomeTaskListSectionOrder
         preferences.macTaskRankingReversedMetrics = backupPreferences.macTaskRankingReversedMetrics
+        preferences.macTaskLadderOrganization = backupPreferences.macTaskLadderOrganization
         preferences.homeTaskRowHiddenFields = backupPreferences.homeTaskRowHiddenFields
         preferences.dayPlanCalendarListRowHiddenFields =
             backupPreferences.dayPlanCalendarListRowHiddenFields
