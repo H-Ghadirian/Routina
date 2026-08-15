@@ -19,7 +19,6 @@
 		3D1000022E70000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		3D1000032E70000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
 		3D1000052E70000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
-		5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5F1000072E90000100000001 /* RoutinaWatchApp.app */; };
 		5F1000022E90000100000001 /* RoutinaWatchExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */; };
 		B70000012F40000100000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B70000092F40000100000001 /* WidgetKit.framework */; };
 		B70000022F40000100000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B700000A2F40000100000001 /* SwiftUI.framework */; };
@@ -54,13 +53,6 @@
 			remoteGlobalIDString = 3D1000402E70000100000001;
 			remoteInfo = RoutinaiOSDev;
 		};
-		5F1000032E90000100000001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 5F1000132E90000100000001;
-			remoteInfo = RoutinaWatchApp;
-		};
 		5F1000042E90000100000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
@@ -85,17 +77,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		5F1000052E90000100000001 /* Embed Watch Content */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
-			files = (
-				5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */,
-			);
-			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		5F1000062E90000100000001 /* Embed App Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -761,6 +742,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		C20000102F90000100000001 /* Verify CloudKit Production Schema */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/cloudkit_schema_guard.sh",
+				"$(SRCROOT)/Config/CloudKit",
+				"$(SRCROOT)/SharedCore/Models",
+			);
+			name = "Verify CloudKit Production Schema";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/cloudkit_schema_guard.sh\" --xcode-build\n";
+		};
 		F10003012FA0000100000001 /* Copy Firebase Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -859,27 +861,6 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$SRCROOT/script/upload_crashlytics_symbols.sh\"\n";
 		};
-		C20000102F90000100000001 /* Verify CloudKit Production Schema */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/script/cloudkit_schema_guard.sh",
-				"$(SRCROOT)/Config/CloudKit",
-				"$(SRCROOT)/SharedCore/Models",
-			);
-			name = "Verify CloudKit Production Schema";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$SRCROOT/script/cloudkit_schema_guard.sh\" --xcode-build\n";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -951,11 +932,6 @@
 			isa = PBXTargetDependency;
 			target = 3D1000402E70000100000001 /* RoutinaiOSDev */;
 			targetProxy = 2A5A74D82D7B92F900E91075 /* PBXContainerItemProxy */;
-		};
-		5F1000192E90000100000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 5F1000132E90000100000001 /* RoutinaWatchApp */;
-			targetProxy = 5F1000032E90000100000001 /* PBXContainerItemProxy */;
 		};
 		5F1000202E90000100000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

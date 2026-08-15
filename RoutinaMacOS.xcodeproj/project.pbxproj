@@ -482,6 +482,77 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		7D00000130A0000100000001 /* Embed Routina AI MCP Helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/embed_mcp_helper.sh",
+				"$(SRCROOT)/Package.swift",
+				"$(SRCROOT)/Package.resolved",
+				"$(SRCROOT)/Tools/RoutinaAIMCPServer/main.swift",
+				"$(SRCROOT)/Tools/RoutinaAIMCPServer/ReadOnlySnapshotModels.swift",
+			);
+			name = "Embed Routina AI MCP Helper";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/RoutinaAIMCPHelper",
+				"$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/RoutinaAIMCPServer",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/embed_mcp_helper.sh\"\n";
+		};
+		7D00000230A0000100000001 /* Embed Routina AI MCP Helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/embed_mcp_helper.sh",
+				"$(SRCROOT)/Package.swift",
+				"$(SRCROOT)/Package.resolved",
+				"$(SRCROOT)/Tools/RoutinaAIMCPServer/main.swift",
+				"$(SRCROOT)/Tools/RoutinaAIMCPServer/ReadOnlySnapshotModels.swift",
+			);
+			name = "Embed Routina AI MCP Helper";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/RoutinaAIMCPHelper",
+				"$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/RoutinaAIMCPServer",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/embed_mcp_helper.sh\"\n";
+		};
+		C20000102F90000100000001 /* Verify CloudKit Production Schema */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/cloudkit_schema_guard.sh",
+				"$(SRCROOT)/Config/CloudKit",
+				"$(SRCROOT)/SharedCore/Models",
+			);
+			name = "Verify CloudKit Production Schema";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/cloudkit_schema_guard.sh\" --xcode-build\n";
+		};
 		F20003012FA0000100000001 /* Copy Firebase Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -579,77 +650,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$SRCROOT/script/upload_crashlytics_symbols.sh\"\n";
-		};
-		7D00000130A0000100000001 /* Embed Routina AI MCP Helper */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/script/embed_mcp_helper.sh",
-				"$(SRCROOT)/Package.swift",
-				"$(SRCROOT)/Package.resolved",
-				"$(SRCROOT)/Tools/RoutinaAIMCPServer/main.swift",
-				"$(SRCROOT)/Tools/RoutinaAIMCPServer/ReadOnlySnapshotModels.swift",
-			);
-			name = "Embed Routina AI MCP Helper";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/RoutinaAIMCPHelper",
-				"$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/RoutinaAIMCPServer",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$SRCROOT/script/embed_mcp_helper.sh\"\n";
-		};
-		7D00000230A0000100000001 /* Embed Routina AI MCP Helper */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/script/embed_mcp_helper.sh",
-				"$(SRCROOT)/Package.swift",
-				"$(SRCROOT)/Package.resolved",
-				"$(SRCROOT)/Tools/RoutinaAIMCPServer/main.swift",
-				"$(SRCROOT)/Tools/RoutinaAIMCPServer/ReadOnlySnapshotModels.swift",
-			);
-			name = "Embed Routina AI MCP Helper";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/RoutinaAIMCPHelper",
-				"$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/RoutinaAIMCPServer",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$SRCROOT/script/embed_mcp_helper.sh\"\n";
-		};
-		C20000102F90000100000001 /* Verify CloudKit Production Schema */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/script/cloudkit_schema_guard.sh",
-				"$(SRCROOT)/Config/CloudKit",
-				"$(SRCROOT)/SharedCore/Models",
-			);
-			name = "Verify CloudKit Production Schema";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$SRCROOT/script/cloudkit_schema_guard.sh\" --xcode-build\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
