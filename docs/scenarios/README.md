@@ -2306,7 +2306,7 @@ Given a task has a persisted planner block
 When the user deletes that task from edit task
 Then matching planner blocks are removed from Planner storage and unrelated planner blocks remain
 
-### Planner Ignores Duplicate Persisted Block IDs
+### Planner Ignores Duplicate Persisted Blocks
 
 Area: Planner / Storage
 Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
@@ -2318,6 +2318,12 @@ Given older data contains multiple planner records with the same block ID for on
 When Planner loads that day
 Then it keeps only the most recently updated block and the Calendar can render without an identity collision
 And the next planner save removes the stale duplicate record
+
+Given synchronization produced different block IDs for the same task, day, start, and duration
+When Planner loads that day
+Then it keeps only the most recently updated semantic placement and Calendar renders one block
+And distinct time slots for that task and coincident blocks for other tasks remain visible
+And the next planner save removes the stale semantic duplicate
 
 ### Planner Slot Actions Hide Away and Sleep When Away Is Off
 
@@ -2537,6 +2543,20 @@ Coverage:
 Given a dashboard report has no backing data
 When Stats summary items are derived
 Then the report is hidden while saved order and hidden-item preferences remain preserved
+
+### Focus Charts Keep Their Date Axes Readable
+
+Area: Stats / UI
+Decision links: [0119](../decisions/0119-show-cumulative-focus-chart.md), [0147](../decisions/0147-use-adaptive-stats-dashboard-width.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/StatsFeatureDerivedStateSupportTests.swift`
+
+Given Focus Stats covers more daily points than can carry a complete label at every position
+When the focus distribution or cumulative-focus chart is shown on iOS or macOS
+Then the axis keeps the first and last date and samples a compact set of complete intermediate labels
+And a custom range shows month context at its first visible label and whenever the visible labels cross a month boundary
+And a horizontally scrollable plot fills the available viewport before becoming wider than it
 
 ### Mac Stats Round Trip Preserves Task Detail
 

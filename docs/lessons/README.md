@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0188 — Deduplicate planner placements by meaning](0188-deduplicate-planner-placements-by-meaning.md)
+- [0187 — Make chart overflow fill its viewport](0187-make-chart-overflow-fill-its-viewport.md)
 - [0186 — Show collapsed titles only after source titles leave](0186-show-collapsed-titles-only-after-source-titles-leave.md)
 - [0185 — Sync structured task relationships](0185-sync-structured-task-relationships.md)
 - [0184 — Sequence repeating dependencies by completion](0184-sequence-repeating-dependencies-by-completion.md)

@@ -368,7 +368,20 @@ enum DayPlanStorage {
             }
         }
 
-        return blocksByID.values.sorted {
+        var blocksByPlacement: [DayPlanBlockPlacementKey: DayPlanBlock] = [:]
+        for block in blocksByID.values {
+            let placementKey = DayPlanBlockPlacementKey(block: block)
+            guard let existingBlock = blocksByPlacement[placementKey] else {
+                blocksByPlacement[placementKey] = block
+                continue
+            }
+
+            if shouldKeep(block, over: existingBlock) {
+                blocksByPlacement[placementKey] = block
+            }
+        }
+
+        return blocksByPlacement.values.sorted {
             if $0.startMinute != $1.startMinute {
                 return $0.startMinute < $1.startMinute
             }
@@ -383,6 +396,21 @@ enum DayPlanStorage {
         if candidate.createdAt != existing.createdAt {
             return candidate.createdAt > existing.createdAt
         }
-        return candidate.durationMinutes > existing.durationMinutes
+        if candidate.durationMinutes != existing.durationMinutes {
+            return candidate.durationMinutes > existing.durationMinutes
+        }
+        return candidate.id.uuidString > existing.id.uuidString
+    }
+}
+
+private struct DayPlanBlockPlacementKey: Hashable {
+    var taskID: UUID
+    var startMinute: Int
+    var durationMinutes: Int
+
+    init(block: DayPlanBlock) {
+        taskID = block.taskID
+        startMinute = block.startMinute
+        durationMinutes = block.durationMinutes
     }
 }

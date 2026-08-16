@@ -151,7 +151,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Turn intention into a visual day without changing every task into a deadline.
 
-**Desired experience:** The Planner distinguishes fixed schedule, all-day intent, date-only planning, and flexible work. Items can be placed, moved, reviewed, or removed from the plan while retaining their original task meaning.
+**Desired experience:** The Planner distinguishes fixed schedule, all-day intent, date-only planning, and flexible work. Items can be placed, moved, reviewed, or removed from the plan while retaining their original task meaning. Each timed placement appears once; synchronization must not multiply one block into several overlapping copies.
 
 **Successful outcome:** The person can see whether the day fits and adjust before committing attention.
 
@@ -225,9 +225,9 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** See meaningful summaries for a chosen period and understand their scope.
 
-**Desired experience:** Stats uses the same selected date boundaries across reports, hides empty or unavailable reports, distinguishes recorded from assumed activity, and lets the person customize what matters.
+**Desired experience:** Stats uses the same selected date boundaries across reports, hides empty or unavailable reports, distinguishes recorded from assumed activity, and lets the person customize what matters. Time charts use the available width on each device and keep date axes sparse, complete, and readable instead of truncating labels or compressing the plot into unused space.
 
-**Successful outcome:** The person identifies a useful pattern without mistaking an estimate or incomplete dataset for certainty.
+**Successful outcome:** The person can scan the period and identify a useful pattern without decoding overlapping labels, overlooking a compressed chart, or mistaking an estimate or incomplete dataset for certainty.
 
 **Example:** Compare focus time and completed work this month, while assumed routine completions remain visibly separate from recorded completions.
 

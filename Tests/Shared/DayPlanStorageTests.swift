@@ -55,6 +55,81 @@ struct DayPlanStorageTests {
     }
 
     @Test
+    func loadingDuplicateSemanticPlacementsUsesTheMostRecentlyUpdatedBlockAndRepairsOnSave() throws {
+        let context = makeInMemoryContext()
+        let dayKey = "2026-08-05"
+        let taskID = UUID()
+        let otherTaskID = UUID()
+        let createdAt = Date(timeIntervalSince1970: 1_785_921_600)
+        let staleBlockID = UUID()
+        let currentBlockID = UUID()
+        let distinctSlotBlockID = UUID()
+        let otherTaskBlockID = UUID()
+
+        context.insert(
+            DayPlanBlockRecord(
+                id: staleBlockID,
+                taskID: taskID,
+                dayKey: dayKey,
+                startMinute: 13 * 60,
+                durationMinutes: 45,
+                titleSnapshot: "Stale title",
+                createdAt: createdAt,
+                updatedAt: createdAt
+            )
+        )
+        context.insert(
+            DayPlanBlockRecord(
+                id: currentBlockID,
+                taskID: taskID,
+                dayKey: dayKey,
+                startMinute: 13 * 60,
+                durationMinutes: 45,
+                titleSnapshot: "Current title",
+                createdAt: createdAt.addingTimeInterval(30),
+                updatedAt: createdAt.addingTimeInterval(60)
+            )
+        )
+        context.insert(
+            DayPlanBlockRecord(
+                id: distinctSlotBlockID,
+                taskID: taskID,
+                dayKey: dayKey,
+                startMinute: 15 * 60,
+                durationMinutes: 45,
+                titleSnapshot: "Same task later",
+                createdAt: createdAt,
+                updatedAt: createdAt
+            )
+        )
+        context.insert(
+            DayPlanBlockRecord(
+                id: otherTaskBlockID,
+                taskID: otherTaskID,
+                dayKey: dayKey,
+                startMinute: 13 * 60,
+                durationMinutes: 45,
+                titleSnapshot: "Other task",
+                createdAt: createdAt,
+                updatedAt: createdAt
+            )
+        )
+        try context.save()
+
+        let loadedBlocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+
+        #expect(loadedBlocks.count == 3)
+        #expect(Set(loadedBlocks.map(\.id)) == Set([currentBlockID, distinctSlotBlockID, otherTaskBlockID]))
+        #expect(loadedBlocks.first(where: { $0.id == currentBlockID })?.titleSnapshot == "Current title")
+        #expect(!loadedBlocks.contains(where: { $0.id == staleBlockID }))
+
+        DayPlanStorage.saveBlocks(loadedBlocks, forDayKey: dayKey, context: context)
+        let persistedRecords = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+            .filter { $0.dayKey == dayKey }
+        #expect(Set(persistedRecords.map(\.id)) == Set([currentBlockID, distinctSlotBlockID, otherTaskBlockID]))
+    }
+
+    @Test
     func deleteBlocksForTaskIDsRemovesOnlyMatchingPlannerBlocks() throws {
         let context = makeInMemoryContext()
         let deletedTaskID = UUID()
