@@ -543,7 +543,7 @@ detailBody
     }
 
     private var shouldShowRelationshipsSection: Bool {
-        true
+        !store.resolvedRelationships.isEmpty
     }
 
     private var shouldShowLinkedEventsSection: Bool {

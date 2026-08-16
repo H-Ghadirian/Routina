@@ -108,6 +108,41 @@ struct TaskDetailPlatformActionParityTests {
         try assertOptionalActionsAreLast(in: routineContent)
     }
 
+    @Test
+    func iosTaskDetailsHideEmptyLinkedTasksBehindAddMoreDetails() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let todoContent = try Self.sourceSection(
+            startingAt: "private var todoDetailContent",
+            endingAt: "private var taskDetailContent",
+            in: source
+        )
+        let routineContent = try Self.sourceSection(
+            startingAt: "private var taskDetailContent",
+            endingAt: "private var focusSessionSection",
+            in: source
+        )
+        let optionalActions = try Self.sourceSection(
+            startingAt: "private var optionalDetailActions",
+            endingAt: "private var shouldShowCommentsSection",
+            in: source
+        )
+        let relationshipVisibility = try Self.sourceSection(
+            startingAt: "private var shouldShowRelationshipsSection",
+            endingAt: "private var shouldShowLinkedEventsSection",
+            in: source
+        )
+
+        #expect(todoContent.contains("if shouldShowRelationshipsSection"))
+        #expect(routineContent.contains("if shouldShowRelationshipsSection"))
+        #expect(relationshipVisibility.contains("!store.resolvedRelationships.isEmpty"))
+        #expect(!relationshipVisibility.contains("true"))
+        #expect(optionalActions.contains("if !shouldShowRelationshipsSection"))
+        #expect(optionalActions.contains("title: \"Linked Task\""))
+        #expect(optionalActions.contains("store.send(.openAddLinkedTask)"))
+    }
+
     private func assertOptionalActionsAreLast(in content: String) throws {
         let optionalActions = try #require(content.range(of: "optionalActionsSection"))
         let extras = try #require(content.range(of: "taskExtrasSection"))

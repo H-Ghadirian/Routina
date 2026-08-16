@@ -42,6 +42,23 @@ When they create another task from a detailed or quick creation path
 Then Routina saves the task without counting existing tasks
 And no purchase paywall, entitlement check, or development override participates
 
+### iOS Task Detail Hides Empty Linked Tasks
+
+Area: Tasks / iOS Task Details
+Decision links: [0058](../decisions/0058-use-progressive-task-forms.md), [0100](../decisions/0100-reveal-task-form-details-by-section.md), [0506](../decisions/0506-make-apple-intelligence-relationship-suggestions-macos-only.md), [0508](../decisions/0508-keep-ios-add-more-details-last.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+
+Given a task has no resolved linked tasks
+When the person opens its iOS Task Details
+Then the Linked Tasks section is absent
+And `Add more details` offers `Linked Task` as the manual relationship entry point
+
+When the task has a resolved relationship
+Then Linked Tasks is visible before `Add more details`
+
+
 ### Home And Task Detail Use The Latest Recorded Completion
 
 Area: Tasks / Home
