@@ -129,6 +129,8 @@ enum HomeTimelineFilterMutation: Equatable {
     case selectedTag(String?)
     case selectedTags(Set<String>)
     case includeTagMatchMode(RoutineTagMatchMode)
+    case selectedFlags(Set<String>)
+    case includeFlagMatchMode(RoutineTagMatchMode)
     case selectedExcludedTags(Set<String>)
     case excludeTagMatchMode(RoutineTagMatchMode)
     case selectedImportanceUrgencyFilter(ImportanceUrgencyFilterCell?)
@@ -338,6 +340,12 @@ enum HomeFilterEditor {
 
         case let .includeTagMatchMode(mode):
             timelineFilters.includeTagMatchMode = mode
+
+        case let .selectedFlags(flags):
+            timelineFilters.selectedFlags = Set(RoutineFlag.deduplicated(Array(flags)))
+
+        case let .includeFlagMatchMode(mode):
+            timelineFilters.includeFlagMatchMode = mode
 
         case let .selectedExcludedTags(tags):
             timelineFilters.selectedExcludedTags = tags

@@ -225,6 +225,8 @@ struct SettingsFlagsDetailView: View {
         switch kind {
         case .hideFromTaskLists:
             return "eye.slash"
+        case .hideFromTimeline:
+            return "clock.badge.xmark"
         case .hideFromTaskLadder:
             return "list.number"
         case .autoAssumeDone:

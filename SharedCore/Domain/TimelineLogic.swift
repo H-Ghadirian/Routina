@@ -174,6 +174,7 @@ struct TimelineEntry: Identifiable, Equatable {
     let taskName: String
     let taskEmoji: String
     let tags: [String]
+    let flags: [String]
     let hasImage: Bool
     let hasFileAttachment: Bool
     let hasVoiceNote: Bool
@@ -196,6 +197,7 @@ struct TimelineEntry: Identifiable, Equatable {
         taskName: String,
         taskEmoji: String,
         tags: [String],
+        flags: [String] = [],
         hasImage: Bool = false,
         hasFileAttachment: Bool = false,
         hasVoiceNote: Bool = false,
@@ -217,6 +219,7 @@ struct TimelineEntry: Identifiable, Equatable {
         self.taskName = taskName
         self.taskEmoji = taskEmoji
         self.tags = tags
+        self.flags = flags
         self.hasImage = hasImage
         self.hasFileAttachment = hasFileAttachment
         self.hasVoiceNote = hasVoiceNote
@@ -486,6 +489,7 @@ enum TimelineLogic {
                 taskName: task?.name ?? "Deleted Routine",
                 taskEmoji: task?.emoji ?? "🗑️",
                 tags: task?.tags ?? [],
+                flags: task?.flags ?? [],
                 hasImage: hasImage,
                 hasFileAttachment: hasFileAttachment,
                 hasVoiceNote: hasVoiceNote,
@@ -638,6 +642,7 @@ enum TimelineLogic {
                 taskName: title,
                 taskEmoji: emoji,
                 tags: tags,
+                flags: task?.flags ?? [],
                 importance: importance,
                 urgency: urgency,
                 isOneOff: isOneOff,
@@ -856,6 +861,35 @@ enum TimelineLogic {
 
     static func availableTags(from entries: [TimelineEntry]) -> [String] {
         RoutineTag.allTags(from: entries.map(\.tags))
+    }
+
+    static func availableFlags(from entries: [TimelineEntry]) -> [String] {
+        RoutineFlag.allFlags(from: entries.map(\.flags))
+    }
+
+    /// Applies Timeline-specific Flag behavior at an explicit presentation
+    /// refresh boundary. With no Flag filter, configured entries stay hidden.
+    /// Selecting Flags is deliberate recovery and therefore reveals matching
+    /// entries even when one of their Flags normally hides them from Timeline.
+    static func entriesVisibleForFlags(
+        _ entries: [TimelineEntry],
+        selectedFlags: Set<String>,
+        includeFlagMatchMode: RoutineTagMatchMode,
+        rules: [RoutineFlagRule]
+    ) -> [TimelineEntry] {
+        guard !selectedFlags.isEmpty else {
+            return entries.filter {
+                !RoutineFlagRules.hidesFromTimeline(flags: $0.flags, rules: rules)
+            }
+        }
+
+        return entries.filter {
+            HomeDisplayFilterSupport.matchesSelectedFlags(
+                selectedFlags,
+                mode: includeFlagMatchMode,
+                in: $0.flags
+            )
+        }
     }
 
     static func matchesSelectedTag(_ selectedTag: String?, in tags: [String]) -> Bool {

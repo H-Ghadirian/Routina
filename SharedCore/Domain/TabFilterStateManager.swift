@@ -353,6 +353,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedTimelineTag: String?
     var homeSelectedTimelineTags: Set<String>
     var homeTimelineIncludeTagMatchMode: RoutineTagMatchMode
+    var homeSelectedTimelineFlags: Set<String> = []
+    var homeTimelineIncludeFlagMatchMode: RoutineTagMatchMode = .all
     var homeSelectedTimelineExcludedTags: Set<String> = []
     var homeTimelineExcludeTagMatchMode: RoutineTagMatchMode
     var homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
@@ -364,6 +366,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var timelineSelectedTag: String?
     var timelineSelectedTags: Set<String>
     var timelineIncludeTagMatchMode: RoutineTagMatchMode
+    var timelineSelectedFlags: Set<String> = []
+    var timelineIncludeFlagMatchMode: RoutineTagMatchMode = .all
     var timelineExcludedTags: Set<String>
     var timelineExcludeTagMatchMode: RoutineTagMatchMode
     var timelineSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
@@ -414,6 +418,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTimelineTag: String?,
         homeSelectedTimelineTags: Set<String>? = nil,
         homeTimelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
+        homeSelectedTimelineFlags: Set<String> = [],
+        homeTimelineIncludeFlagMatchMode: RoutineTagMatchMode = .all,
         homeSelectedTimelineExcludedTags: Set<String> = [],
         homeTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
         homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
@@ -425,6 +431,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         timelineSelectedTag: String?,
         timelineSelectedTags: Set<String>? = nil,
         timelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
+        timelineSelectedFlags: Set<String> = [],
+        timelineIncludeFlagMatchMode: RoutineTagMatchMode = .all,
         timelineExcludedTags: Set<String> = [],
         timelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
         timelineSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
@@ -474,6 +482,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedTimelineTag = homeSelectedTimelineTag
         self.homeSelectedTimelineTags = homeSelectedTimelineTags ?? homeSelectedTimelineTag.map { [$0] } ?? []
         self.homeTimelineIncludeTagMatchMode = homeTimelineIncludeTagMatchMode
+        self.homeSelectedTimelineFlags = homeSelectedTimelineFlags
+        self.homeTimelineIncludeFlagMatchMode = homeTimelineIncludeFlagMatchMode
         self.homeSelectedTimelineExcludedTags = homeSelectedTimelineExcludedTags
         self.homeTimelineExcludeTagMatchMode = homeTimelineExcludeTagMatchMode
         self.homeSelectedTimelineImportanceUrgencyFilter = homeSelectedTimelineImportanceUrgencyFilter
@@ -485,6 +495,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.timelineSelectedTag = timelineSelectedTag
         self.timelineSelectedTags = timelineSelectedTags ?? timelineSelectedTag.map { [$0] } ?? []
         self.timelineIncludeTagMatchMode = timelineIncludeTagMatchMode
+        self.timelineSelectedFlags = timelineSelectedFlags
+        self.timelineIncludeFlagMatchMode = timelineIncludeFlagMatchMode
         self.timelineExcludedTags = timelineExcludedTags
         self.timelineExcludeTagMatchMode = timelineExcludeTagMatchMode
         self.timelineSelectedImportanceUrgencyFilter = timelineSelectedImportanceUrgencyFilter
@@ -536,6 +548,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedTimelineTag
         case homeSelectedTimelineTags
         case homeTimelineIncludeTagMatchMode
+        case homeSelectedTimelineFlags
+        case homeTimelineIncludeFlagMatchMode
         case homeSelectedTimelineExcludedTags
         case homeTimelineExcludeTagMatchMode
         case homeSelectedTimelineImportanceUrgencyFilter
@@ -547,6 +561,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case timelineSelectedTag
         case timelineSelectedTags
         case timelineIncludeTagMatchMode
+        case timelineSelectedFlags
+        case timelineIncludeFlagMatchMode
         case timelineExcludedTags
         case timelineExcludeTagMatchMode
         case timelineSelectedImportanceUrgencyFilter
@@ -603,6 +619,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedTimelineTag: try container.decodeIfPresent(String.self, forKey: .homeSelectedTimelineTag),
             homeSelectedTimelineTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineTags),
             homeTimelineIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineIncludeTagMatchMode) ?? .all,
+            homeSelectedTimelineFlags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineFlags) ?? [],
+            homeTimelineIncludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineIncludeFlagMatchMode) ?? .all,
             homeSelectedTimelineExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineExcludedTags) ?? [],
             homeTimelineExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineExcludeTagMatchMode) ?? .any,
             homeSelectedTimelineImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .homeSelectedTimelineImportanceUrgencyFilter),
@@ -614,6 +632,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             timelineSelectedTag: try container.decodeIfPresent(String.self, forKey: .timelineSelectedTag),
             timelineSelectedTags: try container.decodeIfPresent(Set<String>.self, forKey: .timelineSelectedTags),
             timelineIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .timelineIncludeTagMatchMode) ?? .all,
+            timelineSelectedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .timelineSelectedFlags) ?? [],
+            timelineIncludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .timelineIncludeFlagMatchMode) ?? .all,
             timelineExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .timelineExcludedTags) ?? [],
             timelineExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .timelineExcludeTagMatchMode) ?? .any,
             timelineSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .timelineSelectedImportanceUrgencyFilter),
@@ -666,6 +686,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTimelineTag: nil,
         homeSelectedTimelineTags: [],
         homeTimelineIncludeTagMatchMode: .all,
+        homeSelectedTimelineFlags: [],
+        homeTimelineIncludeFlagMatchMode: .all,
         homeSelectedTimelineExcludedTags: [],
         homeTimelineExcludeTagMatchMode: .any,
         homeSelectedTimelineImportanceUrgencyFilter: nil,
@@ -677,6 +699,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         timelineSelectedTag: nil,
         timelineSelectedTags: [],
         timelineIncludeTagMatchMode: .all,
+        timelineSelectedFlags: [],
+        timelineIncludeFlagMatchMode: .all,
         timelineExcludedTags: [],
         timelineExcludeTagMatchMode: .any,
         timelineSelectedImportanceUrgencyFilter: nil,

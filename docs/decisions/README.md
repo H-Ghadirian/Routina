@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0582](0582-hide-flagged-task-activity-from-timeline.md) revises [0498](0498-filter-task-lists-by-flags.md) and refines [0497](0497-use-flags-for-task-behavior-rules.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), and [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md):** A `Hide task activity from Timeline` Flag rule omits matching task logs and task-linked Focus by default, while the Timeline Flags filter deliberately reveals matching activity with `All` / `Any` semantics from a cached pre-hide catalog.
+
 - **[0581](0581-separate-ios-priority-filter-controls.md) revises [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md) and [0563](0563-present-importance-and-urgency-as-independent-task-controls.md), and refines [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md) and [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md):** iOS Home, Stats, and Timeline Filters expose Importance and Urgency as independent minimum-threshold rows in a Priority section, with Home's existing Pressure and Thinking needed rows grouped beside them, while retaining combined matching and persistence.
 
 - **[0580](0580-show-every-active-tag-in-ios-filter-summary.md) revises [0533](0533-keep-active-ios-filter-tag-rules-visible.md) and refines [0579](0579-align-ios-filter-tag-picker-with-task-tag-picker.md):** The iOS Filter tags entry lists every active Hidden and Included tag and alone grows to multiple lines, while other filter summaries remain single-line.
@@ -264,7 +266,7 @@ These are ordered from newest resolver to oldest resolver.
 
 - **[0499](0499-explain-applied-flags-in-task-details.md) refines [0497](0497-use-flags-for-task-behavior-rules.md) and [0498](0498-filter-task-lists-by-flags.md):** Task Details show assigned Flags on both platforms, and a Mac breadcrumb for a selected `Hidden by flag` result identifies that task's hiding Flag or Flags while the shared result section stays generic.
 
-- **[0498](0498-filter-task-lists-by-flags.md) refines [0497](0497-use-flags-for-task-behavior-rules.md), as refined by [0549](0549-filter-stats-by-task-flags.md):** Home task lists support persisted `All` / `Any` Flag filtering. A deliberately selected tracking-style Flag reveals matching rule-hidden tasks only in the presentation-only `Hidden by flag` result section; Board, Planner, and Timeline are unchanged, while Stats has its own independent Flag filters.
+- **[0498](0498-filter-task-lists-by-flags.md) refines [0497](0497-use-flags-for-task-behavior-rules.md), as revised by [0582](0582-hide-flagged-task-activity-from-timeline.md) and refined by [0549](0549-filter-stats-by-task-flags.md):** Home task lists support persisted `All` / `Any` Flag filtering. A deliberately selected tracking-style Flag reveals matching rule-hidden tasks only in the presentation-only `Hidden by flag` result section; Board and Planner Calendar are unchanged, Timeline has an independent reveal-by-Flag filter, and Stats has its own Flag filters.
 
 - **[0497](0497-use-flags-for-task-behavior-rules.md) supersedes [0496](superseded/0496-use-extensible-per-tag-task-list-rules.md):** Task-only Flags hold extensible typed behavior rules, while tags remain organizational. The first rule hides matching tasks from ordinary task-list placement but text search can reveal them in a labelled presentation-only result section.
 
@@ -695,6 +697,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0582](0582-hide-flagged-task-activity-from-timeline.md) | Hide Flagged Task Activity From Timeline by Default | Accepted | 2026-08-16 |
 | [0578](0578-separate-task-ladder-details-from-inner-navigation.md) | Separate Task Ladder Details From Inner Navigation | Accepted | 2026-08-16 |
 | [0577](0577-suggest-linked-tasks-as-task-ladder-children.md) | Suggest Linked Tasks as Task Ladder Children | Accepted | 2026-08-16 |
 | [0576](0576-offer-direct-repeating-task-ladder-grouping.md) | Offer Direct Repeating-Task Ladder Activation | Accepted | 2026-08-15 |

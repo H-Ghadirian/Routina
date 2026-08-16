@@ -8,6 +8,7 @@ struct HomeMacSidebarPresentation {
     let selectedTimelineRange: TimelineRange
     let selectedTimelineFilterType: TimelineFilterType
     let selectedTimelineTags: Set<String>
+    let selectedTimelineFlags: Set<String>
     let selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let selectedTimelineExcludedTags: Set<String>
     let selectedFilter: RoutineListFilter
@@ -51,6 +52,7 @@ struct HomeMacSidebarPresentation {
         if mode == .timeline {
             return selectedTimelineFilterType != .all
                 || !selectedTimelineTags.isEmpty
+                || !selectedTimelineFlags.isEmpty
                 || selectedTimelineImportanceUrgencyFilter != nil
                 || !selectedTimelineExcludedTags.isEmpty
         }

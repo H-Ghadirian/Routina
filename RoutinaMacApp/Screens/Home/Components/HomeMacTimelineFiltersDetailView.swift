@@ -5,6 +5,9 @@ struct HomeMacTimelineFiltersDetailView: View {
 
     @Binding var selectedType: TimelineFilterType
     @Binding var selectedMediaFilter: TaskMediaFilter
+    @Binding var selectedFlags: Set<String>
+    @Binding var includeFlagMatchMode: RoutineTagMatchMode
+    let availableFlags: [String]
     let timelineRowVisibility: HomeTimelineRowVisibility
     let showsTypeSection: Bool
     let onTimelineRowFieldVisibilityChanged: (HomeTimelineRowField, Bool) -> Void
@@ -50,6 +53,14 @@ struct HomeMacTimelineFiltersDetailView: View {
                         mediaPicker
                     }
                 }
+            }
+
+            if !availableFlags.isEmpty || !selectedFlags.isEmpty {
+                HomeMacTimelineFlagFiltersView(
+                    availableFlags: availableFlags,
+                    selectedFlags: $selectedFlags,
+                    includeFlagMatchMode: $includeFlagMatchMode
+                )
             }
         }
     }
@@ -162,6 +173,109 @@ struct HomeMacTimelineFiltersDetailView: View {
         }.count
         guard hiddenCount > 0 else { return "All fields" }
         return "\(HomeTimelineRowField.allCases.count - hiddenCount) of \(HomeTimelineRowField.allCases.count) fields"
+    }
+}
+
+private struct HomeMacTimelineFlagFiltersView: View {
+    let availableFlags: [String]
+    @Binding var selectedFlags: Set<String>
+    @Binding var includeFlagMatchMode: RoutineTagMatchMode
+
+    var body: some View {
+        HomeMacCollapsibleFilterSection(
+            title: "Flags",
+            summaryText: summaryText,
+            systemImage: "flag.fill",
+            tint: .orange
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Show activity with flags")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Show Timeline activity with flags",
+                    options: RoutineTagMatchMode.allCases,
+                    selection: $includeFlagMatchMode,
+                    fillsAvailableWidth: true
+                ) { mode in
+                    Text(mode.rawValue)
+                }
+
+                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                    if selectedFlags.isEmpty {
+                        flagButton("Default Timeline", isSelected: true) {
+                            selectedFlags = []
+                        }
+                    } else {
+                        ForEach(sortedSelectedFlags, id: \.self) { flag in
+                            flagButton(flag, isSelected: true) {
+                                toggle(flag)
+                            }
+                        }
+                    }
+                }
+
+                let unselectedFlags = availableFlags.filter {
+                    !HomeFlagFilterMutationSupport.contains($0, in: selectedFlags)
+                }
+                if !unselectedFlags.isEmpty {
+                    Text("Reveal by Flag")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                        ForEach(unselectedFlags, id: \.self) { flag in
+                            flagButton(flag, isSelected: false) {
+                                toggle(flag)
+                            }
+                        }
+                    }
+                }
+
+                Text("Selecting a Flag reveals matching task activity, including activity hidden by that Flag's Timeline rule.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var sortedSelectedFlags: [String] {
+        selectedFlags.sorted {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }
+    }
+
+    private var summaryText: String {
+        guard !selectedFlags.isEmpty else {
+            return "Default visibility · \(availableFlags.count) available"
+        }
+        return "\(includeFlagMatchMode.rawValue) \(selectedFlags.count) \(selectedFlags.count == 1 ? "Flag" : "Flags")"
+    }
+
+    private func toggle(_ flag: String) {
+        selectedFlags = HomeFlagFilterMutationSupport.toggled(flag, in: selectedFlags)
+    }
+
+    private func flagButton(
+        _ title: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: isSelected ? "flag.fill" : "flag")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(isSelected ? Color.orange : Color.primary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .routinaGlassPill(
+                    tint: .orange,
+                    tintOpacity: isSelected ? 0.16 : 0.08,
+                    interactive: true
+                )
+                .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
 

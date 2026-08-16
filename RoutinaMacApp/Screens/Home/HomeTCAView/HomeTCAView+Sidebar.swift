@@ -134,6 +134,7 @@ extension HomeTCAView {
     private var macHasTimelineFiltersApplied: Bool {
         store.selectedTimelineFilterType != .all
             || !store.selectedTimelineTags.isEmpty
+            || !store.selectedTimelineFlags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
             || store.selectedTimelineMediaFilter != .all
             || !store.selectedTimelineExcludedTags.isEmpty
@@ -225,6 +226,8 @@ extension HomeTCAView {
         store.send(.selectedTimelineFilterTypeChanged(.all))
         store.send(.selectedTimelineTagsChanged([]))
         store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
+        store.send(.selectedTimelineFlagsChanged([]))
+        store.send(.selectedTimelineIncludeFlagMatchModeChanged(.all))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
         store.send(.selectedTimelineMediaFilterChanged(.all))
         store.send(.selectedTimelineExcludedTagsChanged([]))
@@ -995,6 +998,8 @@ extension HomeTCAView {
         store.send(.selectedTimelineFilterTypeChanged(.events))
         store.send(.selectedTimelineTagsChanged([]))
         store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
+        store.send(.selectedTimelineFlagsChanged([]))
+        store.send(.selectedTimelineIncludeFlagMatchModeChanged(.all))
         store.send(.selectedTimelineExcludedTagsChanged([]))
         store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
@@ -1019,6 +1024,8 @@ extension HomeTCAView {
         store.send(.selectedTimelineFilterTypeChanged(.emotions))
         store.send(.selectedTimelineTagsChanged([]))
         store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
+        store.send(.selectedTimelineFlagsChanged([]))
+        store.send(.selectedTimelineIncludeFlagMatchModeChanged(.all))
         store.send(.selectedTimelineExcludedTagsChanged([]))
         store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))

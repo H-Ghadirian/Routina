@@ -117,6 +117,25 @@ struct TabFilterStateManagerTests {
     }
 
     @Test
+    func temporaryViewStateRoundTripPreservesTimelineFlagFilters() throws {
+        var state = TemporaryViewState.default
+        state.homeSelectedTimelineFlags = ["Private"]
+        state.homeTimelineIncludeFlagMatchMode = .any
+        state.timelineSelectedFlags = ["Tracking", "Private"]
+        state.timelineIncludeFlagMatchMode = .all
+
+        let decoded = try JSONDecoder().decode(
+            TemporaryViewState.self,
+            from: JSONEncoder().encode(state)
+        )
+
+        #expect(decoded.homeSelectedTimelineFlags == ["Private"])
+        #expect(decoded.homeTimelineIncludeFlagMatchMode == .any)
+        #expect(decoded.timelineSelectedFlags == ["Tracking", "Private"])
+        #expect(decoded.timelineIncludeFlagMatchMode == .all)
+    }
+
+    @Test
     func saveAndRestore_preservesNilFieldsCorrectly() {
         var manager = TabFilterStateManager()
 

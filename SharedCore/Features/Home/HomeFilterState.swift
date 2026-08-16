@@ -100,6 +100,8 @@ struct HomeTimelineFiltersState: Equatable {
     var selectedTag: String? = nil
     var selectedTags: Set<String> = []
     var includeTagMatchMode: RoutineTagMatchMode = .all
+    var selectedFlags: Set<String> = []
+    var includeFlagMatchMode: RoutineTagMatchMode = .all
     var selectedExcludedTags: Set<String> = []
     var excludeTagMatchMode: RoutineTagMatchMode = .any
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
@@ -207,6 +209,8 @@ enum HomeTemporaryViewStateMapper {
                 selectedTag: persistedState.homeSelectedTimelineTag,
                 selectedTags: persistedState.homeSelectedTimelineTags,
                 includeTagMatchMode: persistedState.homeTimelineIncludeTagMatchMode,
+                selectedFlags: persistedState.homeSelectedTimelineFlags,
+                includeFlagMatchMode: persistedState.homeTimelineIncludeFlagMatchMode,
                 selectedExcludedTags: persistedState.homeSelectedTimelineExcludedTags,
                 excludeTagMatchMode: persistedState.homeTimelineExcludeTagMatchMode,
                 selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell.normalized(
@@ -268,6 +272,8 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedTimelineTag: values.timelineFilters.selectedTag,
             homeSelectedTimelineTags: values.timelineFilters.effectiveSelectedTags,
             homeTimelineIncludeTagMatchMode: values.timelineFilters.includeTagMatchMode,
+            homeSelectedTimelineFlags: values.timelineFilters.selectedFlags,
+            homeTimelineIncludeFlagMatchMode: values.timelineFilters.includeFlagMatchMode,
             homeSelectedTimelineExcludedTags: values.timelineFilters.selectedExcludedTags,
             homeTimelineExcludeTagMatchMode: values.timelineFilters.excludeTagMatchMode,
             homeSelectedTimelineImportanceUrgencyFilter: values.timelineFilters.selectedImportanceUrgencyFilter,
@@ -279,6 +285,8 @@ enum HomeTemporaryViewStateMapper {
             timelineSelectedTag: existing.timelineSelectedTag,
             timelineSelectedTags: existing.timelineSelectedTags,
             timelineIncludeTagMatchMode: existing.timelineIncludeTagMatchMode,
+            timelineSelectedFlags: existing.timelineSelectedFlags,
+            timelineIncludeFlagMatchMode: existing.timelineIncludeFlagMatchMode,
             timelineExcludedTags: existing.timelineExcludedTags,
             timelineExcludeTagMatchMode: existing.timelineExcludeTagMatchMode,
             timelineSelectedImportanceUrgencyFilter: existing.timelineSelectedImportanceUrgencyFilter,

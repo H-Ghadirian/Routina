@@ -365,6 +365,10 @@ struct TimelineView: View {
         store.availableTags
     }
 
+    private var availableFlags: [String] {
+        store.availableFlags
+    }
+
     private var filterPresentation: TimelineFilterPresentation {
         TimelineFilterPresentation(
             selectedTags: store.effectiveSelectedTags,
@@ -448,6 +452,7 @@ struct TimelineView: View {
             || effectiveFilterType != .all
             || !store.effectiveSelectedTags.isEmpty
             || !store.excludedTags.isEmpty
+            || !store.selectedFlags.isEmpty
             || store.selectedImportanceUrgencyFilter != nil
             || store.mediaFilter != .all
     }
@@ -559,6 +564,14 @@ struct TimelineView: View {
                         var selected = store.effectiveSelectedTags
                         selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
                         store.send(.selectedTagsChanged(selected))
+                    }
+                }
+
+                ForEach(store.selectedFlags.sorted(), id: \.self) { flag in
+                    compactFilterChip(title: "flag: \(flag)", tintColor: .orange) {
+                        store.send(.selectedFlagsChanged(
+                            HomeFlagFilterMutationSupport.toggled(flag, in: store.selectedFlags)
+                        ))
                     }
                 }
 
@@ -785,6 +798,16 @@ struct TimelineView: View {
                     onPresent: presentTimelineFilterDetail
                 )
 
+                if !availableFlags.isEmpty || !store.selectedFlags.isEmpty {
+                    HomeFiltersDetailEntry(
+                        title: "Filter flags",
+                        systemImage: "flag",
+                        value: timelineFlagSelectionSummary
+                    ) {
+                        presentTimelineFilterDetail(.flags)
+                    }
+                }
+
                 if !availableTags.isEmpty || !store.effectiveSelectedTags.isEmpty || !store.excludedTags.isEmpty {
                     HomeFiltersTagFilterEntrySection(
                         selectedTags: Binding(
@@ -892,11 +915,32 @@ struct TimelineView: View {
                     excludeFooter: "Select tags to hide from the Timeline."
                 )
             )
+        case .flags:
+            TimelineFlagFilterPickerSheet(
+                selectedFlags: Binding(
+                    get: { store.selectedFlags },
+                    set: { store.send(.selectedFlagsChanged($0)) }
+                ),
+                includeFlagMatchMode: Binding(
+                    get: { store.includeFlagMatchMode },
+                    set: { store.send(.includeFlagMatchModeChanged($0)) }
+                ),
+                availableFlags: availableFlags
+            )
         case .advancedQuery, .homeTaskType, .visibility, .grouping, .sort,
                 .created, .status, .todoState, .pressure, .thinkingNeeded,
-                .goal, .estimation, .flags, .place, .statsTaskType:
+                .goal, .estimation, .place, .statsTaskType:
             EmptyView()
         }
+    }
+
+    private var timelineFlagSelectionSummary: String {
+        let flags = store.selectedFlags.sorted {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }
+        guard let firstFlag = flags.first else { return "All flags" }
+        let suffix = flags.count > 1 ? " +\(flags.count - 1)" : ""
+        return "\(store.includeFlagMatchMode.rawValue): \(firstFlag)\(suffix)"
     }
 
     private var selectedImportanceUrgencyFilterLabel: String? {
@@ -1242,6 +1286,105 @@ struct TimelineView: View {
         )
     }
 
+}
+
+private struct TimelineFlagFilterPickerSheet: View {
+    @Binding var selectedFlags: Set<String>
+    @Binding var includeFlagMatchMode: RoutineTagMatchMode
+    let availableFlags: [String]
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Picker("Show activity with", selection: $includeFlagMatchMode) {
+                        ForEach(RoutineTagMatchMode.allCases) { mode in
+                            Text(mode.rawValue).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if !selectedFlags.isEmpty {
+                        Button("Show default Timeline") {
+                            selectedFlags = []
+                        }
+                    }
+                } footer: {
+                    Text("Selecting a Flag reveals matching task activity, including activity hidden by that Flag's Timeline rule.")
+                }
+
+                if !sortedSelectedFlags.isEmpty {
+                    Section("Selected Flags") {
+                        ForEach(sortedSelectedFlags, id: \.self) { flag in
+                            flagRow(flag, isSelected: true)
+                        }
+                    }
+                }
+
+                if !filteredAvailableFlags.isEmpty {
+                    Section("Flags") {
+                        ForEach(filteredAvailableFlags, id: \.self) { flag in
+                            flagRow(flag, isSelected: false)
+                        }
+                    }
+                } else if selectedFlags.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Filter Flags")
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, prompt: "Search flags")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private var sortedSelectedFlags: [String] {
+        selectedFlags.sorted {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }
+    }
+
+    private var filteredAvailableFlags: [String] {
+        let unselected = availableFlags.filter {
+            !HomeFlagFilterMutationSupport.contains($0, in: selectedFlags)
+        }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return unselected }
+        return unselected.filter { $0.localizedCaseInsensitiveContains(query) }
+    }
+
+    private func flagRow(_ flag: String, isSelected: Bool) -> some View {
+        Button {
+            selectedFlags = HomeFlagFilterMutationSupport.toggled(flag, in: selectedFlags)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                Text(flag)
+                    .foregroundStyle(.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isSelected ? "Remove \(flag) from Timeline filters" : "Show Timeline activity with \(flag)")
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+    }
 }
 
 private struct TimelineNoteDeepLinkPresentation: Identifiable, Equatable {

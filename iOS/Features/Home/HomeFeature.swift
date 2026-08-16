@@ -110,6 +110,8 @@ struct HomeFeature {
             selectedTimelineTag: String? = nil,
             selectedTimelineTags: Set<String> = [],
             selectedTimelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
+            selectedTimelineFlags: Set<String> = [],
+            selectedTimelineIncludeFlagMatchMode: RoutineTagMatchMode = .all,
             selectedTimelineExcludedTags: Set<String> = [],
             selectedTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
@@ -183,6 +185,8 @@ struct HomeFeature {
                 selectedTag: selectedTimelineTag,
                 selectedTags: selectedTimelineTags.isEmpty ? selectedTimelineTag.map { [$0] } ?? [] : selectedTimelineTags,
                 includeTagMatchMode: selectedTimelineIncludeTagMatchMode,
+                selectedFlags: selectedTimelineFlags,
+                includeFlagMatchMode: selectedTimelineIncludeFlagMatchMode,
                 selectedExcludedTags: selectedTimelineExcludedTags,
                 excludeTagMatchMode: selectedTimelineExcludeTagMatchMode,
                 selectedImportanceUrgencyFilter: selectedTimelineImportanceUrgencyFilter,
@@ -395,6 +399,16 @@ struct HomeFeature {
             set { timelineFilters.includeTagMatchMode = newValue }
         }
 
+        var selectedTimelineFlags: Set<String> {
+            get { timelineFilters.selectedFlags }
+            set { timelineFilters.selectedFlags = newValue }
+        }
+
+        var selectedTimelineIncludeFlagMatchMode: RoutineTagMatchMode {
+            get { timelineFilters.includeFlagMatchMode }
+            set { timelineFilters.includeFlagMatchMode = newValue }
+        }
+
         var selectedTimelineExcludedTags: Set<String> {
             get { timelineFilters.selectedExcludedTags }
             set { timelineFilters.selectedExcludedTags = newValue }
@@ -498,6 +512,8 @@ struct HomeFeature {
         case selectedTimelineTagChanged(String?)
         case selectedTimelineTagsChanged(Set<String>)
         case selectedTimelineIncludeTagMatchModeChanged(RoutineTagMatchMode)
+        case selectedTimelineFlagsChanged(Set<String>)
+        case selectedTimelineIncludeFlagMatchModeChanged(RoutineTagMatchMode)
         case selectedTimelineExcludedTagsChanged(Set<String>)
         case selectedTimelineExcludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedTimelineImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
@@ -1015,6 +1031,12 @@ struct HomeFeature {
 
             case let .selectedTimelineIncludeTagMatchModeChanged(mode):
                 return filterMutationHandler().applyTimelineFilterMutation(.includeTagMatchMode(mode), state: &state)
+
+            case let .selectedTimelineFlagsChanged(flags):
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedFlags(flags), state: &state)
+
+            case let .selectedTimelineIncludeFlagMatchModeChanged(mode):
+                return filterMutationHandler().applyTimelineFilterMutation(.includeFlagMatchMode(mode), state: &state)
 
             case let .selectedTimelineExcludedTagsChanged(tags):
                 return filterMutationHandler().applyTimelineFilterMutation(.selectedExcludedTags(tags), state: &state)

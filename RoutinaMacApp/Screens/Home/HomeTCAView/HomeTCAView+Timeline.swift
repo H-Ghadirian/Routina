@@ -35,6 +35,8 @@ struct HomeMacTimelinePresentationSignature: Equatable {
     let mediaFilter: TaskMediaFilter
     let selectedTags: Set<String>
     let includeTagMatchMode: RoutineTagMatchMode
+    let selectedFlags: Set<String>
+    let includeFlagMatchMode: RoutineTagMatchMode
     let excludedTags: Set<String>
     let excludeTagMatchMode: RoutineTagMatchMode
     let importanceUrgencyFilter: ImportanceUrgencyFilterCell?
@@ -44,6 +46,7 @@ struct HomeMacTimelinePresentationSignature: Equatable {
     let showsNotes: Bool
     let showsAway: Bool
     let showsSleep: Bool
+    let flagRules: [RoutineFlagRule]
     let fileAttachmentTaskIDs: Set<UUID>
     let noteAttachmentNoteIDs: Set<UUID>
     let calendarIdentifier: Calendar.Identifier
@@ -56,6 +59,7 @@ struct HomeMacTimelinePresentation {
     let baseEntries: [TimelineEntry]
     let filteredEntries: [TimelineEntry]
     let unfilteredEntries: [TimelineEntry]
+    let availableFlags: [String]
     let groupedFilteredEntries: [(date: Date, entries: [TimelineEntry])]
     let rowNumbersByEntryID: [UUID: Int]
 }
@@ -114,6 +118,8 @@ extension HomeTCAView {
             mediaFilter: store.selectedTimelineMediaFilter,
             selectedTags: store.selectedTimelineTags,
             includeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
+            selectedFlags: store.selectedTimelineFlags,
+            includeFlagMatchMode: store.selectedTimelineIncludeFlagMatchMode,
             excludedTags: store.selectedTimelineExcludedTags,
             excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
             importanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
@@ -123,6 +129,7 @@ extension HomeTCAView {
             showsNotes: isNotesEnabled,
             showsAway: isAwayEnabled,
             showsSleep: includesMacSleepTimelineFilters,
+            flagRules: store.flagRules,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
             calendarIdentifier: calendar.identifier,
@@ -145,7 +152,7 @@ extension HomeTCAView {
         let visibleAwaySessions = isAwayEnabled ? awaySessions : []
         let visibleNoteAttachmentIDs = isNotesEnabled ? noteAttachmentNoteIDs : []
 
-        let baseEntries = TimelineLogic.filteredEntries(
+        let unfilteredBaseEntries = TimelineLogic.filteredEntries(
             logs: logs,
             tasks: tasks,
             events: events,
@@ -164,6 +171,16 @@ extension HomeTCAView {
             mediaFilter: store.selectedTimelineMediaFilter,
             now: now,
             calendar: calendar
+        )
+        let availableFlags = TimelineLogic.availableFlags(from: unfilteredBaseEntries)
+        let selectedFlags = store.selectedTimelineFlags.filter {
+            RoutineFlag.contains($0, in: availableFlags)
+        }
+        let baseEntries = TimelineLogic.entriesVisibleForFlags(
+            unfilteredBaseEntries,
+            selectedFlags: selectedFlags,
+            includeFlagMatchMode: store.selectedTimelineIncludeFlagMatchMode,
+            rules: store.flagRules
         )
         let filteredEntries = baseEntries
             .filter { entry in
@@ -184,7 +201,7 @@ extension HomeTCAView {
                     )
             }
             .filter(matchesTimelineSearch)
-        let unfilteredEntries = TimelineLogic.filteredEntries(
+        let allUnfilteredEntries = TimelineLogic.filteredEntries(
             logs: logs,
             tasks: tasks,
             events: events,
@@ -204,6 +221,12 @@ extension HomeTCAView {
             now: now,
             calendar: calendar
         )
+        let unfilteredEntries = TimelineLogic.entriesVisibleForFlags(
+            allUnfilteredEntries,
+            selectedFlags: [],
+            includeFlagMatchMode: .all,
+            rules: store.flagRules
+        )
 
         let groupedFilteredEntries = TimelineLogic.groupedByDay(
             entries: filteredEntries,
@@ -217,6 +240,7 @@ extension HomeTCAView {
             baseEntries: baseEntries,
             filteredEntries: filteredEntries,
             unfilteredEntries: unfilteredEntries,
+            availableFlags: availableFlags,
             groupedFilteredEntries: groupedFilteredEntries,
             rowNumbersByEntryID: rowNumbersByEntryID
         )
@@ -240,6 +264,10 @@ extension HomeTCAView {
         TimelineLogic.availableTags(
             from: filteredTimelineEntriesForTagging
         )
+    }
+
+    var availableTimelineFlags: [String] {
+        macTimelinePresentation.availableFlags
     }
 
     var filteredTimelineEntriesForTagging: [TimelineEntry] {
@@ -288,6 +316,7 @@ extension HomeTCAView {
     var macHasActiveTimelineFilters: Bool {
         effectiveMacTimelineFilterType != .all
             || !store.selectedTimelineTags.isEmpty
+            || !store.selectedTimelineFlags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
             || store.selectedTimelineMediaFilter != .all
             || !store.selectedTimelineExcludedTags.isEmpty
@@ -587,6 +616,10 @@ extension HomeTCAView {
     }
 
     func validateSelectedTimelineTag() {
+        let selectedFlags = store.selectedTimelineFlags.filter {
+            RoutineFlag.contains($0, in: availableTimelineFlags)
+        }
+        store.send(.selectedTimelineFlagsChanged(selectedFlags))
         let selected = store.selectedTimelineTags.filter { RoutineTag.contains($0, in: availableTimelineTags) }
         store.send(.selectedTimelineTagsChanged(selected))
         store.send(
@@ -615,6 +648,10 @@ extension HomeTCAView {
 
         if !store.selectedTimelineTags.isEmpty {
             labels.append("\(store.selectedTimelineIncludeTagMatchMode.rawValue) \(store.selectedTimelineTags.count) tags")
+        }
+
+        if !store.selectedTimelineFlags.isEmpty {
+            labels.append("\(store.selectedTimelineIncludeFlagMatchMode.rawValue) \(store.selectedTimelineFlags.count) flags")
         }
 
         if !store.selectedTimelineExcludedTags.isEmpty {
@@ -670,6 +707,15 @@ extension HomeTCAView {
                 get: { store.selectedTimelineMediaFilter },
                 set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
             ),
+            selectedFlags: Binding(
+                get: { store.selectedTimelineFlags },
+                set: { store.send(.selectedTimelineFlagsChanged($0)) }
+            ),
+            includeFlagMatchMode: Binding(
+                get: { store.selectedTimelineIncludeFlagMatchMode },
+                set: { store.send(.selectedTimelineIncludeFlagMatchModeChanged($0)) }
+            ),
+            availableFlags: availableTimelineFlags,
             timelineRowVisibility: timelineRowVisibility,
             showsTypeSection: showsMacTimelineTypeFilterSection,
             onTimelineRowFieldVisibilityChanged: { field, isVisible in

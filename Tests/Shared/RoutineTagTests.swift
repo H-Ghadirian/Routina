@@ -243,6 +243,20 @@ struct RoutineTagTests {
             rules: taskLadderRules
         ))
 
+        let timelineRules = RoutineFlagRules.adding(
+            .hideFromTimeline,
+            for: "Private",
+            in: taskLadderRules
+        )
+        #expect(RoutineFlagRules.hidesFromTimeline(
+            flags: ["private"],
+            rules: timelineRules
+        ))
+        #expect(!RoutineFlagRules.hidesFromTimeline(
+            flags: ["Tracking"],
+            rules: timelineRules
+        ))
+
         let removed = RoutineFlagRules.removing("tracking", from: rules)
         #expect(removed.isEmpty)
     }

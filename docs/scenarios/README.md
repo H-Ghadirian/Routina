@@ -1872,6 +1872,27 @@ Given Mac Home is showing the Timeline filter companion pane
 When a filter change updates the visible timeline rows
 Then the sidebar does not automatically select a fallback row or close the filter pane until the user explicitly leaves the filter pane or selects a row
 
+### Timeline Flag Rules Hide by Default and Remain Recoverable
+
+Area: Timeline / Flags
+Decision links: [0582](../decisions/0582-hide-flagged-task-activity-from-timeline.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/RoutineTagTests.swift`
+- `Tests/Shared/TimelineLogicTests.swift`
+- `Tests/Shared/TabFilterStateManagerTests.swift`
+
+Given a task has a Flag configured with `Hide task activity from Timeline`
+When no Timeline Flag filter is selected
+Then that task's completion, missed, canceled, and task-linked Focus activity is omitted from iOS Timeline and Mac Planner Timeline
+And the history, task, Stats, notifications, Planner Calendar, and unrelated context records remain unchanged
+
+When the person selects that Flag in Timeline Filters
+Then matching task activity appears even though the rule normally hides it
+And multiple selected Flags use the chosen `All` or `Any` matching mode
+And clearing the Flag selection restores the default hidden presentation
+And the filter catalog remains available from the cached pre-hide snapshot without whole-history work in scrolling row builders
+
 ### iOS Timeline Refreshes After Synced Activity
 
 Area: Timeline / Sync

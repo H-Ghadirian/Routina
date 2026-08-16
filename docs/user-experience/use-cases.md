@@ -195,11 +195,11 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Review one chronological history across relevant activity types.
 
-**Desired experience:** The Timeline presents clear outcomes and context in a stable order, supports filtering and date navigation, opens the source record for detail or correction, and offers only type filters whose features are currently available.
+**Desired experience:** The Timeline presents clear outcomes and context in a stable order, supports filtering and date navigation, opens the source record for detail or correction, and offers only type filters whose features are currently available. A person can keep activity from behavior-heavy or private tasks out of the default history through a Flag rule, then deliberately reveal matching activity from the Timeline's Flag filter without losing or changing the underlying record.
 
 **Successful outcome:** The person understands the period without relying on memory or combining several disconnected logs.
 
-**Example:** Review yesterday to see completed work, a canceled routine, focus time, and a contextual note.
+**Example:** Review yesterday to see completed work, a canceled routine, focus time, and a contextual note; select a hidden task's Flag when that quieter activity is relevant to the review.
 
 **Availability:** Production, with available record types varying by feature gate.
 

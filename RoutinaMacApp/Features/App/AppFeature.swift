@@ -114,7 +114,7 @@ struct AppFeature {
                     appSettingsClient.definedFlags(),
                     state: &state.settings.flags
                 )
-                return .none
+                return .send(.timeline(.flagRulesChanged(flagRules)))
             case .settings(.resetTemporaryViewStateTapped):
                 let timelineTasks = state.timeline.tasks
                 let timelineLogs = state.timeline.logs
@@ -179,6 +179,8 @@ struct AppFeature {
                  .timeline(.includeTagMatchModeChanged),
                  .timeline(.excludedTagsChanged),
                  .timeline(.excludeTagMatchModeChanged),
+                 .timeline(.selectedFlagsChanged),
+                 .timeline(.includeFlagMatchModeChanged),
                  .timeline(.selectedImportanceUrgencyFilterChanged),
                  .timeline(.mediaFilterChanged),
                  .timeline(.clearFilters),
@@ -204,8 +206,9 @@ struct AppFeature {
             case .settings(.addFlagRuleTapped),
                  .settings(.removeFlagRuleTapped),
                  .settings(.removeFlagTapped):
-                state.home.flagRules = RoutineFlagRules.sanitized(appSettingsClient.flagRules())
-                return .none
+                let flagRules = RoutineFlagRules.sanitized(appSettingsClient.flagRules())
+                state.home.flagRules = flagRules
+                return .send(.timeline(.flagRulesChanged(flagRules)))
             default:
                 return .none
             }
@@ -318,6 +321,8 @@ struct AppFeature {
              .includeTagMatchModeChanged,
              .excludedTagsChanged,
              .excludeTagMatchModeChanged,
+             .selectedFlagsChanged,
+             .includeFlagMatchModeChanged,
              .selectedImportanceUrgencyFilterChanged,
              .mediaFilterChanged:
             return .timelineFilterChanged

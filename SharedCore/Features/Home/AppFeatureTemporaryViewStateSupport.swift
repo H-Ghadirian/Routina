@@ -80,10 +80,13 @@ enum AppFeatureTemporaryViewStateSupport {
         state.timeline.includeTagMatchMode = .all
         state.timeline.excludedTags = []
         state.timeline.excludeTagMatchMode = .any
+        state.timeline.selectedFlags = []
+        state.timeline.includeFlagMatchMode = .all
         state.timeline.selectedImportanceUrgencyFilter = nil
         state.timeline.mediaFilter = .all
         state.timeline.isFilterSheetPresented = false
         state.timeline.availableTags = []
+        state.timeline.availableFlags = []
         state.timeline.groupedEntries = []
 
         state.stats.selectedRange = .week
@@ -131,6 +134,8 @@ enum AppFeatureTemporaryViewStateSupport {
             homeSelectedTimelineTag: existing.homeSelectedTimelineTag,
             homeSelectedTimelineTags: existing.homeSelectedTimelineTags,
             homeTimelineIncludeTagMatchMode: existing.homeTimelineIncludeTagMatchMode,
+            homeSelectedTimelineFlags: existing.homeSelectedTimelineFlags,
+            homeTimelineIncludeFlagMatchMode: existing.homeTimelineIncludeFlagMatchMode,
             homeSelectedTimelineExcludedTags: existing.homeSelectedTimelineExcludedTags,
             homeTimelineExcludeTagMatchMode: existing.homeTimelineExcludeTagMatchMode,
             homeSelectedTimelineImportanceUrgencyFilter: existing.homeSelectedTimelineImportanceUrgencyFilter,
@@ -142,6 +147,8 @@ enum AppFeatureTemporaryViewStateSupport {
             timelineSelectedTag: state.timeline.selectedTag,
             timelineSelectedTags: state.timeline.effectiveSelectedTags,
             timelineIncludeTagMatchMode: state.timeline.includeTagMatchMode,
+            timelineSelectedFlags: state.timeline.selectedFlags,
+            timelineIncludeFlagMatchMode: state.timeline.includeFlagMatchMode,
             timelineExcludedTags: state.timeline.excludedTags,
             timelineExcludeTagMatchMode: state.timeline.excludeTagMatchMode,
             timelineSelectedImportanceUrgencyFilter: state.timeline.selectedImportanceUrgencyFilter,
@@ -173,6 +180,8 @@ enum AppFeatureTemporaryViewStateSupport {
             state.setSelectedTag(persistedState.timelineSelectedTag)
         }
         state.includeTagMatchMode = persistedState.timelineIncludeTagMatchMode
+        state.selectedFlags = persistedState.timelineSelectedFlags
+        state.includeFlagMatchMode = persistedState.timelineIncludeFlagMatchMode
         state.excludedTags = persistedState.timelineExcludedTags
         state.excludeTagMatchMode = persistedState.timelineExcludeTagMatchMode
         state.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(

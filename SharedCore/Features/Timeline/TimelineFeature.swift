@@ -120,11 +120,15 @@ struct TimelineFeature {
         var includeTagMatchMode: RoutineTagMatchMode = .all
         var excludedTags: Set<String> = []
         var excludeTagMatchMode: RoutineTagMatchMode = .any
+        var selectedFlags: Set<String> = []
+        var includeFlagMatchMode: RoutineTagMatchMode = .all
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var mediaFilter: TaskMediaFilter = .all
         var isFilterSheetPresented: Bool = false
         var availableTags: [String] = []
         var availableExcludeTags: [String] = []
+        var availableFlags: [String] = []
+        var flagRules: [RoutineFlagRule] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var groupedEntries: [TimelineSection] = []
         var visibleEntryIDs: [UUID] = []
@@ -145,6 +149,7 @@ struct TimelineFeature {
                 || filterType != .all
                 || !effectiveSelectedTags.isEmpty
                 || !excludedTags.isEmpty
+                || !selectedFlags.isEmpty
                 || selectedImportanceUrgencyFilter != nil
                 || mediaFilter != .all
         }
@@ -188,6 +193,9 @@ struct TimelineFeature {
         case includeTagMatchModeChanged(RoutineTagMatchMode)
         case excludedTagsChanged(Set<String>)
         case excludeTagMatchModeChanged(RoutineTagMatchMode)
+        case selectedFlagsChanged(Set<String>)
+        case includeFlagMatchModeChanged(RoutineTagMatchMode)
+        case flagRulesChanged([RoutineFlagRule])
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case mediaFilterChanged(TaskMediaFilter)
         case setFilterSheet(Bool)
@@ -233,6 +241,7 @@ struct TimelineFeature {
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
                 )
+                state.flagRules = RoutineFlagRules.sanitized(appSettingsClient.flagRules())
                 refreshDerivedState(&state)
                 return .none
 
@@ -271,6 +280,21 @@ struct TimelineFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .selectedFlagsChanged(flags):
+                state.selectedFlags = Set(RoutineFlag.deduplicated(Array(flags)))
+                refreshDerivedState(&state)
+                return .none
+
+            case let .includeFlagMatchModeChanged(mode):
+                state.includeFlagMatchMode = mode
+                refreshDerivedState(&state)
+                return .none
+
+            case let .flagRulesChanged(rules):
+                state.flagRules = RoutineFlagRules.sanitized(rules)
+                refreshDerivedState(&state)
+                return .none
+
             case let .selectedImportanceUrgencyFilterChanged(filter):
                 state.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(filter)
                 refreshDerivedState(&state)
@@ -292,6 +316,8 @@ struct TimelineFeature {
                 state.includeTagMatchMode = .all
                 state.excludedTags = []
                 state.excludeTagMatchMode = .any
+                state.selectedFlags = []
+                state.includeFlagMatchMode = .all
                 state.selectedImportanceUrgencyFilter = nil
                 state.mediaFilter = .all
                 refreshDerivedState(&state)
@@ -305,6 +331,8 @@ struct TimelineFeature {
                 state.includeTagMatchMode = .all
                 state.excludedTags = []
                 state.excludeTagMatchMode = .any
+                state.selectedFlags = []
+                state.includeFlagMatchMode = .all
                 state.selectedImportanceUrgencyFilter = nil
                 state.mediaFilter = .all
                 state.isFilterSheetPresented = false
@@ -326,6 +354,8 @@ struct TimelineFeature {
                 state.includeTagMatchMode = .all
                 state.excludedTags = []
                 state.excludeTagMatchMode = .any
+                state.selectedFlags = []
+                state.includeFlagMatchMode = .all
                 state.selectedImportanceUrgencyFilter = nil
                 state.mediaFilter = .all
                 state.isFilterSheetPresented = false
@@ -371,7 +401,18 @@ struct TimelineFeature {
                 urgency: entry.urgency
             )
         }
-        state.availableTags = TimelineLogic.availableTags(from: importanceUrgencyFilteredEntries)
+        state.availableFlags = TimelineLogic.availableFlags(from: importanceUrgencyFilteredEntries)
+        state.selectedFlags = state.selectedFlags.filter {
+            RoutineFlag.contains($0, in: state.availableFlags)
+        }
+        let flagVisibleEntries = TimelineLogic.entriesVisibleForFlags(
+            importanceUrgencyFilteredEntries,
+            selectedFlags: state.selectedFlags,
+            includeFlagMatchMode: state.includeFlagMatchMode,
+            rules: state.flagRules
+        )
+
+        state.availableTags = TimelineLogic.availableTags(from: flagVisibleEntries)
         state.setSelectedTags(state.effectiveSelectedTags.filter { RoutineTag.contains($0, in: state.availableTags) })
         state.availableExcludeTags = TimelineFilterPresentation(
             selectedTags: state.effectiveSelectedTags,
@@ -379,12 +420,12 @@ struct TimelineFeature {
             includeTagMatchMode: state.includeTagMatchMode,
             availableTags: state.availableTags,
             relatedTagRules: state.relatedTagRules
-        ).availableExcludeTags(from: importanceUrgencyFilteredEntries)
+        ).availableExcludeTags(from: flagVisibleEntries)
         state.excludedTags = state.excludedTags.filter {
             RoutineTag.contains($0, in: state.availableExcludeTags)
         }
 
-        let entries = importanceUrgencyFilteredEntries.filter { entry in
+        let entries = flagVisibleEntries.filter { entry in
             HomeDisplayFilterSupport.matchesSelectedTags(
                 state.effectiveSelectedTags,
                 mode: state.includeTagMatchMode,

@@ -18,6 +18,7 @@ struct TimelineLogicTests {
         name: String = "Test Routine",
         emoji: String = "🔧",
         tags: [String] = [],
+        flags: [String] = [],
         scheduleMode: RoutineScheduleMode = .fixedInterval
     ) -> RoutineTask {
         RoutineTask(
@@ -25,6 +26,7 @@ struct TimelineLogicTests {
             name: name,
             emoji: emoji,
             tags: tags,
+            flags: flags,
             scheduleMode: scheduleMode
         )
     }
@@ -33,13 +35,15 @@ struct TimelineLogicTests {
         id: UUID = UUID(),
         name: String = "Test Todo",
         emoji: String = "📝",
-        tags: [String] = []
+        tags: [String] = [],
+        flags: [String] = []
     ) -> RoutineTask {
         RoutineTask(
             id: id,
             name: name,
             emoji: emoji,
             tags: tags,
+            flags: flags,
             scheduleMode: .oneOff
         )
     }
@@ -505,7 +509,12 @@ struct TimelineLogicTests {
     func filteredEntries_includesTaskFocusSessionsAtStartTimeAndSupportsFocusFilter() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")
-        let task = makeTodoTask(name: "Write brief", emoji: "✍️", tags: ["Focus"])
+        let task = makeTodoTask(
+            name: "Write brief",
+            emoji: "✍️",
+            tags: ["Focus"],
+            flags: ["Private"]
+        )
         let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
         let startedAt = makeDate("2026-03-20T09:00:00Z")
         let completedAt = makeDate("2026-03-20T09:25:00Z")
@@ -550,6 +559,7 @@ struct TimelineLogicTests {
         #expect(focusEntry?.taskName == "Write brief")
         #expect(focusEntry?.taskEmoji == "✍️")
         #expect(focusEntry?.tags == ["Focus"])
+        #expect(focusEntry?.flags == ["Private"])
         #expect(focusEntry?.timestamp == startedAt)
         #expect(focusEntry?.startTimestamp == startedAt)
         #expect(focusEntry?.endTimestamp == completedAt)
@@ -1242,7 +1252,11 @@ struct TimelineLogicTests {
     func filteredEntries_preservesTaskTags() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")
-        let task = makeRoutineTask(name: "Tagged Task", tags: ["Focus", "Morning"])
+        let task = makeRoutineTask(
+            name: "Tagged Task",
+            tags: ["Focus", "Morning"],
+            flags: ["Tracking"]
+        )
         let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
 
         let entries = TimelineLogic.filteredEntries(
@@ -1256,6 +1270,87 @@ struct TimelineLogicTests {
 
         #expect(entries.count == 1)
         #expect(entries[0].tags == ["Focus", "Morning"])
+        #expect(entries[0].flags == ["Tracking"])
+    }
+
+    @Test
+    func timelineFlagRuleHidesByDefaultAndSelectedFlagsDeliberatelyRevealMatches() {
+        let privateEntry = TimelineEntry(
+            id: UUID(),
+            taskID: UUID(),
+            timestamp: makeDate("2026-03-20T08:00:00Z"),
+            taskName: "Private",
+            taskEmoji: "🔒",
+            tags: [],
+            flags: ["Private"],
+            isOneOff: false,
+            kind: .completed
+        )
+        let trackingEntry = TimelineEntry(
+            id: UUID(),
+            taskID: UUID(),
+            timestamp: makeDate("2026-03-20T09:00:00Z"),
+            taskName: "Tracking",
+            taskEmoji: "📍",
+            tags: [],
+            flags: ["Tracking"],
+            isOneOff: false,
+            kind: .completed
+        )
+        let combinedEntry = TimelineEntry(
+            id: UUID(),
+            taskID: UUID(),
+            timestamp: makeDate("2026-03-20T10:00:00Z"),
+            taskName: "Combined",
+            taskEmoji: "🧩",
+            tags: [],
+            flags: ["Private", "Tracking"],
+            isOneOff: false,
+            kind: .completed
+        )
+        let plainEntry = TimelineEntry(
+            id: UUID(),
+            taskID: UUID(),
+            timestamp: makeDate("2026-03-20T11:00:00Z"),
+            taskName: "Plain",
+            taskEmoji: "✅",
+            tags: [],
+            isOneOff: false,
+            kind: .completed
+        )
+        let entries = [privateEntry, trackingEntry, combinedEntry, plainEntry]
+        let rules = [RoutineFlagRule(flag: "private", kind: .hideFromTimeline)]
+
+        let defaultEntries = TimelineLogic.entriesVisibleForFlags(
+            entries,
+            selectedFlags: [],
+            includeFlagMatchMode: .all,
+            rules: rules
+        )
+        let privateEntries = TimelineLogic.entriesVisibleForFlags(
+            entries,
+            selectedFlags: ["PRIVATE"],
+            includeFlagMatchMode: .all,
+            rules: rules
+        )
+        let allSelectedEntries = TimelineLogic.entriesVisibleForFlags(
+            entries,
+            selectedFlags: ["Private", "Tracking"],
+            includeFlagMatchMode: .all,
+            rules: rules
+        )
+        let anySelectedEntries = TimelineLogic.entriesVisibleForFlags(
+            entries,
+            selectedFlags: ["Private", "Tracking"],
+            includeFlagMatchMode: .any,
+            rules: rules
+        )
+
+        #expect(defaultEntries.map(\.id) == [trackingEntry.id, plainEntry.id])
+        #expect(privateEntries.map(\.id) == [privateEntry.id, combinedEntry.id])
+        #expect(allSelectedEntries.map(\.id) == [combinedEntry.id])
+        #expect(anySelectedEntries.map(\.id) == [privateEntry.id, trackingEntry.id, combinedEntry.id])
+        #expect(TimelineLogic.availableFlags(from: entries) == ["Private", "Tracking"])
     }
 
     @Test
