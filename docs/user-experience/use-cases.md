@@ -77,11 +77,11 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Search without losing the surrounding workspace or accidentally creating a duplicate.
 
-**Desired experience:** Search accepts typing immediately, returns understandable matches, and keeps clear recovery paths when filters hide a known item. Creating from a no-result query is offered only when it will not encourage an obvious duplicate.
+**Desired experience:** Search accepts typing immediately, returns understandable matches, and keeps clear recovery paths when filters or normal placement hide a known item. A broader query includes every eligible item that a more specific version of the same query can find, even when other matches already occupy normal task-list sections. Creating from a no-result query is offered only when it will not encourage an obvious duplicate.
 
 **Successful outcome:** The person opens the intended item or confidently creates a new one.
 
-**Example:** Searching “dentist” finds the task even though it is not in today's section; searching a genuinely new phrase can seed a new task.
+**Example:** Searching “dentist” finds the task even though it is not in today's section. On Mac, searching “watch” does not omit a known “Watch movie” task that also appears for “watch m”. Searching a genuinely new phrase can seed a new task.
 
 **Availability:** Production on iOS and macOS.
 

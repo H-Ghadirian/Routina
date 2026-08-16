@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0176 — Append search fallbacks to partial results](0176-append-search-fallbacks-to-partial-results.md)
 - [0174 — Apply proven overflow glyphs across platforms](0174-apply-proven-overflow-glyphs-across-platforms.md)
 - [0173 — Bound user-initiated CloudKit refreshes](0173-bound-user-initiated-cloudkit-refreshes.md)
 - [0172 — Recheck shortcut availability at execution](0172-recheck-shortcut-availability-at-execution.md)

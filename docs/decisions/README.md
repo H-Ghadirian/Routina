@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0591](0591-include-suppressed-mac-search-matches-beside-ordinary-results.md) refines [0310](0310-show-mac-home-toolbar-search.md), [0405](0405-show-hidden-scheduled-task-search-results.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** every non-empty Mac task search merges eligible placement-suppressed matches beside ordinary results without duplicates, so broad queries do not omit tasks that narrower queries reveal.
+
 - **[0589](0589-bound-manual-icloud-refresh.md) refines [0523](0523-report-manual-icloud-refresh-honestly.md), [0545](0545-bound-ios-foreground-focus-reconciliation.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** explicit Settings and Home CloudKit pulls stop after 60 seconds, cancel with their calling task, preserve the complete-response merge boundary, and explain how to retry without implying local data loss.
 
 - **[0588](0588-configure-flag-rules-by-assignment.md) refines [0497](0497-use-flags-for-task-behavior-rules.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** iOS and macOS Settings show only the rules assigned to each Flag, offer remaining behaviors through `Add Rule`, and keep direct removal beside each assigned rule without changing synchronized rule storage.
@@ -711,6 +713,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0591](0591-include-suppressed-mac-search-matches-beside-ordinary-results.md) | Include Suppressed Mac Search Matches Beside Ordinary Results | Accepted | 2026-08-16 |
 | [0589](0589-bound-manual-icloud-refresh.md) | Bound Manual iCloud Refresh | Accepted | 2026-08-16 |
 | [0588](0588-configure-flag-rules-by-assignment.md) | Configure Flag Rules by Assignment | Accepted | 2026-08-16 |
 | [0587](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md) | Keep Task Ladder Activation in Deliberate Editing Flows | Accepted | 2026-08-16 |

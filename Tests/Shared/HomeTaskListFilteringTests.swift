@@ -437,6 +437,63 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarSearchFallbackAddsSuppressedMatchesBesideOrdinaryMatches() {
+        let visibleID = UUID()
+        let suppressedID = UUID()
+        let flagHiddenID = UUID()
+        let visibleTask = TestTaskDisplay(
+            taskID: visibleID,
+            name: "Watch WWDC videos",
+            recurrenceRule: .interval(days: 1)
+        )
+        let suppressedTask = TestTaskDisplay(
+            taskID: suppressedID,
+            name: "Watch movie or series",
+            recurrenceRule: .interval(days: 1),
+            isDoneToday: true
+        )
+        let flagHiddenTask = TestTaskDisplay(
+            taskID: flagHiddenID,
+            name: "Watch conference recording",
+            flags: ["Later"],
+            recurrenceRule: .interval(days: 1)
+        )
+        let filtering = makeFiltering(
+            searchText: "watch",
+            flagRules: [RoutineFlagRule(flag: "Later", kind: .hideFromTaskLists)]
+        )
+        let normalPresentation = HomeTaskListPresentation.sidebar(
+            filtering: filtering,
+            routineDisplays: [visibleTask, suppressedTask, flagHiddenTask],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different timeline search or filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(normalPresentation.sections.flatMap(\.tasks).map(\.taskID) == [visibleID])
+
+        let presentationWithFlagResult = normalPresentation.appendingFlagRuleRevealResults(
+            from: [visibleTask, suppressedTask, flagHiddenTask],
+            filtering: filtering
+        )
+        let searchPresentation = presentationWithFlagResult.addingSearchFallbackResults(
+            from: [visibleTask, suppressedTask, flagHiddenTask],
+            filtering: filtering
+        )
+
+        #expect(searchPresentation.sections.dropLast().last?.title == "Hidden by flag")
+        #expect(searchPresentation.sections.last?.title == "Search Results")
+        #expect(searchPresentation.sections.last?.tasks.map(\.taskID) == [suppressedID])
+        #expect(searchPresentation.sections.last?.includeMarkDone == false)
+        #expect(searchPresentation.visibleTaskCount == 3)
+        #expect(Set(searchPresentation.sections.flatMap(\.tasks).map(\.taskID)).count == 3)
+    }
+
+    @Test
     func filteredPlannedTodayTasksMatchesReferenceDate() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let tasks = [

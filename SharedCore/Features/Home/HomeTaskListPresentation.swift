@@ -485,11 +485,6 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         filtering: HomeTaskListFiltering<Display>,
         title: String = "Search Results"
     ) -> Self {
-        let onlyTagRuleResultsAreVisible = sections.allSatisfy {
-            $0.identityKey == "hiddenByTagRule"
-        }
-        guard sections.isEmpty || onlyTagRuleResultsAreVisible else { return self }
-
         let presentedTaskIDs = Set(sections.flatMap(\.tasks).map(\.taskID))
         let fallbackTasks = filtering.searchFallbackTasks(from: sourceDisplays).filter {
             !presentedTaskIDs.contains($0.taskID)

@@ -1310,10 +1310,10 @@ And the toolbar shows a visible Return-to-create hint for that no-result query
 And when that no-result query leaves the task-list sidebar empty, the sidebar uses the Planner Timeline no-results subtext and shows a `Create task` button that opens the full Add Task form with the query in the Identity task-name field
 And if the query includes quick-add syntax such as `today`, `every day`, or `#home`, the toolbar shows a flat same-width parser preview below the field before creation without duplicating the Return-to-create hint
 
-### Mac Toolbar Search Shows Hidden Scheduled Task Matches
+### Mac Toolbar Search Shows Every Eligible Suppressed Task Match
 
 Area: Tasks / Planner
-Decision links: [0310](../decisions/0310-show-mac-home-toolbar-search.md), [0387](../decisions/0387-keep-completed-scheduled-blocks-visible.md), [0405](../decisions/0405-show-hidden-scheduled-task-search-results.md)
+Decision links: [0591](../decisions/0591-include-suppressed-mac-search-matches-beside-ordinary-results.md), [0310](../decisions/0310-show-mac-home-toolbar-search.md), [0387](../decisions/0387-keep-completed-scheduled-blocks-visible.md), [0405](../decisions/0405-show-hidden-scheduled-task-search-results.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
@@ -1321,8 +1321,9 @@ Coverage:
 Given Mac Home toolbar search is non-empty
 And Planner Calendar can show a matching task-backed scheduled block
 And the normal left task-list sections hide that task because it is already done or otherwise suppressed from active placement
-When the task-list sidebar would otherwise render no rows
-Then the sidebar shows a search-only `Search Results` section with the matching task row instead of the no-results empty state
+When the task-list sidebar renders no rows or also renders other ordinary matches
+Then the sidebar shows a search-only `Search Results` section with the suppressed matching task row
+And it does not duplicate a task already shown in an ordinary or `Hidden by flag` section
 And normal task-list section membership remains unchanged when search is cleared
 
 ### Mac Home Sidebar Toggle Keeps Detail Panes Stable

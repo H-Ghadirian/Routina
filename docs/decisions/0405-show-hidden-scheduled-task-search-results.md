@@ -15,6 +15,10 @@ Accepted
 - [0389: Create Task From Mac Search Empty State](0389-create-task-from-mac-search-empty-state.md)
 - [0404: Temporarily Expand Mac Sidebar During Search](0404-temporarily-expand-mac-sidebar-during-search.md)
 
+## Refined By
+
+- [0591: Include Suppressed Mac Search Matches Beside Ordinary Results](0591-include-suppressed-mac-search-matches-beside-ordinary-results.md)
+
 ## Context
 
 Mac toolbar search filters both the Home task-list sidebar and task-backed Planner Calendar presentation. Calendar `Schedule` intentionally keeps completed scheduled task blocks visible, so a query can visibly match a calendar block while the normal Home task-list sections hide the same task because it is already done, completed, canceled, or otherwise outside active sidebar placement.
