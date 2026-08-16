@@ -829,6 +829,7 @@ Coverage:
 - `Tests/Shared/HomeBlockedStatusBadgeSourceTests.swift`
 - `Tests/Shared/HomeActionableFilterTests.swift`
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/Shared/CloudKitDirectPullTaskRelationshipTests.swift`
 - `Tests/iOS/HomeFeatureTests.swift`
 - `Tests/macOS/HomeFeatureTests.swift`
 - `Tests/Shared/TaskDetailTodoStateTests.swift`
@@ -854,6 +855,13 @@ Given every blocking prerequisite becomes done or canceled
 When Home and Task Details refresh the relationship status
 Then Task Details returns to its previously stored Ready or In Progress State
 And the Home Status Badge returns to To Do or In Progress accordingly
+
+Given a task relationship was created on one device
+When another device applies that task through direct CloudKit refresh
+Then the relationship is restored with the task
+And iOS and macOS derive the same Linked Tasks content and Blocked state
+And a partial legacy record without relationship storage does not erase a local relationship
+And an explicit empty relationship payload removes relationships that were deleted remotely
 
 Given the dependent task is Paused or Done while an unresolved prerequisite exists
 When Task Details derives its effective State

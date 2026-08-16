@@ -24,6 +24,7 @@ extension CloudKitDirectPullService {
         var flags: [String]?
         var goalIDs: [UUID]?
         var eventIDs: [UUID]?
+        var relationships: [RoutineTaskRelationship]?
         var steps: [RoutineStep]?
         var checklistItems: [RoutineChecklistItem]?
         var imageData: Data?
