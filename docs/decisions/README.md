@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0579](0579-align-ios-filter-tag-picker-with-task-tag-picker.md) refines [0531](0531-keep-ios-task-tag-selection-compact-and-searchable.md), [0533](0533-keep-active-ios-filter-tag-rules-visible.md), and [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md):** iOS Filter Tags uses Add Task's large-title, one-list plus/check selection pattern while retaining explicit Show/Hide and All/Any filter semantics and keeping each active rule visible once.
+
 - **[0578](0578-separate-task-ladder-details-from-inner-navigation.md) refines [0577](0577-suggest-linked-tasks-as-task-ladder-children.md), [0576](0576-offer-direct-repeating-task-ladder-grouping.md), [0574](0574-separate-task-ladder-placement-from-completion.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** One click on a Mac Task Ladder row shows its task or container-group details, while double-click or the explicit context-menu action opens an available inner ladder.
 
 - **[0577](0577-suggest-linked-tasks-as-task-ladder-children.md) refines [0576](0576-offer-direct-repeating-task-ladder-grouping.md), [0574](0574-separate-task-ladder-placement-from-completion.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** A task-backed group's nested Mac Task Ladder offers eligible bidirectionally linked tasks as explicit Accept/Reject child suggestions while preserving the relationship and its completion meaning.

@@ -699,8 +699,6 @@ struct StatsView: View {
                     bindings: tagRuleBindings,
                     actions: tagRuleActions,
                     labels: HomeTagFilterPickerLabels(
-                        includeCatalogTitle: "Show stats with",
-                        excludeCatalogTitle: "Hide stats with",
                         includeFooter: "Select tags to include in Stats.",
                         excludeFooter: "Select tags to hide from Stats."
                     )

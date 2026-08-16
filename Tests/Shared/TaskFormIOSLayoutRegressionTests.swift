@@ -77,6 +77,21 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func filterTagsUseTheTaskTagPickerSelectionPatternWithoutDuplicateRows() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/Home/HomeTagFilterPickerSheet.swift"
+        )
+
+        #expect(source.contains(".navigationBarTitleDisplayMode(.large)"))
+        #expect(source.contains("selectedRule?.selectedSymbol ?? \"plus.circle\""))
+        #expect(source.contains("switch selectedRule ?? rule"))
+        #expect(source.contains("displayedTagSummaries = selected + unselected"))
+        #expect(source.contains("displayedTagSummaries = selected + unselected.filter"))
+        #expect(!source.contains("Section(\"Selected tags\")"))
+        #expect(!source.contains(".presentationDetents([.medium, .large])"))
+    }
+
+    @Test
     func flagsUseIntrinsicWidthBeforeWrappingInTaskForms() throws {
         let source = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"

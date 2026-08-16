@@ -383,6 +383,22 @@ When they open `Browse all tags`
 Then the searchable tag picker stays open above the task form
 And dismissing the picker returns to the still-open task form with its draft intact
 
+### iOS Filter Tags Reuse The Task Tag Selection Pattern
+
+Area: Tasks / UI
+Decision links: [0579](../decisions/0579-align-ios-filter-tag-picker-with-task-tag-picker.md), [0533](../decisions/0533-keep-active-ios-filter-tag-rules-visible.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+- `Tests/Shared/IOSScrollingPerformanceRegressionTests.swift`
+
+Given a person opens Filter Tags on iOS
+When they inspect, search, add, or remove tag rules
+Then the picker uses the same large-title plus/check row pattern as Add Task
+And each active tag appears once at the top with its Included or Hidden effect
+And Show/Hide plus All/Any remain available without duplicating selected rows
+And searching keeps active rules visible while narrowing unselected tags
+
 ### iOS Priority Pickers Keep Task Forms And Filters Compact
 
 Area: Tasks / UI

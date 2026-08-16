@@ -47,8 +47,7 @@ struct HomeTagFilterPickerSheet: View {
     @State private var rule: Rule
     @State private var searchText = ""
     @State private var displayedTagSummaries: [RoutineTagSummary] = []
-    @State private var selectedTagIDs = Set<String>()
-    @State private var selectedTagSelections: [TagSelection] = []
+    @State private var selectedRuleByTagID: [String: Rule] = [:]
 
     init(
         data: HomeTagFilterData,
@@ -67,31 +66,34 @@ struct HomeTagFilterPickerSheet: View {
         NavigationStack {
             List {
                 Section {
-                    Picker("Rule", selection: $rule) {
-                        ForEach(Rule.allCases) { rule in
-                            Text(rule.title).tag(rule)
+                    LabeledContent("Select tags to") {
+                        Picker("Select tags to", selection: $rule) {
+                            ForEach(Rule.allCases) { rule in
+                                Text(rule.title).tag(rule)
+                            }
                         }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
                     }
-                    .pickerStyle(.segmented)
 
                     tagMatchModePicker
                 } footer: {
                     Text(currentRuleFooter)
                 }
 
-                if !selectedTagSelections.isEmpty {
-                    Section("Selected tags") {
-                        ForEach(selectedTagSelections) { selection in
-                            selectedTagRow(selection)
+                if displayedTagSummaries.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                } else {
+                    Section {
+                        ForEach(displayedTagSummaries) { summary in
+                            tagRow(summary)
                         }
                     }
                 }
-
-                tagCatalogSection
             }
             .listStyle(.insetGrouped)
             .navigationTitle(labels.navigationTitle)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .searchable(text: $searchText, prompt: "Search tags")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -114,25 +116,19 @@ struct HomeTagFilterPickerSheet: View {
                 refreshPresentation()
             }
             .onChange(of: data.selectedTags) { _, _ in
-                refreshSelectedTagIDs()
-                refreshSelectedTagSelections()
-                refreshDisplayedTagSummaries()
+                refreshPresentation()
             }
             .onChange(of: data.excludedTags) { _, _ in
-                refreshSelectedTagIDs()
-                refreshSelectedTagSelections()
-                refreshDisplayedTagSummaries()
+                refreshPresentation()
             }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
     }
 
     private func tagRow(_ summary: RoutineTagSummary) -> some View {
-        let isSelected = selectedTagIDs.contains(summary.id)
+        let selectedRule = selectedRuleByTagID[summary.id]
 
         return Button {
-            switch rule {
+            switch selectedRule ?? rule {
             case .include:
                 actions.onToggleIncludedTag(summary.name)
             case .exclude:
@@ -140,59 +136,26 @@ struct HomeTagFilterPickerSheet: View {
             }
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? rule.tint : .secondary)
+                Image(systemName: selectedRule?.selectedSymbol ?? "plus.circle")
+                    .foregroundStyle(selectedRule?.tint ?? .secondary)
 
                 Text(tagTitle(for: summary))
                     .foregroundStyle(.primary)
 
                 Spacer()
 
-                if isSelected {
-                    Text(rule.selectedTitle)
+                if let selectedRule {
+                    Text(selectedRule.selectedTitle)
                         .font(.caption)
-                        .foregroundStyle(rule.tint)
+                        .foregroundStyle(selectedRule.tint)
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(accessibilityLabel(for: summary, isSelected: isSelected))
-        .accessibilityValue(isSelected ? rule.selectedTitle : "Not selected")
-    }
-
-    private func selectedTagRow(_ selection: TagSelection) -> some View {
-        Button {
-            switch selection.rule {
-            case .include:
-                actions.onToggleIncludedTag(selection.name)
-            case .exclude:
-                actions.onToggleExcludedTag(selection.name)
-            }
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: selection.rule.selectedSymbol)
-                    .foregroundStyle(selection.rule.tint)
-
-                Text("#\(selection.name)")
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                Text(selection.rule.selectedTitle)
-                    .font(.caption)
-                    .foregroundStyle(selection.rule.tint)
-
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Remove \(selection.name) from \(selection.rule.selectedTitle.lowercased()) tags")
-        .accessibilityValue(selection.rule.selectedTitle)
+        .accessibilityLabel(accessibilityLabel(for: summary, selectedRule: selectedRule))
+        .accessibilityValue(selectedRule?.selectedTitle ?? "Not selected")
     }
 
     private var matchModeBinding: Binding<RoutineTagMatchMode> {
@@ -205,98 +168,64 @@ struct HomeTagFilterPickerSheet: View {
     }
 
     private var tagMatchModePicker: some View {
-        Picker("Match", selection: matchModeBinding) {
-            ForEach(RoutineTagMatchMode.allCases) { mode in
-                Text(mode.rawValue).tag(mode)
-            }
-        }
-        .pickerStyle(.segmented)
-    }
-
-    @ViewBuilder
-    private var tagCatalogSection: some View {
-        if displayedTagSummaries.isEmpty {
-            ContentUnavailableView.search(text: searchText)
-        } else {
-            Section(currentRuleCatalogTitle) {
-                ForEach(displayedTagSummaries) { summary in
-                    tagRow(summary)
+        LabeledContent("Match") {
+            Picker("Match", selection: matchModeBinding) {
+                ForEach(RoutineTagMatchMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
                 }
             }
+            .labelsHidden()
+            .pickerStyle(.segmented)
         }
-    }
-
-    private var currentRuleCatalogTitle: String {
-        rule == .include ? labels.includeCatalogTitle : labels.excludeCatalogTitle
     }
 
     private var currentRuleFooter: String {
         rule == .include ? labels.includeFooter : labels.excludeFooter
     }
 
-    private var currentSelectedTags: Set<String> {
-        switch rule {
-        case .include:
-            data.selectedTags
-        case .exclude:
-            data.excludedTags
-        }
-    }
-
     private func refreshPresentation() {
-        refreshSelectedTagIDs()
-        refreshSelectedTagSelections()
+        refreshSelectedRules()
         refreshDisplayedTagSummaries()
     }
 
-    private func refreshSelectedTagIDs() {
-        selectedTagIDs = Set(currentSelectedTags.compactMap(RoutineTag.normalized))
-    }
-
-    private func refreshSelectedTagSelections() {
-        selectedTagSelections = selections(from: data.excludedTags, for: .exclude)
-            + selections(from: data.selectedTags, for: .include)
-    }
-
-    private func selections(from tags: Set<String>, for rule: Rule) -> [TagSelection] {
-        tags.sorted {
-            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
-        }.map { tag in
-            TagSelection(name: tag, rule: rule)
+    private func refreshSelectedRules() {
+        var rulesByTagID: [String: Rule] = [:]
+        for tag in data.excludedTags {
+            rulesByTagID[tagID(for: tag)] = .exclude
         }
+        for tag in data.selectedTags where rulesByTagID[tagID(for: tag)] == nil {
+            rulesByTagID[tagID(for: tag)] = .include
+        }
+        selectedRuleByTagID = rulesByTagID
     }
 
     private func refreshDisplayedTagSummaries() {
         let catalog = tagCatalog()
+        let selected = catalog.filter { selectedRuleByTagID[$0.id] != nil }
+            .sorted(by: selectedTagSort)
+        let unselected = catalog.filter { selectedRuleByTagID[$0.id] == nil }
 
         guard let query = RoutineTag.normalized(searchText) else {
-            displayedTagSummaries = catalog
+            displayedTagSummaries = selected + unselected
             return
         }
 
-        displayedTagSummaries = catalog.filter { summary in
+        displayedTagSummaries = selected + unselected.filter { summary in
             RoutineTag.normalized(summary.name)?
                 .localizedCaseInsensitiveContains(query) == true
         }
     }
 
     private func tagCatalog() -> [RoutineTagSummary] {
-        let summaries = switch rule {
-        case .include:
-            data.tagSummaries
-        case .exclude:
-            data.availableExcludeTagSummaries
-        }
-
         var summariesByID = Dictionary(
-            summaries.map { summary in
+            (data.tagSummaries + data.availableExcludeTagSummaries).map { summary in
                 (summary.id, summary)
             },
             uniquingKeysWith: { existing, _ in existing }
         )
 
-        for selectedTag in currentSelectedTags {
-            let id = RoutineTag.normalized(selectedTag) ?? selectedTag
+        for selectedTag in data.selectedTags.union(data.excludedTags) {
+            let id = tagID(for: selectedTag)
             if summariesByID[id] == nil {
                 summariesByID[id] = RoutineTagSummary(name: selectedTag, linkedRoutineCount: 0)
             }
@@ -312,30 +241,41 @@ struct HomeTagFilterPickerSheet: View {
         return "#\(summary.name) \(summary.linkedRoutineCount)"
     }
 
-    private func accessibilityLabel(for summary: RoutineTagSummary, isSelected: Bool) -> String {
-        let action = isSelected ? "Remove" : "Add"
-        let preposition = isSelected ? "from" : "to"
-        return "\(action) \(summary.name) \(preposition) \(rule.selectedTitle.lowercased()) tags"
+    private func selectedTagSort(_ lhs: RoutineTagSummary, _ rhs: RoutineTagSummary) -> Bool {
+        let lhsRank = selectedRuleByTagID[lhs.id] == .exclude ? 0 : 1
+        let rhsRank = selectedRuleByTagID[rhs.id] == .exclude ? 0 : 1
+        if lhsRank != rhsRank {
+            return lhsRank < rhsRank
+        }
+        return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+    }
+
+    private func accessibilityLabel(
+        for summary: RoutineTagSummary,
+        selectedRule: Rule?
+    ) -> String {
+        if let selectedRule {
+            return "Remove \(summary.name) from \(selectedRule.selectedTitle.lowercased()) tags"
+        }
+        return "Add \(summary.name) to \(rule.selectedTitle.lowercased()) tags"
+    }
+
+    private func tagID(for tag: String) -> String {
+        RoutineTag.normalized(tag) ?? tag
     }
 }
 
 struct HomeTagFilterPickerLabels {
     let navigationTitle: String
-    let includeCatalogTitle: String
-    let excludeCatalogTitle: String
     let includeFooter: String
     let excludeFooter: String
 
     init(
         navigationTitle: String = "Filter Tags",
-        includeCatalogTitle: String = "Show tasks with",
-        excludeCatalogTitle: String = "Hide tasks with",
         includeFooter: String = "Select tags to include in the Home task list.",
         excludeFooter: String = "Select tags to hide from the Home task list."
     ) {
         self.navigationTitle = navigationTitle
-        self.includeCatalogTitle = includeCatalogTitle
-        self.excludeCatalogTitle = excludeCatalogTitle
         self.includeFooter = includeFooter
         self.excludeFooter = excludeFooter
     }
@@ -373,14 +313,5 @@ private enum Rule: CaseIterable, Identifiable {
         case .include: .accentColor
         case .exclude: .red
         }
-    }
-}
-
-private struct TagSelection: Identifiable {
-    let name: String
-    let rule: Rule
-
-    var id: String {
-        "\(rule.id)-\(RoutineTag.normalized(name) ?? name)"
     }
 }

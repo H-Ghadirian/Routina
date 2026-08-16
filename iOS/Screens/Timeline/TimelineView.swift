@@ -866,8 +866,6 @@ struct TimelineView: View {
                 bindings: tagRuleBindings,
                 actions: tagRuleActions,
                 labels: HomeTagFilterPickerLabels(
-                    includeCatalogTitle: "Show timeline items with",
-                    excludeCatalogTitle: "Hide timeline items with",
                     includeFooter: "Select tags to include in the Timeline.",
                     excludeFooter: "Select tags to hide from the Timeline."
                 )
