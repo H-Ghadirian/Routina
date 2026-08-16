@@ -131,6 +131,108 @@ struct HomeMacStatsRangeSection: View {
     }
 }
 
+struct HomeMacStatsImportanceFilterSection: View {
+    @Binding var selectedFilter: ImportanceUrgencyFilterCell?
+
+    var body: some View {
+        HomeMacCollapsibleFilterSection(
+            title: "Importance",
+            summaryText: minimumImportance.map { "\($0.title)+" } ?? "All",
+            systemImage: "star.fill",
+            tint: .orange
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Minimum importance",
+                    options: importanceOptions,
+                    selection: minimumImportanceBinding,
+                    horizontalPadding: 10,
+                    verticalPadding: 8,
+                    fillsAvailableWidth: true,
+                    maximumSegmentsPerRow: 2
+                ) { importance in
+                    Text(importance.map { "\($0.title)+" } ?? "All")
+                }
+
+                Text("All includes every importance level. Other choices set the minimum importance a task must have.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var importanceOptions: [RoutineTaskImportance?] {
+        [nil] + RoutineTaskImportance.allCases.dropFirst().map(Optional.some)
+    }
+
+    private var minimumImportance: RoutineTaskImportance? {
+        selectedFilter?.minimumImportance
+    }
+
+    private var minimumImportanceBinding: Binding<RoutineTaskImportance?> {
+        Binding(
+            get: { minimumImportance },
+            set: {
+                selectedFilter = ImportanceUrgencyFilterCell.updatingMinimumImportance(
+                    $0,
+                    in: selectedFilter
+                )
+            }
+        )
+    }
+}
+
+struct HomeMacStatsUrgencyFilterSection: View {
+    @Binding var selectedFilter: ImportanceUrgencyFilterCell?
+
+    var body: some View {
+        HomeMacCollapsibleFilterSection(
+            title: "Urgency",
+            summaryText: minimumUrgency.map { "\($0.title)+" } ?? "All",
+            systemImage: "clock.badge.exclamationmark",
+            tint: .red
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Minimum urgency",
+                    options: urgencyOptions,
+                    selection: minimumUrgencyBinding,
+                    horizontalPadding: 10,
+                    verticalPadding: 8,
+                    fillsAvailableWidth: true,
+                    maximumSegmentsPerRow: 2
+                ) { urgency in
+                    Text(urgency.map { "\($0.title)+" } ?? "All")
+                }
+
+                Text("All includes every urgency level. Other choices set the minimum urgency a task must have.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var urgencyOptions: [RoutineTaskUrgency?] {
+        [nil] + RoutineTaskUrgency.allCases.dropFirst().map(Optional.some)
+    }
+
+    private var minimumUrgency: RoutineTaskUrgency? {
+        selectedFilter?.minimumUrgency
+    }
+
+    private var minimumUrgencyBinding: Binding<RoutineTaskUrgency?> {
+        Binding(
+            get: { minimumUrgency },
+            set: {
+                selectedFilter = ImportanceUrgencyFilterCell.updatingMinimumUrgency(
+                    $0,
+                    in: selectedFilter
+                )
+            }
+        )
+    }
+}
+
 struct HomeMacStatsSectionTitle: View {
     private let title: String
 

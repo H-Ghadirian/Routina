@@ -16,7 +16,6 @@ struct HomeMacStatsSidebarView: View {
     @Binding var advancedQuery: String
     let queryOptions: HomeAdvancedQueryOptions
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
-    let importanceUrgencySummary: String
     let allTags: [String]
     let tagSummaries: [RoutineTagSummary]
     let suggestedRelatedTags: [String]
@@ -72,9 +71,12 @@ struct HomeMacStatsSidebarView: View {
                     onSelectRange: onSelectRange
                 )
 
-                HomeMacImportanceUrgencyDisclosureSection(
-                    selectedFilter: $selectedImportanceUrgencyFilter,
-                    summaryText: importanceUrgencySummary
+                HomeMacStatsImportanceFilterSection(
+                    selectedFilter: $selectedImportanceUrgencyFilter
+                )
+
+                HomeMacStatsUrgencyFilterSection(
+                    selectedFilter: $selectedImportanceUrgencyFilter
                 )
 
                 if !allTags.isEmpty {

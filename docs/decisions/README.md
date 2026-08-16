@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0599](0599-separate-mac-stats-priority-filters.md) refines [0563](0563-present-importance-and-urgency-as-independent-task-controls.md) and [0581](0581-separate-ios-priority-filter-controls.md):** The Mac Stats sidebar presents Importance and Urgency as separate minimum-threshold sections, preserving the other axis, combined matching, and saved state whenever one selection changes.
+
 - **[0598](0598-count-semantic-focus-session-copies-once-in-stats.md) refines [0118](0118-show-focus-chart-details-and-grouping.md), [0137](0137-show-active-focus-in-stats-today.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Stats canonicalizes exact semantic copies of task, tag, unassigned, and board focus sessions before applicable duration, hourly, goal, 2048, and achievement derivations, without deleting persisted history or changing completion-day bucketing.
 
 - **[0597](0597-show-ios-task-detail-title-after-header-scrolls-away.md) revises the navigation-principal portion of [0594](0594-simplify-ios-task-detail-scan-and-action-hierarchy.md) and refines [0089](0089-prefer-native-apple-platform-patterns.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** iOS Task Details keeps the navigation principal empty while the full header title is visible, then shows a text-only title after that source title scrolls away, without an emoji or fixed width cap.

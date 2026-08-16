@@ -70,7 +70,6 @@ extension HomeTCAView {
                 get: { statsStore?.selectedImportanceUrgencyFilter },
                 set: { statsStore?.send(.selectedImportanceUrgencyFilterChanged($0)) }
             ),
-            importanceUrgencySummary: statsImportanceUrgencySummary,
             allTags: allTags,
             tagSummaries: tagSummaries,
             suggestedRelatedTags: filterPresentation.suggestedRelatedTags(
@@ -241,10 +240,4 @@ extension HomeTCAView {
         return selectedStatsDashboardScope
     }
 
-    private var statsImportanceUrgencySummary: String {
-        guard let filter = ImportanceUrgencyFilterCell.normalized(statsStore?.selectedImportanceUrgencyFilter) else {
-            return "Showing stats across all importance and urgency levels."
-        }
-        return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
-    }
 }
