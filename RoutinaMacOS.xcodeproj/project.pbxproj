@@ -563,7 +563,7 @@
 			);
 			inputPaths = (
 				"$(SRCROOT)/script/copy_firebase_configuration.sh",
-				"$(SRCROOT)/Config/Firebase",
+				"$(SRCROOT)/Config/Firebase/GoogleService-Info-Prod.plist",
 			);
 			name = "Copy Firebase Configuration";
 			outputFileListPaths = (
@@ -612,7 +612,7 @@
 			);
 			inputPaths = (
 				"$(SRCROOT)/script/copy_firebase_configuration.sh",
-				"$(SRCROOT)/Config/Firebase",
+				"$(SRCROOT)/Config/Firebase/GoogleService-Info-macOS-Dev.plist",
 			);
 			name = "Copy Firebase Configuration";
 			outputFileListPaths = (

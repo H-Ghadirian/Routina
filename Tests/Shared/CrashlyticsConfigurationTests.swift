@@ -35,6 +35,27 @@ struct CrashlyticsConfigurationTests {
     }
 
     @Test
+    func configurationCopyDeclaresExactInputsForXcodeScriptSandboxing() throws {
+        let iOSProject = try Self.sourceFile("RoutinaiOS.xcodeproj/project.pbxproj")
+        #expect(iOSProject.contains(
+            "$(SRCROOT)/Config/Firebase/GoogleService-Info-Prod.plist"
+        ))
+        #expect(iOSProject.contains(
+            "$(SRCROOT)/Config/Firebase/GoogleService-Info-iOS-Dev.plist"
+        ))
+        #expect(!iOSProject.contains("\"$(SRCROOT)/Config/Firebase\","))
+
+        let macOSProject = try Self.sourceFile("RoutinaMacOS.xcodeproj/project.pbxproj")
+        #expect(macOSProject.contains(
+            "$(SRCROOT)/Config/Firebase/GoogleService-Info-Prod.plist"
+        ))
+        #expect(macOSProject.contains(
+            "$(SRCROOT)/Config/Firebase/GoogleService-Info-macOS-Dev.plist"
+        ))
+        #expect(!macOSProject.contains("\"$(SRCROOT)/Config/Firebase\","))
+    }
+
+    @Test
     func crashContextCannotAcceptUserOwnedStrings() throws {
         let reporter = try Self.sourceFile("SharedCore/Services/RoutinaCrashReporter.swift")
         #expect(reporter.contains(

@@ -18,6 +18,11 @@ build phase validates each plist's bundle ID and copies it into the matching app
 bundle as `GoogleService-Info.plist`. Builds that produce dSYMs upload them
 through Firebase's supported Crashlytics script.
 
+Each app target declares its exact variant plist as an Xcode script input. This
+is required because the user-script sandbox does not grant child-file access
+when only this containing directory is declared. A missing declared plist still
+follows the script's intentional no-configuration path.
+
 Google Analytics is not linked. Routina sends Crashlytics' standard crash data,
 the app variant and platform, and a throttled trail of fixed interaction
 categories. It does not set a Crashlytics user ID or add task titles, search
