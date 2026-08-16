@@ -185,6 +185,14 @@ struct SettingsFlagsState: Equatable {
     func hasRule(_ kind: RoutineFlagRuleKind, for flag: String) -> Bool {
         RoutineFlagRules.contains(kind, for: flag, in: rules)
     }
+
+    func assignedRuleKinds(for flag: String) -> [RoutineFlagRuleKind] {
+        RoutineFlagRuleKind.allCases.filter { hasRule($0, for: flag) }
+    }
+
+    func availableRuleKinds(for flag: String) -> [RoutineFlagRuleKind] {
+        RoutineFlagRuleKind.allCases.filter { !hasRule($0, for: flag) }
+    }
 }
 
 struct SettingsTagMergeRequest: Equatable {

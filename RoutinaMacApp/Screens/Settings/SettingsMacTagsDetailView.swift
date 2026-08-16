@@ -155,88 +155,123 @@ struct SettingsMacFlagsDetailView: View {
     }
 
     private func flagRow(_ flag: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+        let assignedRuleKinds = store.flags.assignedRuleKinds(for: flag)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 Label(flag, systemImage: "flag.fill")
                     .font(.callout.weight(.medium))
 
                 Spacer()
 
                 Menu {
-                    Button("Remove flag", role: .destructive) {
+                    Button("Remove Flag", role: .destructive) {
                         store.send(.removeFlagTapped(flag))
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
+                        .frame(width: 28, height: 28)
+                        .contentShape(Circle())
                 }
                 .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
                 .help("Flag actions")
+                .accessibilityLabel("More actions for \(flag)")
             }
 
-            ForEach(RoutineFlagRuleKind.allCases) { kind in
-                flagRuleToggle(flag, kind: kind)
+            HStack(spacing: 12) {
+                Text(assignedRuleKinds.isEmpty ? "No rules added" : "Rules")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                addRuleMenu(for: flag)
+            }
+
+            ForEach(assignedRuleKinds) { kind in
+                assignedRuleRow(flag, kind: kind)
             }
         }
         .padding(.vertical, 12)
     }
 
-    private func flagRuleToggle(
+    private func assignedRuleRow(
         _ flag: String,
         kind: RoutineFlagRuleKind
     ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Toggle(isOn: flagRuleBinding(flag, kind: kind)) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Label(kind.title, systemImage: ruleSystemImage(for: kind))
-                        .font(.callout)
-                    Text(kind.detail)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .toggleStyle(.switch)
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: kind.systemImage)
+                .foregroundStyle(.secondary)
+                .frame(width: 18, height: 20)
 
-            if kind == .autoAssumeDone,
-               store.flags.hasRule(kind, for: flag) {
-                Button("Migrate existing auto-assume tasks") {
-                    store.send(.migrateAutoAssumeDoneTasksTapped(flag))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(kind.title)
+                    .font(.callout)
+                Text(kind.detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                if kind == .autoAssumeDone {
+                    Button {
+                        store.send(.migrateAutoAssumeDoneTasksTapped(flag))
+                    } label: {
+                        Label("Migrate Existing Tasks…", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .buttonStyle(.borderless)
+                    .font(.footnote)
+                    .help("Add this Flag to tasks that already use auto-assume done")
                 }
-                .buttonStyle(.borderless)
-                .font(.footnote)
-                .padding(.top, 54)
-                .help("Add this Flag to tasks that already use auto-assume done")
             }
+
+            Spacer(minLength: 8)
+
+            Button {
+                store.send(.removeFlagRuleTapped(flagName: flag, kind: kind))
+            } label: {
+                Image(systemName: "minus.circle")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .help("Remove \(kind.title)")
+            .accessibilityLabel("Remove \(kind.title) from \(flag)")
         }
         .padding(.vertical, 2)
     }
 
-    private func flagRuleBinding(
-        _ flag: String,
-        kind: RoutineFlagRuleKind
-    ) -> Binding<Bool> {
-        Binding(
-            get: { store.flags.hasRule(kind, for: flag) },
-            set: { isEnabled in
-                store.send(
-                    isEnabled
-                        ? .addFlagRuleTapped(flagName: flag, kind: kind)
-                        : .removeFlagRuleTapped(flagName: flag, kind: kind)
-                )
-            }
-        )
-    }
+    private func addRuleMenu(for flag: String) -> some View {
+        let availableRuleKinds = store.flags.availableRuleKinds(for: flag)
 
-    private func ruleSystemImage(for kind: RoutineFlagRuleKind) -> String {
-        switch kind {
-        case .hideFromTaskLists:
-            return "eye.slash"
-        case .hideFromTimeline:
-            return "clock.badge.xmark"
-        case .hideFromTaskLadder:
-            return "list.number"
-        case .autoAssumeDone:
-            return "checkmark.circle"
+        return Menu {
+            ForEach(availableRuleKinds) { kind in
+                Button {
+                    store.send(.addFlagRuleTapped(flagName: flag, kind: kind))
+                } label: {
+                    Label(kind.title, systemImage: kind.systemImage)
+                }
+            }
+        } label: {
+            Label("Add Rule", systemImage: "plus")
+                .frame(minHeight: 20)
+                .contentShape(Rectangle())
         }
+        .menuStyle(.button)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .disabled(availableRuleKinds.isEmpty)
+        .help(
+            availableRuleKinds.isEmpty
+                ? "All available rules are already added"
+                : "Choose a rule to add to \(flag)"
+        )
+        .accessibilityLabel(
+            availableRuleKinds.isEmpty
+                ? "All rules added to \(flag)"
+                : "Add rule to \(flag)"
+        )
     }
 
     private var draftBinding: Binding<String> {

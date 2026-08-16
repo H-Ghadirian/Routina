@@ -133,6 +133,24 @@ Then the task does not appear or contribute to the ladder count
 And the task remains unchanged in Home, Backlog, Planner, Timeline, and Stats
 And a Flag that only hides tasks from normal task lists does not hide them from Task Ladder
 
+### Flag Settings Show Only Assigned Rules
+
+Area: Settings / Flags
+Decision links: [0588](../decisions/0588-configure-flag-rules-by-assignment.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/SettingsFlagRulePresentationTests.swift`
+
+Given a Flag has some but not all available behavior rules
+When the person opens Flags settings on iOS or macOS
+Then only the assigned rules are shown beneath that Flag
+And `Add Rule` lists only the remaining rule kinds
+And each assigned rule can be removed directly
+
+Given a Flag has no assigned rules
+When the person views it in Settings
+Then the Flag says that no rules are added without repeating the rule catalog
+
 ### Mac Task Ladder Rows Show Task Identity Metadata
 
 Area: Tasks / Mac Task Ladder

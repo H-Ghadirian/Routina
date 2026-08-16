@@ -20,8 +20,10 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0588](0588-configure-flag-rules-by-assignment.md) refines [0497](0497-use-flags-for-task-behavior-rules.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** iOS and macOS Settings show only the rules assigned to each Flag, offer remaining behaviors through `Add Rule`, and keep direct removal beside each assigned rule without changing synchronized rule storage.
 
 - **[0587](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md) revises [0576](0576-offer-direct-repeating-task-ladder-grouping.md) and refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** macOS Task Details no longer presents direct Task Ladder group activation; Add Task, Edit Task, and the Task Ladder retain the deliberate entry points for that uncommon structural choice.
+
 - **[0586](0586-group-ios-task-detail-priority-context-in-the-header.md) refines [0468](0468-model-task-thinking-needed-separately.md) and [0563](0563-present-importance-and-urgency-as-independent-task-controls.md):** iOS Task Details groups Importance, Urgency, Pressure, and Thinking needed in that order in the task header, keeping Thinking separate from the primary-action card without changing its independent meaning or persistence.
 
 - **[0585](0585-persist-ios-task-detail-calendar-expansion-per-task.md) refines [0089](0089-prefer-native-apple-platform-patterns.md), [0100](0100-reveal-task-form-details-by-section.md), [0393](0393-persist-task-detail-heatmap-per-task.md), and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details collapses Calendar by default and remembers each task's explicit expanded or collapsed state through task-owned persistence, copying, synchronization, and backup/import without changing macOS.
@@ -707,6 +709,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0588](0588-configure-flag-rules-by-assignment.md) | Configure Flag Rules by Assignment | Accepted | 2026-08-16 |
 | [0587](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md) | Keep Task Ladder Activation in Deliberate Editing Flows | Accepted | 2026-08-16 |
 | [0586](0586-group-ios-task-detail-priority-context-in-the-header.md) | Group iOS Task Detail Priority Context in the Header | Accepted | 2026-08-16 |
 | [0585](0585-persist-ios-task-detail-calendar-expansion-per-task.md) | Persist iOS Task Detail Calendar Expansion Per Task | Accepted | 2026-08-16 |

@@ -119,11 +119,11 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Move it off the radar while retaining searchability, context, and a return path.
 
-**Desired experience:** Pausing, archiving, backlog organization, and visibility rules have distinct meanings. The item is not lost, completed, or silently rescheduled.
+**Desired experience:** Pausing, archiving, backlog organization, and visibility rules have distinct meanings. The item is not lost, completed, or silently rescheduled. Configuring Flag behavior stays progressive: each Flag shows only the rules already attached to it, `Add Rule` lists the remaining behaviors, and every attached rule can be removed in place.
 
 **Successful outcome:** Everyday views remain manageable and deferred work can be recovered deliberately.
 
-**Example:** A future home-renovation idea moves to Backlog and can later return to normal task lists.
+**Example:** A future home-renovation idea moves to Backlog and can later return to normal task lists. Its Backlog Flag shows only its chosen task-list rule instead of every behavior Routina supports.
 
 **Availability:** Mixed; pause and archive are broadly available, while the dedicated Backlog workspace is on macOS.
 

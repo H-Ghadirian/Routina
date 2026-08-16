@@ -37,6 +37,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0526](../decisions/0526-identify-exact-builds-in-support.md)
 - [0569](../decisions/0569-suppress-no-op-preference-sync-refresh-loops.md)
 - [0583](../decisions/0583-keep-task-creation-unlimited.md)
+- [0588](../decisions/0588-configure-flag-rules-by-assignment.md)
 
 ## Current Contract
 
@@ -57,6 +58,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - When `Show Goals tab` is off, iOS hides Goals navigation, New Goal, Goals Stats reports, the Goals iCloud category, and the Home Filters Goal option; existing task and goal data remains stored.
 - iOS Settings -> Appearance hides the Task Row `Goals` and `Places` controls, their preview content, and their shown-fields count from the respective disabled Goal and Places feature gates. Their stored row-visibility choices remain intact and return when the feature is enabled again.
 - iOS Settings -> Tags does not expose saved-tag quick-filter configuration until the app provides a discoverable shortcut surface. The deferred implementation is tracked in [Product Debt 0002](../debt/0002-implement-saved-tag-quick-filters.md).
+- iOS and macOS Settings -> Flags show only the rules assigned to each Flag. `Add Rule` lists the remaining rule kinds, assigned rules can be removed in place, and a Flag with no rules stays compact instead of repeating the full rule catalog. The auto-assume migration action appears only when that rule is assigned.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
 - Legacy `.json` backup remains compatibility-only for older task, place, goal, and log payloads.
 - Data-wide reset actions show backup/export first when possible.

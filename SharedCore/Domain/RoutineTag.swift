@@ -184,6 +184,19 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
             return "Eligible tasks are automatically marked done after their scheduled time."
         }
     }
+
+    var systemImage: String {
+        switch self {
+        case .hideFromTaskLists:
+            return "eye.slash"
+        case .hideFromTimeline:
+            return "clock.badge.xmark"
+        case .hideFromTaskLadder:
+            return "list.number"
+        case .autoAssumeDone:
+            return "checkmark.circle"
+        }
+    }
 }
 
 struct RoutineFlagRule: Codable, Equatable, Identifiable, Sendable {
