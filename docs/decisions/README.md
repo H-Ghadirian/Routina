@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md) refines [0046](0046-label-routine-schedule-behavior-as-due-and-gentle.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0575](0575-inherit-task-ladder-group-values-from-actionable-tasks.md):** repeating Due routines can keep stable baseline Importance, Urgency, and Pressure while a read-only Task Ladder `Now` view derives on-due-date or gradual categorical increases for the current occurrence.
+
 - **[0591](0591-include-suppressed-mac-search-matches-beside-ordinary-results.md) refines [0310](0310-show-mac-home-toolbar-search.md), [0405](0405-show-hidden-scheduled-task-search-results.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** every non-empty Mac task search merges eligible placement-suppressed matches beside ordinary results without duplicates, so broad queries do not omit tasks that narrower queries reveal.
 
 - **[0590](0590-use-progress-aware-incremental-manual-refresh.md) supersedes [0589](superseded/0589-bound-manual-icloud-refresh.md) and refines [0523](0523-report-manual-icloud-refresh-honestly.md), [0545](0545-bound-ios-foreground-focus-reconciliation.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Settings and Home distinguish a one-minute inactivity stall from an active transfer, retain a three-minute safety cap, save per-container change tokens only after a successful merge, and make later manual pulls incremental.
@@ -713,6 +715,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md) | Derive Time-Based Task Ladder Values From Repeating Due Dates | Accepted | 2026-08-16 |
 | [0591](0591-include-suppressed-mac-search-matches-beside-ordinary-results.md) | Include Suppressed Mac Search Matches Beside Ordinary Results | Accepted | 2026-08-16 |
 | [0590](0590-use-progress-aware-incremental-manual-refresh.md) | Use Progress-Aware Incremental Manual iCloud Refresh | Accepted | 2026-08-16 |
 | [0589](superseded/0589-bound-manual-icloud-refresh.md) | Bound Manual iCloud Refresh | Superseded | 2026-08-16 |

@@ -89,6 +89,7 @@ enum SettingsRoutineDataBackupMapping {
             snoozedUntil: task.snoozedUntil,
             pinnedAt: task.pinnedAt,
             taskRankingOrderStorage: task.taskRankingOrderStorage.isEmpty ? nil : task.taskRankingOrderStorage,
+            temporalWeightRuleStorage: task.temporalWeightRuleStorage.isEmpty ? nil : task.temporalWeightRuleStorage,
             completedStepCount: task.completedSteps,
             sequenceStartedAt: task.sequenceStartedAt,
             createdAt: task.createdAt,

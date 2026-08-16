@@ -165,6 +165,37 @@ Then each row shows its assigned tags instead of repeating the section's metric 
 And each non-one-off row shows a visible `Repeating` label with the repeat symbol
 And a one-off task without tags does not reserve an empty metadata line
 
+### Repeating Due Tasks Gain Temporary Task Ladder Weight
+
+Area: Tasks / Mac Task Ladder / Recurrence
+Decision links: [0592](../decisions/0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md), [0575](../decisions/0575-inherit-task-ladder-group-values-from-actionable-tasks.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+
+Given a repeating Due routine has stable Base values and higher due-date targets
+When its rule is `On due date`
+Then Task Ladder Now keeps Base before the due date and uses each target on the due date
+And Base remains unchanged
+
+Given a repeating Due routine has a gradual lead window
+When calendar days advance through that window
+Then Now advances through categorical values toward each due-date target
+And it reaches the target on the due date
+
+Given the current occurrence has an adjusted Now value
+When the occurrence is completed and the next due date advances beyond its lead window
+Then Now returns to Base without a cleanup mutation
+
+Given Task Ladder is showing Now
+Then effective value sections are read-only
+And an adjusted task row explains its due timing
+And an inherited container group uses its actionable direct children's Now values
+
+Given a task is Gentle, tracking-only, cadence-free, or one-off
+When Task Ladder resolves its values
+Then no time-based rule changes its Base value
+
 ### Mac Task Ladder Separates Placement From Completion
 
 Area: Tasks / Mac Task Ladder / Relationships

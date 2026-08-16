@@ -12,6 +12,43 @@ import Testing
 @MainActor
 struct SettingsRoutineDataPersistenceTests {
     @Test
+    func backupAndRestorePreservesTemporalTaskLadderRule() throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(
+            name: "Monthly report",
+            importance: .level1,
+            urgency: .level1,
+            pressure: .low,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .monthly(on: [28]),
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
+        )
+        let rule = RoutineTaskTemporalWeightRule(
+            curve: .gradual,
+            leadDays: 3,
+            importanceAtDue: .level3,
+            urgencyAtDue: .level4,
+            pressureAtDue: .high
+        )
+        task.temporalWeightRule = rule
+        context.insert(task)
+        try context.save()
+
+        let package = try SettingsRoutineDataPersistence.buildBackupPackage(from: context)
+        let restoreContext = makeInMemoryContext()
+        _ = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            with: package.manifestData,
+            in: restoreContext
+        )
+        let restoredTask = try #require(
+            restoreContext.fetch(FetchDescriptor<RoutineTask>()).first
+        )
+
+        #expect(restoredTask.temporalWeightRule == rule)
+    }
+
+    @Test
     func writeBackup_toJSONURLWritesLegacyJSONFile() async throws {
         let context = makeInMemoryContext()
         let task = RoutineTask(name: "Archive paperwork", tags: ["Admin"])

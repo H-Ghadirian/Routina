@@ -333,6 +333,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 importedTask.linkItems = linkItems
             }
             importedTask.taskRankingOrderStorage = task.taskRankingOrderStorage ?? ""
+            importedTask.temporalWeightRuleStorage = task.temporalWeightRuleStorage ?? ""
             context.insert(importedTask)
             importedCount += 1
         }

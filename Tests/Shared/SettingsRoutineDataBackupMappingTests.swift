@@ -60,6 +60,10 @@ struct SettingsRoutineDataBackupMappingTests {
             hasExplicitImportance: true,
             hasExplicitUrgency: true
         )
+        task.temporalWeightRule = RoutineTaskTemporalWeightRule(
+            curve: .onDueDate,
+            pressureAtDue: .high
+        )
 
         let inline = SettingsRoutineDataBackupMapping.task(
             task,
@@ -99,6 +103,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.hasExplicitUrgency == true)
         #expect(inline.pressure == .high)
         #expect(inline.thinkingNeeded == .medium)
+        #expect(inline.temporalWeightRuleStorage == task.temporalWeightRuleStorage)
         #expect(packaged.imageData == nil)
         #expect(packaged.taskDescription == "Keep the original and a scanned copy.")
         #expect(packaged.imageAttachmentID == attachmentID)
@@ -112,6 +117,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(packaged.hasExplicitUrgency == true)
         #expect(packaged.pressure == .high)
         #expect(packaged.thinkingNeeded == .medium)
+        #expect(packaged.temporalWeightRuleStorage == task.temporalWeightRuleStorage)
     }
 
     @Test

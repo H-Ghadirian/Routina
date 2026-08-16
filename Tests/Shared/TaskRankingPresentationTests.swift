@@ -637,6 +637,24 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func taskLadderOffersBaseNowAndTemporalRuleEditing() throws {
+        let viewSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+        let featureSource = try Self.sourceFile(
+            "RoutinaMacApp/Features/TaskRanking/TaskRankingFeature.swift"
+        )
+
+        #expect(viewSource.contains("ForEach(TaskRankingValueMode.allCases)"))
+        #expect(viewSource.contains("Button(\"Time-based Ladder Values…\")"))
+        #expect(viewSource.contains("TaskTemporalWeightRuleMacSheet("))
+        #expect(viewSource.contains("Base values stay saved. Now values rise toward the targets"))
+        #expect(featureSource.contains("case temporalBoundaryReached"))
+        #expect(featureSource.contains("scheduleTemporalRefresh(for: state)"))
+        #expect(featureSource.contains("persistTemporalWeightRule(taskID: taskID, rule: rule)"))
+    }
+
+    @Test
     func taskLadderGroupEditorOffersInheritedValues() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
@@ -729,6 +747,217 @@ struct TaskRankingPresentationTests {
         #expect(source.contains("ForEach(section.tasks)"))
         #expect(source.contains("rankingSectionHeader(section, isCollapsed: isCollapsed)"))
         #expect(!source.contains("private func rankingSection(_ section"))
+    }
+
+    @Test
+    func onDueDateRuleKeepsBaseBeforeDueAndJumpsOnDueDate() throws {
+        let interval = 10
+        let dueTodayAnchor = try #require(
+            calendar.date(byAdding: .day, value: -interval, to: referenceDate)
+        )
+        let dueTomorrowAnchor = try #require(
+            calendar.date(byAdding: .day, value: -(interval - 1), to: referenceDate)
+        )
+        let task = RoutineTask(
+            name: "Due-weighted",
+            pressure: .low,
+            scheduleMode: .fixedInterval,
+            interval: Int16(interval),
+            recurrenceRule: .interval(days: interval),
+            lastDone: dueTomorrowAnchor,
+            scheduleAnchor: dueTomorrowAnchor
+        )
+        task.temporalWeightRule = RoutineTaskTemporalWeightRule(
+            curve: .onDueDate,
+            pressureAtDue: .high
+        )
+
+        #expect(
+            RoutineTaskTemporalWeightResolver.effectiveWeights(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ).pressure == .low
+        )
+
+        task.lastDone = dueTodayAnchor
+        task.scheduleAnchor = dueTodayAnchor
+
+        #expect(
+            RoutineTaskTemporalWeightResolver.effectiveWeights(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ).pressure == .high
+        )
+    }
+
+    @Test
+    func gradualRuleStepsTowardDueTargetsInsideLeadWindow() throws {
+        let interval = 10
+        let twoDaysBeforeDueAnchor = try #require(
+            calendar.date(byAdding: .day, value: -(interval - 2), to: referenceDate)
+        )
+        let task = RoutineTask(
+            name: "Gradual",
+            importance: .level1,
+            urgency: .level1,
+            pressure: .none,
+            scheduleMode: .fixedInterval,
+            interval: Int16(interval),
+            recurrenceRule: .interval(days: interval),
+            lastDone: twoDaysBeforeDueAnchor,
+            scheduleAnchor: twoDaysBeforeDueAnchor,
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
+        )
+        task.temporalWeightRule = RoutineTaskTemporalWeightRule(
+            curve: .gradual,
+            leadDays: 6,
+            importanceAtDue: .level4,
+            urgencyAtDue: .level4,
+            pressureAtDue: .high
+        )
+
+        let weights = RoutineTaskTemporalWeightResolver.effectiveWeights(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(weights.importance == .level3)
+        #expect(weights.urgency == .level3)
+        #expect(weights.pressure == .medium)
+        #expect(weights.progress > 0 && weights.progress < 1)
+    }
+
+    @Test
+    func advancingCompletedOccurrenceReturnsNowValuesToBase() throws {
+        let interval = 7
+        let dueTodayAnchor = try #require(
+            calendar.date(byAdding: .day, value: -interval, to: referenceDate)
+        )
+        let task = RoutineTask(
+            name: "Reset after done",
+            pressure: .low,
+            scheduleMode: .fixedInterval,
+            interval: Int16(interval),
+            recurrenceRule: .interval(days: interval),
+            lastDone: dueTodayAnchor,
+            scheduleAnchor: dueTodayAnchor
+        )
+        task.temporalWeightRule = RoutineTaskTemporalWeightRule(
+            curve: .gradual,
+            leadDays: 3,
+            pressureAtDue: .high
+        )
+
+        #expect(
+            RoutineTaskTemporalWeightResolver.effectiveWeights(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ).pressure == .high
+        )
+
+        task.lastDone = referenceDate
+        task.scheduleAnchor = referenceDate
+
+        #expect(
+            RoutineTaskTemporalWeightResolver.effectiveWeights(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ).pressure == .low
+        )
+    }
+
+    @Test
+    func nowPresentationIsReadOnlyAndInheritedGroupsUseEffectiveChildValue() throws {
+        let interval = 7
+        let dueTodayAnchor = try #require(
+            calendar.date(byAdding: .day, value: -interval, to: referenceDate)
+        )
+        let child = RoutineTask(
+            name: "Dynamic child",
+            pressure: .low,
+            scheduleMode: .fixedInterval,
+            interval: Int16(interval),
+            recurrenceRule: .interval(days: interval),
+            lastDone: dueTodayAnchor,
+            scheduleAnchor: dueTodayAnchor
+        )
+        child.temporalWeightRule = RoutineTaskTemporalWeightRule(
+            curve: .onDueDate,
+            pressureAtDue: .high
+        )
+        let group = TaskLadderGroup(name: "Inherited", inheritedMetrics: [.pressure])
+        let organization = TaskLadderOrganization(
+            groups: [group],
+            placements: [TaskLadderPlacement(taskID: child.id, parent: .group(group.id))]
+        )
+
+        let base = TaskRankingPresentation.make(
+            tasks: [child],
+            organization: organization,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            valueMode: .base,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let now = TaskRankingPresentation.make(
+            tasks: [child],
+            organization: organization,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            valueMode: .now,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let nestedNow = TaskRankingPresentation.make(
+            tasks: [child],
+            organization: organization,
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            valueMode: .now,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            scopePath: [group.id]
+        )
+
+        #expect(base.sections.first { $0.tasks.contains(where: { $0.id == group.id }) }?.value == .pressure(.low))
+        #expect(now.sections.first { $0.tasks.contains(where: { $0.id == group.id }) }?.value == .pressure(.high))
+        #expect(now.sections.allSatisfy { !$0.supportsManualOrdering })
+        #expect(nestedNow.rowMetadataByTaskID[child.id]?.temporalTimingLabel == "Due today")
+        #expect(TaskRankingOrderingSupport.moveTask(taskID: group.id, direction: .down, in: now) == nil)
+    }
+
+    @Test
+    func temporalRuleRoundTripsAndSoftRoutinesIgnoreIt() {
+        let task = RoutineTask(name: "Gentle", pressure: .low, scheduleMode: .softInterval)
+        let rule = RoutineTaskTemporalWeightRule(
+            curve: .gradual,
+            leadDays: 14,
+            importanceAtDue: .level4,
+            urgencyAtDue: .level3,
+            pressureAtDue: .high
+        )
+
+        task.temporalWeightRule = rule
+
+        #expect(task.temporalWeightRule == rule)
+        #expect(!RoutineTaskTemporalWeightResolver.supportsTemporalWeight(task))
+        #expect(
+            RoutineTaskTemporalWeightResolver.effectiveWeights(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ).pressure == .low
+        )
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

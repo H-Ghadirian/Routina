@@ -13,6 +13,43 @@ import Testing
 @MainActor
 struct CloudKitDirectPullRecurrenceTests {
     @Test
+    func cloudKitMergeReadsTemporalTaskLadderRuleStorage() throws {
+        let context = makeInMemoryContext()
+        let taskID = UUID()
+        let rule = RoutineTaskTemporalWeightRule(
+            curve: .gradual,
+            leadDays: 5,
+            urgencyAtDue: .level4,
+            pressureAtDue: .high
+        )
+        let storage = RoutineTaskTemporalWeightStorage.serialize(rule)
+        let remoteTask = CKRecord(
+            recordType: "RoutineTask",
+            recordID: CKRecord.ID(recordName: taskID.uuidString)
+        )
+        remoteTask["name"] = "Quarterly filing" as CKRecordValue
+        remoteTask["interval"] = NSNumber(value: 90)
+        remoteTask["scheduleModeRawValue"] = RoutineScheduleMode.fixedInterval.rawValue as CKRecordValue
+        remoteTask["temporalWeightRuleStorage"] = storage as CKRecordValue
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(changedRecords: [remoteTask], deletedRecordIDs: []),
+            into: context
+        )
+
+        let task = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(task.temporalWeightRule == rule)
+    }
+
+    @Test
     func cloudKitMerge_readsSwiftDataRecurrenceColumns() throws {
         let context = makeInMemoryContext()
         let taskID = UUID()

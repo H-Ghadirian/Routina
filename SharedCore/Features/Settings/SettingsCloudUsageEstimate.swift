@@ -203,6 +203,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var taskChoiceTieBreakScore: Double
         var taskChoiceComparisonCount: Int16
         var thinkingNeededRawValue: String
+        var temporalWeightRuleStorage: String
 
         init(task: RoutineTask) {
             id = task.id
@@ -262,6 +263,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             taskChoiceTieBreakScore = task.taskChoiceTieBreakScore
             taskChoiceComparisonCount = task.taskChoiceComparisonCount
             thinkingNeededRawValue = task.thinkingNeededRawValue
+            temporalWeightRuleStorage = task.temporalWeightRuleStorage
         }
     }
 

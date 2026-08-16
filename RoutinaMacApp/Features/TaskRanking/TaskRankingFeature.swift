@@ -7,6 +7,7 @@ struct TaskRankingFeature {
     private enum CancelID: Hashable {
         case load
         case automaticRefresh
+        case temporalRefresh
         case taskDetail(UUID)
     }
 
@@ -16,6 +17,7 @@ struct TaskRankingFeature {
         var flagRules: [RoutineFlagRule] = []
         var organization = TaskLadderOrganization()
         var metric: TaskRankingMetric = .pressure
+        var valueMode: TaskRankingValueMode = .base
         var reversedMetrics: Set<TaskRankingMetric> = []
         var scopePath: [UUID] = []
         var presentation = TaskRankingPresentation.empty()
@@ -72,6 +74,8 @@ struct TaskRankingFeature {
         case errorDismissed
         case reversedMetricsChanged(Set<TaskRankingMetric>)
         case metricChanged(TaskRankingMetric)
+        case valueModeChanged(TaskRankingValueMode)
+        case temporalBoundaryReached
         case directionToggled
         case taskSelected(UUID)
         case groupSelected(UUID)
@@ -83,6 +87,7 @@ struct TaskRankingFeature {
         case taskPlacementSaved(UUID, TaskLadderNodeID?, TaskLadderCompletionBehavior)
         case linkedTaskChildSuggestionAccepted(parentTaskID: UUID, childTaskID: UUID)
         case linkedTaskChildSuggestionRejected(parentTaskID: UUID, childTaskID: UUID)
+        case temporalWeightRuleSaved(UUID, RoutineTaskTemporalWeightRule?)
         case taskDetail(TaskDetailFeature.Action)
     }
 
@@ -104,6 +109,7 @@ struct TaskRankingFeature {
                 return .merge(
                     .cancel(id: CancelID.load),
                     .cancel(id: CancelID.automaticRefresh),
+                    .cancel(id: CancelID.temporalRefresh),
                     state.selectedTaskID.map { .cancel(id: CancelID.taskDetail($0)) } ?? .none
                 )
 
@@ -139,7 +145,7 @@ struct TaskRankingFeature {
                    state.organization.group(id: selectedGroupID) == nil {
                     state.selectedGroupID = nil
                 }
-                return .none
+                return scheduleTemporalRefresh(for: state)
 
             case .flagRulesChanged:
                 state.flagRules = RoutineFlagRules.sanitized(appSettingsClient.flagRules())
@@ -174,7 +180,17 @@ struct TaskRankingFeature {
                 guard state.metric != metric else { return .none }
                 state.metric = metric
                 rebuildPresentation(&state)
-                return .none
+                return scheduleTemporalRefresh(for: state)
+
+            case let .valueModeChanged(valueMode):
+                guard state.valueMode != valueMode else { return .none }
+                state.valueMode = valueMode
+                rebuildPresentation(&state)
+                return scheduleTemporalRefresh(for: state)
+
+            case .temporalBoundaryReached:
+                rebuildPresentation(&state)
+                return scheduleTemporalRefresh(for: state)
 
             case .directionToggled:
                 if state.reversedMetrics.contains(state.metric) {
@@ -323,6 +339,29 @@ struct TaskRankingFeature {
                 appSettingsClient.setTaskLadderOrganization(state.organization)
                 return .none
 
+            case let .temporalWeightRuleSaved(taskID, rule):
+                guard let taskIndex = state.tasks.firstIndex(where: { $0.id == taskID }),
+                      RoutineTaskTemporalWeightResolver.supportsTemporalWeight(state.tasks[taskIndex]) else {
+                    return .none
+                }
+                let task = state.tasks[taskIndex].detachedCopy()
+                task.temporalWeightRule = rule
+                if rule?.importanceAtDue != nil {
+                    task.hasExplicitImportance = true
+                }
+                if rule?.urgencyAtDue != nil {
+                    task.hasExplicitUrgency = true
+                }
+                state.tasks[taskIndex] = task
+                if state.selectedTaskID == taskID {
+                    state.taskDetailState?.task = task.detachedCopy()
+                }
+                rebuildPresentation(&state)
+                return .merge(
+                    persistTemporalWeightRule(taskID: taskID, rule: rule),
+                    scheduleTemporalRefresh(for: state)
+                )
+
             case let .taskDetail(taskDetailAction):
                 guard var taskDetailState = state.taskDetailState else { return .none }
                 let taskID = taskDetailState.task.id
@@ -343,16 +382,40 @@ struct TaskRankingFeature {
     }
 
     private func rebuildPresentation(_ state: inout State) {
+        let effectiveValueMode = state.metric.supportsTemporalWeight ? state.valueMode : .base
         state.presentation = TaskRankingPresentation.make(
             tasks: state.tasks,
             organization: state.organization,
             flagRules: state.flagRules,
             metric: state.metric,
             isReversed: state.isReversed,
+            valueMode: effectiveValueMode,
             referenceDate: now,
             calendar: calendar,
             scopePath: state.scopePath
         )
+    }
+
+    private func scheduleTemporalRefresh(for state: State) -> Effect<Action> {
+        guard state.valueMode == .now,
+              state.metric.supportsTemporalWeight,
+              state.tasks.contains(where: {
+                  RoutineTaskTemporalWeightResolver.supportsTemporalWeight($0)
+                      && $0.temporalWeightRule != nil
+              }),
+              let nextDay = calendar.date(
+                  byAdding: .day,
+                  value: 1,
+                  to: calendar.startOfDay(for: now)
+              ) else {
+            return .cancel(id: CancelID.temporalRefresh)
+        }
+        let seconds = max(nextDay.timeIntervalSince(now), 1)
+        return .run { send in
+            try await continuousClock.sleep(for: .seconds(seconds))
+            await send(.temporalBoundaryReached)
+        }
+        .cancellable(id: CancelID.temporalRefresh, cancelInFlight: true)
     }
 
     private func selectTask(_ task: RoutineTask, state: inout State) {
@@ -419,6 +482,33 @@ struct TaskRankingFeature {
                 )
             } catch {
                 await send(.loadFailed("Couldn’t update completion behavior. \(error.localizedDescription)"))
+            }
+        }
+    }
+
+    private func persistTemporalWeightRule(
+        taskID: UUID,
+        rule: RoutineTaskTemporalWeightRule?
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                guard let task = tasks.first(where: { $0.id == taskID }) else {
+                    await send(.loadFailed("Couldn’t find that task to update its time-based values."))
+                    return
+                }
+                task.temporalWeightRule = rule
+                if rule?.importanceAtDue != nil {
+                    task.hasExplicitImportance = true
+                }
+                if rule?.urgencyAtDue != nil {
+                    task.hasExplicitUrgency = true
+                }
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                await send(.loadFailed("Couldn’t update time-based values. \(error.localizedDescription)"))
             }
         }
     }

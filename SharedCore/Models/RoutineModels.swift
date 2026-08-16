@@ -67,6 +67,8 @@ final class RoutineTask {
     var manualSectionOrderStorage: String = ""
     /// Per-metric manual tie-break order used only by the Mac task-ranking workspace.
     var taskRankingOrderStorage: String = ""
+    /// Optional, synchronized due-date targets used only to derive Task Ladder's Now values.
+    var temporalWeightRuleStorage: String = ""
     var completedStepCount: Int16 = 0
     var sequenceStartedAt: Date?
     var colorRawValue: String = RoutineTaskColor.none.rawValue
@@ -312,6 +314,11 @@ final class RoutineTask {
     var taskRankingOrders: [String: Int64] {
         get { TaskRankingOrderStorage.deserialize(taskRankingOrderStorage) }
         set { taskRankingOrderStorage = TaskRankingOrderStorage.serialize(newValue) }
+    }
+
+    var temporalWeightRule: RoutineTaskTemporalWeightRule? {
+        get { RoutineTaskTemporalWeightStorage.deserialize(temporalWeightRuleStorage) }
+        set { temporalWeightRuleStorage = RoutineTaskTemporalWeightStorage.serialize(newValue) }
     }
 
     func taskRankingOrder(
@@ -987,6 +994,7 @@ final class RoutineTask {
         copy.completedChecklistProgressStartedAt = completedChecklistProgressStartedAt
         copy.manualSectionOrderStorage = manualSectionOrderStorage
         copy.taskRankingOrderStorage = taskRankingOrderStorage
+        copy.temporalWeightRuleStorage = temporalWeightRuleStorage
         copy.linkItems = linkItems
         copy.commentsStorage = commentsStorage
         copy.changeLogStorage = changeLogStorage

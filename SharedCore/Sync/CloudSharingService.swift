@@ -64,6 +64,7 @@ enum CloudSharingService {
         var snoozedUntil: Date?
         var pinnedAt: Date?
         var taskRankingOrderStorage: String?
+        var temporalWeightRuleStorage: String?
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
         var color: RoutineTaskColor
@@ -336,6 +337,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.snoozedUntil = task.snoozedUntil
         self.pinnedAt = task.pinnedAt
         self.taskRankingOrderStorage = task.taskRankingOrderStorage.isEmpty ? nil : task.taskRankingOrderStorage
+        self.temporalWeightRuleStorage = task.temporalWeightRuleStorage.isEmpty ? nil : task.temporalWeightRuleStorage
         self.completedStepCount = task.completedStepCount
         self.sequenceStartedAt = task.sequenceStartedAt
         self.color = task.color
@@ -429,6 +431,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.snoozedUntil = snoozedUntil
         task.pinnedAt = pinnedAt
         task.taskRankingOrderStorage = taskRankingOrderStorage ?? ""
+        task.temporalWeightRuleStorage = temporalWeightRuleStorage ?? ""
         task.completedStepCount = completedStepCount
         task.sequenceStartedAt = sequenceStartedAt
         task.color = color
@@ -529,6 +532,7 @@ private extension RoutineTask {
             ?? payload.link.map { [RoutineTaskLink(title: nil, url: $0)] }
             ?? []
         self.taskRankingOrderStorage = payload.taskRankingOrderStorage ?? ""
+        self.temporalWeightRuleStorage = payload.temporalWeightRuleStorage ?? ""
         self.showsTaskDetailPriority = payload.showsTaskDetailPriority ?? false
         self.hasExplicitImportance = payload.hasExplicitImportance ?? false
         self.hasExplicitUrgency = payload.hasExplicitUrgency ?? false

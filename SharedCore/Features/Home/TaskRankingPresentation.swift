@@ -1,5 +1,19 @@
 import Foundation
 
+enum TaskRankingValueMode: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case base
+    case now
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .base: return "Base"
+        case .now: return "Now"
+        }
+    }
+}
+
 /// The task attributes that can be inspected in the Mac task-ranking workspace.
 /// Estimated time deliberately remains a factual sort rather than a manual ladder.
 enum TaskRankingMetric: String, CaseIterable, Codable, Equatable, Hashable, Identifiable, Sendable {
@@ -23,6 +37,13 @@ enum TaskRankingMetric: String, CaseIterable, Codable, Equatable, Hashable, Iden
 
     var supportsManualLadder: Bool {
         self != .estimatedTime
+    }
+
+    var supportsTemporalWeight: Bool {
+        switch self {
+        case .pressure, .urgency, .importance: return true
+        case .estimatedTime, .thinkingNeeded: return false
+        }
     }
 
     /// True when the standard presentation starts with the strongest value.
@@ -71,6 +92,32 @@ enum TaskRankingMetric: String, CaseIterable, Codable, Equatable, Hashable, Iden
         case .thinkingNeeded:
             guard task.thinkingNeeded != .none else { return nil }
             return .thinkingNeeded(task.thinkingNeeded)
+        }
+    }
+
+    func value(
+        for task: RoutineTask,
+        mode: TaskRankingValueMode,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> TaskRankingMetricValue? {
+        guard mode == .now, supportsTemporalWeight else { return value(for: task) }
+        let weights = RoutineTaskTemporalWeightResolver.effectiveWeights(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        switch self {
+        case .pressure:
+            return weights.pressure == .none ? nil : .pressure(weights.pressure)
+        case .urgency:
+            guard task.hasExplicitUrgency else { return nil }
+            return .urgency(weights.urgency)
+        case .importance:
+            guard task.hasExplicitImportance else { return nil }
+            return .importance(weights.importance)
+        case .estimatedTime, .thinkingNeeded:
+            return value(for: task)
         }
     }
 
@@ -256,14 +303,37 @@ struct TaskRankingPresentation: Equatable {
         let isGroup: Bool
         let isTaskGroup: Bool
         let inheritsMetricValue: Bool
+        let temporalTimingLabel: String?
 
-        init(task: RoutineTask, childCount: Int, isTaskGroup: Bool = false) {
+        init(
+            task: RoutineTask,
+            childCount: Int,
+            isTaskGroup: Bool = false,
+            metric: TaskRankingMetric,
+            valueMode: TaskRankingValueMode,
+            referenceDate: Date,
+            calendar: Calendar
+        ) {
             tagLabels = task.tags.map { "#\($0)" }
             isRepeating = !task.isOneOffTask
             self.childCount = childCount
             isGroup = false
             self.isTaskGroup = isTaskGroup
             inheritsMetricValue = false
+            let baseValue = metric.value(for: task)
+            let effectiveValue = metric.value(
+                for: task,
+                mode: valueMode,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            temporalTimingLabel = valueMode == .now && baseValue != effectiveValue
+                ? RoutineTaskTemporalWeightResolver.timingLabel(
+                    for: task,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
+                : nil
         }
 
         init(group: TaskLadderGroup, childCount: Int, metric: TaskRankingMetric) {
@@ -273,6 +343,7 @@ struct TaskRankingPresentation: Equatable {
             isGroup = true
             isTaskGroup = false
             inheritsMetricValue = group.inheritsValue(for: metric)
+            temporalTimingLabel = nil
         }
     }
 
@@ -288,6 +359,7 @@ struct TaskRankingPresentation: Equatable {
 
     let metric: TaskRankingMetric
     let isReversed: Bool
+    let valueMode: TaskRankingValueMode
     let scopePath: [UUID]
     let sections: [Section]
     let rowMetadataByTaskID: [UUID: RowMetadata]
@@ -306,10 +378,15 @@ struct TaskRankingPresentation: Equatable {
         taskCount == 0 && linkedTaskChildSuggestions.isEmpty
     }
 
-    static func empty(metric: TaskRankingMetric = .pressure, isReversed: Bool = false) -> Self {
+    static func empty(
+        metric: TaskRankingMetric = .pressure,
+        isReversed: Bool = false,
+        valueMode: TaskRankingValueMode = .base
+    ) -> Self {
         Self(
             metric: metric,
             isReversed: isReversed,
+            valueMode: valueMode,
             scopePath: [],
             sections: [],
             rowMetadataByTaskID: [:],
@@ -324,6 +401,7 @@ struct TaskRankingPresentation: Equatable {
         flagRules: [RoutineFlagRule],
         metric: TaskRankingMetric,
         isReversed: Bool,
+        valueMode: TaskRankingValueMode = .base,
         referenceDate: Date,
         calendar: Calendar,
         scopePath: [UUID] = []
@@ -380,7 +458,10 @@ struct TaskRankingPresentation: Equatable {
                     for: group,
                     metric: metric,
                     childTaskIDs: childTaskIDsByParent[.group(group.id)] ?? [],
-                    eligibleTasksByID: eligibleTasksByID
+                    eligibleTasksByID: eligibleTasksByID,
+                    valueMode: valueMode,
+                    referenceDate: referenceDate,
+                    calendar: calendar
                 )
                 return syntheticTask(
                     for: group,
@@ -413,7 +494,11 @@ struct TaskRankingPresentation: Equatable {
                     RowMetadata(
                         task: task,
                         childCount: childCount,
-                        isTaskGroup: organization.isTaskGroup(taskID: task.id)
+                        isTaskGroup: organization.isTaskGroup(taskID: task.id),
+                        metric: metric,
+                        valueMode: valueMode,
+                        referenceDate: referenceDate,
+                        calendar: calendar
                     )
                 )
             }
@@ -433,6 +518,7 @@ struct TaskRankingPresentation: Equatable {
                 activeTasks,
                 metric: metric,
                 isReversed: isReversed,
+                valueMode: valueMode,
                 scopePath: scopePath,
                 rowMetadataByTaskID: rowMetadataByTaskID,
                 eligibleTaskIDs: eligibleTaskIDs,
@@ -441,7 +527,12 @@ struct TaskRankingPresentation: Equatable {
         }
 
         let knownTasks = activeTasks.compactMap { task -> (RoutineTask, TaskRankingMetricValue)? in
-            metric.value(for: task).map { (task, $0) }
+            metric.value(
+                for: task,
+                mode: valueMode,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ).map { (task, $0) }
         }
         let values = Array(Set(knownTasks.map(\.1))).sorted {
             metric.sortsHighToLow(isReversed: isReversed)
@@ -466,14 +557,22 @@ struct TaskRankingPresentation: Equatable {
                     metric: metric,
                     value: value,
                     isReversed: isReversed,
-                    scopeTaskID: scopePath.last
+                    scopeTaskID: scopePath.last,
+                    usesStoredOrder: valueMode == .base
                 ),
                 isMissingValue: false,
-                supportsManualOrdering: true
+                supportsManualOrdering: valueMode == .base
             )
         }
 
-        let missingTasks = activeTasks.filter { metric.value(for: $0) == nil }
+        let missingTasks = activeTasks.filter {
+            metric.value(
+                for: $0,
+                mode: valueMode,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == nil
+        }
         let missingSection: [Section]
         if missingTasks.isEmpty {
             missingSection = []
@@ -497,6 +596,7 @@ struct TaskRankingPresentation: Equatable {
         return Self(
             metric: metric,
             isReversed: isReversed,
+            valueMode: valueMode,
             scopePath: scopePath,
             sections: sections + missingSection,
             rowMetadataByTaskID: rowMetadataByTaskID,
@@ -509,6 +609,7 @@ struct TaskRankingPresentation: Equatable {
         _ activeTasks: [RoutineTask],
         metric: TaskRankingMetric,
         isReversed: Bool,
+        valueMode: TaskRankingValueMode,
         scopePath: [UUID],
         rowMetadataByTaskID: [UUID: RowMetadata],
         eligibleTaskIDs: Set<UUID>,
@@ -563,6 +664,7 @@ struct TaskRankingPresentation: Equatable {
         return Self(
             metric: metric,
             isReversed: isReversed,
+            valueMode: valueMode,
             scopePath: scopePath,
             sections: sections,
             rowMetadataByTaskID: rowMetadataByTaskID,
@@ -638,9 +740,13 @@ struct TaskRankingPresentation: Equatable {
         metric: TaskRankingMetric,
         value: TaskRankingMetricValue,
         isReversed: Bool,
-        scopeTaskID: UUID?
+        scopeTaskID: UUID?,
+        usesStoredOrder: Bool
     ) -> [RoutineTask] {
         tasks.sorted { lhs, rhs in
+            guard usesStoredOrder else {
+                return fallbackComesBefore(lhs, rhs, isReversed: isReversed)
+            }
             let lhsOrder = lhs.taskRankingOrder(
                 for: metric,
                 value: value,
@@ -697,14 +803,24 @@ struct TaskRankingPresentation: Equatable {
         for group: TaskLadderGroup,
         metric: TaskRankingMetric,
         childTaskIDs: Set<UUID>,
-        eligibleTasksByID: [UUID: RoutineTask]
+        eligibleTasksByID: [UUID: RoutineTask],
+        valueMode: TaskRankingValueMode,
+        referenceDate: Date,
+        calendar: Calendar
     ) -> TaskRankingMetricValue? {
         guard group.inheritsValue(for: metric) else {
             return metric.value(for: group)
         }
         return childTaskIDs
             .compactMap { eligibleTasksByID[$0] }
-            .compactMap { metric.value(for: $0) }
+            .compactMap {
+                metric.value(
+                    for: $0,
+                    mode: valueMode,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
+            }
             .max { $0.sortOrder < $1.sortOrder }
     }
 
@@ -772,6 +888,7 @@ enum TaskRankingOrderingSupport {
         in presentation: TaskRankingPresentation
     ) -> TaskRankingOrderUpdate? {
         guard presentation.metric.supportsManualLadder,
+              presentation.valueMode == .base,
               let sourceSectionIndex = presentation.sections.firstIndex(where: { section in
                   section.tasks.contains(where: { $0.id == taskID })
               }),

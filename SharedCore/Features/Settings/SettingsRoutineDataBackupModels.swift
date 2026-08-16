@@ -96,6 +96,7 @@ extension SettingsRoutineDataPersistence {
             var snoozedUntil: Date?
             var pinnedAt: Date?
             var taskRankingOrderStorage: String?
+            var temporalWeightRuleStorage: String?
             var completedStepCount: Int?
             var sequenceStartedAt: Date?
             var createdAt: Date?

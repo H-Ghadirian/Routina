@@ -119,15 +119,15 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Describe when a repeating task should gain attention so that it does not compete too early or remain artificially urgent after completion.
 
-**Desired experience:** The person keeps a stable understanding of the task between occurrences and can choose either an on-due-date change or a gradual increase over a visible lead window. Routina explains the task's effective current weight and why it changed without silently rewriting its underlying values. Completing, missing, or canceling the current occurrence resolves that occurrence's temporary weight; completion normally returns the task to its between-occurrence level until the next configured window begins.
+**Desired experience:** The person keeps stable Base values between occurrences and can choose either an on-due-date change or a gradual increase over a visible lead window for Importance, Urgency, and/or Pressure. Task Ladder's read-only Now view explains an adjusted task with its due timing without silently rewriting Base. Completing the current occurrence advances its due date and normally returns the task to Base until the next configured window begins.
 
 **Successful outcome:** The task becomes prominent at the right time, falls back predictably after the occurrence is resolved, and never requires the person to keep manually raising and lowering its values.
 
 **Example:** “Put out recycling” stays low until its Tuesday due date, then changes at once. “Prepare monthly report” begins increasing three days before month-end, reaches its highest urgency on the due date, and returns to its normal level after completion.
 
-**Evidence:** Working assumption based on a user-described need on 2026-08-16; the exact controls and affected weight dimensions remain to be validated.
+**Evidence:** User-described need on 2026-08-16. The selected curves, lead-window control, affected dimensions, and Base/Now mental model remain product assumptions to validate through use.
 
-**Availability:** Proposed.
+**Availability:** Development experiment on macOS for repeating Due routines.
 
 ### UC-07 — Keep someday or hidden work without daily noise
 

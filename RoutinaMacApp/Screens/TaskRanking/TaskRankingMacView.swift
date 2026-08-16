@@ -21,6 +21,7 @@ struct TaskRankingMacView: View {
     @State private var placementTaskID: UUID?
     @State private var isRepeatingTaskGroupEditorPresented = false
     @State private var repeatingTaskGroupParentID: UUID?
+    @State private var temporalWeightTaskID: UUID?
 
     var body: some View {
         HSplitView {
@@ -55,16 +56,33 @@ struct TaskRankingMacView: View {
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Picker("Rank by", selection: Binding(
-                    get: { store.metric },
-                    set: { store.send(.metricChanged($0)) }
-                )) {
-                    ForEach(TaskRankingMetric.allCases) { metric in
-                        Text(metric.title).tag(metric)
+                HStack(spacing: 10) {
+                    Picker("Rank by", selection: Binding(
+                        get: { store.metric },
+                        set: { store.send(.metricChanged($0)) }
+                    )) {
+                        ForEach(TaskRankingMetric.allCases) { metric in
+                            Text(metric.title).tag(metric)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 170)
+
+                    if store.metric.supportsTemporalWeight {
+                        Picker("Values", selection: Binding(
+                            get: { store.valueMode },
+                            set: { store.send(.valueModeChanged($0)) }
+                        )) {
+                            ForEach(TaskRankingValueMode.allCases) { mode in
+                                Text(mode.title).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(width: 120)
+                        .help("Base shows saved values; Now applies each repeating task’s due-date rule")
                     }
                 }
-                .labelsHidden()
-                .frame(width: 170)
             }
 
             ToolbarItem(placement: .primaryAction) {
@@ -165,6 +183,20 @@ struct TaskRankingMacView: View {
                     store.send(.childLadderOpened(parentTaskID))
                 }
             )
+        }
+        .sheet(isPresented: Binding(
+            get: { temporalWeightTaskID != nil },
+            set: { if !$0 { temporalWeightTaskID = nil } }
+        )) {
+            if let taskID = temporalWeightTaskID,
+               let task = store.tasks.first(where: { $0.id == taskID }) {
+                TaskTemporalWeightRuleMacSheet(
+                    task: task,
+                    onSave: { rule in
+                        store.send(.temporalWeightRuleSaved(taskID, rule))
+                    }
+                )
+            }
         }
     }
 
@@ -513,6 +545,11 @@ struct TaskRankingMacView: View {
                     placementTaskID = task.id
                 }
                 if !task.isOneOffTask {
+                    if RoutineTaskTemporalWeightResolver.supportsTemporalWeight(task) {
+                        Button("Time-based Ladder Values…") {
+                            temporalWeightTaskID = task.id
+                        }
+                    }
                     Button(
                         isTaskGroup || childCount > 0
                             ? "Add Task to This Group…"
@@ -538,7 +575,7 @@ struct TaskRankingMacView: View {
 
     @ViewBuilder
     private func rowMetadata(_ metadata: TaskRankingPresentation.RowMetadata) -> some View {
-        if metadata.isGroup || metadata.isTaskGroup || metadata.inheritsMetricValue || !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.childCount > 0 {
+        if metadata.isGroup || metadata.isTaskGroup || metadata.inheritsMetricValue || !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.childCount > 0 || metadata.temporalTimingLabel != nil {
             HStack(spacing: 6) {
                 if metadata.isGroup {
                     Label("Group", systemImage: "folder")
@@ -569,6 +606,13 @@ struct TaskRankingMacView: View {
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                         .accessibilityLabel("Repeating task")
+                }
+
+                if let temporalTimingLabel = metadata.temporalTimingLabel {
+                    Label(temporalTimingLabel, systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .accessibilityLabel("Time-based value: \(temporalTimingLabel)")
                 }
 
                 if metadata.childCount > 0 {
@@ -625,6 +669,8 @@ struct TaskRankingMacView: View {
         let rankingDescription: String
         if store.metric == .estimatedTime {
             rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • factual sort"
+        } else if store.metric.supportsTemporalWeight && store.valueMode == .now {
+            rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • current due-date values • read only"
         } else {
             rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • move tasks within or between values"
         }
@@ -649,4 +695,191 @@ struct TaskRankingMacView: View {
         return "Paused, blocked, completed, canceled, archived, nested, and Flag-hidden tasks stay out of the root task ladder."
     }
 
+}
+
+private struct TaskTemporalWeightRuleMacSheet: View {
+    let task: RoutineTask
+    let onSave: (RoutineTaskTemporalWeightRule?) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var isEnabled: Bool
+    @State private var curve: RoutineTaskTemporalWeightCurve
+    @State private var leadDays: Int
+    @State private var adjustsImportance: Bool
+    @State private var importanceAtDue: RoutineTaskImportance
+    @State private var adjustsUrgency: Bool
+    @State private var urgencyAtDue: RoutineTaskUrgency
+    @State private var adjustsPressure: Bool
+    @State private var pressureAtDue: RoutineTaskPressure
+
+    init(
+        task: RoutineTask,
+        onSave: @escaping (RoutineTaskTemporalWeightRule?) -> Void
+    ) {
+        self.task = task
+        self.onSave = onSave
+        let rule = task.temporalWeightRule
+        _isEnabled = State(initialValue: rule != nil)
+        _curve = State(initialValue: rule?.curve ?? .onDueDate)
+        _leadDays = State(initialValue: rule?.leadDays ?? 7)
+        _adjustsImportance = State(
+            initialValue: rule?.importanceAtDue.map { $0.sortOrder > task.importance.sortOrder } ?? false
+        )
+        _importanceAtDue = State(initialValue: rule?.importanceAtDue ?? Self.importanceTargets(for: task).last ?? task.importance)
+        _adjustsUrgency = State(
+            initialValue: rule?.urgencyAtDue.map { $0.sortOrder > task.urgency.sortOrder } ?? false
+        )
+        _urgencyAtDue = State(initialValue: rule?.urgencyAtDue ?? Self.urgencyTargets(for: task).last ?? task.urgency)
+        _adjustsPressure = State(
+            initialValue: rule?.pressureAtDue.map { $0.sortOrder > task.pressure.sortOrder } ?? false
+        )
+        _pressureAtDue = State(initialValue: rule?.pressureAtDue ?? Self.pressureTargets(for: task).last ?? task.pressure)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Time-based Ladder values")
+                    .font(.title2.weight(.semibold))
+                Text("\(task.emoji ?? "✨") \(task.name ?? "Untitled task")")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text("Base values stay saved. Now values rise toward the targets for each occurrence, then reset after completion advances the due date.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Form {
+                Toggle("Use time-based values", isOn: $isEnabled)
+
+                if isEnabled {
+                    Picker("Change", selection: $curve) {
+                        ForEach(RoutineTaskTemporalWeightCurve.allCases) { curve in
+                            Text(curve.title).tag(curve)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if curve == .gradual {
+                        Stepper("Lead window: \(leadDays) \(leadDays == 1 ? "day" : "days")", value: $leadDays, in: 1...RoutineTaskTemporalWeightRule.maximumLeadDays)
+                    }
+
+                    temporalTargetRow(
+                        title: "Importance",
+                        baseTitle: task.importance.title,
+                        isEnabled: $adjustsImportance
+                    ) {
+                        Picker("Importance at due", selection: $importanceAtDue) {
+                            ForEach(Self.importanceTargets(for: task), id: \.self) { value in
+                                Text(value.title).tag(value)
+                            }
+                        }
+                        .labelsHidden()
+                    }
+                    .disabled(Self.importanceTargets(for: task).isEmpty)
+
+                    temporalTargetRow(
+                        title: "Urgency",
+                        baseTitle: task.urgency.title,
+                        isEnabled: $adjustsUrgency
+                    ) {
+                        Picker("Urgency at due", selection: $urgencyAtDue) {
+                            ForEach(Self.urgencyTargets(for: task), id: \.self) { value in
+                                Text(value.title).tag(value)
+                            }
+                        }
+                        .labelsHidden()
+                    }
+                    .disabled(Self.urgencyTargets(for: task).isEmpty)
+
+                    temporalTargetRow(
+                        title: "Pressure",
+                        baseTitle: task.pressure.title,
+                        isEnabled: $adjustsPressure
+                    ) {
+                        Picker("Pressure at due", selection: $pressureAtDue) {
+                            ForEach(Self.pressureTargets(for: task), id: \.self) { value in
+                                Text(value.title).tag(value)
+                            }
+                        }
+                        .labelsHidden()
+                    }
+                    .disabled(Self.pressureTargets(for: task).isEmpty)
+
+                    if !hasTarget {
+                        Text("Choose at least one value to change.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .formStyle(.grouped)
+
+            HStack {
+                Spacer()
+                Button("Cancel", role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") {
+                    onSave(savedRule)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(isEnabled && !hasTarget)
+            }
+        }
+        .padding(22)
+        .frame(width: 510, height: 560)
+    }
+
+    private var hasTarget: Bool {
+        (adjustsImportance && importanceAtDue.sortOrder > task.importance.sortOrder)
+            || (adjustsUrgency && urgencyAtDue.sortOrder > task.urgency.sortOrder)
+            || (adjustsPressure && pressureAtDue.sortOrder > task.pressure.sortOrder)
+    }
+
+    private var savedRule: RoutineTaskTemporalWeightRule? {
+        guard isEnabled else { return nil }
+        return RoutineTaskTemporalWeightRule(
+            curve: curve,
+            leadDays: leadDays,
+            importanceAtDue: adjustsImportance ? importanceAtDue : nil,
+            urgencyAtDue: adjustsUrgency ? urgencyAtDue : nil,
+            pressureAtDue: adjustsPressure ? pressureAtDue : nil
+        ).sanitized
+    }
+
+    private func temporalTargetRow<Content: View>(
+        title: String,
+        baseTitle: String,
+        isEnabled: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 12) {
+            Toggle(isOn: isEnabled) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                    Text("Base: \(baseTitle)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 8)
+            content()
+                .frame(width: 130)
+                .disabled(!isEnabled.wrappedValue)
+        }
+    }
+
+    private static func importanceTargets(for task: RoutineTask) -> [RoutineTaskImportance] {
+        RoutineTaskImportance.allCases.filter { $0.sortOrder > task.importance.sortOrder }
+    }
+
+    private static func urgencyTargets(for task: RoutineTask) -> [RoutineTaskUrgency] {
+        RoutineTaskUrgency.allCases.filter { $0.sortOrder > task.urgency.sortOrder }
+    }
+
+    private static func pressureTargets(for task: RoutineTask) -> [RoutineTaskPressure] {
+        RoutineTaskPressure.allCases.filter { $0.sortOrder > task.pressure.sortOrder }
+    }
 }
