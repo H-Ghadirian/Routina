@@ -22,6 +22,31 @@ struct TaskDetailPlatformActionParityTests {
     }
 
     @Test
+    func iosTaskDetailsGroupMaintenanceActionsInNavigationOverflow() throws {
+        let toolbarSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailToolbarContent.swift"
+        )
+        let actionControlsSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+        let editSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailEditRoutineContentPlatform.swift"
+        )
+
+        #expect(toolbarSource.contains("Menu {"))
+        #expect(toolbarSource.contains("RoutinaDeepLinkShareActions("))
+        #expect(toolbarSource.contains("store.send(.cancelTodo)"))
+        #expect(toolbarSource.contains(".disabled(store.isCancelTodoButtonDisabled)"))
+        #expect(toolbarSource.contains("Button(role: .destructive)"))
+        #expect(toolbarSource.contains("store.send(.setDeleteConfirmation(true))"))
+        #expect(toolbarSource.contains("Image(systemName: \"ellipsis.vertical\")"))
+        #expect(toolbarSource.contains(".accessibilityLabel(\"More task actions\")"))
+        #expect(!toolbarSource.contains("RoutinaDeepLinkShareMenu("))
+        #expect(!actionControlsSource.contains("TaskDetailCancelTodoButton"))
+        #expect(!editSource.contains("onDelete:"))
+    }
+
+    @Test
     func multiDayPrimaryActionKeepsStartAndStopLifecycle() throws {
         let source = try Self.sourceFile(
             "SharedCore/Features/TaskDetail/TaskDetailFeature+Presentation.swift"

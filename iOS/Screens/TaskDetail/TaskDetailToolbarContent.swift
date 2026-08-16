@@ -51,16 +51,42 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     }
                 }
 
-                RoutinaDeepLinkShareMenu(
-                    title: RoutineTask.trimmedName(store.task.name) ?? "Untitled task",
-                    deepLink: .task(store.task.id)
-                )
-
                 Button {
                     store.send(.setEditSheet(true))
                 } label: {
                     Label("Edit", systemImage: "square.and.pencil")
                 }
+
+                Menu {
+                    RoutinaDeepLinkShareActions(
+                        title: RoutineTask.trimmedName(store.task.name) ?? "Untitled task",
+                        deepLink: .task(store.task.id)
+                    )
+
+                    if store.task.isOneOffTask
+                        && !store.task.isCompletedOneOff
+                        && !store.task.isCanceledOneOff {
+                        Divider()
+
+                        Button {
+                            store.send(.cancelTodo)
+                        } label: {
+                            Label(store.cancelTodoButtonTitle, systemImage: "xmark.circle")
+                        }
+                        .disabled(store.isCancelTodoButtonDisabled)
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        store.send(.setDeleteConfirmation(true))
+                    } label: {
+                        Label("Delete Task", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.vertical")
+                }
+                .accessibilityLabel("More task actions")
             }
         }
     }

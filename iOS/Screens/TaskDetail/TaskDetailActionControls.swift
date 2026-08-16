@@ -40,7 +40,6 @@ struct TaskDetailTodoPrimaryActionSection: View {
             }
 
             TaskDetailPrimaryActionButton(store: store)
-            TaskDetailCancelTodoButton(store: store)
 
             if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff && !store.blockingRelationships.isEmpty {
                 Text(store.blockerSummaryText)
@@ -447,26 +446,6 @@ private struct TaskDetailTodoStatePickerPill: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(store.blockerSummaryText)
-        }
-    }
-}
-
-private struct TaskDetailCancelTodoButton: View {
-    let store: StoreOf<TaskDetailFeature>
-
-    var body: some View {
-        if store.task.isOneOffTask && !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-            Button {
-                store.send(.cancelTodo)
-            } label: {
-                Label(store.cancelTodoButtonTitle, systemImage: "xmark.circle")
-                    .routinaPlatformPrimaryActionLabelLayout()
-            }
-            .buttonStyle(.bordered)
-            .tint(.orange)
-            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
-            .routinaPlatformPrimaryActionButtonLayout()
-            .disabled(store.isCancelTodoButtonDisabled)
         }
     }
 }

@@ -346,6 +346,22 @@ Given an explicit full sync receives multiple task-deletion tombstones
 When it removes their task-backed history
 Then it batches the tombstones and scans each related model family once for the pull
 
+### iOS Task Detail Keeps Maintenance Actions Together
+
+Area: Tasks / UI
+Decision links: [0584](../decisions/0584-group-ios-task-maintenance-in-navigation-overflow.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+
+Given a task is open in iOS Task Details
+When the person opens the top-trailing vertical-ellipsis menu
+Then Share Link, Copy Link, and confirmed Delete Task are available there
+And an unfinished one-off task also offers Cancel todo under its existing eligibility rules
+And Cancel todo is absent from the primary action card
+And Delete Task is absent from the iOS Edit Task form
+And Edit and optional Cloud sharing remain direct navigation-bar actions
+
 ### Task Detail Flags Use Available Width
 
 Area: Tasks / UI

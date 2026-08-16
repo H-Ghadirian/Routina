@@ -223,7 +223,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Adjust it without losing history or creating duplicate records.
 
-**Desired experience:** Editing affects future behavior in a previewable way. Pausing, archiving, restoring, reorganizing, and changing cadence preserve past meaning. Risky changes provide confirmation or recovery.
+**Desired experience:** Editing affects future behavior in a previewable way. Pausing, archiving, restoring, reorganizing, and changing cadence preserve past meaning. Risky changes provide confirmation or recovery. On iOS Task Details, secondary maintenance actions such as sharing a task link, canceling an eligible todo, or deleting the task stay together in a familiar top-bar overflow instead of competing with completion or being scattered through Edit Task.
 
 **Successful outcome:** Routina adapts with the person rather than forcing a restart.
 

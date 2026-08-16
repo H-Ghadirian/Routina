@@ -16,6 +16,8 @@ Accepted
 - [0264: Match Button Hit Areas to Visual Surfaces](0264-match-button-hit-areas-to-visual-surfaces.md)
 - [0431: Present One Progressive Recurrence Composer](0431-present-one-progressive-recurrence-composer.md)
 
+Revised by: [0584 Group iOS Task Maintenance in Navigation Overflow](0584-group-ios-task-maintenance-in-navigation-overflow.md)
+
 ## Context
 
 The iOS Add Task and Edit Task form placed task type, routine duration, and
@@ -41,7 +43,8 @@ iOS Add Task and Edit Task use a compact grouped form with these rules:
 - Optional empty sections appear in an `Add details` menu. Choosing an item
   reveals only that section and scrolls it into view.
 - Populated optional sections remain visible, and destructive Edit Task
-  actions remain last.
+  actions remain last. Decision 0584 later moves iOS Task Detail deletion out
+  of its Edit Task form and into the detail navigation overflow.
 - The Add details row uses the complete visible row as its touch target.
 
 The redesign changes presentation and disclosure state only. Existing task

@@ -227,8 +227,7 @@ struct TaskDetailEditRoutineContent: View {
             ),
             visibilityMode: .progressiveEdit,
             initiallyRevealedCompactSections: Set(initiallyRevealedSection.map { [$0] } ?? []),
-            autofocusName: false,
-            onDelete: { store.send(.setDeleteConfirmation(true)) }
+            autofocusName: false
         )
     }
 
