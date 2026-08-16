@@ -2399,6 +2399,29 @@ Given feature availability leaves Task as the only iOS New action
 When the user taps the bottom-bar New action
 Then task creation opens directly without presenting a one-row chooser
 
+### iOS Timeline Type Filters Follow Feature Availability
+
+Area: Timeline / Settings / UI
+Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0221](../decisions/0221-hide-stats-sleep-tab-behind-beta-toggle.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md), [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md), [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/IOSNewTabActionAvailabilityTests.swift`
+- `Tests/Shared/TimelineLogicTests.swift`
+
+Given `Show Event and Emotion actions` is off
+When the person opens iOS Timeline filters or scans its horizontal type controls
+Then Events and Emotions are not offered as filter choices
+
+Given `Show Away` or `Show Sleep tab` is off
+When the person opens iOS Timeline filters or scans its horizontal type controls
+Then Sleep is not offered as a filter choice
+
+Given an unavailable Event, Emotion, or Sleep filter was restored from an
+earlier enabled session
+When iOS Timeline becomes active or the corresponding feature gate changes
+Then the hidden filter normalizes to `All`
+And it does not remain counted or presented as an active filter
+
 Given two or more iOS New actions are available
 When the user taps the bottom-bar New action
 Then the feature-gated chooser opens with those available actions

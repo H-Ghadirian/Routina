@@ -179,7 +179,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Record relevant context such as sleep, time away, a note, an event, an emotion, or a place visit without pretending it is a task.
 
-**Desired experience:** Each record keeps its own meaning and appears in a coherent personal history. Optional context features do not complicate the core task experience when unavailable or disabled.
+**Desired experience:** Each record keeps its own meaning and appears in a coherent personal history. Optional context features do not complicate the core task experience when unavailable or disabled, including by leaving unavailable choices in creation or history filters.
 
 **Successful outcome:** Later review explains the day more accurately.
 
@@ -195,7 +195,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Review one chronological history across relevant activity types.
 
-**Desired experience:** The Timeline presents clear outcomes and context in a stable order, supports filtering and date navigation, and opens the source record for detail or correction.
+**Desired experience:** The Timeline presents clear outcomes and context in a stable order, supports filtering and date navigation, opens the source record for detail or correction, and offers only type filters whose features are currently available.
 
 **Successful outcome:** The person understands the period without relying on memory or combining several disconnected logs.
 

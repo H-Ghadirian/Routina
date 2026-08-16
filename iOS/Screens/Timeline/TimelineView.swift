@@ -27,6 +27,14 @@ struct TimelineView: View {
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isAwayEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsSleepTabEnabled = false
     @State private var dataSnapshot = TimelineDataSnapshot()
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
@@ -78,6 +86,14 @@ struct TimelineView: View {
                 if !isAwayEnabled {
                     editingAwaySession = nil
                 }
+            }
+            .onChange(of: areEventEmotionActionsEnabled) { _, _ in
+                guard isActive else { return }
+                validateTimelineFilterVisibility()
+            }
+            .onChange(of: isStatsSleepTabEnabled) { _, _ in
+                guard isActive else { return }
+                validateTimelineFilterVisibility()
             }
             .onChange(of: store.filterType) { _, _ in
                 validateTimelineFilterVisibility()
@@ -181,6 +197,7 @@ struct TimelineView: View {
 
     private func timelineTask() async {
         refreshTimelineDataSnapshot()
+        validateTimelineFilterVisibility()
         resolveTimelineRouting()
     }
 
@@ -309,37 +326,28 @@ struct TimelineView: View {
 
     private var filterTypeBinding: Binding<TimelineFilterType> {
         Binding(
-            get: {
-                store.filterType.normalized(
-                    includingEventEmotion: true,
-                    includingPlaces: isPlacesEnabled,
-                    includingNotes: isNotesEnabled,
-                    includingAway: isAwayEnabled
-                )
-            },
+            get: { effectiveFilterType },
             set: {
-                store.send(.filterTypeChanged(
-                    $0.normalized(
-                        includingEventEmotion: true,
-                        includingPlaces: isPlacesEnabled,
-                        includingNotes: isNotesEnabled,
-                        includingAway: isAwayEnabled
-                    )
-                ))
+                store.send(.filterTypeChanged(normalizedFilterType($0)))
             }
         )
     }
 
     private func validateTimelineFilterVisibility() {
-        let normalized = store.filterType.normalized(
-            includingEventEmotion: true,
-            includingPlaces: isPlacesEnabled,
-            includingNotes: isNotesEnabled,
-            includingAway: isAwayEnabled
-        )
+        let normalized = normalizedFilterType(store.filterType)
         if normalized != store.filterType {
             store.send(.filterTypeChanged(normalized))
         }
+    }
+
+    private func normalizedFilterType(_ filterType: TimelineFilterType) -> TimelineFilterType {
+        filterType.normalized(
+            includingEventEmotion: areEventEmotionActionsEnabled,
+            includingPlaces: isPlacesEnabled,
+            includingNotes: isNotesEnabled,
+            includingAway: isAwayEnabled,
+            includingSleep: includesSleepTimelineFilters
+        )
     }
 
     private var mediaFilterBinding: Binding<TaskMediaFilter> {
@@ -436,7 +444,12 @@ struct TimelineView: View {
     }
 
     private var hasActiveFilters: Bool {
-        store.hasActiveFilters
+        store.selectedRange != .all
+            || effectiveFilterType != .all
+            || !store.effectiveSelectedTags.isEmpty
+            || !store.excludedTags.isEmpty
+            || store.selectedImportanceUrgencyFilter != nil
+            || store.mediaFilter != .all
     }
 
     private var hasAnyTimelineRecords: Bool {
@@ -451,17 +464,22 @@ struct TimelineView: View {
         if isPlacesEnabled {
             items.append("place check-ins")
         }
-        items.append("emotions")
+        if areEventEmotionActionsEnabled {
+            items.append("events")
+            items.append("emotions")
+        }
         if isAwayEnabled {
             items.append("away sessions")
         }
-        items.append("sleep records")
+        if includesSleepTimelineFilters {
+            items.append("sleep records")
+        }
         return "\(items.joined(separator: ", ")) will appear here newest first."
     }
 
     private var hasActiveFilterChips: Bool {
         store.selectedRange != .all
-            || (store.filterType != .all && !store.filterType.isTimelinePigmentCase)
+            || (effectiveFilterType != .all && !effectiveFilterType.isTimelinePigmentCase)
             || !store.effectiveSelectedTags.isEmpty
             || !store.excludedTags.isEmpty
             || store.selectedImportanceUrgencyFilter != nil
@@ -471,9 +489,11 @@ struct TimelineView: View {
     private var timelinePigmentControl: some View {
         TimelinePigmentControl(
             selection: filterTypeBinding,
+            includesEventEmotion: areEventEmotionActionsEnabled,
             includesPlaces: isPlacesEnabled,
             includesNotes: isNotesEnabled,
-            includesAway: isAwayEnabled
+            includesAway: isAwayEnabled,
+            includesSleep: includesSleepTimelineFilters
         )
     }
 
@@ -528,8 +548,8 @@ struct TimelineView: View {
                     }
                 }
 
-                if store.filterType != .all && !store.filterType.isTimelinePigmentCase {
-                    compactFilterChip(title: store.filterType.rawValue) {
+                if effectiveFilterType != .all && !effectiveFilterType.isTimelinePigmentCase {
+                    compactFilterChip(title: effectiveFilterType.rawValue) {
                         store.send(.filterTypeChanged(.all))
                     }
                 }
@@ -740,7 +760,7 @@ struct TimelineView: View {
                     onPresent: presentTimelineFilterDetail
                 )
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || (isNotesEnabled && !notes.isEmpty) || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || (isAwayEnabled && !awaySessions.isEmpty) || (isPlacesEnabled && !placeCheckInSessions.isEmpty) {
+                if showsTypeFilterSection {
                     HomeFiltersPickerEntry(
                         title: "Type",
                         systemImage: "line.3.horizontal.decrease.circle",
@@ -828,12 +848,7 @@ struct TimelineView: View {
             HomeFiltersDetailSheet(title: "Type") {
                 Section {
                     Picker("Type", selection: filterTypeBinding) {
-                        ForEach(TimelineFilterType.visibleCases(
-                            includingEventEmotion: true,
-                            includingPlaces: isPlacesEnabled,
-                            includingNotes: isNotesEnabled,
-                            includingAway: isAwayEnabled
-                        )) { type in
+                        ForEach(visibleTimelineFilterTypes) { type in
                             Text(type.title).tag(type)
                         }
                     }
@@ -889,6 +904,35 @@ struct TimelineView: View {
             return nil
         }
         return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
+    }
+
+    private var effectiveFilterType: TimelineFilterType {
+        normalizedFilterType(store.filterType)
+    }
+
+    private var includesSleepTimelineFilters: Bool {
+        isAwayEnabled && isStatsSleepTabEnabled
+    }
+
+    private var visibleTimelineFilterTypes: [TimelineFilterType] {
+        TimelineFilterType.visibleCases(
+            includingEventEmotion: areEventEmotionActionsEnabled,
+            includingPlaces: isPlacesEnabled,
+            includingNotes: isNotesEnabled,
+            includingAway: isAwayEnabled,
+            includingSleep: includesSleepTimelineFilters
+        )
+    }
+
+    private var showsTypeFilterSection: Bool {
+        tasks.contains(where: { $0.isOneOffTask })
+            || (areEventEmotionActionsEnabled && (!events.isEmpty || !emotionLogs.isEmpty))
+            || (isNotesEnabled && !notes.isEmpty)
+            || !focusSessions.isEmpty
+            || !sprintFocusSessions.isEmpty
+            || (includesSleepTimelineFilters && !sleepSessions.isEmpty)
+            || (isAwayEnabled && !awaySessions.isEmpty)
+            || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
     @ViewBuilder

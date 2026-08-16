@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0170 — Gate every Timeline type control](0170-gate-every-timeline-type-control.md)
 - [0169 — Verify selection summaries at the return surface](0169-verify-selection-summaries-at-the-return-surface.md)
 - [0168 — Keep selected choices single-sourced in searchable pickers](0168-keep-selected-choices-single-sourced-in-searchable-pickers.md)
 - [0167 — Name each iOS filter choice once](0167-name-each-ios-filter-choice-once.md)

@@ -72,6 +72,34 @@ struct IOSNewTabActionAvailabilityTests {
         ))
     }
 
+    @Test
+    func timelineTypeFiltersFollowFeatureAvailability() throws {
+        let source = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
+        let visibleTypes = try Self.functionSource(
+            named: "private var visibleTimelineFilterTypes",
+            endingAt: "private var showsTypeFilterSection",
+            in: source
+        )
+        let typeSection = try Self.functionSource(
+            named: "private var showsTypeFilterSection",
+            endingAt: "@ViewBuilder\n    private func timelineRow",
+            in: source
+        )
+
+        #expect(source.contains("appSettingMacEventEmotionActionsEnabled.rawValue"))
+        #expect(source.contains("appSettingStatsSleepTabEnabled.rawValue"))
+        #expect(source.contains("isAwayEnabled && isStatsSleepTabEnabled"))
+        #expect(visibleTypes.contains("includingEventEmotion: areEventEmotionActionsEnabled"))
+        #expect(visibleTypes.contains("includingSleep: includesSleepTimelineFilters"))
+        #expect(typeSection.contains("areEventEmotionActionsEnabled && (!events.isEmpty || !emotionLogs.isEmpty)"))
+        #expect(typeSection.contains("includesSleepTimelineFilters && !sleepSessions.isEmpty"))
+        #expect(source.contains("ForEach(visibleTimelineFilterTypes)"))
+        #expect(source.contains("includesEventEmotion: areEventEmotionActionsEnabled"))
+        #expect(source.contains("includesSleep: includesSleepTimelineFilters"))
+        #expect(source.contains(".onChange(of: areEventEmotionActionsEnabled)"))
+        #expect(source.contains(".onChange(of: isStatsSleepTabEnabled)"))
+    }
+
     private static func functionSource(
         named startMarker: String,
         endingAt endMarker: String,
