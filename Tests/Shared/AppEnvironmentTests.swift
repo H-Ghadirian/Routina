@@ -34,6 +34,8 @@ struct AppEnvironmentTests {
         diagnostics.signedCloudKitEnvironmentDescription = "Not present"
         diagnostics.cloudDiagnosticsTimestamp = "09.08.26, 11:23:10"
         diagnostics.cloudDiagnosticsSummary = "type=export status=succeeded"
+        diagnostics.manualCloudRefreshTimestamp = "16.08.26, 14:38:00"
+        diagnostics.manualCloudRefreshSummary = "status=failed mode=full received=800 changed=790 deleted=10"
         diagnostics.pushDiagnosticsStatus = "Push registered (token bytes: 32)"
 
         #expect(
@@ -47,6 +49,8 @@ struct AppEnvironmentTests {
             Signed CloudKit Environment: Not present
             Last CloudKit Event: 09.08.26, 11:23:10
             CloudKit Detail: type=export status=succeeded
+            Last Manual Refresh: 16.08.26, 14:38:00
+            Manual Refresh Detail: status=failed mode=full received=800 changed=790 deleted=10
             Push Status: Push registered (token bytes: 32)
             """
         )

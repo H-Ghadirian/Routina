@@ -658,10 +658,10 @@ Then the status confirms that the latest iCloud data was received
 And it explains that changes from this device continue syncing in the background
 And it does not claim a full sync completed before CloudKit reports an export outcome
 
-### Manual iCloud Refresh Stops and Explains Recovery
+### Manual iCloud Refresh Distinguishes Progress From a Stall
 
 Area: Settings / Home
-Decision links: [0589](../decisions/0589-bound-manual-icloud-refresh.md), [0523](../decisions/0523-report-manual-icloud-refresh-honestly.md)
+Decision links: [0590](../decisions/0590-use-progress-aware-incremental-manual-refresh.md), [0523](../decisions/0523-report-manual-icloud-refresh-honestly.md)
 Current behavior: [Settings](../current-behavior/settings.md), [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/CloudKitSyncDiagnosticsTests.swift`
@@ -669,12 +669,17 @@ Coverage:
 - `Tests/Shared/HomeFeatureLifecycleEffectSupportTests.swift`
 
 Given a person selects Settings `Sync Now`, pulls to refresh iOS Home, or selects the Mac Home sync action
-When the direct CloudKit pull does not finish within 60 seconds
-Then Routina cancels the CloudKit operation and ends visible progress
+When CloudKit continues delivering records beyond 60 seconds
+Then Routina keeps the refresh active and Settings or Home shows a linear activity bar plus the exact received-item count
+And neither surface invents a completion percentage because CloudKit has not supplied a total item count
+But when no CloudKit activity arrives for 60 seconds, Routina cancels the operation and ends visible progress
+And a separate three-minute limit ends even a continuously active manual request
 And no partial fetch result is merged into the local store
 And Settings or Home explains that the existing local data is safe
 And the message tells the person to check the connection or iCloud account and try again
 And Home reloads the existing local snapshot and presents a `Try Again` action
+And after a complete response merges successfully, Routina saves its change token so the next manual refresh requests only newer changes
+And a record failure, merge failure, cancellation, timeout, token expiry, cloud reset, or backup import cannot leave a token that skips unmerged data
 
 ### Estimated iCloud Usage Respects Feature Availability
 

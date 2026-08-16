@@ -7,20 +7,59 @@ struct CloudSyncClient: Sendable {
 }
 
 enum CloudSyncManualRefreshError: LocalizedError, Equatable {
-    case timedOut
+    case stalled(receivedRecordCount: Int)
+    case hardLimitReached(receivedRecordCount: Int)
 
     var errorDescription: String? {
         switch self {
-        case .timedOut:
-            return "iCloud did not respond in time."
+        case let .stalled(receivedRecordCount):
+            if receivedRecordCount == 0 {
+                return "iCloud stopped responding before any data arrived."
+            }
+            return "iCloud stopped responding after \(receivedRecordCount) items arrived."
+        case let .hardLimitReached(receivedRecordCount):
+            return "iCloud refresh reached its safety limit after \(receivedRecordCount) items arrived."
+        }
+    }
+}
+
+struct CloudSyncManualRefreshProgress: Equatable, Sendable {
+    enum Mode: String, Equatable, Sendable {
+        case full
+        case incremental
+    }
+
+    var mode: Mode
+    var changedRecordCount: Int
+    var deletedRecordCount: Int
+
+    var receivedRecordCount: Int {
+        changedRecordCount + deletedRecordCount
+    }
+
+    var displayMessage: String {
+        let noun = receivedRecordCount == 1 ? "item" : "items"
+        switch mode {
+        case .full:
+            return "Receiving iCloud data… \(receivedRecordCount) \(noun)."
+        case .incremental:
+            return "Receiving recent iCloud changes… \(receivedRecordCount) \(noun)."
         }
     }
 }
 
 enum CloudSyncFeedbackSupport {
     static func manualRefreshErrorMessage(for error: Error) -> String {
-        if error as? CloudSyncManualRefreshError == .timedOut {
-            return "iCloud did not respond in time. Check your internet connection and iCloud account, then try again. Your existing Routina data is safe."
+        if let refreshError = error as? CloudSyncManualRefreshError {
+            switch refreshError {
+            case let .stalled(receivedRecordCount):
+                if receivedRecordCount == 0 {
+                    return "iCloud stopped responding before any data arrived. Check your internet connection and iCloud account, then try again. Your existing Routina data is safe."
+                }
+                return "iCloud stopped responding after receiving \(receivedRecordCount) items. Check your connection, then try again. Your existing Routina data is safe."
+            case let .hardLimitReached(receivedRecordCount):
+                return "iCloud was still processing after receiving \(receivedRecordCount) items, but the refresh reached its safety limit. Try again on a stable connection. Your existing Routina data is safe."
+            }
         }
 
         guard let cloudError = error as? CKError else {

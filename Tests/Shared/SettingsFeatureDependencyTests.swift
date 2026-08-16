@@ -41,6 +41,9 @@ struct SettingsFeatureDependencyTests {
         defaults.removeObject(forKey: "cloudKitSyncDiagnostics.summary")
         defaults.removeObject(forKey: "cloudKitSyncDiagnostics.timestamp")
         defaults.removeObject(forKey: "cloudKitSyncDiagnostics.pushStatus")
+        defaults.removeObject(forKey: "cloudKitSyncDiagnostics.manualRefreshSummary")
+        defaults.removeObject(forKey: "cloudKitSyncDiagnostics.manualRefreshTimestamp")
+        defaults.removeObject(forKey: "cloudKitSyncDiagnostics.manualRefreshDisplayMessage")
 
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()

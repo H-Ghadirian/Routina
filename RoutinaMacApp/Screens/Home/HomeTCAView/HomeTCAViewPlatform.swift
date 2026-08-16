@@ -1,5 +1,7 @@
 import AppKit
+import Combine
 import ComposableArchitecture
+import Foundation
 import MapKit
 import SwiftUI
 
@@ -597,34 +599,74 @@ extension HomeTCAView {
     }
 
     func applyPlatformRefresh<Content: View>(to view: Content) -> some View {
-        view.alert(
-            "Couldn't Refresh from iCloud",
-            isPresented: Binding(
-                get: { store.manualRefreshErrorMessage != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        store.send(.manualRefreshErrorDismissed)
+        view
+            .safeAreaInset(edge: .top) {
+                if isManualCloudRefreshInProgress {
+                    HomeManualCloudRefreshProgressBanner(
+                        statusText: manualCloudRefreshStatusText
+                    )
+                }
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: CloudKitSyncDiagnostics.didUpdateNotification
+                )
+            ) { _ in
+                updateManualCloudRefreshStatus()
+            }
+            .alert(
+                "Couldn't Refresh from iCloud",
+                isPresented: Binding(
+                    get: { store.manualRefreshErrorMessage != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            store.send(.manualRefreshErrorDismissed)
+                        }
+                    }
+                )
+            ) {
+                Button("Try Again") {
+                    Task { @MainActor in
+                        await performManualCloudRefresh()
                     }
                 }
-            )
-        ) {
-            Button("Try Again") {
-                store.send(.manualRefreshRequested)
+                Button("OK", role: .cancel) {
+                    store.send(.manualRefreshErrorDismissed)
+                }
+            } message: {
+                Text(store.manualRefreshErrorMessage ?? "")
             }
-            Button("OK", role: .cancel) {
-                store.send(.manualRefreshErrorDismissed)
-            }
-        } message: {
-            Text(store.manualRefreshErrorMessage ?? "")
-        }
     }
 
     @ViewBuilder
     var platformRefreshButton: some View {
         MacToolbarIconButton(title: "Sync with iCloud", systemImage: "arrow.clockwise") {
             Task { @MainActor in
-                await store.send(.manualRefreshRequested).finish()
+                await performManualCloudRefresh()
             }
+        }
+    }
+
+    @MainActor
+    func performManualCloudRefresh() async {
+        guard !isManualCloudRefreshInProgress else { return }
+
+        isManualCloudRefreshInProgress = true
+        manualCloudRefreshStatusText = "Checking iCloud for updates…"
+        defer {
+            isManualCloudRefreshInProgress = false
+            manualCloudRefreshStatusText = ""
+        }
+
+        await store.send(.manualRefreshRequested).finish()
+    }
+
+    func updateManualCloudRefreshStatus() {
+        guard isManualCloudRefreshInProgress else { return }
+
+        let message = CloudKitSyncDiagnostics.snapshot().manualRefreshDisplayMessage
+        if !message.isEmpty {
+            manualCloudRefreshStatusText = message
         }
     }
 
@@ -1187,6 +1229,26 @@ extension HomeTCAView {
         return "This will permanently remove \(routineName) and its logs."
     }
 
+}
+
+private struct HomeManualCloudRefreshProgressBanner: View {
+    let statusText: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ProgressView()
+                .progressViewStyle(.linear)
+                .accessibilityLabel("Receiving iCloud data")
+                .accessibilityValue(statusText)
+            Text(statusText)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+    }
 }
 
 struct HomeMacView: View {

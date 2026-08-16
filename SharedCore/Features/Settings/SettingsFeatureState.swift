@@ -41,6 +41,8 @@ struct SettingsDiagnosticsState: Equatable {
     var cloudDiagnosticsSummary: String = "No CloudKit event yet"
     var cloudDiagnosticsTimestamp: String = "Never"
     var pushDiagnosticsStatus: String = "Push not registered yet"
+    var manualCloudRefreshSummary: String = "No manual refresh yet"
+    var manualCloudRefreshTimestamp: String = "Never"
     var isDebugSectionVisible: Bool = false
 }
 

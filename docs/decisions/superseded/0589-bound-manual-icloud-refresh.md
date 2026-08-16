@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0590: Use Progress-Aware Incremental Manual iCloud Refresh](../0590-use-progress-aware-incremental-manual-refresh.md)
 
 ## Date
 
@@ -10,9 +10,9 @@ Accepted
 
 ## Refines
 
-- [0523: Report Manual iCloud Refresh Honestly](0523-report-manual-icloud-refresh-honestly.md)
-- [0545: Bound iOS Foreground Focus Reconciliation](0545-bound-ios-foreground-focus-reconciliation.md)
-- [0418: Keep Whole-History Work Out of Scrolling Render Paths](0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+- [0523: Report Manual iCloud Refresh Honestly](../0523-report-manual-icloud-refresh-honestly.md)
+- [0545: Bound iOS Foreground Focus Reconciliation](../0545-bound-ios-foreground-focus-reconciliation.md)
+- [0418: Keep Whole-History Work Out of Scrolling Render Paths](../0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 
 ## Context
 

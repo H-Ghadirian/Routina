@@ -1,4 +1,6 @@
+import Combine
 import ComposableArchitecture
+import Foundation
 import SwiftData
 import SwiftUI
 
@@ -69,8 +71,22 @@ detailContent
 
     func applyPlatformRefresh<Content: View>(to view: Content) -> some View {
         view
+            .safeAreaInset(edge: .top) {
+                if isManualCloudRefreshInProgress {
+                    HomeManualCloudRefreshProgressBanner(
+                        statusText: manualCloudRefreshStatusText
+                    )
+                }
+            }
             .refreshable {
-                await store.send(.manualRefreshRequested).finish()
+                await performManualCloudRefresh()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: CloudKitSyncDiagnostics.didUpdateNotification
+                )
+            ) { _ in
+                updateManualCloudRefreshStatus()
             }
             .alert(
                 "Couldn't Refresh from iCloud",
@@ -84,7 +100,9 @@ detailContent
                 )
             ) {
                 Button("Try Again") {
-                    store.send(.manualRefreshRequested)
+                    Task { @MainActor in
+                        await performManualCloudRefresh()
+                    }
                 }
                 Button("OK", role: .cancel) {
                     store.send(.manualRefreshErrorDismissed)
@@ -92,6 +110,29 @@ detailContent
             } message: {
                 Text(store.manualRefreshErrorMessage ?? "")
             }
+    }
+
+    @MainActor
+    func performManualCloudRefresh() async {
+        guard !isManualCloudRefreshInProgress else { return }
+
+        isManualCloudRefreshInProgress = true
+        manualCloudRefreshStatusText = "Checking iCloud for updates…"
+        defer {
+            isManualCloudRefreshInProgress = false
+            manualCloudRefreshStatusText = ""
+        }
+
+        await store.send(.manualRefreshRequested).finish()
+    }
+
+    func updateManualCloudRefreshStatus() {
+        guard isManualCloudRefreshInProgress else { return }
+
+        let message = CloudKitSyncDiagnostics.snapshot().manualRefreshDisplayMessage
+        if !message.isEmpty {
+            manualCloudRefreshStatusText = message
+        }
     }
 
     @ViewBuilder
@@ -439,6 +480,26 @@ detailContent
                 }
             }
         }
+    }
+}
+
+private struct HomeManualCloudRefreshProgressBanner: View {
+    let statusText: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ProgressView()
+                .progressViewStyle(.linear)
+                .accessibilityLabel("Receiving iCloud data")
+                .accessibilityValue(statusText)
+            Text(statusText)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
     }
 }
 

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -59,6 +60,62 @@ struct SettingsSectionViewSupportTests {
         state.isDataTransferInProgress = false
         state.dataTransferStatusMessage = "Saved to Routina.routinabackup."
         #expect(state.shouldShowStatusText)
+    }
+
+    @Test
+    func cloudSyncProgressShowsTheLatestReceivedItemCount() {
+        var state = SettingsCloudState(
+            cloudSyncAvailable: true,
+            isCloudSyncInProgress: true,
+            cloudStatusMessage: "Receiving iCloud data… 76 items."
+        )
+
+        #expect(state.syncStatusText == "Receiving iCloud data… 76 items.")
+        #expect(state.overviewSubtitle == "Receiving iCloud data… 76 items.")
+
+        state.cloudStatusMessage = "Applying 76 iCloud items…"
+        #expect(state.syncStatusText == "Applying 76 iCloud items…")
+    }
+
+    @Test
+    func cloudSyncViewsUseLinearProgressBars() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let expectations = [
+            (
+                path: "iOS/Screens/Settings/SettingsCloudDetailView.swift",
+                statusNeedle: "store.cloud.syncStatusText"
+            ),
+            (
+                path: "RoutinaMacApp/Screens/Settings/SettingsMacDataSupportDetailViews.swift",
+                statusNeedle: "store.cloud.syncStatusText"
+            ),
+            (
+                path: "iOS/Screens/Home/HomeTCAViewPlatform.swift",
+                statusNeedle: "manualCloudRefreshStatusText"
+            ),
+            (
+                path: "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift",
+                statusNeedle: "manualCloudRefreshStatusText"
+            )
+        ]
+
+        for expectation in expectations {
+            let source = try String(
+                contentsOf: projectRoot.appendingPathComponent(expectation.path),
+                encoding: .utf8
+            )
+            #expect(
+                source.contains(".progressViewStyle(.linear)"),
+                "Missing sync progress bar in \(expectation.path)"
+            )
+            #expect(
+                source.contains(expectation.statusNeedle),
+                "Missing live sync status in \(expectation.path)"
+            )
+        }
     }
 
     @Test

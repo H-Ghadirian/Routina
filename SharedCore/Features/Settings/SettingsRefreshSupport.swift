@@ -38,6 +38,9 @@ struct SettingsOnAppearSnapshot: Equatable {
     var cloudDiagnosticsSummary: String
     var cloudDiagnosticsTimestamp: String
     var pushDiagnosticsStatus: String
+    var manualCloudRefreshSummary: String
+    var manualCloudRefreshTimestamp: String
+    var manualCloudRefreshDisplayMessage: String
 }
 
 enum SettingsRefreshEditor {
@@ -55,6 +58,8 @@ enum SettingsRefreshEditor {
         state.diagnostics.cloudDiagnosticsSummary = snapshot.cloudDiagnosticsSummary
         state.diagnostics.cloudDiagnosticsTimestamp = snapshot.cloudDiagnosticsTimestamp
         state.diagnostics.pushDiagnosticsStatus = snapshot.pushDiagnosticsStatus
+        state.diagnostics.manualCloudRefreshSummary = snapshot.manualCloudRefreshSummary
+        state.diagnostics.manualCloudRefreshTimestamp = snapshot.manualCloudRefreshTimestamp
         state.cloud.cloudSyncAvailable = snapshot.cloudSyncAvailable
         state.dataTransfer.lastSuccessfulBackupDate = snapshot.lastRoutineDataBackupDate
         state.github.scope = snapshot.gitHubConnection.scope

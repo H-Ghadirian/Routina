@@ -2,7 +2,10 @@ import CloudKit
 import Foundation
 
 enum CloudKitDirectPullFetcher {
-    static let manualRefreshTimeoutSeconds: TimeInterval = 60
+    static let manualRefreshTimeoutPolicy = CloudKitManualRefreshTimeoutPolicy(
+        idleTimeoutSeconds: 60,
+        hardLimitSeconds: 180
+    )
 
     private static let zoneID = CKRecordZone.ID(
         zoneName: "com.apple.coredata.cloudkit.zone",
@@ -12,13 +15,48 @@ enum CloudKitDirectPullFetcher {
     static func fetchZoneChanges(
         containerIdentifier: String
     ) async throws -> CloudKitDirectPullService.PullResult {
+        let previousServerChangeToken = CloudKitDirectPullTokenStore.load(
+            containerIdentifier: containerIdentifier
+        )
+
+        do {
+            return try await fetchZoneChanges(
+                containerIdentifier: containerIdentifier,
+                previousServerChangeToken: previousServerChangeToken
+            )
+        } catch {
+            guard previousServerChangeToken != nil,
+                  isChangeTokenExpired(error) else {
+                throw error
+            }
+
+            CloudKitDirectPullTokenStore.clear(containerIdentifier: containerIdentifier)
+            return try await fetchZoneChanges(
+                containerIdentifier: containerIdentifier,
+                previousServerChangeToken: nil
+            )
+        }
+    }
+
+    private static func fetchZoneChanges(
+        containerIdentifier: String,
+        previousServerChangeToken: CKServerChangeToken?
+    ) async throws -> CloudKitDirectPullService.PullResult {
         let database = CKContainer(identifier: containerIdentifier).privateCloudDatabase
-        let requestState = CloudKitZoneChangesRequestState()
+        let mode: CloudSyncManualRefreshProgress.Mode = previousServerChangeToken == nil
+            ? .full
+            : .incremental
+        let requestState = CloudKitZoneChangesRequestState(
+            previousServerChangeToken: previousServerChangeToken,
+            mode: mode,
+            timeoutPolicy: manualRefreshTimeoutPolicy
+        )
+        CloudKitSyncDiagnostics.recordManualRefreshStarted(mode: mode)
 
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
-                config.previousServerChangeToken = nil
+                config.previousServerChangeToken = previousServerChangeToken
                 config.desiredKeys = nil
 
                 let operation = CKFetchRecordZoneChangesOperation(
@@ -26,10 +64,14 @@ enum CloudKitDirectPullFetcher {
                     configurationsByRecordZoneID: [zoneID: config]
                 )
                 configureManualRefreshOperation(operation)
+                operation.fetchAllChanges = true
 
                 operation.recordWasChangedBlock = { _, result in
-                    if case let .success(record) = result {
+                    switch result {
+                    case let .success(record):
                         requestState.recordChanged(record)
+                    case let .failure(error):
+                        requestState.recordFailure(error)
                     }
                 }
 
@@ -38,7 +80,12 @@ enum CloudKitDirectPullFetcher {
                 }
 
                 operation.recordZoneFetchResultBlock = { _, result in
-                    if case let .failure(error) = result {
+                    switch result {
+                    case let .success(zoneResult):
+                        requestState.recordZoneProgress(
+                            serverChangeToken: zoneResult.serverChangeToken
+                        )
+                    case let .failure(error):
                         requestState.finish(.failure(error))
                     }
                 }
@@ -59,18 +106,7 @@ enum CloudKitDirectPullFetcher {
                     return
                 }
 
-                let timeoutTask = Task {
-                    do {
-                        try await Task.sleep(for: .seconds(manualRefreshTimeoutSeconds))
-                    } catch {
-                        return
-                    }
-                    requestState.finish(
-                        .failure(CloudSyncManualRefreshError.timedOut),
-                        cancellingOperation: true
-                    )
-                }
-                guard requestState.install(timeoutTask: timeoutTask) else {
+                guard requestState.startWatchdogs() else {
                     return
                 }
 
@@ -84,9 +120,21 @@ enum CloudKitDirectPullFetcher {
     static func configureManualRefreshOperation(_ operation: CKOperation) {
         let configuration = CKOperation.Configuration()
         configuration.qualityOfService = .userInitiated
-        configuration.timeoutIntervalForRequest = manualRefreshTimeoutSeconds
-        configuration.timeoutIntervalForResource = manualRefreshTimeoutSeconds
+        configuration.timeoutIntervalForRequest = manualRefreshTimeoutPolicy.idleTimeoutSeconds
+        configuration.timeoutIntervalForResource = manualRefreshTimeoutPolicy.hardLimitSeconds
         operation.configuration = configuration
+    }
+
+    private static func isChangeTokenExpired(_ error: Error) -> Bool {
+        guard let cloudError = error as? CKError else { return false }
+        if cloudError.code == .changeTokenExpired {
+            return true
+        }
+        guard cloudError.code == .partialFailure,
+              let partialErrors = cloudError.partialErrorsByItemID else {
+            return false
+        }
+        return partialErrors.values.contains(where: isChangeTokenExpired)
     }
 
     /// Foreground reconciliation needs to discover a remote active Focus timer,
@@ -241,17 +289,95 @@ enum CloudKitDirectPullFetcher {
     }
 }
 
+struct CloudKitManualRefreshTimeoutPolicy: Equatable, Sendable {
+    var idleTimeoutSeconds: TimeInterval
+    var hardLimitSeconds: TimeInterval
+}
+
+enum CloudKitDirectPullTokenStore {
+    private static let keyPrefix = "cloudKitDirectPull.serverChangeToken."
+
+    static func load(
+        containerIdentifier: String,
+        defaults: UserDefaults = .standard
+    ) -> CKServerChangeToken? {
+        let key = storageKey(containerIdentifier: containerIdentifier)
+        guard let data = defaults.data(forKey: key) else { return nil }
+
+        do {
+            return try NSKeyedUnarchiver.unarchivedObject(
+                ofClass: CKServerChangeToken.self,
+                from: data
+            )
+        } catch {
+            defaults.removeObject(forKey: key)
+            return nil
+        }
+    }
+
+    static func save(
+        _ token: CKServerChangeToken,
+        containerIdentifier: String,
+        defaults: UserDefaults = .standard
+    ) {
+        let key = storageKey(containerIdentifier: containerIdentifier)
+        do {
+            let data = try NSKeyedArchiver.archivedData(
+                withRootObject: token,
+                requiringSecureCoding: true
+            )
+            defaults.set(data, forKey: key)
+        } catch {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    static func clear(
+        containerIdentifier: String,
+        defaults: UserDefaults = .standard
+    ) {
+        defaults.removeObject(forKey: storageKey(containerIdentifier: containerIdentifier))
+    }
+
+    static func clearAll(defaults: UserDefaults = .standard) {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(keyPrefix) {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    static func storageKey(containerIdentifier: String) -> String {
+        keyPrefix + containerIdentifier
+    }
+}
+
 private final class CloudKitZoneChangesRequestState: @unchecked Sendable {
     typealias PullResult = CloudKitDirectPullService.PullResult
 
     private let lock = NSLock()
     private var changedRecords: [CKRecord] = []
     private var deletedRecordIDs: [CKRecord.ID] = []
+    private var serverChangeToken: CKServerChangeToken?
     private var continuation: CheckedContinuation<PullResult, Error>?
     private var operation: CKOperation?
-    private var timeoutTask: Task<Void, Never>?
+    private var idleTimeoutTask: Task<Void, Never>?
+    private var hardLimitTask: Task<Void, Never>?
     private var pendingResult: Result<PullResult, Error>?
+    private var firstRecordError: Error?
     private var isFinished = false
+    private var activityGeneration: UInt = 0
+    private var lastReportedRecordCount = 0
+    private let mode: CloudSyncManualRefreshProgress.Mode
+    private let timeoutPolicy: CloudKitManualRefreshTimeoutPolicy
+
+    init(
+        previousServerChangeToken: CKServerChangeToken?,
+        mode: CloudSyncManualRefreshProgress.Mode,
+        timeoutPolicy: CloudKitManualRefreshTimeoutPolicy
+    ) {
+        self.serverChangeToken = previousServerChangeToken
+        self.mode = mode
+        self.timeoutPolicy = timeoutPolicy
+    }
 
     func install(
         continuation: CheckedContinuation<PullResult, Error>,
@@ -270,40 +396,120 @@ private final class CloudKitZoneChangesRequestState: @unchecked Sendable {
         return true
     }
 
-    func install(timeoutTask: Task<Void, Never>) -> Bool {
+    func startWatchdogs() -> Bool {
+        let oldIdleTimeoutTask: Task<Void, Never>?
+
         lock.lock()
         guard !isFinished else {
             lock.unlock()
-            timeoutTask.cancel()
             return false
         }
-        self.timeoutTask = timeoutTask
+        oldIdleTimeoutTask = resetIdleTimeoutLocked()
+        hardLimitTask = Task { [weak self, timeoutPolicy] in
+            do {
+                try await Task.sleep(for: .seconds(timeoutPolicy.hardLimitSeconds))
+            } catch {
+                return
+            }
+            self?.finishForHardLimit()
+        }
         lock.unlock()
+
+        oldIdleTimeoutTask?.cancel()
         return true
     }
 
     func recordChanged(_ record: CKRecord) {
+        let progress: CloudSyncManualRefreshProgress?
+        let oldIdleTimeoutTask: Task<Void, Never>?
+
         lock.lock()
-        if !isFinished {
-            changedRecords.append(record)
+        guard !isFinished else {
+            lock.unlock()
+            return
         }
+        changedRecords.append(record)
+        oldIdleTimeoutTask = resetIdleTimeoutLocked()
+        progress = progressToReportLocked()
         lock.unlock()
+
+        oldIdleTimeoutTask?.cancel()
+        if let progress {
+            CloudKitSyncDiagnostics.recordManualRefreshProgress(progress)
+        }
     }
 
     func recordDeleted(_ recordID: CKRecord.ID) {
+        let progress: CloudSyncManualRefreshProgress?
+        let oldIdleTimeoutTask: Task<Void, Never>?
+
         lock.lock()
-        if !isFinished {
-            deletedRecordIDs.append(recordID)
+        guard !isFinished else {
+            lock.unlock()
+            return
+        }
+        deletedRecordIDs.append(recordID)
+        oldIdleTimeoutTask = resetIdleTimeoutLocked()
+        progress = progressToReportLocked()
+        lock.unlock()
+
+        oldIdleTimeoutTask?.cancel()
+        if let progress {
+            CloudKitSyncDiagnostics.recordManualRefreshProgress(progress)
+        }
+    }
+
+    func recordActivity() {
+        let oldIdleTimeoutTask: Task<Void, Never>?
+
+        lock.lock()
+        guard !isFinished else {
+            lock.unlock()
+            return
+        }
+        oldIdleTimeoutTask = resetIdleTimeoutLocked()
+        lock.unlock()
+
+        oldIdleTimeoutTask?.cancel()
+    }
+
+    func recordFailure(_ error: Error) {
+        let oldIdleTimeoutTask: Task<Void, Never>?
+
+        lock.lock()
+        guard !isFinished else {
+            lock.unlock()
+            return
+        }
+        if firstRecordError == nil {
+            firstRecordError = error
+        }
+        oldIdleTimeoutTask = resetIdleTimeoutLocked()
+        lock.unlock()
+
+        oldIdleTimeoutTask?.cancel()
+    }
+
+    func recordZoneProgress(serverChangeToken: CKServerChangeToken?) {
+        lock.lock()
+        if !isFinished, let serverChangeToken {
+            self.serverChangeToken = serverChangeToken
         }
         lock.unlock()
+        recordActivity()
     }
 
     func finishSuccessfully() {
-        finish { changedRecords, deletedRecordIDs in
-            .success(
+        finish { changedRecords, deletedRecordIDs, serverChangeToken in
+            if let firstRecordError = self.firstRecordError {
+                return .failure(firstRecordError)
+            }
+            return .success(
                 PullResult(
                     changedRecords: changedRecords,
-                    deletedRecordIDs: deletedRecordIDs
+                    deletedRecordIDs: deletedRecordIDs,
+                    serverChangeToken: serverChangeToken,
+                    wasIncremental: self.mode == .incremental
                 )
             )
         }
@@ -314,19 +520,58 @@ private final class CloudKitZoneChangesRequestState: @unchecked Sendable {
         cancellingOperation: Bool = false
     ) {
         finish(
-            result: { _, _ in result },
+            result: { _, _, _ in result },
             cancellingOperation: cancellingOperation
         )
     }
 
+    private func finishForInactivity(activityGeneration: UInt) {
+        lock.lock()
+        guard !isFinished, self.activityGeneration == activityGeneration else {
+            lock.unlock()
+            return
+        }
+        lock.unlock()
+
+        finish(
+            result: { changedRecords, deletedRecordIDs, _ in
+                .failure(
+                    CloudSyncManualRefreshError.stalled(
+                        receivedRecordCount: changedRecords.count + deletedRecordIDs.count
+                    )
+                )
+            },
+            cancellingOperation: true
+        )
+    }
+
+    private func finishForHardLimit() {
+        finish(
+            result: { changedRecords, deletedRecordIDs, _ in
+                .failure(
+                    CloudSyncManualRefreshError.hardLimitReached(
+                        receivedRecordCount: changedRecords.count + deletedRecordIDs.count
+                    )
+                )
+            },
+            cancellingOperation: true
+        )
+    }
+
     private func finish(
-        result makeResult: ([CKRecord], [CKRecord.ID]) -> Result<PullResult, Error>,
+        result makeResult: (
+            [CKRecord],
+            [CKRecord.ID],
+            CKServerChangeToken?
+        ) -> Result<PullResult, Error>,
         cancellingOperation: Bool = false
     ) {
         let continuation: CheckedContinuation<PullResult, Error>?
         let operation: CKOperation?
-        let timeoutTask: Task<Void, Never>?
+        let idleTimeoutTask: Task<Void, Never>?
+        let hardLimitTask: Task<Void, Never>?
         let result: Result<PullResult, Error>
+        let progress: CloudSyncManualRefreshProgress
 
         lock.lock()
         guard !isFinished else {
@@ -336,17 +581,59 @@ private final class CloudKitZoneChangesRequestState: @unchecked Sendable {
         isFinished = true
         continuation = self.continuation
         operation = self.operation
-        timeoutTask = self.timeoutTask
-        result = makeResult(changedRecords, deletedRecordIDs)
+        idleTimeoutTask = self.idleTimeoutTask
+        hardLimitTask = self.hardLimitTask
+        result = makeResult(changedRecords, deletedRecordIDs, serverChangeToken)
+        progress = currentProgressLocked()
         if continuation == nil {
             pendingResult = result
         }
         lock.unlock()
 
-        timeoutTask?.cancel()
+        idleTimeoutTask?.cancel()
+        hardLimitTask?.cancel()
         if cancellingOperation {
             operation?.cancel()
         }
+        switch result {
+        case .success:
+            CloudKitSyncDiagnostics.recordManualRefreshDownloadFinished(progress)
+        case let .failure(error):
+            CloudKitSyncDiagnostics.recordManualRefreshFailure(error, progress: progress)
+        }
         continuation?.resume(with: result)
+    }
+
+    private func resetIdleTimeoutLocked() -> Task<Void, Never>? {
+        activityGeneration &+= 1
+        let expectedGeneration = activityGeneration
+        let oldTask = idleTimeoutTask
+        idleTimeoutTask = Task { [weak self, timeoutPolicy] in
+            do {
+                try await Task.sleep(for: .seconds(timeoutPolicy.idleTimeoutSeconds))
+            } catch {
+                return
+            }
+            self?.finishForInactivity(activityGeneration: expectedGeneration)
+        }
+        return oldTask
+    }
+
+    private func progressToReportLocked() -> CloudSyncManualRefreshProgress? {
+        let progress = currentProgressLocked()
+        guard progress.receivedRecordCount == 1
+                || progress.receivedRecordCount - lastReportedRecordCount >= 25 else {
+            return nil
+        }
+        lastReportedRecordCount = progress.receivedRecordCount
+        return progress
+    }
+
+    private func currentProgressLocked() -> CloudSyncManualRefreshProgress {
+        CloudSyncManualRefreshProgress(
+            mode: mode,
+            changedRecordCount: changedRecords.count,
+            deletedRecordCount: deletedRecordIDs.count
+        )
     }
 }

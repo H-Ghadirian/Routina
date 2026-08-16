@@ -53,6 +53,8 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) private var taskRowHiddenFieldsRawValue = ""
     @State private var localSearchText = ""
+    @State var isManualCloudRefreshInProgress = false
+    @State var manualCloudRefreshStatusText = ""
     @State var isCompactHeaderHidden = false
     @State var areTaskListModeActionsExpanded = false
     @State var isRefreshScheduled = false

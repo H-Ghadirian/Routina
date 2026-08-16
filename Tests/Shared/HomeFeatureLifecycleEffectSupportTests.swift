@@ -16,7 +16,7 @@ struct HomeFeatureLifecycleEffectSupportTests {
     func manualRefreshFailureReportsRecoveryAndStillReloadsLocalData() async {
         let context = makeInMemoryContext()
         let expectedMessage = CloudSyncFeedbackSupport.manualRefreshErrorMessage(
-            for: CloudSyncManualRefreshError.timedOut
+            for: CloudSyncManualRefreshError.stalled(receivedRecordCount: 120)
         )
         let store = TestStore(initialState: ManualRefreshHarness.State()) {
             ManualRefreshHarness()
@@ -60,7 +60,7 @@ private struct ManualRefreshHarness {
                 return HomeFeatureLifecycleEffectSupport.manualRefreshEffect(
                     modelContext: { self.modelContext() },
                     pullLatestIntoLocalStore: { _ in
-                        throw CloudSyncManualRefreshError.timedOut
+                        throw CloudSyncManualRefreshError.stalled(receivedRecordCount: 120)
                     },
                     sleepBeforeSecondRefresh: {},
                     onAppearAction: { .reload },

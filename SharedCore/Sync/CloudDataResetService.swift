@@ -22,6 +22,9 @@ enum CloudDataResetService {
         modelContext: ModelContext,
         remoteStore: CloudDataResetRemoteStoreClient = .live
     ) async throws {
+        CloudKitDirectPullTokenStore.clear(
+            containerIdentifier: cloudKitContainerIdentifier
+        )
         try LocalUserDataResetService.wipeAllUserData(in: modelContext)
         clearLocalNotifications()
         try await remoteStore.deleteAllRecords(cloudKitContainerIdentifier)

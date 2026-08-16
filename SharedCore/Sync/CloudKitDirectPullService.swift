@@ -9,6 +9,8 @@ enum CloudKitDirectPullService {
     struct PullResult {
         var changedRecords: [CKRecord]
         var deletedRecordIDs: [CKRecord.ID]
+        var serverChangeToken: CKServerChangeToken? = nil
+        var wasIncremental: Bool = false
     }
 
     @MainActor
@@ -16,10 +18,37 @@ enum CloudKitDirectPullService {
         containerIdentifier: String,
         modelContext: ModelContext
     ) async throws {
-        let result = try await CloudKitDirectPullFetcher.fetchZoneChanges(
-            containerIdentifier: containerIdentifier
-        )
-        try merge(result: result, into: modelContext)
+        var fetchedProgress: CloudSyncManualRefreshProgress?
+        do {
+            let result = try await CloudKitDirectPullFetcher.fetchZoneChanges(
+                containerIdentifier: containerIdentifier
+            )
+            let progress = CloudSyncManualRefreshProgress(
+                mode: result.wasIncremental ? .incremental : .full,
+                changedRecordCount: result.changedRecords.count,
+                deletedRecordCount: result.deletedRecordIDs.count
+            )
+            fetchedProgress = progress
+            try merge(result: result, into: modelContext)
+            if let serverChangeToken = result.serverChangeToken {
+                CloudKitDirectPullTokenStore.save(
+                    serverChangeToken,
+                    containerIdentifier: containerIdentifier
+                )
+            }
+            CloudKitSyncDiagnostics.recordManualRefreshSucceeded(
+                progress,
+                savedChangeToken: result.serverChangeToken != nil
+            )
+        } catch {
+            if let fetchedProgress {
+                CloudKitSyncDiagnostics.recordManualRefreshFailure(
+                    error,
+                    progress: fetchedProgress
+                )
+            }
+            throw error
+        }
     }
 
     /// Reconciles Focus state after an app launch or foreground transition.

@@ -47,9 +47,18 @@ List {
         }
         .disabled(actionsDisabled)
 
-        if store.cloud.isCloudSyncInProgress ||
-            store.cloud.isCloudDataResetAuthenticationInProgress ||
-            store.cloud.isCloudDataResetInProgress {
+        if store.cloud.isCloudSyncInProgress {
+            VStack(alignment: .leading, spacing: 8) {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .accessibilityLabel("Receiving iCloud data")
+                    .accessibilityValue(store.cloud.syncStatusText)
+                Text(store.cloud.syncStatusText)
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        } else if store.cloud.isCloudDataResetAuthenticationInProgress ||
+                    store.cloud.isCloudDataResetInProgress {
             HStack(spacing: 10) {
                 ProgressView()
                 Text(store.cloud.syncStatusText)

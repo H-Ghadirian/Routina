@@ -95,7 +95,9 @@ extension SettingsCloudState {
 
     var overviewSubtitle: String {
         if isCloudSyncInProgress {
-            return "Checking iCloud for updates"
+            return cloudStatusMessage.isEmpty
+                ? "Checking iCloud for updates"
+                : cloudStatusMessage
         }
         if isCloudDataResetAuthenticationInProgress {
             return "Confirming App Lock"
@@ -120,7 +122,9 @@ extension SettingsCloudState {
             return "Deleting iCloud data..."
         }
         if isCloudSyncInProgress {
-            return "Checking iCloud for updates..."
+            return cloudStatusMessage.isEmpty
+                ? "Checking iCloud for updates..."
+                : cloudStatusMessage
         }
         if !cloudStatusMessage.isEmpty {
             return cloudStatusMessage

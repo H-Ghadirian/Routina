@@ -55,17 +55,28 @@ SettingsMacDetailShell(
             .buttonStyle(.bordered)
             .disabled(actionsDisabled)
 
-            if store.cloud.isCloudSyncInProgress ||
-                store.cloud.isCloudDataResetAuthenticationInProgress ||
+            if store.cloud.isCloudDataResetAuthenticationInProgress ||
                 store.cloud.isCloudDataResetInProgress {
                 ProgressView()
                     .controlSize(.small)
             }
         }
 
-        Text(store.cloud.syncStatusText)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
+        if store.cloud.isCloudSyncInProgress {
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .accessibilityLabel("Receiving iCloud data")
+                    .accessibilityValue(store.cloud.syncStatusText)
+                Text(store.cloud.syncStatusText)
+                    .font(.footnote.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            Text(store.cloud.syncStatusText)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
     }
 
     SettingsMacDetailCard(title: "Data Backup") {

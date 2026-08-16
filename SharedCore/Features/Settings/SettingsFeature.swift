@@ -495,7 +495,12 @@ struct SettingsFeature {
                 return .none
 
             case .cloudDiagnosticsUpdated:
-                SettingsDiagnosticsLoader.refreshCloudDiagnostics(state: &state.diagnostics)
+                let displayMessage = SettingsDiagnosticsLoader.refreshCloudDiagnostics(
+                    state: &state.diagnostics
+                )
+                if state.cloud.isCloudSyncInProgress, !displayMessage.isEmpty {
+                    state.cloud.cloudStatusMessage = displayMessage
+                }
                 return .none
 
             case let .cloudUsageEstimateLoaded(estimate):

@@ -200,10 +200,10 @@ struct SettingsFeatureTests {
     }
 
     @Test
-    func syncNow_timeoutStopsProgressAndExplainsRecovery() async {
+    func syncNow_stalledPullStopsProgressAndExplainsRecovery() async {
         let context = makeInMemoryContext()
         let expectedMessage = CloudSyncFeedbackSupport.manualRefreshErrorMessage(
-            for: CloudSyncManualRefreshError.timedOut
+            for: CloudSyncManualRefreshError.stalled(receivedRecordCount: 0)
         )
         let store = TestStore(
             initialState: SettingsFeature.State(
@@ -214,7 +214,7 @@ struct SettingsFeatureTests {
         } withDependencies: {
             $0.modelContext = { context }
             $0.cloudSyncClient.pullLatestIntoLocalStore = { _ in
-                throw CloudSyncManualRefreshError.timedOut
+                throw CloudSyncManualRefreshError.stalled(receivedRecordCount: 0)
             }
         }
 

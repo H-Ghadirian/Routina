@@ -53,17 +53,24 @@ enum SettingsDiagnosticsLoader {
             lastRoutineDataBackupDate: appSettingsClient.lastRoutineDataBackupDate(),
             cloudDiagnosticsSummary: diagnostics.summary,
             cloudDiagnosticsTimestamp: diagnostics.timestampText,
-            pushDiagnosticsStatus: diagnostics.pushStatus
+            pushDiagnosticsStatus: diagnostics.pushStatus,
+            manualCloudRefreshSummary: diagnostics.manualRefreshSummary,
+            manualCloudRefreshTimestamp: diagnostics.manualRefreshTimestampText,
+            manualCloudRefreshDisplayMessage: diagnostics.manualRefreshDisplayMessage
         )
     }
 
+    @discardableResult
     static func refreshCloudDiagnostics(
         state: inout SettingsDiagnosticsState
-    ) {
+    ) -> String {
         let diagnostics = CloudKitSyncDiagnostics.snapshot()
         state.cloudDiagnosticsSummary = diagnostics.summary
         state.cloudDiagnosticsTimestamp = diagnostics.timestampText
         state.pushDiagnosticsStatus = diagnostics.pushStatus
+        state.manualCloudRefreshSummary = diagnostics.manualRefreshSummary
+        state.manualCloudRefreshTimestamp = diagnostics.manualRefreshTimestampText
+        return diagnostics.manualRefreshDisplayMessage
     }
 }
 
@@ -79,6 +86,8 @@ enum SettingsDiagnosticsReport {
             "Signed CloudKit Environment: \(diagnostics.signedCloudKitEnvironmentDescription)",
             "Last CloudKit Event: \(diagnostics.cloudDiagnosticsTimestamp)",
             "CloudKit Detail: \(diagnostics.cloudDiagnosticsSummary)",
+            "Last Manual Refresh: \(diagnostics.manualCloudRefreshTimestamp)",
+            "Manual Refresh Detail: \(diagnostics.manualCloudRefreshSummary)",
             "Push Status: \(diagnostics.pushDiagnosticsStatus)"
         ].joined(separator: "\n")
     }

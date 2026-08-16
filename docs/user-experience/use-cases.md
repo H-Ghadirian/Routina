@@ -113,6 +113,22 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Availability:** Development experiment on macOS. Temporary group focus and a cross-group “What should I do now?” recommendation remain proposed.
 
+### UC-06B — Let recurring work become timely without staying permanently urgent
+
+**Situation:** A repeating responsibility matters differently across its cycle. Some tasks need little attention until the due date, while others should become progressively more pressing as that date approaches.
+
+**Need:** Describe when a repeating task should gain attention so that it does not compete too early or remain artificially urgent after completion.
+
+**Desired experience:** The person keeps a stable understanding of the task between occurrences and can choose either an on-due-date change or a gradual increase over a visible lead window. Routina explains the task's effective current weight and why it changed without silently rewriting its underlying values. Completing, missing, or canceling the current occurrence resolves that occurrence's temporary weight; completion normally returns the task to its between-occurrence level until the next configured window begins.
+
+**Successful outcome:** The task becomes prominent at the right time, falls back predictably after the occurrence is resolved, and never requires the person to keep manually raising and lowering its values.
+
+**Example:** “Put out recycling” stays low until its Tuesday due date, then changes at once. “Prepare monthly report” begins increasing three days before month-end, reaches its highest urgency on the due date, and returns to its normal level after completion.
+
+**Evidence:** Working assumption based on a user-described need on 2026-08-16; the exact controls and affected weight dimensions remain to be validated.
+
+**Availability:** Proposed.
+
 ### UC-07 — Keep someday or hidden work without daily noise
 
 **Situation:** Some work is worth keeping but should not compete with everyday priorities.
@@ -239,7 +255,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Trust that personal data and durable preferences remain coherent.
 
-**Desired experience:** Synchronization is unobtrusive, conflicts do not silently discard history, and manual refresh reports only what it can verify. A manual refresh always reaches a bounded verified success or an actionable failure; on failure, existing local data stays available while Routina explains whether to check the connection, iCloud sign-in, or service availability and offers a retry. Platform-specific layouts preserve the same product concepts. On iOS, the task calendar stays collapsed until it is useful, and each task remembers whether the person left its calendar expanded or collapsed when Task Details is reopened.
+**Desired experience:** Synchronization is unobtrusive, conflicts do not silently discard history, and manual refresh reports only what it can verify. A long first refresh makes its continuing progress understandable with visible activity and an exact received-item count instead of treating elapsed time alone as failure or inventing a percentage, while later refreshes normally check only recent changes. Every manual refresh still reaches a bounded verified success or an actionable failure; on failure, existing local data stays available while Routina explains whether to check the connection, iCloud sign-in, or service availability and offers a retry. Platform-specific layouts preserve the same product concepts. On iOS, the task calendar stays collapsed until it is useful, and each task remembers whether the person left its calendar expanded or collapsed when Task Details is reopened.
 
 **Successful outcome:** The person continues the same task or review without reconstructing work.
 

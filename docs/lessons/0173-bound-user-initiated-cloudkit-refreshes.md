@@ -33,10 +33,13 @@ framework's server-operation defaults for an interactive spinner.
 
 ## Regression Safeguard
 
-`CloudKitSyncDiagnosticsTests.manualRefreshOperationUsesAnInteractiveDeadline`
+`CloudKitSyncDiagnosticsTests.manualRefreshOperationUsesIdleAndHardSafetyLimits`
 protects the CloudKit operation configuration.
-`SettingsFeatureTests.syncNow_timeoutStopsProgressAndExplainsRecovery` protects
+`SettingsFeatureTests.syncNow_stalledPullStopsProgressAndExplainsRecovery` protects
 the Settings terminal state.
 `HomeFeatureLifecycleEffectSupportTests.manualRefreshFailureReportsRecoveryAndStillReloadsLocalData`
 protects Home error feedback and local reload behavior. The Manual iCloud
 Refresh scenario records the cross-surface expectation.
+
+Follow-up: [0175](0175-distinguish-cloudkit-stalls-from-progress.md) revises the
+timeout model to distinguish inactivity from a legitimately progressing pull.

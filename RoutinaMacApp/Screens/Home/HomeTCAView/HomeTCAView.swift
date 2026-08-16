@@ -270,6 +270,8 @@ struct HomeTCAView: View {
     ) var macHomeTaskListSectionOrderRawValue = ""
     @StateObject var collapsedTagTaskListSectionIDsCache = HomeCollapsedTagTaskListSectionIDsCache()
     @State private var localSearchText = ""
+    @State var isManualCloudRefreshInProgress = false
+    @State var manualCloudRefreshStatusText = ""
     @State var macSearchPresentationText = ""
     @State var macSearchPresentationUpdateTask: Task<Void, Never>?
     @State var isMacSearchPresentationCurrent = true

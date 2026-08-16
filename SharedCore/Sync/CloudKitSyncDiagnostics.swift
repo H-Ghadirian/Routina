@@ -8,6 +8,9 @@ enum CloudKitSyncDiagnostics {
         var summary: String
         var timestampText: String
         var pushStatus: String
+        var manualRefreshSummary: String
+        var manualRefreshTimestampText: String
+        var manualRefreshDisplayMessage: String
     }
 
     static let didUpdateNotification = Notification.Name("cloudKitSyncDiagnosticsDidUpdate")
@@ -15,8 +18,12 @@ enum CloudKitSyncDiagnostics {
     private static let summaryKey = "cloudKitSyncDiagnostics.summary"
     private static let timestampKey = "cloudKitSyncDiagnostics.timestamp"
     private static let pushStatusKey = "cloudKitSyncDiagnostics.pushStatus"
+    private static let manualRefreshSummaryKey = "cloudKitSyncDiagnostics.manualRefreshSummary"
+    private static let manualRefreshTimestampKey = "cloudKitSyncDiagnostics.manualRefreshTimestamp"
+    private static let manualRefreshDisplayMessageKey = "cloudKitSyncDiagnostics.manualRefreshDisplayMessage"
     private static let defaults = UserDefaults.standard
     private static let observerBox = ObserverBox()
+    private static let manualRefreshLock = NSLock()
 
     static func startIfNeeded() {
         guard observerBox.observer == nil else { return }
@@ -35,7 +42,62 @@ enum CloudKitSyncDiagnostics {
         Snapshot(
             summary: defaults.string(forKey: summaryKey) ?? "No CloudKit event yet",
             timestampText: timestampString(from: defaults.object(forKey: timestampKey) as? Date),
-            pushStatus: defaults.string(forKey: pushStatusKey) ?? "Push not registered yet"
+            pushStatus: defaults.string(forKey: pushStatusKey) ?? "Push not registered yet",
+            manualRefreshSummary: defaults.string(forKey: manualRefreshSummaryKey) ?? "No manual refresh yet",
+            manualRefreshTimestampText: timestampString(
+                from: defaults.object(forKey: manualRefreshTimestampKey) as? Date
+            ),
+            manualRefreshDisplayMessage: defaults.string(
+                forKey: manualRefreshDisplayMessageKey
+            ) ?? ""
+        )
+    }
+
+    static func recordManualRefreshStarted(mode: CloudSyncManualRefreshProgress.Mode) {
+        let modeDescription = mode == .full ? "all iCloud data" : "recent iCloud changes"
+        recordManualRefresh(
+            summary: "status=started mode=\(mode.rawValue) received=0 changed=0 deleted=0",
+            displayMessage: "Checking \(modeDescription)…"
+        )
+    }
+
+    static func recordManualRefreshProgress(_ progress: CloudSyncManualRefreshProgress) {
+        recordManualRefresh(
+            summary: manualRefreshSummary(status: "receiving", progress: progress),
+            displayMessage: progress.displayMessage
+        )
+    }
+
+    static func recordManualRefreshDownloadFinished(
+        _ progress: CloudSyncManualRefreshProgress
+    ) {
+        let noun = progress.receivedRecordCount == 1 ? "item" : "items"
+        recordManualRefresh(
+            summary: manualRefreshSummary(status: "applying", progress: progress),
+            displayMessage: "Applying \(progress.receivedRecordCount) iCloud \(noun)…"
+        )
+    }
+
+    static func recordManualRefreshSucceeded(
+        _ progress: CloudSyncManualRefreshProgress,
+        savedChangeToken: Bool
+    ) {
+        recordManualRefresh(
+            summary: "\(manualRefreshSummary(status: "succeeded", progress: progress)) tokenSaved=\(savedChangeToken)",
+            displayMessage: "Latest iCloud data received."
+        )
+    }
+
+    static func recordManualRefreshFailure(
+        _ error: Error,
+        progress: CloudSyncManualRefreshProgress?
+    ) {
+        let progressSummary = progress.map {
+            manualRefreshSummary(status: "failed", progress: $0)
+        } ?? "status=failed mode=unknown"
+        recordManualRefresh(
+            summary: "\(progressSummary) error=\(describe(error))",
+            displayMessage: CloudSyncFeedbackSupport.manualRefreshErrorMessage(for: error)
         )
     }
 
@@ -56,6 +118,25 @@ enum CloudKitSyncDiagnostics {
 
     static func recordSubscriptionStatus(_ status: String) {
         defaults.set("\(defaults.string(forKey: pushStatusKey) ?? "Push state unknown") | \(status)", forKey: pushStatusKey)
+        NotificationCenter.default.post(name: didUpdateNotification, object: nil)
+    }
+
+    private static func manualRefreshSummary(
+        status: String,
+        progress: CloudSyncManualRefreshProgress
+    ) -> String {
+        "status=\(status) mode=\(progress.mode.rawValue) received=\(progress.receivedRecordCount) changed=\(progress.changedRecordCount) deleted=\(progress.deletedRecordCount)"
+    }
+
+    private static func recordManualRefresh(
+        summary: String,
+        displayMessage: String
+    ) {
+        manualRefreshLock.lock()
+        defaults.set(summary, forKey: manualRefreshSummaryKey)
+        defaults.set(Date(), forKey: manualRefreshTimestampKey)
+        defaults.set(displayMessage, forKey: manualRefreshDisplayMessageKey)
+        manualRefreshLock.unlock()
         NotificationCenter.default.post(name: didUpdateNotification, object: nil)
     }
 
