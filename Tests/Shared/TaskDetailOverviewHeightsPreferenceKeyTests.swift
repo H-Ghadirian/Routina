@@ -29,4 +29,12 @@ struct TaskDetailOverviewHeightsPreferenceKeyTests {
             "relationships": 180
         ])
     }
+
+    @Test
+    func collapsedTitleAppearsOnlyAfterTheFullHeaderTitleLeavesTheViewport() {
+        #expect(!TaskDetailCollapsedTitlePresentation.shouldShow(titleMaxY: nil))
+        #expect(!TaskDetailCollapsedTitlePresentation.shouldShow(titleMaxY: 0.5))
+        #expect(TaskDetailCollapsedTitlePresentation.shouldShow(titleMaxY: 0))
+        #expect(TaskDetailCollapsedTitlePresentation.shouldShow(titleMaxY: -20))
+    }
 }

@@ -129,6 +129,11 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
             .foregroundStyle(.primary)
             .fixedSize(horizontal: false, vertical: true)
             .taskDetailCopyableText(title)
+            .anchorPreference(
+                key: TaskDetailHeaderTitleBoundsPreferenceKey.self,
+                value: .bounds,
+                transform: { $0 }
+            )
     }
 
     private var measuredHeaderAccessory: some View {
@@ -182,6 +187,17 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
                 value: [metric: proxy.size.width]
             )
         }
+    }
+}
+
+struct TaskDetailHeaderTitleBoundsPreferenceKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: Anchor<CGRect>?
+
+    static func reduce(
+        value: inout Anchor<CGRect>?,
+        nextValue: () -> Anchor<CGRect>?
+    ) {
+        value = nextValue() ?? value
     }
 }
 

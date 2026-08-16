@@ -81,6 +81,7 @@ struct TaskDetailTCAView: View {
     @State private var referenceDate = Date()
     @State private var activeBlockingTask: RoutineTask?
     @State private var sprintBlockingFocusTitle: String?
+    @State private var showsCollapsedTaskTitle = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
@@ -124,11 +125,15 @@ struct TaskDetailTCAView: View {
 
     var body: some View {
 detailBody
+.overlayPreferenceValue(TaskDetailHeaderTitleBoundsPreferenceKey.self) { titleBounds in
+    collapsedTaskTitleVisibilityReader(titleBounds)
+}
 .routinaInlineTitleDisplayMode()
 .toolbar {
     TaskDetailToolbarContent(
         store: store,
         isInlineEditPresented: isInlineEditPresented,
+        showsCollapsedTaskTitle: showsCollapsedTaskTitle,
         canSaveCurrentEdit: canSaveCurrentEdit,
         isTaskSharingEnabled: isTaskSharingEnabled,
         onShare: { isCloudSharingPresented = true }
@@ -220,6 +225,7 @@ detailBody
 .onChange(of: store.task.id) { _, _ in
     referenceDate = Date()
     activeBlockingTask = nil
+    showsCollapsedTaskTitle = false
     isCommentComposerVisible = false
     resetRevealedOptionalControls()
     syncAvailableEvents()
@@ -290,6 +296,35 @@ detailBody
     private var taskColorBackground: some View {
         if let color = store.task.color.swiftUIColor {
             color.opacity(0.07).ignoresSafeArea()
+        }
+    }
+
+    private func collapsedTaskTitleVisibilityReader(
+        _ titleBounds: Anchor<CGRect>?
+    ) -> some View {
+        GeometryReader { proxy in
+            let titleMaxY = titleBounds.map { proxy[$0].maxY }
+
+            Color.clear
+                .onAppear {
+                    updateCollapsedTaskTitleVisibility(titleMaxY: titleMaxY)
+                }
+                .onChange(of: titleMaxY) { _, newValue in
+                    updateCollapsedTaskTitleVisibility(titleMaxY: newValue)
+                }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func updateCollapsedTaskTitleVisibility(titleMaxY: CGFloat?) {
+        let shouldShow = TaskDetailCollapsedTitlePresentation.shouldShow(
+            titleMaxY: titleMaxY
+        )
+        guard shouldShow != showsCollapsedTaskTitle else { return }
+
+        withAnimation(.easeInOut(duration: 0.16)) {
+            showsCollapsedTaskTitle = shouldShow
         }
     }
 

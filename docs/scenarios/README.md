@@ -451,7 +451,7 @@ And the vertical-dot trigger has a bold, comfortably legible size beside Edit
 ### iOS Task Detail Keeps Primary Context Easy To Scan
 
 Area: Tasks / UI
-Decision links: [0595](../decisions/0595-keep-task-completion-colors-consistent-across-platforms.md), [0594](../decisions/0594-simplify-ios-task-detail-scan-and-action-hierarchy.md), [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md), [0585](../decisions/0585-persist-ios-task-detail-calendar-expansion-per-task.md), [0508](../decisions/0508-keep-ios-add-more-details-last.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md)
+Decision links: [0597](../decisions/0597-show-ios-task-detail-title-after-header-scrolls-away.md), [0595](../decisions/0595-keep-task-completion-colors-consistent-across-platforms.md), [0594](../decisions/0594-simplify-ios-task-detail-scan-and-action-hierarchy.md), [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md), [0585](../decisions/0585-persist-ios-task-detail-calendar-expansion-per-task.md), [0508](../decisions/0508-keep-ios-add-more-details-last.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
@@ -479,7 +479,10 @@ Given saved Importance, Urgency, Pressure, or Thinking needed values are visible
 Then the controls retain that order and adaptively wrap at ordinary text sizes
 And accessibility text sizes stack the controls with explicit labels, values, strokes, and 44-point-high visible targets
 
-Then the navigation principal combines the task emoji with a bounded one-line task name
+Then the navigation principal remains empty while the full header title is visible
+When the full header title scrolls above the detail viewport
+Then a text-only task name appears in the navigation principal without an emoji or fixed width cap
+And scrolling the full title back into view hides that navigation title again
 And `Add more details` explains its badge as `1 option` or `<count> options`
 
 ### Task Detail Flags Use Available Width

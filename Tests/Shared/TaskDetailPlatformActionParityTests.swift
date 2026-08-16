@@ -45,13 +45,33 @@ struct TaskDetailPlatformActionParityTests {
         #expect(toolbarSource.contains(".frame(width: 24, height: 24)"))
         #expect(toolbarSource.contains(".contentShape(Rectangle())"))
         #expect(toolbarSource.contains(".accessibilityLabel(\"More task actions\")"))
-        #expect(toolbarSource.contains("taskIdentityLabel"))
+        #expect(toolbarSource.contains("showsCollapsedTaskTitle"))
+        #expect(toolbarSource.contains("collapsedTaskTitleLabel"))
         #expect(toolbarSource.contains("Text(RoutineTask.trimmedName(store.task.name) ?? \"Task\")"))
         #expect(toolbarSource.contains(".lineLimit(1)"))
-        #expect(toolbarSource.contains(".frame(maxWidth: 150)"))
+        #expect(!toolbarSource.contains("Text(store.routineEmoji)"))
+        #expect(!toolbarSource.contains(".frame(maxWidth: 150)"))
+        #expect(toolbarSource.contains(".minimumScaleFactor(0.75)"))
+        #expect(toolbarSource.contains(".allowsTightening(true)"))
         #expect(!toolbarSource.contains("RoutinaDeepLinkShareMenu("))
         #expect(!actionControlsSource.contains("TaskDetailCancelTodoButton"))
         #expect(!editSource.contains("onDelete:"))
+    }
+
+    @Test
+    func iosTaskDetailShowsItsToolbarTitleOnlyAfterTheHeaderTitleScrollsAway() throws {
+        let detailSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let headerSource = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift"
+        )
+
+        #expect(detailSource.contains("overlayPreferenceValue(TaskDetailHeaderTitleBoundsPreferenceKey.self)"))
+        #expect(detailSource.contains("TaskDetailCollapsedTitlePresentation.shouldShow("))
+        #expect(detailSource.contains("showsCollapsedTaskTitle: showsCollapsedTaskTitle"))
+        #expect(headerSource.contains("key: TaskDetailHeaderTitleBoundsPreferenceKey.self"))
+        #expect(headerSource.contains("value: .bounds"))
     }
 
     @Test

@@ -14,6 +14,7 @@ Accepted
 
 ## Refined By
 
+- [0597: Show iOS Task Detail Title After Header Scrolls Away](0597-show-ios-task-detail-title-after-header-scrolls-away.md)
 - [0595: Keep Task Completion Colors Consistent Across Platforms](0595-keep-task-completion-colors-consistent-across-platforms.md)
 
 ## Refines

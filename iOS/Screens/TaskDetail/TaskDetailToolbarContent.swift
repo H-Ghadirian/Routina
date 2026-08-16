@@ -4,6 +4,7 @@ import ComposableArchitecture
 struct TaskDetailToolbarContent: ToolbarContent {
     let store: StoreOf<TaskDetailFeature>
     let isInlineEditPresented: Bool
+    let showsCollapsedTaskTitle: Bool
     let canSaveCurrentEdit: Bool
     let isTaskSharingEnabled: Bool
     let onShare: () -> Void
@@ -24,8 +25,8 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     RoundedRectangle(cornerRadius: 999, style: .continuous)
                         .stroke(Color.white.opacity(0.16), lineWidth: 1)
                 )
-            } else {
-                taskIdentityLabel
+            } else if showsCollapsedTaskTitle {
+                collapsedTaskTitleLabel
             }
         }
 
@@ -93,17 +94,13 @@ struct TaskDetailToolbarContent: ToolbarContent {
         }
     }
 
-    private var taskIdentityLabel: some View {
-        HStack(spacing: 6) {
-            Text(store.routineEmoji)
-                .font(TaskDetailPlatformStyle.principalTitleFont)
-
-            Text(RoutineTask.trimmedName(store.task.name) ?? "Task")
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-        }
-        .frame(maxWidth: 150)
+    private var collapsedTaskTitleLabel: some View {
+        Text(RoutineTask.trimmedName(store.task.name) ?? "Task")
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .allowsTightening(true)
+            .transition(.opacity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Task: \(RoutineTask.trimmedName(store.task.name) ?? "Untitled task")")
     }

@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0186 — Show collapsed titles only after source titles leave](0186-show-collapsed-titles-only-after-source-titles-leave.md)
 - [0184 — Sequence repeating dependencies by completion](0184-sequence-repeating-dependencies-by-completion.md)
 - [0183 — Check derived state before progress shortcuts](0183-check-derived-state-before-progress-shortcuts.md)
 - [0182 — Condition task-detail chrome on meaningful context](0182-condition-task-detail-chrome-on-meaningful-context.md)

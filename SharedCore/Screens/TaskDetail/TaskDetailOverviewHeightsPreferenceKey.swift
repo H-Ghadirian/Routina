@@ -7,3 +7,10 @@ struct TaskDetailOverviewHeightsPreferenceKey: PreferenceKey {
         value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }
+
+enum TaskDetailCollapsedTitlePresentation {
+    static func shouldShow(titleMaxY: CGFloat?) -> Bool {
+        guard let titleMaxY else { return false }
+        return titleMaxY <= 0
+    }
+}
