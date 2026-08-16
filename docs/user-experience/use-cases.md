@@ -239,11 +239,11 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Trust that personal data and durable preferences remain coherent.
 
-**Desired experience:** Synchronization is unobtrusive, conflicts do not silently discard history, and manual refresh reports only what it can verify. Platform-specific layouts preserve the same product concepts. On iOS, the task calendar stays collapsed until it is useful, and each task remembers whether the person left its calendar expanded or collapsed when Task Details is reopened.
+**Desired experience:** Synchronization is unobtrusive, conflicts do not silently discard history, and manual refresh reports only what it can verify. A manual refresh always reaches a bounded verified success or an actionable failure; on failure, existing local data stays available while Routina explains whether to check the connection, iCloud sign-in, or service availability and offers a retry. Platform-specific layouts preserve the same product concepts. On iOS, the task calendar stays collapsed until it is useful, and each task remembers whether the person left its calendar expanded or collapsed when Task Details is reopened.
 
 **Successful outcome:** The person continues the same task or review without reconstructing work.
 
-**Example:** Capture a task on iPhone, then find and schedule it on Mac after synchronization.
+**Example:** Capture a task on iPhone, then find and schedule it on Mac after synchronization. If a deliberate refresh cannot reach iCloud, continue using the local task list, check the connection or iCloud account, and retry instead of waiting on an endless spinner.
 
 **Availability:** Production where iCloud is configured and available.
 

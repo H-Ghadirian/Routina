@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0589](0589-bound-manual-icloud-refresh.md) refines [0523](0523-report-manual-icloud-refresh-honestly.md), [0545](0545-bound-ios-foreground-focus-reconciliation.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** explicit Settings and Home CloudKit pulls stop after 60 seconds, cancel with their calling task, preserve the complete-response merge boundary, and explain how to retry without implying local data loss.
+
 - **[0588](0588-configure-flag-rules-by-assignment.md) refines [0497](0497-use-flags-for-task-behavior-rules.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** iOS and macOS Settings show only the rules assigned to each Flag, offer remaining behaviors through `Add Rule`, and keep direct removal beside each assigned rule without changing synchronized rule storage.
 
 - **[0587](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md) revises [0576](0576-offer-direct-repeating-task-ladder-grouping.md) and refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** macOS Task Details no longer presents direct Task Ladder group activation; Add Task, Edit Task, and the Task Ladder retain the deliberate entry points for that uncommon structural choice.
@@ -709,6 +711,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0589](0589-bound-manual-icloud-refresh.md) | Bound Manual iCloud Refresh | Accepted | 2026-08-16 |
 | [0588](0588-configure-flag-rules-by-assignment.md) | Configure Flag Rules by Assignment | Accepted | 2026-08-16 |
 | [0587](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md) | Keep Task Ladder Activation in Deliberate Editing Flows | Accepted | 2026-08-16 |
 | [0586](0586-group-ios-task-detail-priority-context-in-the-header.md) | Group iOS Task Detail Priority Context in the Header | Accepted | 2026-08-16 |

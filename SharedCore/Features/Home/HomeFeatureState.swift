@@ -22,4 +22,5 @@ struct HomePresentationState: Equatable {
     var pendingDeleteTaskIDs: [UUID] = []
     var isDeleteConfirmationPresented: Bool = false
     var isMacFilterDetailPresented: Bool = false
+    var manualRefreshErrorMessage: String? = nil
 }

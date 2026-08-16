@@ -317,6 +317,11 @@ struct HomeFeature {
             set { presentation.isMacFilterDetailPresented = newValue }
         }
 
+        var manualRefreshErrorMessage: String? {
+            get { presentation.manualRefreshErrorMessage }
+            set { presentation.manualRefreshErrorMessage = newValue }
+        }
+
         var boardTodoDisplays: [RoutineDisplay] {
             get { board.todoDisplays }
             set { board.todoDisplays = newValue }
@@ -581,6 +586,8 @@ struct HomeFeature {
     enum Action: Equatable {
         case onAppear
         case manualRefreshRequested
+        case manualRefreshFailed(String)
+        case manualRefreshErrorDismissed
         case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], [RoutineGoal], [RoutineLog], DoneStats)
         case sprintBoardLoaded(SprintBoardData)
         case sprintBoardLoadedFromStorage(SprintBoardData, revision: Int)
@@ -1064,7 +1071,8 @@ struct HomeFeature {
                     modelContext: { self.modelContext() },
                     pullLatestIntoLocalStore: { try await self.cloudSyncClient.pullLatestIntoLocalStore($0) },
                     sleepBeforeSecondRefresh: { try await self.clock.sleep(for: .seconds(2)) },
-                    onAppearAction: { .onAppear }
+                    onAppearAction: { .onAppear },
+                    refreshFailedAction: { .manualRefreshFailed($0) }
                 )
             }
         )
@@ -1112,7 +1120,16 @@ struct HomeFeature {
 
             case .manualRefreshRequested:
                 state.isLoading = true
+                state.manualRefreshErrorMessage = nil
                 return lifecycleActionHandler().manualRefreshRequested()
+
+            case let .manualRefreshFailed(message):
+                state.manualRefreshErrorMessage = message
+                return .none
+
+            case .manualRefreshErrorDismissed:
+                state.manualRefreshErrorMessage = nil
+                return .none
 
             case let .statusComposerSaveRequested(rawText):
                 guard let text = RoutineNote.cleanedText(rawText) else { return .none }

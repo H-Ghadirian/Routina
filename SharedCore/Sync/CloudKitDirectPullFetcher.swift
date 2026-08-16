@@ -2,6 +2,8 @@ import CloudKit
 import Foundation
 
 enum CloudKitDirectPullFetcher {
+    static let manualRefreshTimeoutSeconds: TimeInterval = 60
+
     private static let zoneID = CKRecordZone.ID(
         zoneName: "com.apple.coredata.cloudkit.zone",
         ownerName: "__defaultOwner__"
@@ -11,64 +13,80 @@ enum CloudKitDirectPullFetcher {
         containerIdentifier: String
     ) async throws -> CloudKitDirectPullService.PullResult {
         let database = CKContainer(identifier: containerIdentifier).privateCloudDatabase
-        var changedRecords: [CKRecord] = []
-        var deletedRecordIDs: [CKRecord.ID] = []
+        let requestState = CloudKitZoneChangesRequestState()
 
-        return try await withCheckedThrowingContinuation { continuation in
-            var didResume = false
-            func resumeIfNeeded(_ result: Result<CloudKitDirectPullService.PullResult, Error>) {
-                guard !didResume else { return }
-                didResume = true
-                continuation.resume(with: result)
-            }
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
+                config.previousServerChangeToken = nil
+                config.desiredKeys = nil
 
-            let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
-            config.previousServerChangeToken = nil
-            config.desiredKeys = nil
+                let operation = CKFetchRecordZoneChangesOperation(
+                    recordZoneIDs: [zoneID],
+                    configurationsByRecordZoneID: [zoneID: config]
+                )
+                configureManualRefreshOperation(operation)
 
-            let operation = CKFetchRecordZoneChangesOperation(
-                recordZoneIDs: [zoneID],
-                configurationsByRecordZoneID: [zoneID: config]
-            )
-
-            operation.recordWasChangedBlock = { _, result in
-                switch result {
-                case .success(let record):
-                    changedRecords.append(record)
-                case .failure:
-                    // Keep going; one failed record should not abort the whole pull.
-                    break
+                operation.recordWasChangedBlock = { _, result in
+                    if case let .success(record) = result {
+                        requestState.recordChanged(record)
+                    }
                 }
-            }
 
-            operation.recordWithIDWasDeletedBlock = { recordID, _ in
-                deletedRecordIDs.append(recordID)
-            }
-
-            operation.recordZoneFetchResultBlock = { _, result in
-                if case .failure(let error) = result {
-                    resumeIfNeeded(.failure(error))
+                operation.recordWithIDWasDeletedBlock = { recordID, _ in
+                    requestState.recordDeleted(recordID)
                 }
-            }
 
-            operation.fetchRecordZoneChangesResultBlock = { result in
-                switch result {
-                case .success:
-                    resumeIfNeeded(
-                        .success(
-                            CloudKitDirectPullService.PullResult(
-                                changedRecords: changedRecords,
-                                deletedRecordIDs: deletedRecordIDs
-                            )
-                        )
+                operation.recordZoneFetchResultBlock = { _, result in
+                    if case let .failure(error) = result {
+                        requestState.finish(.failure(error))
+                    }
+                }
+
+                operation.fetchRecordZoneChangesResultBlock = { result in
+                    switch result {
+                    case .success:
+                        requestState.finishSuccessfully()
+                    case let .failure(error):
+                        requestState.finish(.failure(error))
+                    }
+                }
+
+                guard requestState.install(
+                    continuation: continuation,
+                    operation: operation
+                ) else {
+                    return
+                }
+
+                let timeoutTask = Task {
+                    do {
+                        try await Task.sleep(for: .seconds(manualRefreshTimeoutSeconds))
+                    } catch {
+                        return
+                    }
+                    requestState.finish(
+                        .failure(CloudSyncManualRefreshError.timedOut),
+                        cancellingOperation: true
                     )
-                case .failure(let error):
-                    resumeIfNeeded(.failure(error))
                 }
-            }
+                guard requestState.install(timeoutTask: timeoutTask) else {
+                    return
+                }
 
-            database.add(operation)
+                database.add(operation)
+            }
+        } onCancel: {
+            requestState.finish(.failure(CancellationError()), cancellingOperation: true)
         }
+    }
+
+    static func configureManualRefreshOperation(_ operation: CKOperation) {
+        let configuration = CKOperation.Configuration()
+        configuration.qualityOfService = .userInitiated
+        configuration.timeoutIntervalForRequest = manualRefreshTimeoutSeconds
+        configuration.timeoutIntervalForResource = manualRefreshTimeoutSeconds
+        operation.configuration = configuration
     }
 
     /// Foreground reconciliation needs to discover a remote active Focus timer,
@@ -220,5 +238,115 @@ enum CloudKitDirectPullFetcher {
 
             database.add(operation)
         }
+    }
+}
+
+private final class CloudKitZoneChangesRequestState: @unchecked Sendable {
+    typealias PullResult = CloudKitDirectPullService.PullResult
+
+    private let lock = NSLock()
+    private var changedRecords: [CKRecord] = []
+    private var deletedRecordIDs: [CKRecord.ID] = []
+    private var continuation: CheckedContinuation<PullResult, Error>?
+    private var operation: CKOperation?
+    private var timeoutTask: Task<Void, Never>?
+    private var pendingResult: Result<PullResult, Error>?
+    private var isFinished = false
+
+    func install(
+        continuation: CheckedContinuation<PullResult, Error>,
+        operation: CKOperation
+    ) -> Bool {
+        lock.lock()
+        self.operation = operation
+        if let pendingResult {
+            lock.unlock()
+            operation.cancel()
+            continuation.resume(with: pendingResult)
+            return false
+        }
+        self.continuation = continuation
+        lock.unlock()
+        return true
+    }
+
+    func install(timeoutTask: Task<Void, Never>) -> Bool {
+        lock.lock()
+        guard !isFinished else {
+            lock.unlock()
+            timeoutTask.cancel()
+            return false
+        }
+        self.timeoutTask = timeoutTask
+        lock.unlock()
+        return true
+    }
+
+    func recordChanged(_ record: CKRecord) {
+        lock.lock()
+        if !isFinished {
+            changedRecords.append(record)
+        }
+        lock.unlock()
+    }
+
+    func recordDeleted(_ recordID: CKRecord.ID) {
+        lock.lock()
+        if !isFinished {
+            deletedRecordIDs.append(recordID)
+        }
+        lock.unlock()
+    }
+
+    func finishSuccessfully() {
+        finish { changedRecords, deletedRecordIDs in
+            .success(
+                PullResult(
+                    changedRecords: changedRecords,
+                    deletedRecordIDs: deletedRecordIDs
+                )
+            )
+        }
+    }
+
+    func finish(
+        _ result: Result<PullResult, Error>,
+        cancellingOperation: Bool = false
+    ) {
+        finish(
+            result: { _, _ in result },
+            cancellingOperation: cancellingOperation
+        )
+    }
+
+    private func finish(
+        result makeResult: ([CKRecord], [CKRecord.ID]) -> Result<PullResult, Error>,
+        cancellingOperation: Bool = false
+    ) {
+        let continuation: CheckedContinuation<PullResult, Error>?
+        let operation: CKOperation?
+        let timeoutTask: Task<Void, Never>?
+        let result: Result<PullResult, Error>
+
+        lock.lock()
+        guard !isFinished else {
+            lock.unlock()
+            return
+        }
+        isFinished = true
+        continuation = self.continuation
+        operation = self.operation
+        timeoutTask = self.timeoutTask
+        result = makeResult(changedRecords, deletedRecordIDs)
+        if continuation == nil {
+            pendingResult = result
+        }
+        lock.unlock()
+
+        timeoutTask?.cancel()
+        if cancellingOperation {
+            operation?.cancel()
+        }
+        continuation?.resume(with: result)
     }
 }

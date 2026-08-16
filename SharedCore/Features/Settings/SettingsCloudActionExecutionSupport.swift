@@ -107,7 +107,7 @@ enum SettingsCloudActionExecution {
                 await send(
                     .cloudSyncFinished(
                         success: false,
-                        message: "Couldn't check iCloud: \(error.localizedDescription)"
+                        message: CloudSyncFeedbackSupport.manualRefreshErrorMessage(for: error)
                     )
                 )
             }

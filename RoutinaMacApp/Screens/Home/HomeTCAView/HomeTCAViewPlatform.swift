@@ -597,7 +597,26 @@ extension HomeTCAView {
     }
 
     func applyPlatformRefresh<Content: View>(to view: Content) -> some View {
-        view
+        view.alert(
+            "Couldn't Refresh from iCloud",
+            isPresented: Binding(
+                get: { store.manualRefreshErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        store.send(.manualRefreshErrorDismissed)
+                    }
+                }
+            )
+        ) {
+            Button("Try Again") {
+                store.send(.manualRefreshRequested)
+            }
+            Button("OK", role: .cancel) {
+                store.send(.manualRefreshErrorDismissed)
+            }
+        } message: {
+            Text(store.manualRefreshErrorMessage ?? "")
+        }
     }
 
     @ViewBuilder

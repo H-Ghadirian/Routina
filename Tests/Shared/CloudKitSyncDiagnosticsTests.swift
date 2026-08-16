@@ -10,6 +10,18 @@ import Testing
 
 struct CloudKitSyncDiagnosticsTests {
     @Test
+    func manualRefreshOperationUsesAnInteractiveDeadline() {
+        let operation = CKFetchRecordZoneChangesOperation()
+
+        CloudKitDirectPullFetcher.configureManualRefreshOperation(operation)
+
+        #expect(CloudKitDirectPullFetcher.manualRefreshTimeoutSeconds == 60)
+        #expect(operation.configuration?.qualityOfService == .userInitiated)
+        #expect(operation.configuration?.timeoutIntervalForRequest == 60)
+        #expect(operation.configuration?.timeoutIntervalForResource == 60)
+    }
+
+    @Test
     func partialFailureDescribesAnonymizedRecordSpecificErrors() {
         let recordID = CKRecord.ID(recordName: "private-record-name")
         let childError = CKError(.serverRejectedRequest)

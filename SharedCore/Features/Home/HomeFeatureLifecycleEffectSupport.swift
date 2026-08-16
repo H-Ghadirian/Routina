@@ -7,7 +7,8 @@ enum HomeFeatureLifecycleEffectSupport {
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,
         pullLatestIntoLocalStore: @escaping @MainActor @Sendable (ModelContext) async throws -> Void,
         sleepBeforeSecondRefresh: @escaping @Sendable () async throws -> Void,
-        onAppearAction: @escaping @MainActor @Sendable () -> Action
+        onAppearAction: @escaping @MainActor @Sendable () -> Action,
+        refreshFailedAction: @escaping @MainActor @Sendable (String) -> Action
     ) -> Effect<Action> {
         .run { @MainActor send in
             let context = modelContext()
@@ -15,7 +16,13 @@ enum HomeFeatureLifecycleEffectSupport {
                 try? context.save()
             }
 
-            try? await pullLatestIntoLocalStore(context)
+            do {
+                try await pullLatestIntoLocalStore(context)
+            } catch is CancellationError {
+                return
+            } catch {
+                send(refreshFailedAction(CloudSyncFeedbackSupport.manualRefreshErrorMessage(for: error)))
+            }
             send(onAppearAction())
 
             // CloudKit imports are asynchronous; do a second pass shortly after manual refresh.

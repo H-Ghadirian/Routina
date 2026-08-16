@@ -200,6 +200,38 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func syncNow_timeoutStopsProgressAndExplainsRecovery() async {
+        let context = makeInMemoryContext()
+        let expectedMessage = CloudSyncFeedbackSupport.manualRefreshErrorMessage(
+            for: CloudSyncManualRefreshError.timedOut
+        )
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                cloud: .init(cloudSyncAvailable: true)
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.cloudSyncClient.pullLatestIntoLocalStore = { _ in
+                throw CloudSyncManualRefreshError.timedOut
+            }
+        }
+
+        await store.send(.syncNowTapped) {
+            $0.cloud.isCloudSyncInProgress = true
+            $0.cloud.cloudStatusMessage = "Checking iCloud for updates..."
+        }
+
+        await store.receive(
+            .cloudSyncFinished(success: false, message: expectedMessage)
+        ) {
+            $0.cloud.isCloudSyncInProgress = false
+            $0.cloud.cloudStatusMessage = expectedMessage
+        }
+    }
+
+    @Test
     func localUserDataReset_deletesEverySwiftDataUserModel() throws {
         let context = makeInMemoryContext()
         let source = RoutinaDeviceActivitySource(

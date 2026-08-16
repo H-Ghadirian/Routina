@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0173 — Bound user-initiated CloudKit refreshes](0173-bound-user-initiated-cloudkit-refreshes.md)
 - [0172 — Recheck shortcut availability at execution](0172-recheck-shortcut-availability-at-execution.md)
 - [0171 — Derive optional sections from their content](0171-derive-optional-sections-from-their-content.md)
 - [0170 — Gate every Timeline type control](0170-gate-every-timeline-type-control.md)
