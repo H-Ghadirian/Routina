@@ -800,6 +800,7 @@ And it has a confirmed `Blocked by` relationship whose prerequisite is unresolve
 When Home presents the task on iOS or macOS
 Then its visible Home Status Badge is Blocked rather than To Do or In Progress
 And the row reads relationship status from its cached display snapshot instead of resolving the graph while rendering
+And an ongoing or step-progress row shortcut cannot override the Blocked badge
 
 Given the same blocked one-off task opens in Task Details
 When Task Details presents its State on iOS or macOS

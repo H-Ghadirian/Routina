@@ -31,6 +31,13 @@ extension HomeRoutineDisplayMetadataPresenter {
         if case .away = task.locationAvailability {
             return badge("Away", "location.slash.fill", .blue, Color.blue.opacity(0.14))
         }
+        if task.isOneOffTask,
+           !task.isCompletedOneOff,
+           !task.isCanceledOneOff,
+           task.hasActiveRelationshipBlocker,
+           task.todoState == .ready || task.todoState == .inProgress {
+            return badge("Blocked", "exclamationmark.circle.fill", .orange, Color.orange.opacity(0.14))
+        }
         if task.isOngoing {
             return task.isSoftIntervalRoutine
                 ? badge("Ongoing", "airplane.circle.fill", .teal, Color.teal.opacity(0.16))
@@ -54,13 +61,6 @@ extension HomeRoutineDisplayMetadataPresenter {
                     ? badge("Ready to Do", "circle", .secondary, Color.secondary.opacity(0.12))
                     : nil
             }
-        }
-        if task.isOneOffTask,
-           !task.isCompletedOneOff,
-           !task.isCanceledOneOff,
-           task.hasActiveRelationshipBlocker,
-           task.todoState == .ready || task.todoState == .inProgress {
-            return badge("Blocked", "exclamationmark.circle.fill", .orange, Color.orange.opacity(0.14))
         }
         if task.isInProgress {
             return badge("Step \(task.completedStepCount + 1)/\(max(task.steps.count, 1))", "list.number", .orange, Color.orange.opacity(0.16))

@@ -2882,6 +2882,27 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func unresolvedRelationshipBlockerOverridesOngoingInProgressBadge() {
+        let task = TestTaskDisplay(
+            name: "Release Candidate 4.4.0",
+            isOneOffTask: true,
+            isOngoing: true,
+            hasActiveRelationshipBlocker: true,
+            todoState: .inProgress
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        let badge = presenter.badgeStyle(for: task)
+
+        #expect(badge?.title == "Blocked")
+        #expect(badge?.systemImage == "exclamationmark.circle.fill")
+    }
+
+    @Test
     func completedTodoBadgeKeepsPrecedenceOverRelationshipBlocker() {
         let task = TestTaskDisplay(
             name: "Open the release merge request",
