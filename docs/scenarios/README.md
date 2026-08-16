@@ -120,7 +120,7 @@ And a one-off task without tags does not reserve an empty metadata line
 ### Mac Task Ladder Separates Placement From Completion
 
 Area: Tasks / Mac Task Ladder / Relationships
-Decision links: [0574](../decisions/0574-separate-task-ladder-placement-from-completion.md), [0409](../decisions/0409-add-manual-can-complete-task-links.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md)
+Decision links: [0578](../decisions/0578-separate-task-ladder-details-from-inner-navigation.md), [0574](../decisions/0574-separate-task-ladder-placement-from-completion.md), [0409](../decisions/0409-add-manual-can-complete-task-links.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskLadderOrganizationTests.swift`
@@ -150,6 +150,14 @@ And the activation is synchronized with the rest of the Task Ladder organization
 Given Exercise already has nested tasks
 When the person views the Task Ladder group switch
 Then it remains on and cannot be turned off until those tasks are moved elsewhere
+
+Given Exercise is a task-backed group and Company is a container-only group
+When the person single-clicks either row in Task Ladder
+Then the right side shows Exercise's normal task details or Company's group details
+And the current ladder scope does not change
+When the person double-clicks either group row
+Then Task Ladder opens that group's inner ladder
+And the context menu also offers explicit details and inner-ladder commands
 
 Given Exercise is a task-backed Task Ladder group
 And Walk is an actionable task linked to Exercise in either relationship direction

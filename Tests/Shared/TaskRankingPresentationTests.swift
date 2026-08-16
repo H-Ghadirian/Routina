@@ -628,7 +628,7 @@ struct TaskRankingPresentationTests {
 
         #expect(source.contains("metadata.tagLabels.joined(separator: \" • \")"))
         #expect(source.contains("Label(\"Repeating\", systemImage: \"repeat\")"))
-        #expect(source.contains("Show Nested Tasks"))
+        #expect(source.contains("Open Inner Task Ladder"))
         #expect(source.contains("metadata.childCount"))
         #expect(source.contains("metadata.inheritsMetricValue"))
         #expect(source.contains("Label(\"Inherited\", systemImage: \"arrow.triangle.branch\")"))
@@ -680,6 +680,28 @@ struct TaskRankingPresentationTests {
         #expect(source.contains(".linkedTaskChildSuggestionAccepted("))
         #expect(source.contains("keeps the task link and its completion behavior unchanged"))
         #expect(source.contains("ForEach(store.presentation.linkedTaskChildSuggestions)"))
+    }
+
+    @Test
+    func taskLadderGroupRowsShowDetailsOnClickAndOpenTheirInnerLadderOnDoubleClick() throws {
+        let viewSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+        let featureSource = try Self.sourceFile(
+            "RoutinaMacApp/Features/TaskRanking/TaskRankingFeature.swift"
+        )
+
+        #expect(viewSource.contains("store.send(.groupSelected(task.id))"))
+        #expect(viewSource.contains(".onMacDoubleClick(enabled: canOpenInnerLadder)"))
+        #expect(viewSource.contains("store.send(.childLadderOpened(task.id))"))
+        #expect(viewSource.contains("Click to show details; double-click to open the inner Task Ladder"))
+        #expect(viewSource.contains("Button(\"Show Group Details\")"))
+        #expect(viewSource.contains("Button(\"Open Inner Task Ladder\")"))
+        #expect(viewSource.contains("store.detailGroup"))
+        #expect(featureSource.contains("var selectedGroupID: UUID?"))
+        #expect(featureSource.contains("case groupSelected(UUID)"))
+        #expect(featureSource.contains("var detailGroup: TaskLadderGroup?"))
+        #expect(featureSource.contains("var detailGroupChildCount: Int"))
     }
 
     @Test

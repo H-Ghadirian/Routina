@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0578](0578-separate-task-ladder-details-from-inner-navigation.md) refines [0577](0577-suggest-linked-tasks-as-task-ladder-children.md), [0576](0576-offer-direct-repeating-task-ladder-grouping.md), [0574](0574-separate-task-ladder-placement-from-completion.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** One click on a Mac Task Ladder row shows its task or container-group details, while double-click or the explicit context-menu action opens an available inner ladder.
+
 - **[0577](0577-suggest-linked-tasks-as-task-ladder-children.md) refines [0576](0576-offer-direct-repeating-task-ladder-grouping.md), [0574](0574-separate-task-ladder-placement-from-completion.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** A task-backed group's nested Mac Task Ladder offers eligible bidirectionally linked tasks as explicit Accept/Reject child suggestions while preserving the relationship and its completion meaning.
 
 - **[0576](0576-offer-direct-repeating-task-ladder-grouping.md) refines [0574](0574-separate-task-ladder-placement-from-completion.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** A repeating task can be explicitly activated as a Task Ladder group from Add Task, Edit Task, Task Details, or the Ladder itself, including before it has children, while remaining a real repeating task.
@@ -687,6 +689,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0578](0578-separate-task-ladder-details-from-inner-navigation.md) | Separate Task Ladder Details From Inner Navigation | Accepted | 2026-08-16 |
+| [0577](0577-suggest-linked-tasks-as-task-ladder-children.md) | Suggest Linked Tasks as Task Ladder Children | Accepted | 2026-08-16 |
 | [0576](0576-offer-direct-repeating-task-ladder-grouping.md) | Offer Direct Repeating-Task Ladder Activation | Accepted | 2026-08-15 |
 | [0575](0575-inherit-task-ladder-group-values-from-actionable-tasks.md) | Inherit Task Ladder Group Values From Actionable Tasks | Accepted | 2026-08-15 |
 | [0574](0574-separate-task-ladder-placement-from-completion.md) | Separate Task Ladder Placement From Completion | Accepted | 2026-08-15 |

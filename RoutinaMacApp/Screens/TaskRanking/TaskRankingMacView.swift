@@ -411,11 +411,14 @@ struct TaskRankingMacView: View {
         let isGroup = metadata?.isGroup == true
         let isTaskGroup = metadata?.isTaskGroup == true
         let childCount = metadata?.childCount ?? 0
-        let isSelected = !isGroup && store.selectedTaskID == task.id
+        let canOpenInnerLadder = isGroup || isTaskGroup || childCount > 0
+        let isSelected = isGroup
+            ? store.selectedGroupID == task.id
+            : store.selectedTaskID == task.id
         return HStack(spacing: 9) {
             Button {
-                if isGroup || isTaskGroup || childCount > 0 {
-                    store.send(.childLadderOpened(task.id))
+                if isGroup {
+                    store.send(.groupSelected(task.id))
                 } else {
                     store.send(.taskSelected(task.id))
                 }
@@ -437,7 +440,7 @@ struct TaskRankingMacView: View {
 
                     Spacer(minLength: 2)
 
-                    if isGroup || isTaskGroup || childCount > 0 {
+                    if canOpenInnerLadder {
                         Image(systemName: "chevron.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.tertiary)
@@ -448,6 +451,19 @@ struct TaskRankingMacView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .help(
+                canOpenInnerLadder
+                    ? "Click to show details; double-click to open the inner Task Ladder"
+                    : "Click to show details"
+            )
+            .accessibilityHint(
+                canOpenInnerLadder
+                    ? "Double-click to open the inner Task Ladder"
+                    : "Shows task details"
+            )
+            .onMacDoubleClick(enabled: canOpenInnerLadder) {
+                store.send(.childLadderOpened(task.id))
+            }
 
             if section.supportsManualOrdering {
                 VStack(spacing: 2) {
@@ -479,7 +495,10 @@ struct TaskRankingMacView: View {
         .background(isSelected ? Color.accentColor.opacity(0.14) : .clear)
         .contextMenu {
             if isGroup {
-                Button("Open Group") {
+                Button("Show Group Details") {
+                    store.send(.groupSelected(task.id))
+                }
+                Button("Open Inner Task Ladder") {
                     store.send(.childLadderOpened(task.id))
                 }
                 Button("Edit Group…") {
@@ -504,7 +523,7 @@ struct TaskRankingMacView: View {
                     }
                 }
                 if isTaskGroup || childCount > 0 {
-                    Button("Show Nested Tasks") {
+                    Button("Open Inner Task Ladder") {
                         store.send(.childLadderOpened(task.id))
                     }
                 }
@@ -575,10 +594,10 @@ struct TaskRankingMacView: View {
             action: \.taskDetail
         ) {
             TaskDetailTCAView(store: detailStore)
-        } else if let group = store.scopeParentGroup {
+        } else if let group = store.detailGroup {
             TaskLadderGroupDetailView(
                 group: group,
-                childCount: store.presentation.taskCount,
+                childCount: store.detailGroupChildCount,
                 onEdit: {
                     editingGroupID = group.id
                     isGroupEditorPresented = true
@@ -586,7 +605,7 @@ struct TaskRankingMacView: View {
             )
         } else {
             ContentUnavailableView(
-                "Select a task",
+                "Select a task or group",
                 systemImage: "arrow.up.arrow.down.circle",
                 description: Text("Move categorical tasks up or down to set their place in this metric’s ladder.")
             )

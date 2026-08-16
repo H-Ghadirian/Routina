@@ -20,6 +20,7 @@ struct TaskRankingFeature {
         var scopePath: [UUID] = []
         var presentation = TaskRankingPresentation.empty()
         var selectedTaskID: UUID?
+        var selectedGroupID: UUID?
         var taskDetailState: TaskDetailFeature.State?
         var isLoading = false
         var errorMessage: String?
@@ -37,6 +38,21 @@ struct TaskRankingFeature {
         var scopeParentGroup: TaskLadderGroup? {
             guard let scopeParentID = scopePath.last else { return nil }
             return organization.group(id: scopeParentID)
+        }
+
+        var detailGroup: TaskLadderGroup? {
+            if let selectedGroupID,
+               let selectedGroup = organization.group(id: selectedGroupID) {
+                return selectedGroup
+            }
+            return scopeParentGroup
+        }
+
+        var detailGroupChildCount: Int {
+            guard let group = detailGroup else { return 0 }
+            return organization.childTaskIDs(of: .group(group.id))
+                .intersection(presentation.eligibleTaskIDs)
+                .count
         }
 
         var scopeParentName: String? {
@@ -58,6 +74,7 @@ struct TaskRankingFeature {
         case metricChanged(TaskRankingMetric)
         case directionToggled
         case taskSelected(UUID)
+        case groupSelected(UUID)
         case childLadderOpened(UUID)
         case scopeBackTapped
         case moveTask(UUID, TaskRankingMoveDirection)
@@ -118,6 +135,10 @@ struct TaskRankingFeature {
                     state.selectedTaskID = nil
                     state.taskDetailState = nil
                 }
+                if let selectedGroupID = state.selectedGroupID,
+                   state.organization.group(id: selectedGroupID) == nil {
+                    state.selectedGroupID = nil
+                }
                 return .none
 
             case .flagRulesChanged:
@@ -128,6 +149,10 @@ struct TaskRankingFeature {
             case .organizationChanged:
                 state.organization = appSettingsClient.taskLadderOrganization()
                     .sanitized(validTaskIDs: Set(state.tasks.map(\.id)))
+                if let selectedGroupID = state.selectedGroupID,
+                   state.organization.group(id: selectedGroupID) == nil {
+                    state.selectedGroupID = nil
+                }
                 rebuildPresentation(&state)
                 return .none
 
@@ -165,6 +190,14 @@ struct TaskRankingFeature {
                 selectTask(task, state: &state)
                 return .send(.taskDetail(.onAppear))
 
+            case let .groupSelected(groupID):
+                guard state.organization.group(id: groupID) != nil else { return .none }
+                let previousTaskID = state.selectedTaskID
+                state.selectedGroupID = groupID
+                state.selectedTaskID = nil
+                state.taskDetailState = nil
+                return previousTaskID.map { .cancel(id: CancelID.taskDetail($0)) } ?? .none
+
             case let .childLadderOpened(nodeID):
                 guard !state.scopePath.contains(nodeID),
                       let metadata = state.presentation.rowMetadataByTaskID[nodeID],
@@ -175,6 +208,7 @@ struct TaskRankingFeature {
                 if let task = state.tasks.first(where: { $0.id == nodeID }) {
                     selectTask(task, state: &state)
                 } else {
+                    state.selectedGroupID = nodeID
                     state.selectedTaskID = nil
                     state.taskDetailState = nil
                 }
@@ -216,6 +250,9 @@ struct TaskRankingFeature {
 
             case let .groupDeleted(groupID):
                 state.organization.deleteGroup(id: groupID)
+                if state.selectedGroupID == groupID {
+                    state.selectedGroupID = nil
+                }
                 if state.scopePath.contains(groupID) {
                     state.scopePath = []
                 }
@@ -319,6 +356,7 @@ struct TaskRankingFeature {
     }
 
     private func selectTask(_ task: RoutineTask, state: inout State) {
+        state.selectedGroupID = nil
         state.selectedTaskID = task.id
         state.taskDetailState = HomeTaskSupport.makeTaskDetailState(
             for: task,
