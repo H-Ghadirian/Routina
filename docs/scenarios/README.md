@@ -428,6 +428,21 @@ Given iOS Add Task, Edit Task, or Task Detail shows one or more Flags
 When the Flag chips are rendered
 Then each chip retains its intrinsic label width and wraps to a later row before truncating
 
+### Mac Task Forms Keep Flags Visible
+
+Area: Tasks / macOS Task Forms
+Decision links: [0497](../decisions/0497-use-flags-for-task-behavior-rules.md), [0500](../decisions/0500-move-auto-assume-done-to-flag-rules.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormFlagSuggestionPresentationTests.swift`
+- `Tests/Shared/TaskFormMacLayoutRegressionTests.swift`
+
+Given Mac Add Task or Edit Task has no organizational tags
+And the task has an assigned Flag or Settings has at least one defined Flag
+When the progressive form derives its visible sections
+Then the combined Tags and Flags card remains visible
+And the person can inspect and change the Flag assignment without first using Add More Details
+
 ### Task Detail Tags Use Their Intrinsic Width
 
 Area: Tasks / UI

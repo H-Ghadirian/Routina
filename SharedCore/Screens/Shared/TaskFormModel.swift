@@ -670,8 +670,13 @@ extension TaskFormModel {
         if !attachments.isEmpty {
             sections.insert(.attachment)
         }
-        if !routineTags.isEmpty || hasText(tagDraft.wrappedValue)
-            || !routineFlags.isEmpty || !availableFlags.isEmpty || hasText(flagDraft.wrappedValue) {
+        if TaskFormTagFlagSectionPresentation.hasContent(
+            routineTags: routineTags,
+            tagDraft: tagDraft.wrappedValue,
+            routineFlags: routineFlags,
+            availableFlags: availableFlags,
+            flagDraft: flagDraft.wrappedValue
+        ) {
             sections.insert(.tags)
         }
         if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
@@ -719,6 +724,22 @@ enum TaskFormFlagSuggestionPresentation {
 
     static func visibleAvailableFlags(_ flags: [String], showsAll: Bool) -> [String] {
         showsAll ? flags : Array(flags.prefix(collapsedLimit))
+    }
+}
+
+enum TaskFormTagFlagSectionPresentation {
+    static func hasContent(
+        routineTags: [String],
+        tagDraft: String,
+        routineFlags: [String],
+        availableFlags: [String],
+        flagDraft: String
+    ) -> Bool {
+        !routineTags.isEmpty
+            || !tagDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !routineFlags.isEmpty
+            || !availableFlags.isEmpty
+            || !flagDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
 

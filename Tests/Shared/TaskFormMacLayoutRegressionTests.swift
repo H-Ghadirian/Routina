@@ -61,6 +61,18 @@ struct TaskFormMacLayoutRegressionTests {
         #expect(controls.contains("model.taskLadderGroupEnabled"))
     }
 
+    @Test
+    func macProgressiveFormsCountFlagsWhenDerivingVisibleSections() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/FormSection.swift")
+        let sharedPredicateCall = "TaskFormTagFlagSectionPresentation.hasContent("
+        let callCount = source.components(separatedBy: sharedPredicateCall).count - 1
+
+        #expect(callCount == 3)
+        #expect(source.contains("routineFlags: routineFlags"))
+        #expect(source.contains("routineFlags: organization.routineFlags"))
+        #expect(source.contains("routineFlags: editRoutineFlags"))
+    }
+
     private static func sourceSection(
         startingAt startMarker: String,
         endingAt endMarker: String,

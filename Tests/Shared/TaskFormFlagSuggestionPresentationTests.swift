@@ -18,4 +18,35 @@ struct TaskFormFlagSuggestionPresentationTests {
         )
         #expect(TaskFormFlagSuggestionPresentation.visibleAvailableFlags(flags, showsAll: true) == flags)
     }
+
+    @Test
+    func assignedOrDefinedFlagsPopulateTheCombinedTagFlagSection() {
+        #expect(
+            TaskFormTagFlagSectionPresentation.hasContent(
+                routineTags: [],
+                tagDraft: "",
+                routineFlags: ["Tracking"],
+                availableFlags: [],
+                flagDraft: ""
+            )
+        )
+        #expect(
+            TaskFormTagFlagSectionPresentation.hasContent(
+                routineTags: [],
+                tagDraft: "",
+                routineFlags: [],
+                availableFlags: ["Tracking"],
+                flagDraft: ""
+            )
+        )
+        #expect(
+            !TaskFormTagFlagSectionPresentation.hasContent(
+                routineTags: [],
+                tagDraft: "  ",
+                routineFlags: [],
+                availableFlags: [],
+                flagDraft: "\n"
+            )
+        )
+    }
 }

@@ -170,7 +170,13 @@ extension TaskFormModel {
         if importance.wrappedValue != .level2 || urgency.wrappedValue != .level2 {
             sections.insert(.importanceUrgency)
         }
-        if !routineTags.isEmpty || hasText(tagDraft.wrappedValue) {
+        if TaskFormTagFlagSectionPresentation.hasContent(
+            routineTags: routineTags,
+            tagDraft: tagDraft.wrappedValue,
+            routineFlags: routineFlags,
+            availableFlags: availableFlags,
+            flagDraft: flagDraft.wrappedValue
+        ) {
             sections.insert(.tags)
         }
         if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
@@ -245,7 +251,13 @@ extension AddRoutineFeature.State {
         if basics.importance != .level2 || basics.urgency != .level2 {
             sections.insert(.importanceUrgency)
         }
-        if !organization.routineTags.isEmpty || hasText(organization.tagDraft) {
+        if TaskFormTagFlagSectionPresentation.hasContent(
+            routineTags: organization.routineTags,
+            tagDraft: organization.tagDraft,
+            routineFlags: organization.routineFlags,
+            availableFlags: organization.availableFlags,
+            flagDraft: organization.flagDraft
+        ) {
             sections.insert(.tags)
         }
         if !organization.routineGoals.isEmpty || hasText(organization.goalDraft) {
@@ -336,7 +348,13 @@ extension TaskDetailFeature.State {
         if editImportance != .level2 || editUrgency != .level2 {
             sections.insert(.importanceUrgency)
         }
-        if !editRoutineTags.isEmpty || hasText(editTagDraft) {
+        if TaskFormTagFlagSectionPresentation.hasContent(
+            routineTags: editRoutineTags,
+            tagDraft: editTagDraft,
+            routineFlags: editRoutineFlags,
+            availableFlags: availableFlags,
+            flagDraft: editFlagDraft
+        ) {
             sections.insert(.tags)
         }
         if !editRoutineGoals.isEmpty || hasText(editGoalDraft) {
