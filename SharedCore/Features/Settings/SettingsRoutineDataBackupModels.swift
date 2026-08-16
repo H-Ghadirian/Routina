@@ -112,6 +112,7 @@ extension SettingsRoutineDataPersistence {
             var taskChoiceComparisonCount: Int16?
             var showsTaskDetailHeatmap: Bool?
             var showsTaskDetailHistory: Bool?
+            var isTaskDetailCalendarExpanded: Bool?
             var showsTaskDetailPriority: Bool?
             var hasExplicitImportance: Bool?
             var hasExplicitUrgency: Bool?

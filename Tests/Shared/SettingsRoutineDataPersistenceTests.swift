@@ -306,6 +306,7 @@ struct SettingsRoutineDataPersistenceTests {
             voiceNoteCreatedAt: voiceCreatedAt,
             showsTaskDetailHeatmap: true,
             showsTaskDetailHistory: true,
+            isTaskDetailCalendarExpanded: true,
             showsTaskDetailPriority: true,
             hasExplicitImportance: true,
             hasExplicitUrgency: true
@@ -345,6 +346,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredTask.thinkingNeeded == .high)
         #expect(restoredTask.showsTaskDetailHeatmap)
         #expect(restoredTask.showsTaskDetailHistory)
+        #expect(restoredTask.isTaskDetailCalendarExpanded)
         #expect(restoredTask.showsTaskDetailPriority)
         #expect(restoredTask.hasExplicitImportance)
         #expect(restoredTask.hasExplicitUrgency)

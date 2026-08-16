@@ -55,6 +55,7 @@ struct SettingsRoutineDataBackupMappingTests {
             interval: 0,
             showsTaskDetailHeatmap: true,
             showsTaskDetailHistory: true,
+            isTaskDetailCalendarExpanded: true,
             showsTaskDetailPriority: true,
             hasExplicitImportance: true,
             hasExplicitUrgency: true
@@ -92,6 +93,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.interval == 1)
         #expect(inline.showsTaskDetailHeatmap == true)
         #expect(inline.showsTaskDetailHistory == true)
+        #expect(inline.isTaskDetailCalendarExpanded == true)
         #expect(inline.showsTaskDetailPriority == true)
         #expect(inline.hasExplicitImportance == true)
         #expect(inline.hasExplicitUrgency == true)
@@ -104,6 +106,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(packaged.voiceNoteAttachmentID == voiceAttachmentID)
         #expect(packaged.showsTaskDetailHeatmap == true)
         #expect(packaged.showsTaskDetailHistory == true)
+        #expect(packaged.isTaskDetailCalendarExpanded == true)
         #expect(packaged.showsTaskDetailPriority == true)
         #expect(packaged.hasExplicitImportance == true)
         #expect(packaged.hasExplicitUrgency == true)

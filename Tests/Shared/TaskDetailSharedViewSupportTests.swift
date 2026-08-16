@@ -363,6 +363,19 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func iosTaskDetailCalendarUsesTaskOwnedDisclosureState() throws {
+        let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let macDetail = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+
+        #expect(iosDetail.contains("TaskDetailCalendarDisclosureCard("))
+        #expect(iosDetail.contains("isExpanded: store.task.isTaskDetailCalendarExpanded"))
+        #expect(iosDetail.contains("store.send(.taskDetailCalendarExpansionChanged($0))"))
+        #expect(iosDetail.contains(".contentShape(Rectangle())"))
+        #expect(iosDetail.contains(".accessibilityValue(isExpanded ? \"Expanded\" : \"Collapsed\")"))
+        #expect(!macDetail.contains("TaskDetailCalendarDisclosureCard("))
+    }
+
+    @Test
     func addEventsActionRequiresEventActionsEnabledAndNoLinkedEvents() {
         #expect(TaskDetailEventActionVisibility.shouldShowAddEventsAction(
             hasLinkedEvents: false,

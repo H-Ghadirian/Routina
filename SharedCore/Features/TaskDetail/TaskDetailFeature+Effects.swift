@@ -472,6 +472,23 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleTaskDetailCalendarExpansionChanged(
+        taskID: UUID,
+        isExpanded: Bool
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                task.isTaskDetailCalendarExpanded = isExpanded
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error saving task detail calendar expansion: \(error)")
+            }
+        }
+    }
+
     func handleTaskDetailImportanceRevealed(taskID: UUID) -> Effect<Action> {
         .run { @MainActor _ in
             do {

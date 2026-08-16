@@ -47,6 +47,37 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func taskDetailCalendarExpansionPersistsPerTaskAndCanBeCollapsedAgain() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Plan week", interval: 1, lastDone: nil, emoji: "🗓️")
+        try context.save()
+
+        #expect(!task.isTaskDetailCalendarExpanded)
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.taskDetailCalendarExpansionChanged(true)) {
+            $0.task.isTaskDetailCalendarExpanded = true
+            $0.taskRefreshID = 1
+        }
+
+        let expandedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(expandedTask.isTaskDetailCalendarExpanded)
+
+        await store.send(.taskDetailCalendarExpansionChanged(false)) {
+            $0.task.isTaskDetailCalendarExpanded = false
+            $0.taskRefreshID = 2
+        }
+
+        let collapsedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(!collapsedTask.isTaskDetailCalendarExpanded)
+    }
+
+    @Test
     func deleteRoutineConfirmed_removesTaskPlannerBlocksCancelsNotificationAndRequestsDismiss() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Stretch", interval: 3, lastDone: nil, emoji: "🤸")

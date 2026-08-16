@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0585](0585-persist-ios-task-detail-calendar-expansion-per-task.md) refines [0089](0089-prefer-native-apple-platform-patterns.md), [0100](0100-reveal-task-form-details-by-section.md), [0393](0393-persist-task-detail-heatmap-per-task.md), and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details collapses Calendar by default and remembers each task's explicit expanded or collapsed state through task-owned persistence, copying, synchronization, and backup/import without changing macOS.
+
 - **[0584](0584-group-ios-task-maintenance-in-navigation-overflow.md) revises [0462](0462-use-a-compact-progressive-ios-task-editor.md) and refines [0061](0061-share-stable-routina-deep-links.md), [0089](0089-prefer-native-apple-platform-patterns.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), and [0507](0507-clarify-ios-task-detail-action-hierarchy.md):** iOS Task Details moves deep-link sharing, eligible todo cancellation, and confirmed deletion into one top-trailing vertical-ellipsis menu; completion stays in the primary card, while Edit and optional Cloud sharing remain direct navigation-bar actions.
 
 - **[0582](0582-hide-flagged-task-activity-from-timeline.md) revises [0498](0498-filter-task-lists-by-flags.md) and refines [0497](0497-use-flags-for-task-behavior-rules.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), and [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md):** A `Hide task activity from Timeline` Flag rule omits matching task logs and task-linked Focus by default, while the Timeline Flags filter deliberately reveals matching activity with `All` / `Any` semantics from a cached pre-hide catalog.
@@ -699,6 +701,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0585](0585-persist-ios-task-detail-calendar-expansion-per-task.md) | Persist iOS Task Detail Calendar Expansion Per Task | Accepted | 2026-08-16 |
 | [0584](0584-group-ios-task-maintenance-in-navigation-overflow.md) | Group iOS Task Maintenance in Navigation Overflow | Accepted | 2026-08-16 |
 | [0582](0582-hide-flagged-task-activity-from-timeline.md) | Hide Flagged Task Activity From Timeline by Default | Accepted | 2026-08-16 |
 | [0578](0578-separate-task-ladder-details-from-inner-navigation.md) | Separate Task Ladder Details From Inner Navigation | Accepted | 2026-08-16 |

@@ -239,7 +239,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Trust that personal data and durable preferences remain coherent.
 
-**Desired experience:** Synchronization is unobtrusive, conflicts do not silently discard history, and manual refresh reports only what it can verify. Platform-specific layouts preserve the same product concepts.
+**Desired experience:** Synchronization is unobtrusive, conflicts do not silently discard history, and manual refresh reports only what it can verify. Platform-specific layouts preserve the same product concepts. On iOS, the task calendar stays collapsed until it is useful, and each task remembers whether the person left its calendar expanded or collapsed when Task Details is reopened.
 
 **Successful outcome:** The person continues the same task or review without reconstructing work.
 

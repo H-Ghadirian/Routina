@@ -323,6 +323,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 trackingNudgesEnabled: task.trackingNudgesEnabled ?? true,
                 showsTaskDetailHeatmap: task.showsTaskDetailHeatmap ?? false,
                 showsTaskDetailHistory: task.showsTaskDetailHistory ?? false,
+                isTaskDetailCalendarExpanded: task.isTaskDetailCalendarExpanded ?? false,
                 showsTaskDetailPriority: task.showsTaskDetailPriority ?? false,
                 hasExplicitImportance: task.hasExplicitImportance ?? false,
                 hasExplicitUrgency: task.hasExplicitUrgency ?? false,

@@ -2,6 +2,56 @@ import SwiftUI
 import ComposableArchitecture
 import SwiftData
 
+private struct TaskDetailCalendarDisclosureCard<Content: View>: View {
+    let isExpanded: Bool
+    let onExpansionChanged: (Bool) -> Void
+    let content: Content
+
+    init(
+        isExpanded: Bool,
+        onExpansionChanged: @escaping (Bool) -> Void,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.isExpanded = isExpanded
+        self.onExpansionChanged = onExpansionChanged
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    onExpansionChanged(!isExpanded)
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Label("Calendar", systemImage: "calendar")
+                        .font(.headline)
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .padding(.horizontal, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+            .accessibilityHint(isExpanded ? "Collapses the task calendar" : "Expands the task calendar")
+
+            if isExpanded {
+                Divider()
+                content
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
     let externalBlockingFocusTitle: String?
@@ -685,28 +735,35 @@ detailBody
     }
 
     var calendarSection: some View {
-        TaskDetailCalendarCardContent(
-            displayedMonthStart: displayedMonthStart,
-            onPreviousMonth: {
-                displayedMonthStart = TaskDetailCalendarNavigation.previousMonth(from: displayedMonthStart)
-            },
-            onNextMonth: {
-                displayedMonthStart = TaskDetailCalendarNavigation.nextMonth(from: displayedMonthStart)
-            },
-            logs: store.logs,
-            task: store.task,
-            dueDate: store.resolvedDueDate,
-            softDueDate: store.resolvedSoftDueDate,
-            isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
-            selectedDate: store.resolvedSelectedDate,
-            onSelectDate: { store.send(.selectedDateChanged($0)) },
-            onToday: {
-                let calendar = Calendar.current
-                let today = calendar.startOfDay(for: Date())
-                displayedMonthStart = calendar.startOfMonth(for: today)
-                store.send(.selectedDateChanged(today))
+        TaskDetailCalendarDisclosureCard(
+            isExpanded: store.task.isTaskDetailCalendarExpanded,
+            onExpansionChanged: {
+                store.send(.taskDetailCalendarExpansionChanged($0))
             }
-        )
+        ) {
+            TaskDetailCalendarCardContent(
+                displayedMonthStart: displayedMonthStart,
+                onPreviousMonth: {
+                    displayedMonthStart = TaskDetailCalendarNavigation.previousMonth(from: displayedMonthStart)
+                },
+                onNextMonth: {
+                    displayedMonthStart = TaskDetailCalendarNavigation.nextMonth(from: displayedMonthStart)
+                },
+                logs: store.logs,
+                task: store.task,
+                dueDate: store.resolvedDueDate,
+                softDueDate: store.resolvedSoftDueDate,
+                isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
+                selectedDate: store.resolvedSelectedDate,
+                onSelectDate: { store.send(.selectedDateChanged($0)) },
+                onToday: {
+                    let calendar = Calendar.current
+                    let today = calendar.startOfDay(for: Date())
+                    displayedMonthStart = calendar.startOfMonth(for: today)
+                    store.send(.selectedDateChanged(today))
+                }
+            )
+        }
         .routinaPlatformCalendarCardStyle()
     }
 

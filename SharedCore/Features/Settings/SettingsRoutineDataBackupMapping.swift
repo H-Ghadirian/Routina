@@ -105,6 +105,7 @@ enum SettingsRoutineDataBackupMapping {
             taskChoiceComparisonCount: task.taskChoiceComparisonCount,
             showsTaskDetailHeatmap: task.showsTaskDetailHeatmap,
             showsTaskDetailHistory: task.showsTaskDetailHistory,
+            isTaskDetailCalendarExpanded: task.isTaskDetailCalendarExpanded,
             showsTaskDetailPriority: task.showsTaskDetailPriority,
             hasExplicitImportance: task.hasExplicitImportance,
             hasExplicitUrgency: task.hasExplicitUrgency,

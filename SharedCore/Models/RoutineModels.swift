@@ -90,6 +90,7 @@ final class RoutineTask {
     var trackingNudgesEnabled: Bool = true
     var showsTaskDetailHeatmap: Bool = false
     var showsTaskDetailHistory: Bool = false
+    var isTaskDetailCalendarExpanded: Bool = false
     var showsTaskDetailPriority: Bool = false
     var hasExplicitImportance: Bool = false
     var hasExplicitUrgency: Bool = false
@@ -521,6 +522,7 @@ final class RoutineTask {
         trackingNudgesEnabled: Bool = true,
         showsTaskDetailHeatmap: Bool = false,
         showsTaskDetailHistory: Bool = false,
+        isTaskDetailCalendarExpanded: Bool = false,
         showsTaskDetailPriority: Bool = false,
         hasExplicitImportance: Bool = false,
         hasExplicitUrgency: Bool = false,
@@ -636,6 +638,7 @@ final class RoutineTask {
             : true
         self.showsTaskDetailHeatmap = showsTaskDetailHeatmap
         self.showsTaskDetailHistory = showsTaskDetailHistory
+        self.isTaskDetailCalendarExpanded = isTaskDetailCalendarExpanded
         self.showsTaskDetailPriority = showsTaskDetailPriority
         self.hasExplicitImportance = hasExplicitImportance
         self.hasExplicitUrgency = hasExplicitUrgency
@@ -974,6 +977,7 @@ final class RoutineTask {
             trackingNudgesEnabled: trackingNudgesEnabled,
             showsTaskDetailHeatmap: showsTaskDetailHeatmap,
             showsTaskDetailHistory: showsTaskDetailHistory,
+            isTaskDetailCalendarExpanded: isTaskDetailCalendarExpanded,
             showsTaskDetailPriority: showsTaskDetailPriority,
             hasExplicitImportance: hasExplicitImportance,
             hasExplicitUrgency: hasExplicitUrgency,

@@ -31,6 +31,7 @@ struct SwiftDataModelTests {
         #expect(task.scheduleMode == .fixedInterval)
         #expect(task.priority == .none)
         #expect(!task.showsTaskDetailHistory)
+        #expect(!task.isTaskDetailCalendarExpanded)
         #expect(!task.showsTaskDetailPriority)
         #expect(!task.hasExplicitImportance)
         #expect(!task.hasExplicitUrgency)
@@ -83,6 +84,16 @@ struct SwiftDataModelTests {
         #expect(!visibleByDefault.hidesAssumedDoneCalendarBlock)
         #expect(hiddenByPreference.hidesAssumedDoneCalendarBlock)
         #expect(hiddenByPreference.detachedCopy().hidesAssumedDoneCalendarBlock)
+    }
+
+    @Test
+    func routineTask_copiesTaskDetailCalendarExpansion() {
+        let task = RoutineTask(
+            name: "Review month",
+            isTaskDetailCalendarExpanded: true
+        )
+
+        #expect(task.detachedCopy().isTaskDetailCalendarExpanded)
     }
 
     @Test

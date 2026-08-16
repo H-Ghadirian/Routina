@@ -369,6 +369,7 @@ struct TaskDetailFeature: Reducer {
         case revealUrgencyInTaskDetail
         case revealHeatmapInTaskDetail
         case revealHistoryInTaskDetail
+        case taskDetailCalendarExpansionChanged(Bool)
         case pauseTapped
         case pauseUntilTapped(Date)
         case notTodayTapped
@@ -1268,6 +1269,15 @@ struct TaskDetailFeature: Reducer {
             state.task.showsTaskDetailHistory = true
             refreshTaskView(&state)
             return handleTaskDetailHistoryRevealed(taskID: state.task.id)
+
+        case let .taskDetailCalendarExpansionChanged(isExpanded):
+            guard state.task.isTaskDetailCalendarExpanded != isExpanded else { return .none }
+            state.task.isTaskDetailCalendarExpanded = isExpanded
+            refreshTaskView(&state)
+            return handleTaskDetailCalendarExpansionChanged(
+                taskID: state.task.id,
+                isExpanded: isExpanded
+            )
 
         case let .requestRemoveLogEntry(timestamp):
             return dialogLifecycleActionHandler().requestRemoveLogEntry(timestamp, state: &state)
