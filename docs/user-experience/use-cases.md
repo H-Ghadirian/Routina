@@ -179,7 +179,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Record relevant context such as sleep, time away, a note, an event, an emotion, or a place visit without pretending it is a task.
 
-**Desired experience:** Each record keeps its own meaning and appears in a coherent personal history. Optional context features do not complicate the core task experience when unavailable or disabled, including by leaving unavailable choices in creation or history filters.
+**Desired experience:** Each record keeps its own meaning and appears in a coherent personal history. Optional context features do not complicate the core task experience when unavailable or disabled, including by leaving unavailable choices in creation or history filters. On iOS, disabling Sleep or its shake shortcut means a physical shake cannot open or complete a Sleep-mode start.
 
 **Successful outcome:** Later review explains the day more accurately.
 

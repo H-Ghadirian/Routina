@@ -10,6 +10,40 @@ import Testing
 #endif
 
 struct SleepSessionSupportTests {
+    @Test
+    func shakeStartAvailability_requiresSleepFeatureAndShortcutFlags() {
+        #expect(SleepShakeStartAvailability.isEnabled(
+            isAwayEnabled: true,
+            isSleepExperimentEnabled: true,
+            isShakeShortcutEnabled: true,
+            hasActiveSleepSession: false
+        ))
+        #expect(!SleepShakeStartAvailability.isEnabled(
+            isAwayEnabled: false,
+            isSleepExperimentEnabled: true,
+            isShakeShortcutEnabled: true,
+            hasActiveSleepSession: false
+        ))
+        #expect(!SleepShakeStartAvailability.isEnabled(
+            isAwayEnabled: true,
+            isSleepExperimentEnabled: false,
+            isShakeShortcutEnabled: true,
+            hasActiveSleepSession: false
+        ))
+        #expect(!SleepShakeStartAvailability.isEnabled(
+            isAwayEnabled: true,
+            isSleepExperimentEnabled: true,
+            isShakeShortcutEnabled: false,
+            hasActiveSleepSession: false
+        ))
+        #expect(!SleepShakeStartAvailability.isEnabled(
+            isAwayEnabled: true,
+            isSleepExperimentEnabled: true,
+            isShakeShortcutEnabled: true,
+            hasActiveSleepSession: true
+        ))
+    }
+
     @MainActor
     @Test
     func startSleep_createsSingleActiveSessionUntilWake() throws {

@@ -18,6 +18,20 @@ enum SleepSessionSupportError: LocalizedError, Equatable {
     }
 }
 
+enum SleepShakeStartAvailability {
+    static func isEnabled(
+        isAwayEnabled: Bool,
+        isSleepExperimentEnabled: Bool,
+        isShakeShortcutEnabled: Bool,
+        hasActiveSleepSession: Bool
+    ) -> Bool {
+        isAwayEnabled
+            && isSleepExperimentEnabled
+            && isShakeShortcutEnabled
+            && !hasActiveSleepSession
+    }
+}
+
 enum SleepSessionSupport {
     @MainActor
     static func activeSession(in context: ModelContext) throws -> SleepSession? {

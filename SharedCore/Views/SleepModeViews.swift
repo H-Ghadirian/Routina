@@ -17,6 +17,14 @@ private struct SleepModeRootModifier: ViewModifier {
         UserDefaultBoolValueKey.appSettingShakeToStartSleepEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isShakeToStartSleepEnabled = true
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isSleepExperimentEnabled = false
     @State private var isShakeConfirmationPresented = false
     @State private var focusStopWarningMessage: String?
 
@@ -47,7 +55,7 @@ private struct SleepModeRootModifier: ViewModifier {
         #endif
         #if os(iOS)
         .background {
-            if isShakeToStartSleepEnabled, activeSleepSession == nil {
+            if isShakeSleepStartAvailable {
                 SleepShakeStartBridge {
                     prepareSleepConfirmation()
                 }
@@ -63,6 +71,11 @@ private struct SleepModeRootModifier: ViewModifier {
         } message: {
             Text(sleepConfirmationMessage)
         }
+        .onChange(of: isShakeSleepStartAvailable) { _, isAvailable in
+            if !isAvailable {
+                clearShakeSleepStartPresentation()
+            }
+        }
         #endif
     }
 
@@ -70,8 +83,22 @@ private struct SleepModeRootModifier: ViewModifier {
         activeSleepSessions.first
     }
 
+    private var isShakeSleepStartAvailable: Bool {
+        SleepShakeStartAvailability.isEnabled(
+            isAwayEnabled: isAwayEnabled,
+            isSleepExperimentEnabled: isSleepExperimentEnabled,
+            isShakeShortcutEnabled: isShakeToStartSleepEnabled,
+            hasActiveSleepSession: activeSleepSession != nil
+        )
+    }
+
     @MainActor
     private func prepareSleepConfirmation() {
+        guard isShakeSleepStartAvailable else {
+            clearShakeSleepStartPresentation()
+            return
+        }
+
         do {
             focusStopWarningMessage = try SleepSessionSupport.activeFocusTimerWarningMessage(in: modelContext)
         } catch {
@@ -83,12 +110,22 @@ private struct SleepModeRootModifier: ViewModifier {
 
     @MainActor
     private func startSleep() {
+        guard isShakeSleepStartAvailable else {
+            clearShakeSleepStartPresentation()
+            return
+        }
+
         do {
             _ = try SleepSessionSupport.startSleep(in: modelContext)
-            focusStopWarningMessage = nil
+            clearShakeSleepStartPresentation()
         } catch {
             NSLog("Failed to start sleep session from shake: \(error.localizedDescription)")
         }
+    }
+
+    private func clearShakeSleepStartPresentation() {
+        isShakeConfirmationPresented = false
+        focusStopWarningMessage = nil
     }
 
     private var sleepConfirmationTitle: String {
@@ -279,6 +316,11 @@ private struct SleepShakeStartBridge: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: Controller, context: Context) {
         uiViewController.onShake = onShake
+    }
+
+    static func dismantleUIViewController(_ uiViewController: Controller, coordinator: ()) {
+        uiViewController.onShake = {}
+        uiViewController.resignFirstResponder()
     }
 
     final class Controller: UIViewController {

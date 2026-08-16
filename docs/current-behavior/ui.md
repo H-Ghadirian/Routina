@@ -4,6 +4,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 
 ## Key Decisions
 
+- [0012](../decisions/0012-model-sleep-as-app-level-session-mode.md)
 - [0024](../decisions/0024-adopt-liquid-glass-ui-surfaces.md)
 - [0089](../decisions/0089-prefer-native-apple-platform-patterns.md)
 - [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md)
@@ -40,6 +41,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - [0437](../decisions/0437-compact-wide-mac-task-forms.md)
 - [0439](../decisions/0439-keep-cadence-dependent-controls-after-repeat.md)
 - [0457](../decisions/0457-confirm-successful-mac-task-creation.md)
+- [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md)
 - [0459](../decisions/0459-route-single-ios-new-action-directly.md)
 - [0539](../decisions/0539-offer-ios-task-creation-from-home-empty-states.md)
 - [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md)
@@ -60,6 +62,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - iOS Timeline renders from a stable explicit SwiftData snapshot and refetches it on appearance, app activation, and Routina's semantic update notification so newly imported CloudKit activity appears without reopening the app or waiting for a long-lived query to invalidate.
 - iOS Timeline's Type sheet and horizontal type controls follow feature availability. Events and Emotions require `Show Event and Emotion actions`; Sleep requires both `Show Away` and `Show Sleep tab`; Notes, Places, and Away retain their own gates. Turning a gate off removes its type choice immediately and normalizes a stale selection back to `All`, so unavailable selections do not remain active or keep the filter button highlighted.
 - The iOS bottom-bar `New` action always offers Task. Production has no Beta Experiment actions, so New routes directly to task creation. Development builds derive optional actions from experiment availability: Event and Emotion follow their experiment, Goal follows `Show Goals tab`, Note follows `Show Notes`, Check In follows `Show Places`, Away follows `Show Away`, and Going to sleep requires Away, the nested Sleep experiment, and its dedicated New-sheet shortcut preference. When exactly one action is available, New opens it directly; with two or more actions, New presents the chooser.
+- The iOS shake-to-sleep shortcut requires `Show Away`, `Show Sleep tab`, and `Shake to start sleep mode` to all be enabled. Turning any of them off immediately removes the shake listener, dismisses a pending shake confirmation, and prevents a stale shake or confirmation action from starting Sleep mode.
 - A truly empty iOS Home list shows `Add New Task`. When a non-empty Home search has no matching known task, its no-results state shows `Create Task`; both actions open the shared Smart Add sheet, and the search action pre-fills it with the trimmed query. If a known task matches but current filters hide it, Home omits the create action to avoid suggesting a duplicate.
 - Compact iOS More keeps `Review tasks` as its dedicated task-review destination. It contains `Help me choose` first, then a clearly labeled `Add missing task details` group for time estimates, Pressure, Thinking needed, Importance, and Urgency. The root More list stays concise while the native navigation stack preserves a normal back path through each review.
 - `Help me choose` lets the person select available time, current energy, and whether they want to reduce pressure, meet urgency, or make progress. It requires every currently selectable task to have explicit Importance and Urgency plus Pressure, Thinking needed, and a time estimate; missing-field counts direct the person to the matching review. Canceled, paused, snoozed, assumed-done, and current-period-complete tasks, plus tasks with a confirmed unresolved `Blocked by` prerequisite, are excluded before readiness and ranking. Once ready, the reducer compares only tasks that are equally relevant for the chosen condition and have an equal learned tie-break. Each choice persists a separate task-choice score and comparison count, then moves to the next unresolved tie; the score is never presented as or allowed to change Importance, Urgency, Pressure, Thinking needed, Priority, duration, planning, scheduling, or order. When no relevant ties remain, it recommends the highest-ranked task and can open the existing Home task details. The MVP has no macOS entry point.

@@ -2439,7 +2439,7 @@ inset rather than leaving unused width after them
 ### iOS New Actions Follow Feature Availability
 
 Area: Settings / UI
-Decision links: [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md)
+Decision links: [0012](../decisions/0012-model-sleep-as-app-level-session-mode.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md), [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md)
 Current behavior: [Settings](../current-behavior/settings.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/IOSNewTabActionAvailabilityTests.swift`
@@ -2457,6 +2457,14 @@ Given the persisted Sleep experiment is enabled but its parent Away experiment
 is disabled
 When the user opens New
 Then Going to sleep remains absent
+
+Given `Show Away`, `Show Sleep tab`, or `Shake to start sleep mode` is off
+When the person shakes the iOS device
+Then no Sleep confirmation opens and no Sleep session starts
+
+Given a shake confirmation was already open when one of those settings turns off
+When the person tries to confirm the stale action
+Then the confirmation is dismissed and no Sleep session starts
 
 Given an optional action becomes unavailable before a queued selection routes
 When the pending action is performed

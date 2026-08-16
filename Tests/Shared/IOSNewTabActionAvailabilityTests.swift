@@ -62,6 +62,31 @@ struct IOSNewTabActionAvailabilityTests {
     }
 
     @Test
+    func shakeSleepRechecksAvailabilityBeforeConfirmationAndStart() throws {
+        let source = try Self.sourceFile("SharedCore/Views/SleepModeViews.swift")
+        let confirmation = try Self.functionSource(
+            named: "private func prepareSleepConfirmation",
+            endingAt: "private func startSleep",
+            in: source
+        )
+        let start = try Self.functionSource(
+            named: "private func startSleep",
+            endingAt: "private func clearShakeSleepStartPresentation",
+            in: source
+        )
+
+        #expect(source.contains("appSettingAwayEnabled.rawValue"))
+        #expect(source.contains("appSettingStatsSleepTabEnabled.rawValue"))
+        #expect(source.contains("appSettingShakeToStartSleepEnabled.rawValue"))
+        #expect(source.contains("if isShakeSleepStartAvailable"))
+        #expect(confirmation.contains("guard isShakeSleepStartAvailable else"))
+        #expect(start.contains("guard isShakeSleepStartAvailable else"))
+        #expect(source.contains(".onChange(of: isShakeSleepStartAvailable)"))
+        #expect(source.contains("static func dismantleUIViewController"))
+        #expect(source.contains("uiViewController.resignFirstResponder()"))
+    }
+
+    @Test
     func iosBetaExperimentsExposeEventEmotionGate() throws {
         let source = try Self.sourceFile(
             "iOS/Screens/Settings/SettingsDataSupportDetailViews.swift"
