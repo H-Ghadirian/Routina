@@ -116,6 +116,7 @@ struct TaskDetailOptionalActionsSectionView: View {
                 TaskDetailCollapsibleSectionHeaderView(
                     title: "Add more details",
                     count: actions.count,
+                    countText: actions.count == 1 ? "1 option" : "\(actions.count) options",
                     isExpanded: isExpanded,
                     onToggle: { isExpanded.toggle() }
                 )

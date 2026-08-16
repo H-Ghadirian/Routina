@@ -41,7 +41,14 @@ struct TaskDetailPlatformActionParityTests {
         #expect(toolbarSource.contains("store.send(.setDeleteConfirmation(true))"))
         #expect(toolbarSource.contains("Text(\"⋮\")"))
         #expect(!toolbarSource.contains("ellipsis.vertical"))
+        #expect(toolbarSource.contains(".font(.system(size: 22, weight: .bold, design: .rounded))"))
+        #expect(toolbarSource.contains(".frame(width: 24, height: 24)"))
+        #expect(toolbarSource.contains(".contentShape(Rectangle())"))
         #expect(toolbarSource.contains(".accessibilityLabel(\"More task actions\")"))
+        #expect(toolbarSource.contains("taskIdentityLabel"))
+        #expect(toolbarSource.contains("Text(RoutineTask.trimmedName(store.task.name) ?? \"Task\")"))
+        #expect(toolbarSource.contains(".lineLimit(1)"))
+        #expect(toolbarSource.contains(".frame(maxWidth: 150)"))
         #expect(!toolbarSource.contains("RoutinaDeepLinkShareMenu("))
         #expect(!actionControlsSource.contains("TaskDetailCancelTodoButton"))
         #expect(!editSource.contains("onDelete:"))
@@ -107,6 +114,45 @@ struct TaskDetailPlatformActionParityTests {
 
         try assertOptionalActionsAreLast(in: todoContent)
         try assertOptionalActionsAreLast(in: routineContent)
+    }
+
+    @Test
+    func iosTodoCompletionPrecedesSecondaryCalendarWithoutAnEmptyOuterCard() throws {
+        let detailSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let actionControlsSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+        let todoContent = try Self.sourceSection(
+            startingAt: "private var todoDetailContent",
+            endingAt: "private var taskDetailContent",
+            in: detailSource
+        )
+        let todoActions = try Self.sourceSection(
+            startingAt: "struct TaskDetailTodoPrimaryActionSection",
+            endingAt: "struct TaskDetailRoutinePrimaryActionSection",
+            in: actionControlsSource
+        )
+
+        let header = try #require(todoContent.range(of: "todoHeaderSection"))
+        let completion = try #require(todoContent.range(of: "TaskDetailTodoPrimaryActionSection("))
+        let calendar = try #require(todoContent.range(of: "calendarSection"))
+        #expect(header.lowerBound < completion.lowerBound)
+        #expect(completion.lowerBound < calendar.lowerBound)
+
+        #expect(todoActions.contains("if hasSupportingContext"))
+        #expect(todoActions.contains("else {\n                TaskDetailPrimaryActionButton(store: store)"))
+        #expect(todoActions.contains(".detailCardStyle()"))
+    }
+
+    @Test
+    func iosAddMoreDetailsExplainsItsOptionCount() throws {
+        let source = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailExtrasSectionView.swift"
+        )
+
+        #expect(source.contains("countText: actions.count == 1 ? \"1 option\" : \"\\(actions.count) options\""))
     }
 
     @Test

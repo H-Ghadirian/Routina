@@ -25,8 +25,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
                         .stroke(Color.white.opacity(0.16), lineWidth: 1)
                 )
             } else {
-                Text(store.routineEmoji)
-                    .font(TaskDetailPlatformStyle.principalTitleFont)
+                taskIdentityLabel
             }
         }
 
@@ -85,9 +84,27 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     }
                 } label: {
                     Text("⋮")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel("More task actions")
             }
         }
+    }
+
+    private var taskIdentityLabel: some View {
+        HStack(spacing: 6) {
+            Text(store.routineEmoji)
+                .font(TaskDetailPlatformStyle.principalTitleFont)
+
+            Text(RoutineTask.trimmedName(store.task.name) ?? "Task")
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+        }
+        .frame(maxWidth: 150)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Task: \(RoutineTask.trimmedName(store.task.name) ?? "Untitled task")")
     }
 }

@@ -297,14 +297,14 @@ detailBody
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
-                notificationDisabledWarningSection
-                calendarSection
                 TaskDetailTodoPrimaryActionSection(
                     store: store,
                     showsTodoStateControl: shouldShowTodoStateControl,
                     stateTimingSummary: todoStateTimingSummary,
                     showPersianDates: showPersianDates
                 )
+                notificationDisabledWarningSection
+                calendarSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
@@ -803,18 +803,13 @@ detailBody
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                if shouldShowImportanceControl {
-                    TaskDetailImportancePickerPill(store: store)
-                }
-                if shouldShowUrgencyControl {
-                    TaskDetailUrgencyPickerPill(store: store)
-                }
-                if shouldShowPressureControl {
-                    TaskDetailPressurePickerPill(store: store)
-                }
-                if shouldShowThinkingNeededControl {
-                    TaskDetailThinkingNeededPickerPill(store: store)
-                }
+                TaskDetailPriorityContextControls(
+                    store: store,
+                    showsImportance: shouldShowImportanceControl,
+                    showsUrgency: shouldShowUrgencyControl,
+                    showsPressure: shouldShowPressureControl,
+                    showsThinkingNeeded: shouldShowThinkingNeededControl
+                )
                 if shouldShowTimeControl {
                     todoTimeSpentHeaderBox
                 }
@@ -844,18 +839,13 @@ detailBody
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                if shouldShowImportanceControl {
-                    TaskDetailImportancePickerPill(store: store)
-                }
-                if shouldShowUrgencyControl {
-                    TaskDetailUrgencyPickerPill(store: store)
-                }
-                if shouldShowPressureControl {
-                    TaskDetailPressurePickerPill(store: store)
-                }
-                if shouldShowThinkingNeededControl {
-                    TaskDetailThinkingNeededPickerPill(store: store)
-                }
+                TaskDetailPriorityContextControls(
+                    store: store,
+                    showsImportance: shouldShowImportanceControl,
+                    showsUrgency: shouldShowUrgencyControl,
+                    showsPressure: shouldShowPressureControl,
+                    showsThinkingNeeded: shouldShowThinkingNeededControl
+                )
                 headerGoalsBox
             }
         } flagChip: { flag in

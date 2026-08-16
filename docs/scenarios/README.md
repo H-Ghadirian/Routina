@@ -446,6 +446,33 @@ And an unfinished one-off task also offers Cancel todo under its existing eligib
 And Cancel todo is absent from the primary action card
 And Delete Task is absent from the iOS Edit Task form
 And Edit and optional Cloud sharing remain direct navigation-bar actions
+And the vertical-dot trigger has a bold, comfortably legible size beside Edit
+
+### iOS Task Detail Keeps Primary Context Easy To Scan
+
+Area: Tasks / UI
+Decision links: [0594](../decisions/0594-simplify-ios-task-detail-scan-and-action-hierarchy.md), [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md), [0585](../decisions/0585-persist-ios-task-detail-calendar-expansion-per-task.md), [0508](../decisions/0508-keep-ios-add-more-details-last.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+- `Tests/Shared/TaskDetailDateMetadataPresentationTests.swift`
+- `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+
+Given an active todo is open on today's date in iOS Task Details
+Then its header shows Status without a redundant `Selected / Today` badge
+And its completion action appears before notification context and Calendar
+And a standalone completion action does not have an otherwise-empty outer card
+
+When the person selects another day in Calendar
+Then the header adds `Viewing` with that date
+And the selected date continues to control eligible completion, undo, checklist, and cancellation behavior
+
+Given saved Importance, Urgency, Pressure, or Thinking needed values are visible
+Then the controls retain that order and adaptively wrap at ordinary text sizes
+And accessibility text sizes stack the controls with explicit labels, values, strokes, and 44-point-high visible targets
+
+Then the navigation principal combines the task emoji with a bounded one-line task name
+And `Add more details` explains its badge as `1 option` or `<count> options`
 
 ### Task Detail Flags Use Available Width
 

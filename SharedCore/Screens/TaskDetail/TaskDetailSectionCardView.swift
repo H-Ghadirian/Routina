@@ -62,6 +62,7 @@ extension View {
 struct TaskDetailCollapsibleSectionHeaderView: View {
     let title: String
     let count: Int
+    var countText: String? = nil
     let isExpanded: Bool
     let onToggle: () -> Void
 
@@ -76,7 +77,7 @@ struct TaskDetailCollapsibleSectionHeaderView: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
 
-                Text(count.formatted())
+                Text(countText ?? count.formatted())
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)

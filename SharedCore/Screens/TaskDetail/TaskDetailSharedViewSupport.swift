@@ -81,20 +81,27 @@ enum TaskDetailHeaderBadgePresentation {
 
         switch layout {
         case .mobile:
-            rows = [[
+            var statusRow = [
                 TaskDetailHeaderBadgeItem(
                     title: "Status",
                     value: state.summaryStatusTitle,
                     systemImage: nil,
                     tint: summaryStatusColor
-                ),
-                TaskDetailHeaderBadgeItem(
-                    title: "Selected",
-                    value: state.selectedDateMetadataText,
-                    systemImage: nil,
-                    tint: .accentColor
                 )
-            ]]
+            ]
+
+            if state.shouldShowSelectedDateMetadata {
+                statusRow.append(
+                    TaskDetailHeaderBadgeItem(
+                        title: "Viewing",
+                        value: state.selectedDateMetadataText,
+                        systemImage: nil,
+                        tint: .accentColor
+                    )
+                )
+            }
+
+            rows = [statusRow]
 
         case .desktop:
             rows = []

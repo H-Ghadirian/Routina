@@ -55,6 +55,23 @@ struct TaskDetailDateMetadataPresentationTests {
     }
 
     @Test
+    func selectedDateMetadataAppearsOnlyForActiveTodoAwayFromToday() throws {
+        let task = RoutineTask(scheduleMode: .oneOff)
+        let yesterday = try #require(
+            Calendar.current.date(byAdding: .day, value: -1, to: Date())
+        )
+
+        #expect(!TaskDetailDateMetadataPresentation.shouldShowSelectedDateMetadata(
+            selectedDate: Date(),
+            task: task
+        ))
+        #expect(TaskDetailDateMetadataPresentation.shouldShowSelectedDateMetadata(
+            selectedDate: yesterday,
+            task: task
+        ))
+    }
+
+    @Test
     func scheduledTimeBlockMetadataDescribesOneOffDateAndRange() throws {
         let calendar = makeTestCalendar()
         let task = RoutineTask(

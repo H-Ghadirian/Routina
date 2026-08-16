@@ -12,6 +12,10 @@ Accepted
 
 - [0462: Use a Compact Progressive iOS Task Editor](0462-use-a-compact-progressive-ios-task-editor.md)
 
+## Revised By
+
+- [0594: Simplify iOS Task Detail Scan and Action Hierarchy](0594-simplify-ios-task-detail-scan-and-action-hierarchy.md) for the simple todo completion card only
+
 ## Refines
 
 - [0061: Share Stable Routina Deep Links](0061-share-stable-routina-deep-links.md)

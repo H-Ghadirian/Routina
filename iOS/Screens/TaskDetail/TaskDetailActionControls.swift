@@ -9,6 +9,24 @@ struct TaskDetailTodoPrimaryActionSection: View {
     @State private var isStateTimingExpanded = false
 
     var body: some View {
+        Group {
+            if hasSupportingContext {
+                actionContent
+                    .padding(16)
+                    .detailCardStyle()
+            } else {
+                TaskDetailPrimaryActionButton(store: store)
+            }
+        }
+        .onChange(of: store.task.id) { _, _ in
+            isStateTimingExpanded = false
+        }
+        .onChange(of: store.task.todoStateRawValue) { _, _ in
+            isStateTimingExpanded = false
+        }
+    }
+
+    private var actionContent: some View {
         VStack(alignment: .leading, spacing: 10) {
             if showsTodoStateControl {
                 todoStateControl
@@ -33,14 +51,13 @@ struct TaskDetailTodoPrimaryActionSection: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(16)
-        .detailCardStyle()
-        .onChange(of: store.task.id) { _, _ in
-            isStateTimingExpanded = false
-        }
-        .onChange(of: store.task.todoStateRawValue) { _, _ in
-            isStateTimingExpanded = false
-        }
+    }
+
+    private var hasSupportingContext: Bool {
+        showsTodoStateControl
+            || (!store.task.isCompletedOneOff
+                && !store.task.isCanceledOneOff
+                && !store.blockingRelationships.isEmpty)
     }
 
     @ViewBuilder
@@ -243,6 +260,45 @@ enum TaskDetailIOSCompletionPresentation {
     }
 }
 
+struct TaskDetailPriorityContextControls: View {
+    let store: StoreOf<TaskDetailFeature>
+    let showsImportance: Bool
+    let showsUrgency: Bool
+    let showsPressure: Bool
+    let showsThinkingNeeded: Bool
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                controls
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                controls
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var controls: some View {
+        if showsImportance {
+            TaskDetailImportancePickerPill(store: store)
+        }
+        if showsUrgency {
+            TaskDetailUrgencyPickerPill(store: store)
+        }
+        if showsPressure {
+            TaskDetailPressurePickerPill(store: store)
+        }
+        if showsThinkingNeeded {
+            TaskDetailThinkingNeededPickerPill(store: store)
+        }
+    }
+}
+
 struct TaskDetailPressurePickerPill: View {
     let store: StoreOf<TaskDetailFeature>
     @State private var isPresented = false
@@ -254,13 +310,14 @@ struct TaskDetailPressurePickerPill: View {
             isPresented = true
         } label: {
             Label("Pressure: \(pressure.title)", systemImage: TaskDetailPriorityPresentation.pressureSystemImage(for: pressure))
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(TaskDetailPriorityPresentation.pressureTint(for: pressure, style: .compactPill))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(TaskDetailPriorityPresentation.pressureTint(for: pressure, style: .compactPill).opacity(0.12), in: Capsule())
+                .taskDetailPriorityPillStyle(
+                    tint: TaskDetailPriorityPresentation.pressureTint(for: pressure, style: .compactPill)
+                )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Pressure")
+        .accessibilityValue(pressure.title)
+        .accessibilityHint("Changes the task pressure")
         .confirmationDialog("Set Pressure", isPresented: $isPresented) {
             ForEach(RoutineTaskPressure.allCases, id: \.self) { option in
                 if option != pressure {
@@ -288,13 +345,12 @@ struct TaskDetailImportancePickerPill: View {
             isPresented = true
         } label: {
             Label("Importance: \(importance.title)", systemImage: "arrow.up.circle.fill")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(tint)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(tint.opacity(0.12), in: Capsule())
+                .taskDetailPriorityPillStyle(tint: tint)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Importance")
+        .accessibilityValue(importance.title)
+        .accessibilityHint("Changes the task importance")
         .confirmationDialog("Set Importance", isPresented: $isPresented) {
             ForEach(RoutineTaskImportance.allCases, id: \.self) { option in
                 if option != importance {
@@ -322,13 +378,12 @@ struct TaskDetailUrgencyPickerPill: View {
             isPresented = true
         } label: {
             Label("Urgency: \(urgency.title)", systemImage: "clock.fill")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(tint)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(tint.opacity(0.12), in: Capsule())
+                .taskDetailPriorityPillStyle(tint: tint)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Urgency")
+        .accessibilityValue(urgency.title)
+        .accessibilityHint("Changes the task urgency")
         .confirmationDialog("Set Urgency", isPresented: $isPresented) {
             ForEach(RoutineTaskUrgency.allCases, id: \.self) { option in
                 if option != urgency {
@@ -355,13 +410,12 @@ struct TaskDetailThinkingNeededPickerPill: View {
             isPresented = true
         } label: {
             Label("Thinking: \(level.title)", systemImage: "lightbulb.fill")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.indigo)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.indigo.opacity(0.12), in: Capsule())
+                .taskDetailPriorityPillStyle(tint: .indigo)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Thinking needed")
+        .accessibilityValue(level.title)
+        .accessibilityHint("Changes how much thinking the task needs")
         .confirmationDialog("Set Thinking Needed", isPresented: $isPresented) {
             ForEach(RoutineTaskThinkingNeeded.allCases, id: \.self) { option in
                 if option != level {
@@ -374,6 +428,30 @@ struct TaskDetailThinkingNeededPickerPill: View {
         } message: {
             Text("Current: \(level.title)")
         }
+    }
+}
+
+private struct TaskDetailPriorityPillStyle: ViewModifier {
+    let tint: Color
+
+    func body(content: Content) -> some View {
+        content
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 44)
+            .background(tint.opacity(0.15), in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(tint.opacity(0.30), lineWidth: 1)
+            }
+            .contentShape(Capsule())
+    }
+}
+
+private extension View {
+    func taskDetailPriorityPillStyle(tint: Color) -> some View {
+        modifier(TaskDetailPriorityPillStyle(tint: tint))
     }
 }
 
