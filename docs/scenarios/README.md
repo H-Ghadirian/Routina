@@ -29,6 +29,19 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Task Creation Remains Unlimited
+
+Area: Tasks / Capture
+Decision links: [0583](../decisions/0583-keep-task-creation-unlimited.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/UnlimitedTaskCreationTests.swift`
+
+Given a person already has more than the former free active-task allowance
+When they create another task from a detailed or quick creation path
+Then Routina saves the task without counting existing tasks
+And no purchase paywall, entitlement check, or development override participates
+
 ### Home And Task Detail Use The Latest Recorded Completion
 
 Area: Tasks / Home
@@ -2579,7 +2592,7 @@ And macOS cards and iOS Compact-mode rows remain unchanged
 ### One-Off Task Archiving Keeps It Out of Suggestions
 
 Area: Tasks / Lifecycle
-Decision links: [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md)
+Decision links: [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0583](../decisions/0583-keep-task-creation-unlimited.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/TaskDetailFeatureTests.swift`

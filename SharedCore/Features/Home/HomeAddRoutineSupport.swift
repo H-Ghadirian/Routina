@@ -119,9 +119,7 @@ enum HomeAddRoutineSupport {
         scheduleAnchor: @escaping @MainActor @Sendable () -> Date,
         calendar: Calendar,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,
-        currentEntitlement: @escaping @Sendable () async -> RoutinaSubscriptionEntitlement,
         savedAction: @escaping @Sendable (RoutineTask) -> Action,
-        subscriptionRequiredAction: @escaping @Sendable (RoutinaTaskLimitSnapshot) -> Action,
         failedAction: @escaping @Sendable () -> Action
     ) -> Effect<Action> {
         .run { @MainActor send in
@@ -139,16 +137,6 @@ enum HomeAddRoutineSupport {
                 }
 
                 let referenceDate = scheduleAnchor()
-                if let snapshot = RoutinaTaskUsageGate.limitSnapshot(
-                    for: existingTasks,
-                    entitlement: await currentEntitlement(),
-                    referenceDate: referenceDate,
-                    calendar: calendar
-                ) {
-                    send(subscriptionRequiredAction(snapshot))
-                    return
-                }
-
                 let goalIDs = try RoutineGoalPersistence.ensureGoals(request.goals, in: context)
                 let newRoutine = makeRoutine(
                     from: request,

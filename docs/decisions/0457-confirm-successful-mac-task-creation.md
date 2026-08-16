@@ -41,8 +41,7 @@ trailing inset.
 
 - A successful full-form save has immediate, explicit feedback in addition to
   the selected detail screen.
-- Canceling Add Task and failed or subscription-gated saves do not show a false
-  success confirmation.
+- Canceling Add Task and failed saves do not show a false success confirmation.
 - Quick Add keeps its optional navigation action, while full Add Task avoids a
   redundant action.
 - Toast controls no longer appear separated from the trailing edge by unused

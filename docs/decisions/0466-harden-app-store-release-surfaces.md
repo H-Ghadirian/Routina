@@ -4,7 +4,9 @@ Status: Accepted
 
 Date: 2026-07-31
 
-Refines: [0290 Limit Free Active Tasks Behind Subscription](0290-limit-free-active-tasks-behind-subscription.md), [0293 Add Settings Unlimited Task Override While Products Are Unavailable](0293-add-settings-unlimited-task-override-while-products-unavailable.md), [0374 Move Unlimited Task Override to Beta Experiments](0374-move-unlimited-task-override-to-beta-experiments.md), [0417 Route Feature Data Loading Through Reducers](0417-route-feature-data-loading-through-reducers.md)
+Refines: [0290 Limit Free Active Tasks Behind Subscription](superseded/0290-limit-free-active-tasks-behind-subscription.md), [0293 Add Settings Unlimited Task Override While Products Are Unavailable](superseded/0293-add-settings-unlimited-task-override-while-products-unavailable.md), [0374 Move Unlimited Task Override to Beta Experiments](superseded/0374-move-unlimited-task-override-to-beta-experiments.md), [0417 Route Feature Data Loading Through Reducers](0417-route-feature-data-loading-through-reducers.md)
+
+Task-purchase portion revised by: [0583 Keep Task Creation Unlimited](0583-keep-task-creation-unlimited.md)
 
 ## Context
 

@@ -19,9 +19,9 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Save a clear task in seconds without deciding every scheduling detail now.
 
-**Desired experience:** The shortest path asks for a meaningful title and confirms the save. Dates, recurrence, duration, tags, links, notes, and other details can be added when useful. A longer thought can open the full editor without retyping the title.
+**Desired experience:** The shortest path asks for a meaningful title and confirms the save. Dates, recurrence, duration, tags, links, notes, and other details can be added when useful. A longer thought can open the full editor without retyping the title. Task count never blocks capture or redirects the person into a purchase flow.
 
-**Successful outcome:** The person trusts that the item is saved and can return to what they were doing.
+**Successful outcome:** The person trusts that the item is saved, regardless of how many other tasks they keep, and can return to what they were doing.
 
 **Example:** “Book dentist appointment” is captured immediately. The person later adds a weekday availability window and a reminder.
 

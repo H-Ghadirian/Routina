@@ -62,7 +62,6 @@ enum SettingsAppearanceEditor {
         notesEnabled: Bool,
         awayEnabled: Bool,
         filterQuerySectionsEnabled: Bool,
-        unlockUnlimitedTasks: Bool,
         showPersianDates: Bool,
         showTimelineTasksInDayPlanner: Bool,
         separateDailyRoutinesInTaskList: Bool,
@@ -84,7 +83,6 @@ enum SettingsAppearanceEditor {
         state.isNotesEnabled = notesEnabled
         state.isAwayEnabled = awayEnabled
         state.showsFilterQuerySections = filterQuerySectionsEnabled
-        state.unlocksUnlimitedTasks = unlockUnlimitedTasks
         state.showPersianDates = showPersianDates
         state.showsTimelineTasksInDayPlanner = showTimelineTasksInDayPlanner
         state.separatesDailyRoutinesInTaskList = separateDailyRoutinesInTaskList

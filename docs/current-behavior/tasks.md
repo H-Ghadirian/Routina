@@ -25,8 +25,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0283](../decisions/0283-preserve-mac-future-inner-sections.md)
 - [0285](../decisions/0285-clarify-mac-sidebar-section-surfaces.md)
 - [0287](../decisions/0287-remove-deleted-task-blocks-from-planner.md)
-- [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md)
-- [0293](../decisions/0293-add-settings-unlimited-task-override-while-products-unavailable.md)
+- [0583](../decisions/0583-keep-task-creation-unlimited.md)
 - [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md)
 - [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md)
 - [0314](../decisions/0314-remove-status-grouping-and-collapse-deadline-groups.md)
@@ -35,7 +34,6 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0349](../decisions/0349-preserve-interval-anchor-on-frequency-edits.md)
 - [0350](../decisions/0350-add-optional-mac-tomorrow-task-section.md)
 - [0358](../decisions/0358-prefer-current-day-missed-window-resolution-from-home.md)
-- [0374](../decisions/0374-move-unlimited-task-override-to-beta-experiments.md)
 - [0379](../decisions/0379-separate-deadline-status-in-tag-task-list.md)
 - [0391](../decisions/0391-filter-task-list-by-duration-estimates.md)
 - [0394](../decisions/0394-add-custom-mac-sidebar-task-sections.md)
@@ -91,11 +89,11 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 
 - iOS Add Task, Edit Task, and Task Details let every Flag chip use its full intrinsic label width and wrap to a later row before truncating.
 - Todos and routines share the task model while keeping their distinct timing semantics. If an internal `record`-shaped development row is encountered, every product surface treats it as a routine.
-- Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks. Development apps can temporarily unlock unlimited task creation from Settings while StoreKit products are unavailable. Production apps ignore this testing override and require a StoreKit entitlement.
+- Task creation is unlimited on iOS and macOS. Full Add Task, Smart Add, toolbar creation, and Quick Add never count existing tasks or require a purchase entitlement before saving another task.
 - Active-task counting includes todos and routines that are not paused, snoozed, archived, done, or canceled; internal record-shaped rows count as routines.
 - One-off tasks and repeating routines can be archived without changing their completion history or other task data. On Mac, one-off tasks use `Archive` / `Restore` in Task Detail, Edit Task, and Home row context menus, while routines retain `Pause` / `Resume`; archived tasks leave active Home placement, notifications, guided `Add missing…` reviews, Help me choose, task-relationship review, and Calendar scheduling until restored. Task Detail also offers `Pause Until…` / `Archive Until…` with a local date and time: the task is hidden from Calendar scheduling until that instant and then becomes active automatically. An indefinite pause remains hidden until manually restored. Restoring a one-off task does not create or shift recurrence data.
 - Full task create and edit forms offer `One-time` / `Repeating` without a separate third task type. New repeating tasks are routines. Repeating routines can use `Repeat type: None` when they are reusable but have no known cadence; they remain immediately available after completion and preserve every completion in history without cadence-derived occurrences, overdue pressure, nudges, or daily classification. After today's first such completion, the iOS Task Detail action becomes `Log another completion` so further entries are explicit.
-- On Mac, a successful full Add Task save closes the form, returns to the task list, selects and opens the new task's details, and shows a transient confirmation containing the task name. Canceling, a failed save, or a subscription-gated save does not show that success confirmation.
+- On Mac, a successful full Add Task save closes the form, returns to the task list, selects and opens the new task's details, and shows a transient confirmation containing the task name. Canceling or a failed save does not show that success confirmation.
 - Gentle repeating routines expose an independent `Nudges` preference. Turning it off preserves cadence and history while suppressing Ready and Gentle-nudge threshold badges. Due routines do not expose the preference, and cadence-free routines cannot nudge.
 - Home cards and Task Detail derive elapsed-completion text from the newest recorded completion across history and the task summary. The task summary's `lastDone` remains the recurrence cursor, so a delayed or independently synchronized summary cannot make a Home card report an older elapsed time than Task Detail or Calendar.
 - Home, Timeline, Stats, Settings, badges, search vocabulary, and sidebar sections do not expose a separate Tracking category. Transitional tracking-named storage fields remain internal implementation details only.

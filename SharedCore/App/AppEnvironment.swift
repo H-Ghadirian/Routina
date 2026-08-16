@@ -66,42 +66,6 @@ enum AppEnvironment {
         return boolValue(from: processEnvironment["ROUTINA_SCREENSHOT_DATA_SEED_EXIT"]) ?? false
     }()
 
-    static let defaultUnlocksAllTasks: Bool = {
-        if let infoValue = infoDictionary["RoutinaUnlockAllTasks"] as? Bool {
-            return infoValue
-        }
-
-        if let infoString = infoDictionary["RoutinaUnlockAllTasks"] as? String,
-           let value = boolValue(from: infoString) {
-            return value
-        }
-
-        return false
-    }()
-
-    static var unlocksAllTasks: Bool {
-        let key = UserDefaultBoolValueKey.appSettingUnlockUnlimitedTasks.rawValue
-        let storedOverride: Bool? = SharedDefaults.app.object(forKey: key) == nil
-            ? nil
-            : SharedDefaults.app[.appSettingUnlockUnlimitedTasks]
-        return resolvedUnlocksAllTasks(
-            isDevelopmentAppVariant: isDevelopmentAppVariant,
-            processOverride: boolValue(from: processEnvironment["ROUTINA_UNLOCK_ALL_TASKS"]),
-            configuredDefault: defaultUnlocksAllTasks,
-            storedOverride: storedOverride
-        )
-    }
-
-    static func resolvedUnlocksAllTasks(
-        isDevelopmentAppVariant: Bool,
-        processOverride: Bool?,
-        configuredDefault: Bool,
-        storedOverride: Bool?
-    ) -> Bool {
-        guard isDevelopmentAppVariant else { return false }
-        return processOverride ?? storedOverride ?? configuredDefault
-    }
-
     static let isSandboxDataMode: Bool = {
         if isAutomatedTestMode {
             return true
@@ -289,13 +253,6 @@ enum AppEnvironment {
         }
     }
 
-    static func subscriptionProductID(for plan: RoutinaSubscriptionPlan) -> String {
-        resolvedString(
-            infoKey: plan.subscriptionInfoKey,
-            envKey: plan.subscriptionEnvironmentKey
-        ) ?? plan.defaultProductID
-    }
-
     private static var operatingSystemName: String {
         #if os(macOS)
         "macOS"
@@ -346,34 +303,6 @@ private extension AppEnvironment {
             return false
         default:
             return nil
-        }
-    }
-}
-
-private extension RoutinaSubscriptionPlan {
-    var subscriptionInfoKey: String {
-        switch self {
-        case .weekly:
-            return "RoutinaSubscriptionWeeklyProductID"
-        case .monthly:
-            return "RoutinaSubscriptionMonthlyProductID"
-        case .annual:
-            return "RoutinaSubscriptionAnnualProductID"
-        case .lifetime:
-            return "RoutinaSubscriptionLifetimeProductID"
-        }
-    }
-
-    var subscriptionEnvironmentKey: String {
-        switch self {
-        case .weekly:
-            return "ROUTINA_SUBSCRIPTION_WEEKLY_PRODUCT_ID"
-        case .monthly:
-            return "ROUTINA_SUBSCRIPTION_MONTHLY_PRODUCT_ID"
-        case .annual:
-            return "ROUTINA_SUBSCRIPTION_ANNUAL_PRODUCT_ID"
-        case .lifetime:
-            return "ROUTINA_SUBSCRIPTION_LIFETIME_PRODUCT_ID"
         }
     }
 }

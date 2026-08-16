@@ -603,17 +603,6 @@ homeContent
         )
     }
 
-    var subscriptionPaywallBinding: Binding<Bool> {
-        Binding(
-            get: { store.subscriptionPaywallState != nil },
-            set: { isPresented in
-                if !isPresented {
-                    store.send(.subscriptionPaywallDismissed)
-                }
-            }
-        )
-    }
-
     var searchTextBinding: Binding<String> {
         if let externalSearchText {
             externalSearchText
@@ -659,16 +648,6 @@ homeContent
             action: \.addRoutineSheet
         ) {
             AddRoutineTCAView(store: addRoutineStore)
-        }
-    }
-
-    @ViewBuilder
-    var subscriptionPaywallContent: some View {
-        if let paywallStore = store.scope(
-            state: \.subscriptionPaywallState,
-            action: \.subscriptionPaywall
-        ) {
-            SubscriptionPaywallView(store: paywallStore)
         }
     }
 

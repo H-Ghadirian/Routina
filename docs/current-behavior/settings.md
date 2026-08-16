@@ -21,10 +21,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md)
 - [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
 - [0284](../decisions/0284-hide-filter-query-sections-behind-beta-toggle.md)
-- [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md)
-- [0293](../decisions/0293-add-settings-unlimited-task-override-while-products-unavailable.md)
 - [0313](../decisions/0313-disable-mac-app-widgets-in-app-targets.md)
-- [0374](../decisions/0374-move-unlimited-task-override-to-beta-experiments.md)
 - [0464](../decisions/0464-host-mac-settings-in-a-standard-window.md)
 - [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md)
 - [0466](../decisions/0466-harden-app-store-release-surfaces.md)
@@ -39,12 +36,13 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0525](../decisions/0525-gate-testflight-archives-on-cloudkit-schema-deployment.md)
 - [0526](../decisions/0526-identify-exact-builds-in-support.md)
 - [0569](../decisions/0569-suppress-no-op-preference-sync-refresh-loops.md)
+- [0583](../decisions/0583-keep-task-creation-unlimited.md)
 
 ## Current Contract
 
 - User-owned preferences that should back up, restore, reset, and sync belong in SwiftData. The `UserDefaults` compatibility bridge saves and advances the synchronized preference record only when a durable value changes and applies only changed remote values back to defaults. Device-local temporary view state never schedules that durable mirror and equivalent state is not rewritten.
 - The standalone Mac Settings surface uses a launch-suppressed, single-instance standard window. It retains the system Settings command and Command-comma routing while supporting minimize, free resizing and zoom above its 640 by 560 minimum, and native full screen.
-- Purchase entitlement is resolved from StoreKit rather than backed up in user data. Weekly, monthly, annual, and lifetime products unlock unlimited active tasks. The paywall shows renewal disclosure plus Privacy Policy and Terms of Use links, and Support & About exposes the same legal links. Settings -> Support & About -> Beta Experiments includes the temporary unlimited-task override only in development apps; production ignores persisted and configured testing overrides.
+- Task creation has no purchase entitlement or Settings override. Support & About continues to expose the general Privacy Policy and Terms of Use links. The legacy synchronized unlimited-task preference remains inert only for data-model and backup compatibility.
 - Calendar task import always supports Apple Calendar. Outlook appears only when the app bundle has a nonempty Microsoft Graph client ID, so unconfigured release builds do not advertise a nonfunctional sign-in path.
 - The iOS and macOS production bundles declare `ITSAppUsesNonExemptEncryption` as false so App Store Connect can reuse Routina's current exempt-encryption answer. The declaration must be reassessed before shipping custom cryptography, encrypted communications or VPN functionality, or a cryptography-providing dependency.
 - Beta Experiments are available only in development app variants. Production does not render the Beta Experiments panel after the hidden diagnostics gesture, resolves every experimental preference to disabled, and forces attempted experimental writes off, including values restored from older releases.

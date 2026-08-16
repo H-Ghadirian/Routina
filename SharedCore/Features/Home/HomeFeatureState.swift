@@ -19,8 +19,6 @@ struct HomeSelectionState: Equatable {
 struct HomePresentationState: Equatable {
     var isAddRoutineSheetPresented: Bool = false
     var addRoutineState: AddRoutineFeature.State? = nil
-    var subscriptionPaywallState: SubscriptionPaywallFeature.State? = nil
-    var pendingSubscriptionSaveRequest: AddRoutineSaveRequest? = nil
     var pendingDeleteTaskIDs: [UUID] = []
     var isDeleteConfirmationPresented: Bool = false
     var isMacFilterDetailPresented: Bool = false

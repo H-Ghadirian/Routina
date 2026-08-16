@@ -857,9 +857,6 @@ extension HomeTCAView {
                 .easeOut(duration: 0.18),
                 value: store.taskCreationConfirmation
             )
-            .sheet(isPresented: subscriptionPaywallBinding) {
-                subscriptionPaywallContent
-            }
             .alert("Could Not Create Task", isPresented: toolbarSearchCreateErrorBinding) {
                 Button("OK", role: .cancel) {
                     toolbarSearchCreateErrorMessage = nil
@@ -927,8 +924,6 @@ extension HomeTCAView {
                 )
                 searchTextBinding.wrappedValue = ""
                 handleQuickAddCreated(result)
-            } catch let error as RoutinaTaskLimitError {
-                store.send(.subscriptionRequired(error.snapshot, nil))
             } catch {
                 toolbarSearchCreateErrorMessage = error.localizedDescription
             }

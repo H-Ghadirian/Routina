@@ -28,7 +28,7 @@ The toolbar search field is already the global Home entry point and keeps AppKit
 
 The configurable Mac Quick Add shortcut focuses the Mac Home toolbar search field instead of opening a separate overlay. Typing in that field continues to live-filter tasks, Timeline-style lists, Planner List entries, and task-backed Planner Calendar items.
 
-Pressing Return in the toolbar search field submits the current query. If the query is non-empty and does not match an existing task or timeline result in the Home search domain, Routina creates a task through the shared Quick Add parser and persistence service. Successful creation clears the search and shows the existing created-task toast. Subscription limits open the existing paywall, and creation errors are shown as a Home alert.
+Pressing Return in the toolbar search field submits the current query. If the query is non-empty and does not match an existing task or timeline result in the Home search domain, Routina creates a task through the shared Quick Add parser and persistence service. Successful creation clears the search and shows the existing created-task toast, and creation errors are shown as a Home alert. Task count never blocks creation, as revised by [0583](0583-keep-task-creation-unlimited.md).
 
 The toolbar Add button and explicit Add Task commands still open the full Mac Add Task form. The full form remains the rich editing path, while the toolbar search owns the fast search-or-create path.
 

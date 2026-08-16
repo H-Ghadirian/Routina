@@ -1,6 +1,6 @@
 # 0293: Add Settings Unlimited Task Override While Products Are Unavailable
 
-Status: Accepted
+Status: Superseded by [0583 Keep Task Creation Unlimited](../0583-keep-task-creation-unlimited.md)
 
 Date: 2026-06-27
 
@@ -8,7 +8,7 @@ Refines: [0290 Limit Free Active Tasks Behind Subscription](0290-limit-free-acti
 
 Refined by: [0374 Move Unlimited Task Override to Beta Experiments](0374-move-unlimited-task-override-to-beta-experiments.md)
 
-Refined by: [0466 Harden App Store Release Surfaces](0466-harden-app-store-release-surfaces.md)
+Refined by: [0466 Harden App Store Release Surfaces](../0466-harden-app-store-release-surfaces.md)
 
 ## Context
 

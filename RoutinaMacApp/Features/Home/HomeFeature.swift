@@ -302,11 +302,6 @@ struct HomeFeature {
             set { presentation.addRoutineState = newValue }
         }
 
-        var subscriptionPaywallState: SubscriptionPaywallFeature.State? {
-            get { presentation.subscriptionPaywallState }
-            set { presentation.subscriptionPaywallState = newValue }
-        }
-
         var pendingDeleteTaskIDs: [UUID] {
             get { presentation.pendingDeleteTaskIDs }
             set { presentation.pendingDeleteTaskIDs = newValue }
@@ -722,9 +717,6 @@ struct HomeFeature {
         case statusComposerSaveFailed
 
         case addRoutineSheet(AddRoutineFeature.Action)
-        case subscriptionPaywall(SubscriptionPaywallFeature.Action)
-        case subscriptionRequired(RoutinaTaskLimitSnapshot, AddRoutineSaveRequest?)
-        case subscriptionPaywallDismissed
         case taskDetail(TaskDetailFeature.Action)
         case routineSavedSuccessfully(RoutineTask)
         case routineSaveFailed
@@ -743,7 +735,6 @@ struct HomeFeature {
     @Dependency(\.continuousClock) var clock
     @Dependency(\.appSettingsClient) var appSettingsClient
     @Dependency(\.creationDraftClient) var creationDraftClient
-    @Dependency(\.routinaSubscriptionClient) var subscriptionClient
     @Dependency(\.sprintBoardClient) var sprintBoardClient
 
     private func taskLifecycleCoordinator() -> HomeTaskLifecycleCoordinator<Action> {
@@ -884,9 +875,6 @@ struct HomeFeature {
             },
             modelContext: { self.modelContext() },
             scheduleAnchor: { self.now },
-            currentEntitlement: {
-                await self.subscriptionClient.currentEntitlement()
-            },
             scheduleNotification: { payload in
                 await self.notificationClient.schedule(payload)
             },
@@ -895,9 +883,6 @@ struct HomeFeature {
                 var organization = appSettingsClient.taskLadderOrganization()
                 guard organization.setTaskGroupEnabled(isEnabled, taskID: taskID) else { return }
                 appSettingsClient.setTaskLadderOrganization(organization)
-            },
-            subscriptionRequiredAction: { snapshot, request in
-                .subscriptionRequired(snapshot, request)
             },
             failedAction: { .routineSaveFailed },
             finishMutation: { effect, state in
@@ -1622,31 +1607,6 @@ struct HomeFeature {
             case let .addRoutineSheet(.delegate(.didSave(request))):
                 return addRoutineActionHandler().save(request)
 
-            case let .subscriptionRequired(snapshot, request):
-                state.presentation.pendingSubscriptionSaveRequest = request
-                state.presentation.isAddRoutineSheetPresented = false
-                state.presentation.addRoutineState = nil
-                state.presentation.subscriptionPaywallState = SubscriptionPaywallFeature.State(
-                    limitSnapshot: snapshot
-                )
-                return .none
-
-            case .subscriptionPaywall(.delegate(.didUnlock)):
-                state.presentation.subscriptionPaywallState = nil
-                guard let pendingRequest = state.presentation.pendingSubscriptionSaveRequest else {
-                    return loadTasksEffect()
-                }
-                state.presentation.pendingSubscriptionSaveRequest = nil
-                return addRoutineActionHandler().save(pendingRequest)
-
-            case .subscriptionPaywall(.delegate(.didDismiss)), .subscriptionPaywallDismissed:
-                state.presentation.subscriptionPaywallState = nil
-                state.presentation.pendingSubscriptionSaveRequest = nil
-                return .none
-
-            case .subscriptionPaywall:
-                return .none
-
             case let .routineSavedSuccessfully(task):
                 return finishSaveAndRouteNewTodoToBacklog(task, state: &state)
 
@@ -1674,9 +1634,6 @@ struct HomeFeature {
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
-        }
-        .ifLet(\.subscriptionPaywallState, action: \.subscriptionPaywall) {
-            SubscriptionPaywallFeature()
         }
     }
 

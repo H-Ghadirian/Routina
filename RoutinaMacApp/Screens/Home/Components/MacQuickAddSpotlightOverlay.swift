@@ -13,7 +13,6 @@ struct MacQuickAddSpotlightOverlay: View {
     @State private var errorMessage: String?
 
     let onCreated: (RoutinaQuickAddCreateResult) -> Void
-    let onLimitReached: (RoutinaTaskLimitSnapshot) -> Void
 
     private var draft: RoutinaQuickAddDraft? {
         RoutinaQuickAddParser.parse(text, calendar: calendar, includingPlaces: isPlacesEnabled)
@@ -163,10 +162,6 @@ struct MacQuickAddSpotlightOverlay: View {
                 text = ""
                 onCreated(result)
                 dismiss()
-            } catch let error as RoutinaTaskLimitError {
-                dismiss()
-                await Task.yield()
-                onLimitReached(error.snapshot)
             } catch {
                 errorMessage = error.localizedDescription
             }

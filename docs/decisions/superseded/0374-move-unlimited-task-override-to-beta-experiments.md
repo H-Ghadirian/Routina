@@ -1,12 +1,12 @@
 # 0374: Move Unlimited Task Override to Beta Experiments
 
-Status: Accepted
+Status: Superseded by [0583 Keep Task Creation Unlimited](../0583-keep-task-creation-unlimited.md)
 
 Date: 2026-07-12
 
 Refines: [0293 Add Settings Unlimited Task Override While Products Are Unavailable](0293-add-settings-unlimited-task-override-while-products-unavailable.md)
 
-Refined by: [0466 Harden App Store Release Surfaces](0466-harden-app-store-release-surfaces.md)
+Refined by: [0466 Harden App Store Release Surfaces](../0466-harden-app-store-release-surfaces.md)
 
 ## Context
 

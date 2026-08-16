@@ -39,7 +39,6 @@ enum SettingsDiagnosticsLoader {
             notesEnabled: appSettingsClient.notesEnabled(),
             awayEnabled: appSettingsClient.awayEnabled(),
             filterQuerySectionsEnabled: appSettingsClient.filterQuerySectionsEnabled(),
-            unlockUnlimitedTasks: appSettingsClient.unlockUnlimitedTasks(),
             showPersianDates: appSettingsClient.showPersianDates(),
             automaticPlaceCheckInEnabled: appSettingsClient.automaticPlaceCheckInEnabled(),
             showTimelineTasksInDayPlanner: appSettingsClient.showTimelineTasksInDayPlanner(),

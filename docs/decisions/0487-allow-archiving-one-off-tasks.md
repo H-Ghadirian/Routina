@@ -10,15 +10,16 @@ Accepted
 
 ## Refines
 
-[0290 Limit Free Active Tasks Behind Subscription](0290-limit-free-active-tasks-behind-subscription.md)
-and [0486 Suggest Confirmed Task Relationships On Device](0486-suggest-confirmed-task-relationships-on-device.md)
+[0486 Suggest Confirmed Task Relationships On Device](0486-suggest-confirmed-task-relationships-on-device.md)
+
+Revised by: [0583 Keep Task Creation Unlimited](0583-keep-task-creation-unlimited.md)
 
 ## Context
 
 One-off tasks may remain unfinished without being work a person currently wants
 Routina to surface. Marking them done or canceled misstates that intent, while
-the existing archived lifecycle state already excludes a task from active-task
-counting, notifications, Home placement, and Help me choose. The Mac controls
+the existing archived lifecycle state already excludes a task from
+notifications, Home placement, and Help me choose. The Mac controls
 previously exposed archiving only for repeating routines, despite the data model
 and presentation layers supporting archived todos.
 
@@ -41,7 +42,7 @@ or shift a recurrence anchor.
 ## Consequences
 
 - People can defer a one-off task without falsely marking it done or canceled.
-- Suggestions and active-task limits consistently exclude archived work.
+- Suggestions consistently exclude archived work.
 - Home uses task-specific labels without changing the established routine
   pause/resume behavior.
 - The shared lifecycle state remains compatible with existing backup, sync, and

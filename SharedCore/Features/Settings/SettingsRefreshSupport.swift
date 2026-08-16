@@ -25,7 +25,6 @@ struct SettingsOnAppearSnapshot: Equatable {
     var notesEnabled: Bool
     var awayEnabled: Bool
     var filterQuerySectionsEnabled: Bool
-    var unlockUnlimitedTasks: Bool
     var showPersianDates: Bool
     var automaticPlaceCheckInEnabled: Bool
     var showTimelineTasksInDayPlanner: Bool
@@ -106,7 +105,6 @@ enum SettingsRefreshEditor {
             notesEnabled: snapshot.notesEnabled,
             awayEnabled: snapshot.awayEnabled,
             filterQuerySectionsEnabled: snapshot.filterQuerySectionsEnabled,
-            unlockUnlimitedTasks: snapshot.unlockUnlimitedTasks,
             showPersianDates: snapshot.showPersianDates,
             showTimelineTasksInDayPlanner: snapshot.showTimelineTasksInDayPlanner,
             separateDailyRoutinesInTaskList: snapshot.separateDailyRoutinesInTaskList,
@@ -131,7 +129,6 @@ enum SettingsRefreshEditor {
         notesEnabled: Bool,
         awayEnabled: Bool,
         filterQuerySectionsEnabled: Bool,
-        unlockUnlimitedTasks: Bool,
         lastRoutineDataBackupDate: Date?,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         state: inout SettingsFeatureState
@@ -145,7 +142,6 @@ enum SettingsRefreshEditor {
         state.appearance.isNotesEnabled = notesEnabled
         state.appearance.isAwayEnabled = awayEnabled
         state.appearance.showsFilterQuerySections = filterQuerySectionsEnabled
-        state.appearance.unlocksUnlimitedTasks = unlockUnlimitedTasks
         state.dataTransfer.lastSuccessfulBackupDate = lastRoutineDataBackupDate
         state.appearance.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appearance.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason

@@ -168,13 +168,6 @@ private struct SettingsBetaExperimentsSection: View {
 
     var body: some View {
         Section("Beta Experiments") {
-            if AppEnvironment.isDevelopmentAppVariant {
-                Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
-
-                Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
-                    .foregroundStyle(.secondary)
-            }
-
             Toggle("Enable Git features", isOn: gitFeaturesBinding)
 
             Text("Shows GitHub and GitLab contribution activity in Stats.")
@@ -255,13 +248,6 @@ private struct SettingsBetaExperimentsSection: View {
         Binding(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
-        )
-    }
-
-    private var unlockUnlimitedTasksBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.unlocksUnlimitedTasks },
-            set: { store.send(.unlockUnlimitedTasksToggled($0)) }
         )
     }
 

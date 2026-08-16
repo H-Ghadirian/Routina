@@ -99,9 +99,6 @@ detailContent
             .sheet(isPresented: addRoutineSheetBinding) {
                 addRoutineSheetContent
             }
-            .sheet(isPresented: subscriptionPaywallBinding) {
-                subscriptionPaywallContent
-            }
     }
 
     func openAddTask() {

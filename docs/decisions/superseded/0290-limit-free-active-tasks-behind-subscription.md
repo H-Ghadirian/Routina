@@ -1,6 +1,6 @@
 # 0290 Limit Free Active Tasks Behind Subscription
 
-Status: Accepted
+Status: Superseded by [0583 Keep Task Creation Unlimited](../0583-keep-task-creation-unlimited.md)
 
 Date: 2026-06-27
 
@@ -24,4 +24,3 @@ Unlimited tasks are unlocked by StoreKit entitlements. Weekly, monthly, and annu
 - The paywall should preserve the user's pending detailed task save and retry it after a successful purchase or restore.
 - Backup, import, CloudKit sync, and existing task lifecycle actions remain data-preserving and do not trim existing active tasks.
 - Future paid features should extend the entitlement model instead of hard-coding StoreKit checks in views.
-
