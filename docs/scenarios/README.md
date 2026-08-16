@@ -150,7 +150,7 @@ And a one-off task without tags does not reserve an empty metadata line
 ### Mac Task Ladder Separates Placement From Completion
 
 Area: Tasks / Mac Task Ladder / Relationships
-Decision links: [0578](../decisions/0578-separate-task-ladder-details-from-inner-navigation.md), [0574](../decisions/0574-separate-task-ladder-placement-from-completion.md), [0409](../decisions/0409-add-manual-can-complete-task-links.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md)
+Decision links: [0587](../decisions/0587-keep-task-ladder-activation-in-deliberate-editing-flows.md), [0578](../decisions/0578-separate-task-ladder-details-from-inner-navigation.md), [0576](../decisions/0576-offer-direct-repeating-task-ladder-grouping.md), [0574](../decisions/0574-separate-task-ladder-placement-from-completion.md), [0409](../decisions/0409-add-manual-can-complete-task-links.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskLadderOrganizationTests.swift`
@@ -158,6 +158,7 @@ Coverage:
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 - `Tests/Shared/AddRoutineFeatureTests.swift`
 - `Tests/Shared/TaskLadderGroupActivationFeatureTests.swift`
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
 
 Given Walk and Gym are placed inside the task Exercise
 When the root Task Ladder builds any metric presentation
@@ -171,14 +172,19 @@ Then Exercise keeps its repeating-task schedule and history
 And Walk is placed inside Exercise without creating a container-only group
 And the Task Ladder opens Exercise's nested ladder
 
-Given Exercise is being created or edited as a repeating task, or is open in Task Details
+Given Exercise is being created or edited as a repeating task
 When the person turns on `Use as Task Ladder group`
 Then Exercise keeps its repeating-task schedule, completion behavior, and history
 And its empty nested ladder can be opened before any task is placed inside it
 And the activation is synchronized with the rest of the Task Ladder organization
 
+Given Exercise is open in macOS Task Details
+When the person reviews its available information and actions
+Then `Use as Task Ladder group` is not shown
+And the person can use Edit Task when they deliberately want to change that role
+
 Given Exercise already has nested tasks
-When the person views the Task Ladder group switch
+When the person edits the task and views the Task Ladder group switch
 Then it remains on and cannot be turned off until those tasks are moved elsewhere
 
 Given Exercise is a task-backed group and Company is a container-only group

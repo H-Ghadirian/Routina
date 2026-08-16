@@ -128,7 +128,6 @@ struct TaskDetailFeature: Reducer {
         var editFocusModeEnabled: Bool = false
         var editTrackingCadenceEnabled: Bool = true
         var editTrackingNudgesEnabled: Bool = true
-        var taskLadderGroupEnabled: Bool = false
         var taskLadderGroupHasChildren: Bool = false
         var editTaskLadderGroupEnabled: Bool = false
         var isDeleteConfirmationPresented: Bool = false
@@ -468,7 +467,6 @@ struct TaskDetailFeature: Reducer {
         case editFocusModeEnabledChanged(Bool)
         case editTrackingCadenceEnabledChanged(Bool)
         case editTrackingNudgesEnabledChanged(Bool)
-        case taskLadderGroupEnabledChanged(Bool)
         case editTaskLadderGroupEnabledChanged(Bool)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
@@ -1761,18 +1759,6 @@ struct TaskDetailFeature: Reducer {
 
         case let .editTrackingNudgesEnabledChanged(isEnabled):
             state.editTrackingNudgesEnabled = isEnabled
-            return .none
-
-        case let .taskLadderGroupEnabledChanged(isEnabled):
-            var organization = appSettingsClient.taskLadderOrganization()
-            guard organization.setTaskGroupEnabled(isEnabled, taskID: state.task.id) else {
-                state.taskLadderGroupEnabled = organization.isTaskGroup(taskID: state.task.id)
-                state.editTaskLadderGroupEnabled = state.taskLadderGroupEnabled
-                return .none
-            }
-            appSettingsClient.setTaskLadderOrganization(organization)
-            state.taskLadderGroupEnabled = organization.isTaskGroup(taskID: state.task.id)
-            state.editTaskLadderGroupEnabled = state.taskLadderGroupEnabled
             return .none
 
         case let .editTaskLadderGroupEnabledChanged(isEnabled):

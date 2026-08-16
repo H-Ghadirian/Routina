@@ -11,7 +11,7 @@ import Testing
 @MainActor
 struct TaskLadderGroupActivationFeatureTests {
     @Test
-    func taskDetailsActivationPersistsImmediatelyWhileEditActivationRemainsDrafted() async {
+    func taskDetailEditActivationRemainsDraftedUntilSave() async {
         let task = RoutineTask(name: "Exercise", scheduleMode: .fixedInterval)
         let storedOrganization = LockIsolated(TaskLadderOrganization())
         var appSettingsClient = AppSettingsClient.noop
@@ -25,15 +25,9 @@ struct TaskLadderGroupActivationFeatureTests {
             $0.appSettingsClient = appSettingsClient
         }
 
-        await store.send(.taskLadderGroupEnabledChanged(true)) {
-            $0.taskLadderGroupEnabled = true
+        await store.send(.editTaskLadderGroupEnabledChanged(true)) {
             $0.editTaskLadderGroupEnabled = true
         }
-        #expect(storedOrganization.value.isExplicitTaskGroup(taskID: task.id))
-
-        await store.send(.editTaskLadderGroupEnabledChanged(false)) {
-            $0.editTaskLadderGroupEnabled = false
-        }
-        #expect(storedOrganization.value.isExplicitTaskGroup(taskID: task.id))
+        #expect(!storedOrganization.value.isExplicitTaskGroup(taskID: task.id))
     }
 }

@@ -13,6 +13,10 @@ Accepted
 - [0574: Separate Task Ladder Placement From Completion](0574-separate-task-ladder-placement-from-completion.md)
 - [0188: Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md)
 
+## Revised By
+
+- [0587: Keep Task Ladder Activation in Deliberate Editing Flows](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md), which removes the direct Task Details switch while retaining Add Task, Edit Task, and Task Ladder entry points.
+
 ## Context
 
 Task Ladder already allows a normal task to be a parent, so a real repeating

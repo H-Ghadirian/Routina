@@ -63,14 +63,17 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
-    func macRepeatingTaskDetailsExposeTaskLadderGroupActivation() throws {
+    func macTaskDetailsKeepTaskLadderGroupActivationInTheEditor() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
         )
+        let editorSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Shared/TaskFormMacCards.swift"
+        )
 
-        #expect(source.contains("taskLadderGroupSection"))
-        #expect(source.contains("Label(\"Use as Task Ladder group\""))
-        #expect(source.contains("store.send(.taskLadderGroupEnabledChanged($0))"))
+        #expect(!source.contains("taskLadderGroupSection"))
+        #expect(!source.contains("Use as Task Ladder group"))
+        #expect(editorSource.contains("Toggle(\"Use as Task Ladder group\""))
     }
 
     @Test

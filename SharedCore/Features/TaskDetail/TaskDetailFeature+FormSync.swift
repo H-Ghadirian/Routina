@@ -5,8 +5,7 @@ extension TaskDetailFeature {
     func syncTaskLadderGroupState(_ state: inout State) {
         let organization = appSettingsClient.taskLadderOrganization()
         state.taskLadderGroupHasChildren = !organization.childTaskIDs(of: .task(state.task.id)).isEmpty
-        state.taskLadderGroupEnabled = organization.isTaskGroup(taskID: state.task.id)
-        state.editTaskLadderGroupEnabled = state.taskLadderGroupEnabled
+        state.editTaskLadderGroupEnabled = organization.isTaskGroup(taskID: state.task.id)
     }
 
     func syncEditFormFromTask(_ state: inout State) {

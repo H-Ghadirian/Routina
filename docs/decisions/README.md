@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+
+- **[0587](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md) revises [0576](0576-offer-direct-repeating-task-ladder-grouping.md) and refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** macOS Task Details no longer presents direct Task Ladder group activation; Add Task, Edit Task, and the Task Ladder retain the deliberate entry points for that uncommon structural choice.
 - **[0586](0586-group-ios-task-detail-priority-context-in-the-header.md) refines [0468](0468-model-task-thinking-needed-separately.md) and [0563](0563-present-importance-and-urgency-as-independent-task-controls.md):** iOS Task Details groups Importance, Urgency, Pressure, and Thinking needed in that order in the task header, keeping Thinking separate from the primary-action card without changing its independent meaning or persistence.
 
 - **[0585](0585-persist-ios-task-detail-calendar-expansion-per-task.md) refines [0089](0089-prefer-native-apple-platform-patterns.md), [0100](0100-reveal-task-form-details-by-section.md), [0393](0393-persist-task-detail-heatmap-per-task.md), and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details collapses Calendar by default and remembers each task's explicit expanded or collapsed state through task-owned persistence, copying, synchronization, and backup/import without changing macOS.
@@ -40,7 +42,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 - **[0577](0577-suggest-linked-tasks-as-task-ladder-children.md) refines [0576](0576-offer-direct-repeating-task-ladder-grouping.md), [0574](0574-separate-task-ladder-placement-from-completion.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** A task-backed group's nested Mac Task Ladder offers eligible bidirectionally linked tasks as explicit Accept/Reject child suggestions while preserving the relationship and its completion meaning.
 
-- **[0576](0576-offer-direct-repeating-task-ladder-grouping.md) refines [0574](0574-separate-task-ladder-placement-from-completion.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** A repeating task can be explicitly activated as a Task Ladder group from Add Task, Edit Task, Task Details, or the Ladder itself, including before it has children, while remaining a real repeating task.
+- **[0576](0576-offer-direct-repeating-task-ladder-grouping.md), revised by [0587](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md), refines [0574](0574-separate-task-ladder-placement-from-completion.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** A repeating task can be explicitly activated as a Task Ladder group from Add Task, Edit Task, or the Ladder itself, including before it has children, while remaining a real repeating task; ordinary Task Details omits the control.
 
 - **[0575](0575-inherit-task-ladder-group-values-from-actionable-tasks.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0574](0574-separate-task-ladder-placement-from-completion.md):** Each categorical Task Ladder group value can independently inherit the highest explicit value among its currently actionable direct tasks, with the result derived in the cached presentation snapshot.
 
@@ -705,6 +707,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0587](0587-keep-task-ladder-activation-in-deliberate-editing-flows.md) | Keep Task Ladder Activation in Deliberate Editing Flows | Accepted | 2026-08-16 |
 | [0586](0586-group-ios-task-detail-priority-context-in-the-header.md) | Group iOS Task Detail Priority Context in the Header | Accepted | 2026-08-16 |
 | [0585](0585-persist-ios-task-detail-calendar-expansion-per-task.md) | Persist iOS Task Detail Calendar Expansion Per Task | Accepted | 2026-08-16 |
 | [0584](0584-group-ios-task-maintenance-in-navigation-overflow.md) | Group iOS Task Maintenance in Navigation Overflow | Accepted | 2026-08-16 |

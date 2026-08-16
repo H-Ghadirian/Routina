@@ -499,7 +499,6 @@ struct TaskDetailTCAView: View {
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
-                taskLadderGroupSection
                 doneOccurrenceSection
                 notificationDisabledWarningSection
                 if shouldShowFocusSessionSection {
@@ -566,41 +565,6 @@ struct TaskDetailTCAView: View {
             blockingFocusTitle: blockingFocusTitle,
             onCompletedDuration: addCompletedFocusToTimeSpent
         )
-    }
-
-    private var taskLadderGroupSection: some View {
-        TaskDetailSectionCardView(
-            background: routineLogsBackground,
-            stroke: TaskDetailPlatformStyle.sectionCardStroke
-        ) {
-            Toggle(
-                isOn: Binding(
-                    get: { store.taskLadderGroupEnabled },
-                    set: { store.send(.taskLadderGroupEnabledChanged($0)) }
-                )
-            ) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Label("Use as Task Ladder group", systemImage: "square.stack.3d.up")
-                        .font(.subheadline.weight(.semibold))
-
-                    Text(taskLadderGroupDetailHelpText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .toggleStyle(.switch)
-            .disabled(store.taskLadderGroupHasChildren)
-        }
-    }
-
-    private var taskLadderGroupDetailHelpText: String {
-        if store.taskLadderGroupHasChildren {
-            return "This group has nested tasks. Move them elsewhere before turning the group off."
-        }
-        return "Give this repeating task its own nested ladder without changing how it repeats or completes."
     }
 
     private var shouldShowFocusSessionSection: Bool {
