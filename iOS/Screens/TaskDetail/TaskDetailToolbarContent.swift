@@ -84,7 +84,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
                         Label("Delete Task", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.vertical")
+                    Text("⋮")
                 }
                 .accessibilityLabel("More task actions")
             }
