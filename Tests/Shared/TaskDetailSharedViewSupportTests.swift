@@ -91,6 +91,21 @@ struct TaskDetailSharedViewSupportTests {
         return try String(contentsOf: sourceURL, encoding: .utf8)
     }
 
+    private static func sourceSection(
+        startingAt startMarker: String,
+        endingAt endMarker: String,
+        in source: String
+    ) throws -> String {
+        let start = try #require(source.range(of: startMarker))
+        let end = try #require(
+            source.range(
+                of: endMarker,
+                range: start.upperBound..<source.endIndex
+            )
+        )
+        return String(source[start.lowerBound..<end.lowerBound])
+    }
+
     @Test
     func displayedActualDurationUsesTodoStoredValueAndRoutineLogs() {
         let todo = RoutineTask(
@@ -360,6 +375,46 @@ struct TaskDetailSharedViewSupportTests {
         #expect(macControls.contains("struct TaskDetailUrgencySegmentedPicker"))
         #expect(macControls.contains("struct TaskDetailPriorityControlsGrid"))
         #expect(!priorityDisclosure.contains("ImportanceUrgencyMatrixPicker"))
+    }
+
+    @Test
+    func iosTaskDetailsGroupThinkingBelowTheOtherPriorityMetadata() throws {
+        let detail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let actionControls = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
+        let todoHeader = try Self.sourceSection(
+            startingAt: "private var todoHeaderSection",
+            endingAt: "private var todoStateTimingSummary",
+            in: detail
+        )
+        let routineHeader = try Self.sourceSection(
+            startingAt: "private var routineHeaderSection",
+            endingAt: "private var headerGoalsBox",
+            in: detail
+        )
+        let todoPrimaryAction = try Self.sourceSection(
+            startingAt: "struct TaskDetailTodoPrimaryActionSection",
+            endingAt: "struct TaskDetailRoutinePrimaryActionSection",
+            in: actionControls
+        )
+        let routinePrimaryAction = try Self.sourceSection(
+            startingAt: "struct TaskDetailRoutinePrimaryActionSection",
+            endingAt: "struct TaskDetailPrimaryActionButton",
+            in: actionControls
+        )
+
+        for header in [todoHeader, routineHeader] {
+            let importance = try #require(header.range(of: "TaskDetailImportancePickerPill(store: store)"))
+            let urgency = try #require(header.range(of: "TaskDetailUrgencyPickerPill(store: store)"))
+            let pressure = try #require(header.range(of: "TaskDetailPressurePickerPill(store: store)"))
+            let thinking = try #require(header.range(of: "TaskDetailThinkingNeededPickerPill(store: store)"))
+
+            #expect(importance.lowerBound < urgency.lowerBound)
+            #expect(urgency.lowerBound < pressure.lowerBound)
+            #expect(pressure.lowerBound < thinking.lowerBound)
+        }
+
+        #expect(!todoPrimaryAction.contains("TaskDetailThinkingNeededPickerPill"))
+        #expect(!routinePrimaryAction.contains("TaskDetailThinkingNeededPickerPill"))
     }
 
     @Test

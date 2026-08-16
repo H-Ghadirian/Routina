@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0586](0586-group-ios-task-detail-priority-context-in-the-header.md) refines [0468](0468-model-task-thinking-needed-separately.md) and [0563](0563-present-importance-and-urgency-as-independent-task-controls.md):** iOS Task Details groups Importance, Urgency, Pressure, and Thinking needed in that order in the task header, keeping Thinking separate from the primary-action card without changing its independent meaning or persistence.
+
 - **[0585](0585-persist-ios-task-detail-calendar-expansion-per-task.md) refines [0089](0089-prefer-native-apple-platform-patterns.md), [0100](0100-reveal-task-form-details-by-section.md), [0393](0393-persist-task-detail-heatmap-per-task.md), and [0425](0425-make-task-detail-history-optional.md):** iOS Task Details collapses Calendar by default and remembers each task's explicit expanded or collapsed state through task-owned persistence, copying, synchronization, and backup/import without changing macOS.
 
 - **[0584](0584-group-ios-task-maintenance-in-navigation-overflow.md) revises [0462](0462-use-a-compact-progressive-ios-task-editor.md) and refines [0061](0061-share-stable-routina-deep-links.md), [0089](0089-prefer-native-apple-platform-patterns.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), and [0507](0507-clarify-ios-task-detail-action-hierarchy.md):** iOS Task Details moves deep-link sharing, eligible todo cancellation, and confirmed deletion into one top-trailing vertical-ellipsis menu; completion stays in the primary card, while Edit and optional Cloud sharing remain direct navigation-bar actions.
@@ -703,6 +705,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0586](0586-group-ios-task-detail-priority-context-in-the-header.md) | Group iOS Task Detail Priority Context in the Header | Accepted | 2026-08-16 |
 | [0585](0585-persist-ios-task-detail-calendar-expansion-per-task.md) | Persist iOS Task Detail Calendar Expansion Per Task | Accepted | 2026-08-16 |
 | [0584](0584-group-ios-task-maintenance-in-navigation-overflow.md) | Group iOS Task Maintenance in Navigation Overflow | Accepted | 2026-08-16 |
 | [0583](0583-keep-task-creation-unlimited.md) | Keep Task Creation Unlimited | Accepted | 2026-08-16 |

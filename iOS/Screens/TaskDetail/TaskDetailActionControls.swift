@@ -4,32 +4,14 @@ import ComposableArchitecture
 struct TaskDetailTodoPrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
     let showsTodoStateControl: Bool
-    let showsThinkingNeededControl: Bool
     let stateTimingSummary: TodoStateTimingSummary?
     let showPersianDates: Bool
     @State private var isStateTimingExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if shouldShowStatusControls {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) {
-                        if showsTodoStateControl {
-                            todoStateControl
-                        }
-                        if showsThinkingNeededControl {
-                            TaskDetailThinkingNeededPickerPill(store: store)
-                        }
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        if showsTodoStateControl {
-                            todoStateControl
-                        }
-                        if showsThinkingNeededControl {
-                            TaskDetailThinkingNeededPickerPill(store: store)
-                        }
-                    }
-                }
+            if showsTodoStateControl {
+                todoStateControl
             }
 
             if showsTodoStateControl, let stateTimingSummary, isStateTimingExpanded {
@@ -56,10 +38,6 @@ struct TaskDetailTodoPrimaryActionSection: View {
         .onChange(of: store.task.todoStateRawValue) { _, _ in
             isStateTimingExpanded = false
         }
-    }
-
-    private var shouldShowStatusControls: Bool {
-        showsTodoStateControl || showsThinkingNeededControl
     }
 
     @ViewBuilder
@@ -90,15 +68,11 @@ struct TaskDetailTodoPrimaryActionSection: View {
 struct TaskDetailRoutinePrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
     let pauseArchivePresentation: RoutinePauseArchivePresentation
-    let showsThinkingNeededControl: Bool
 
     @State private var isPauseUntilPresented = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if showsThinkingNeededControl {
-                TaskDetailThinkingNeededPickerPill(store: store)
-            }
             TaskDetailPrimaryActionButton(store: store)
 
             if store.shouldShowBulkConfirmAssumedDays {

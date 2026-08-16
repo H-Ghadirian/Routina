@@ -302,7 +302,6 @@ detailBody
                 TaskDetailTodoPrimaryActionSection(
                     store: store,
                     showsTodoStateControl: shouldShowTodoStateControl,
-                    showsThinkingNeededControl: shouldShowThinkingNeededControl,
                     stateTimingSummary: todoStateTimingSummary,
                     showPersianDates: showPersianDates
                 )
@@ -348,8 +347,7 @@ detailBody
                 notificationDisabledWarningSection
                 TaskDetailRoutinePrimaryActionSection(
                     store: store,
-                    pauseArchivePresentation: pauseArchivePresentation,
-                    showsThinkingNeededControl: shouldShowThinkingNeededControl
+                    pauseArchivePresentation: pauseArchivePresentation
                 )
                 calendarSection
                 if store.task.focusModeEnabled {
@@ -810,6 +808,9 @@ detailBody
                 if shouldShowPressureControl {
                     TaskDetailPressurePickerPill(store: store)
                 }
+                if shouldShowThinkingNeededControl {
+                    TaskDetailThinkingNeededPickerPill(store: store)
+                }
                 if shouldShowTimeControl {
                     todoTimeSpentHeaderBox
                 }
@@ -847,6 +848,9 @@ detailBody
                 }
                 if shouldShowPressureControl {
                     TaskDetailPressurePickerPill(store: store)
+                }
+                if shouldShowThinkingNeededControl {
+                    TaskDetailThinkingNeededPickerPill(store: store)
                 }
                 headerGoalsBox
             }
