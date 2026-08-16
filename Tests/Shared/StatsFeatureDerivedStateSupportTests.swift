@@ -229,6 +229,51 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func focusDayXAxisDatesStaySparseAndKeepRangeAnchors() {
+        let calendar = makeTestCalendar()
+        let startDate = makeDate("2026-08-01T00:00:00Z")
+        let dates = (0..<16).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: startDate)
+        }
+        let selectedRange = DoneChartRange.custom(
+            from: startDate,
+            through: dates.last ?? startDate,
+            calendar: calendar
+        )
+        let compactPresentation = StatsChartPresentation(
+            selectedRange: selectedRange,
+            isCompact: true
+        )
+        let regularPresentation = StatsChartPresentation(
+            selectedRange: selectedRange,
+            isCompact: false
+        )
+        let compactDates = compactPresentation.focusDayXAxisDates(from: dates)
+        let regularDates = regularPresentation.focusDayXAxisDates(from: dates)
+
+        #expect(compactDates.count == 5)
+        #expect(regularDates.count == 10)
+        #expect(compactDates.first == dates.first)
+        #expect(compactDates.last == dates.last)
+        #expect(regularDates.first == dates.first)
+        #expect(regularDates.last == dates.last)
+        #expect(
+            compactPresentation.focusDayXAxisLabel(
+                for: compactDates[0],
+                in: compactDates,
+                calendar: calendar
+            ) == compactDates[0].formatted(.dateTime.month(.abbreviated).day())
+        )
+        #expect(
+            compactPresentation.focusDayXAxisLabel(
+                for: compactDates[1],
+                in: compactDates,
+                calendar: calendar
+            ) == compactDates[1].formatted(.dateTime.day())
+        )
+    }
+
+    @Test
     func build_countsDoneCanceledAndMissedTimelineActivity() {
         let calendar = makeTestCalendar()
         let task = RoutineTask(
@@ -964,6 +1009,19 @@ struct StatsFeatureDerivedStateSupportTests {
 
             #expect(source.contains("x: .fit(to: .chart)"), "Missing horizontal annotation fitting in \(path)")
         }
+    }
+
+    @Test
+    func focusChartScrollContentFillsItsAvailableViewport() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                .appendingPathComponent("SharedCore/Views/StatsFocusChartSection.swift"),
+            encoding: .utf8
+        )
+
+        #expect(source.contains(".containerRelativeFrame(.horizontal)"))
+        #expect(source.contains("focusDayXAxisDates(from: points.map(\\.date))"))
+        #expect(!source.contains("focusBarXAxisDateSet"))
     }
 
     @Test

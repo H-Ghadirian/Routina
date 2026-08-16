@@ -13,7 +13,6 @@ struct StatsFocusChartSection: View {
     let averageFocusSecondsPerDay: TimeInterval
     let focusChartUpperBound: Double
     let focusWeekdayAverageUpperBound: Double
-    let xAxisDates: [Date]
     let chartPresentation: StatsChartPresentation
     let highlightBarFill: LinearGradient
     let surfaceGradient: LinearGradient
@@ -29,7 +28,6 @@ struct StatsFocusChartSection: View {
         let selectedPoint = selectedPoint(in: displayPoints)
         let peakPoint = FocusDurationStats.busiestDay(in: displayPoints)
         let focusBarXAxisDates = selectedGrouping.xAxisDates(from: displayPoints, chartPresentation: chartPresentation)
-        let focusBarXAxisDateSet = Set(focusBarXAxisDates)
         let averageSeconds = averageSeconds(in: displayPoints)
         let focusAxisUpperBound = StatsChartTimeAxis.upperBound(for: displayUpperBound(in: displayPoints, averageSeconds: averageSeconds))
         let usesHorizontalScroll = selectedGrouping.usesHorizontalScroll(
@@ -141,27 +139,25 @@ struct StatsFocusChartSection: View {
                     }
                 }
                 .chartXAxis {
-                    if selectedGrouping == .day {
-                        AxisMarks(values: xAxisDates) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
-                                .foregroundStyle(Color.secondary.opacity(0.12))
-                            AxisTick()
-                            AxisValueLabel {
-                                if let date = value.as(Date.self),
-                                   !focusBarXAxisDateSet.contains(date) {
-                                    Text(chartPresentation.xAxisLabel(for: date))
-                                }
-                            }
-                        }
-                    }
                     AxisMarks(values: focusBarXAxisDates) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
+                            .foregroundStyle(Color.secondary.opacity(0.12))
                         AxisTick()
                             .foregroundStyle(Color.secondary.opacity(0.35))
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
-                                Text(selectedGrouping.axisLabel(for: date, chartPresentation: chartPresentation, calendar: calendar))
+                                Text(
+                                    selectedGrouping.axisLabel(
+                                        for: date,
+                                        labeledDates: focusBarXAxisDates,
+                                        chartPresentation: chartPresentation,
+                                        calendar: calendar
+                                    )
+                                )
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.primary.opacity(0.75))
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
                             }
                         }
                     }
@@ -451,7 +447,7 @@ private enum StatsFocusChartGrouping: String, CaseIterable, Identifiable {
     ) -> [Date] {
         switch self {
         case .day:
-            return chartPresentation.focusBarXAxisDates(from: points)
+            return chartPresentation.focusDayXAxisDates(from: points.map(\.date))
         case .week:
             return sampledDates(from: points, targetCount: chartPresentation.isCompact ? 8 : 14)
         case .month:
@@ -461,12 +457,17 @@ private enum StatsFocusChartGrouping: String, CaseIterable, Identifiable {
 
     func axisLabel(
         for date: Date,
+        labeledDates: [Date],
         chartPresentation: StatsChartPresentation,
         calendar: Calendar
     ) -> String {
         switch self {
         case .day:
-            return chartPresentation.focusBarXAxisLabel(for: date)
+            return chartPresentation.focusDayXAxisLabel(
+                for: date,
+                in: labeledDates,
+                calendar: calendar
+            )
         case .week:
             return date.formatted(.dateTime.month(.abbreviated).day())
         case .month:
@@ -521,6 +522,7 @@ private struct StatsFocusChartContainer<Content: View>: View {
             if usesHorizontalScroll {
                 ScrollView(.horizontal, showsIndicators: false) {
                     content()
+                        .containerRelativeFrame(.horizontal)
                         .frame(minWidth: minWidth, minHeight: minHeight)
                         .padding(.top, 4)
                 }
@@ -610,6 +612,7 @@ private struct StatsFocusPointDetailPanel: View {
 }
 
 private struct StatsFocusCumulativeChart: View {
+    @Environment(\.calendar) private var calendar
     @State private var selectedPointID: Date?
 
     let points: [FocusCumulativeChartPoint]
@@ -632,32 +635,7 @@ private struct StatsFocusCumulativeChart: View {
     }
 
     private var xAxisDates: [Date] {
-        let activePoints = points.filter { $0.dailySeconds > 0 }
-        let labelPoints = activePoints.isEmpty ? points : activePoints
-        let targetCount: Int
-
-        switch chartPresentation.selectedRange.kind {
-        case .today:
-            targetCount = 1
-        case .week:
-            targetCount = 7
-        case .month:
-            targetCount = 10
-        case .year:
-            targetCount = 18
-        case .custom:
-            targetCount = min(max(chartPresentation.selectedRange.trailingDayCount, 7), 18)
-        }
-
-        guard labelPoints.count > targetCount, targetCount > 1 else {
-            return labelPoints.map(\.date)
-        }
-
-        let step = Double(labelPoints.count - 1) / Double(targetCount - 1)
-        return (0..<targetCount).map { index in
-            let pointIndex = min(Int((Double(index) * step).rounded()), labelPoints.count - 1)
-            return labelPoints[pointIndex].date
-        }
+        chartPresentation.focusDayXAxisDates(from: points.map(\.date))
     }
 
     var body: some View {
@@ -739,9 +717,17 @@ private struct StatsFocusCumulativeChart: View {
                         AxisTick()
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
-                                Text(chartPresentation.focusBarXAxisLabel(for: date))
+                                Text(
+                                    chartPresentation.focusDayXAxisLabel(
+                                        for: date,
+                                        in: xAxisDates,
+                                        calendar: calendar
+                                    )
+                                )
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
                             }
                         }
                     }

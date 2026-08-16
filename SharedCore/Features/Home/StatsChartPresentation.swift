@@ -227,13 +227,38 @@ struct StatsChartPresentation {
         return sampledSparklinePoints(from: labelPoints).map(\.date)
     }
 
-    func focusBarXAxisDates(from points: [FocusDurationChartPoint]) -> [Date] {
-        points
-            .filter { $0.seconds > 0 }
-            .map(\.date)
+    func focusDayXAxisDates(from dates: [Date]) -> [Date] {
+        let targetCount: Int
+
+        switch selectedRange.kind {
+        case .today:
+            targetCount = 1
+        case .week:
+            targetCount = 7
+        case .month:
+            targetCount = isCompact ? 5 : 10
+        case .year:
+            targetCount = 18
+        case .custom:
+            targetCount = isCompact ? 5 : 10
+        }
+
+        guard dates.count > targetCount, targetCount > 1 else {
+            return dates
+        }
+
+        let step = Double(dates.count - 1) / Double(targetCount - 1)
+        return (0..<targetCount).map { index in
+            let dateIndex = min(Int((Double(index) * step).rounded()), dates.count - 1)
+            return dates[dateIndex]
+        }
     }
 
-    func focusBarXAxisLabel(for date: Date) -> String {
+    func focusDayXAxisLabel(
+        for date: Date,
+        in labeledDates: [Date],
+        calendar: Calendar
+    ) -> String {
         switch selectedRange.kind {
         case .today:
             return "Today"
@@ -244,7 +269,16 @@ struct StatsChartPresentation {
         case .year:
             return date.formatted(.dateTime.month(.abbreviated).day())
         case .custom:
-            return date.formatted(.dateTime.month(.abbreviated).day())
+            let previousDate = labeledDates.firstIndex(of: date).flatMap { index in
+                index > labeledDates.startIndex ? labeledDates[index - 1] : nil
+            }
+            let startsVisibleMonth = previousDate.map {
+                !calendar.isDate($0, equalTo: date, toGranularity: .month)
+            } ?? true
+
+            return startsVisibleMonth
+                ? date.formatted(.dateTime.month(.abbreviated).day())
+                : date.formatted(.dateTime.day())
         }
     }
 

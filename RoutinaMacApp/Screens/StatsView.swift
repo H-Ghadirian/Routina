@@ -763,7 +763,6 @@ struct StatsView: View {
             averageFocusSecondsPerDay: metrics.averageFocusSecondsPerDay,
             focusChartUpperBound: metrics.focusChartUpperBound,
             focusWeekdayAverageUpperBound: metrics.focusWeekdayAverageUpperBound,
-            xAxisDates: metrics.xAxisDates,
             chartPresentation: snapshot.chartPresentation,
             highlightBarFill: highlightBarFill,
             surfaceGradient: surfaceGradient,
