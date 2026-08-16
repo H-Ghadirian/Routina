@@ -56,14 +56,20 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                     selectedTodoStateFilter: bindings.selectedTodoStateFilter,
                     onPresent: presentDetail
                 )
-                HomeFiltersPressureSection(
-                    selectedPressureFilter: bindings.selectedPressureFilter,
-                    onPresent: presentDetail
-                )
-                HomeFiltersThinkingNeededSection(
-                    selectedThinkingNeededFilter: bindings.selectedThinkingNeededFilter,
-                    onPresent: presentDetail
-                )
+                Section("Priority") {
+                    HomeFiltersImportanceUrgencyEntries(
+                        selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter,
+                        onPresent: presentDetail
+                    )
+                    HomeFiltersPressureSection(
+                        selectedPressureFilter: bindings.selectedPressureFilter,
+                        onPresent: presentDetail
+                    )
+                    HomeFiltersThinkingNeededSection(
+                        selectedThinkingNeededFilter: bindings.selectedThinkingNeededFilter,
+                        onPresent: presentDetail
+                    )
+                }
                 if configuration.isGoalsEnabled {
                     HomeFiltersGoalSection(
                         selectedGoalFilter: bindings.selectedGoalFilter,
@@ -76,11 +82,6 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                 )
                 HomeFiltersEstimationSection(
                     selectedEstimationFilter: bindings.selectedEstimationFilter,
-                    onPresent: presentDetail
-                )
-                HomeFiltersImportanceUrgencySection(
-                    selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter,
-                    summary: configuration.importanceUrgencySummary,
                     onPresent: presentDetail
                 )
                 HomeFiltersTagFilterEntrySection(
@@ -287,10 +288,13 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                     .labelsHidden()
                 }
             }
-        case .priority:
-            HomeFiltersPriorityPickerSheet(
-                selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter,
-                summary: configuration.importanceUrgencySummary
+        case .importance:
+            HomeFiltersImportancePickerSheet(
+                selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter
+            )
+        case .urgency:
+            HomeFiltersUrgencyPickerSheet(
+                selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter
             )
         case .tags:
             tagPicker()

@@ -178,7 +178,6 @@ detailContent
                 placeFilterSectionDescription: placeFilterSectionDescription,
                 locationStatusText: locationStatusText
             ),
-            importanceUrgencySummary: importanceUrgencyFilterSummary,
             hasActiveOptionalFilters: hasActiveOptionalFilters
         )
     }

@@ -665,7 +665,6 @@ struct StatsView: View {
                 get: { store.selectedImportanceUrgencyFilter },
                 set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
             ),
-            importanceUrgencyFilterSummary: importanceUrgencyFilterSummary,
             hasActiveFilters: hasActiveFilters,
             selectedTags: Binding(
                 get: { store.effectiveSelectedTags },
@@ -715,13 +714,6 @@ struct StatsView: View {
             return nil
         }
         return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
-    }
-
-    private var importanceUrgencyFilterSummary: String {
-        guard let filter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter) else {
-            return "Showing stats across all importance and urgency levels."
-        }
-        return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }
 
     private var rangeSection: some View {

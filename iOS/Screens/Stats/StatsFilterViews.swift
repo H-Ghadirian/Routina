@@ -237,7 +237,6 @@ struct StatsFiltersSheet<TagPicker: View>: View {
     let showsTaskTypeFilter: Bool
     @Binding var taskTypeFilter: StatsTaskTypeFilter
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
-    let importanceUrgencyFilterSummary: String
     let hasActiveFilters: Bool
     @Binding var selectedTags: Set<String>
     @Binding var excludedTags: Set<String>
@@ -281,11 +280,12 @@ struct StatsFiltersSheet<TagPicker: View>: View {
                     )
                 }
 
-                HomeFiltersImportanceUrgencySection(
-                    selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
-                    summary: importanceUrgencyFilterSummary,
-                    onPresent: presentDetail
-                )
+                Section("Priority") {
+                    HomeFiltersImportanceUrgencyEntries(
+                        selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
+                        onPresent: presentDetail
+                    )
+                }
 
                 HomeFiltersTagFilterEntrySection(
                     selectedTags: $selectedTags,
@@ -364,10 +364,13 @@ struct StatsFiltersSheet<TagPicker: View>: View {
                     .labelsHidden()
                 }
             }
-        case .priority:
-            HomeFiltersPriorityPickerSheet(
-                selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
-                summary: importanceUrgencyFilterSummary
+        case .importance:
+            HomeFiltersImportancePickerSheet(
+                selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter
+            )
+        case .urgency:
+            HomeFiltersUrgencyPickerSheet(
+                selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter
             )
         case .tags:
             tagPicker()

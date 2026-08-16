@@ -199,6 +199,34 @@ struct ImportanceUrgencyFilterCell: Codable, Equatable, Hashable, Identifiable, 
         return cell
     }
 
+    var minimumImportance: RoutineTaskImportance? {
+        importance == .level1 ? nil : importance
+    }
+
+    var minimumUrgency: RoutineTaskUrgency? {
+        urgency == .level1 ? nil : urgency
+    }
+
+    static func updatingMinimumImportance(
+        _ importance: RoutineTaskImportance?,
+        in current: ImportanceUrgencyFilterCell?
+    ) -> ImportanceUrgencyFilterCell? {
+        normalized(ImportanceUrgencyFilterCell(
+            importance: importance ?? .level1,
+            urgency: current?.urgency ?? .level1
+        ))
+    }
+
+    static func updatingMinimumUrgency(
+        _ urgency: RoutineTaskUrgency?,
+        in current: ImportanceUrgencyFilterCell?
+    ) -> ImportanceUrgencyFilterCell? {
+        normalized(ImportanceUrgencyFilterCell(
+            importance: current?.importance ?? .level1,
+            urgency: urgency ?? .level1
+        ))
+    }
+
     var id: String {
         "\(importance.rawValue)-\(urgency.rawValue)"
     }

@@ -750,14 +750,15 @@ struct TimelineView: View {
                     )
                 }
 
-                HomeFiltersImportanceUrgencySection(
-                    selectedImportanceUrgencyFilter: Binding(
-                        get: { store.selectedImportanceUrgencyFilter },
-                        set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-                    ),
-                    summary: importanceUrgencyFilterSummary,
-                    onPresent: presentTimelineFilterDetail
-                )
+                Section("Priority") {
+                    HomeFiltersImportanceUrgencyEntries(
+                        selectedImportanceUrgencyFilter: Binding(
+                            get: { store.selectedImportanceUrgencyFilter },
+                            set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                        ),
+                        onPresent: presentTimelineFilterDetail
+                    )
+                }
 
                 HomeFiltersMediaSection(
                     selectedMediaFilter: mediaFilterBinding,
@@ -840,13 +841,19 @@ struct TimelineView: View {
                     .labelsHidden()
                 }
             }
-        case .priority:
-            HomeFiltersPriorityPickerSheet(
+        case .importance:
+            HomeFiltersImportancePickerSheet(
                 selectedImportanceUrgencyFilter: Binding(
                     get: { store.selectedImportanceUrgencyFilter },
                     set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-                ),
-                summary: importanceUrgencyFilterSummary
+                )
+            )
+        case .urgency:
+            HomeFiltersUrgencyPickerSheet(
+                selectedImportanceUrgencyFilter: Binding(
+                    get: { store.selectedImportanceUrgencyFilter },
+                    set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                )
             )
         case .media:
             HomeFiltersDetailSheet(title: "Media") {
@@ -882,13 +889,6 @@ struct TimelineView: View {
             return nil
         }
         return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
-    }
-
-    private var importanceUrgencyFilterSummary: String {
-        guard let filter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter) else {
-            return "Showing done items across all importance and urgency levels."
-        }
-        return "Showing done items from tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }
 
     @ViewBuilder

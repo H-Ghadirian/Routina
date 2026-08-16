@@ -157,9 +157,9 @@ struct TaskFormIOSLayoutRegressionTests {
         let homeFilters = try Self.sourceFile(
             "iOS/Screens/Home/HomeFiltersListSections.swift"
         )
-        let homePrioritySection = try Self.sourceSection(
-            startingAt: "struct HomeFiltersImportanceUrgencySection",
-            endingAt: "struct HomeFiltersPriorityPickerSheet",
+        let homePriorityEntries = try Self.sourceSection(
+            startingAt: "struct HomeFiltersImportanceUrgencyEntries",
+            endingAt: "struct HomeFiltersImportancePickerSheet",
             in: homeFilters
         )
         let homeFilterSheet = try Self.sourceFile(
@@ -174,12 +174,18 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(!formPrioritySection.contains(".sheet("))
         #expect(!formSections.contains("TaskFormIOSPriorityPickerSheet"))
 
-        #expect(homePrioritySection.contains("title: \"Filter priority\""))
-        #expect(homePrioritySection.contains("onPresent(.priority)"))
-        #expect(!homePrioritySection.contains(".sheet("))
-        #expect(!homePrioritySection.contains("ImportanceUrgencyMatrixPicker(selectedFilter:"))
-        #expect(homeFilterSheet.contains("case .priority:"))
-        #expect(homeFilterSheet.contains("HomeFiltersPriorityPickerSheet("))
+        #expect(homePriorityEntries.contains("title: \"Importance\""))
+        #expect(homePriorityEntries.contains("destination: .importance"))
+        #expect(homePriorityEntries.contains("title: \"Urgency\""))
+        #expect(homePriorityEntries.contains("destination: .urgency"))
+        #expect(!homePriorityEntries.contains("ImportanceUrgencyMatrixPicker"))
+        #expect(homeFilters.contains("struct HomeFiltersImportancePickerSheet"))
+        #expect(homeFilters.contains("struct HomeFiltersUrgencyPickerSheet"))
+        #expect(homeFilterSheet.contains("Section(\"Priority\")"))
+        #expect(homeFilterSheet.contains("case .importance:"))
+        #expect(homeFilterSheet.contains("HomeFiltersImportancePickerSheet("))
+        #expect(homeFilterSheet.contains("case .urgency:"))
+        #expect(homeFilterSheet.contains("HomeFiltersUrgencyPickerSheet("))
     }
 
     @Test
@@ -245,6 +251,8 @@ struct TaskFormIOSLayoutRegressionTests {
             "created",
             "status",
             "todoState",
+            "importance",
+            "urgency",
             "pressure",
             "thinkingNeeded",
             "goal",
@@ -258,7 +266,10 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(!filterSections.contains("sectionTitle:"))
         #expect(!filterSections.contains("Section(\"Group\")"))
         #expect(!filterSections.contains("Section(\"Sort\")"))
-        #expect(!filterSections.contains("Section(\"Priority\")"))
+        #expect(filterSheet.contains("Section(\"Priority\")"))
+        #expect(filterSheet.contains("HomeFiltersImportanceUrgencyEntries("))
+        #expect(filterSheet.contains("HomeFiltersPressureSection("))
+        #expect(filterSheet.contains("HomeFiltersThinkingNeededSection("))
         #expect(filterSheet.contains("@State private var presentedDetail: IOSFilterDetailDestination?"))
         #expect(filterSheet.contains(".sheet(item: $presentedDetail, content: detailSheet)"))
         #expect(filterSheet.contains("private func detailSheet("))
@@ -272,6 +283,8 @@ struct TaskFormIOSLayoutRegressionTests {
 
         #expect(statsFilters.contains("destination: .advancedQuery"))
         #expect(statsFilters.contains("destination: .statsTaskType"))
+        #expect(statsFilters.contains("Section(\"Priority\")"))
+        #expect(statsFilters.contains("HomeFiltersImportanceUrgencyEntries("))
         #expect(!statsFilters.contains("sectionTitle:"))
         #expect(statsFilters.contains("HomeFiltersTagFilterEntrySection"))
         #expect(!statsFilters.contains("HomeFiltersTagRulesSection("))
@@ -281,6 +294,8 @@ struct TaskFormIOSLayoutRegressionTests {
 
         #expect(timeline.contains("destination: .timelineRange"))
         #expect(timeline.contains("destination: .timelineType"))
+        #expect(timeline.contains("Section(\"Priority\")"))
+        #expect(timeline.contains("HomeFiltersImportanceUrgencyEntries("))
         #expect(!timeline.contains("sectionTitle:"))
         #expect(timeline.contains("HomeFiltersMediaSection(\n                    selectedMediaFilter: mediaFilterBinding,"))
         #expect(timeline.contains("HomeFiltersTagFilterEntrySection"))

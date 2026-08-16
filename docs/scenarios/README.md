@@ -400,23 +400,28 @@ And Show/Hide plus All/Any remain available without duplicating selected rows
 And searching keeps active rules visible while narrowing unselected tags
 And returning to Filters shows every selected Hidden and Included tag in a wrapping tag-only summary
 
-### iOS Priority Pickers Keep Task Forms And Filters Compact
+### iOS Priority Filters Keep Importance And Urgency Independent
 
 Area: Tasks / UI
-Decision links: [0534](../decisions/0534-present-ios-priority-controls-in-dedicated-sheets.md)
+Decision links: [0581](../decisions/0581-separate-ios-priority-filter-controls.md), [0563](../decisions/0563-present-importance-and-urgency-as-independent-task-controls.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
 
 Given iOS Add Task or Edit Task is open
-When the person needs to change Priority
-Then the main form shows a compact current-priority entry
-And tapping it opens the existing Importance and Urgency matrix in a dedicated sheet
+When the person changes Importance or Urgency
+Then each field has its own control
+And changing one does not implicitly change or mark the other explicit
 
 Given an iOS Home, Stats, or Timeline filter screen is open
-When the person opens Filter priority
-Then the filter matrix and `Show all priority levels` reset appear in a dedicated sheet
-And the selected threshold retains its existing matching and persistence behavior
+When the person scans Priority or opens either threshold
+Then Importance and Urgency appear as separate compact rows with dedicated sheets
+And changing one minimum threshold preserves the other threshold
+And the stored combined threshold retains its existing matching and persistence behavior
+
+Given iOS Home Filters is open
+When the person scans Priority
+Then Pressure and Thinking needed appear in the same section as Importance and Urgency
 
 ### iOS Home Filter Detail Pickers Keep The Main Sheet Compact
 
@@ -428,7 +433,7 @@ Coverage:
 
 Given iOS Home Filters is open
 When the person needs to change any available filter, including task type,
-visibility, status, tags, flags, or priority
+visibility, status, tags, flags, Importance, Urgency, Pressure, or Thinking needed
 Then each control first shows its active value as a compact row
 And tapping it opens its dedicated picker sheet without closing Home Filters
 
@@ -2793,7 +2798,7 @@ And the procedure advances without showing that task again
 ### iOS Filter Sheets Name Each Choice Once
 
 Area: Tasks / Stats / Timeline / UI
-Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0537](../decisions/0537-keep-all-ios-home-filter-options-in-persistent-sheets.md), [0548](../decisions/0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md)
+Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0537](../decisions/0537-keep-all-ios-home-filter-options-in-persistent-sheets.md), [0548](../decisions/0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md), [0581](../decisions/0581-separate-ios-priority-filter-controls.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
@@ -2801,7 +2806,8 @@ Coverage:
 Given the person opens the Home, Stats, or Timeline Filters sheet on iOS
 When they scan the available filter choices
 Then each choice appears as one compact current-value row
-And no separate section heading repeats that row's name
+And no section heading repeats that row's name
+And the Priority heading groups related rows without replacing their independent names
 
 Given the person opens an inline filter picker such as Media
 When the detail sheet appears

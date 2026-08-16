@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0581](0581-separate-ios-priority-filter-controls.md) revises [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md) and [0563](0563-present-importance-and-urgency-as-independent-task-controls.md), and refines [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md) and [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md):** iOS Home, Stats, and Timeline Filters expose Importance and Urgency as independent minimum-threshold rows in a Priority section, with Home's existing Pressure and Thinking needed rows grouped beside them, while retaining combined matching and persistence.
+
 - **[0580](0580-show-every-active-tag-in-ios-filter-summary.md) revises [0533](0533-keep-active-ios-filter-tag-rules-visible.md) and refines [0579](0579-align-ios-filter-tag-picker-with-task-tag-picker.md):** The iOS Filter tags entry lists every active Hidden and Included tag and alone grows to multiple lines, while other filter summaries remain single-line.
 
 - **[0579](0579-align-ios-filter-tag-picker-with-task-tag-picker.md) refines [0531](0531-keep-ios-task-tag-selection-compact-and-searchable.md), [0533](0533-keep-active-ios-filter-tag-rules-visible.md), and [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md):** iOS Filter Tags uses Add Task's large-title, one-list plus/check selection pattern while retaining explicit Show/Hide and All/Any filter semantics and keeping each active rule visible once.

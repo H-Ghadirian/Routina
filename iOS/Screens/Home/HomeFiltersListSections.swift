@@ -9,12 +9,13 @@ enum IOSFilterDetailDestination: String, Identifiable {
     case created
     case status
     case todoState
+    case importance
+    case urgency
     case pressure
     case thinkingNeeded
     case goal
     case media
     case estimation
-    case priority
     case tags
     case flags
     case place
@@ -387,71 +388,122 @@ struct HomeFiltersEstimationSection: View {
     }
 }
 
-struct HomeFiltersImportanceUrgencySection: View {
+struct HomeFiltersImportanceUrgencyEntries: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
-    let summary: String
     let onPresent: (IOSFilterDetailDestination) -> Void
 
     var body: some View {
-        HomeFiltersDetailEntry(
-            title: "Filter priority",
-            systemImage: "line.3.horizontal.decrease.circle",
-            value: selectionSummary
-        ) {
-            onPresent(.priority)
+        HomeFiltersPickerEntry(
+            title: "Importance",
+            systemImage: "star.fill",
+            value: minimumImportanceSummary,
+            destination: .importance,
+            onPresent: onPresent
+        )
+
+        HomeFiltersPickerEntry(
+            title: "Urgency",
+            systemImage: "clock.badge.exclamationmark",
+            value: minimumUrgencySummary,
+            destination: .urgency,
+            onPresent: onPresent
+        )
+    }
+
+    private var minimumImportanceSummary: String {
+        guard let importance = selectedImportanceUrgencyFilter?.minimumImportance else {
+            return "All"
         }
-        .accessibilityValue(selectionAccessibilityValue)
-        .accessibilityHint("Open the importance and urgency filter")
+        return "\(importance.title)+"
     }
 
-    private var selectionSummary: String {
-        guard let selectedImportanceUrgencyFilter else { return "All levels" }
-        return "\(selectedImportanceUrgencyFilter.importance.shortTitle)/\(selectedImportanceUrgencyFilter.urgency.shortTitle)+"
-    }
-
-    private var selectionAccessibilityValue: String {
-        guard let selectedImportanceUrgencyFilter else { return "All priority levels" }
-        return "At least \(selectedImportanceUrgencyFilter.importance.title.lowercased()) importance and \(selectedImportanceUrgencyFilter.urgency.title.lowercased()) urgency"
+    private var minimumUrgencySummary: String {
+        guard let urgency = selectedImportanceUrgencyFilter?.minimumUrgency else {
+            return "All"
+        }
+        return "\(urgency.title)+"
     }
 }
 
-struct HomeFiltersPriorityPickerSheet: View {
+struct HomeFiltersImportancePickerSheet: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
-    let summary: String
-
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Button("Show all priority levels") {
-                        selectedImportanceUrgencyFilter = nil
-                    }
-                    .disabled(selectedImportanceUrgencyFilter == nil)
-
-                    ImportanceUrgencyMatrixPicker(
-                        selectedFilter: $selectedImportanceUrgencyFilter,
-                        showsSummaryChip: false
-                    )
-                    .frame(maxWidth: 420, alignment: .leading)
-                } footer: {
-                    Text(summary)
+        HomeFiltersDetailSheet(title: "Importance") {
+            Section {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Minimum importance",
+                    options: importanceOptions,
+                    selection: minimumImportanceBinding,
+                    horizontalPadding: 10,
+                    verticalPadding: 8,
+                    fillsAvailableWidth: true,
+                    maximumSegmentsPerRow: 2
+                ) { importance in
+                    Text(importance.map { "\($0.title)+" } ?? "All")
                 }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Filter Priority")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
+            } footer: {
+                Text("All includes every importance level. Other choices set the minimum importance a task must have.")
             }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+    }
+
+    private var importanceOptions: [RoutineTaskImportance?] {
+        [nil] + RoutineTaskImportance.allCases.dropFirst().map(Optional.some)
+    }
+
+    private var minimumImportanceBinding: Binding<RoutineTaskImportance?> {
+        Binding(
+            get: { selectedImportanceUrgencyFilter?.minimumImportance },
+            set: {
+                selectedImportanceUrgencyFilter =
+                    ImportanceUrgencyFilterCell.updatingMinimumImportance(
+                        $0,
+                        in: selectedImportanceUrgencyFilter
+                    )
+            }
+        )
+    }
+}
+
+struct HomeFiltersUrgencyPickerSheet: View {
+    @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+
+    var body: some View {
+        HomeFiltersDetailSheet(title: "Urgency") {
+            Section {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Minimum urgency",
+                    options: urgencyOptions,
+                    selection: minimumUrgencyBinding,
+                    horizontalPadding: 10,
+                    verticalPadding: 8,
+                    fillsAvailableWidth: true,
+                    maximumSegmentsPerRow: 2
+                ) { urgency in
+                    Text(urgency.map { "\($0.title)+" } ?? "All")
+                }
+            } footer: {
+                Text("All includes every urgency level. Other choices set the minimum urgency a task must have.")
+            }
+        }
+    }
+
+    private var urgencyOptions: [RoutineTaskUrgency?] {
+        [nil] + RoutineTaskUrgency.allCases.dropFirst().map(Optional.some)
+    }
+
+    private var minimumUrgencyBinding: Binding<RoutineTaskUrgency?> {
+        Binding(
+            get: { selectedImportanceUrgencyFilter?.minimumUrgency },
+            set: {
+                selectedImportanceUrgencyFilter =
+                    ImportanceUrgencyFilterCell.updatingMinimumUrgency(
+                        $0,
+                        in: selectedImportanceUrgencyFilter
+                    )
+            }
+        )
     }
 }
 

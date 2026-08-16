@@ -5,7 +5,6 @@ struct HomeFiltersSheetConfiguration {
     let availableFilters: [RoutineListFilter]
     let isGoalsEnabled: Bool
     let place: HomeFiltersPlaceConfiguration
-    let importanceUrgencySummary: String
     let hasActiveOptionalFilters: Bool
 }
 

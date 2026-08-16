@@ -39,6 +39,34 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func independentFilterAxisUpdatesPreserveTheOtherThreshold() {
+        let urgencyOnly = ImportanceUrgencyFilterCell.updatingMinimumUrgency(
+            .level3,
+            in: nil
+        )
+
+        #expect(urgencyOnly?.minimumImportance == nil)
+        #expect(urgencyOnly?.minimumUrgency == .level3)
+
+        let both = ImportanceUrgencyFilterCell.updatingMinimumImportance(
+            .level2,
+            in: urgencyOnly
+        )
+
+        #expect(both?.minimumImportance == .level2)
+        #expect(both?.minimumUrgency == .level3)
+
+        let importanceOnly = ImportanceUrgencyFilterCell.updatingMinimumUrgency(
+            nil,
+            in: both
+        )
+
+        #expect(importanceOnly?.minimumImportance == .level2)
+        #expect(importanceOnly?.minimumUrgency == nil)
+        #expect(ImportanceUrgencyFilterCell.updatingMinimumImportance(nil, in: importanceOnly) == nil)
+    }
+
+    @Test
     func searchMatchesTaskDescription() {
         let tasks = [
             TestTaskDisplay(name: "Call supplier", taskDescription: "Ask about the replacement shipment"),
