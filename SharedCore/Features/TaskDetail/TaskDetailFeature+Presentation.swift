@@ -517,6 +517,37 @@ extension TaskDetailFeature.State {
         )
     }
 
+    /// The state Task Details should present after applying relationship-backed
+    /// availability. The stored workflow state remains unchanged so resolving
+    /// the prerequisite restores the person's previous Ready/In Progress state.
+    var effectiveTodoState: TodoState? {
+        guard let todoState = task.todoState else { return nil }
+        guard hasActiveRelationshipBlocker else { return todoState }
+
+        switch todoState {
+        case .ready, .inProgress:
+            return .blocked
+        case .blocked, .done, .paused:
+            return todoState
+        }
+    }
+
+    var isTodoStateDerivedFromRelationshipBlocker: Bool {
+        hasActiveRelationshipBlocker
+            && effectiveTodoState == .blocked
+            && task.todoState != .blocked
+    }
+
+    /// Ready and In Progress cannot be selected while an unresolved confirmed
+    /// prerequisite still makes the task unavailable. Paused and Done remain
+    /// valid lifecycle choices, with Done retaining its confirmation step.
+    var selectableTodoStates: [TodoState] {
+        guard hasActiveRelationshipBlocker else { return TodoState.allCases }
+        return TodoState.allCases.filter { state in
+            state == .blocked || state == .done || state == .paused
+        }
+    }
+
     var blockerSummaryText: String {
         if hasActiveRelationshipBlocker {
             let count = blockingRelationships.filter { rel in

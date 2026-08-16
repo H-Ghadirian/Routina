@@ -558,7 +558,11 @@ detailBody
 
     private var shouldShowTodoStateControl: Bool {
         canShowTodoStateControl
-            && (isTodoStateControlRevealed || TaskDetailOptionalControlVisibility.showsTodoState(for: store.task))
+            && (
+                isTodoStateControlRevealed
+                    || store.hasActiveRelationshipBlocker
+                    || TaskDetailOptionalControlVisibility.showsTodoState(for: store.task)
+            )
     }
 
     private var shouldShowPressureControl: Bool {

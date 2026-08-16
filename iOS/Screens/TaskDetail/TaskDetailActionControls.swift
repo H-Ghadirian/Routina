@@ -14,7 +14,10 @@ struct TaskDetailTodoPrimaryActionSection: View {
                 todoStateControl
             }
 
-            if showsTodoStateControl, let stateTimingSummary, isStateTimingExpanded {
+            if showsTodoStateControl,
+               !store.isTodoStateDerivedFromRelationshipBlocker,
+               let stateTimingSummary,
+               isStateTimingExpanded {
                 TodoStateTimingInlineView(
                     summary: stateTimingSummary,
                     showPersianDates: showPersianDates
@@ -46,7 +49,8 @@ struct TaskDetailTodoPrimaryActionSection: View {
             HStack(spacing: 6) {
                 TaskDetailTodoStatePickerPill(store: store)
 
-                if stateTimingSummary != nil {
+                if stateTimingSummary != nil,
+                   !store.isTodoStateDerivedFromRelationshipBlocker {
                     Button {
                         withAnimation(.easeInOut(duration: 0.18)) {
                             isStateTimingExpanded.toggle()
@@ -378,7 +382,7 @@ private struct TaskDetailTodoStatePickerPill: View {
     @State private var isPresented = false
 
     var body: some View {
-        let currentState = store.task.todoState ?? .ready
+        let currentState = store.effectiveTodoState ?? .ready
 
         Button {
             isPresented = true
@@ -392,7 +396,7 @@ private struct TaskDetailTodoStatePickerPill: View {
         }
         .buttonStyle(.plain)
         .confirmationDialog("Set State", isPresented: $isPresented) {
-            ForEach(TodoState.allCases, id: \.self) { state in
+            ForEach(store.selectableTodoStates, id: \.self) { state in
                 if state != currentState {
                     Button(state.displayTitle) {
                         if state == .done && store.hasActiveRelationshipBlocker {

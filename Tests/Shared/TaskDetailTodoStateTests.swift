@@ -522,6 +522,93 @@ struct TodoStateFeatureTests {
     }
 
     @Test
+    func effectiveTodoState_reportsBlockedWithoutOverwritingReadyState() {
+        let blockerID = UUID()
+        let task = RoutineTask(
+            name: "Deploy",
+            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)],
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.ready.rawValue
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.availableRelationshipTasks = [
+            RoutineTaskRelationshipCandidate(
+                id: blockerID,
+                name: "Write tests",
+                emoji: "🧪",
+                relationships: [],
+                status: .pendingTodo
+            )
+        ]
+
+        #expect(state.effectiveTodoState == .blocked)
+        #expect(state.isTodoStateDerivedFromRelationshipBlocker)
+        #expect(state.task.todoState == .ready)
+        #expect(state.task.todoStateRawValue == TodoState.ready.rawValue)
+        #expect(state.selectableTodoStates == [.blocked, .done, .paused])
+    }
+
+    @Test
+    func effectiveTodoState_restoresStoredStateWhenBlockerResolves() {
+        let blockerID = UUID()
+        let task = RoutineTask(
+            name: "Deploy",
+            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)],
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.inProgress.rawValue
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.availableRelationshipTasks = [
+            RoutineTaskRelationshipCandidate(
+                id: blockerID,
+                name: "Write tests",
+                emoji: "🧪",
+                relationships: [],
+                status: .pendingTodo
+            )
+        ]
+
+        #expect(state.effectiveTodoState == .blocked)
+
+        state.availableRelationshipTasks[0].status = .completedOneOff
+
+        #expect(state.effectiveTodoState == .inProgress)
+        #expect(!state.isTodoStateDerivedFromRelationshipBlocker)
+        #expect(state.selectableTodoStates == TodoState.allCases)
+    }
+
+    @Test
+    func effectiveTodoState_preservesPausedAndDoneLifecyclePrecedence() {
+        let blockerID = UUID()
+        let blocker = RoutineTaskRelationshipCandidate(
+            id: blockerID,
+            name: "Write tests",
+            emoji: "🧪",
+            relationships: [],
+            status: .pendingTodo
+        )
+        let pausedTask = RoutineTask(
+            name: "Deploy later",
+            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)],
+            scheduleMode: .oneOff,
+            pausedAt: makeDate("2026-03-18T10:00:00Z")
+        )
+        let doneTask = RoutineTask(
+            name: "Deployed",
+            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)],
+            scheduleMode: .oneOff,
+            lastDone: makeDate("2026-03-18T10:00:00Z")
+        )
+        var pausedState = TaskDetailFeature.State(task: pausedTask)
+        pausedState.availableRelationshipTasks = [blocker]
+        var doneState = TaskDetailFeature.State(task: doneTask)
+        doneState.availableRelationshipTasks = [blocker]
+
+        #expect(pausedState.effectiveTodoState == .paused)
+        #expect(doneState.effectiveTodoState == .done)
+    }
+
+    @Test
     func isCompletionButtonDisabled_trueWhenHasActiveRelationshipBlocker() {
         let blockerID = UUID()
         let task = RoutineTask(

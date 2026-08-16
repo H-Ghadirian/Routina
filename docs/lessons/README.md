@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0179 — Derive task state from active relationship blockers](0179-derive-task-state-from-active-relationship-blockers.md)
 - [0177 — Render live CloudKit progress](0177-render-live-cloudkit-progress.md)
 - [0176 — Append search fallbacks to partial results](0176-append-search-fallbacks-to-partial-results.md)
 - [0175 — Distinguish CloudKit stalls from progress](0175-distinguish-cloudkit-stalls-from-progress.md)

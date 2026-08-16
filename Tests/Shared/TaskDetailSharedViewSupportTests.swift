@@ -77,6 +77,32 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func taskDetailStateControlsUseRelationshipAwareTodoState() throws {
+        let macDetail = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let macControls = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+        let iosDetail = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let iosControls = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+
+        for detail in [macDetail, iosDetail] {
+            #expect(detail.contains("|| store.hasActiveRelationshipBlocker"))
+        }
+        for controls in [macControls, iosControls] {
+            #expect(controls.contains("store.effectiveTodoState ?? .ready"))
+            #expect(controls.contains("store.selectableTodoStates"))
+        }
+        #expect(macControls.contains("return \"by linked task\""))
+        #expect(iosControls.contains("!store.isTodoStateDerivedFromRelationshipBlocker"))
+    }
+
+    @Test
     func durationTextFormatsMinutesHoursAndMixedDurations() {
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 1) == "1 minute")
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 25) == "25 minutes")

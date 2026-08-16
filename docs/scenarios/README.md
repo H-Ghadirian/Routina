@@ -736,6 +736,32 @@ And no second Linked Tasks editor or second `Link a Task` button is inserted bel
 And the picker lists every other task in Home's loaded catalog except tasks already linked to the open task
 And choosing a task persists that relationship without requiring a second Save action
 
+### Task Detail State Reflects Unresolved Prerequisites
+
+Area: Tasks / Relationships
+Decision links: [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailTodoStateTests.swift`
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+
+Given a one-off task has a stored State of Ready or In Progress
+And it has a confirmed `Blocked by` relationship whose prerequisite is unresolved
+When Task Details opens on iOS or macOS
+Then the visible State is Blocked
+And State is visible even when the person did not reveal that optional control earlier
+And Ready and In Progress are not offered while the prerequisite remains unresolved
+And relationship-derived blocking does not inherit the stored State's elapsed-time claim
+And the stored workflow State and state history remain unchanged
+
+Given every blocking prerequisite becomes done or canceled
+When Task Details refreshes the relationship status
+Then the task returns to its previously stored Ready or In Progress State
+
+Given the dependent task is Paused or Done while an unresolved prerequisite exists
+When Task Details derives its effective State
+Then that stronger lifecycle State remains authoritative
+
 ### Mac Task Relationship Suggestions Require Confirmation
 
 Area: Tasks / AI

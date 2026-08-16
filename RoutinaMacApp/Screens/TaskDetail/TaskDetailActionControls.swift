@@ -240,7 +240,7 @@ struct TaskDetailTodoStateSegmentedPicker: View {
     @State private var isExpanded = false
 
     var body: some View {
-        let currentState = store.task.todoState ?? .ready
+        let currentState = store.effectiveTodoState ?? .ready
 
         VStack(alignment: .leading, spacing: isExpanded ? 8 : 0) {
             Button {
@@ -265,7 +265,7 @@ struct TaskDetailTodoStateSegmentedPicker: View {
 
             if isExpanded {
                 TaskDetailColoredSegmentedControl(
-                    options: TodoState.allCases,
+                    options: store.selectableTodoStates,
                     selection: currentState,
                     title: { $0.displayTitle },
                     tint: { TaskDetailPriorityPresentation.todoStateTint(for: $0, style: .segmentedControl) },
@@ -338,11 +338,15 @@ struct TaskDetailTodoStateSegmentedPicker: View {
     }
 
     private func stateTimingDetailText(for state: TodoState) -> String? {
+        if state == .blocked, store.hasActiveRelationshipBlocker {
+            return "by linked task"
+        }
+
         guard let timingSummary else {
             return nil
         }
 
-        if timingSummary.currentState != nil,
+        if timingSummary.currentState == state,
            let elapsedDays = timingSummary.currentStateElapsedDays,
            let startedAt = timingSummary.currentStateStartedAt {
             return "for \(durationText(elapsedDays)) since \(dateText(startedAt))"
