@@ -10,6 +10,28 @@ import Testing
 
 struct TaskDetailPresentationRoutingSupportTests {
     @Test
+    func primaryCompletionToneDistinguishesCompletionFromReversalOrStop() {
+        #expect(
+            TaskDetailCompletionActionTone.resolve(
+                isOngoingMultiDayRoutine: false,
+                canUndoSelectedDate: false
+            ) == .completion
+        )
+        #expect(
+            TaskDetailCompletionActionTone.resolve(
+                isOngoingMultiDayRoutine: false,
+                canUndoSelectedDate: true
+            ) == .reversalOrStop
+        )
+        #expect(
+            TaskDetailCompletionActionTone.resolve(
+                isOngoingMultiDayRoutine: true,
+                canUndoSelectedDate: false
+            ) == .reversalOrStop
+        )
+    }
+
+    @Test
     func undoCompletionCopyUsesAdaptiveRemovalTextWhenRemovingSpecificLog() {
         let copy = TaskDetailUndoCompletionAlertCopy.make(
             pendingLogRemovalTimestamp: Date(),

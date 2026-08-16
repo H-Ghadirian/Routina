@@ -228,6 +228,12 @@ struct TaskDetailPrimaryActionButton: View {
             .routinaPlatformPrimaryActionLabelLayout()
         }
         .buttonStyle(.borderedProminent)
+        .tint(
+            TaskDetailPresentation.completionActionTint(
+                isOngoingMultiDayRoutine: store.task.isMultiDayRoutine && store.task.isOngoing,
+                canUndoSelectedDate: store.canUndoSelectedDate
+            )
+        )
         .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
         .routinaPlatformPrimaryActionButtonLayout()
         .disabled(store.isCompletionButtonDisabled)

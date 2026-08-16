@@ -147,6 +147,20 @@ struct TaskDetailPlatformActionParityTests {
     }
 
     @Test
+    func taskDetailPrimaryCompletionActionsShareSemanticTintAcrossPlatforms() throws {
+        let iosSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+        let macSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift"
+        )
+
+        #expect(iosSource.contains("TaskDetailPresentation.completionActionTint("))
+        #expect(macSource.contains("TaskDetailPresentation.completionActionTint("))
+        #expect(iosSource.contains(".tint("))
+    }
+
+    @Test
     func iosAddMoreDetailsExplainsItsOptionCount() throws {
         let source = try Self.sourceFile(
             "SharedCore/Screens/TaskDetail/TaskDetailExtrasSectionView.swift"

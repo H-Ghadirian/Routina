@@ -334,10 +334,10 @@ struct TaskDetailActionClusterView: View {
     }
 
     private var completionTint: Color {
-        if store.task.isMultiDayRoutine && store.task.isOngoing {
-            return Color.orange
-        }
-        return store.canUndoSelectedDate ? Color.orange : Color.green
+        TaskDetailPresentation.completionActionTint(
+            isOngoingMultiDayRoutine: store.task.isMultiDayRoutine && store.task.isOngoing,
+            canUndoSelectedDate: store.canUndoSelectedDate
+        )
     }
 
     private var pauseActionTitle: String {

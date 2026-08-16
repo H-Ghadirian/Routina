@@ -129,3 +129,17 @@ struct TaskDetailCompletionButtonTitlePresentation {
         return "No occurrence on \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
     }
 }
+
+enum TaskDetailCompletionActionTone: Equatable {
+    case completion
+    case reversalOrStop
+
+    static func resolve(
+        isOngoingMultiDayRoutine: Bool,
+        canUndoSelectedDate: Bool
+    ) -> Self {
+        isOngoingMultiDayRoutine || canUndoSelectedDate
+            ? .reversalOrStop
+            : .completion
+    }
+}

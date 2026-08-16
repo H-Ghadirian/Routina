@@ -46,7 +46,7 @@ Explain permissions in context, ask only for capabilities the available feature 
 
 ## P-11 — Be coherent across platforms, not mechanically identical
 
-The meaning of tasks, plans, outcomes, and history should stay consistent. Navigation and interaction should use the native strengths of iPhone, iPad, and Mac.
+The meaning of tasks, plans, outcomes, and history should stay consistent. Semantic cues such as completion, warning, cancellation, and reversal should retain their meaning across platforms, while navigation and interaction use the native strengths of iPhone, iPad, and Mac.
 
 ## P-12 — Keep unavailable and experimental experiences honest
 

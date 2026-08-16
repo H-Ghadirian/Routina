@@ -451,17 +451,25 @@ And the vertical-dot trigger has a bold, comfortably legible size beside Edit
 ### iOS Task Detail Keeps Primary Context Easy To Scan
 
 Area: Tasks / UI
-Decision links: [0594](../decisions/0594-simplify-ios-task-detail-scan-and-action-hierarchy.md), [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md), [0585](../decisions/0585-persist-ios-task-detail-calendar-expansion-per-task.md), [0508](../decisions/0508-keep-ios-add-more-details-last.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md)
+Decision links: [0595](../decisions/0595-keep-task-completion-colors-consistent-across-platforms.md), [0594](../decisions/0594-simplify-ios-task-detail-scan-and-action-hierarchy.md), [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md), [0585](../decisions/0585-persist-ios-task-detail-calendar-expansion-per-task.md), [0508](../decisions/0508-keep-ios-add-more-details-last.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
 - `Tests/Shared/TaskDetailDateMetadataPresentationTests.swift`
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+- `Tests/Shared/TaskDetailPresentationRoutingSupportTests.swift`
 
 Given an active todo is open on today's date in iOS Task Details
 Then its header shows Status without a redundant `Selected / Today` badge
 And its completion action appears before notification context and Calendar
 And a standalone completion action does not have an otherwise-empty outer card
+And its completion-creating action is green on iOS and macOS
+
+When the primary action would undo a completion or stop ongoing multi-day work
+Then its semantic tint is orange on both platforms
+
+When a cadence-free routine offers `Log another completion`
+Then that positive completion action remains green
 
 When the person selects another day in Calendar
 Then the header adds `Viewing` with that date

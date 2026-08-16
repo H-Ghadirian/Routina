@@ -6,6 +6,23 @@ import SwiftUI
 // these pure, platform-shared functions.
 enum TaskDetailPresentation {
 
+    // MARK: - Primary completion action
+
+    static func completionActionTint(
+        isOngoingMultiDayRoutine: Bool,
+        canUndoSelectedDate: Bool
+    ) -> Color {
+        switch TaskDetailCompletionActionTone.resolve(
+            isOngoingMultiDayRoutine: isOngoingMultiDayRoutine,
+            canUndoSelectedDate: canUndoSelectedDate
+        ) {
+        case .completion:
+            return .green
+        case .reversalOrStop:
+            return .orange
+        }
+    }
+
     // MARK: - Relationship + checklist status colors
 
     static func statusColor(for status: RoutineTaskRelationshipStatus) -> Color {

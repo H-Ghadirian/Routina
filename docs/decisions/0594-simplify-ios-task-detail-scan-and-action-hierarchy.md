@@ -12,6 +12,10 @@ Accepted
 
 - [0584: Group iOS Task Maintenance in Navigation Overflow](0584-group-ios-task-maintenance-in-navigation-overflow.md) for the simple todo completion card only
 
+## Refined By
+
+- [0595: Keep Task Completion Colors Consistent Across Platforms](0595-keep-task-completion-colors-consistent-across-platforms.md)
+
 ## Refines
 
 - [0188: Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md)
