@@ -132,16 +132,21 @@ struct HomeFiltersDetailEntry: View {
     let title: String
     let systemImage: String
     let value: String
+    var allowsMultilineValue = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Label(title, systemImage: systemImage)
+                    .lineLimit(allowsMultilineValue ? 1 : nil)
+                    .layoutPriority(allowsMultilineValue ? 1 : 0)
                 Spacer()
                 Text(value)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .multilineTextAlignment(.trailing)
+                    .lineLimit(allowsMultilineValue ? nil : 1)
+                    .fixedSize(horizontal: false, vertical: allowsMultilineValue)
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)

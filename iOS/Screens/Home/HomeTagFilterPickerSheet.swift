@@ -9,7 +9,8 @@ struct HomeFiltersTagFilterEntrySection: View {
         HomeFiltersDetailEntry(
             title: "Filter tags",
             systemImage: "tag",
-            value: selectionSummary
+            value: selectionSummary,
+            allowsMultilineValue: true
         ) {
             onPresent(.tags)
         }
@@ -29,11 +30,10 @@ struct HomeFiltersTagFilterEntrySection: View {
         let names = tags.sorted {
             $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
         }
-        guard let firstName = names.first else { return nil }
+        guard !names.isEmpty else { return nil }
 
-        let remainingCount = names.count - 1
-        let suffix = remainingCount > 0 ? " +\(remainingCount)" : ""
-        return "\(action) #\(firstName)\(suffix)"
+        let tagList = names.map { "#\($0)" }.joined(separator: ", ")
+        return "\(action) \(tagList)"
     }
 }
 

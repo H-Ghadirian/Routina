@@ -92,6 +92,27 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func filterTagEntryWrapsAndNamesEverySelectedTag() throws {
+        let tagFilter = try Self.sourceSection(
+            startingAt: "struct HomeFiltersTagFilterEntrySection",
+            endingAt: "struct HomeTagFilterPickerSheet",
+            in: try Self.sourceFile("iOS/Screens/Home/HomeTagFilterPickerSheet.swift")
+        )
+        let detailEntry = try Self.sourceSection(
+            startingAt: "struct HomeFiltersDetailEntry",
+            endingAt: "struct HomeFiltersPickerEntry",
+            in: try Self.sourceFile("iOS/Screens/Home/HomeFiltersListSections.swift")
+        )
+
+        #expect(tagFilter.contains("allowsMultilineValue: true"))
+        #expect(tagFilter.contains("names.map { \"#\\($0)\" }.joined(separator: \", \")"))
+        #expect(!tagFilter.contains("remainingCount"))
+        #expect(!tagFilter.contains("suffix"))
+        #expect(detailEntry.contains(".lineLimit(allowsMultilineValue ? nil : 1)"))
+        #expect(detailEntry.contains(".fixedSize(horizontal: false, vertical: allowsMultilineValue)"))
+    }
+
+    @Test
     func flagsUseIntrinsicWidthBeforeWrappingInTaskForms() throws {
         let source = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"

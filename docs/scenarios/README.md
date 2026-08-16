@@ -398,6 +398,7 @@ Then the picker uses the same large-title plus/check row pattern as Add Task
 And each active tag appears once at the top with its Included or Hidden effect
 And Show/Hide plus All/Any remain available without duplicating selected rows
 And searching keeps active rules visible while narrowing unselected tags
+And returning to Filters shows every selected Hidden and Included tag in a wrapping tag-only summary
 
 ### iOS Priority Pickers Keep Task Forms And Filters Compact
 
