@@ -800,7 +800,9 @@ homeContent
            task.isOneOffTask,
            !task.isCompletedOneOff,
            !task.isCanceledOneOff,
-           !task.isInProgress {
+           !task.isInProgress,
+           !task.hasActiveRelationshipBlocker,
+           task.todoState != .blocked {
             EmptyView()
         } else {
             HomeStatusBadgeView(

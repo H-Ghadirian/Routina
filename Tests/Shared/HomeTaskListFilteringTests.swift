@@ -2841,6 +2841,65 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func unresolvedRelationshipBlockerOverridesReadyTodoBadge() {
+        let task = TestTaskDisplay(
+            name: "Open the release merge request",
+            isOneOffTask: true,
+            hasActiveRelationshipBlocker: true,
+            todoState: .ready
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        let badge = presenter.badgeStyle(for: task)
+
+        #expect(badge?.title == "Blocked")
+        #expect(badge?.systemImage == "exclamationmark.circle.fill")
+    }
+
+    @Test
+    func unresolvedRelationshipBlockerOverridesInProgressTodoBadge() {
+        let task = TestTaskDisplay(
+            name: "Open the release merge request",
+            isOneOffTask: true,
+            isInProgress: true,
+            hasActiveRelationshipBlocker: true,
+            todoState: .inProgress
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        let badge = presenter.badgeStyle(for: task)
+
+        #expect(badge?.title == "Blocked")
+        #expect(badge?.systemImage == "exclamationmark.circle.fill")
+    }
+
+    @Test
+    func completedTodoBadgeKeepsPrecedenceOverRelationshipBlocker() {
+        let task = TestTaskDisplay(
+            name: "Open the release merge request",
+            isOneOffTask: true,
+            isCompletedOneOff: true,
+            hasActiveRelationshipBlocker: true,
+            todoState: .done
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        #expect(presenter.badgeStyle(for: task)?.title == "Done")
+    }
+
+    @Test
     func trackingRowsCanKeepCadenceWithoutGentleNudgeBadges() {
         let task = TestTaskDisplay(
             name: "Clean coffee machine",

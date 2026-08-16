@@ -55,6 +55,13 @@ extension HomeRoutineDisplayMetadataPresenter {
                     : nil
             }
         }
+        if task.isOneOffTask,
+           !task.isCompletedOneOff,
+           !task.isCanceledOneOff,
+           task.hasActiveRelationshipBlocker,
+           task.todoState == .ready || task.todoState == .inProgress {
+            return badge("Blocked", "exclamationmark.circle.fill", .orange, Color.orange.opacity(0.14))
+        }
         if task.isInProgress {
             return badge("Step \(task.completedStepCount + 1)/\(max(task.steps.count, 1))", "list.number", .orange, Color.orange.opacity(0.16))
         }

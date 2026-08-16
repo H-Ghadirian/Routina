@@ -31,6 +31,34 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func refreshDisplaysCarriesRelationshipDerivedBlockingIntoTaskRows() {
+        let now = makeDate("2026-08-16T12:00:00Z")
+        let blockerID = UUID()
+        let blockedTask = RoutineTask(
+            name: "Open the release merge request",
+            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)],
+            scheduleMode: .oneOff,
+            createdAt: now
+        )
+        let blocker = RoutineTask(
+            id: blockerID,
+            name: "Merge the release locally",
+            scheduleMode: .oneOff,
+            createdAt: now
+        )
+        var state = HomeFeature.State(routineTasks: [blockedTask, blocker])
+
+        withDependencies {
+            setTestDateDependencies(&$0, now: now, calendar: makeTestCalendar())
+            $0.appSettingsClient.placesEnabled = { false }
+        } operation: {
+            HomeFeature().refreshDisplays(&state)
+        }
+
+        #expect(state.routineDisplays.first(where: { $0.taskID == blockedTask.id })?.hasActiveRelationshipBlocker == true)
+    }
+
+    @Test
     func hideAssumedDoneTasksRefreshesAnAfterCompletionAssumption() async {
         let now = makeDate("2026-08-07T12:00:00Z")
         let calendar = makeTestCalendar()

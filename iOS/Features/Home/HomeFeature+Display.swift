@@ -33,9 +33,14 @@ extension HomeFeature {
         var active: [RoutineDisplay] = []
         var away: [RoutineDisplay] = []
         var archived: [RoutineDisplay] = []
+        let relationshipBlockedTaskIDs = HomeDisplayFilterSupport.activeRelationshipBlockedTaskIDs(
+            tasks: state.routineTasks,
+            referenceDate: now,
+            calendar: calendar
+        )
 
         for task in state.routineTasks {
-            let display = makeRoutineDisplay(
+            var display = makeRoutineDisplay(
                 task,
                 placesByID: placesByID,
                 goalsByID: goalsByID,
@@ -44,6 +49,7 @@ extension HomeFeature {
                 fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
                 showsPlaces: showsPlaces
             )
+            display.hasActiveRelationshipBlocker = relationshipBlockedTaskIDs.contains(task.id)
 
             if task.isArchived(referenceDate: now, calendar: calendar) {
                 archived.append(display)

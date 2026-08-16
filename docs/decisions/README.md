@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0593](0593-show-relationship-blocking-in-home-task-rows.md) refines [0038](0038-configure-home-task-row-fields.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), and [0486](0486-suggest-confirmed-task-relationships-on-device.md):** iOS and macOS Home task-row Status Badges show relationship-derived `Blocked` instead of stored Ready or In Progress, using a cached display-snapshot value so scrolling never resolves the task graph.
+
 - **[0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md) refines [0046](0046-label-routine-schedule-behavior-as-due-and-gentle.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0575](0575-inherit-task-ladder-group-values-from-actionable-tasks.md):** repeating Due routines can keep stable baseline Importance, Urgency, and Pressure while a read-only Task Ladder `Now` view derives on-due-date or gradual categorical increases for the current occurrence.
 
 - **[0591](0591-include-suppressed-mac-search-matches-beside-ordinary-results.md) refines [0310](0310-show-mac-home-toolbar-search.md), [0405](0405-show-hidden-scheduled-task-search-results.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** every non-empty Mac task search merges eligible placement-suppressed matches beside ordinary results without duplicates, so broad queries do not omit tasks that narrower queries reveal.

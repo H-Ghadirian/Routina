@@ -782,18 +782,27 @@ And no second Linked Tasks editor or second `Link a Task` button is inserted bel
 And the picker lists every other task in Home's loaded catalog except tasks already linked to the open task
 And choosing a task persists that relationship without requiring a second Save action
 
-### Task Detail State Reflects Unresolved Prerequisites
+### Home and Task Detail State Reflect Unresolved Prerequisites
 
 Area: Tasks / Relationships
-Decision links: [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md)
+Decision links: [0593](../decisions/0593-show-relationship-blocking-in-home-task-rows.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
+- `Tests/Shared/HomeBlockedStatusBadgeSourceTests.swift`
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/iOS/HomeFeatureTests.swift`
+- `Tests/macOS/HomeFeatureTests.swift`
 - `Tests/Shared/TaskDetailTodoStateTests.swift`
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
 
 Given a one-off task has a stored State of Ready or In Progress
 And it has a confirmed `Blocked by` relationship whose prerequisite is unresolved
-When Task Details opens on iOS or macOS
+When Home presents the task on iOS or macOS
+Then its visible Home Status Badge is Blocked rather than To Do or In Progress
+And the row reads relationship status from its cached display snapshot instead of resolving the graph while rendering
+
+Given the same blocked one-off task opens in Task Details
+When Task Details presents its State on iOS or macOS
 Then the visible State is Blocked
 And State is visible even when the person did not reveal that optional control earlier
 And Ready and In Progress are not offered while the prerequisite remains unresolved
@@ -801,8 +810,9 @@ And relationship-derived blocking does not inherit the stored State's elapsed-ti
 And the stored workflow State and state history remain unchanged
 
 Given every blocking prerequisite becomes done or canceled
-When Task Details refreshes the relationship status
-Then the task returns to its previously stored Ready or In Progress State
+When Home and Task Details refresh the relationship status
+Then Task Details returns to its previously stored Ready or In Progress State
+And the Home Status Badge returns to To Do or In Progress accordingly
 
 Given the dependent task is Paused or Done while an unresolved prerequisite exists
 When Task Details derives its effective State

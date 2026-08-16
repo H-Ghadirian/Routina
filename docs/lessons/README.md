@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0181 — Carry derived task state into row snapshots](0181-carry-derived-task-state-into-row-snapshots.md)
 - [0179 — Derive task state from active relationship blockers](0179-derive-task-state-from-active-relationship-blockers.md)
 - [0178 — Count Flags when deriving progressive form sections](0178-count-flags-when-deriving-progressive-form-sections.md)
 - [0177 — Render live CloudKit progress](0177-render-live-cloudkit-progress.md)
