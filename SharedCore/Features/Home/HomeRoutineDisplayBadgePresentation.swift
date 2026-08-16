@@ -31,11 +31,10 @@ extension HomeRoutineDisplayMetadataPresenter {
         if case .away = task.locationAvailability {
             return badge("Away", "location.slash.fill", .blue, Color.blue.opacity(0.14))
         }
-        if task.isOneOffTask,
-           !task.isCompletedOneOff,
+        if !task.isCompletedOneOff,
            !task.isCanceledOneOff,
            task.hasActiveRelationshipBlocker,
-           task.todoState == .ready || task.todoState == .inProgress {
+           !task.isOneOffTask || task.todoState == .ready || task.todoState == .inProgress {
             return badge("Blocked", "exclamationmark.circle.fill", .orange, Color.orange.opacity(0.14))
         }
         if task.isOngoing {

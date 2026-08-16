@@ -1072,7 +1072,11 @@ extension TaskDetailFeature {
                     appSettingsClient.relatedTagRules() + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
                 )
             ))
-            send(.availableRelationshipTasksLoaded(RoutineTaskRelationshipCandidate.from(tasks, excluding: taskID)))
+            send(.availableRelationshipTasksLoaded(RoutineTaskRelationshipCandidate.from(
+                tasks,
+                excluding: taskID,
+                completionDatesByTaskID: doneStats.completedDatesByTaskID
+            )))
         }
     }
 

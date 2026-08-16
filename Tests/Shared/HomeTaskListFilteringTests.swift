@@ -2903,6 +2903,21 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func repeatingTaskChainShowsBlockedBadgeUntilPrerequisiteCompletion() {
+        let task = TestTaskDisplay(
+            name: "Release Candidate 4.4.0",
+            hasActiveRelationshipBlocker: true
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        #expect(presenter.badgeStyle(for: task)?.title == "Blocked")
+    }
+
+    @Test
     func completedTodoBadgeKeepsPrecedenceOverRelationshipBlocker() {
         let task = TestTaskDisplay(
             name: "Open the release merge request",

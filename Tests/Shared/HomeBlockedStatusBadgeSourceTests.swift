@@ -11,6 +11,7 @@ struct HomeBlockedStatusBadgeSourceTests {
 
         for source in sources {
             #expect(source.contains("HomeDisplayFilterSupport.activeRelationshipBlockedTaskIDs("))
+            #expect(source.contains("completionDatesByTaskID: state.doneStats.completedDatesByTaskID"))
             #expect(source.contains("display.hasActiveRelationshipBlocker = relationshipBlockedTaskIDs.contains(task.id)"))
         }
     }

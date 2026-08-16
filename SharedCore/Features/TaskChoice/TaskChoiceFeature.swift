@@ -497,6 +497,10 @@ struct TaskChoiceFeature {
                 let tasks = try modelContext().fetch(descriptor)
                 let logs = try modelContext().fetch(FetchDescriptor<RoutineLog>())
                 let logsByTaskID = Dictionary(grouping: logs, by: \.taskID)
+                let completionDatesByTaskID = HomeTaskSupport.makeDoneStats(
+                    tasks: tasks,
+                    logs: logs
+                ).completedDatesByTaskID
                 let referenceDate = now
                 let selectableTasks = tasks.filter {
                     TaskChoiceCandidateRanking.isCurrentlySelectable(
@@ -509,12 +513,17 @@ struct TaskChoiceFeature {
                 let relationshipCandidates = RoutineTaskRelationshipCandidate.from(
                     tasks,
                     referenceDate: referenceDate,
-                    calendar: calendar
+                    calendar: calendar,
+                    completionDatesByTaskID: completionDatesByTaskID
                 )
                 let unblockedTasks = selectableTasks.filter {
                     !RoutineTaskRelationshipResolution.hasActiveBlocker(
                         for: $0,
-                        within: relationshipCandidates
+                        within: relationshipCandidates,
+                        dependentLatestCompletionAt: RoutineTaskRelationshipResolution.latestCompletion(
+                            $0.lastDone,
+                            completionDatesByTaskID[$0.id]?.max()
+                        )
                     )
                 }
                 let missingData = TaskChoiceCandidateRanking.missingData(for: unblockedTasks)

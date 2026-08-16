@@ -522,6 +522,19 @@ struct TodoStateFeatureTests {
     }
 
     @Test
+    func relationshipCandidatesUseLatestRecordedCompletionHistory() throws {
+        let blocker = RoutineTask(name: "Run Test.io")
+        let loggedCompletion = makeDate("2026-08-14T10:00:00Z")
+
+        let candidate = try #require(RoutineTaskRelationshipCandidate.from(
+            [blocker],
+            completionDatesByTaskID: [blocker.id: [loggedCompletion]]
+        ).first)
+
+        #expect(candidate.latestCompletionAt == loggedCompletion)
+    }
+
+    @Test
     func effectiveTodoState_reportsBlockedWithoutOverwritingReadyState() {
         let blockerID = UUID()
         let task = RoutineTask(
@@ -575,6 +588,46 @@ struct TodoStateFeatureTests {
         #expect(state.effectiveTodoState == .inProgress)
         #expect(!state.isTodoStateDerivedFromRelationshipBlocker)
         #expect(state.selectableTodoStates == TodoState.allCases)
+    }
+
+    @Test
+    func repeatingTaskChainConsumesPrerequisiteCompletionsInOrder() {
+        let blockerID = UUID()
+        let firstDependentCompletion = makeDate("2026-08-14T09:00:00Z")
+        let firstBlockerCompletion = makeDate("2026-08-14T10:00:00Z")
+        let dependent = RoutineTask(
+            name: "Release Candidate 4.4.0",
+            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)],
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(on: 2, at: nil),
+            lastDone: firstDependentCompletion
+        )
+        var state = TaskDetailFeature.State(task: dependent)
+        state.availableRelationshipTasks = [
+            RoutineTaskRelationshipCandidate(
+                id: blockerID,
+                name: "Run Test.io",
+                emoji: "✨",
+                relationships: [],
+                status: .paused,
+                latestCompletionAt: nil
+            )
+        ]
+
+        #expect(state.hasActiveRelationshipBlocker)
+
+        state.availableRelationshipTasks[0].latestCompletionAt = firstBlockerCompletion
+
+        #expect(!state.hasActiveRelationshipBlocker)
+
+        state.task.lastDone = makeDate("2026-08-14T11:00:00Z")
+
+        #expect(state.hasActiveRelationshipBlocker)
+
+        state.availableRelationshipTasks[0].status = .onTrack
+        state.availableRelationshipTasks[0].latestCompletionAt = makeDate("2026-08-14T12:00:00Z")
+
+        #expect(!state.hasActiveRelationshipBlocker)
     }
 
     @Test

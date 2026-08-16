@@ -201,6 +201,7 @@ struct RoutineTaskRelationshipCandidate: Equatable, Hashable, Identifiable, Send
     var emoji: String
     var relationships: [RoutineTaskRelationship]
     var status: RoutineTaskRelationshipStatus = .onTrack
+    var latestCompletionAt: Date? = nil
     var canBeFulfilledByLinkedTask: Bool = true
 
     var displayName: String {
@@ -222,16 +223,30 @@ struct RoutineTaskRelationshipCandidate: Equatable, Hashable, Identifiable, Send
         _ tasks: [RoutineTask],
         excluding excludedTaskID: UUID? = nil,
         referenceDate: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        completionDatesByTaskID: [UUID: Set<Date>] = [:]
     ) -> [RoutineTaskRelationshipCandidate] {
         tasks.compactMap { task in
             guard task.id != excludedTaskID else { return nil }
+            let latestLoggedCompletion = completionDatesByTaskID[task.id]?.max()
+            let latestCompletionAt: Date?
+            switch (task.lastDone, latestLoggedCompletion) {
+            case let (taskCompletion?, loggedCompletion?):
+                latestCompletionAt = max(taskCompletion, loggedCompletion)
+            case let (taskCompletion?, nil):
+                latestCompletionAt = taskCompletion
+            case let (nil, loggedCompletion?):
+                latestCompletionAt = loggedCompletion
+            case (nil, nil):
+                latestCompletionAt = nil
+            }
             return RoutineTaskRelationshipCandidate(
                 id: task.id,
                 name: task.name ?? "Untitled task",
                 emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
                 relationships: task.relationships,
                 status: RoutineTaskRelationshipStatus.resolved(for: task, referenceDate: referenceDate, calendar: calendar),
+                latestCompletionAt: latestCompletionAt,
                 canBeFulfilledByLinkedTask: task.canBeFulfilledByLinkedTask(
                     referenceDate: referenceDate,
                     calendar: calendar

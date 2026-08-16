@@ -41,7 +41,8 @@ extension HomeFeature {
         let relationshipBlockedTaskIDs = HomeDisplayFilterSupport.activeRelationshipBlockedTaskIDs(
             tasks: state.routineTasks,
             referenceDate: now,
-            calendar: calendar
+            calendar: calendar,
+            completionDatesByTaskID: state.doneStats.completedDatesByTaskID
         )
 
         for task in state.routineTasks {

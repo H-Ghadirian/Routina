@@ -509,11 +509,13 @@ extension TaskDetailFeature.State {
         resolvedRelationships.filter { $0.kind == .blockedBy }
     }
 
-    /// True when at least one `.blockedBy` relationship target is not yet done/canceled.
+    /// True when at least one `.blockedBy` prerequisite has not handed off a
+    /// completion newer than this task's latest completion.
     var hasActiveRelationshipBlocker: Bool {
         RoutineTaskRelationshipResolution.hasActiveBlocker(
             for: task,
-            within: availableRelationshipTasks
+            within: availableRelationshipTasks,
+            dependentLatestCompletionAt: latestRecordedCompletion
         )
     }
 

@@ -820,15 +820,17 @@ And choosing a task persists that relationship without requiring a second Save a
 ### Home and Task Detail State Reflect Unresolved Prerequisites
 
 Area: Tasks / Relationships
-Decision links: [0593](../decisions/0593-show-relationship-blocking-in-home-task-rows.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md)
+Decision links: [0596](../decisions/0596-advance-repeating-blocked-by-chains-by-completion-order.md), [0593](../decisions/0593-show-relationship-blocking-in-home-task-rows.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/HomeBlockedStatusBadgeSourceTests.swift`
+- `Tests/Shared/HomeActionableFilterTests.swift`
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
 - `Tests/iOS/HomeFeatureTests.swift`
 - `Tests/macOS/HomeFeatureTests.swift`
 - `Tests/Shared/TaskDetailTodoStateTests.swift`
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+- `Tests/Shared/TaskChoiceFeatureTests.swift`
 
 Given a one-off task has a stored State of Ready or In Progress
 And it has a confirmed `Blocked by` relationship whose prerequisite is unresolved
@@ -853,6 +855,24 @@ And the Home Status Badge returns to To Do or In Progress accordingly
 Given the dependent task is Paused or Done while an unresolved prerequisite exists
 When Task Details derives its effective State
 Then that stronger lifecycle State remains authoritative
+
+Given repeating task A is Blocked by repeating task B
+And B has no completion newer than A's latest completion
+When Home, Task Details, or Help me choose derives A's availability
+Then A remains Blocked
+
+When B records a newer completion or fulfillment
+Then A becomes available for the current chain pass
+And A's Home Status Badge no longer says Blocked
+And B becoming immediately available again does not re-block A
+And pausing B after that completion does not re-block A
+
+When A records a completion newer than B's latest completion
+Then that B completion is consumed for the chain
+And A's next pass is Blocked until B completes again
+
+Given B is paused before it has completed the current chain step
+Then A remains Blocked
 
 ### Mac Task Relationship Suggestions Require Confirmation
 

@@ -50,6 +50,63 @@ struct HomeActionableFilterTests {
     }
 
     @Test
+    func pausedRepeatingBlockerStaysResolvedUntilDependentCompletes() {
+        let blockedTaskID = UUID()
+        let blockerID = UUID()
+        let calendar = Calendar(identifier: .gregorian)
+        let referenceDate = Date(timeIntervalSince1970: 500)
+        let blockedTask = RoutineTask(
+            id: blockedTaskID,
+            name: "Release Candidate 4.4.0",
+            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)],
+            lastDone: Date(timeIntervalSince1970: 100)
+        )
+        let blocker = RoutineTask(
+            id: blockerID,
+            name: "Run Test.io",
+            lastDone: Date(timeIntervalSince1970: 200),
+            pausedAt: Date(timeIntervalSince1970: 300)
+        )
+
+        #expect(!HomeDisplayFilterSupport.hasActiveRelationshipBlocker(
+            taskID: blockedTaskID,
+            tasks: [blockedTask, blocker],
+            referenceDate: referenceDate,
+            calendar: calendar
+        ))
+
+        blockedTask.lastDone = Date(timeIntervalSince1970: 400)
+
+        #expect(HomeDisplayFilterSupport.hasActiveRelationshipBlocker(
+            taskID: blockedTaskID,
+            tasks: [blockedTask, blocker],
+            referenceDate: referenceDate,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func recordedBlockerCompletionUnlocksChainWhenTaskSummaryLags() {
+        let blockedTaskID = UUID()
+        let blockerID = UUID()
+        let blockedTask = RoutineTask(
+            id: blockedTaskID,
+            name: "Release Candidate 4.4.0",
+            relationships: [RoutineTaskRelationship(targetTaskID: blockerID, kind: .blockedBy)],
+            lastDone: Date(timeIntervalSince1970: 100)
+        )
+        let blocker = RoutineTask(id: blockerID, name: "Run Test.io")
+
+        #expect(!HomeDisplayFilterSupport.hasActiveRelationshipBlocker(
+            taskID: blockedTaskID,
+            tasks: [blockedTask, blocker],
+            referenceDate: Date(timeIntervalSince1970: 500),
+            calendar: Calendar(identifier: .gregorian),
+            completionDatesByTaskID: [blockerID: [Date(timeIntervalSince1970: 200)]]
+        ))
+    }
+
+    @Test
     func inverseBlocksRelationshipIsTreatedAsBlocker() {
         let blockedTaskID = UUID()
         let blocker = RoutineTask(

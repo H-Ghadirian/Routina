@@ -278,6 +278,47 @@ struct TaskChoiceFeatureTests {
     }
 
     @Test
+    func pausedRepeatingRequirementStaysResolvedForCurrentChainStep() async throws {
+        let context = makeInMemoryContext()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let prerequisite = makeReadyTask(name: "Run Test.io")
+        prerequisite.lastDone = now.addingTimeInterval(-86_400)
+        prerequisite.pausedAt = now
+        let dependent = makeReadyTask(name: "Release Candidate 4.4.0")
+        dependent.lastDone = now.addingTimeInterval(-172_800)
+        dependent.replaceRelationships([
+            RoutineTaskRelationship(
+                targetTaskID: prerequisite.id,
+                kind: .blockedBy
+            )
+        ])
+        context.insert(prerequisite)
+        context.insert(dependent)
+        try context.save()
+
+        let dependentCandidate = TaskChoiceCandidate(task: dependent)
+        let store = TestStore(initialState: TaskChoiceFeature.State()) {
+            TaskChoiceFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+            $0.calendar = calendar
+        }
+
+        await store.send(.findTasksTapped) {
+            $0.phase = .loading
+        }
+        await store.receive(.tasksLoaded(.recommendation(dependentCandidate, candidateCount: 1))) {
+            $0.phase = .recommendation
+            $0.recommendedTask = dependentCandidate
+            $0.candidateCount = 1
+        }
+    }
+
+    @Test
     func savesComparisonsAndOnlyRecommendsAfterAllTiesAreResolved() async throws {
         let context = makeInMemoryContext()
         let now = Date(timeIntervalSince1970: 1_700_000_000)

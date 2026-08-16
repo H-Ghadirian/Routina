@@ -277,14 +277,16 @@ enum HomeTaskSupport {
             relatedTasks,
             excluding: task.id,
             referenceDate: now,
-                calendar: calendar
+            calendar: calendar,
+            completionDatesByTaskID: doneStats.completedDatesByTaskID
         )
 
         let allRelationshipTasks = RoutineTaskRelationshipCandidate.from(
             tasks,
             excluding: task.id,
             referenceDate: now,
-            calendar: calendar
+            calendar: calendar,
+            completionDatesByTaskID: doneStats.completedDatesByTaskID
         )
         detailState.availableGoals = availableGoals
         detailState.editRoutineGoals = RoutineGoalSummary.summaries(

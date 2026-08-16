@@ -145,20 +145,80 @@ struct RoutineTaskRelationshipResolution {
     }
 
     /// A task is unavailable while any confirmed Blocked by relationship has
-    /// a target that is neither completed nor canceled for its current state.
+    /// not completed after the dependent task's latest completion. Comparing
+    /// completion order lets repeating chains advance one task at a time even
+    /// when a prerequisite immediately recurs or is paused after completion.
     static func hasActiveBlocker(
         for task: RoutineTask,
-        within candidates: [RoutineTaskRelationshipCandidate]
+        within candidates: [RoutineTaskRelationshipCandidate],
+        dependentLatestCompletionAt: Date? = nil
     ) -> Bool {
-        resolvedRelationships(for: task, within: candidates).contains { relationship in
-            guard relationship.kind == .blockedBy else { return false }
-            switch relationship.status {
-            case .doneToday, .completedOneOff, .canceledOneOff:
-                return false
-            case .paused, .pendingTodo, .overdue, .dueToday, .onTrack:
-                return true
+        let candidateByID = RoutineTaskRelationshipCandidate.lookupByID(candidates)
+        let dependentCompletionAt = latestCompletion(
+            task.lastDone,
+            dependentLatestCompletionAt
+        )
+
+        return blockerIDs(for: task, within: candidates).contains { blockerID in
+            guard let blocker = candidateByID[blockerID] else { return false }
+            return !prerequisiteIsResolved(
+                status: blocker.status,
+                blockerLatestCompletionAt: blocker.latestCompletionAt,
+                dependentLatestCompletionAt: dependentCompletionAt
+            )
+        }
+    }
+
+    static func prerequisiteIsResolved(
+        status: RoutineTaskRelationshipStatus,
+        blockerLatestCompletionAt: Date?,
+        dependentLatestCompletionAt: Date?
+    ) -> Bool {
+        switch status {
+        case .completedOneOff, .canceledOneOff:
+            return true
+        case .doneToday, .paused, .pendingTodo, .overdue, .dueToday, .onTrack:
+            break
+        }
+
+        if let blockerLatestCompletionAt {
+            return dependentLatestCompletionAt.map { blockerLatestCompletionAt > $0 } ?? true
+        }
+
+        // Synthetic assumed-done occurrences have no persisted completion
+        // timestamp, so retain their existing current-occurrence behavior.
+        return status == .doneToday
+    }
+
+    static func latestCompletion(_ lhs: Date?, _ rhs: Date?) -> Date? {
+        switch (lhs, rhs) {
+        case let (lhs?, rhs?):
+            return max(lhs, rhs)
+        case let (lhs?, nil):
+            return lhs
+        case let (nil, rhs?):
+            return rhs
+        case (nil, nil):
+            return nil
+        }
+    }
+
+    private static func blockerIDs(
+        for task: RoutineTask,
+        within candidates: [RoutineTaskRelationshipCandidate]
+    ) -> Set<UUID> {
+        var ids = Set(task.relationships.compactMap { relationship in
+            relationship.kind == .blockedBy ? relationship.targetTaskID : nil
+        })
+
+        for candidate in candidates {
+            if candidate.relationships.contains(where: {
+                $0.targetTaskID == task.id && $0.kind == .blocks
+            }) {
+                ids.insert(candidate.id)
             }
         }
+        return ids
     }
 
     static func removeRelationships(

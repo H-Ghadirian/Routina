@@ -190,19 +190,22 @@ enum HomeDisplayFilterSupport {
         taskID: UUID,
         tasks: [RoutineTask],
         referenceDate: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        completionDatesByTaskID: [UUID: Set<Date>] = [:]
     ) -> Bool {
         activeRelationshipBlockedTaskIDs(
             tasks: tasks,
             referenceDate: referenceDate,
-            calendar: calendar
+            calendar: calendar,
+            completionDatesByTaskID: completionDatesByTaskID
         ).contains(taskID)
     }
 
     static func activeRelationshipBlockedTaskIDs(
         tasks: [RoutineTask],
         referenceDate: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        completionDatesByTaskID: [UUID: Set<Date>] = [:]
     ) -> Set<UUID> {
         let tasksByID = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var blockerIDsByBlockedTaskID: [UUID: Set<UUID>] = [:]
@@ -221,6 +224,11 @@ enum HomeDisplayFilterSupport {
         }
 
         return Set(blockerIDsByBlockedTaskID.compactMap { blockedTaskID, blockerIDs in
+            guard let blockedTask = tasksByID[blockedTaskID] else { return nil }
+            let dependentLatestCompletionAt = RoutineTaskRelationshipResolution.latestCompletion(
+                blockedTask.lastDone,
+                completionDatesByTaskID[blockedTaskID]?.max()
+            )
             let hasActiveBlocker = blockerIDs.contains { blockerID in
                 guard let blocker = tasksByID[blockerID] else { return false }
                 let status = RoutineTaskRelationshipStatus.resolved(
@@ -228,9 +236,15 @@ enum HomeDisplayFilterSupport {
                     referenceDate: referenceDate,
                     calendar: calendar
                 )
-                return status != .doneToday
-                    && status != .completedOneOff
-                    && status != .canceledOneOff
+                let blockerLatestCompletionAt = RoutineTaskRelationshipResolution.latestCompletion(
+                    blocker.lastDone,
+                    completionDatesByTaskID[blockerID]?.max()
+                )
+                return !RoutineTaskRelationshipResolution.prerequisiteIsResolved(
+                    status: status,
+                    blockerLatestCompletionAt: blockerLatestCompletionAt,
+                    dependentLatestCompletionAt: dependentLatestCompletionAt
+                )
             }
             return hasActiveBlocker ? blockedTaskID : nil
         })

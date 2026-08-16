@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0184 — Sequence repeating dependencies by completion](0184-sequence-repeating-dependencies-by-completion.md)
 - [0183 — Check derived state before progress shortcuts](0183-check-derived-state-before-progress-shortcuts.md)
 - [0182 — Condition task-detail chrome on meaningful context](0182-condition-task-detail-chrome-on-meaningful-context.md)
 - [0181 — Carry derived task state into row snapshots](0181-carry-derived-task-state-into-row-snapshots.md)
