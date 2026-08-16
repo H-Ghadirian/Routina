@@ -225,7 +225,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** See meaningful summaries for a chosen period and understand their scope.
 
-**Desired experience:** Stats uses the same selected date boundaries across reports, hides empty or unavailable reports, distinguishes recorded from assumed activity, and lets the person customize what matters. Time charts use the available width on each device and keep date axes sparse, complete, and readable instead of truncating labels or compressing the plot into unused space.
+**Desired experience:** Stats uses the same selected date boundaries across reports, hides empty or unavailable reports, distinguishes recorded from assumed activity, counts synchronized copies of one focus session only once, and lets the person customize what matters. Time charts use the available width on each device and keep date axes sparse, complete, and readable instead of truncating labels or compressing the plot into unused space.
 
 **Successful outcome:** The person can scan the period and identify a useful pattern without decoding overlapping labels, overlooking a compressed chart, or mistaking an estimate or incomplete dataset for certainty.
 

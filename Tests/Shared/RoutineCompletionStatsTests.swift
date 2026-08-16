@@ -312,6 +312,50 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func focusDurationPoints_countSemanticSyncCopiesOnce() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-08-05T23:59:00Z")
+        let sessionSpecifications: [(startedAt: Date, durationSeconds: TimeInterval)] = [
+            (makeDate("2026-08-05T10:00:00Z"), (31 * 60) + 10),
+            (makeDate("2026-08-05T12:27:00Z"), (229 * 60) + 10),
+            (makeDate("2026-08-05T22:01:00Z"), (100 * 60) + 40)
+        ]
+        let sessions = (0..<6).flatMap { _ in
+            sessionSpecifications.map { specification in
+                FocusSession(
+                    taskID: FocusSession.unassignedTaskID,
+                    startedAt: specification.startedAt,
+                    completedAt: specification.startedAt.addingTimeInterval(
+                        specification.durationSeconds
+                    ),
+                    tagName: "HSE"
+                )
+            }
+        }
+
+        let points = FocusDurationStats.points(
+            for: .today,
+            sessions: sessions,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let hourlyPoints = HourlyActivityStats.points(
+            tasks: [],
+            logs: [],
+            focusSessions: sessions,
+            selectedRange: .today,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let expectedSeconds = TimeInterval(6 * 60 * 60 + 60)
+        #expect(FocusDurationStats.totalSeconds(in: points) == expectedSeconds)
+        #expect(points.first?.contributions.map(\.title) == ["#HSE"])
+        #expect(points.first?.contributions.map(\.sessionCount) == [3])
+        #expect(hourlyPoints.reduce(0) { $0 + $1.focusSeconds } == expectedSeconds)
+    }
+
+    @Test
     func focusDurationPoints_includeActiveFocusForReferenceDay() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-03-14T12:00:00Z")

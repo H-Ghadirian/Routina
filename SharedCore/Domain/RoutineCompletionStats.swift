@@ -556,6 +556,9 @@ enum GoalProgressStats {
         limit: Int = 8,
         calendar: Calendar = .current
     ) -> [GoalProgressChartPoint] {
+        let canonicalFocusSessions = FocusStatsSessionCanonicalization.canonicalTaskSessions(
+            focusSessions
+        )
         let chartDays = Set(outcomePoints.map { calendar.startOfDay(for: $0.date) })
         guard !chartDays.isEmpty else { return [] }
 
@@ -589,7 +592,7 @@ enum GoalProgressStats {
         }
 
         var focusSecondsByGoalID: [UUID: TimeInterval] = [:]
-        for session in focusSessions {
+        for session in canonicalFocusSessions {
             guard session.state == .completed,
                   let daySource = session.completedAt ?? session.startedAt,
                   chartDays.contains(calendar.startOfDay(for: daySource)) else {
@@ -676,6 +679,10 @@ enum HourlyActivityStats {
         referenceDate: Date = .now,
         calendar: Calendar = .current
     ) -> [HourlyActivityChartPoint] {
+        let canonicalSessions = FocusStatsSessionCanonicalization.canonicalSessions(
+            taskSessions: focusSessions,
+            sprintSessions: sprintFocusSessions
+        )
         let range = dateRange(
             selectedRange: selectedRange,
             earliestActivityDate: earliestActivityDate,
@@ -684,7 +691,7 @@ enum HourlyActivityStats {
         )
 
         var focusSecondsByHour: [Int: TimeInterval] = [:]
-        for session in focusSessions {
+        for session in canonicalSessions.taskSessions {
             guard let contribution = focusContribution(
                 for: session,
                 range: range,
@@ -700,7 +707,7 @@ enum HourlyActivityStats {
             )
         }
 
-        for session in sprintFocusSessions {
+        for session in canonicalSessions.sprintSessions {
             guard let contribution = sprintFocusContribution(
                 for: session,
                 range: range,

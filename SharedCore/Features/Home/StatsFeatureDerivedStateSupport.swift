@@ -81,9 +81,12 @@ struct StatsAchievementPresentationSnapshot: Equatable {
         referenceDate: Date,
         calendar: Calendar
     ) -> Self {
-        Self(
+        let canonicalFocusSessions = FocusStatsSessionCanonicalization.canonicalTaskSessions(
+            focusSessions
+        )
+        return Self(
             achievements: StatsAchievementStats.achievements(
-                focusSessions: focusSessions,
+                focusSessions: canonicalFocusSessions,
                 sleepSessions: sleepSessions,
                 awaySessions: awaySessions,
                 logs: logs,
@@ -96,7 +99,7 @@ struct StatsAchievementPresentationSnapshot: Equatable {
                 calendar: calendar
             ),
             earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
-                focusSessions: focusSessions,
+                focusSessions: canonicalFocusSessions,
                 sleepSessions: sleepSessions,
                 awaySessions: awaySessions,
                 logs: logs,
@@ -110,7 +113,7 @@ struct StatsAchievementPresentationSnapshot: Equatable {
                 calendar: calendar
             ),
             celebrations: StatsAchievementStats.celebrationPeriods(
-                focusSessions: focusSessions,
+                focusSessions: canonicalFocusSessions,
                 sleepSessions: sleepSessions,
                 awaySessions: awaySessions,
                 logs: logs,

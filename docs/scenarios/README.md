@@ -2544,6 +2544,21 @@ Given a dashboard report has no backing data
 When Stats summary items are derived
 Then the report is hidden while saved order and hidden-item preferences remain preserved
 
+### Semantic Focus Copies Count Once In Stats
+
+Area: Stats / Focus
+Decision links: [0598](../decisions/0598-count-semantic-focus-session-copies-once-in-stats.md), [0137](../decisions/0137-show-active-focus-in-stats-today.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/RoutineCompletionStatsTests.swift`
+
+Given synchronization preserved several storage rows for the same logical focus sessions
+And those rows share the same task, tag, or sprint owner and exact start time
+When Stats derives focus duration, hourly rhythm, goal focus, Focus 2048, or task-focus achievements
+Then each logical focus session contributes once
+And genuinely separate sessions with different start times remain separate
+And Stats does not delete the persisted rows while canonicalizing its evidence
+
 ### Focus Charts Keep Their Date Axes Readable
 
 Area: Stats / UI

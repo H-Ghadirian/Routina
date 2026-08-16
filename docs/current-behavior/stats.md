@@ -41,6 +41,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 ## Current Contract
 
 - Stats dashboards are customizable, reorderable, and adaptive-width.
+- Stats counts exact synchronized copies of one focus session once wherever that session type contributes: task, tag, and unassigned focus are canonicalized for duration, hourly rhythm, goal focus, Focus 2048, and task-focus achievements, while board focus is canonicalized for the duration and hourly evidence that includes it. Canonicalization changes derived evidence without deleting persisted history.
 - Focus distribution and cumulative-focus charts fill their available viewport before using horizontal overflow. Their day axes sample the selected range to a compact set of complete labels, retain the first and last date, and add month context at the start of a custom range or when its visible labels cross a month boundary.
 - iOS Stats renders dashboard reports lazily from reducer-owned presentation snapshots. Whole-history achievement and win derivations run only when the data snapshot changes, and semantic data-update bursts are coalesced before reloading.
 - iOS Cards mode uses dense two-column metric tiles, with compact icon/title headers and single-line values and captions. The separate Compact mode remains a shorter one-column summary row; macOS retains its larger cards. Both modes preserve the same values, captions, colors, and accessories.

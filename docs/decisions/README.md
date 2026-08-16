@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0598](0598-count-semantic-focus-session-copies-once-in-stats.md) refines [0118](0118-show-focus-chart-details-and-grouping.md), [0137](0137-show-active-focus-in-stats-today.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Stats canonicalizes exact semantic copies of task, tag, unassigned, and board focus sessions before applicable duration, hourly, goal, 2048, and achievement derivations, without deleting persisted history or changing completion-day bucketing.
+
 - **[0597](0597-show-ios-task-detail-title-after-header-scrolls-away.md) revises the navigation-principal portion of [0594](0594-simplify-ios-task-detail-scan-and-action-hierarchy.md) and refines [0089](0089-prefer-native-apple-platform-patterns.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** iOS Task Details keeps the navigation principal empty while the full header title is visible, then shows a text-only title after that source title scrolls away, without an emoji or fixed width cap.
 
 - **[0596](0596-advance-repeating-blocked-by-chains-by-completion-order.md) revises [0486](0486-suggest-confirmed-task-relationships-on-device.md) and refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0593](0593-show-relationship-blocking-in-home-task-rows.md):** Repeating `Blocked by` chains advance by completion order: a prerequisite completion unlocks the dependent until the dependent completes, even if the prerequisite immediately recurs or is paused afterward.
@@ -725,6 +727,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0598](0598-count-semantic-focus-session-copies-once-in-stats.md) | Count Semantic Focus Session Copies Once in Stats | Accepted | 2026-08-16 |
 | [0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md) | Derive Time-Based Task Ladder Values From Repeating Due Dates | Accepted | 2026-08-16 |
 | [0591](0591-include-suppressed-mac-search-matches-beside-ordinary-results.md) | Include Suppressed Mac Search Matches Beside Ordinary Results | Accepted | 2026-08-16 |
 | [0590](0590-use-progress-aware-incremental-manual-refresh.md) | Use Progress-Aware Incremental Manual iCloud Refresh | Accepted | 2026-08-16 |
