@@ -1650,29 +1650,9 @@ private struct TaskDetailDoneOccurrenceSection: View {
         self.occurrence = occurrence
 
         let calendar = Calendar.current
-        let completionComponents = calendar.dateComponents(
-            [.hour, .minute],
-            from: occurrence.completedAt
-        )
-        let completionMinute = ((completionComponents.hour ?? 0) * 60)
-            + (completionComponents.minute ?? 0)
-        let initialDuration = DayPlanBlock.clampedDuration(
-            occurrence.durationMinutes,
-            startMinute: 0,
-            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-        )
-        let initialStart = DayPlanBlock.clampedStartMinute(
-            max(0, completionMinute - initialDuration)
-        )
-
-        _startMinute = State(initialValue: initialStart)
-        _durationMinutes = State(
-            initialValue: DayPlanBlock.clampedDuration(
-                initialDuration,
-                startMinute: occurrence.hasSpecificTime ? initialStart : 0,
-                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-            )
-        )
+        let workTiming = occurrence.workTiming(calendar: calendar)
+        _startMinute = State(initialValue: workTiming.startMinute)
+        _durationMinutes = State(initialValue: workTiming.durationMinutes)
         _hasSpecificTime = State(initialValue: occurrence.hasSpecificTime)
     }
 

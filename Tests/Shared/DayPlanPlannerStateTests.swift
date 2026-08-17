@@ -946,6 +946,10 @@ struct DayPlanPlannerStateTests {
         #expect(occurrence.completedAt == completedAt)
         #expect(occurrence.durationMinutes == 45)
         #expect(occurrence.hasSpecificTime)
+        #expect(doneItem.placement == .timed(
+            startMinute: 13 * 60 + 45,
+            durationMinutes: 45
+        ))
 
         let plannedItem = try #require(items.first(where: { $0.taskID == plannedTask.id }))
         #expect(plannedItem.section == .planned)
@@ -997,6 +1001,47 @@ struct DayPlanPlannerStateTests {
         #expect(occurrence.completedAt == completedAt)
         #expect(occurrence.durationMinutes == 35)
         #expect(!occurrence.hasSpecificTime)
+    }
+
+    @Test
+    func plannerBackedCalendarListDoneRowUsesCompletionWithoutSpecificTime() throws {
+        let calendar = gregorianCalendar
+        let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T20:15:00Z"))
+        let task = RoutineTask(
+            name: "Gym",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let log = RoutineLog(
+            timestamp: completedAt,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 90,
+            hasSpecificWorkTime: false
+        )
+        let plannedBlock = DayPlanBlock(
+            taskID: task.id,
+            dayKey: DayPlanStorage.dayKey(for: clickedDate, calendar: calendar),
+            startMinute: 8 * 60 + 30,
+            durationMinutes: 90,
+            titleSnapshot: "Gym"
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: clickedDate,
+            timedBlocks: [plannedBlock],
+            allDayBlocks: [],
+            tasks: [task],
+            logs: [log],
+            calendar: calendar
+        )
+        let doneItem = try #require(items.first)
+
+        #expect(doneItem.section == .done)
+        #expect(doneItem.placement == .durationOnly(durationMinutes: 90))
+        #expect(doneItem.doneOccurrence?.completedAt == completedAt)
+        #expect(doneItem.doneOccurrence?.hasSpecificTime == false)
     }
 
     @Test

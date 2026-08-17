@@ -796,6 +796,38 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
     var plannedCompletionDate: Date? = nil
 }
 
+struct DayPlanDoneTaskWorkTiming: Equatable {
+    var startMinute: Int
+    var durationMinutes: Int
+}
+
+extension DayPlanDoneTaskOccurrence {
+    func workTiming(calendar: Calendar) -> DayPlanDoneTaskWorkTiming {
+        let durationMinutes = DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: 0,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let completionComponents = calendar.dateComponents(
+            [.hour, .minute],
+            from: completedAt
+        )
+        let completionMinute = ((completionComponents.hour ?? 0) * 60)
+            + (completionComponents.minute ?? 0)
+        let startMinute = DayPlanBlock.clampedStartMinute(
+            max(0, completionMinute - durationMinutes)
+        )
+        return DayPlanDoneTaskWorkTiming(
+            startMinute: startMinute,
+            durationMinutes: DayPlanBlock.clampedDuration(
+                durationMinutes,
+                startMinute: hasSpecificTime ? startMinute : 0,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
+        )
+    }
+}
+
 struct DayPlanDayTaskCounts: Equatable {
     var planned: Int = 0
     var assumedDone: Int = 0
@@ -1191,9 +1223,13 @@ enum DayPlanDayTaskListPresentation {
             activityItems.filter { $0.section == .assumedDone }
         )
         let assumedDoneTaskIDs = Set(assumedDoneItems.map(\.taskID))
-        let rawRecordedCompletionItems = sortedActivityItems(
+        let plannerBackedRecordedCompletionItems = (
             allDayItems.filter { $0.section.isRecordedCompletion }
                 + timedItems.filter { $0.section.isRecordedCompletion }
+        )
+        .map { recordedCompletionItem($0, calendar: calendar) }
+        let rawRecordedCompletionItems = sortedActivityItems(
+            plannerBackedRecordedCompletionItems
                 + activityItems.filter { $0.section.isRecordedCompletion }
         )
         let confirmedAssumedDoneItems = rawRecordedCompletionItems.filter {
@@ -1263,6 +1299,27 @@ enum DayPlanDayTaskListPresentation {
                 return lhs.id < rhs.id
             }
         }
+    }
+
+    private static func recordedCompletionItem(
+        _ item: DayPlanDayTaskListItem,
+        calendar: Calendar
+    ) -> DayPlanDayTaskListItem {
+        guard let occurrence = item.doneOccurrence else { return item }
+
+        var recordedItem = item
+        let workTiming = occurrence.workTiming(calendar: calendar)
+        if occurrence.hasSpecificTime {
+            recordedItem.placement = .timed(
+                startMinute: workTiming.startMinute,
+                durationMinutes: workTiming.durationMinutes
+            )
+        } else {
+            recordedItem.placement = .durationOnly(
+                durationMinutes: workTiming.durationMinutes
+            )
+        }
+        return recordedItem
     }
 
     private static func allDayBlockIntersects(

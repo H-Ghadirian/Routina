@@ -1262,6 +1262,11 @@ And planned and assumed-done rows do not show the completion card
 And Planner blocks, other completion occurrences, task recurrence, availability, reminders, estimates, and other days are unchanged
 And correcting an existing Done row's time remains in Task Detail rather than becoming an inline List editor
 
+Given that recorded Done task also retains a Planner block at a different time
+When Calendar `List` presents the row and Task Detail presents `Done this day`
+Then both surfaces derive the completed work's start and duration from the exact completion occurrence
+And the separate Planner block keeps its original Schedule placement
+
 ### Mac Internal Record Time Action Reveals Its Editor
 
 Area: Tasks
@@ -2556,7 +2561,7 @@ When the Mac task-detail card selects `No specific time` and saves a total durat
 Then the exact completion keeps its existing timestamp as occurrence identity
 And its actual duration is updated without inventing one start/end interval
 And reopening the completion keeps `No specific time` selected
-And an unplanned Calendar List Done row shows `No specific time` with the total duration
+And the Calendar List Done row shows `No specific time` with the total duration even when the task retains a separate Planner placement
 And backup/import and CloudKit direct pull preserve the timing choice
 And Planner blocks, other completion occurrences, recurrence, availability, reminders, estimates, and other days are unchanged
 

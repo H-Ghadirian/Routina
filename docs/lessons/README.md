@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0192 — Keep recorded Done rows on completion time](0192-keep-recorded-done-rows-on-completion-time.md)
 - [0191 — Treat missing lazy geometry as unknown](0191-treat-missing-lazy-geometry-as-unknown.md)
 - [0190 — Declare exact optional files to Xcode script sandboxes](0190-declare-exact-optional-files-to-xcode-script-sandboxes.md)
 - [0189 — Canonicalize focus sessions before deriving Stats](0189-canonicalize-focus-sessions-before-deriving-stats.md)
