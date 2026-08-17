@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0601](0601-keep-ios-task-reviews-development-only.md) revises the availability portion of [0540](0540-group-ios-task-reviews-under-more-destination.md):** Compact iOS More shows Review tasks only in development builds, where its navigation title carries an orange `DEV` label; release versions omit the entry and destination.
+
 - **[0600](0600-edit-recorded-tag-focus-from-mac-planner.md) refines [0267](0267-support-mac-toolbar-tag-focus.md), [0286](0286-present-planner-slot-actions-in-sidebar.md), and [0296](0296-present-mac-task-details-as-planner-inspector.md):** Double-clicking a completed tag Focus block in Mac Calendar `Schedule` opens a Planner right sidebar that corrects the owning Focus start and duration together with its calendar evidence, without changing active, task-linked, Plan, or board Focus behavior.
 
 - **[0599](0599-separate-mac-stats-priority-filters.md) refines [0563](0563-present-importance-and-urgency-as-independent-task-controls.md) and [0581](0581-separate-ios-priority-filter-controls.md):** The Mac Stats sidebar presents Importance and Urgency as separate minimum-threshold sections, preserving the other axis, combined matching, and saved state whenever one selection changes.
@@ -731,6 +733,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0601](0601-keep-ios-task-reviews-development-only.md) | Keep iOS Task Reviews Development-Only | Accepted | 2026-08-17 |
 | [0600](0600-edit-recorded-tag-focus-from-mac-planner.md) | Edit Recorded Tag Focus From Mac Planner | Accepted | 2026-08-17 |
 | [0598](0598-count-semantic-focus-session-copies-once-in-stats.md) | Count Semantic Focus Session Copies Once in Stats | Accepted | 2026-08-16 |
 | [0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md) | Derive Time-Based Task Ladder Values From Repeating Due Dates | Accepted | 2026-08-16 |

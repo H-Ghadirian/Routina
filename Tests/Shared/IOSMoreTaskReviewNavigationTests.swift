@@ -17,6 +17,9 @@ struct IOSMoreTaskReviewNavigationTests {
         )
 
         #expect(source.contains("case taskReview"))
+        #expect(moreList.contains(
+            "if AppEnvironment.isDevelopmentAppVariant {\n                Section {\n                    moreButton(destination: .taskReview)"
+        ))
         #expect(moreList.contains("moreButton(destination: .taskReview)"))
         #expect(moreList.contains("title: \"Review tasks\""))
         #expect(!moreList.contains("destination: .taskChoice"))
@@ -34,6 +37,18 @@ struct IOSMoreTaskReviewNavigationTests {
         #expect(taskReviewList.contains("MissingTaskDataView(store: missingEstimatedDurationDataStore)"))
         #expect(taskReviewList.contains("MissingTaskMetadataView(store: missingImportanceDataStore)"))
         #expect(taskReviewList.contains("MissingTaskMetadataView(store: missingUrgencyDataStore)"))
+        #expect(taskReviewList.contains("ToolbarItem(placement: .principal)"))
+        #expect(taskReviewList.contains("Text(\"DEV\")"))
+        #expect(taskReviewList.contains(".foregroundStyle(.orange)"))
+
+        let destinationView = try Self.sourceSection(
+            startingAt: "private func destinationView",
+            endingAt: "private func restoreSelectedMoreDestinationIfNeeded",
+            in: source
+        )
+        #expect(destinationView.contains(
+            "case .taskReview:\n            if AppEnvironment.isDevelopmentAppVariant"
+        ))
     }
 
     private static func sourceSection(

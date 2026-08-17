@@ -779,14 +779,16 @@ private struct AppMoreNavigationView: View {
 
     private var moreList: some View {
         List {
-            Section {
-                moreButton(destination: .taskReview) {
-                    SettingsNavigationRow(
-                        icon: "checklist",
-                        tint: .blue,
-                        title: "Review tasks",
-                        subtitle: "Choose what to do next or complete task details"
-                    )
+            if AppEnvironment.isDevelopmentAppVariant {
+                Section {
+                    moreButton(destination: .taskReview) {
+                        SettingsNavigationRow(
+                            icon: "checklist",
+                            tint: .blue,
+                            title: "Review tasks",
+                            subtitle: "Choose what to do next or complete task details"
+                        )
+                    }
                 }
             }
 
@@ -901,6 +903,22 @@ private struct AppMoreNavigationView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Review tasks")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                HStack(spacing: 6) {
+                    Text("Review tasks")
+                        .font(.headline)
+
+                    Text("DEV")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.orange.opacity(0.12), in: Capsule())
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
     }
 
     private var settingsSubtitle: String {
@@ -968,7 +986,9 @@ private struct AppMoreNavigationView: View {
                     selectTabAfterNavigationGesture(.settings)
                 }
         case .taskReview:
-            taskReviewList
+            if AppEnvironment.isDevelopmentAppVariant {
+                taskReviewList
+            }
         }
     }
 

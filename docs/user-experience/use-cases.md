@@ -91,13 +91,13 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Compare realistic options without relying on urgency alone.
 
-**Desired experience:** Routina can narrow or rank actionable work using available time, energy, importance, urgency, pressure, and thinking needed. Missing information is gathered progressively, and any recommendation remains explainable and optional.
+**Desired experience:** Routina can narrow or rank actionable work using available time, energy, importance, urgency, pressure, and thinking needed. Missing information is gathered progressively, and any recommendation remains explainable and optional. While the guided iOS journey is still being evaluated, release versions leave it out of More; development builds keep it together under Review tasks and mark the screen with an orange `DEV` label.
 
 **Successful outcome:** The person chooses a task that fits both their capacity and responsibilities.
 
 **Example:** With 30 minutes and low energy, the person sees a short low-thinking task instead of a two-hour deep-work task.
 
-**Availability:** Mixed. Guided choice is currently iOS-oriented; macOS also provides a separate task-ranking workspace.
+**Availability:** Mixed. Guided choice and missing-detail review are development experiments on iOS; macOS also provides a separate development task-ranking workspace.
 
 ### UC-06A — Compare meaningful peers without losing the overall picture
 

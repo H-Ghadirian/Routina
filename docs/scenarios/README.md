@@ -2754,19 +2754,24 @@ Then the feature-gated chooser opens with those available actions
 ### iOS More Groups Task Reviews
 
 Area: Tasks / UI
-Decision links: [0540](../decisions/0540-group-ios-task-reviews-under-more-destination.md), [0033](../decisions/0033-use-app-owned-ios-more-tab.md)
+Decision links: [0601](../decisions/0601-keep-ios-task-reviews-development-only.md), [0540](../decisions/0540-group-ios-task-reviews-under-more-destination.md), [0033](../decisions/0033-use-app-owned-ios-more-tab.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/IOSMoreTaskReviewNavigationTests.swift`
 
-Given a person opens compact iOS More
+Given a person opens compact iOS More in a development build
 When they need task-choice or missing-task-detail help
 Then More shows one `Review tasks` entry instead of a separate top-level row for every review
 
 Given the person opens `Review tasks`
-Then `Help me choose` is available first
+Then the navigation title shows an orange `DEV` label
+And `Help me choose` is available first
 And `Add missing task details` groups Pressure, Thinking needed, time estimates, Importance, and Urgency
 And selecting any action uses the same app-owned navigation stack with a normal back path to `Review tasks` and More
+
+Given a person opens compact iOS More in a release version
+Then `Review tasks` is absent
+And its task-review destination cannot be presented
 
 ### iOS Home Empty States Offer Task Creation
 
