@@ -644,11 +644,15 @@ struct TaskRankingPresentationTests {
         let featureSource = try Self.sourceFile(
             "RoutinaMacApp/Features/TaskRanking/TaskRankingFeature.swift"
         )
+        let sharedEditorSource = try Self.sourceFile(
+            "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
+        )
 
         #expect(viewSource.contains("ForEach(TaskRankingValueMode.allCases)"))
         #expect(viewSource.contains("Button(\"Time-based Ladder Values…\")"))
-        #expect(viewSource.contains("TaskTemporalWeightRuleMacSheet("))
-        #expect(viewSource.contains("Base values stay saved. Now values rise toward the targets"))
+        #expect(viewSource.contains("TaskTemporalWeightRuleSheet("))
+        #expect(sharedEditorSource.contains("Base values stay saved. Now values rise toward the targets"))
+        #expect(sharedEditorSource.contains("TaskTemporalWeightSummaryCard"))
         #expect(featureSource.contains("case temporalBoundaryReached"))
         #expect(featureSource.contains("scheduleTemporalRefresh(for: state)"))
         #expect(featureSource.contains("persistTemporalWeightRule(taskID: taskID, rule: rule)"))

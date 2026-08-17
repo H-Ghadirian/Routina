@@ -99,6 +99,7 @@ struct AddRoutineSaveRequest: Equatable {
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
     let pressure: RoutineTaskPressure
+    let temporalWeightRule: RoutineTaskTemporalWeightRule?
     let thinkingNeeded: RoutineTaskThinkingNeeded
     let imageData: Data?
     let voiceNote: RoutineVoiceNote?
@@ -149,6 +150,7 @@ struct AddRoutineSaveRequest: Equatable {
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
         pressure: RoutineTaskPressure = .none,
+        temporalWeightRule: RoutineTaskTemporalWeightRule? = nil,
         thinkingNeeded: RoutineTaskThinkingNeeded = .none,
         imageData: Data? = nil,
         voiceNote: RoutineVoiceNote? = nil,
@@ -196,6 +198,9 @@ struct AddRoutineSaveRequest: Equatable {
             endDate: availabilityEndDate,
             calendar: calendar
         )
+        let resolvedTrackingCadenceEnabled = scheduleMode.taskType == .todo
+            ? true
+            : trackingCadenceEnabled
 
         self.deadline = scheduleMode.taskType == .todo ? deadline : nil
         self.isAllDay = isAllDay
@@ -206,9 +211,7 @@ struct AddRoutineSaveRequest: Equatable {
                 scheduleMode: scheduleMode,
                 recurrenceRule: recurrenceRule,
                 checklistItems: sanitizedChecklistItems,
-                trackingCadenceEnabled: scheduleMode.taskType == .todo
-                    ? true
-                    : trackingCadenceEnabled
+                trackingCadenceEnabled: resolvedTrackingCadenceEnabled
             )
             ? RoutineTask.effectivePlannedDate(
                 plannedDate: plannedDate,
@@ -223,6 +226,14 @@ struct AddRoutineSaveRequest: Equatable {
         self.importance = importance
         self.urgency = urgency
         self.pressure = pressure
+        self.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
+            temporalWeightRule,
+            scheduleMode: scheduleMode,
+            trackingCadenceEnabled: resolvedTrackingCadenceEnabled,
+            importance: importance,
+            urgency: urgency,
+            pressure: pressure
+        )
         self.thinkingNeeded = thinkingNeeded
         self.imageData = imageData
         self.voiceNote = voiceNote
@@ -246,7 +257,7 @@ struct AddRoutineSaveRequest: Equatable {
             : recurrenceTimeRangeRole
         self.attachments = attachments
         self.color = color
-        self.trackingCadenceEnabled = scheduleMode.taskType == .todo ? true : trackingCadenceEnabled
+        self.trackingCadenceEnabled = resolvedTrackingCadenceEnabled
         self.autoAssumeDailyDone = autoAssumeDailyDone
             && RoutineAssumedCompletion.canEnable(
                 scheduleMode: scheduleMode,
@@ -360,6 +371,14 @@ struct AddRoutineSaveRequest: Equatable {
         self.importance = basics.importance
         self.urgency = basics.urgency
         self.pressure = basics.pressure
+        self.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
+            basics.temporalWeightRule,
+            scheduleMode: schedule.scheduleMode,
+            trackingCadenceEnabled: trackingCadenceEnabled,
+            importance: basics.importance,
+            urgency: basics.urgency,
+            pressure: basics.pressure
+        )
         self.thinkingNeeded = basics.thinkingNeeded
         self.imageData = basics.imageData
         self.voiceNote = basics.voiceNote

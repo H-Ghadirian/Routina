@@ -58,6 +58,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var importance: RoutineTaskImportance = .level2
     var urgency: RoutineTaskUrgency = .level2
     var pressure: RoutineTaskPressure = .none
+    var temporalWeightRule: RoutineTaskTemporalWeightRule?
     var thinkingNeeded: RoutineTaskThinkingNeeded? = RoutineTaskThinkingNeeded.none
     var imageData: Data?
     var voiceNote: RoutineVoiceNote?
@@ -132,6 +133,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         importance = basics.importance
         urgency = basics.urgency
         pressure = basics.pressure
+        temporalWeightRule = basics.temporalWeightRule
         thinkingNeeded = basics.thinkingNeeded
         imageData = basics.imageData
         voiceNote = basics.voiceNote
@@ -199,6 +201,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             || importance != .level2
             || urgency != .level2
             || pressure != .none
+            || temporalWeightRule != nil
             || (thinkingNeeded ?? .none) != .none
             || imageData?.isEmpty == false
             || voiceNote != nil
@@ -271,6 +274,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         state.basics.importance = importance
         state.basics.urgency = urgency
         state.basics.pressure = pressure
+        state.basics.temporalWeightRule = temporalWeightRule
         state.basics.thinkingNeeded = thinkingNeeded ?? .none
         state.basics.imageData = imageData
         state.basics.voiceNote = voiceNote
@@ -341,6 +345,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         ) {
             state.basics.plannedDate = exactAvailabilityDate
         }
+        state.basics.temporalWeightRule = sanitizedTemporalWeightRule(for: state)
         state.synchronizeRecurrenceDraftFromLegacy()
         AddRoutineValidationEditor.refreshNameValidation(state: &state)
     }
@@ -374,6 +379,31 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         let availableIDs = Set(state.organization.availableEvents.map(\.id))
         guard !availableIDs.isEmpty else { return selectedIDs }
         return selectedIDs.filter { availableIDs.contains($0) }
+    }
+
+    private func sanitizedTemporalWeightRule(
+        for state: AddRoutineFeature.State
+    ) -> RoutineTaskTemporalWeightRule? {
+        guard let temporalWeightRule else { return nil }
+
+        let trackingCadenceEnabled = state.schedule.scheduleMode.taskType == .todo
+            ? true
+            : state.basics.trackingCadenceEnabled
+        guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
+            scheduleMode: state.schedule.scheduleMode,
+            trackingCadenceEnabled: trackingCadenceEnabled
+        ) else {
+            return nil
+        }
+
+        return temporalWeightRule.sanitized(
+            baseImportance: state.basics.importance,
+            baseUrgency: state.basics.urgency,
+            basePressure: state.basics.pressure
+        ) ?? RoutineTaskTemporalWeightRule(
+            curve: temporalWeightRule.curve,
+            leadDays: temporalWeightRule.leadDays
+        )
     }
 
     private func hasText(_ value: String) -> Bool {

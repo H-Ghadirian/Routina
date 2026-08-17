@@ -580,6 +580,9 @@ struct TaskFormPresentationTests {
         let notesIndex = try #require(order.firstIndex(of: .notes))
         let voiceNoteIndex = try #require(order.firstIndex(of: .voiceNote))
         let deadlineIndex = try #require(order.firstIndex(of: .deadline))
+        let pressureIndex = try #require(order.firstIndex(of: .pressure))
+        let temporalWeightIndex = try #require(order.firstIndex(of: .temporalWeight))
+        let thinkingNeededIndex = try #require(order.firstIndex(of: .thinkingNeeded))
         let imageIndex = try #require(order.firstIndex(of: .image))
         let goalsIndex = try #require(order.firstIndex(of: .goals))
         let eventsIndex = try #require(order.firstIndex(of: .events))
@@ -591,10 +594,33 @@ struct TaskFormPresentationTests {
         #expect(emojiIndex == order.index(after: descriptionIndex))
         #expect(voiceNoteIndex == order.index(after: notesIndex))
         #expect(voiceNoteIndex < deadlineIndex)
+        #expect(temporalWeightIndex == order.index(after: pressureIndex))
+        #expect(thinkingNeededIndex == order.index(after: temporalWeightIndex))
         #expect(voiceNoteIndex < imageIndex)
         #expect(eventsIndex == order.index(after: goalsIndex))
         #expect(relationshipsIndex == order.index(after: eventsIndex))
         #expect(checklistIndex == order.index(after: stepsIndex))
+    }
+
+    @Test
+    func temporalWeightSectionOnlyAppearsForEligibleRepeatingDueDraftsOrExistingRules() {
+        let repeatingDue = taskFormModel(scheduleMode: .fixedInterval)
+        let gentleRoutine = taskFormModel(scheduleMode: .softInterval)
+        let cadenceFreeRoutine = taskFormModel(
+            scheduleMode: .fixedInterval,
+            trackingCadenceEnabled: false
+        )
+        let oneOffTask = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
+        let alreadyConfigured = taskFormModel(
+            scheduleMode: .softInterval,
+            temporalWeightRule: RoutineTaskTemporalWeightRule(pressureAtDue: .high)
+        )
+
+        #expect(repeatingDue.visibleCompactSections(isShowingMoreDetails: true).contains(.temporalWeight))
+        #expect(!gentleRoutine.visibleCompactSections(isShowingMoreDetails: true).contains(.temporalWeight))
+        #expect(!cadenceFreeRoutine.visibleCompactSections(isShowingMoreDetails: true).contains(.temporalWeight))
+        #expect(!oneOffTask.visibleCompactSections(isShowingMoreDetails: true).contains(.temporalWeight))
+        #expect(alreadyConfigured.visibleCompactSections(isShowingMoreDetails: false).contains(.temporalWeight))
     }
 
     @Test
@@ -693,6 +719,7 @@ struct TaskFormPresentationTests {
         recurrenceWeekdaysBinding: Binding<[Int]>? = nil,
         recurrenceDaysOfMonthBinding: Binding<[Int]>? = nil,
         trackingCadenceEnabledBinding: Binding<Bool>? = nil,
+        temporalWeightRule: RoutineTaskTemporalWeightRule? = nil,
         visibilityMode: TaskFormVisibilityMode = .progressiveCreate
     ) -> TaskFormModel {
         TaskFormModel(
@@ -712,6 +739,7 @@ struct TaskFormPresentationTests {
             importance: .constant(.level2),
             urgency: .constant(.level2),
             pressure: .constant(.none),
+            temporalWeightRule: .constant(temporalWeightRule),
             estimatedDurationMinutes: .constant(nil),
             storyPoints: .constant(nil),
             imageData: nil,

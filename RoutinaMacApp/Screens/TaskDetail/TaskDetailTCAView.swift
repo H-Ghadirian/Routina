@@ -67,6 +67,7 @@ struct TaskDetailTCAView: View {
     @State var fileToSave: AttachmentItem?
     @State private var isRelationshipGraphPresented = false
     @State private var isExistingTaskLinkerPresented = false
+    @State private var isTemporalWeightEditorPresented = false
     @State private var selectedLinkedEventPresentation: TaskDetailLinkedEventPresentation?
     @State private var isCalendarExpanded = false
     @State private var referenceDate = Date()
@@ -182,6 +183,11 @@ struct TaskDetailTCAView: View {
             .sheet(isPresented: $isExistingTaskLinkerPresented) {
                 existingTaskLinkerSheet
             }
+            .sheet(isPresented: $isTemporalWeightEditorPresented) {
+                TaskTemporalWeightRuleSheet(task: store.task) { rule in
+                    store.send(.temporalWeightRuleChanged(rule))
+                }
+            }
             .sheet(item: $selectedLinkedEventPresentation) { presentation in
                 linkedEventDetailSheet(eventID: presentation.id)
             }
@@ -248,6 +254,7 @@ struct TaskDetailTCAView: View {
                 activeBlockingTask = nil
                 isCommentComposerVisible = false
                 isExistingTaskLinkerPresented = false
+                isTemporalWeightEditorPresented = false
                 resetRevealedOptionalControls()
                 syncAvailableEvents()
                 Task {
@@ -378,6 +385,7 @@ struct TaskDetailTCAView: View {
 
             taskDetailStatusControls
             taskDetailPrioritySection
+            taskTemporalWeightSummary
         }
     }
 
@@ -494,6 +502,18 @@ struct TaskDetailTCAView: View {
             }
             taskDetailStatusControls
             taskDetailPrioritySection
+            taskTemporalWeightSummary
+        }
+    }
+
+    @ViewBuilder
+    private var taskTemporalWeightSummary: some View {
+        if store.task.temporalWeightRule != nil {
+            TaskTemporalWeightSummaryCard(
+                task: store.task,
+                referenceDate: referenceDate,
+                onEdit: { isTemporalWeightEditorPresented = true }
+            )
         }
     }
 
@@ -669,6 +689,12 @@ struct TaskDetailTCAView: View {
             actions.append(inlineEditSectionAction(title: "Estimate", section: .estimation))
         }
 
+        if shouldShowTemporalWeightAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Time-based", systemImage: "flame.fill") {
+                isTemporalWeightEditorPresented = true
+            })
+        }
+
         if !shouldShowChecklistSection {
             actions.append(TaskDetailOptionalAction(title: "Checklist", systemImage: "checklist") {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -736,6 +762,11 @@ struct TaskDetailTCAView: View {
             && store.task.storyPoints == nil
             && !store.task.focusModeEnabled
             && !isInlineEditSectionRevealed(.estimation)
+    }
+
+    private var shouldShowTemporalWeightAddAction: Bool {
+        store.task.temporalWeightRule == nil
+            && RoutineTaskTemporalWeightResolver.supportsTemporalWeight(store.task)
     }
 
     private var shouldShowGoalSectionInAddMore: Bool {

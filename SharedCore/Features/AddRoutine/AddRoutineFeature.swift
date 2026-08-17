@@ -25,6 +25,7 @@ struct AddRoutineFeature: Reducer {
         case importanceChanged(RoutineTaskImportance)
         case urgencyChanged(RoutineTaskUrgency)
         case pressureChanged(RoutineTaskPressure)
+        case temporalWeightRuleChanged(RoutineTaskTemporalWeightRule?)
         case thinkingNeededChanged(RoutineTaskThinkingNeeded)
         case imagePicked(Data?)
         case removeImageTapped
@@ -160,6 +161,27 @@ struct AddRoutineFeature: Reducer {
             routineDurationMode: state.basics.routineDurationMode,
             recurrenceKind: state.schedule.recurrenceKind,
             frequencyUnit: state.schedule.frequency
+        )
+    }
+
+    private func sanitizeTemporalWeightRule(state: inout State) {
+        guard let rule = state.basics.temporalWeightRule else { return }
+        guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
+            scheduleMode: state.schedule.scheduleMode,
+            trackingCadenceEnabled: state.schedule.scheduleMode.taskType == .todo
+                ? true
+                : state.basics.trackingCadenceEnabled
+        ) else {
+            state.basics.temporalWeightRule = nil
+            return
+        }
+        state.basics.temporalWeightRule = rule.sanitized(
+            baseImportance: state.basics.importance,
+            baseUrgency: state.basics.urgency,
+            basePressure: state.basics.pressure
+        ) ?? RoutineTaskTemporalWeightRule(
+            curve: rule.curve,
+            leadDays: rule.leadDays
         )
     }
 
@@ -352,6 +374,7 @@ struct AddRoutineFeature: Reducer {
                 importance,
                 basics: &state.basics
             )
+            sanitizeTemporalWeightRule(state: &state)
             return .none
 
         case let .urgencyChanged(urgency):
@@ -359,6 +382,7 @@ struct AddRoutineFeature: Reducer {
                 urgency,
                 basics: &state.basics
             )
+            sanitizeTemporalWeightRule(state: &state)
             return .none
 
         case let .pressureChanged(pressure):
@@ -366,6 +390,12 @@ struct AddRoutineFeature: Reducer {
                 pressure,
                 basics: &state.basics
             )
+            sanitizeTemporalWeightRule(state: &state)
+            return .none
+
+        case let .temporalWeightRuleChanged(rule):
+            state.basics.temporalWeightRule = rule
+            sanitizeTemporalWeightRule(state: &state)
             return .none
 
         case let .thinkingNeededChanged(thinkingNeeded):
@@ -415,6 +445,7 @@ struct AddRoutineFeature: Reducer {
             if taskType == .todo {
                 state.basics.taskLadderGroupEnabled = false
             }
+            sanitizeTemporalWeightRule(state: &state)
             return .none
 
         case let .taskLadderGroupEnabledChanged(isEnabled):
@@ -538,6 +569,7 @@ struct AddRoutineFeature: Reducer {
                 AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
             }
             enforcePlanningRules(state: &state)
+            sanitizeTemporalWeightRule(state: &state)
             return .none
 
         case let .stepDraftChanged(value):
@@ -764,6 +796,7 @@ struct AddRoutineFeature: Reducer {
                 state.schedule.autoAssumeDailyDone = false
                 state.schedule.hidesAssumedDoneCalendarBlock = false
             }
+            sanitizeTemporalWeightRule(state: &state)
             return .none
 
         case let .trackingNudgesEnabledChanged(isEnabled):

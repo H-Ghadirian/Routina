@@ -275,6 +275,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
     case reminder
     case importanceUrgency
     case pressure
+    case temporalWeight
     case thinkingNeeded
     case estimation
     case image
@@ -304,6 +305,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
         .reminder,
         .importanceUrgency,
         .pressure,
+        .temporalWeight,
         .thinkingNeeded,
         .estimation,
         .image,

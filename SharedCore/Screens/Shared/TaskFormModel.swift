@@ -54,6 +54,7 @@ struct TaskFormModel {
     var importance: Binding<RoutineTaskImportance>
     var urgency: Binding<RoutineTaskUrgency>
     var pressure: Binding<RoutineTaskPressure>
+    var temporalWeightRule: Binding<RoutineTaskTemporalWeightRule?> = .constant(nil)
     var thinkingNeeded: Binding<RoutineTaskThinkingNeeded> = .constant(.none)
 
     // MARK: Estimation
@@ -528,6 +529,13 @@ extension TaskFormModel {
         taskType.wrappedValue == .todo
     }
 
+    var supportsTemporalWeightValues: Bool {
+        RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
+            scheduleMode: scheduleMode.wrappedValue,
+            trackingCadenceEnabled: trackingCadenceEnabled.wrappedValue
+        )
+    }
+
     var supportsPlanning: Bool {
         switch taskType.wrappedValue {
         case .todo:
@@ -554,6 +562,8 @@ extension TaskFormModel {
                 return supportsExactDateReminder
             case .planning:
                 return supportsPlanning
+            case .temporalWeight:
+                return supportsTemporalWeightValues || temporalWeightRule.wrappedValue != nil
             default:
                 return true
             }
@@ -654,6 +664,9 @@ extension TaskFormModel {
         }
         if pressure.wrappedValue != .none {
             sections.insert(.pressure)
+        }
+        if temporalWeightRule.wrappedValue != nil {
+            sections.insert(.temporalWeight)
         }
         if thinkingNeeded.wrappedValue != .none {
             sections.insert(.thinkingNeeded)

@@ -66,5 +66,7 @@ values in Base and child effective values in Now.
   Ladder's value sections rather than inventing a hidden continuous rank.
 - Now mode cannot be manually reordered because its section membership may change
   at the next day or completion boundary.
-- Time-based rules are currently configured and viewed in the development Mac
-  Task Ladder; other task surfaces continue to show the stored baseline.
+- The initial implementation configured and viewed time-based rules in the
+  development Mac Task Ladder. [0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md)
+  extends the same rule into task creation, editing, and detail explanation
+  surfaces without changing the derivation model.

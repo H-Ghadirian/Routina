@@ -62,6 +62,7 @@ struct TaskDetailFeature: Reducer {
         var editImportance: RoutineTaskImportance = .level2
         var editUrgency: RoutineTaskUrgency = .level2
         var editPressure: RoutineTaskPressure = .none
+        var editTemporalWeightRule: RoutineTaskTemporalWeightRule?
         var editThinkingNeeded: RoutineTaskThinkingNeeded = .none
         var editImageData: Data?
         var editVoiceNote: RoutineVoiceNote?
@@ -416,6 +417,7 @@ struct TaskDetailFeature: Reducer {
         case editImportanceChanged(RoutineTaskImportance)
         case editUrgencyChanged(RoutineTaskUrgency)
         case editPressureChanged(RoutineTaskPressure)
+        case editTemporalWeightRuleChanged(RoutineTaskTemporalWeightRule?)
         case editThinkingNeededChanged(RoutineTaskThinkingNeeded)
         case editImagePicked(Data?)
         case editRemoveImageTapped
@@ -506,6 +508,7 @@ struct TaskDetailFeature: Reducer {
         case thinkingNeededChanged(RoutineTaskThinkingNeeded)
         case importanceChanged(RoutineTaskImportance)
         case urgencyChanged(RoutineTaskUrgency)
+        case temporalWeightRuleChanged(RoutineTaskTemporalWeightRule?)
         case setBlockedStateConfirmation(Bool)
         case confirmBlockedStateCompletion
         case notificationDisabledWarningTapped
@@ -595,6 +598,27 @@ struct TaskDetailFeature: Reducer {
     private func basicEditActionHandler() -> TaskDetailBasicEditActionHandler {
         TaskDetailBasicEditActionHandler(
             draftMutationHandler: editDraftMutationHandler()
+        )
+    }
+
+    private func sanitizeEditTemporalWeightRule(_ state: inout State) {
+        guard let rule = state.editTemporalWeightRule else { return }
+        guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
+            scheduleMode: state.editScheduleMode,
+            trackingCadenceEnabled: state.editScheduleMode.taskType == .todo
+                ? true
+                : state.editTrackingCadenceEnabled
+        ) else {
+            state.editTemporalWeightRule = nil
+            return
+        }
+        state.editTemporalWeightRule = rule.sanitized(
+            baseImportance: state.editImportance,
+            baseUrgency: state.editUrgency,
+            basePressure: state.editPressure
+        ) ?? RoutineTaskTemporalWeightRule(
+            curve: rule.curve,
+            leadDays: rule.leadDays
         )
     }
 
@@ -1550,13 +1574,24 @@ struct TaskDetailFeature: Reducer {
             return basicEditActionHandler().editPriorityChanged(priority, state: &state)
 
         case let .editImportanceChanged(importance):
-            return basicEditActionHandler().editImportanceChanged(importance, state: &state)
+            let effect = basicEditActionHandler().editImportanceChanged(importance, state: &state)
+            sanitizeEditTemporalWeightRule(&state)
+            return effect
 
         case let .editUrgencyChanged(urgency):
-            return basicEditActionHandler().editUrgencyChanged(urgency, state: &state)
+            let effect = basicEditActionHandler().editUrgencyChanged(urgency, state: &state)
+            sanitizeEditTemporalWeightRule(&state)
+            return effect
 
         case let .editPressureChanged(pressure):
-            return basicEditActionHandler().editPressureChanged(pressure, state: &state)
+            let effect = basicEditActionHandler().editPressureChanged(pressure, state: &state)
+            sanitizeEditTemporalWeightRule(&state)
+            return effect
+
+        case let .editTemporalWeightRuleChanged(rule):
+            state.editTemporalWeightRule = rule
+            sanitizeEditTemporalWeightRule(&state)
+            return .none
 
         case let .editThinkingNeededChanged(thinkingNeeded):
             return basicEditActionHandler().editThinkingNeededChanged(thinkingNeeded, state: &state)
@@ -1631,7 +1666,9 @@ struct TaskDetailFeature: Reducer {
             return tagGoalRelationshipEditActionHandler().editTagDeleted(tag, state: &state)
 
         case let .editScheduleModeChanged(mode):
-            return recurrenceEditActionHandler().editScheduleModeChanged(mode, state: &state)
+            let effect = recurrenceEditActionHandler().editScheduleModeChanged(mode, state: &state)
+            sanitizeEditTemporalWeightRule(&state)
+            return effect
 
         case let .editStepDraftChanged(value):
             return stepChecklistEditActionHandler().editStepDraftChanged(value, state: &state)
@@ -1755,6 +1792,7 @@ struct TaskDetailFeature: Reducer {
                 state.editAutoAssumeDailyDone = false
                 state.editHidesAssumedDoneCalendarBlock = false
             }
+            sanitizeEditTemporalWeightRule(&state)
             return .none
 
         case let .editTrackingNudgesEnabledChanged(isEnabled):
@@ -1932,6 +1970,16 @@ struct TaskDetailFeature: Reducer {
 
         case let .urgencyChanged(urgency):
             return statusActionHandler().urgencyChanged(urgency, state: &state)
+
+        case let .temporalWeightRuleChanged(rule):
+            let sanitizedRule = RoutineTaskTemporalWeightResolver.sanitizedRule(rule, for: state.task)
+            guard state.task.temporalWeightRule != sanitizedRule else { return .none }
+            state.task.temporalWeightRule = sanitizedRule
+            state.editTemporalWeightRule = sanitizedRule
+            return handleTemporalWeightRuleChanged(
+                taskID: state.task.id,
+                rule: sanitizedRule
+            )
 
         case let .setBlockedStateConfirmation(isPresented):
             return statusActionHandler().setBlockedStateConfirmation(isPresented, state: &state)

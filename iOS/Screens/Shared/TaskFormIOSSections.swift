@@ -141,6 +141,24 @@ struct TaskFormIOSPressureSection: View {
     }
 }
 
+struct TaskFormIOSTemporalWeightSection: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        Section(header: Text("Time-based values")) {
+            TaskTemporalWeightRuleEditor(
+                rule: model.temporalWeightRule,
+                importance: model.importance.wrappedValue,
+                urgency: model.urgency.wrappedValue,
+                pressure: model.pressure.wrappedValue
+            )
+            Text("Keep the saved Base values low while this repeating Due task can heat up near its due date.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
 struct TaskFormIOSThinkingNeededSection: View {
     let model: TaskFormModel
 

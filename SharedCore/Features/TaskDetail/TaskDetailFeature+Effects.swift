@@ -648,6 +648,7 @@ extension TaskDetailFeature {
             importance: request.importance,
             urgency: request.urgency,
             pressure: request.pressure,
+            temporalWeightRule: request.temporalWeightRule,
             thinkingNeeded: request.thinkingNeeded,
             imageData: request.imageData,
             voiceNote: request.voiceNote,
@@ -699,6 +700,7 @@ extension TaskDetailFeature {
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
         pressure: RoutineTaskPressure,
+        temporalWeightRule: RoutineTaskTemporalWeightRule?,
         thinkingNeeded: RoutineTaskThinkingNeeded,
         imageData: Data?,
         voiceNote: RoutineVoiceNote?,
@@ -767,6 +769,16 @@ extension TaskDetailFeature {
                 task.importance = importance
                 task.urgency = urgency
                 task.pressure = pressure
+                task.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
+                    temporalWeightRule,
+                    scheduleMode: scheduleMode,
+                    trackingCadenceEnabled: scheduleMode.taskType == .todo
+                        ? true
+                        : trackingCadenceEnabled,
+                    importance: importance,
+                    urgency: urgency,
+                    pressure: pressure
+                )
                 task.thinkingNeeded = thinkingNeeded
                 task.color = color
                 task.imageData = imageData
@@ -1533,6 +1545,31 @@ extension TaskDetailFeature {
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error updating thinking needed: \(error)")
+            }
+        }
+    }
+
+    func handleTemporalWeightRuleChanged(
+        taskID: UUID,
+        rule: RoutineTaskTemporalWeightRule?
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                task.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(rule, for: task)
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Updated time-based values",
+                    in: context
+                )
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating time-based values: \(error)")
             }
         }
     }

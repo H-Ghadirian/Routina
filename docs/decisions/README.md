@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md) refines [0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md), [0563](0563-present-importance-and-urgency-as-independent-task-controls.md), [0534](0534-present-ios-priority-controls-in-dedicated-sheets.md), and [0462](0462-use-a-compact-progressive-ios-task-editor.md):** Add Task, Edit Task, and Task Details expose eligible repeating Due routines' time-based Base/Now ladder rule so a task can stay low today while visibly heating up on or before its due date.
+
 - **[0603](0603-start-mac-focus-from-one-recalling-sheet.md) revises the duration-first presentation in [0244](0244-start-mac-toolbar-focus-with-task-picker.md) and [0333](0333-move-mac-focus-control-to-planner-calendar-header.md), and refines [0267](0267-support-mac-toolbar-tag-focus.md):** Pressing Mac Planner Focus opens one sheet containing duration and attribution choices; it restores the latest attributed duration and an available latest tag, while unassigned Focus does not replace that default.
 
 - **[0601](0601-keep-ios-task-reviews-development-only.md) revises the availability portion of [0540](0540-group-ios-task-reviews-under-more-destination.md):** Compact iOS More shows Review tasks only in development builds, where its navigation title carries an orange `DEV` label; release versions omit the entry and destination.
@@ -735,6 +737,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md) | Expose Time-Based Ladder Values in Task Forms and Details | Accepted | 2026-08-18 |
 | [0603](0603-start-mac-focus-from-one-recalling-sheet.md) | Start Mac Focus From One Recalling Sheet | Accepted | 2026-08-17 |
 | [0601](0601-keep-ios-task-reviews-development-only.md) | Keep iOS Task Reviews Development-Only | Accepted | 2026-08-17 |
 | [0600](0600-edit-recorded-tag-focus-from-mac-planner.md) | Edit Recorded Tag Focus From Mac Planner | Accepted | 2026-08-17 |

@@ -53,6 +53,27 @@ struct RoutineTaskTemporalWeightRule: Codable, Equatable, Sendable {
             pressureAtDue: pressureAtDue
         )
     }
+
+    func sanitized(
+        baseImportance: RoutineTaskImportance,
+        baseUrgency: RoutineTaskUrgency,
+        basePressure: RoutineTaskPressure
+    ) -> Self? {
+        let sanitizedRule = Self(
+            curve: curve,
+            leadDays: leadDays,
+            importanceAtDue: (importanceAtDue?.sortOrder ?? Int.min) > baseImportance.sortOrder
+                ? importanceAtDue
+                : nil,
+            urgencyAtDue: (urgencyAtDue?.sortOrder ?? Int.min) > baseUrgency.sortOrder
+                ? urgencyAtDue
+                : nil,
+            pressureAtDue: (pressureAtDue?.sortOrder ?? Int.min) > basePressure.sortOrder
+                ? pressureAtDue
+                : nil
+        )
+        return sanitizedRule.sanitized
+    }
 }
 
 enum RoutineTaskTemporalWeightStorage {
@@ -88,11 +109,56 @@ struct RoutineTaskEffectiveWeights: Equatable, Sendable {
 }
 
 enum RoutineTaskTemporalWeightResolver {
+    static func supportsTemporalWeight(
+        scheduleMode: RoutineScheduleMode,
+        trackingCadenceEnabled: Bool
+    ) -> Bool {
+        scheduleMode.taskType == .routine
+            && scheduleMode.scheduleBehavior == .fixed
+            && scheduleMode.usesRoutineCadence
+            && trackingCadenceEnabled
+    }
+
     static func supportsTemporalWeight(_ task: RoutineTask) -> Bool {
-        !task.isOneOffTask
-            && task.scheduleMode.taskType == .routine
-            && task.scheduleMode.scheduleBehavior == .fixed
-            && task.usesEffectiveRoutineCadence
+        supportsTemporalWeight(
+            scheduleMode: task.scheduleMode,
+            trackingCadenceEnabled: task.trackingCadenceEnabled
+        )
+    }
+
+    static func sanitizedRule(
+        _ rule: RoutineTaskTemporalWeightRule?,
+        scheduleMode: RoutineScheduleMode,
+        trackingCadenceEnabled: Bool,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
+        pressure: RoutineTaskPressure
+    ) -> RoutineTaskTemporalWeightRule? {
+        guard supportsTemporalWeight(
+            scheduleMode: scheduleMode,
+            trackingCadenceEnabled: trackingCadenceEnabled
+        ) else {
+            return nil
+        }
+        return rule?.sanitized(
+            baseImportance: importance,
+            baseUrgency: urgency,
+            basePressure: pressure
+        )
+    }
+
+    static func sanitizedRule(
+        _ rule: RoutineTaskTemporalWeightRule?,
+        for task: RoutineTask
+    ) -> RoutineTaskTemporalWeightRule? {
+        sanitizedRule(
+            rule,
+            scheduleMode: task.scheduleMode,
+            trackingCadenceEnabled: task.trackingCadenceEnabled,
+            importance: task.importance,
+            urgency: task.urgency,
+            pressure: task.pressure
+        )
     }
 
     static func effectiveWeights(
@@ -202,5 +268,69 @@ enum RoutineTaskTemporalWeightResolver {
             ? distance
             : min(proposedLevels, max(distance - 1, 0))
         return values[min(baseIndex + advancedLevels, targetIndex)]
+    }
+}
+
+enum RoutineTaskTemporalWeightPresentation {
+    static func targetSummary(
+        rule: RoutineTaskTemporalWeightRule?,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
+        pressure: RoutineTaskPressure
+    ) -> String? {
+        guard let rule = rule?.sanitized(
+            baseImportance: importance,
+            baseUrgency: urgency,
+            basePressure: pressure
+        ) else {
+            return nil
+        }
+
+        var parts: [String] = []
+        if let target = rule.importanceAtDue {
+            parts.append("Importance \(importance.title) -> \(target.title)")
+        }
+        if let target = rule.urgencyAtDue {
+            parts.append("Urgency \(urgency.title) -> \(target.title)")
+        }
+        if let target = rule.pressureAtDue {
+            parts.append("Pressure \(pressure.title) -> \(target.title)")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " • ")
+    }
+
+    static func changeSummary(rule: RoutineTaskTemporalWeightRule?) -> String? {
+        guard let rule = rule?.sanitized else { return nil }
+        switch rule.curve {
+        case .onDueDate:
+            return "Changes on due date"
+        case .gradual:
+            return "Rises over \(rule.leadDays) \(rule.leadDays == 1 ? "day" : "days")"
+        }
+    }
+
+    static func nowSummary(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> String? {
+        guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(task),
+              task.temporalWeightRule != nil else {
+            return nil
+        }
+        let weights = RoutineTaskTemporalWeightResolver.effectiveWeights(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        return "Now: Importance \(weights.importance.title) • Urgency \(weights.urgency.title) • Pressure \(weights.pressure.title)"
+    }
+
+    static func baseSummary(
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
+        pressure: RoutineTaskPressure
+    ) -> String {
+        "Base: Importance \(importance.title) • Urgency \(urgency.title) • Pressure \(pressure.title)"
     }
 }

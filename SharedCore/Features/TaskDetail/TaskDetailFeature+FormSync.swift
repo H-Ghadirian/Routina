@@ -39,6 +39,7 @@ extension TaskDetailFeature {
         }
         state.editPriority = state.task.priority
         state.editPressure = state.task.pressure
+        state.editTemporalWeightRule = state.task.temporalWeightRule
         state.editThinkingNeeded = state.task.thinkingNeeded
         state.editImageData = state.task.imageData
         state.editVoiceNote = state.task.voiceNote

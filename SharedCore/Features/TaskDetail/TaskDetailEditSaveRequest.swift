@@ -21,6 +21,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var importance: RoutineTaskImportance
     var urgency: RoutineTaskUrgency
     var pressure: RoutineTaskPressure
+    var temporalWeightRule: RoutineTaskTemporalWeightRule?
     var thinkingNeeded: RoutineTaskThinkingNeeded
     var imageData: Data?
     var voiceNote: RoutineVoiceNote?
@@ -170,6 +171,14 @@ struct TaskDetailEditSaveRequestBuilder {
             importance: state.editImportance,
             urgency: state.editUrgency,
             pressure: state.editPressure,
+            temporalWeightRule: RoutineTaskTemporalWeightResolver.sanitizedRule(
+                state.editTemporalWeightRule,
+                scheduleMode: scheduleMode,
+                trackingCadenceEnabled: trackingCadenceEnabled,
+                importance: state.editImportance,
+                urgency: state.editUrgency,
+                pressure: state.editPressure
+            ),
             thinkingNeeded: state.editThinkingNeeded,
             imageData: state.editImageData,
             voiceNote: state.editVoiceNote,
@@ -306,6 +315,7 @@ extension TaskDetailFeature {
         updatedTask.importance = request.importance
         updatedTask.urgency = request.urgency
         updatedTask.pressure = request.pressure
+        updatedTask.temporalWeightRule = request.temporalWeightRule
         updatedTask.thinkingNeeded = request.thinkingNeeded
         updatedTask.color = request.color
         updatedTask.imageData = request.imageData

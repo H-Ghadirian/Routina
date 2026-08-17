@@ -482,6 +482,7 @@ final class RoutineTask {
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
         pressure: RoutineTaskPressure = .none,
+        temporalWeightRule: RoutineTaskTemporalWeightRule? = nil,
         pressureUpdatedAt: Date? = nil,
         thinkingNeeded: RoutineTaskThinkingNeeded = .none,
         imageData: Data? = nil,
@@ -621,6 +622,16 @@ final class RoutineTask {
         self.pinnedAt = pinnedAt
         self.manualSectionOrderStorage = ""
         self.taskRankingOrderStorage = ""
+        self.temporalWeightRuleStorage = RoutineTaskTemporalWeightStorage.serialize(
+            RoutineTaskTemporalWeightResolver.sanitizedRule(
+                temporalWeightRule,
+                scheduleMode: resolvedScheduleMode,
+                trackingCadenceEnabled: resolvedTrackingCadenceEnabled,
+                importance: importance,
+                urgency: urgency,
+                pressure: pressure
+            )
+        )
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))
         self.sequenceStartedAt = sequenceStartedAt
         self.colorRawValue = color.rawValue

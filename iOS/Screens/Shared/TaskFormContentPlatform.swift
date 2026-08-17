@@ -264,6 +264,8 @@ struct TaskFormContent: View {
             importanceUrgencySection
         case .pressure:
             pressureSection
+        case .temporalWeight:
+            temporalWeightSection
         case .thinkingNeeded:
             thinkingNeededSection
         case .estimation:
@@ -378,6 +380,10 @@ struct TaskFormContent: View {
 
     private var pressureSection: some View {
         TaskFormIOSPressureSection(model: model)
+    }
+
+    private var temporalWeightSection: some View {
+        TaskFormIOSTemporalWeightSection(model: model)
     }
 
     private var thinkingNeededSection: some View {
@@ -496,6 +502,7 @@ private extension TaskFormCompactSection {
         case .reminder: return "Reminder"
         case .importanceUrgency: return "Importance & urgency"
         case .pressure: return "Pressure"
+        case .temporalWeight: return "Time-based values"
         case .thinkingNeeded: return "Thinking needed"
         case .estimation: return "Estimation"
         case .image: return "Image"
@@ -528,6 +535,7 @@ private extension TaskFormCompactSection {
         case .reminder: return "bell"
         case .importanceUrgency: return "square.grid.2x2"
         case .pressure: return "brain.head.profile"
+        case .temporalWeight: return "flame"
         case .thinkingNeeded: return "lightbulb"
         case .estimation: return "timer"
         case .image: return "photo"

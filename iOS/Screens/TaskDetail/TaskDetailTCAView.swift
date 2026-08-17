@@ -77,6 +77,7 @@ struct TaskDetailTCAView: View {
     @State var fileToSave: AttachmentItem?
     @State private var isCloudSharingPresented = false
     @State private var isRelationshipGraphPresented = false
+    @State private var isTemporalWeightEditorPresented = false
     @State private var selectedLinkedEventPresentation: TaskDetailLinkedEventPresentation?
     @State private var referenceDate = Date()
     @State private var activeBlockingTask: RoutineTask?
@@ -164,6 +165,11 @@ detailBody
         }
     )
 }
+.sheet(isPresented: $isTemporalWeightEditorPresented) {
+    TaskTemporalWeightRuleSheet(task: store.task) { rule in
+        store.send(.temporalWeightRuleChanged(rule))
+    }
+}
 .sheet(item: $selectedLinkedEventPresentation) { presentation in
     linkedEventDetailSheet(eventID: presentation.id)
 }
@@ -227,6 +233,7 @@ detailBody
     activeBlockingTask = nil
     showsCollapsedTaskTitle = false
     isCommentComposerVisible = false
+    isTemporalWeightEditorPresented = false
     resetRevealedOptionalControls()
     syncAvailableEvents()
     Task {
@@ -521,6 +528,12 @@ detailBody
             })
         }
 
+        if shouldShowTemporalWeightAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Time-based", systemImage: "flame.fill") {
+                isTemporalWeightEditorPresented = true
+            })
+        }
+
         if shouldShowThinkingNeededAddAction {
             actions.append(TaskDetailOptionalAction(title: "Thinking needed", systemImage: "lightbulb") {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -608,6 +621,11 @@ detailBody
     private var shouldShowThinkingNeededControl: Bool {
         isThinkingNeededControlRevealed
             || TaskDetailOptionalControlVisibility.showsThinkingNeeded(for: store.task)
+    }
+
+    private var shouldShowTemporalWeightAddAction: Bool {
+        store.task.temporalWeightRule == nil
+            && RoutineTaskTemporalWeightResolver.supportsTemporalWeight(store.task)
     }
 
     private var shouldShowImportanceControl: Bool {
@@ -846,6 +864,7 @@ detailBody
                     showsPressure: shouldShowPressureControl,
                     showsThinkingNeeded: shouldShowThinkingNeededControl
                 )
+                taskTemporalWeightSummary
                 if shouldShowTimeControl {
                     todoTimeSpentHeaderBox
                 }
@@ -882,6 +901,7 @@ detailBody
                     showsPressure: shouldShowPressureControl,
                     showsThinkingNeeded: shouldShowThinkingNeededControl
                 )
+                taskTemporalWeightSummary
                 headerGoalsBox
             }
         } flagChip: { flag in
@@ -893,6 +913,17 @@ detailBody
     private var headerGoalsBox: some View {
         if !store.taskGoalSummaries.isEmpty {
             TaskDetailGoalsHeaderBoxView(goals: store.taskGoalSummaries)
+        }
+    }
+
+    @ViewBuilder
+    private var taskTemporalWeightSummary: some View {
+        if store.task.temporalWeightRule != nil {
+            TaskTemporalWeightSummaryCard(
+                task: store.task,
+                referenceDate: referenceDate,
+                onEdit: { isTemporalWeightEditorPresented = true }
+            )
         }
     }
 

@@ -15,6 +15,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     case color              = "Color"
     case behavior           = "Behavior"
     case pressure           = "Pressure"
+    case temporalWeight     = "Time-based values"
     case thinkingNeeded     = "Thinking needed"
     case estimation         = "Estimation"
     case places             = "Places"
@@ -63,6 +64,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         case .color:             return "paintpalette.fill"
         case .behavior:          return "repeat"
         case .pressure:          return "brain"
+        case .temporalWeight:    return "flame.fill"
         case .thinkingNeeded:    return "lightbulb.fill"
         case .estimation:        return "clock.fill"
         case .places:            return "mappin.and.ellipse"
@@ -96,7 +98,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         includesDangerZone: Bool
     ) -> [FormSection] {
         var sections: [FormSection] = includesIdentity ? [.identity] : []
-        sections += [.taskDescription, .emoji, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
+        sections += [.taskDescription, .emoji, .color, .behavior, .pressure, .temporalWeight, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }
@@ -154,6 +156,9 @@ extension TaskFormModel {
         }
         if pressure.wrappedValue != .none {
             sections.insert(.pressure)
+        }
+        if temporalWeightRule.wrappedValue != nil {
+            sections.insert(.temporalWeight)
         }
         if thinkingNeeded.wrappedValue != .none {
             sections.insert(.thinkingNeeded)

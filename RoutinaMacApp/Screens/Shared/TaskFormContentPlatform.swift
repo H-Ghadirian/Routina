@@ -211,6 +211,9 @@ struct TaskFormContent: View {
         if section == .notes || section == .voiceNote {
             return isNotesEnabled
         }
+        if section == .temporalWeight {
+            return model.supportsTemporalWeightValues || model.temporalWeightRule.wrappedValue != nil
+        }
         return section != .goals || isGoalsTabEnabled
     }
 
@@ -296,6 +299,7 @@ struct TaskFormContent: View {
         case .color:              colorCard
         case .behavior:           behaviorCard
         case .pressure:           pressureCard
+        case .temporalWeight:     temporalWeightCard
         case .thinkingNeeded:     thinkingNeededCard
         case .estimation:         estimationCard
         case .places:
@@ -417,6 +421,37 @@ struct TaskFormContent: View {
             }
         }
         .id(FormSection.pressure)
+    }
+
+    private var temporalWeightCard: some View {
+        macSectionCard(
+            title: "Time-based values"
+        ) {
+            macControlBlock(
+                title: "Base now, heat up later",
+                caption: "For repeating Due tasks, keep the saved Base values low while the current occurrence can rise near its due date."
+            ) {
+                TaskTemporalWeightRuleEditor(
+                    rule: model.temporalWeightRule,
+                    importance: model.importance.wrappedValue,
+                    urgency: model.urgency.wrappedValue,
+                    pressure: model.pressure.wrappedValue
+                )
+            }
+
+            if let summary = RoutineTaskTemporalWeightPresentation.targetSummary(
+                rule: model.temporalWeightRule.wrappedValue,
+                importance: model.importance.wrappedValue,
+                urgency: model.urgency.wrappedValue,
+                pressure: model.pressure.wrappedValue
+            ) {
+                Text(summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .id(FormSection.temporalWeight)
     }
 
     private var thinkingNeededCard: some View {
