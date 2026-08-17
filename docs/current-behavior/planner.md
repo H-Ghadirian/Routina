@@ -71,6 +71,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0435](../decisions/0435-edit-calendar-list-done-times-from-mac-task-detail.md)
 - [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
 - [0448](../decisions/0448-complete-planned-tasks-inline-from-calendar-list.md)
+- [0600](../decisions/0600-edit-recorded-tag-focus-from-mac-planner.md)
 
 ## Current Contract
 
@@ -98,6 +99,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - Task, unassigned, and board focus can pause and resume. Active time, not paused wall-clock time, feeds app history and stats.
 - Focus session state syncs through iCloud across iPhone, iPad, and Mac. When iOS opens or returns to the foreground, it performs one coalesced direct reconciliation so a timer started on another device appears promptly; if that pull finds an active session, one short retry also covers a just-exported start, pause, resume, or terminal update.
 - Plan focus starts from `Today`, runs as unassigned focus, and can be allocated to planned tasks while running or after finishing.
+- On macOS Calendar `Schedule`, double-clicking a completed tag Focus block opens a Planner right sidebar for that recorded session. The sidebar shows its tag, start, duration, and end; saving updates the owning Focus history and rebuilds its Planner evidence together. Correcting a previously paused session normalizes its segments into one continuous interval. Active tag Focus remains controlled by the live Focus controls, while task-linked, Plan, and board Focus keep their existing routes.
 - The Mac Planner header keeps the Focus control visible in both Calendar and Timeline modes. Its picker lets users select a tag to filter tasks, start tag-backed focus, or select a task to start task-backed focus.
 - The Mac toolbar no longer offers pending focus assignment, and Stats no longer shows the unassigned focus assignment card by default.
 - Away has dedicated history and stats, supports fixed-duration and count-up sessions, and can optionally link to a task.

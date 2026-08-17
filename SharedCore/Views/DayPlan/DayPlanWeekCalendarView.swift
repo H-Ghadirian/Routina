@@ -118,6 +118,8 @@ struct DayPlanWeekCalendarView: View {
     var onDropTaskToAllDay: (UUID, Date) -> Void = { _, _ in }
     var slotSidebarContent: ((Date, Int, Binding<Int>, @escaping () -> Void) -> AnyView)? = nil
     var dayTaskListSidebarContent: ((Date, @escaping () -> Void) -> AnyView)? = nil
+    var completedTagFocusSessionID: (DayPlanBlock) -> UUID? = { _ in nil }
+    var tagFocusSidebarContent: ((UUID, @escaping () -> Void) -> AnyView)? = nil
     var isFilterSidebarPresented: Binding<Bool> = .constant(false)
     var filterSidebarContent: ((@escaping () -> Void) -> AnyView)? = nil
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
@@ -134,6 +136,7 @@ struct DayPlanWeekCalendarView: View {
     @State private var resizeSession: DayPlanResizeSession?
     @State private var selectedSlotDraft: DayPlanSelectedSlotDraft?
     @State private var selectedDayTaskListDate: Date?
+    @State private var selectedTagFocusSessionID: UUID?
     @State private var draftResizeBaseline: DayPlanSelectedSlotDraft?
     @State private var frozenTimeAxis: DayPlanAdaptiveTimeAxis?
     @StateObject private var adaptiveTimeAxisCache = DayPlanAdaptiveTimeAxisCache()
@@ -287,7 +290,9 @@ struct DayPlanWeekCalendarView: View {
                                     },
                                     onOpenBlockDetails: { block, date in
                                         selectedSlotDraft = nil
-                                        onOpenBlockDetails(block, date)
+                                        if !presentTagFocusSidebar(for: block) {
+                                            onOpenBlockDetails(block, date)
+                                        }
                                     },
                                     onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
                                     onOpenEventDetails: onOpenEventDetails,
@@ -477,6 +482,7 @@ struct DayPlanWeekCalendarView: View {
             isDatePickerSidebarPresented.wrappedValue = false
             selectedSlotDraft = nil
             selectedDayTaskListDate = nil
+            selectedTagFocusSessionID = nil
             draftResizeBaseline = nil
         }
         .onChange(of: isDatePickerSidebarPresented.wrappedValue) { _, isPresented in
@@ -485,6 +491,7 @@ struct DayPlanWeekCalendarView: View {
             isFilterSidebarPresented.wrappedValue = false
             selectedSlotDraft = nil
             selectedDayTaskListDate = nil
+            selectedTagFocusSessionID = nil
             draftResizeBaseline = nil
         }
         .onChange(of: isExternalInspectorPresented) { _, isPresented in
@@ -695,6 +702,7 @@ struct DayPlanWeekCalendarView: View {
 
     private func dismissScheduleInteractionState() {
         selectedSlotDraft = nil
+        selectedTagFocusSessionID = nil
         draftResizeBaseline = nil
         isCompletingDrop = false
         draggedBlockID = nil
@@ -781,6 +789,7 @@ struct DayPlanWeekCalendarView: View {
         isDatePickerSidebarPresented.wrappedValue = false
         draftResizeBaseline = nil
         selectedDayTaskListDate = nil
+        selectedTagFocusSessionID = nil
         let clampedStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
         selectedSlotDraft = DayPlanSelectedSlotDraft(
             date: calendar.startOfDay(for: date),
@@ -809,8 +818,26 @@ struct DayPlanWeekCalendarView: View {
         isFilterSidebarPresented.wrappedValue = false
         isDatePickerSidebarPresented.wrappedValue = false
         selectedSlotDraft = nil
+        selectedTagFocusSessionID = nil
         draftResizeBaseline = nil
         selectedDayTaskListDate = calendar.startOfDay(for: date)
+    }
+
+    @discardableResult
+    private func presentTagFocusSidebar(for block: DayPlanBlock) -> Bool {
+        guard tagFocusSidebarContent != nil,
+              let sessionID = completedTagFocusSessionID(block) else {
+            return false
+        }
+
+        onSidebarPresentationRequested?()
+        isFilterSidebarPresented.wrappedValue = false
+        isDatePickerSidebarPresented.wrappedValue = false
+        selectedSlotDraft = nil
+        selectedDayTaskListDate = nil
+        draftResizeBaseline = nil
+        selectedTagFocusSessionID = sessionID
+        return true
     }
 
     @ViewBuilder
@@ -876,6 +903,7 @@ struct DayPlanWeekCalendarView: View {
         !isExternalInspectorPresented
             && ((selectedSlotDraft != nil && slotSidebarContent != nil)
             || (selectedDayTaskListDate != nil && dayTaskListSidebarContent != nil)
+            || (selectedTagFocusSessionID != nil && tagFocusSidebarContent != nil)
             || (isFilterSidebarPresented.wrappedValue && filterSidebarContent != nil)
             || (isDatePickerSidebarPresented.wrappedValue && datePickerSidebarContent != nil))
     }
@@ -894,6 +922,11 @@ struct DayPlanWeekCalendarView: View {
                 selectedDayTaskListDate,
                 dismissDayTaskListSidebar
             )
+        } else if let selectedTagFocusSessionID, let tagFocusSidebarContent {
+            tagFocusSidebarContent(
+                selectedTagFocusSessionID,
+                dismissTagFocusSidebar
+            )
         } else if isFilterSidebarPresented.wrappedValue, let filterSidebarContent {
             filterSidebarContent(dismissFilterSidebar)
         } else if isDatePickerSidebarPresented.wrappedValue, let datePickerSidebarContent {
@@ -910,6 +943,10 @@ struct DayPlanWeekCalendarView: View {
         selectedDayTaskListDate = nil
     }
 
+    private func dismissTagFocusSidebar() {
+        selectedTagFocusSessionID = nil
+    }
+
     private func dismissFilterSidebar() {
         isFilterSidebarPresented.wrappedValue = false
     }
@@ -921,6 +958,7 @@ struct DayPlanWeekCalendarView: View {
     private func dismissPlannerRightSidebar() {
         selectedSlotDraft = nil
         selectedDayTaskListDate = nil
+        selectedTagFocusSessionID = nil
         draftResizeBaseline = nil
         isFilterSidebarPresented.wrappedValue = false
         isDatePickerSidebarPresented.wrappedValue = false

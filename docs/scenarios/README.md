@@ -2239,6 +2239,24 @@ When the user switches Planner Calendar between Week, 3 Days, and Day ranges
 Then saved focus segments on visible prior days remain visible, while only the live current-day segment is replaced by the live Focus overlay
 And active task-list filters do not hide unassigned tag-focus blocks, while calendar text search still matches them by tag/title
 
+### Completed Tag Focus Can Be Corrected From Calendar
+
+Area: Planner
+Decision links: [0600](../decisions/0600-edit-recorded-tag-focus-from-mac-planner.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given Mac Planner Calendar `Schedule` shows a completed tag Focus block
+When the user double-clicks that block
+Then a Planner right sidebar shows the tag, recorded start, duration, and end
+And active tag Focus, task Focus, Plan Focus, and board Focus keep their existing routes
+
+Given the person changes the completed tag Focus start or duration and saves
+When Planner refreshes the recorded session
+Then the owning Focus history and persisted Planner evidence use the corrected interval together
+And any previous pause/resume segments for that session are replaced by one continuous corrected interval
+
 ### Planner Range Picker Follows Adaptive Visible Days
 
 Area: Planner

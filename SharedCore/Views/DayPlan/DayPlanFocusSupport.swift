@@ -466,6 +466,69 @@ enum DayPlanFocusSessionBlocks {
 }
 
 enum DayPlanFocusSessionPlannerSync {
+    static func completedTagFocusSession(
+        matching block: DayPlanBlock,
+        in sessions: [FocusSession]
+    ) -> FocusSession? {
+        guard block.taskID == FocusSession.unassignedTaskID else {
+            return nil
+        }
+
+        return sessions.first { session in
+            guard session.isTagFocus,
+                  session.completedAt != nil,
+                  session.abandonedAt == nil else {
+                return false
+            }
+
+            return block.id == session.id || isFocusSegmentBlock(block, for: session)
+        }
+    }
+
+    @MainActor
+    @discardableResult
+    static func updateCompletedTagFocusSession(
+        _ session: FocusSession,
+        startedAt: Date,
+        durationMinutes: Int,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        guard session.isTagFocus,
+              session.completedAt != nil,
+              session.abandonedAt == nil,
+              let tagName = session.focusTagName else {
+            return nil
+        }
+
+        let clampedDurationMinutes = min(max(durationMinutes, 1), DayPlanBlock.minutesPerDay)
+        _ = removeFocusBlock(for: session, context: context)
+
+        let durationSeconds = TimeInterval(clampedDurationMinutes * 60)
+        session.startedAt = startedAt
+        session.completedAt = startedAt.addingTimeInterval(durationSeconds)
+        session.abandonedAt = nil
+        session.plannedDurationSeconds = durationSeconds
+        session.clearPauseTracking()
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: session.focusTagTitle ?? "#Tag",
+            details: "Updated recorded tag focus time",
+            in: context
+        )
+
+        return saveStartedTagFocusBlock(
+            tagName: tagName,
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: durationSeconds,
+            calendar: calendar,
+            context: context
+        )
+    }
+
     static func allocationBlockID(sessionID: UUID, taskID: UUID) -> UUID {
         let sessionBytes = sessionID.uuid
         let taskBytes = taskID.uuid

@@ -181,11 +181,11 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Keep an honest record without rewriting the original plan.
 
-**Desired experience:** Outcomes are distinct, the relevant occurrence is clear, and late entry or correction is possible where the meaning remains unambiguous. An assumption never looks identical to a confirmed completion.
+**Desired experience:** Outcomes are distinct, the relevant occurrence is clear, and late entry or correction is possible where the meaning remains unambiguous. An assumption never looks identical to a confirmed completion. On Mac, a completed tag Focus block can be corrected in context from Calendar `Schedule`, with its Focus history and calendar evidence staying aligned.
 
 **Successful outcome:** Timeline, Planner, and Stats tell a consistent story.
 
-**Example:** A 09:00 routine is completed at 10:15 and logged against the 09:00 occurrence; yesterday's missed occurrence remains separately resolvable.
+**Example:** A 09:00 routine is completed at 10:15 and logged against the 09:00 occurrence; yesterday's missed occurrence remains separately resolvable. A recorded `#Admin` Focus block that began at the wrong time can be opened from the Mac calendar and corrected without turning it into task activity.
 
 **Availability:** Production.
 

@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0600](0600-edit-recorded-tag-focus-from-mac-planner.md) refines [0267](0267-support-mac-toolbar-tag-focus.md), [0286](0286-present-planner-slot-actions-in-sidebar.md), and [0296](0296-present-mac-task-details-as-planner-inspector.md):** Double-clicking a completed tag Focus block in Mac Calendar `Schedule` opens a Planner right sidebar that corrects the owning Focus start and duration together with its calendar evidence, without changing active, task-linked, Plan, or board Focus behavior.
+
 - **[0599](0599-separate-mac-stats-priority-filters.md) refines [0563](0563-present-importance-and-urgency-as-independent-task-controls.md) and [0581](0581-separate-ios-priority-filter-controls.md):** The Mac Stats sidebar presents Importance and Urgency as separate minimum-threshold sections, preserving the other axis, combined matching, and saved state whenever one selection changes.
 
 - **[0598](0598-count-semantic-focus-session-copies-once-in-stats.md) refines [0118](0118-show-focus-chart-details-and-grouping.md), [0137](0137-show-active-focus-in-stats-today.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Stats canonicalizes exact semantic copies of task, tag, unassigned, and board focus sessions before applicable duration, hourly, goal, 2048, and achievement derivations, without deleting persisted history or changing completion-day bucketing.
@@ -729,6 +731,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0600](0600-edit-recorded-tag-focus-from-mac-planner.md) | Edit Recorded Tag Focus From Mac Planner | Accepted | 2026-08-17 |
 | [0598](0598-count-semantic-focus-session-copies-once-in-stats.md) | Count Semantic Focus Session Copies Once in Stats | Accepted | 2026-08-16 |
 | [0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md) | Derive Time-Based Task Ladder Values From Repeating Due Dates | Accepted | 2026-08-16 |
 | [0591](0591-include-suppressed-mac-search-matches-beside-ordinary-results.md) | Include Suppressed Mac Search Matches Beside Ordinary Results | Accepted | 2026-08-16 |
