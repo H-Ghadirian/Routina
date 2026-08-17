@@ -98,7 +98,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         includesDangerZone: Bool
     ) -> [FormSection] {
         var sections: [FormSection] = includesIdentity ? [.identity] : []
-        sections += [.taskDescription, .emoji, .color, .behavior, .pressure, .temporalWeight, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
+        sections += [.taskDescription, .emoji, .color, .behavior, .pressure, .temporalWeight, .thinkingNeeded, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }

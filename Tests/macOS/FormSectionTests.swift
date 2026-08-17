@@ -98,9 +98,15 @@ struct FormSectionTests {
             includesIdentity: true,
             includesDangerZone: true
         )
+        let temporalWeightIndex = sections.firstIndex(of: .temporalWeight)
+        let thinkingNeededIndex = sections.firstIndex(of: .thinkingNeeded)
+        let estimationIndex = sections.firstIndex(of: .estimation)
 
         #expect(sections.first == .identity)
         #expect(sections.contains(.emoji))
+        #expect(sections.contains(.thinkingNeeded))
+        #expect(thinkingNeededIndex == temporalWeightIndex.map { sections.index(after: $0) })
+        #expect(estimationIndex == thinkingNeededIndex.map { sections.index(after: $0) })
         #expect(sections.contains(.steps))
         #expect(sections.contains(.checklist))
         #expect(Array(sections.suffix(5)) == [.checklist, .image, .voiceNote, .attachment, .dangerZone])
