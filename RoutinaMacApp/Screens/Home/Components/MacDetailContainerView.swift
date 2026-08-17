@@ -82,7 +82,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let onOpenDayPlanCalendarListTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
     let onOpenEventDetails: (UUID) -> Void
     let onToggleDayPlanCalendarFilters: () -> Void
-    let onTaskFocusDurationSelected: (TimeInterval) -> Void
+    let onTaskFocusRequested: () -> Void
     let onPausePlanFocus: (FocusSession) -> Void
     let onResumePlanFocus: (FocusSession) -> Void
     let onFinishPlanFocus: (FocusSession) -> Void
@@ -460,7 +460,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             HomeMacPlanFocusToolbarButton(
                 focusStartTaskCount: focusStartTaskCount,
                 isDisabled: isPlanFocusStartDisabled,
-                onTaskFocusDurationSelected: onTaskFocusDurationSelected,
+                onTaskFocusRequested: onTaskFocusRequested,
                 trailingPadding: 0
             )
         }

@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0603](0603-start-mac-focus-from-one-recalling-sheet.md) revises the duration-first presentation in [0244](0244-start-mac-toolbar-focus-with-task-picker.md) and [0333](0333-move-mac-focus-control-to-planner-calendar-header.md), and refines [0267](0267-support-mac-toolbar-tag-focus.md):** Pressing Mac Planner Focus opens one sheet containing duration and attribution choices; it restores the latest attributed duration and an available latest tag, while unassigned Focus does not replace that default.
+
 - **[0601](0601-keep-ios-task-reviews-development-only.md) revises the availability portion of [0540](0540-group-ios-task-reviews-under-more-destination.md):** Compact iOS More shows Review tasks only in development builds, where its navigation title carries an orange `DEV` label; release versions omit the entry and destination.
 
 - **[0600](0600-edit-recorded-tag-focus-from-mac-planner.md) refines [0267](0267-support-mac-toolbar-tag-focus.md), [0286](0286-present-planner-slot-actions-in-sidebar.md), and [0296](0296-present-mac-task-details-as-planner-inspector.md):** Double-clicking a completed tag Focus block in Mac Calendar `Schedule` opens a Planner right sidebar that corrects the owning Focus start and duration together with its calendar evidence, without changing active, task-linked, Plan, or board Focus behavior.
@@ -733,6 +735,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0603](0603-start-mac-focus-from-one-recalling-sheet.md) | Start Mac Focus From One Recalling Sheet | Accepted | 2026-08-17 |
 | [0601](0601-keep-ios-task-reviews-development-only.md) | Keep iOS Task Reviews Development-Only | Accepted | 2026-08-17 |
 | [0600](0600-edit-recorded-tag-focus-from-mac-planner.md) | Edit Recorded Tag Focus From Mac Planner | Accepted | 2026-08-17 |
 | [0598](0598-count-semantic-focus-session-copies-once-in-stats.md) | Count Semantic Focus Session Copies Once in Stats | Accepted | 2026-08-16 |

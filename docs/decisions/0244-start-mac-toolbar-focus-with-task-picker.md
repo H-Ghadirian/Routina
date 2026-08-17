@@ -6,7 +6,7 @@ Date: 2026-06-14
 
 Refines: [0205 Run Plan Focus From Planner](0205-run-plan-focus-from-planner.md)
 
-Refined By: [0333 Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
+Refined By: [0333 Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md); duration-first presentation revised by [0603 Start Mac Focus From One Recalling Sheet](0603-start-mac-focus-from-one-recalling-sheet.md)
 
 ## Context
 

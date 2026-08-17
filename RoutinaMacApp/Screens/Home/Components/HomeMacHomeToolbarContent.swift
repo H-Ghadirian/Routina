@@ -1396,32 +1396,12 @@ struct HomeMacActivePlanFocusToolbarButton: View {
 struct HomeMacPlanFocusToolbarButton: View {
     let focusStartTaskCount: Int
     let isDisabled: Bool
-    let onTaskFocusDurationSelected: (TimeInterval) -> Void
+    let onTaskFocusRequested: () -> Void
     var trailingPadding: CGFloat = 8
 
-    private let durationOptions: [TimeInterval] = [
-        15 * 60,
-        25 * 60,
-        45 * 60,
-        60 * 60,
-        90 * 60,
-    ]
-
     var body: some View {
-        Menu {
-            Button {
-                onTaskFocusDurationSelected(0)
-            } label: {
-                Text("Count up")
-            }
-
-            Divider()
-
-            ForEach(durationOptions, id: \.self) { duration in
-                Button(FocusSessionFormatting.compactDurationText(seconds: duration)) {
-                    onTaskFocusDurationSelected(duration)
-                }
-            }
+        Button {
+            onTaskFocusRequested()
         } label: {
             planFocusToolbarLabel {
                 Image(systemName: "play.fill")
@@ -1433,7 +1413,6 @@ struct HomeMacPlanFocusToolbarButton: View {
                     .foregroundStyle(.primary)
             }
         }
-        .menuStyle(.button)
         .buttonStyle(.plain)
         .controlSize(.small)
         .disabled(isDisabled)

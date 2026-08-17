@@ -141,6 +141,10 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Example:** A future home-renovation idea moves to Backlog and can later return to normal task lists. Its Backlog Flag shows only its chosen task-list rule instead of every behavior Routina supports.
 
+**Current limitation:** The dedicated Mac Backlog has no unsectioned explicit destination. The person must first discover the separate Backlog window and create a section before Home's `Move to` menu or a task form's `Path` menu offers `Backlog › <section>`. Those menus do not explain the missing prerequisite when no Backlog section exists, and the beta Board's separately named backlog can add ambiguity.
+
+**Evidence:** User feedback and supplied macOS screenshots on 2026-08-17 confirmed that the expected Backlog destinations were absent when the catalog contained only ordinary Radar sections.
+
 **Availability:** Mixed; pause and archive are broadly available, while the dedicated Backlog workspace is on macOS.
 
 ## Plan and Act
@@ -165,11 +169,11 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Start a focus session with enough context and optional distraction protection.
 
-**Desired experience:** The person can choose the task and duration, see active progress, pause or finish appropriately, and understand how the session will appear in history. Blocking is offered only where the current platform can support it.
+**Desired experience:** The person can choose the task and duration, see active progress, pause or finish appropriately, and understand how the session will appear in history. On Mac, pressing Focus opens one sheet where duration and work attribution can be reviewed together; the latest attributed duration and an available latest tag are restored so a common choice can be repeated without rebuilding it. Blocking is offered only where the current platform can support it.
 
 **Successful outcome:** The session supports attention without making later history ambiguous.
 
-**Example:** Start 25 minutes on “Draft proposal,” block selected Mac apps, pause for an interruption, then resume and finish.
+**Example:** Start 25 minutes on “Draft proposal,” block selected Mac apps, pause for an interruption, then resume and finish. Later, open Mac Focus after a count-up `#HSE` session and find `Count up · #HSE` ready to repeat or change in the same sheet.
 
 **Availability:** Mixed by platform and protection capability.
 

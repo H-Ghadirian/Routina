@@ -15,6 +15,10 @@ Accepted
 - [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
 - [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
 
+## Revised By
+
+- [0603: Start Mac Focus From One Recalling Sheet](0603-start-mac-focus-from-one-recalling-sheet.md) revises the duration-first presentation while preserving Planner-header ownership.
+
 ## Context
 
 Mac Home's command row became crowded as search, global navigation, Add, and Focus all lived in titlebar-adjacent chrome. Focus is most useful while planning or working from the calendar, and the Planner Calendar header already owns local work controls such as filters and date/range navigation.

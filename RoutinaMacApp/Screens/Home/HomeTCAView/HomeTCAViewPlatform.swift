@@ -180,19 +180,17 @@ extension HomeTCAView {
         }
     }
 
-    var homeToolbarFocusPickerPresentedBinding: Binding<Bool> {
-        Binding(
-            get: { homeToolbarFocusPickerDuration != nil },
-            set: { isPresented in
-                if !isPresented {
-                    homeToolbarFocusPickerDuration = nil
-                }
-            }
+    private func presentHomeToolbarFocusPicker() {
+        let availableTags = FocusSessionTagRecency.orderedAvailableTags(
+            RoutineTag.allTags(from: homeToolbarFocusStartTasks.map(\.tags)),
+            focusSessions: focusSessions
         )
-    }
-
-    private func presentHomeToolbarFocusPicker(duration: TimeInterval) {
-        homeToolbarFocusPickerDuration = duration
+        homeToolbarFocusPickerAvailableTags = availableTags
+        homeToolbarFocusPickerDefaults = FocusSessionStartDefaults.latest(
+            focusSessions: focusSessions,
+            availableTags: availableTags
+        )
+        isHomeToolbarFocusPickerPresented = true
     }
 
     private func pauseHomeToolbarPlanFocus(_ session: FocusSession) {
@@ -381,8 +379,8 @@ extension HomeTCAView {
                         },
                         onOpenEventDetails: openSavedEvent,
                         onToggleDayPlanCalendarFilters: toggleMacCalendarFilterDetailFromPlanner,
-                        onTaskFocusDurationSelected: { duration in
-                            presentHomeToolbarFocusPicker(duration: duration)
+                        onTaskFocusRequested: {
+                            presentHomeToolbarFocusPicker()
                         },
                         onPausePlanFocus: { session in
                             pauseHomeToolbarPlanFocus(session)

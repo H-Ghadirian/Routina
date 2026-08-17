@@ -2208,6 +2208,30 @@ When the user switches to Timeline mode
 Then the same Focus control remains visible beside the Planner filter button
 And task-backed, tag-backed, active, paused, and completion menu behavior remains unchanged
 
+### Mac Focus Starts From One Recalling Sheet
+
+Area: Planner / Focus
+Decision links: [0603](../decisions/0603-start-mac-focus-from-one-recalling-sheet.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/FocusSessionTagRecencyTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given no protected session prevents a new attributed Focus start
+When the person presses Focus in the Mac Planner header
+Then one Focus sheet opens directly without an intermediate duration menu
+And that sheet presents count-up and fixed durations beside task and tag attribution
+
+Given the latest attributed Focus session was count-up on an available `#HSE` tag
+When the person opens the Focus sheet again
+Then `Count up · #HSE` is selected by default
+And the person can repeat it with Start or change duration and attribution in that same sheet
+
+Given a newer unassigned Focus exists or the latest attributed tag is no longer available
+When the person opens the Focus sheet
+Then unassigned Focus does not replace the attributed duration default
+And an unavailable tag is not restored as a hidden selection
+
 ### Plan Focus Allocation Preserves Focus History
 
 Area: Planner

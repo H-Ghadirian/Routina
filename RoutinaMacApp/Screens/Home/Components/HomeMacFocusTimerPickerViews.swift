@@ -5,17 +5,21 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    let duration: TimeInterval
     let tasks: [RoutineTask]
-    let focusSessions: [FocusSession]
+    let availableTags: [String]
     @State private var searchText = ""
+    @State private var selectedDuration: TimeInterval
     @State private var selectedTag: String?
 
-    private var availableTags: [String] {
-        FocusSessionTagRecency.orderedAvailableTags(
-            RoutineTag.allTags(from: tasks.map(\.tags)),
-            focusSessions: focusSessions
-        )
+    init(
+        tasks: [RoutineTask],
+        availableTags: [String],
+        defaults: FocusSessionStartDefaults
+    ) {
+        self.tasks = tasks
+        self.availableTags = availableTags
+        _selectedDuration = State(initialValue: defaults.duration)
+        _selectedTag = State(initialValue: defaults.tagName)
     }
 
     private var filteredTasks: [RoutineTask] {
@@ -35,6 +39,10 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             header
+
+            durationPicker
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
 
             HomeMacSearchField(
                 placeholder: "Search tasks",
@@ -85,7 +93,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
                 Text("Start Focus Timer")
                     .font(.headline)
 
-                Text(durationText)
+                Text(selectionSummary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -106,6 +114,50 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
             .keyboardShortcut(.cancelAction)
         }
         .padding(20)
+    }
+
+    private var durationPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Duration")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(durationOptions, id: \.self) { duration in
+                        durationButton(duration)
+                    }
+                }
+                .padding(.vertical, 1)
+            }
+        }
+    }
+
+    private func durationButton(_ duration: TimeInterval) -> some View {
+        let isSelected = selectedDuration == duration
+
+        return Button {
+            selectedDuration = duration
+        } label: {
+            Text(durationTitle(duration))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(isSelected ? Color.orange : Color.secondary)
+                .padding(.horizontal, 10)
+                .frame(height: 28)
+                .background {
+                    Capsule(style: .continuous)
+                        .fill(isSelected ? Color.orange.opacity(0.14) : Color.secondary.opacity(0.08))
+                }
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(
+                            isSelected ? Color.orange.opacity(0.32) : Color.secondary.opacity(0.16),
+                            lineWidth: 0.75
+                        )
+                }
+                .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -181,7 +233,16 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         .padding(.vertical, 6)
     }
 
-    private var durationText: String {
+    private var durationOptions: [TimeInterval] {
+        FocusSessionStartDefaults.durationOptions(including: selectedDuration)
+    }
+
+    private var selectionSummary: String {
+        guard let selectedTag else { return durationTitle(selectedDuration) }
+        return "\(durationTitle(selectedDuration)) · #\(selectedTag)"
+    }
+
+    private func durationTitle(_ duration: TimeInterval) -> String {
         duration > 0
             ? FocusSessionFormatting.compactDurationText(seconds: duration)
             : "Count up"
@@ -222,7 +283,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         do {
             _ = try FocusSessionSupport.startTagFocus(
                 tagName: selectedTag,
-                plannedDurationSeconds: duration,
+                plannedDurationSeconds: selectedDuration,
                 context: modelContext,
                 calendar: calendar
             )
@@ -236,7 +297,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         do {
             _ = try FocusSessionSupport.startTaskFocus(
                 task: task,
-                plannedDurationSeconds: duration,
+                plannedDurationSeconds: selectedDuration,
                 context: modelContext,
                 calendar: calendar
             )

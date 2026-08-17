@@ -2,6 +2,45 @@ import XCTest
 @testable @preconcurrency import RoutinaMacOSDev
 
 final class PerformanceRegressionTests: XCTestCase {
+    func testMacFocusStartUsesOneRecallingSheet() throws {
+        let toolbarSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"
+        )
+        let pickerSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacFocusTimerPickerViews.swift"
+        )
+        let homeSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift"
+        )
+        let platformSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
+        )
+
+        let buttonStart = try XCTUnwrap(
+            toolbarSource.range(of: "struct HomeMacPlanFocusToolbarButton: View")
+        )
+        let buttonEnd = try XCTUnwrap(
+            toolbarSource.range(
+                of: "@MainActor\nprivate func planFocusToolbarLabel",
+                range: buttonStart.upperBound..<toolbarSource.endIndex
+            )
+        )
+        let buttonSource = toolbarSource[buttonStart.lowerBound..<buttonEnd.lowerBound]
+
+        XCTAssertTrue(buttonSource.contains("onTaskFocusRequested()"))
+        XCTAssertFalse(
+            buttonSource.contains("Menu {"),
+            "Focus should open its sheet directly instead of presenting duration choices first."
+        )
+        XCTAssertTrue(pickerSource.contains("private var durationPicker: some View"))
+        XCTAssertTrue(pickerSource.contains("plannedDurationSeconds: selectedDuration"))
+        XCTAssertFalse(pickerSource.contains("focusSessions.reduce"))
+        XCTAssertTrue(platformSource.contains("private func presentHomeToolbarFocusPicker()"))
+        XCTAssertTrue(platformSource.contains("FocusSessionStartDefaults.latest("))
+        XCTAssertTrue(homeSource.contains(".sheet(isPresented: $isHomeToolbarFocusPickerPresented)"))
+        XCTAssertFalse(homeSource.contains("homeToolbarFocusPickerDuration"))
+    }
+
     func testMacTaskCreatedToastAnchorsItsTrailingActions() throws {
         let toastSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/MacQuickAddCreatedToastView.swift"

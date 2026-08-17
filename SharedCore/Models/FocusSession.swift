@@ -167,6 +167,62 @@ enum FocusSessionTagRecency {
     }
 }
 
+struct FocusSessionStartDefaults: Equatable {
+    static let fallbackDuration: TimeInterval = 25 * 60
+    static let standardDurationOptions: [TimeInterval] = [
+        0,
+        15 * 60,
+        25 * 60,
+        45 * 60,
+        60 * 60,
+        90 * 60,
+    ]
+
+    let duration: TimeInterval
+    let tagName: String?
+
+    static func latest(
+        focusSessions: [FocusSession],
+        availableTags: [String]
+    ) -> Self {
+        let latestSession = focusSessions
+            .filter { $0.isTaskFocus || $0.isTagFocus }
+            .compactMap { session -> (session: FocusSession, startedAt: Date)? in
+                guard let startedAt = session.startedAt else { return nil }
+                return (session, startedAt)
+            }
+            .max { lhs, rhs in
+                lhs.startedAt < rhs.startedAt
+            }?
+            .session
+
+        guard let latestSession else {
+            return Self(duration: fallbackDuration, tagName: nil)
+        }
+
+        let duration = latestSession.plannedDurationSeconds.isFinite
+            ? max(0, latestSession.plannedDurationSeconds)
+            : fallbackDuration
+        let tagName = latestSession.focusTagName.flatMap { recentTag in
+            availableTags.first { availableTag in
+                RoutineTag.normalized(availableTag) == RoutineTag.normalized(recentTag)
+            }
+        }
+        return Self(duration: duration, tagName: tagName)
+    }
+
+    static func durationOptions(including selectedDuration: TimeInterval) -> [TimeInterval] {
+        guard selectedDuration.isFinite, selectedDuration > 0 else {
+            return standardDurationOptions
+        }
+        guard !standardDurationOptions.contains(selectedDuration) else {
+            return standardDurationOptions
+        }
+
+        return [0] + (standardDurationOptions.dropFirst() + [selectedDuration]).sorted()
+    }
+}
+
 enum FocusSessionFormatting {
     static func durationText(seconds: TimeInterval) -> String {
         let totalSeconds = max(0, Int(seconds.rounded()))
