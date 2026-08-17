@@ -319,7 +319,8 @@ detailBody
 
     private func updateCollapsedTaskTitleVisibility(titleMaxY: CGFloat?) {
         let shouldShow = TaskDetailCollapsedTitlePresentation.shouldShow(
-            titleMaxY: titleMaxY
+            titleMaxY: titleMaxY,
+            currentVisibility: showsCollapsedTaskTitle
         )
         guard shouldShow != showsCollapsedTaskTitle else { return }
 

@@ -9,8 +9,11 @@ struct TaskDetailOverviewHeightsPreferenceKey: PreferenceKey {
 }
 
 enum TaskDetailCollapsedTitlePresentation {
-    static func shouldShow(titleMaxY: CGFloat?) -> Bool {
-        guard let titleMaxY else { return false }
+    static func shouldShow(
+        titleMaxY: CGFloat?,
+        currentVisibility: Bool
+    ) -> Bool {
+        guard let titleMaxY else { return currentVisibility }
         return titleMaxY <= 0
     }
 }

@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0191 — Treat missing lazy geometry as unknown](0191-treat-missing-lazy-geometry-as-unknown.md)
 - [0190 — Declare exact optional files to Xcode script sandboxes](0190-declare-exact-optional-files-to-xcode-script-sandboxes.md)
 - [0189 — Canonicalize focus sessions before deriving Stats](0189-canonicalize-focus-sessions-before-deriving-stats.md)
 - [0188 — Deduplicate planner placements by meaning](0188-deduplicate-planner-placements-by-meaning.md)

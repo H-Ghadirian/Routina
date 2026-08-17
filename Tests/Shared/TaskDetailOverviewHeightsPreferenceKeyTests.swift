@@ -32,9 +32,29 @@ struct TaskDetailOverviewHeightsPreferenceKeyTests {
 
     @Test
     func collapsedTitleAppearsOnlyAfterTheFullHeaderTitleLeavesTheViewport() {
-        #expect(!TaskDetailCollapsedTitlePresentation.shouldShow(titleMaxY: nil))
-        #expect(!TaskDetailCollapsedTitlePresentation.shouldShow(titleMaxY: 0.5))
-        #expect(TaskDetailCollapsedTitlePresentation.shouldShow(titleMaxY: 0))
-        #expect(TaskDetailCollapsedTitlePresentation.shouldShow(titleMaxY: -20))
+        #expect(!TaskDetailCollapsedTitlePresentation.shouldShow(
+            titleMaxY: nil,
+            currentVisibility: false
+        ))
+        #expect(!TaskDetailCollapsedTitlePresentation.shouldShow(
+            titleMaxY: 0.5,
+            currentVisibility: true
+        ))
+        #expect(TaskDetailCollapsedTitlePresentation.shouldShow(
+            titleMaxY: 0,
+            currentVisibility: false
+        ))
+        #expect(TaskDetailCollapsedTitlePresentation.shouldShow(
+            titleMaxY: -20,
+            currentVisibility: false
+        ))
+    }
+
+    @Test
+    func collapsedTitleRemainsVisibleWhenLazyHeaderGeometryIsUnavailable() {
+        #expect(TaskDetailCollapsedTitlePresentation.shouldShow(
+            titleMaxY: nil,
+            currentVisibility: true
+        ))
     }
 }

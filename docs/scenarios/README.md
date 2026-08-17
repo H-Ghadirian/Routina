@@ -482,6 +482,8 @@ And accessibility text sizes stack the controls with explicit labels, values, st
 Then the navigation principal remains empty while the full header title is visible
 When the full header title scrolls above the detail viewport
 Then a text-only task name appears in the navigation principal without an emoji or fixed width cap
+When the person continues scrolling until Calendar and later detail sections reach the top of the viewport
+Then that navigation title remains visible
 And scrolling the full title back into view hides that navigation title again
 And `Add more details` explains its badge as `1 option` or `<count> options`
 
