@@ -2999,6 +2999,89 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func editingScheduledTimeRebasesAutomaticPlannerBlockButPreservesManualPlacement() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-08-18T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: occurrence, calendar: calendar)
+        let taskID = UUID()
+        let previousTask = RoutineTask(
+            id: taskID,
+            name: "Sprint planning",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 11, minute: 15)),
+            scheduleAnchor: occurrence
+        )
+        let updatedTask = RoutineTask(
+            id: taskID,
+            name: "Sprint planning",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 10, minute: 45)),
+            scheduleAnchor: occurrence
+        )
+        let automaticBlockID = UUID()
+        let manualBlockID = UUID()
+        let automaticBlock = DayPlanBlock(
+            id: automaticBlockID,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 11 * 60 + 15,
+            durationMinutes: 60,
+            titleSnapshot: "Sprint planning",
+            emojiSnapshot: "✨"
+        )
+        let manualBlock = DayPlanBlock(
+            id: manualBlockID,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 11 * 60 + 30,
+            durationMinutes: 60,
+            titleSnapshot: "Sprint planning",
+            emojiSnapshot: "✨"
+        )
+        DayPlanStorage.saveBlocks(
+            [automaticBlock, manualBlock],
+            forDayKey: dayKey,
+            context: context
+        )
+
+        let didChange = try DayPlanAutomaticBlockSync.rebaseAutomaticallyScheduledBlocks(
+            from: previousTask,
+            to: updatedTask,
+            calendar: calendar,
+            context: context
+        )
+        try context.save()
+
+        let blocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        let rebasedBlock = try #require(blocks.first { $0.id == automaticBlockID })
+        let preservedBlock = try #require(blocks.first { $0.id == manualBlockID })
+        #expect(didChange)
+        #expect(rebasedBlock.startMinute == 10 * 60 + 45)
+        #expect(rebasedBlock.durationMinutes == 60)
+        #expect(preservedBlock.startMinute == 11 * 60 + 30)
+        #expect(preservedBlock.durationMinutes == 60)
+    }
+
+    @Test
+    func routineUpdateRefreshesPlannerSnapshotWhileTaskInspectorIsOpen() throws {
+        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let refreshFunction = try #require(
+            source.range(of: "private func requestTimelineDataSnapshotRefresh()")
+        )
+        let deferredFunction = try #require(
+            source.range(of: "private func refreshDeferredTimelineDataSnapshotIfNeeded()")
+        )
+        let refreshSource = String(source[refreshFunction.lowerBound..<deferredFunction.lowerBound])
+
+        #expect(source.contains(".onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate))"))
+        #expect(refreshSource.contains("RoutinaMacScrollInteractionGate.isScrollActive"))
+        #expect(!refreshSource.contains("guard !isExternalInspectorPresented"))
+    }
+
+    @Test
     func exactAvailabilityTodoCreatesTimedPlannerBlockWithoutDeadline() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

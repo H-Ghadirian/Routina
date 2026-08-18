@@ -1350,18 +1350,9 @@ private struct DayPlanTimelinePanelView: View {
 
     private func requestTimelineDataSnapshotRefresh() {
 #if os(macOS)
-        guard !isExternalInspectorPresented else {
-            hasDeferredTimelineDataSnapshotRefresh = true
-            return
-        }
         guard !RoutinaMacScrollInteractionGate.isScrollActive else {
             hasDeferredTimelineDataSnapshotRefresh = true
             scheduleDeferredTimelineDataSnapshotRefreshRetry()
-            return
-        }
-#else
-        guard !isExternalInspectorPresented else {
-            hasDeferredTimelineDataSnapshotRefresh = true
             return
         }
 #endif

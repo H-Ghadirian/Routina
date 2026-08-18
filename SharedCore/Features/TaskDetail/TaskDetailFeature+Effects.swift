@@ -747,6 +747,7 @@ extension TaskDetailFeature {
                 let previousScheduleMode = task.scheduleMode
                 let previousRecurrenceRule = task.recurrenceRule
                 let previousRollingScheduleAnchor = task.scheduleAnchor ?? task.lastDone
+                let previousTask = task.detachedCopy()
                 let previousRelationships = RoutineTask.editableRelationships(
                     for: task,
                     within: previousRelationshipCandidates
@@ -892,6 +893,12 @@ extension TaskDetailFeature {
                 } else {
                     task.interval = Int16(clamping: recurrenceRule.approximateIntervalDays)
                 }
+                _ = try DayPlanAutomaticBlockSync.rebaseAutomaticallyScheduledBlocks(
+                    from: previousTask,
+                    to: task,
+                    calendar: calendar,
+                    context: context
+                )
                 DeviceActivityRecorder.recordAction(
                     .updated,
                     entity: .task,
