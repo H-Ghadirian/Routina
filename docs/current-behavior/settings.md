@@ -27,6 +27,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0466](../decisions/0466-harden-app-store-release-surfaces.md)
 - [0467](../decisions/0467-declare-exempt-encryption-in-production-bundles.md)
 - [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
+- [0472](../decisions/0472-broker-local-ai-access-through-an-app-owned-snapshot.md)
 - [0513](../decisions/0513-defer-ios-screen-time-blocking-until-distribution-approval.md)
 - [0514](../decisions/0514-defer-ios-location-services-until-places-release.md)
 - [0515](../decisions/0515-report-signed-cloudkit-environment-in-diagnostics.md)
@@ -40,6 +41,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0569](../decisions/0569-suppress-no-op-preference-sync-refresh-loops.md)
 - [0583](../decisions/0583-keep-task-creation-unlimited.md)
 - [0588](../decisions/0588-configure-flag-rules-by-assignment.md)
+- [0610](../decisions/0610-expose-product-help-through-local-ai-connections.md)
 
 ## Current Contract
 
@@ -74,4 +76,5 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Mac app widget source remains in the repository, but the Mac app targets do not build, embed, or register widget extensions, so Routina widgets are not exposed on macOS.
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.
 - The embedded macOS MCP helper inherits Routina's App Sandbox and is signed with only the App Sandbox and inheritance entitlements required for a Mac App Store helper executable.
+- Mac Settings -> AI Connections explains what the local connection does, provides copyable product-help and personal-task questions, states its read-only limits and privacy boundary, and gives setup and stale-data recovery steps. The embedded helper can search and return bundled user-facing help for Task Ladder, Planner day counts, task time meanings, Assumed done, Flags and Tags, Backlog, Focus, and repeating tasks without opening the exported task snapshot; these help tools remain usable while `Allow read-only task access` is off. Enabling that device-local setting additionally exports the existing personal task snapshot for read-only task search, overdue listing, and task-detail lookup. No MCP tool creates, edits, completes, archives, or deletes Routina data.
 - The Mac development app exposes screenshot preparation in Settings -> Appearance. Its development badge remains visible by default but can be hidden with `Show development badge`; `Generate Screenshot Data` adds an idempotent, non-destructive set of representative tasks, history, planner blocks, focus, goals, notes, events, emotions, sleep, and Away records. Production hides these controls and ignores the screenshot seed launch trigger.

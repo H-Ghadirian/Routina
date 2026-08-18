@@ -701,6 +701,26 @@ When the embedding phase runs with `dwarf-with-dsym` enabled
 Then it generates `RoutinaAIMCPServer.dSYM` in Xcode's dSYM output folder from that helper executable
 And the archive contains a dSYM whose UUID matches the embedded helper
 
+### Local AI Product Help Does Not Require Personal Task Access
+
+Area: Settings / Other
+Decision links: [0610](../decisions/0610-expose-product-help-through-local-ai-connections.md), [0472](../decisions/0472-broker-local-ai-access-through-an-app-owned-snapshot.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/RoutinaHelpCatalogTests.swift`
+- `Tests/Shared/RoutinaAIReadOnlySnapshotStoreTests.swift`
+
+Given the Mac MCP connection is configured and Allow read-only task access is off
+When an AI client searches Routina help for Task Ladder or the numbers above Planner day columns
+Then the helper returns the matching bundled user-facing topic
+And it does not load the exported personal task snapshot
+And the answer states relevant platform, availability, and behavior limits
+
+Given a person opens Settings > AI Connections
+When they review the connection guide
+Then it explains setup, product-help and personal-task question examples, read-only limitations, privacy, and recovery
+And every copyable example-question surface is clickable across its full visible area
+
 ### Support Diagnostics Report the Signed CloudKit Environment
 
 Area: Settings / Other

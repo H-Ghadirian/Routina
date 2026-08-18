@@ -77,4 +77,33 @@ struct RoutinaAIReadOnlySnapshotStoreTests {
         #expect(source.contains(RoutinaAIReadOnlySnapshotStore.productionFileName))
         #expect(source.contains(RoutinaAIReadOnlySnapshotStore.sandboxFileName))
     }
+
+    @Test
+    func mcpProductHelpDoesNotRequireThePersonalTaskSnapshot() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: projectRoot
+                .appendingPathComponent("Tools/RoutinaAIMCPServer/main.swift"),
+            encoding: .utf8
+        )
+
+        #expect(source.contains("search_routina_help"))
+        #expect(source.contains("get_routina_help_topic"))
+        #expect(source.contains("RoutinaHelpCatalog.search"))
+        #expect(source.contains("RoutinaHelpCatalog.topic"))
+
+        let helpHandlerStart = try #require(source.range(of: "private func callSearchRoutinaHelp"))
+        let nextHandlerStart = try #require(
+            source.range(
+                of: "private func callGetRoutinaHelpTopic",
+                range: helpHandlerStart.upperBound..<source.endIndex
+            )
+        )
+        let helpHandler = source[helpHandlerStart.lowerBound..<nextHandlerStart.lowerBound]
+        #expect(!helpHandler.contains("loadTaskSnapshot"))
+        #expect(!helpHandler.contains("MCPReadOnlySnapshotStore"))
+    }
 }

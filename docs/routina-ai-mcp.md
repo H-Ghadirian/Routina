@@ -1,16 +1,19 @@
 # Routina AI MCP
 
 Routina's Mac app includes a local read-only MCP bridge. It lets MCP-compatible
-AI clients search tasks, list overdue work, and retrieve a task by UUID without a
-Routina backend and without giving the helper direct database access.
+AI clients explain Routina features and, with separate opt-in task access,
+search tasks, list overdue work, and retrieve a task by UUID. It uses no Routina
+backend and never gives the helper direct database access.
 
 ## User Setup
 
 1. Open Routina for Mac.
 2. Open **Settings > AI Connections**.
-3. Enable **Allow read-only task access**.
-4. Click **Copy setup command**, paste it into Terminal, and press Return.
-5. Start a new task in ChatGPT or Codex and ask, `What Routina tasks are overdue?`
+3. Click **Copy setup command**, paste it into Terminal, and press Return.
+4. Start a new task in ChatGPT or Codex so it discovers the Routina tools.
+5. Ask `What is Task Ladder?` or another product question from the in-app guide.
+6. To ask about personal tasks, enable **Allow read-only task access** and try
+   `What Routina tasks are overdue?`
 
 The copied command uses the full path to the CLI bundled by the installed AI
 desktop app when available, so the user does not need a separate `codex` command
@@ -45,14 +48,23 @@ through its own backend.
 
 ## Tools
 
+- `search_routina_help`: Search the bundled product guide by a natural-language
+  question or phrase. It does not read the personal task snapshot.
+- `get_routina_help_topic`: Retrieve one complete guide topic by the stable ID
+  returned from help search. It does not read the personal task snapshot.
 - `search_tasks`: Search routines and todos by name, description, notes, tags,
   place, schedule, status, goal, link, or next step.
 - `list_overdue_tasks`: Return overdue active tasks.
 - `get_task`: Return one task by UUID.
 
-All tools are read-only, non-destructive, and idempotent. Create, update, and
-delete tools are intentionally deferred until Routina has an app-owned approval
-broker.
+The initial product guide covers Task Ladder, Planner day counts, Availability /
+Plan to do / Schedule / Deadline / Reminder, Assumed done, Flags and Tags,
+Backlog, Focus, and repeating tasks. Help search remains available when personal
+task access is off.
+
+All tools are read-only, non-destructive, and idempotent. Create, update,
+complete, archive, and delete tools are intentionally deferred until Routina has
+an app-owned approval broker.
 
 ## Development
 

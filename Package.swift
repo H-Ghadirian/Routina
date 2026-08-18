@@ -555,9 +555,13 @@ let package = Package(
             dependencies: ["RoutinaAppSupport"],
             path: "Tools/RoutinaAIMVPCLI"
         ),
+        .target(
+            name: "RoutinaHelpSupport",
+            path: "SharedCore/Help"
+        ),
         .executableTarget(
             name: "RoutinaAIMCPServer",
-            dependencies: [],
+            dependencies: ["RoutinaHelpSupport"],
             path: "Tools/RoutinaAIMCPServer",
             exclude: ["smoke-test.jsonl"]
         ),
@@ -565,6 +569,7 @@ let package = Package(
             name: "RoutinaAppSupportTests",
             dependencies: [
                 "RoutinaAppSupport",
+                "RoutinaHelpSupport",
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
             ],

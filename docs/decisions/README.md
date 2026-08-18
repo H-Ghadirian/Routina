@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0610](0610-expose-product-help-through-local-ai-connections.md) refines [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md), [0573](0573-centralize-user-perspective-product-documentation.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** the Mac app and embedded MCP helper share a curated user-facing Routina help catalog; product-help lookup never loads the personal task snapshot, and AI Connections explains setup, example questions, limitations, privacy, and recovery.
+
 - **[0608](0608-keep-mac-task-detail-close-transition-free-of-history-work.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0296](0296-present-mac-task-details-as-planner-inspector.md):** closing the Mac task-detail companion pane keeps adaptive range changes free of Focus-history reconciliation, batches changed Focus blocks by day, skips no-op saves, and releases deferred Home refresh only after the pane transition quiet window.
 
 - **[0607](0607-persist-planner-placement-ownership.md) refines [0375](0375-split-time-blocks-from-available-windows.md):** timed Planner blocks persist whether schedule metadata generated them or the person owns their placement; schedule edits always rebase automatic blocks, while legacy untouched blocks can be recovered and manual placements remain fixed.
@@ -747,6 +749,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0610](0610-expose-product-help-through-local-ai-connections.md) | Expose Product Help Through Local AI Connections | Accepted | 2026-08-18 |
 | [0608](0608-keep-mac-task-detail-close-transition-free-of-history-work.md) | Keep Mac Task Detail Close Transitions Free of History Work | Accepted | 2026-08-18 |
 | [0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md) | Expose Time-Based Ladder Values in Task Forms and Details | Accepted | 2026-08-18 |
 | [0603](0603-start-mac-focus-from-one-recalling-sheet.md) | Start Mac Focus From One Recalling Sheet | Accepted | 2026-08-17 |

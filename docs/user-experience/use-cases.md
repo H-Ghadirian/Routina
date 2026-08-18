@@ -281,6 +281,22 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Availability:** Production.
 
+### UC-17 — Ask what an unfamiliar Routina feature means
+
+**Situation:** A person encounters a Routina workspace, label, number, or distinction they do not understand and wants an answer in the language they would naturally use.
+
+**Need:** Understand what the feature is for, what the visible information means, and what an action would or would not change without searching technical project documentation.
+
+**Desired experience:** After connecting an MCP-compatible AI client, the person can ask questions such as “What is Task Ladder?”, “What are the numbers above Calendar day columns?”, or “What is the difference between Availability and Schedule?” The answer comes from curated Routina help, states meaningful platform or availability limits, distinguishes similarly named concepts, and does not require personal task access. AI Connections shows how to connect, offers copyable questions, separates product help from personal-task access, states that every tool is read-only, and provides recovery when setup or shared task data is unavailable.
+
+**Successful outcome:** The person can interpret Routina and decide what to do next without guessing, exposing personal tasks just to obtain product help, or receiving an answer based on a generic productivity app.
+
+**Example:** In macOS Planner Calendar, the person asks what the number above Tuesday means and learns that it combines visible Planned tasks, Assumed done, and Dones for that day; selecting it opens the breakdown, and current Calendar filters can change the number.
+
+**Evidence:** User-described need and examples on 2026-08-18.
+
+**Availability:** Production on macOS through the local MCP connection and its AI Connections guide. The initial help catalog is curated rather than exhaustive.
+
 ## Coverage Gaps to Validate
 
 The catalog reflects the current product direction, but these questions still need direct user evidence:

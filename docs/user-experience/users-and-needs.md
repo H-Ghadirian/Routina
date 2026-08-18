@@ -97,6 +97,12 @@ That person may have one-off tasks, repeating responsibilities, flexible routine
 
 **Successful outcome:** Concepts and outcomes stay consistent, navigation follows platform conventions, and device-specific differences feel purposeful rather than arbitrary.
 
+### N-13 — Understand unfamiliar features without guessing
+
+**Need:** When I encounter an unfamiliar Routina label, number, or workspace, I need an explanation grounded in what the app actually means.
+
+**Successful outcome:** I can ask a connected AI a natural-language product question, receive a concise answer that names platform and availability limits, and understand what the feature changes or leaves untouched without exposing my task data merely to obtain help.
+
 ## Product Boundary
 
 Routina should help a person remember, choose, plan, act, and learn. It should not make automatic judgments about the person's worth, present estimates as facts, or disguise inferred activity as confirmed history.

@@ -1,10 +1,11 @@
 import Foundation
+import RoutinaHelpSupport
 #if canImport(AppKit)
 import AppKit
 #endif
 
 private let serverName = "routina-ai-mcp"
-private let serverVersion = "0.2.0"
+private let serverVersion = "0.3.0"
 private let fallbackProtocolVersion = "2025-06-18"
 
 private enum MCPErrorCode: Int {
@@ -27,6 +28,7 @@ private enum ServerError: LocalizedError {
     case invalidParams(String)
     case unknownTool(String)
     case taskNotFound(String)
+    case helpTopicNotFound(String)
     case snapshotUnavailable(String)
 
     var errorDescription: String? {
@@ -35,6 +37,7 @@ private enum ServerError: LocalizedError {
              let .invalidParams(message),
              let .unknownTool(message),
              let .taskNotFound(message),
+             let .helpTopicNotFound(message),
              let .snapshotUnavailable(message):
             return message
         }
@@ -135,7 +138,7 @@ private final class MCPStdioServer {
                 "name": serverName,
                 "version": serverVersion
             ],
-            "instructions": "Read-only access to Routina tasks. Use search_tasks for general questions, list_overdue_tasks for overdue routines and todos, and get_task when you already have a task UUID."
+            "instructions": "Read-only Routina support. Use search_routina_help or get_routina_help_topic to explain Routina features and interface concepts. Use search_tasks for questions about the user\u{2019}s tasks, list_overdue_tasks for overdue routines and todos, and get_task when you already have a task UUID. Help lookup does not require access to personal task data."
         ]
     }
 
@@ -203,6 +206,46 @@ private final class MCPStdioServer {
                     "required": ["id"],
                     "additionalProperties": false
                 ]
+            ],
+            [
+                "name": "search_routina_help",
+                "title": "Search Routina Help",
+                "description": "Search Routina\u{2019}s privacy-safe product guide for explanations of features, labels, controls, and interface concepts. This does not access personal task data.",
+                "annotations": readOnlyToolAnnotations(),
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "query": [
+                            "type": "string",
+                            "description": "A question or phrase about Routina, such as \u{2018}What is Task Ladder?\u{2019} or \u{2018}numbers above Calendar day columns\u{2019}."
+                        ],
+                        "limit": [
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "Maximum number of help topics to return. Defaults to 5."
+                        ]
+                    ],
+                    "required": ["query"],
+                    "additionalProperties": false
+                ]
+            ],
+            [
+                "name": "get_routina_help_topic",
+                "title": "Get Routina Help Topic",
+                "description": "Return one complete Routina help topic by the topic ID supplied by search_routina_help. This does not access personal task data.",
+                "annotations": readOnlyToolAnnotations(),
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "topicId": [
+                            "type": "string",
+                            "description": "The stable help topic ID, such as task-ladder or planner-day-counts."
+                        ]
+                    ],
+                    "required": ["topicId"],
+                    "additionalProperties": false
+                ]
             ]
         ]
     }
@@ -221,6 +264,10 @@ private final class MCPStdioServer {
             return try await callListOverdueTasks(arguments: arguments)
         case "get_task":
             return try await callGetTask(arguments: arguments)
+        case "search_routina_help":
+            return try callSearchRoutinaHelp(arguments: arguments)
+        case "get_routina_help_topic":
+            return try callGetRoutinaHelpTopic(arguments: arguments)
         default:
             throw ServerError.unknownTool("Unknown tool: \(name)")
         }
@@ -292,6 +339,34 @@ private final class MCPStdioServer {
         return try toolTextResult(task)
     }
 
+    private func callSearchRoutinaHelp(arguments: [String: Any]) throws -> [String: Any] {
+        guard let query = arguments["query"] as? String,
+              !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw ServerError.invalidParams("search_routina_help requires a non-empty query.")
+        }
+        let limit = try optionalPositiveInt(
+            arguments["limit"],
+            name: "limit",
+            maximum: 10
+        ) ?? 5
+        let topics = RoutinaHelpCatalog.search(query, limit: limit)
+        return try toolTextResult([
+            "count": topics.count,
+            "topics": try jsonObject(topics)
+        ])
+    }
+
+    private func callGetRoutinaHelpTopic(arguments: [String: Any]) throws -> [String: Any] {
+        guard let topicID = arguments["topicId"] as? String,
+              !topicID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw ServerError.invalidParams("get_routina_help_topic requires a topicId.")
+        }
+        guard let topic = RoutinaHelpCatalog.topic(id: topicID) else {
+            throw ServerError.helpTopicNotFound("No Routina help topic exists with id \(topicID).")
+        }
+        return try toolTextResult(topic)
+    }
+
     private func optionalNonNegativeInt(_ value: Any?, name: String) throws -> Int? {
         guard let value else { return nil }
         if let intValue = value as? Int {
@@ -308,6 +383,27 @@ private final class MCPStdioServer {
             return intValue
         }
         throw ServerError.invalidParams("\(name) must be a non-negative integer.")
+    }
+
+    private func optionalPositiveInt(
+        _ value: Any?,
+        name: String,
+        maximum: Int
+    ) throws -> Int? {
+        guard let value else { return nil }
+        let intValue: Int
+        if let value = value as? Int {
+            intValue = value
+        } else if let number = value as? NSNumber,
+                  Double(number.intValue) == number.doubleValue {
+            intValue = number.intValue
+        } else {
+            throw ServerError.invalidParams("\(name) must be an integer.")
+        }
+        guard (1...maximum).contains(intValue) else {
+            throw ServerError.invalidParams("\(name) must be between 1 and \(maximum).")
+        }
+        return intValue
     }
 
     private func toolTextResult<T: Encodable>(_ value: T) throws -> [String: Any] {

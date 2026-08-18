@@ -14,13 +14,13 @@ struct SettingsMacAIConnectionsDetailView: View {
     var body: some View {
         SettingsMacDetailShell(
             title: "AI Connections",
-            subtitle: "Ask an AI client about your Routina tasks without giving it direct database access."
+            subtitle: "Ask a connected AI to explain Routina or answer questions about your tasks."
         ) {
             SettingsMacDetailCard(title: "Local AI Access") {
                 Toggle("Allow read-only task access", isOn: localAIAccessBinding)
                     .toggleStyle(.switch)
 
-                Text("Routina creates a private, read-only snapshot containing task names, schedules, dates, tags, descriptions, notes, links, goals, places, and progress. The AI connection cannot edit Routina.")
+                Text("The connection can explain Routina features without reading your task data. When this setting is enabled, it can also use a private, read-only snapshot containing task names, schedules, dates, tags, descriptions, notes, links, goals, places, and progress.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
@@ -50,7 +50,7 @@ struct SettingsMacAIConnectionsDetailView: View {
             }
 
             SettingsMacDetailCard(title: "Connect ChatGPT or Codex") {
-                Text("1. Enable Local AI Access above.\n2. Copy the setup command and paste it into Terminal once.\n3. Start a new AI task and ask: “What Routina tasks are overdue?”")
+                Text("1. Copy the setup command and paste it into Terminal once.\n2. Start a new AI task so it discovers Routina.\n3. Ask a question from the guide below. Enable Local AI Access only when you also want answers about your personal tasks.")
                     .font(.callout)
 
                 Button {
@@ -74,17 +74,45 @@ struct SettingsMacAIConnectionsDetailView: View {
                         .foregroundStyle(.orange)
                 }
 
-                Button {
-                    copyToPasteboard("What Routina tasks are overdue, and what should I focus on today?")
-                    statusMessage = "Example question copied."
-                } label: {
-                    Label("Copy example question", systemImage: "text.bubble")
+            }
+
+            SettingsMacDetailCard(title: "Questions you can ask") {
+                Text("Ask what a feature means, why something appears, or how two Routina concepts differ. Select a question to copy it.")
+                    .font(.callout)
+
+                VStack(spacing: 8) {
+                    ForEach(RoutinaHelpCatalog.starterQuestions, id: \.self) { question in
+                        guideQuestionButton(question)
+                    }
                 }
-                .buttonStyle(.bordered)
+
+                Divider()
+
+                Text("With Local AI Access enabled, you can also ask about your own data:")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                guideQuestionButton("What Routina tasks are overdue, and what should I focus on today?")
+            }
+
+            SettingsMacDetailCard(title: "What the connection can do") {
+                Label("Explain Routina features and interface concepts", systemImage: "questionmark.bubble")
+                Label("Search and summarize your tasks when read-only access is enabled", systemImage: "magnifyingglass")
+                Label("Show when the shared task data was last refreshed", systemImage: "clock")
+
+                Text("The connection cannot create, edit, complete, archive, or delete anything in Routina. Product help is built into the connection and does not require access to personal task data.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             SettingsMacDetailCard(title: "Privacy") {
                 Text("Routina has no AI backend in this flow. Your AI client runs the local helper and may send the task details needed to answer your question to its own AI provider. Review that provider’s privacy settings before connecting.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            SettingsMacDetailCard(title: "If a question does not work") {
+                Text("Start a new AI task after running the setup command so the client reloads its available Routina tools. If a personal-task answer is missing or outdated, open Routina, enable Local AI Access, and choose Refresh shared data now. If setup is unavailable, install or update the Codex or ChatGPT desktop app and return here.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -137,6 +165,32 @@ struct SettingsMacAIConnectionsDetailView: View {
     private func copyToPasteboard(_ value: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(value, forType: .string)
+    }
+
+    private func guideQuestionButton(_ question: String) -> some View {
+        Button {
+            copyToPasteboard(question)
+            statusMessage = "Question copied. Paste it into a new AI task."
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(question)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 12)
+                Image(systemName: "doc.on.doc")
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(.quaternary.opacity(0.55))
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .help("Copy question")
     }
 }
 
