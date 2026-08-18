@@ -251,6 +251,7 @@ When the person opens Exercise's nested ladder
 Then Walk appears as a linked-task child suggestion with its existing relationship type
 When the person accepts the suggestion
 Then Walk is placed inside Exercise without changing or removing its task relationship
+And the suggestion row is replaced by an ordinary Ladder row without stale Accept or Reject controls
 When the person instead rejects the suggestion
 Then the synchronized parent/task dismissal hides it without unlinking either task
 And manually placing Walk inside Exercise clears that dismissal

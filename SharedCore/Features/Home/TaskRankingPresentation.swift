@@ -286,6 +286,11 @@ enum TaskRankingMetricValue: Equatable, Hashable, Sendable {
 /// A stable, feature-owned snapshot consumed directly by the scrolling Mac task-ranking view.
 struct TaskRankingPresentation: Equatable {
     struct LinkedTaskChildSuggestion: Identifiable, Equatable, Sendable {
+        struct ID: Hashable, Sendable {
+            let parentTaskID: UUID
+            let taskID: UUID
+        }
+
         let parentTaskID: UUID
         let taskID: UUID
         let taskName: String
@@ -293,7 +298,9 @@ struct TaskRankingPresentation: Equatable {
         let relationshipKind: RoutineTaskRelationshipKind
         let willMoveFromAnotherPlacement: Bool
 
-        var id: UUID { taskID }
+        var id: ID {
+            ID(parentTaskID: parentTaskID, taskID: taskID)
+        }
     }
 
     struct RowMetadata: Equatable, Sendable {

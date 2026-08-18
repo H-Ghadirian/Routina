@@ -293,6 +293,32 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func linkedTaskSuggestionIdentityIsDistinctFromItsAcceptedTaskRowIdentity() throws {
+        let exercise = RoutineTask(name: "Exercise", pressure: .low)
+        let walk = RoutineTask(
+            name: "Walk",
+            pressure: .medium,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: exercise.id, kind: .canComplete)
+            ]
+        )
+        let presentation = TaskRankingPresentation.make(
+            tasks: [exercise, walk],
+            organization: TaskLadderOrganization(taskGroupIDs: [exercise.id]),
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            scopePath: [exercise.id]
+        )
+
+        let suggestion = try #require(presentation.linkedTaskChildSuggestions.first)
+
+        #expect(AnyHashable(suggestion.id) != AnyHashable(walk.id))
+    }
+
+    @Test
     func groupInheritsHighestCategoricalValuesFromItsActionableDirectTasks() throws {
         let company = TaskLadderGroup(
             name: "Company",
