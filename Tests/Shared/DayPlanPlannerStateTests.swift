@@ -519,19 +519,19 @@ struct DayPlanPlannerStateTests {
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 820,
-                collapsedRegularDateControlsWidth: 760
+                regularDateControlsWidth: 760
             ) == false
         )
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 620,
-                collapsedRegularDateControlsWidth: 580
+                regularDateControlsWidth: 580
             ) == false
         )
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 620,
-                collapsedRegularDateControlsWidth: 700
+                regularDateControlsWidth: 700
             )
         )
         #expect(
@@ -547,20 +547,45 @@ struct DayPlanPlannerStateTests {
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 760,
-                collapsedRegularDateControlsWidth: 760
+                regularDateControlsWidth: 760
             ) == false
         )
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 759,
-                collapsedRegularDateControlsWidth: 760
+                regularDateControlsWidth: 760
             )
         )
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 900,
-                collapsedRegularDateControlsWidth: 760
+                regularDateControlsWidth: 760
             ) == false
+        )
+    }
+
+    @Test
+    func datePickerFitUsesFullRowWhileRangePickerRemainsVisible() {
+        let availableWidth = 900.0
+        let showsRangePicker = DayPlanHeaderRangePickerVisibility.shouldShow(
+            availableWidth: availableWidth,
+            fullControlsWidth: 860,
+            isTaskDetailInspectorPresented: false,
+            visibleRangeMode: .threeDays
+        )
+        let activeRegularWidth = DayPlanHeaderRangePickerVisibility.regularDateControlsWidth(
+            showsRangePicker: showsRangePicker,
+            fullRegularDateControlsWidth: 980,
+            collapsedRegularDateControlsWidth: 740
+        )
+
+        #expect(showsRangePicker)
+        #expect(activeRegularWidth == 980)
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                availableWidth: availableWidth,
+                regularDateControlsWidth: activeRegularWidth
+            )
         )
     }
 
@@ -2998,7 +3023,8 @@ struct DayPlanPlannerStateTests {
             startMinute: 21 * 60,
             durationMinutes: 60,
             titleSnapshot: "Brush teeth",
-            emojiSnapshot: "✨"
+            emojiSnapshot: "✨",
+            placementSource: .automatic
         )
         context.insert(task)
         DayPlanStorage.saveBlocks([staleBlock], forDayKey: dayKey, context: context)
@@ -3049,7 +3075,8 @@ struct DayPlanPlannerStateTests {
             startMinute: 11 * 60 + 15,
             durationMinutes: 60,
             titleSnapshot: "Sprint planning",
-            emojiSnapshot: "✨"
+            emojiSnapshot: "✨",
+            placementSource: .automatic
         )
         let manualBlock = DayPlanBlock(
             id: manualBlockID,
@@ -3080,8 +3107,120 @@ struct DayPlanPlannerStateTests {
         #expect(didChange)
         #expect(rebasedBlock.startMinute == 10 * 60 + 45)
         #expect(rebasedBlock.durationMinutes == 60)
+        #expect(rebasedBlock.placementSource == .automatic)
         #expect(preservedBlock.startMinute == 11 * 60 + 30)
         #expect(preservedBlock.durationMinutes == 60)
+        #expect(preservedBlock.placementSource == .manual)
+    }
+
+    @Test
+    func editingScheduledTimeRepairsLegacyAutomaticBlockAfterEarlierMissedEdit() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-08-18T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: occurrence, calendar: calendar)
+        let taskID = UUID()
+        let previousTask = RoutineTask(
+            id: taskID,
+            name: "Sprint planning",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 10, minute: 45)),
+            scheduleAnchor: occurrence
+        )
+        let updatedTask = RoutineTask(
+            id: taskID,
+            name: "Sprint planning",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 45)),
+            scheduleAnchor: occurrence
+        )
+        let createdAt = try #require(date("2026-08-18T08:00:00Z"))
+        let staleLegacyBlock = DayPlanBlock(
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 11 * 60 + 15,
+            durationMinutes: 60,
+            titleSnapshot: "Sprint planning",
+            emojiSnapshot: "✨",
+            createdAt: createdAt,
+            updatedAt: createdAt,
+            placementSource: .legacy
+        )
+        DayPlanStorage.saveBlocks([staleLegacyBlock], forDayKey: dayKey, context: context)
+
+        let didChange = try DayPlanAutomaticBlockSync.rebaseAutomaticallyScheduledBlocks(
+            from: previousTask,
+            to: updatedTask,
+            calendar: calendar,
+            context: context
+        )
+        try context.save()
+
+        let repairedBlock = try #require(
+            DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context).first
+        )
+        #expect(didChange)
+        #expect(repairedBlock.startMinute == 9 * 60 + 45)
+        #expect(repairedBlock.durationMinutes == 60)
+        #expect(repairedBlock.placementSource == .automatic)
+    }
+
+    @Test
+    func plannerLoadRepairsStaleAutomaticScheduleEvenWhenNewTimeOverlapsAnotherBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-08-18T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: occurrence, calendar: calendar)
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Sprint planning",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 45)),
+            scheduleAnchor: occurrence
+        )
+        let createdAt = try #require(date("2026-08-18T08:00:00Z"))
+        let staleLegacyBlock = DayPlanBlock(
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 11 * 60 + 15,
+            durationMinutes: 60,
+            titleSnapshot: "Sprint planning",
+            emojiSnapshot: "✨",
+            createdAt: createdAt,
+            updatedAt: createdAt,
+            placementSource: .legacy
+        )
+        let overlappingBlock = DayPlanBlock(
+            taskID: UUID(),
+            dayKey: dayKey,
+            startMinute: 10 * 60,
+            durationMinutes: 15,
+            titleSnapshot: "Daily"
+        )
+        DayPlanStorage.saveBlocks(
+            [staleLegacyBlock, overlappingBlock],
+            forDayKey: dayKey,
+            context: context
+        )
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+        planner.loadBlocks(calendar: calendar, context: context)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let repairedBlock = try #require(
+            planner.weekBlocksByDayKey[dayKey]?.first { $0.taskID == taskID }
+        )
+        #expect(repairedBlock.startMinute == 9 * 60 + 45)
+        #expect(repairedBlock.durationMinutes == 60)
+        #expect(repairedBlock.placementSource == .automatic)
     }
 
     @Test

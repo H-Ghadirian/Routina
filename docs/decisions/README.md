@@ -20,7 +20,9 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
-- **[0606](0606-show-icon-only-go-to-date-button-before-label-truncation.md) refines [0320](0320-hide-planner-range-picker-in-tight-inspector-layouts.md) and [0305](0305-hide-planner-range-picker-when-header-cannot-fit.md):** the macOS Planner's `Go to date` control switches to an icon-only calendar button when the measured regular date control no longer fits, keeping date navigation available without showing an ellipsized label; its accessibility label, value, and help remain intact.
+- **[0607](0607-persist-planner-placement-ownership.md) refines [0375](0375-split-time-blocks-from-available-windows.md):** timed Planner blocks persist whether schedule metadata generated them or the person owns their placement; schedule edits always rebase automatic blocks, while legacy untouched blocks can be recovered and manual placements remain fixed.
+
+- **[0606](0606-show-icon-only-go-to-date-button-before-label-truncation.md) refines [0320](0320-hide-planner-range-picker-in-tight-inspector-layouts.md) and [0305](0305-hide-planner-range-picker-when-header-cannot-fit.md):** the macOS Planner measures compact and regular variants of the active header row, retaining the range picker when its compact row fits and switching `Go to date` to an icon-only calendar button before its intrinsic date label can ellipsize; accessibility remains intact.
 
 - **[0605](0605-add-when-needed-repeating-routines.md) refines [0421](0421-support-cadence-free-repeating-routines.md) and [0524](0524-pause-tasks-until-a-date.md):** repeating tasks can use `When needed` to share `No schedule`'s unknown cadence while automatically pausing after completion; Resume reactivates the task without removing the mode, and undo clears the automatic pause for the removed latest completion.
 

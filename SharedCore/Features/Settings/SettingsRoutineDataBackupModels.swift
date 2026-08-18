@@ -273,6 +273,7 @@ extension SettingsRoutineDataPersistence {
             var emojiSnapshot: String?
             var createdAt: Date
             var updatedAt: Date
+            var placementSourceRawValue: String?
         }
 
         struct BoardSprint: Codable {

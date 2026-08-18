@@ -12,7 +12,7 @@ The macOS Planner keeps `Go to date` available in the header so date navigation 
 
 ## Decision
 
-The macOS Planner measures the regular date-control row before rendering its final header. When that regular row no longer fits, `Go to date` switches to a calendar icon-only button instead of showing a truncated date label. The button keeps its accessible label, selected date/range value, help text, and full click target. In companion-pane layouts, Calendar/Timeline text may collapse first; the date button becomes icon-only when the remaining regular date control still does not fit.
+The macOS Planner measures both the active header row with the intrinsic date label and the same full row with the compact calendar icon. The range picker may remain visible when the compact row fits; if that active row would overflow with the intrinsic label, `Go to date` switches to the icon-only button. If even the compact full row cannot fit, the range picker hides and date-label fit is recomputed against the collapsed row. The regular label does not scale or ellipsize. The button keeps its accessible label, selected date/range value, help text, and full click target. In companion-pane layouts, Calendar/Timeline text may collapse first.
 
 ## Consequences
 

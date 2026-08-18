@@ -858,7 +858,10 @@ final class PerformanceRegressionTests: XCTestCase {
         )
         XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDisplayModePicker"))
         XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDatePickerButton"))
+        XCTAssertTrue(dayPlanSource.contains("macHeaderFullCompactDateControlsWidthProbe"))
+        XCTAssertTrue(dayPlanSource.contains("macHeaderFullRegularDateControlsWidthProbe"))
         XCTAssertTrue(dayPlanSource.contains("macHeaderCollapsedRegularDateControlsWidthProbe"))
+        XCTAssertTrue(dayPlanSource.contains("macHeaderActiveRegularDateControlsWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMinimumWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
         XCTAssertTrue(dayPlanSource.contains("if displayMode.wrappedValue == .list, let listContent {\n                plannerListContent(listContent)"))
@@ -875,6 +878,10 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertFalse(
             dayPlanSource.contains("usesIconOnlyMacDatePickerButton ? nil : 210"),
             "The regular date/range button should not reserve blank horizontal space beyond its content."
+        )
+        XCTAssertFalse(
+            dayPlanSource.contains(".truncationMode(.middle)"),
+            "Go to date should switch to its icon before the regular label is ellipsized."
         )
         XCTAssertTrue(dayPlanSource.contains(".layoutPriority(3)"))
         XCTAssertTrue(dayPlanSource.contains("inspectorRangePickerMinimumAvailableWidth"))

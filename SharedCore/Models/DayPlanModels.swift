@@ -1,6 +1,12 @@
 import Foundation
 import SwiftData
 
+enum DayPlanBlockPlacementSource: String, Codable, Sendable {
+    case automatic
+    case manual
+    case legacy
+}
+
 struct DayPlanBlock: Identifiable, Codable, Equatable, Sendable {
     static let minimumDurationMinutes = 15
     static let minimumStoredDurationMinutes = 1
@@ -15,6 +21,20 @@ struct DayPlanBlock: Identifiable, Codable, Equatable, Sendable {
     var emojiSnapshot: String?
     var createdAt: Date
     var updatedAt: Date
+    var placementSource: DayPlanBlockPlacementSource
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case taskID
+        case dayKey
+        case startMinute
+        case durationMinutes
+        case titleSnapshot
+        case emojiSnapshot
+        case createdAt
+        case updatedAt
+        case placementSource
+    }
 
     init(
         id: UUID = UUID(),
@@ -26,6 +46,7 @@ struct DayPlanBlock: Identifiable, Codable, Equatable, Sendable {
         emojiSnapshot: String? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
+        placementSource: DayPlanBlockPlacementSource = .manual,
         minimumDurationMinutes: Int = Self.minimumDurationMinutes
     ) {
         let sanitizedStartMinute = Self.clampedStartMinute(
@@ -47,6 +68,27 @@ struct DayPlanBlock: Identifiable, Codable, Equatable, Sendable {
         self.emojiSnapshot = emojiSnapshot?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.placementSource = placementSource
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try container.decode(UUID.self, forKey: .id),
+            taskID: try container.decode(UUID.self, forKey: .taskID),
+            dayKey: try container.decode(String.self, forKey: .dayKey),
+            startMinute: try container.decode(Int.self, forKey: .startMinute),
+            durationMinutes: try container.decode(Int.self, forKey: .durationMinutes),
+            titleSnapshot: try container.decode(String.self, forKey: .titleSnapshot),
+            emojiSnapshot: try container.decodeIfPresent(String.self, forKey: .emojiSnapshot),
+            createdAt: try container.decode(Date.self, forKey: .createdAt),
+            updatedAt: try container.decode(Date.self, forKey: .updatedAt),
+            placementSource: try container.decodeIfPresent(
+                DayPlanBlockPlacementSource.self,
+                forKey: .placementSource
+            ) ?? .legacy,
+            minimumDurationMinutes: Self.minimumStoredDurationMinutes
+        )
     }
 
     var endMinute: Int {
@@ -87,6 +129,7 @@ final class DayPlanBlockRecord {
     var emojiSnapshot: String?
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
+    var placementSourceRawValue: String = DayPlanBlockPlacementSource.legacy.rawValue
 
     init(
         id: UUID = UUID(),
@@ -97,7 +140,8 @@ final class DayPlanBlockRecord {
         titleSnapshot: String,
         emojiSnapshot: String? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        placementSource: DayPlanBlockPlacementSource = .manual
     ) {
         apply(
             DayPlanBlock(
@@ -110,6 +154,7 @@ final class DayPlanBlockRecord {
                 emojiSnapshot: emojiSnapshot,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                placementSource: placementSource,
                 minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             )
         )
@@ -125,8 +170,14 @@ final class DayPlanBlockRecord {
             titleSnapshot: block.titleSnapshot,
             emojiSnapshot: block.emojiSnapshot,
             createdAt: block.createdAt,
-            updatedAt: block.updatedAt
+            updatedAt: block.updatedAt,
+            placementSource: block.placementSource
         )
+    }
+
+    var placementSource: DayPlanBlockPlacementSource {
+        get { DayPlanBlockPlacementSource(rawValue: placementSourceRawValue) ?? .legacy }
+        set { placementSourceRawValue = newValue.rawValue }
     }
 
     var detachedBlock: DayPlanBlock {
@@ -140,6 +191,7 @@ final class DayPlanBlockRecord {
             emojiSnapshot: emojiSnapshot,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            placementSource: placementSource,
             minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
         )
     }
@@ -154,6 +206,7 @@ final class DayPlanBlockRecord {
         emojiSnapshot = block.emojiSnapshot
         createdAt = block.createdAt
         updatedAt = block.updatedAt
+        placementSource = block.placementSource
     }
 }
 
@@ -356,6 +409,7 @@ enum DayPlanStorage {
                 emojiSnapshot: block.emojiSnapshot,
                 createdAt: block.createdAt,
                 updatedAt: block.updatedAt,
+                placementSource: block.placementSource,
                 minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             )
             guard let existingBlock = blocksByID[sanitizedBlock.id] else {
@@ -453,8 +507,7 @@ enum DayPlanAutomaticBlockSync {
                       on: date,
                       calendar: calendar
                   ),
-                  record.startMinute == previousPlacement.startMinute,
-                  record.durationMinutes == previousPlacement.durationMinutes
+                  isAutomaticallyManaged(record, matching: previousPlacement)
             else {
                 continue
             }
@@ -484,6 +537,7 @@ enum DayPlanAutomaticBlockSync {
                     emojiSnapshot: record.emojiSnapshot,
                     createdAt: record.createdAt,
                     updatedAt: Date(),
+                    placementSource: .automatic,
                     minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
                 )
             )
@@ -491,6 +545,22 @@ enum DayPlanAutomaticBlockSync {
         }
 
         return didChange
+    }
+
+    private static func isAutomaticallyManaged(
+        _ record: DayPlanBlockRecord,
+        matching previousPlacement: Placement
+    ) -> Bool {
+        switch record.placementSource {
+        case .automatic:
+            return true
+        case .manual:
+            return false
+        case .legacy:
+            let matchesPreviousPlacement = record.startMinute == previousPlacement.startMinute
+                && record.durationMinutes == previousPlacement.durationMinutes
+            return matchesPreviousPlacement || record.createdAt == record.updatedAt
+        }
     }
 
     private static func automaticPlacement(

@@ -272,7 +272,8 @@ enum SettingsRoutineDataBackupMapping {
             titleSnapshot: record.titleSnapshot,
             emojiSnapshot: record.emojiSnapshot,
             createdAt: record.createdAt,
-            updatedAt: record.updatedAt
+            updatedAt: record.updatedAt,
+            placementSourceRawValue: record.placementSourceRawValue
         )
     }
 

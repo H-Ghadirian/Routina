@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0197 — Measure the active header variant](0197-measure-the-active-header-variant.md)
+- [0196 — Persist automatic placement provenance](0196-persist-automatic-placement-provenance.md)
 - [0195 — Show icon-only before date-label truncation](0195-show-icon-only-before-date-label-truncation.md)
 - [0194 — Rebase automatic Planner blocks after schedule edits](0194-rebase-automatic-planner-blocks-after-schedule-edits.md)
 - [0193 — Keep form section catalogs complete](0193-keep-form-section-catalogs-complete.md)

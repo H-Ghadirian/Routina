@@ -808,7 +808,10 @@ enum SettingsRoutineDataImportEntityInserter {
                 titleSnapshot: block.titleSnapshot,
                 emojiSnapshot: block.emojiSnapshot,
                 createdAt: block.createdAt,
-                updatedAt: block.updatedAt
+                updatedAt: block.updatedAt,
+                placementSource: block.placementSourceRawValue.flatMap(
+                    DayPlanBlockPlacementSource.init(rawValue:)
+                ) ?? .legacy
             )
             context.insert(importedBlock)
             importedCount += 1

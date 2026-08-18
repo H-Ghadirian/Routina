@@ -155,7 +155,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Turn intention into a visual day without changing every task into a deadline.
 
-**Desired experience:** The Planner distinguishes fixed schedule, all-day intent, date-only planning, and flexible work. Items can be placed, moved, reviewed, or removed from the plan while retaining their original task meaning. Each timed placement appears once; synchronization must not multiply one block into several overlapping copies. On macOS, when the header becomes too narrow for the `Go to date` label, the control stays available as a calendar icon instead of showing an ellipsized date.
+**Desired experience:** The Planner distinguishes fixed schedule, all-day intent, date-only planning, and flexible work. Items can be placed, moved, reviewed, or removed from the plan while retaining their original task meaning. Editing a task's fixed scheduled time immediately moves its automatically generated block, while a block the person deliberately moved or resized remains where they placed it. Each timed placement appears once; synchronization must not multiply one block into several overlapping copies. On macOS, when the header becomes too narrow for the `Go to date` label, the control stays available as a calendar icon instead of showing an ellipsized date.
 
 **Successful outcome:** The person can see whether the day fits and adjust before committing attention.
 

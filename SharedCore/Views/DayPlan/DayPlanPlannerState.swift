@@ -409,30 +409,19 @@ final class DayPlanPlannerState: ObservableObject {
 
                 if let existingIndex = dayBlocks.firstIndex(where: { $0.taskID == task.id }) {
                     let existingBlock = dayBlocks[existingIndex]
-                    guard shouldRefreshScheduledBlock(
+                    guard shouldAutomaticallyManageScheduledBlock(
                         existingBlock,
                         scheduledStartMinute: startMinute,
                         scheduledDurationMinutes: durationMinutes
                     ) else {
                         continue
                     }
-                    guard !hasConflict(
-                        in: dayBlocks,
-                        ignoring: existingBlock.id,
-                        startMinute: startMinute,
-                        durationMinutes: durationMinutes
-                    ) else {
+                    guard existingBlock.placementSource != .automatic
+                        || existingBlock.startMinute != startMinute
+                        || existingBlock.durationMinutes != durationMinutes
+                    else {
                         continue
                     }
-                    guard !isBlocked(
-                        dayKey: dayKey,
-                        startMinute: startMinute,
-                        durationMinutes: durationMinutes,
-                        blockedIntervalsByDayKey: blockedIntervalsByDayKey
-                    ) else {
-                        continue
-                    }
-
                     dayBlocks[existingIndex] = DayPlanBlock(
                         id: existingBlock.id,
                         taskID: task.id,
@@ -443,6 +432,7 @@ final class DayPlanPlannerState: ObservableObject {
                         emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
                         createdAt: existingBlock.createdAt,
                         updatedAt: now,
+                        placementSource: .automatic,
                         minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
                     )
                     didChangeDay = true
@@ -468,6 +458,7 @@ final class DayPlanPlannerState: ObservableObject {
                         emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
                         createdAt: now,
                         updatedAt: now,
+                        placementSource: .automatic,
                         minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
                     )
                 )
@@ -1370,22 +1361,21 @@ final class DayPlanPlannerState: ObservableObject {
         )
     }
 
-    private func shouldRefreshScheduledBlock(
+    private func shouldAutomaticallyManageScheduledBlock(
         _ block: DayPlanBlock,
         scheduledStartMinute: Int,
         scheduledDurationMinutes: Int
     ) -> Bool {
-        guard block.startMinute == scheduledStartMinute,
-              block.durationMinutes > scheduledDurationMinutes
-        else {
+        switch block.placementSource {
+        case .automatic:
+            return true
+        case .manual:
             return false
+        case .legacy:
+            let matchesCurrentPlacement = block.startMinute == scheduledStartMinute
+                && block.durationMinutes == scheduledDurationMinutes
+            return matchesCurrentPlacement || block.createdAt == block.updatedAt
         }
-
-        return block.durationMinutes == 60
-            || (
-                scheduledDurationMinutes < DayPlanBlock.minimumDurationMinutes
-                    && block.durationMinutes == DayPlanBlock.minimumDurationMinutes
-            )
     }
 
     private func removeStaleScheduledBlocks(

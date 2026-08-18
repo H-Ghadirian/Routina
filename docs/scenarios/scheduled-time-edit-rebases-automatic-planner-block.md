@@ -1,7 +1,7 @@
 ## Scheduled time edits rebase automatic Planner blocks
 
 Area: Tasks / Planner / Recurrence
-Decision links: [0375](../decisions/0375-split-time-blocks-from-available-windows.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0375](../decisions/0375-split-time-blocks-from-available-windows.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0607](../decisions/0607-persist-planner-placement-ownership.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
@@ -10,7 +10,13 @@ Given a task has an automatic timed Planner block at 11:15
 And the task-detail companion pane is open
 When the person edits the task's scheduled time to 10:45 and saves
 Then the routine-update notification refreshes the visible Planner data immediately
-And the block moves to 10:45 when it still matches the previous automatic placement
+And the block moves to 10:45 because its persisted placement source is automatic
+
+Given a legacy automatic block still shows 11:15 after an earlier schedule edit to 10:45
+When the person edits the scheduled time again to 09:45
+Then the untouched legacy block is recognized as automatic and repaired to 09:45 immediately
+And it is persisted with automatic placement provenance for later edits
+And the scheduled block uses 09:45 even when that fixed schedule overlaps another planned block
 
 Given the person previously moved or resized that task's Planner block
 When the person edits the task's scheduled time
