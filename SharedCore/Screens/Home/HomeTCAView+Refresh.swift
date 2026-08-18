@@ -79,7 +79,9 @@ extension HomeTCAView {
 #if os(macOS)
             .onChange(of: shouldDeferRoutineUpdateRefresh) { _, shouldDefer in
                 guard !shouldDefer else { return }
-                requestDeferredRoutineUpdateRefreshIfNeeded()
+                scheduleDeferredRoutineUpdateRefreshRetry(
+                    minimumDelayMilliseconds: taskDetailTransitionQuietDelayMilliseconds
+                )
             }
 #endif
     }
@@ -141,6 +143,10 @@ extension HomeTCAView {
 
     @MainActor
     private var routineUpdateCoalescingDelayMilliseconds: Int64 {
+        450
+    }
+
+    private var taskDetailTransitionQuietDelayMilliseconds: Int64 {
         450
     }
 

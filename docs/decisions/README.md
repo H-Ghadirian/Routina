@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0608](0608-keep-mac-task-detail-close-transition-free-of-history-work.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0296](0296-present-mac-task-details-as-planner-inspector.md):** closing the Mac task-detail companion pane keeps adaptive range changes free of Focus-history reconciliation, batches changed Focus blocks by day, skips no-op saves, and releases deferred Home refresh only after the pane transition quiet window.
+
 - **[0607](0607-persist-planner-placement-ownership.md) refines [0375](0375-split-time-blocks-from-available-windows.md):** timed Planner blocks persist whether schedule metadata generated them or the person owns their placement; schedule edits always rebase automatic blocks, while legacy untouched blocks can be recovered and manual placements remain fixed.
 
 - **[0606](0606-show-icon-only-go-to-date-button-before-label-truncation.md) refines [0320](0320-hide-planner-range-picker-in-tight-inspector-layouts.md) and [0305](0305-hide-planner-range-picker-when-header-cannot-fit.md):** the macOS Planner measures compact and regular variants of the active header row, retaining the range picker when its compact row fits and switching `Go to date` to an icon-only calendar button before its intrinsic date label can ellipsize; accessibility remains intact.
@@ -745,6 +747,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0608](0608-keep-mac-task-detail-close-transition-free-of-history-work.md) | Keep Mac Task Detail Close Transitions Free of History Work | Accepted | 2026-08-18 |
 | [0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md) | Expose Time-Based Ladder Values in Task Forms and Details | Accepted | 2026-08-18 |
 | [0603](0603-start-mac-focus-from-one-recalling-sheet.md) | Start Mac Focus From One Recalling Sheet | Accepted | 2026-08-17 |
 | [0602](0602-preserve-durable-project-investigation-findings.md) | Preserve Durable Project Investigation Findings | Accepted | 2026-08-17 |

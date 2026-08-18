@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0199 — Separate layout transitions from history reconciliation](0199-separate-layout-transitions-from-history-reconciliation.md)
 - [0198 — Namespace identities across Task Ladder row kinds](0198-namespace-identities-across-task-ladder-row-kinds.md)
 - [0197 — Measure the active header variant](0197-measure-the-active-header-variant.md)
 - [0196 — Persist automatic placement provenance](0196-persist-automatic-placement-provenance.md)

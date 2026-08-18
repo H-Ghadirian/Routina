@@ -4192,7 +4192,13 @@ struct DayPlanPlannerStateTests {
             in: context
         )
 
-        DayPlanFocusSessionPlannerSync.reconcileCountUpFocusSegments(
+        let persistedDayCount = DayPlanFocusSessionPlannerSync.reconcileCountUpFocusSegments(
+            for: [session],
+            tasks: [],
+            calendar: calendar,
+            context: context
+        )
+        let repeatedPersistedDayCount = DayPlanFocusSessionPlannerSync.reconcileCountUpFocusSegments(
             for: [session],
             tasks: [],
             calendar: calendar,
@@ -4201,6 +4207,8 @@ struct DayPlanPlannerStateTests {
 
         let blocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
 
+        #expect(persistedDayCount == 1)
+        #expect(repeatedPersistedDayCount == 0)
         #expect(blocks.count == 3)
         #expect(blocks.map(\.titleSnapshot) == ["#HSE", "#HSE", "#HSE"])
         #expect(blocks.map(\.startMinute) == [9 * 60 + 47, 15 * 60 + 35, 16 * 60 + 9])

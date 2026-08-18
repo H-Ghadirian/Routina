@@ -913,11 +913,41 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(refreshSource.contains("scheduleDeferredRoutineUpdateRefreshRetry()"))
         XCTAssertTrue(refreshSource.contains("hasDeferredRoutineUpdateRefresh = true"))
         XCTAssertTrue(refreshSource.contains("requestDeferredRoutineUpdateRefreshIfNeeded()"))
+        XCTAssertTrue(
+            refreshSource.contains(
+                "minimumDelayMilliseconds: taskDetailTransitionQuietDelayMilliseconds"
+            ),
+            "Closing Task Details should let its pane transition finish before a deferred Home reload begins."
+        )
+        XCTAssertTrue(refreshSource.contains("private var taskDetailTransitionQuietDelayMilliseconds"))
         XCTAssertTrue(macHomeSource.contains("@State var hasDeferredRoutineUpdateRefresh = false"))
         XCTAssertTrue(macHomeSource.contains("@State var deferredRoutineUpdateRefreshTask: Task<Void, Never>?"))
         XCTAssertFalse(
             refreshSource.contains("publisher(for: .routineDidUpdate)\n                    .receive(on: RunLoop.main)\n            ) { _ in\n                requestRefresh()"),
             "Cloud routine-update pulses should not synchronously reload Home while a Mac task detail pane is being scrolled."
+        )
+    }
+
+    func testPlannerAdaptiveRangeChangeDoesNotReconcileFocusHistory() throws {
+        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        guard
+            let rangeChangeStart = source.range(of: ".onChange(of: planner.visibleRangeMode)"),
+            let dataChangeStart = source.range(
+                of: ".onChange(of: dataRevision)",
+                range: rangeChangeStart.upperBound..<source.endIndex
+            )
+        else {
+            XCTFail("Expected Planner visible-range and data-revision lifecycle handlers")
+            return
+        }
+
+        let rangeChangeSource = String(
+            source[rangeChangeStart.lowerBound..<dataChangeStart.lowerBound]
+        )
+        XCTAssertTrue(rangeChangeSource.contains("planner.loadBlocks("))
+        XCTAssertFalse(
+            rangeChangeSource.contains("reconcileCountUpFocusSegments()"),
+            "A width-driven Day/3 Days/Week change must not walk and persist the complete Focus history."
         )
     }
 

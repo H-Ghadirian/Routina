@@ -930,15 +930,17 @@ enum DayPlanFocusSessionPlannerSync {
         )
     }
 
+    @discardableResult
     static func reconcileCountUpFocusSegments(
         for sessions: [FocusSession],
         tasks: [RoutineTask],
         calendar: Calendar,
         context: ModelContext
-    ) {
-        guard !sessions.isEmpty else { return }
+    ) -> Int {
+        guard !sessions.isEmpty else { return 0 }
 
         let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
+        var reconciledBlocks: [DayPlanBlock] = []
         for session in sessions {
             guard session.plannedDurationSeconds <= 0,
                   session.abandonedAt == nil,
@@ -971,19 +973,62 @@ enum DayPlanFocusSessionPlannerSync {
             )
             guard !segments.isEmpty else { continue }
 
-            for segment in segments {
-                let block = focusSegmentBlock(
-                    session: session,
-                    taskID: taskID,
-                    title: title,
-                    emoji: emoji,
-                    segmentStartedAt: segment.startedAt,
-                    durationSeconds: segment.durationSeconds,
-                    calendar: calendar
-                )
-                upsertBlock(block, context: context)
-            }
+            reconciledBlocks.append(
+                contentsOf: segments.map { segment in
+                    focusSegmentBlock(
+                        session: session,
+                        taskID: taskID,
+                        title: title,
+                        emoji: emoji,
+                        segmentStartedAt: segment.startedAt,
+                        durationSeconds: segment.durationSeconds,
+                        calendar: calendar
+                    )
+                }
+            )
         }
+
+        return upsertBlocks(reconciledBlocks, context: context)
+    }
+
+    @discardableResult
+    private static func upsertBlocks(
+        _ incomingBlocks: [DayPlanBlock],
+        context: ModelContext
+    ) -> Int {
+        guard !incomingBlocks.isEmpty else { return 0 }
+
+        let incomingByDayKey = Dictionary(grouping: incomingBlocks, by: \.dayKey)
+        var persistedDayCount = 0
+
+        for dayKey in incomingByDayKey.keys.sorted() {
+            guard let incomingDayBlocks = incomingByDayKey[dayKey] else { continue }
+
+            var storedBlocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+            var storedIndexByID: [UUID: Int] = [:]
+            for (index, block) in storedBlocks.enumerated() {
+                storedIndexByID[block.id] = index
+            }
+
+            var didChange = false
+            for block in incomingDayBlocks {
+                if let index = storedIndexByID[block.id] {
+                    guard storedBlocks[index] != block else { continue }
+                    storedBlocks[index] = block
+                    didChange = true
+                } else {
+                    storedIndexByID[block.id] = storedBlocks.count
+                    storedBlocks.append(block)
+                    didChange = true
+                }
+            }
+
+            guard didChange else { continue }
+            DayPlanStorage.saveBlocks(storedBlocks, forDayKey: dayKey, context: context)
+            persistedDayCount += 1
+        }
+
+        return persistedDayCount
     }
 
     @discardableResult
@@ -1739,13 +1784,7 @@ enum DayPlanFocusSessionPlannerSync {
     }
 
     private static func upsertBlock(_ block: DayPlanBlock, context: ModelContext) {
-        var blocks = DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context)
-        if let index = blocks.firstIndex(where: { $0.id == block.id }) {
-            blocks[index] = block
-        } else {
-            blocks.append(block)
-        }
-        DayPlanStorage.saveBlocks(blocks, forDayKey: block.dayKey, context: context)
+        upsertBlocks([block], context: context)
     }
 
     private static func deleteBlock(id: UUID, dayKey: String, context: ModelContext) {

@@ -117,6 +117,22 @@ And it waits for the semantic update burst to settle before performing one refre
 And an automatic refresh does not enter the user-visible loading state
 And the manual Refresh Backlog control remains immediately available when no refresh is in progress
 
+### Mac Task Detail Closes Without Historical Refresh Work
+
+Area: Tasks / Planner / Performance
+Decision links: [0608](../decisions/0608-keep-mac-task-detail-close-transition-free-of-history-work.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0296](../decisions/0296-present-mac-task-details-as-planner-inspector.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Planner shows a right-side task-detail companion pane and has count-up Focus history
+When the person closes Task Details and Planner widens from Day to 3 Days or Week
+Then the adaptive range change reloads visible Planner blocks without reconciling all Focus history
+And any Focus reconciliation caused by a real data revision saves each changed day at most once
+And an identical repeated reconciliation performs no Planner-block save
+And a deferred Home routine update waits until the pane transition quiet window has elapsed
+
 ### Flag Rules Can Keep Tasks Out Of The Mac Task Ladder
 
 Area: Tasks / Settings / Mac Task Ladder
