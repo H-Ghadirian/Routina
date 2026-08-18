@@ -857,7 +857,7 @@ final class PerformanceRegressionTests: XCTestCase {
             "Header available width should be measured from the bounded container, not the potentially overflowing controls row."
         )
         XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDisplayModePicker"))
-        XCTAssertTrue(dayPlanSource.contains("usesCompactMacDatePickerButton"))
+        XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDatePickerButton"))
         XCTAssertTrue(dayPlanSource.contains("macHeaderCollapsedRegularDateControlsWidthProbe"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMinimumWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
@@ -869,11 +869,11 @@ final class PerformanceRegressionTests: XCTestCase {
             "Planner Timeline should render the same Go to date sidebar as Calendar when the date button is pressed."
         )
         XCTAssertTrue(
-            dayPlanSource.contains("usesCompactWidth ? 154 : nil"),
-            "The date/range button should hug its content by default and only cap width in compact inspector layouts."
+            dayPlanSource.contains("usesCompactWidth ? 34 : nil"),
+            "The date/range button should switch to a compact icon-only hit target before its label truncates."
         )
         XCTAssertFalse(
-            dayPlanSource.contains("usesCompactMacDatePickerButton ? nil : 210"),
+            dayPlanSource.contains("usesIconOnlyMacDatePickerButton ? nil : 210"),
             "The regular date/range button should not reserve blank horizontal space beyond its content."
         )
         XCTAssertTrue(dayPlanSource.contains(".layoutPriority(3)"))
@@ -881,7 +881,7 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(dayPlanSource.contains("iconOnlyDisplayModePickerMaximumAvailableWidth"))
         XCTAssertTrue(dayPlanSource.contains("compactDatePickerButtonMaximumAvailableWidth"))
         XCTAssertTrue(dayPlanSource.contains("shouldUseIconOnlyDisplayModePicker"))
-        XCTAssertTrue(dayPlanSource.contains("shouldUseCompactDatePickerButton"))
+        XCTAssertTrue(dayPlanSource.contains("shouldUseIconOnlyDatePickerButton"))
     }
 
     func testHomeDoneStatsDoesNotRewalkLogsForEachOutcome() throws {

@@ -517,23 +517,20 @@ struct DayPlanPlannerStateTests {
             )
         )
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 820,
-                isTaskDetailInspectorPresented: true,
                 collapsedRegularDateControlsWidth: 760
             ) == false
         )
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 620,
-                isTaskDetailInspectorPresented: true,
                 collapsedRegularDateControlsWidth: 580
             ) == false
         )
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
                 availableWidth: 620,
-                isTaskDetailInspectorPresented: true,
                 collapsedRegularDateControlsWidth: 700
             )
         )
@@ -541,6 +538,28 @@ struct DayPlanPlannerStateTests {
             DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
                 availableWidth: 820,
                 isTaskDetailInspectorPresented: false
+            ) == false
+        )
+    }
+
+    @Test
+    func datePickerButtonSwitchesToIconOnlyBeforeRegularDateTextOverflows() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                availableWidth: 760,
+                collapsedRegularDateControlsWidth: 760
+            ) == false
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                availableWidth: 759,
+                collapsedRegularDateControlsWidth: 760
+            )
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                availableWidth: 900,
+                collapsedRegularDateControlsWidth: 760
             ) == false
         )
     }

@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0195 — Show icon-only before date-label truncation](0195-show-icon-only-before-date-label-truncation.md)
 - [0194 — Rebase automatic Planner blocks after schedule edits](0194-rebase-automatic-planner-blocks-after-schedule-edits.md)
 - [0193 — Keep form section catalogs complete](0193-keep-form-section-catalogs-complete.md)
 - [0192 — Keep recorded Done rows on completion time](0192-keep-recorded-done-rows-on-completion-time.md)

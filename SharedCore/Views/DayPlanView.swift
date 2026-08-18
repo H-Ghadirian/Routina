@@ -719,8 +719,7 @@ private struct DayPlanHeaderView: View {
     private var macHeaderCollapsedRegularDateControlsWidthProbe: some View {
         macHeaderFittingControls(
             showsRangePicker: false,
-            forceIconOnlyDisplayModePicker: true,
-            forceCompactDatePickerButton: false
+            forceIconOnlyDatePickerButton: false
         )
         .fixedSize(horizontal: true, vertical: false)
         .hidden()
@@ -738,7 +737,7 @@ private struct DayPlanHeaderView: View {
     private func macHeaderFittingControls(
         showsRangePicker: Bool,
         forceIconOnlyDisplayModePicker: Bool? = nil,
-        forceCompactDatePickerButton: Bool? = nil
+        forceIconOnlyDatePickerButton: Bool? = nil
     ) -> some View {
         HStack(alignment: .center, spacing: 12) {
             plannerViewControlsCluster(
@@ -746,7 +745,7 @@ private struct DayPlanHeaderView: View {
                 forceIconOnlyDisplayModePicker: forceIconOnlyDisplayModePicker
             )
             Color.clear.frame(width: 16, height: 1)
-            plannerUtilityCluster(forceCompactDatePickerButton: forceCompactDatePickerButton)
+            plannerUtilityCluster(forceIconOnlyDatePickerButton: forceIconOnlyDatePickerButton)
         }
     }
 
@@ -792,10 +791,10 @@ private struct DayPlanHeaderView: View {
     }
 
     private var plannerUtilityCluster: some View {
-        plannerUtilityCluster(forceCompactDatePickerButton: nil)
+        plannerUtilityCluster(forceIconOnlyDatePickerButton: nil)
     }
 
-    private func plannerUtilityCluster(forceCompactDatePickerButton: Bool?) -> some View {
+    private func plannerUtilityCluster(forceIconOnlyDatePickerButton: Bool?) -> some View {
         HStack(alignment: .center, spacing: 8) {
 #if os(macOS)
             if let macFocusControl {
@@ -814,7 +813,7 @@ private struct DayPlanHeaderView: View {
 #endif
 
             if showsPlannerDatePickerButton {
-                plannerDatePickerButton(forceCompactWidth: forceCompactDatePickerButton)
+                plannerDatePickerButton(forceIconOnly: forceIconOnlyDatePickerButton)
             }
         }
     }
@@ -954,13 +953,13 @@ private struct DayPlanHeaderView: View {
     }
 
     private var plannerDatePickerButton: some View {
-        plannerDatePickerButton(forceCompactWidth: nil)
+        plannerDatePickerButton(forceIconOnly: nil)
     }
 
-    private func plannerDatePickerButton(forceCompactWidth: Bool?) -> some View {
+    private func plannerDatePickerButton(forceIconOnly: Bool?) -> some View {
         let title = plannerDatePickerButtonTitle
         let isPresented = isDatePickerSidebarPresented.wrappedValue
-        let usesCompactWidth = forceCompactWidth ?? usesCompactMacDatePickerButton
+        let usesIconOnly = forceIconOnly ?? usesIconOnlyMacDatePickerButton
 
         return Button {
             withAnimation(.easeInOut(duration: 0.16)) {
@@ -976,24 +975,26 @@ private struct DayPlanHeaderView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.accentColor)
 
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .minimumScaleFactor(0.85)
-                    .foregroundStyle(.primary)
+                if !usesIconOnly {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .minimumScaleFactor(0.85)
+                        .foregroundStyle(.primary)
 
-                Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.tertiary)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .frame(minHeight: 34)
             .frame(
-                minWidth: plannerDatePickerButtonMinimumWidth,
-                maxWidth: plannerDatePickerButtonMaximumWidth(usesCompactWidth: usesCompactWidth),
-                alignment: .leading
+                minWidth: usesIconOnly ? 34 : plannerDatePickerButtonMinimumWidth,
+                maxWidth: plannerDatePickerButtonMaximumWidth(usesCompactWidth: usesIconOnly),
+                alignment: usesIconOnly ? .center : .leading
             )
             .routinaGlassCard(
                 cornerRadius: 8,
@@ -1034,7 +1035,7 @@ private struct DayPlanHeaderView: View {
     }
 
     private func plannerDatePickerButtonMaximumWidth(usesCompactWidth: Bool) -> CGFloat? {
-        usesCompactWidth ? 154 : nil
+        usesCompactWidth ? 34 : nil
     }
 
     private var calendarFilterAvailability: DayPlanCalendarFilterAvailability {
@@ -1145,11 +1146,10 @@ private struct DayPlanHeaderView: View {
 #endif
     }
 
-    private var usesCompactMacDatePickerButton: Bool {
+    private var usesIconOnlyMacDatePickerButton: Bool {
 #if os(macOS)
-        DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
+        DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
             availableWidth: Double(effectiveMacHeaderAvailableWidth),
-            isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
             collapsedRegularDateControlsWidth: Double(macHeaderCollapsedRegularDateControlsWidth)
         )
 #else
@@ -1201,26 +1201,22 @@ enum DayPlanHeaderRangePickerVisibility {
         return availableWidth < iconOnlyDisplayModePickerMaximumAvailableWidth
     }
 
-    static func shouldUseCompactDatePickerButton(
+    static func shouldUseIconOnlyDatePickerButton(
         availableWidth: Double,
-        isTaskDetailInspectorPresented: Bool,
         collapsedRegularDateControlsWidth: Double
     ) -> Bool {
-        guard isTaskDetailInspectorPresented, availableWidth > 0 else { return false }
+        guard availableWidth > 0 else { return false }
         guard collapsedRegularDateControlsWidth > 0 else {
             return availableWidth < compactDatePickerButtonMaximumAvailableWidth
         }
-        guard availableWidth < compactDatePickerButtonMaximumAvailableWidth else { return false }
         return collapsedRegularDateControlsWidth > availableWidth + 0.5
     }
 
-    static func shouldUseCompactDatePickerButton(
-        availableWidth: Double,
-        isTaskDetailInspectorPresented: Bool
+    static func shouldUseIconOnlyDatePickerButton(
+        availableWidth: Double
     ) -> Bool {
-        shouldUseCompactDatePickerButton(
+        shouldUseIconOnlyDatePickerButton(
             availableWidth: availableWidth,
-            isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
             collapsedRegularDateControlsWidth: 0
         )
     }
