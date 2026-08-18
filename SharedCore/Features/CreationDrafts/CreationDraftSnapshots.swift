@@ -94,6 +94,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var recurrenceDayOfMonth = 1
     var recurrenceWeekdays: [Int] = []
     var recurrenceDaysOfMonth: [Int] = []
+    var autoPauseAfterCompletion: Bool?
     var autoAssumeDailyDone = false
     var hidesAssumedDoneCalendarBlock = false
     var autoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
@@ -173,6 +174,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         recurrenceDayOfMonth = schedule.recurrenceDayOfMonth
         recurrenceWeekdays = schedule.recurrenceWeekdays
         recurrenceDaysOfMonth = schedule.recurrenceDaysOfMonth
+        autoPauseAfterCompletion = schedule.scheduleMode.taskType == .todo
+            ? nil
+            : basics.autoPauseAfterCompletion
         autoAssumeDailyDone = schedule.autoAssumeDailyDone
         hidesAssumedDoneCalendarBlock = schedule.hidesAssumedDoneCalendarBlock
         autoAssumeDoneTimeOfDay = schedule.autoAssumeDoneTimeOfDay
@@ -232,6 +236,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             || recurrenceTimeOfDay != .defaultValue
             || recurrenceTimeRangeStart != RoutineTimeRange.defaultValue.start
             || recurrenceTimeRangeEnd != RoutineTimeRange.defaultValue.end
+            || autoPauseAfterCompletion == true
             || autoAssumeDailyDone
             || hidesAssumedDoneCalendarBlock
             || autoAssumeDoneTimeOfDay != RoutineAssumedCompletion.defaultDoneTimeOfDay
@@ -330,6 +335,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         if state.schedule.recurrenceDaysOfMonth.isEmpty {
             state.schedule.recurrenceDaysOfMonth = [state.schedule.recurrenceDayOfMonth]
         }
+        state.basics.autoPauseAfterCompletion = scheduleMode.taskType == .todo
+            ? false
+            : (autoPauseAfterCompletion ?? false)
         state.schedule.autoAssumeDailyDone = autoAssumeDailyDone
         state.schedule.hidesAssumedDoneCalendarBlock = hidesAssumedDoneCalendarBlock
         state.schedule.autoAssumeDoneTimeOfDay = autoAssumeDoneTimeOfDay

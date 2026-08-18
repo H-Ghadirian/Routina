@@ -89,6 +89,7 @@ final class RoutineTask {
     var taskChoiceComparisonCount: Int16 = 0
     var focusModeEnabled: Bool = false
     var trackingCadenceEnabled: Bool = true
+    var autoPauseAfterCompletion: Bool = false
     var trackingNudgesEnabled: Bool = true
     var showsTaskDetailHeatmap: Bool = false
     var showsTaskDetailHistory: Bool = false
@@ -527,6 +528,7 @@ final class RoutineTask {
         taskChoiceComparisonCount: Int16 = 0,
         focusModeEnabled: Bool = false,
         trackingCadenceEnabled: Bool = true,
+        autoPauseAfterCompletion: Bool = false,
         trackingNudgesEnabled: Bool = true,
         showsTaskDetailHeatmap: Bool = false,
         showsTaskDetailHistory: Bool = false,
@@ -651,6 +653,9 @@ final class RoutineTask {
         self.taskChoiceComparisonCount = max(taskChoiceComparisonCount, 0)
         self.focusModeEnabled = focusModeEnabled
         self.trackingCadenceEnabled = resolvedTrackingCadenceEnabled
+        self.autoPauseAfterCompletion = resolvedScheduleMode.taskType != .todo
+            && !resolvedTrackingCadenceEnabled
+            && autoPauseAfterCompletion
         self.trackingNudgesEnabled = resolvedScheduleMode.usesRoutineCadence
             ? resolvedTrackingCadenceEnabled && trackingNudgesEnabled
             : true
@@ -992,6 +997,7 @@ final class RoutineTask {
             taskChoiceComparisonCount: taskChoiceComparisonCount,
             focusModeEnabled: focusModeEnabled,
             trackingCadenceEnabled: trackingCadenceEnabled,
+            autoPauseAfterCompletion: autoPauseAfterCompletion,
             trackingNudgesEnabled: trackingNudgesEnabled,
             showsTaskDetailHeatmap: showsTaskDetailHeatmap,
             showsTaskDetailHistory: showsTaskDetailHistory,

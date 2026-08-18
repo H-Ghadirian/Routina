@@ -128,6 +128,7 @@ struct TaskDetailFeature: Reducer {
         var editStoryPoints: Int?
         var editFocusModeEnabled: Bool = false
         var editTrackingCadenceEnabled: Bool = true
+        var editAutoPauseAfterCompletion: Bool = false
         var editTrackingNudgesEnabled: Bool = true
         var taskLadderGroupHasChildren: Bool = false
         var editTaskLadderGroupEnabled: Bool = false
@@ -235,7 +236,9 @@ struct TaskDetailFeature: Reducer {
                 cadenceOverride = RoutineRecurrenceDraft.Cadence.none
             } else if editScheduleMode.taskType != .todo,
                       !editTrackingCadenceEnabled {
-                cadenceOverride = RoutineRecurrenceDraft.Cadence.none
+                cadenceOverride = editAutoPauseAfterCompletion
+                    ? .manual
+                    : RoutineRecurrenceDraft.Cadence.none
             } else if editScheduleMode.isChecklistDrivenMode {
                 cadenceOverride = .itemRunout
             } else {
@@ -1784,6 +1787,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .editTrackingCadenceEnabledChanged(isEnabled):
             state.editTrackingCadenceEnabled = isEnabled
+            if isEnabled {
+                state.editAutoPauseAfterCompletion = false
+            }
             if !isEnabled {
                 state.editTrackingNudgesEnabled = false
             }

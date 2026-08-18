@@ -197,6 +197,16 @@ enum CloudKitDirectPullTaskRecordParser {
             in: record,
             keys: ["ongoingSince", "ONGOINGSINCE", "zongoingsince", "ZONGOINGSINCE", "cd_ongoingsince"]
         )
+        let autoPauseAfterCompletionValue = boolValue(
+            in: record,
+            keys: [
+                "autoPauseAfterCompletion",
+                "AUTOPAUSEAFTERCOMPLETION",
+                "zautopauseaftercompletion",
+                "ZAUTOPAUSEAFTERCOMPLETION",
+                "cd_autopauseaftercompletion"
+            ]
+        )
         let autoAssumeDailyDoneValue = boolValue(
             in: record,
             keys: [
@@ -265,6 +275,26 @@ enum CloudKitDirectPullTaskRecordParser {
                 "zstorypoints",
                 "ZSTORYPOINTS",
                 "cd_storypoints"
+            ]
+        )
+        let trackingCadenceEnabledValue = boolValue(
+            in: record,
+            keys: [
+                "trackingCadenceEnabled",
+                "TRACKINGCADENCEENABLED",
+                "ztrackingcadenceenabled",
+                "ZTRACKINGCADENCEENABLED",
+                "cd_trackingcadenceenabled"
+            ]
+        )
+        let trackingNudgesEnabledValue = boolValue(
+            in: record,
+            keys: [
+                "trackingNudgesEnabled",
+                "TRACKINGNUDGESENABLED",
+                "ztrackingnudgesenabled",
+                "ZTRACKINGNUDGESENABLED",
+                "cd_trackingnudgesenabled"
             ]
         )
         let pressureValue = stringValue(
@@ -340,12 +370,15 @@ enum CloudKitDirectPullTaskRecordParser {
                 || sequenceStartedAtValue != nil
                 || activityStateRawValueValue != nil
                 || ongoingSinceValue != nil
+                || autoPauseAfterCompletionValue != nil
                 || pressureValue != nil
                 || pressureUpdatedAtValue != nil
                 || thinkingNeededValue != nil
                 || estimatedDurationMinutesValue != nil
                 || actualDurationMinutesValue != nil
                 || storyPointsValue != nil
+                || trackingCadenceEnabledValue != nil
+                || trackingNudgesEnabledValue != nil
                 || autoAssumeDailyDoneValue != nil
                 || hidesAssumedDoneCalendarBlockValue != nil
                 || autoAssumeDoneTimeOfDayHourValue != nil
@@ -422,6 +455,7 @@ enum CloudKitDirectPullTaskRecordParser {
             todoStateRawValue: todoStateRawValueValue,
             activityStateRawValue: activityStateRawValueValue,
             ongoingSince: ongoingSinceValue,
+            autoPauseAfterCompletion: autoPauseAfterCompletionValue,
             autoAssumeDailyDone: autoAssumeDailyDoneValue,
             hidesAssumedDoneCalendarBlock: hidesAssumedDoneCalendarBlockValue,
             autoAssumeDoneTimeOfDayHour: autoAssumeDoneTimeOfDayHourValue,
@@ -429,6 +463,8 @@ enum CloudKitDirectPullTaskRecordParser {
             estimatedDurationMinutes: estimatedDurationMinutesValue,
             actualDurationMinutes: RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutesValue),
             storyPoints: storyPointsValue,
+            trackingCadenceEnabled: trackingCadenceEnabledValue,
+            trackingNudgesEnabled: trackingNudgesEnabledValue,
             pressure: pressureValue,
             pressureUpdatedAt: pressureUpdatedAtValue,
             thinkingNeeded: thinkingNeededValue,

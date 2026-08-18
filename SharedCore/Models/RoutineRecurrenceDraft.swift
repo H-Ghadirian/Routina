@@ -3,6 +3,7 @@ import Foundation
 struct RoutineRecurrenceDraft: Equatable, Sendable {
     enum Cadence: String, CaseIterable, Equatable, Hashable, Sendable {
         case none
+        case manual
         case itemRunout
         case afterCompletion
         case scheduled
@@ -197,7 +198,7 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
 
     var validationIssue: ValidationIssue? {
         switch cadence {
-        case .none, .itemRunout:
+        case .none, .manual, .itemRunout:
             return nil
 
         case .afterCompletion:
@@ -237,6 +238,9 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
                 at: availability.timeOfDay,
                 timeRange: availability.timeRange
             )
+
+        case .manual:
+            return .interval(days: 1)
 
         case .itemRunout:
             return .interval(days: rollingIntervalDays)
@@ -445,6 +449,8 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         switch cadence {
         case .none:
             return "No automatic schedule. It becomes available again after completion."
+        case .manual:
+            return "Pause after completion. Resume it whenever you need it again."
         case .itemRunout:
             return "Checklist items set the repeat timing."
         case .afterCompletion:

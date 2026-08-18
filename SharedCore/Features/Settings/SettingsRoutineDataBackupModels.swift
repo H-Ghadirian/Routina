@@ -118,6 +118,7 @@ extension SettingsRoutineDataPersistence {
             var hasExplicitImportance: Bool?
             var hasExplicitUrgency: Bool?
             var trackingCadenceEnabled: Bool?
+            var autoPauseAfterCompletion: Bool?
             var trackingNudgesEnabled: Bool?
             var pressure: RoutineTaskPressure?
             var pressureUpdatedAt: Date?

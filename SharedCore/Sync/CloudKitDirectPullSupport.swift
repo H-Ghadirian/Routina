@@ -51,6 +51,7 @@ extension CloudKitDirectPullService {
         var todoStateRawValue: String?
         var activityStateRawValue: String?
         var ongoingSince: Date?
+        var autoPauseAfterCompletion: Bool?
         var autoAssumeDailyDone: Bool?
         var hidesAssumedDoneCalendarBlock: Bool?
         var autoAssumeDoneTimeOfDayHour: Int?
@@ -58,6 +59,8 @@ extension CloudKitDirectPullService {
         var estimatedDurationMinutes: Int?
         var actualDurationMinutes: Int?
         var storyPoints: Int?
+        var trackingCadenceEnabled: Bool?
+        var trackingNudgesEnabled: Bool?
         var pressure: RoutineTaskPressure?
         var pressureUpdatedAt: Date?
         var thinkingNeeded: RoutineTaskThinkingNeeded?

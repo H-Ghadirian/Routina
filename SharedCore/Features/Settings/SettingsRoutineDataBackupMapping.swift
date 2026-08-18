@@ -111,6 +111,7 @@ enum SettingsRoutineDataBackupMapping {
             hasExplicitImportance: task.hasExplicitImportance,
             hasExplicitUrgency: task.hasExplicitUrgency,
             trackingCadenceEnabled: task.trackingCadenceEnabled,
+            autoPauseAfterCompletion: task.autoPauseAfterCompletion,
             trackingNudgesEnabled: task.trackingNudgesEnabled,
             pressure: includesPressure ? task.pressure : nil,
             pressureUpdatedAt: includesPressure ? task.pressureUpdatedAt : nil,

@@ -716,6 +716,11 @@ extension RoutineTask {
         canceledAt = nil
         activityState = .idle
         ongoingSince = nil
+        if autoPauseAfterCompletion {
+            pausedAt = completedAt
+            pauseUntil = nil
+            snoozedUntil = nil
+        }
         if usesRollingScheduleAnchor && shouldUpdateScheduleAnchor(with: completedAt) {
             scheduleAnchor = completedAt
         }

@@ -114,6 +114,7 @@ extension TaskDetailFeature {
     }
 
     func removeCompletion(on completedDay: Date, from state: inout State) {
+        let removedLatestCompletionTimestamp = state.task.lastDone
         let removedLatestCompletion = state.task.lastDone.map {
             calendar.isDate($0, inSameDayAs: completedDay)
         } ?? false
@@ -131,6 +132,11 @@ extension TaskDetailFeature {
         if removedLatestCompletion {
             state.task.lastDone = remainingLatestCompletion
             state.task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
+            if state.task.autoPauseAfterCompletion,
+               state.task.pausedAt == removedLatestCompletionTimestamp {
+                state.task.pausedAt = nil
+                state.task.pauseUntil = nil
+            }
         }
 
         if state.task.canceledAt.map({ calendar.isDate($0, inSameDayAs: completedDay) }) == true {
@@ -162,6 +168,11 @@ extension TaskDetailFeature {
         if removedLatestCompletion {
             state.task.lastDone = remainingLatestCompletion
             state.task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
+            if state.task.autoPauseAfterCompletion,
+               state.task.pausedAt == timestamp {
+                state.task.pausedAt = nil
+                state.task.pauseUntil = nil
+            }
             state.task.refreshScheduleAnchorAfterRemovingLatestCompletion(
                 remainingLatestCompletion: remainingLatestCompletion
             )

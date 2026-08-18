@@ -98,6 +98,7 @@ extension TaskDetailFeature {
         state.editStoryPoints = state.task.storyPoints
         state.editFocusModeEnabled = state.task.focusModeEnabled
         state.editTrackingCadenceEnabled = state.task.trackingCadenceEnabled
+        state.editAutoPauseAfterCompletion = state.task.autoPauseAfterCompletion
         state.editTrackingNudgesEnabled = state.task.trackingNudgesEnabled
         state.tagCounterDisplayMode = appSettingsClient.tagCounterDisplayMode()
 

@@ -31,6 +31,7 @@ struct AddRoutineBasicsState: Equatable {
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
     var trackingCadenceEnabled: Bool = true
+    var autoPauseAfterCompletion: Bool = false
     var trackingNudgesEnabled: Bool = true
     var taskLadderGroupEnabled: Bool = false
 }
@@ -278,7 +279,9 @@ struct AddRoutineFeatureState: Equatable {
             cadenceOverride = RoutineRecurrenceDraft.Cadence.none
         } else if schedule.scheduleMode.taskType != .todo,
                   !basics.trackingCadenceEnabled {
-            cadenceOverride = RoutineRecurrenceDraft.Cadence.none
+            cadenceOverride = basics.autoPauseAfterCompletion
+                ? .manual
+                : RoutineRecurrenceDraft.Cadence.none
         } else if schedule.scheduleMode.isChecklistDrivenMode {
             cadenceOverride = .itemRunout
         } else {

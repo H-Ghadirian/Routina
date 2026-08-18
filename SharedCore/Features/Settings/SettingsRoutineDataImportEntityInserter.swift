@@ -320,6 +320,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 taskChoiceTieBreakScore: task.taskChoiceTieBreakScore ?? 0,
                 taskChoiceComparisonCount: task.taskChoiceComparisonCount ?? 0,
                 trackingCadenceEnabled: task.trackingCadenceEnabled ?? true,
+                autoPauseAfterCompletion: task.autoPauseAfterCompletion ?? false,
                 trackingNudgesEnabled: task.trackingNudgesEnabled ?? true,
                 showsTaskDetailHeatmap: task.showsTaskDetailHeatmap ?? false,
                 showsTaskDetailHistory: task.showsTaskDetailHistory ?? false,

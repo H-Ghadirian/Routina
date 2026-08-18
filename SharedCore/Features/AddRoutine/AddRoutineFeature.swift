@@ -788,6 +788,9 @@ struct AddRoutineFeature: Reducer {
 
         case let .trackingCadenceEnabledChanged(isEnabled):
             state.basics.trackingCadenceEnabled = isEnabled
+            if isEnabled {
+                state.basics.autoPauseAfterCompletion = false
+            }
             if !isEnabled {
                 state.basics.trackingNudgesEnabled = false
             }

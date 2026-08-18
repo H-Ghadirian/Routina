@@ -63,6 +63,49 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func whenNeededCompletionArchivesTaskAndUndoReactivatesIt() throws {
+        let context = makeInMemoryContext()
+        let completedAt = makeDate("2026-07-21T10:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Replace filter",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🧰",
+            trackingCadenceEnabled: false,
+            autoPauseAfterCompletion: true
+        )
+
+        let result = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: completedAt,
+                context: context,
+                calendar: makeTestCalendar()
+            )
+        )
+
+        #expect(result.result == .completedRoutine)
+        #expect(result.task.pausedAt == completedAt)
+        #expect(result.task.autoPauseAfterCompletion)
+        #expect(result.task.isArchived(referenceDate: completedAt))
+
+        let undoneTask = try #require(
+            try RoutineLogHistory.removeCompletion(
+                taskID: task.id,
+                on: completedAt,
+                context: context,
+                calendar: makeTestCalendar()
+            )
+        )
+
+        #expect(undoneTask.lastDone == nil)
+        #expect(undoneTask.pausedAt == nil)
+        #expect(undoneTask.autoPauseAfterCompletion)
+        #expect(!undoneTask.isArchived(referenceDate: completedAt))
+    }
+
+    @Test
     func backfillMissingLastDoneLogs_insertsOnlyMissingEntries() throws {
         let context = makeInMemoryContext()
         let insertedCompletion = makeDate("2026-03-15T09:00:00Z")

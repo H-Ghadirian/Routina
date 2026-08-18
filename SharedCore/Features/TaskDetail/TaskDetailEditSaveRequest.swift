@@ -47,6 +47,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var storyPoints: Int?
     var focusModeEnabled: Bool
     var trackingCadenceEnabled: Bool
+    var autoPauseAfterCompletion: Bool
     var trackingNudgesEnabled: Bool
     var taskLadderGroupEnabled: Bool
 }
@@ -122,6 +123,7 @@ struct TaskDetailEditSaveRequestBuilder {
             state.recurrenceDraftForPersistence(calendar: calendar),
             scheduleMode: scheduleMode,
             trackingCadenceEnabled: trackingCadenceEnabled,
+            autoPauseAfterCompletion: state.editAutoPauseAfterCompletion,
             recurrenceKind: state.editRecurrenceKind
         )
         guard let recurrenceRule = recurrenceDraft.resolvedRecurrenceRule(calendar: calendar) else {
@@ -214,6 +216,9 @@ struct TaskDetailEditSaveRequestBuilder {
             storyPoints: state.editStoryPoints,
             focusModeEnabled: state.editFocusModeEnabled,
             trackingCadenceEnabled: trackingCadenceEnabled,
+            autoPauseAfterCompletion: scheduleMode.taskType == .todo
+                ? false
+                : (!trackingCadenceEnabled && recurrenceDraft.cadence == .manual),
             trackingNudgesEnabled: scheduleMode.usesRoutineCadence
                 ? trackingCadenceEnabled && state.editTrackingNudgesEnabled
                 : true,
@@ -225,11 +230,12 @@ struct TaskDetailEditSaveRequestBuilder {
         _ recurrenceDraft: RoutineRecurrenceDraft,
         scheduleMode: RoutineScheduleMode,
         trackingCadenceEnabled: Bool,
+        autoPauseAfterCompletion: Bool,
         recurrenceKind: RoutineRecurrenceRule.Kind
     ) -> RoutineRecurrenceDraft {
         let cadence: RoutineRecurrenceDraft.Cadence
         if !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
-            cadence = .none
+            cadence = autoPauseAfterCompletion ? .manual : .none
         } else if scheduleMode.isChecklistDrivenMode {
             cadence = .itemRunout
         } else if recurrenceDraft.cadence == .none
@@ -386,6 +392,9 @@ extension TaskDetailFeature {
         updatedTask.trackingCadenceEnabled = request.scheduleMode.taskType == .todo
             ? true
             : request.trackingCadenceEnabled
+        updatedTask.autoPauseAfterCompletion = request.scheduleMode.taskType != .todo
+            && !updatedTask.trackingCadenceEnabled
+            && request.autoPauseAfterCompletion
         updatedTask.trackingNudgesEnabled = request.scheduleMode.usesRoutineCadence
             ? request.trackingCadenceEnabled && request.trackingNudgesEnabled
             : true

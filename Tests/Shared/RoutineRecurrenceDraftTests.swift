@@ -24,6 +24,18 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
+    func whenNeededCadenceHasNoScheduleAndExplainsManualReactivation() throws {
+        let draft = RoutineRecurrenceDraft(cadence: .manual)
+
+        #expect(draft.validationIssue == nil)
+        #expect(try #require(draft.resolvedRecurrenceRule(calendar: calendar)) == .interval(days: 1))
+        #expect(
+            draft.composerSummary(calendar: calendar)
+                == "Pause after completion. Resume it whenever you need it again."
+        )
+    }
+
+    @Test
     func compactRulesRoundTripThroughUnifiedDraft() throws {
         let exactTime = RoutineTimeOfDay(hour: 9, minute: 30)
         let window = RoutineTimeRange(
@@ -321,6 +333,26 @@ struct RoutineRecurrenceDraftTests {
             try #require(AddRoutineSaveRequest(state: state, calendar: calendar)).recurrenceRule
                 == .interval(days: 21, at: exactTime)
         )
+    }
+
+    @Test
+    func whenNeededDraftDisablesCadenceAndPersistsAutoPause() throws {
+        let draft = RoutineRecurrenceDraft(cadence: .manual)
+        var state = AddRoutineFeature.State(
+            basics: AddRoutineBasicsState(routineName: "Replace filter"),
+            schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
+        )
+        let handler = AddRoutineScheduleMutationHandler(
+            now: { makeDate("2026-07-21T09:00:00Z") },
+            calendar: calendar
+        )
+
+        handler.setRecurrenceDraft(draft, state: &state)
+
+        #expect(!state.basics.trackingCadenceEnabled)
+        #expect(state.basics.autoPauseAfterCompletion)
+        #expect(state.candidateRecurrenceDraft.cadence == .manual)
+        #expect(try #require(AddRoutineSaveRequest(state: state, calendar: calendar)).autoPauseAfterCompletion)
     }
 
     @Test @MainActor

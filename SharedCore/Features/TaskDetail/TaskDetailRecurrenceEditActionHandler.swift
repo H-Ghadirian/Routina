@@ -338,6 +338,7 @@ struct TaskDetailRecurrenceEditActionHandler {
         let recurrenceDraft = recurrenceDraft.normalized()
         state.editRecurrenceDraft = recurrenceDraft
         state.editRecurrenceDraftIsAuthoritative = true
+        state.editAutoPauseAfterCompletion = recurrenceDraft.cadence == .manual
         applyCadence(recurrenceDraft.cadence, state: &state)
 
         guard let recurrenceRule = recurrenceDraft.resolvedRecurrenceRule(calendar: calendar) else {
@@ -470,15 +471,24 @@ struct TaskDetailRecurrenceEditActionHandler {
         switch cadence {
         case .none:
             state.editTrackingCadenceEnabled = false
+            state.editAutoPauseAfterCompletion = false
+            state.editTrackingNudgesEnabled = false
+            state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
+
+        case .manual:
+            state.editTrackingCadenceEnabled = false
+            state.editAutoPauseAfterCompletion = true
             state.editTrackingNudgesEnabled = false
             state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
 
         case .itemRunout:
             state.editTrackingCadenceEnabled = true
+            state.editAutoPauseAfterCompletion = false
             state.editScheduleMode = state.editScheduleMode.replacingChecklistTimingMode(.runout)
 
         case .afterCompletion, .scheduled:
             state.editTrackingCadenceEnabled = true
+            state.editAutoPauseAfterCompletion = false
             state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
         }
     }

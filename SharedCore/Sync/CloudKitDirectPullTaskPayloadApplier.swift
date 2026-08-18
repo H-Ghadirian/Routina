@@ -124,6 +124,21 @@ enum CloudKitDirectPullTaskPayloadApplier {
         if let storyPoints = payload.storyPoints {
             task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
         }
+        if let trackingCadenceEnabled = payload.trackingCadenceEnabled {
+            task.trackingCadenceEnabled = task.scheduleMode.taskType == .todo
+                ? true
+                : trackingCadenceEnabled
+        }
+        if let trackingNudgesEnabled = payload.trackingNudgesEnabled {
+            task.trackingNudgesEnabled = task.scheduleMode.usesRoutineCadence
+                ? task.trackingCadenceEnabled && trackingNudgesEnabled
+                : true
+        }
+        if let autoPauseAfterCompletion = payload.autoPauseAfterCompletion {
+            task.autoPauseAfterCompletion = task.scheduleMode.taskType != .todo
+                && !task.trackingCadenceEnabled
+                && autoPauseAfterCompletion
+        }
         if let pressure = payload.pressure {
             task.pressure = pressure
             task.pressureUpdatedAt = payload.pressureUpdatedAt
@@ -137,6 +152,15 @@ enum CloudKitDirectPullTaskPayloadApplier {
     }
 
     static func makeTask(from payload: CloudKitDirectPullService.TaskPayload) -> RoutineTask {
+        let resolvedTrackingCadenceEnabled = payload.trackingCadenceEnabled ?? true
+        let resolvedTrackingNudgesEnabled = payload.trackingNudgesEnabled ?? true
+        let resolvedAutoPauseAfterCompletion = payload.autoPauseAfterCompletion ?? false
+        let resolvedAutoAssumeDoneTimeOfDay: RoutineTimeOfDay? = payload.autoAssumeDoneTimeOfDayHour != nil || payload.autoAssumeDoneTimeOfDayMinute != nil
+            ? RoutineTimeOfDay(
+                hour: payload.autoAssumeDoneTimeOfDayHour ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.hour,
+                minute: payload.autoAssumeDoneTimeOfDayMinute ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.minute
+            )
+            : nil
         let task = RoutineTask(
             id: payload.id,
             name: RoutineTask.trimmedName(payload.name),
@@ -190,17 +214,17 @@ enum CloudKitDirectPullTaskPayloadApplier {
             ongoingSince: payload.ongoingSince,
             autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false,
             hidesAssumedDoneCalendarBlock: payload.hidesAssumedDoneCalendarBlock ?? false,
-            autoAssumeDoneTimeOfDay: payload.autoAssumeDoneTimeOfDayHour != nil || payload.autoAssumeDoneTimeOfDayMinute != nil
-                ? RoutineTimeOfDay(
-                    hour: payload.autoAssumeDoneTimeOfDayHour ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.hour,
-                    minute: payload.autoAssumeDoneTimeOfDayMinute ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.minute
-                )
-                : nil,
+            autoAssumeDoneTimeOfDay: resolvedAutoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: payload.estimatedDurationMinutes,
             actualDurationMinutes: payload.actualDurationMinutes,
             storyPoints: payload.storyPoints,
+            trackingCadenceEnabled: resolvedTrackingCadenceEnabled,
+            trackingNudgesEnabled: resolvedTrackingNudgesEnabled,
             comments: payload.comments ?? []
         )
+        task.autoPauseAfterCompletion = task.scheduleMode.taskType != .todo
+            && !task.trackingCadenceEnabled
+            && resolvedAutoPauseAfterCompletion
         task.taskRankingOrderStorage = payload.taskRankingOrderStorage ?? ""
         task.temporalWeightRuleStorage = payload.temporalWeightRuleStorage ?? ""
         task.linkItems = payload.linkItems

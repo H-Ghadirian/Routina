@@ -124,6 +124,7 @@ struct AddRoutineSaveRequest: Equatable {
     let storyPoints: Int?
     let focusModeEnabled: Bool
     let trackingCadenceEnabled: Bool
+    let autoPauseAfterCompletion: Bool
     let trackingNudgesEnabled: Bool
     let taskLadderGroupEnabled: Bool
 
@@ -175,6 +176,7 @@ struct AddRoutineSaveRequest: Equatable {
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false,
         trackingCadenceEnabled: Bool = true,
+        autoPauseAfterCompletion: Bool = false,
         trackingNudgesEnabled: Bool = true,
         taskLadderGroupEnabled: Bool = false
     ) {
@@ -279,6 +281,9 @@ struct AddRoutineSaveRequest: Equatable {
             : nil
         self.storyPoints = storyPoints
         self.focusModeEnabled = focusModeEnabled
+        self.autoPauseAfterCompletion = scheduleMode.taskType == .todo
+            ? false
+            : (!resolvedTrackingCadenceEnabled && autoPauseAfterCompletion)
         self.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
             ? self.trackingCadenceEnabled && trackingNudgesEnabled
             : true
@@ -408,6 +413,9 @@ struct AddRoutineSaveRequest: Equatable {
         self.storyPoints = RoutineTask.sanitizedStoryPoints(basics.storyPoints)
         self.focusModeEnabled = basics.focusModeEnabled
         self.trackingCadenceEnabled = trackingCadenceEnabled
+        self.autoPauseAfterCompletion = schedule.scheduleMode.taskType == .todo
+            ? false
+            : (!trackingCadenceEnabled && recurrenceDraft.cadence == .manual)
         self.trackingNudgesEnabled = schedule.scheduleMode.usesRoutineCadence
             ? trackingCadenceEnabled && basics.trackingNudgesEnabled
             : true

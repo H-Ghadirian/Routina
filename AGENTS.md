@@ -13,6 +13,13 @@
 - After making a change that introduces or revises long-term decisions, add a new decision record or supersede an existing one.
 - Decision records should capture why a choice was made, not every small implementation detail. Use them for architecture, conventions, data model, dependencies, product behavior, build setup, and other choices future contributors should preserve or understand.
 
+## Project Knowledge Documentation
+
+- Before answering a substantive question about how Routina currently works, read the relevant `docs/current-behavior/` page and follow its decision or user-experience links when rationale or intended outcomes matter.
+- When a meaningful investigation establishes a durable, verified fact that is missing from or inaccurately described by the project documentation, update the canonical topic-based document in the same work even when no app code changes. Prefer `docs/current-behavior/` for what the app does now; use decisions for why, user-experience documents for needs and journeys, scenarios for regression contracts, and lessons for knowledge learned from fixed defects.
+- Record the conditions needed to reach behavior, what happens when those conditions are absent, platform or feature availability, recovery paths, and distinctions between similarly named features whenever those details affect the answer. Clearly separate verified behavior from inference or an open question.
+- Correct the existing canonical document instead of creating a chronological discovery diary. Do not preserve transient debugging observations, machine-specific state, or unverified hypotheses as current behavior.
+
 ## User Experience Documentation
 
 - Before changing product behavior or a user journey, read `docs/user-experience/README.md` and the relevant user needs and use cases in that directory, then check the related current-behavior and decision documents.

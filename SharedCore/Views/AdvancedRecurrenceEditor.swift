@@ -441,7 +441,7 @@ struct UnifiedRecurrenceEditor: View {
     private var cadenceOptions: [RoutineRecurrenceDraft.Cadence] {
         var options: [RoutineRecurrenceDraft.Cadence] = []
         if supportsNoSchedule {
-            options.append(.none)
+            options.append(contentsOf: [.none, .manual])
         }
         options.append(contentsOf: [.afterCompletion, .scheduled])
         if supportsItemRunout {
@@ -698,6 +698,7 @@ struct UnifiedRecurrenceEditor: View {
     private func cadenceTitle(_ cadence: RoutineRecurrenceDraft.Cadence) -> String {
         switch cadence {
         case .none: return "No schedule"
+        case .manual: return "When needed"
         case .itemRunout: return "Item runout"
         case .afterCompletion: return "After done"
         case .scheduled: return "On schedule"
@@ -723,6 +724,7 @@ struct UnifiedRecurrenceEditor: View {
     private var summarySystemImage: String {
         switch draft.cadence {
         case .none: return "arrow.trianglehead.2.clockwise.rotate.90.slash"
+        case .manual: return "archivebox"
         case .itemRunout: return "checklist"
         case .afterCompletion: return "arrow.clockwise"
         case .scheduled: return "calendar.badge.clock"

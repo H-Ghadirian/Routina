@@ -25,6 +25,7 @@ struct SwiftDataModelTests {
         #expect(task.placeID == nil)
         #expect(task.scheduleAnchor == nil)
         #expect(task.pausedAt == nil)
+        #expect(!task.autoPauseAfterCompletion)
         #expect(task.tags.isEmpty)
         #expect(task.steps.isEmpty)
         #expect(task.checklistItems.isEmpty)
@@ -226,6 +227,33 @@ struct SwiftDataModelTests {
         #expect(task.recurrenceRule == .interval(days: 1))
         #expect(task.interval == 1)
         #expect(!task.detachedCopy().trackingCadenceEnabled)
+    }
+
+    @Test
+    func whenNeededRepeatingTaskPausesAfterCompletionAndCanBeReactivated() {
+        let completedAt = makeDate("2026-03-18T12:00:00Z")
+        let task = RoutineTask(
+            name: "Replace filter",
+            scheduleMode: .fixedInterval,
+            trackingCadenceEnabled: false,
+            autoPauseAfterCompletion: true
+        )
+
+        #expect(task.autoPauseAfterCompletion)
+        #expect(task.advance(completedAt: completedAt) == .completedRoutine)
+        #expect(task.lastDone == completedAt)
+        #expect(task.pausedAt == completedAt)
+        #expect(task.isArchived(referenceDate: completedAt))
+
+        task.pausedAt = nil
+        task.pauseUntil = nil
+        #expect(!task.isArchived(referenceDate: completedAt))
+        #expect(task.autoPauseAfterCompletion)
+
+        let nextCompletion = makeDate("2026-04-01T12:00:00Z")
+        _ = task.advance(completedAt: nextCompletion)
+        #expect(task.pausedAt == nextCompletion)
+        #expect(task.autoPauseAfterCompletion)
     }
 
     @Test

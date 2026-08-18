@@ -43,15 +43,15 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 ### UC-03 — Create a routine that matches real life
 
-**Situation:** A responsibility repeats, but repetition may be fixed, interval-based, gentle, checklist-based, or temporarily paused.
+**Situation:** A responsibility repeats, but repetition may be fixed, interval-based, gentle, checklist-based, or waiting for the person to activate it again after completion.
 
 **Need:** Describe the cadence and completion meaning without forcing every routine into a strict daily streak.
 
-**Desired experience:** The person chooses how the routine repeats, when it is available, whether it should feel due or gently ready, and what counts as completion. The app previews the result in understandable language.
+**Desired experience:** The person chooses how the routine repeats, when it is available, whether it should feel due or gently ready, and what counts as completion. For work whose next use is unknown, `When needed` pauses it after completion and the person can use `Resume` whenever it is needed again; ordinary `No schedule` remains available immediately. The app previews the result in understandable language.
 
 **Successful outcome:** The routine returns at the expected time, preserves its history, and can be changed without starting over.
 
-**Example:** “Water plants” becomes available every seven days after completion and gives a gentle nudge rather than becoming overdue.
+**Example:** “Water plants” becomes available every seven days after completion and gives a gentle nudge rather than becoming overdue. “Replace the filter” uses `When needed`, disappears from active work after it is completed, and returns when the person resumes it before the next replacement.
 
 **Availability:** Production, with some advanced combinations varying by platform.
 

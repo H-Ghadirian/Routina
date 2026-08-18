@@ -1060,6 +1060,7 @@ enum RoutineLogHistory {
             guard let timestamp = log.timestamp else { return false }
             return calendar.isDate(timestamp, inSameDayAs: completedDay)
         }
+        let removedLatestCompletionTimestamp = task.lastDone
         let didMatchLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: completedDay) } ?? false
         let didMatchCanceledAt = task.canceledAt.map { calendar.isDate($0, inSameDayAs: completedDay) } ?? false
 
@@ -1090,6 +1091,11 @@ enum RoutineLogHistory {
         if didMatchLastDone {
             task.lastDone = remainingLatestCompletion
             task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
+            if task.autoPauseAfterCompletion,
+               task.pausedAt == removedLatestCompletionTimestamp {
+                task.pausedAt = nil
+                task.pauseUntil = nil
+            }
         }
 
         if didMatchCanceledAt {
@@ -1169,6 +1175,11 @@ enum RoutineLogHistory {
         if didMatchLastDone {
             task.lastDone = remainingLatestCompletion
             task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
+            if task.autoPauseAfterCompletion,
+               task.pausedAt == timestamp {
+                task.pausedAt = nil
+                task.pauseUntil = nil
+            }
             task.refreshScheduleAnchorAfterRemovingLatestCompletion(
                 remainingLatestCompletion: remainingLatestCompletion
             )
