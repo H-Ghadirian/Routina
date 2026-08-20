@@ -398,6 +398,55 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
+    func oneOffExactTimeToRangeKeepsInheritedStartAndReminderLeadTime() throws {
+        let availabilityDate = makeDate("2026-08-25T00:00:00Z")
+        let exactTime = RoutineTimeOfDay(hour: 15, minute: 0)
+        let eventDate = exactTime.date(on: availabilityDate, calendar: calendar)
+        let task = RoutineTask(
+            name: "Physiotherapist",
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, at: exactTime)
+        )
+        var state = TaskDetailFeature.State(
+            task: task,
+            isEditSheetPresented: true
+        )
+        state.editScheduleMode = .oneOff
+        state.editAvailabilityStartDate = availabilityDate
+        state.editRecurrenceHasExplicitTime = true
+        state.editRecurrenceTimeOfDay = exactTime
+        state.editReminderAt = eventDate.addingTimeInterval(-2 * 60 * 60)
+        let handler = TaskDetailRecurrenceEditActionHandler(
+            now: { makeDate("2026-08-20T10:00:00Z") },
+            calendar: calendar
+        )
+        let inheritedRange = TaskFormTimingMode.timeRangeInheritingExactTime(exactTime)
+
+        _ = handler.editRecurrenceTimeRangeStartChanged(inheritedRange.start, state: &state)
+        _ = handler.editRecurrenceTimeRangeEndChanged(inheritedRange.end, state: &state)
+        _ = handler.editRecurrenceHasExplicitTimeChanged(false, state: &state)
+        _ = handler.editRecurrenceHasTimeRangeChanged(true, state: &state)
+
+        #expect(state.editRecurrenceTimeRangeStart == exactTime)
+        #expect(state.editRecurrenceTimeRangeEnd == inheritedRange.end)
+        #expect(state.editReminderAt == eventDate.addingTimeInterval(-2 * 60 * 60))
+        #expect(
+            TaskFormReminderLeadTime.matchedLeadMinutes(
+                eventDate: TaskFormReminderLeadTime.eventDate(
+                    scheduleMode: .oneOff,
+                    deadline: state.editDeadline,
+                    recurrenceRule: state.candidateRecurrenceRule,
+                    availabilityStartDate: state.editAvailabilityStartDate,
+                    availabilityEndDate: state.editAvailabilityEndDate,
+                    referenceDate: makeDate("2026-08-20T10:00:00Z"),
+                    calendar: calendar
+                ),
+                reminderAt: state.editReminderAt
+            ) == TaskFormReminderLeadTime.twoHours.rawValue
+        )
+    }
+
+    @Test
     func formDraftCombinesStructuredRecurrenceWithAvailabilityWindow() throws {
         let window = RoutineTimeRange(
             start: RoutineTimeOfDay(hour: 7, minute: 0),

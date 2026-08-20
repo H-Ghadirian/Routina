@@ -1261,6 +1261,23 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private func applyTimingMode(_ mode: TaskFormTimingMode) {
+        let previousMode = currentTimingMode
+        if previousMode == .exact, mode.usesTimeRange {
+            let inheritedRange = TaskFormTimingMode.timeRangeInheritingExactTime(
+                RoutineTimeOfDay.from(
+                    model.recurrenceTimeOfDay.wrappedValue,
+                    calendar: calendar
+                )
+            )
+            model.recurrenceTimeRangeStart.wrappedValue = inheritedRange.start.date(
+                on: Date(),
+                calendar: calendar
+            )
+            model.recurrenceTimeRangeEnd.wrappedValue = inheritedRange.end.date(
+                on: Date(),
+                calendar: calendar
+            )
+        }
         model.isAllDay.wrappedValue = mode == .allDay
         model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
         model.recurrenceHasTimeRange.wrappedValue = mode.usesTimeRange

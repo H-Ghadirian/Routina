@@ -52,6 +52,21 @@ enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable
         }
     }
 
+    /// Creates the first range shown when a person changes an exact time into
+    /// a range. The exact time remains the meaningful anchor and the default
+    /// range duration is retained from the standard 07:00–10:00 range.
+    static func timeRangeInheritingExactTime(
+        _ exactTime: RoutineTimeOfDay
+    ) -> RoutineTimeRange {
+        let defaultDurationMinutes =
+            RoutineTimeRange.defaultValue.end.minutesFromStartOfDay
+            - RoutineTimeRange.defaultValue.start.minutesFromStartOfDay
+        return RoutineTimeRange(
+            start: exactTime,
+            end: exactTime.addingMinutes(defaultDurationMinutes)
+        )
+    }
+
     func timeRangeHelpText(startTimeText: String, endTimeText: String) -> String? {
         switch self {
         case .timeBlock:

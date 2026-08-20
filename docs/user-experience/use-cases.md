@@ -35,7 +35,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Express those meanings independently.
 
-**Desired experience:** Routina uses distinct controls and plain summaries for availability, plan, deadline, and reminder. Changing one does not silently rewrite the others except where the relationship is explicit and previewed. Before relying on alerts, the person can review every notification actually queued on the current device, grouped by task or event. They can expand one source to see its chronological occurrences, remove one occurrence, or postpone it without changing the source schedule or another device.
+**Desired experience:** Routina uses distinct controls and plain summaries for availability, plan, deadline, and reminder. Changing one does not silently rewrite the others except where the relationship is explicit and previewed. When an exact availability time is changed into a Time block or Available window, that time becomes the new range start and any relative reminder stays anchored to it. Before relying on alerts, the person can review every notification actually queued on the current device, grouped by task or event. They can expand one source to see its chronological occurrences, remove one occurrence, or postpone it without changing the source schedule or another device.
 
 **Successful outcome:** The task appears when and where the person expects, with the right level of urgency, and the person can verify and adjust individual reminders the device is currently prepared to deliver.
 

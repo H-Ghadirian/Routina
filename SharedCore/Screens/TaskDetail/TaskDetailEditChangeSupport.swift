@@ -368,7 +368,7 @@ enum TaskFormReminderLeadTime: Int, CaseIterable, Identifiable {
         if scheduleMode == .oneOff {
             if let availabilityStartDate,
                availabilityEndDate == nil,
-               let timeOfDay = recurrenceRule.timeOfDay {
+               let timeOfDay = recurrenceRule.timeRange?.start ?? recurrenceRule.timeOfDay {
                 return timeOfDay.date(on: availabilityStartDate, calendar: calendar)
             }
             return deadline

@@ -1616,6 +1616,22 @@ When the person instead enters `Submit claim by 25 August 15:00`
 Then Quick Add creates a deadline at that date and time
 And it still does not infer a separate reminder
 
+### Editing Exact Availability Into A Time Range Inherits The Start
+
+Area: Tasks / Task Forms
+Decision links: [0197](../decisions/0197-separate-todo-date-and-time-availability.md), [0375](../decisions/0375-split-time-blocks-from-available-windows.md), [0185](../decisions/0185-limit-exact-reminders-to-todos.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormPresentationTests.swift`
+- `Tests/Shared/RoutineRecurrenceDraftTests.swift`
+
+Given a one-off task has `At date` availability on 25 August and `At time` availability at 15:00
+And its reminder is set to two hours before that availability
+When the person changes Time availability to `Time block` or `Available window`
+Then the new range starts at 15:00 and uses the standard three-hour initial range
+And the reminder remains two hours before 15:00
+And switching the mode does not replace the saved reminder with a new custom time
+
 ### Quick Add Turns a Pasted Link Into an Editable Named Task
 
 Area: Tasks

@@ -10,6 +10,12 @@ import Testing
 #endif
 
 struct TaskFormPresentationTests {
+    private var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        return calendar
+    }
+
     @Test
     func sidebarPathPresentationShowsResolvedAutomaticPathInsteadOfDefault() {
         #expect(
@@ -289,7 +295,34 @@ struct TaskFormPresentationTests {
         #expect(
             TaskFormTimingMode.exact.timeRangeHelpText(startTimeText: "07:00", endTimeText: "10:00") == nil
         )
+        let inheritedRange = TaskFormTimingMode.timeRangeInheritingExactTime(
+            RoutineTimeOfDay(hour: 15, minute: 0)
+        )
+        #expect(inheritedRange.start == RoutineTimeOfDay(hour: 15, minute: 0))
+        #expect(inheritedRange.end == RoutineTimeOfDay(hour: 18, minute: 0))
         #expect(TaskFormDateAvailabilityMode.allCases == [.none, .exact, .range])
+    }
+
+    @Test
+    func oneOffReminderEventUsesTheStartOfTimeRange() throws {
+        let availabilityDate = makeDate("2026-08-25T00:00:00Z")
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 15, minute: 0),
+            end: RoutineTimeOfDay(hour: 18, minute: 0)
+        )
+        let eventDate = try #require(
+            TaskFormReminderLeadTime.eventDate(
+                scheduleMode: .oneOff,
+                deadline: nil,
+                recurrenceRule: .interval(days: 1, timeRange: timeRange),
+                availabilityStartDate: availabilityDate,
+                availabilityEndDate: nil,
+                referenceDate: availabilityDate,
+                calendar: calendar
+            )
+        )
+
+        #expect(eventDate == makeDate("2026-08-25T15:00:00Z"))
     }
 
     @Test
@@ -793,5 +826,9 @@ struct TaskFormPresentationTests {
             color: .constant(.none),
             visibilityMode: visibilityMode
         )
+    }
+
+    private func makeDate(_ value: String) -> Date {
+        ISO8601DateFormatter().date(from: value) ?? Date(timeIntervalSince1970: 0)
     }
 }
