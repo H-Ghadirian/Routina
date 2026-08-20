@@ -45,7 +45,12 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0208 — Preserve the meaning of parsed task dates](0208-preserve-the-meaning-of-parsed-task-dates.md)
 - [0207 — Exclude relationship-blocked Task Ladder rows](0207-exclude-relationship-blocked-task-ladder-rows.md)
 - [0206 — Parse combined natural-language dates as one unit](0206-parse-combined-natural-language-dates-as-one-unit.md)
-
+- [0205 — Recompute the Planner range when an external pane opens](0205-recompute-planner-range-when-external-pane-opens.md)
+- [0204 — Collapse the control that causes loaded-header overflow](0204-collapse-the-control-that-causes-loaded-header-overflow.md)
+- [0203 — Remeasure after optional header controls appear](0203-remeasure-after-optional-header-controls-appear.md)
+- [0202 — Protect visual comfort, not just overflow](0202-protect-visual-comfort-not-just-overflow.md)
+- [0201 — Switch compact headers before space is exhausted](0201-switch-compact-headers-before-space-is-exhausted.md)
+- [0200 — Derive layout choices from effective capability](0200-derive-layout-choices-from-effective-capability.md)
 - [0199 — Separate layout transitions from history reconciliation](0199-separate-layout-transitions-from-history-reconciliation.md)
 - [0198 — Namespace identities across Task Ladder row kinds](0198-namespace-identities-across-task-ladder-row-kinds.md)
 - [0197 — Measure the active header variant](0197-measure-the-active-header-variant.md)

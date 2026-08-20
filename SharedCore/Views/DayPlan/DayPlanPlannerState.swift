@@ -184,7 +184,7 @@ final class DayPlanPlannerState: ObservableObject {
 
     @Published private var visibleDate: Date
     private var preferredVisibleRangeMode: DayPlanVisibleRangeMode
-    private var maximumAdaptiveVisibleRangeMode: DayPlanVisibleRangeMode = .week
+    @Published private var maximumAdaptiveVisibleRangeMode: DayPlanVisibleRangeMode = .week
     private var pendingResizeUndo: DayPlanPendingResizeUndo?
     private var plannerUndoChange: DayPlanPlannerUndoChange?
     private var plannerRedoChange: DayPlanPlannerUndoChange?
@@ -238,6 +238,17 @@ final class DayPlanPlannerState: ObservableObject {
         visibleRangeMode.navigationDayCount
     }
 
+    var availableVisibleRangeModes: [DayPlanVisibleRangeMode] {
+        switch maximumAdaptiveVisibleRangeMode {
+        case .day:
+            return [.day]
+        case .threeDays:
+            return [.day, .threeDays]
+        case .week:
+            return DayPlanVisibleRangeMode.allCases
+        }
+    }
+
     var canIncreaseDayHourSpacing: Bool {
         dayHourSpacing.next != dayHourSpacing
     }
@@ -269,11 +280,19 @@ final class DayPlanPlannerState: ObservableObject {
             return .day
         }
 
-        let availableDayWidth = max(width - 64, 0)
-        if availableDayWidth >= 7 * 150 {
+        let availableDayWidth = max(
+            width - Double(DayPlanWeekCalendarSizing.timeColumnWidth),
+            0
+        )
+        let minimumDayWidth = Double(
+            DayPlanWeekCalendarSizing.minimumDayWidth(
+                isExternalInspectorPresented: isExternalInspectorPresented
+            )
+        )
+        if availableDayWidth >= Double(DayPlanVisibleRangeMode.week.visibleDayCount) * minimumDayWidth {
             return .week
         }
-        if availableDayWidth >= 3 * 150 {
+        if availableDayWidth >= Double(DayPlanVisibleRangeMode.threeDays.visibleDayCount) * minimumDayWidth {
             return .threeDays
         }
         return .day

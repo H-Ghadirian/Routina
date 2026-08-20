@@ -26,9 +26,17 @@ User-experience documents explain who needs what and what success looks like. De
 
 - **[0615](0615-group-and-control-pending-notification-occurrences.md) revises [0611](0611-list-actual-pending-notifications-in-settings.md) and refines [0192](0192-support-event-notifications.md), [0210](0210-store-durable-preferences-in-swiftdata.md), and [0412](0412-add-advanced-recurrence-beside-simple.md):** Settings groups actual pending requests by task or event and lets a person remove or pause one device-local occurrence without changing source data or allowing schedule reconciliation to recreate it.
 
+- **[0614](0614-collapse-planner-date-label-when-focus-is-visible.md) refines [0613](0613-measure-loaded-planner-header-against-visible-width.md), [0612](0612-require-comfortable-width-for-expanded-planner-header.md), and [0609](0609-keep-planner-range-choices-actionable-in-compact-headers.md):** when loaded data makes the Mac Calendar Focus control visible, `Go to date` becomes icon-only independently while the other header choices keep their own compact-fit decision.
+
+- **[0613](0613-measure-loaded-planner-header-against-visible-width.md) refines [0612](0612-require-comfortable-width-for-expanded-planner-header.md) and [0609](0609-keep-planner-range-choices-actionable-in-compact-headers.md):** the Mac Planner header uses the tighter of parent and visible measured width, and its loaded Focus control raises the regular Calendar header comfort threshold before compact menus engage.
+
+- **[0612](0612-require-comfortable-width-for-expanded-planner-header.md) refines [0609](0609-keep-planner-range-choices-actionable-in-compact-headers.md):** the Mac Planner uses expanded Calendar header controls only when the overall header width is comfortable as well as technically fitting; otherwise the Calendar controls become current-value menus and `Go to date` becomes icon-only.
+
 - **[0611](0611-list-actual-pending-notifications-in-settings.md) refines [0185](0185-limit-exact-reminders-to-todos.md), [0192](0192-support-event-notifications.md), and [0412](0412-add-advanced-recurrence-beside-simple.md):** iOS and macOS Settings show the chronological pending requests actually queued with the system, including separate rolling Advanced occurrences, without reconstructing notifications from Planner or task data.
 
 - **[0610](0610-expose-product-help-through-local-ai-connections.md) refines [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md), [0573](0573-centralize-user-perspective-product-documentation.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** the Mac app and embedded MCP helper share a curated user-facing Routina help catalog; product-help lookup never loads the personal task snapshot, and AI Connections explains setup, example questions, limitations, privacy, and recovery.
+
+- **[0609](0609-keep-planner-range-choices-actionable-in-compact-headers.md) revises the range-picker-hiding behavior in [0305](0305-hide-planner-range-picker-when-header-cannot-fit.md), [0307](0307-hide-planner-range-picker-in-day-inspector-layout.md), and [0320](0320-hide-planner-range-picker-in-tight-inspector-layouts.md), and refines [0303](0303-align-mac-planner-range-picker-with-adaptive-days.md) and [0606](0606-show-icon-only-go-to-date-button-before-label-truncation.md):** Mac Planner range eligibility and column rendering share one readable minimum; unavailable ranges are omitted, tight segmented controls become current-value menus instead of disappearing, and the same compact state makes `Go to date` icon-only.
 
 - **[0608](0608-keep-mac-task-detail-close-transition-free-of-history-work.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0296](0296-present-mac-task-details-as-planner-inspector.md):** closing the Mac task-detail companion pane keeps adaptive range changes free of Focus-history reconciliation, batches changed Focus blocks by day, skips no-op saves, and releases deferred Home refresh only after the pane transition quiet window.
 
@@ -760,8 +768,11 @@ These are ordered from newest resolver to oldest resolver.
 | [0617](0617-generate-editable-quick-add-titles-from-pasted-links.md) | Generate Editable Quick Add Titles from Pasted Links | Accepted | 2026-08-20 |
 | [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md) | Interpret Unqualified Quick Add Dates as Availability | Accepted | 2026-08-20 |
 | [0615](0615-group-and-control-pending-notification-occurrences.md) | Group and Control Pending Notification Occurrences | Accepted | 2026-08-18 |
+| [0613](0613-measure-loaded-planner-header-against-visible-width.md) | Measure Loaded Planner Header Against Visible Width | Accepted | 2026-08-18 |
+| [0612](0612-require-comfortable-width-for-expanded-planner-header.md) | Require Comfortable Width for Expanded Planner Header | Accepted | 2026-08-18 |
 | [0611](0611-list-actual-pending-notifications-in-settings.md) | List Actual Pending Notifications in Settings | Accepted | 2026-08-18 |
 | [0610](0610-expose-product-help-through-local-ai-connections.md) | Expose Product Help Through Local AI Connections | Accepted | 2026-08-18 |
+| [0609](0609-keep-planner-range-choices-actionable-in-compact-headers.md) | Keep Planner Range Choices Actionable in Compact Headers | Accepted | 2026-08-18 |
 | [0608](0608-keep-mac-task-detail-close-transition-free-of-history-work.md) | Keep Mac Task Detail Close Transitions Free of History Work | Accepted | 2026-08-18 |
 | [0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md) | Expose Time-Based Ladder Values in Task Forms and Details | Accepted | 2026-08-18 |
 | [0603](0603-start-mac-focus-from-one-recalling-sheet.md) | Start Mac Focus From One Recalling Sheet | Accepted | 2026-08-17 |

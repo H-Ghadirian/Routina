@@ -331,6 +331,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                         plannerContentWidth - DayPlanWeekCalendarSizing.detailHorizontalPadding,
                         0
                     ),
+                    macHeaderFocusControlIsVisible: plannerHeaderFocusControlIsVisible,
                     displayMode: $dayPlanDisplayMode,
                     calendarTaskViewMode: $dayPlanCalendarTaskViewMode,
                     calendarFilters: $dayPlanCalendarFilters,
@@ -464,6 +465,12 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 trailingPadding: 0
             )
         }
+    }
+
+    private var plannerHeaderFocusControlIsVisible: Bool {
+        activePlanFocusSession != nil
+            || isPlanFocusStartDisabled
+            || focusStartTaskCount > 0
     }
 
     private var shouldShowListTaskDetailPane: Bool {

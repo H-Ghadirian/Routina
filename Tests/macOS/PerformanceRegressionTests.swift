@@ -856,12 +856,14 @@ final class PerformanceRegressionTests: XCTestCase {
             dayPlanSource.contains("macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)\n            .background(macHeaderAvailableWidthReader)"),
             "Header available width should be measured from the bounded container, not the potentially overflowing controls row."
         )
-        XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDisplayModePicker"))
+        XCTAssertTrue(dayPlanSource.contains("usesCompactMacHeaderControls"))
         XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDatePickerButton"))
-        XCTAssertTrue(dayPlanSource.contains("macHeaderFullCompactDateControlsWidthProbe"))
-        XCTAssertTrue(dayPlanSource.contains("macHeaderFullRegularDateControlsWidthProbe"))
-        XCTAssertTrue(dayPlanSource.contains("macHeaderCollapsedRegularDateControlsWidthProbe"))
-        XCTAssertTrue(dayPlanSource.contains("macHeaderActiveRegularDateControlsWidth"))
+        XCTAssertTrue(dayPlanSource.contains("macHeaderRegularControlsWidthProbe"))
+        XCTAssertTrue(dayPlanSource.contains("plannerDisplayModeControl(usesCompactControls:"))
+        XCTAssertTrue(dayPlanSource.contains("calendarTaskViewModeControl(usesCompactControls:"))
+        XCTAssertTrue(dayPlanSource.contains("visibleRangeModeControl(usesCompactControls:"))
+        XCTAssertTrue(dayPlanSource.contains("options: planner.availableVisibleRangeModes"))
+        XCTAssertTrue(dayPlanSource.contains("ForEach(planner.availableVisibleRangeModes)"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMinimumWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
         XCTAssertTrue(dayPlanSource.contains("if displayMode.wrappedValue == .list, let listContent {\n                plannerListContent(listContent)"))
@@ -875,6 +877,15 @@ final class PerformanceRegressionTests: XCTestCase {
             dayPlanSource.contains("usesCompactWidth ? 34 : nil"),
             "The date/range button should switch to a compact icon-only hit target before its label truncates."
         )
+        XCTAssertTrue(
+            dayPlanSource.contains("plannerUtilityCluster(forceIconOnlyDatePickerButton: usesIconOnlyMacDatePickerButton)"),
+            "The header should apply the independent Go to date presentation decision."
+        )
+        XCTAssertTrue(dayPlanSource.contains("shouldUseIconOnlyDatePickerButton("))
+        XCTAssertTrue(
+            dayPlanSource.contains("usesCompactControls || (showsCalendarControlSet && showsExtraUtilityControl)"),
+            "A loaded Calendar Focus control should collapse Go to date without waiting for the entire header to enter compact mode."
+        )
         XCTAssertFalse(
             dayPlanSource.contains("usesIconOnlyMacDatePickerButton ? nil : 210"),
             "The regular date/range button should not reserve blank horizontal space beyond its content."
@@ -884,11 +895,22 @@ final class PerformanceRegressionTests: XCTestCase {
             "Go to date should switch to its icon before the regular label is ellipsized."
         )
         XCTAssertTrue(dayPlanSource.contains(".layoutPriority(3)"))
-        XCTAssertTrue(dayPlanSource.contains("inspectorRangePickerMinimumAvailableWidth"))
-        XCTAssertTrue(dayPlanSource.contains("iconOnlyDisplayModePickerMaximumAvailableWidth"))
-        XCTAssertTrue(dayPlanSource.contains("compactDatePickerButtonMaximumAvailableWidth"))
-        XCTAssertTrue(dayPlanSource.contains("shouldUseIconOnlyDisplayModePicker"))
-        XCTAssertTrue(dayPlanSource.contains("shouldUseIconOnlyDatePickerButton"))
+        XCTAssertTrue(dayPlanSource.contains("shouldUseCompactControls"))
+        XCTAssertTrue(dayPlanSource.contains("static let compactTransitionReserveWidth: Double = 120"))
+        XCTAssertTrue(dayPlanSource.contains("static let minimumRegularCalendarHeaderAvailableWidth: Double = 1520"))
+        XCTAssertTrue(dayPlanSource.contains("static let minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth: Double = 1720"))
+        XCTAssertTrue(dayPlanSource.contains("effectiveAvailableWidth("))
+        XCTAssertTrue(dayPlanSource.contains("return min(parentWidth, measuredWidth)"))
+        XCTAssertTrue(dayPlanSource.contains("macFocusControlIsVisible: macHeaderFocusControlIsVisible"))
+        XCTAssertTrue(detailSource.contains("private var plannerHeaderFocusControlIsVisible: Bool"))
+        XCTAssertTrue(dayPlanSource.contains("showsCalendarControlSet: effectiveDisplayMode == .calendar"))
+        XCTAssertTrue(dayPlanSource.contains("parentAvailableWidth: macHeaderAvailableWidth"))
+        XCTAssertTrue(dayPlanSource.contains(".onChange(of: parentAvailableWidth)"))
+        XCTAssertTrue(
+            dayPlanSource.contains("updateAdaptiveVisibleRangeModeFromParentWidthIfAvailable()"),
+            "External Planner panes should recompute the adaptive range from the bounded parent width instead of waiting for child geometry."
+        )
+        XCTAssertFalse(dayPlanSource.contains("shouldShowMacHeaderRangePicker"))
     }
 
     func testHomeDoneStatsDoesNotRewalkLogsForEachOutcome() throws {

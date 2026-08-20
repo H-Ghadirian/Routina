@@ -438,6 +438,7 @@ struct DayPlanDetailView: View {
     var selectedTask: RoutineTask? = nil
     var isTaskDetailInspectorPresented = false
     var macHeaderAvailableWidth: CGFloat? = nil
+    var macHeaderFocusControlIsVisible = false
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
     var calendarTaskViewMode: Binding<DayPlanCalendarTaskViewMode> = .constant(.schedule)
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
@@ -474,6 +475,7 @@ struct DayPlanDetailView: View {
                 showsDisplayModePicker: listContent != nil,
                 isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
                 parentAvailableWidth: macHeaderAvailableWidth,
+                macFocusControlIsVisible: macHeaderFocusControlIsVisible,
                 listFilterButtonIsActive: listFilterButtonIsActive,
                 listFilterButtonAccessibilityValue: listFilterButtonAccessibilityValue,
                 macFocusControl: macHeaderFocusControl,
@@ -496,6 +498,7 @@ struct DayPlanDetailView: View {
                     calendarTaskViewMode: calendarTaskViewMode.wrappedValue,
                     isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
+                    parentAvailableWidth: macHeaderAvailableWidth,
                     isExternalInspectorPresented: isTaskDetailInspectorPresented,
                     onSidebarPresentationRequested: {
                         onPlannerSidebarPresentationRequested?()
@@ -619,6 +622,7 @@ private struct DayPlanHeaderView: View {
     var showsDisplayModePicker = false
     var isTaskDetailInspectorPresented = false
     var parentAvailableWidth: CGFloat? = nil
+    var macFocusControlIsVisible = false
     var listFilterButtonIsActive = false
     var listFilterButtonAccessibilityValue: String? = nil
     var macFocusControl: (() -> AnyView)? = nil
@@ -632,9 +636,7 @@ private struct DayPlanHeaderView: View {
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
     @State private var macHeaderAvailableWidth: CGFloat = 0
-    @State private var macHeaderFullCompactDateControlsWidth: CGFloat = 0
-    @State private var macHeaderFullRegularDateControlsWidth: CGFloat = 0
-    @State private var macHeaderCollapsedRegularDateControlsWidth: CGFloat = 0
+    @State private var macHeaderRegularControlsWidth: CGFloat = 0
 
     var body: some View {
 #if os(macOS)
@@ -646,14 +648,8 @@ private struct DayPlanHeaderView: View {
 
     private var macHeader: some View {
         ZStack(alignment: .leading) {
-            macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)
-                .background {
-                    ZStack {
-                        macHeaderFullCompactDateControlsWidthProbe
-                        macHeaderFullRegularDateControlsWidthProbe
-                        macHeaderCollapsedRegularDateControlsWidthProbe
-                    }
-                }
+            macHeaderRow(usesCompactControls: usesCompactMacHeaderControls)
+                .background(macHeaderRegularControlsWidthProbe)
         }
             .frame(maxWidth: .infinity, alignment: .leading)
             .clipped()
@@ -662,38 +658,34 @@ private struct DayPlanHeaderView: View {
                 guard abs(macHeaderAvailableWidth - width) > 0.5 else { return }
                 macHeaderAvailableWidth = width
             }
-            .onPreferenceChange(DayPlanHeaderFullControlsWidthPreferenceKey.self) { width in
-                guard abs(macHeaderFullCompactDateControlsWidth - width) > 0.5 else { return }
-                macHeaderFullCompactDateControlsWidth = width
-            }
             .onPreferenceChange(DayPlanHeaderFullRegularDateControlsWidthPreferenceKey.self) { width in
-                guard abs(macHeaderFullRegularDateControlsWidth - width) > 0.5 else { return }
-                macHeaderFullRegularDateControlsWidth = width
-            }
-            .onPreferenceChange(DayPlanHeaderCollapsedRegularDateControlsWidthPreferenceKey.self) { width in
-                guard abs(macHeaderCollapsedRegularDateControlsWidth - width) > 0.5 else { return }
-                macHeaderCollapsedRegularDateControlsWidth = width
+                guard abs(macHeaderRegularControlsWidth - width) > 0.5 else { return }
+                macHeaderRegularControlsWidth = width
             }
     }
 
-    private var shouldShowMacHeaderRangePicker: Bool {
-        guard effectiveDisplayMode == .calendar else { return false }
-
-        return DayPlanHeaderRangePickerVisibility.shouldShow(
+    private var usesCompactMacHeaderControls: Bool {
+#if os(macOS)
+        DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
             availableWidth: Double(effectiveMacHeaderAvailableWidth),
-            fullControlsWidth: Double(macHeaderFullCompactDateControlsWidth),
-            isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
-            visibleRangeMode: planner.visibleRangeMode
+            regularControlsWidth: Double(macHeaderRegularControlsWidth),
+            availableRangeModeCount: planner.availableVisibleRangeModes.count,
+            totalRangeModeCount: DayPlanVisibleRangeMode.allCases.count,
+            showsCalendarControlSet: effectiveDisplayMode == .calendar,
+            showsExtraUtilityControl: macFocusControlIsVisible
         )
+#else
+        false
+#endif
     }
 
-    private func macHeaderRow(showsRangePicker: Bool) -> some View {
+    private func macHeaderRow(usesCompactControls: Bool) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            plannerViewControlsCluster(showsRangePicker: showsRangePicker)
+            plannerViewControlsCluster(usesCompactControls: usesCompactControls)
 
             Spacer(minLength: 16)
 
-            plannerUtilityCluster
+            plannerUtilityCluster(forceIconOnlyDatePickerButton: usesIconOnlyMacDatePickerButton)
         }
         .frame(maxWidth: .infinity)
     }
@@ -707,29 +699,8 @@ private struct DayPlanHeaderView: View {
         }
     }
 
-    private var macHeaderFullCompactDateControlsWidthProbe: some View {
-        macHeaderFittingControls(
-            showsRangePicker: true,
-            forceIconOnlyDatePickerButton: true
-        )
-            .fixedSize(horizontal: true, vertical: false)
-            .hidden()
-            .accessibilityHidden(true)
-            .background {
-                GeometryReader { proxy in
-                    Color.clear.preference(
-                        key: DayPlanHeaderFullControlsWidthPreferenceKey.self,
-                        value: proxy.size.width
-                    )
-                }
-            }
-    }
-
-    private var macHeaderFullRegularDateControlsWidthProbe: some View {
-        macHeaderFittingControls(
-            showsRangePicker: true,
-            forceIconOnlyDatePickerButton: false
-        )
+    private var macHeaderRegularControlsWidthProbe: some View {
+        macHeaderFittingControls
         .fixedSize(horizontal: true, vertical: false)
         .hidden()
         .accessibilityHidden(true)
@@ -743,36 +714,11 @@ private struct DayPlanHeaderView: View {
         }
     }
 
-    private var macHeaderCollapsedRegularDateControlsWidthProbe: some View {
-        macHeaderFittingControls(
-            showsRangePicker: false,
-            forceIconOnlyDatePickerButton: false
-        )
-        .fixedSize(horizontal: true, vertical: false)
-        .hidden()
-        .accessibilityHidden(true)
-        .background {
-            GeometryReader { proxy in
-                Color.clear.preference(
-                    key: DayPlanHeaderCollapsedRegularDateControlsWidthPreferenceKey.self,
-                    value: proxy.size.width
-                )
-            }
-        }
-    }
-
-    private func macHeaderFittingControls(
-        showsRangePicker: Bool,
-        forceIconOnlyDisplayModePicker: Bool? = nil,
-        forceIconOnlyDatePickerButton: Bool? = nil
-    ) -> some View {
+    private var macHeaderFittingControls: some View {
         HStack(alignment: .center, spacing: 12) {
-            plannerViewControlsCluster(
-                showsRangePicker: showsRangePicker,
-                forceIconOnlyDisplayModePicker: forceIconOnlyDisplayModePicker
-            )
+            plannerViewControlsCluster(usesCompactControls: false)
             Color.clear.frame(width: 16, height: 1)
-            plannerUtilityCluster(forceIconOnlyDatePickerButton: forceIconOnlyDatePickerButton)
+            plannerUtilityCluster(forceIconOnlyDatePickerButton: false)
         }
     }
 
@@ -801,18 +747,15 @@ private struct DayPlanHeaderView: View {
     }
 
     private func plannerViewControlsCluster(
-        showsRangePicker: Bool = true,
-        forceIconOnlyDisplayModePicker: Bool? = nil
+        usesCompactControls: Bool = false
     ) -> some View {
         HStack(alignment: .center, spacing: DayPlanHeaderRangePickerVisibility.segmentedControlSpacing) {
             if showsDisplayModePicker {
-                displayModePicker(forceIconOnly: forceIconOnlyDisplayModePicker)
+                plannerDisplayModeControl(usesCompactControls: usesCompactControls)
             }
             if effectiveDisplayMode == .calendar {
-                calendarTaskViewModePicker(forceIconOnly: forceIconOnlyDisplayModePicker)
-                if showsRangePicker {
-                    visibleRangeModePicker
-                }
+                calendarTaskViewModeControl(usesCompactControls: usesCompactControls)
+                visibleRangeModeControl(usesCompactControls: usesCompactControls)
             }
         }
     }
@@ -1075,7 +1018,7 @@ private struct DayPlanHeaderView: View {
     private var visibleRangeModePicker: some View {
         RoutinaGlassSegmentedControl(
             accessibilityLabel: "Planner range",
-            options: DayPlanVisibleRangeMode.allCases,
+            options: planner.availableVisibleRangeModes,
             selection: visibleRangeModeBinding
         ) { mode in
             Text(mode.title)
@@ -1085,65 +1028,84 @@ private struct DayPlanHeaderView: View {
     }
 
     private var displayModePicker: some View {
-        displayModePicker(forceIconOnly: nil)
-    }
-
-    private func displayModePicker(forceIconOnly: Bool?) -> some View {
-        let usesIconOnlySegments = forceIconOnly ?? usesIconOnlyMacDisplayModePicker
-
-        return RoutinaGlassSegmentedControl(
+        RoutinaGlassSegmentedControl(
             accessibilityLabel: "Planner view",
             options: DayPlanDisplayMode.allCases,
             selection: displayMode,
-            minimumSegmentWidth: usesIconOnlySegments ? 42 : 84,
-            horizontalPadding: usesIconOnlySegments ? 8 : 11
+            minimumSegmentWidth: 84,
+            horizontalPadding: 11
         ) { mode in
-            if usesIconOnlySegments {
-                Image(systemName: mode.systemImage)
-                    .accessibilityLabel(mode.title)
-                    .help(mode.title)
-            } else {
-                Label(mode.title, systemImage: mode.systemImage)
-                    .labelStyle(.titleAndIcon)
-            }
+            Label(mode.title, systemImage: mode.systemImage)
+                .labelStyle(.titleAndIcon)
         }
-        .frame(
-            width: usesIconOnlySegments
-                ? DayPlanHeaderRangePickerVisibility.iconOnlyDisplayModePickerWidth
-                : DayPlanHeaderRangePickerVisibility.displayModePickerWidth
-        )
+        .frame(width: DayPlanHeaderRangePickerVisibility.displayModePickerWidth)
         .accessibilityLabel("Planner view")
     }
 
     private var calendarTaskViewModePicker: some View {
-        calendarTaskViewModePicker(forceIconOnly: nil)
-    }
-
-    private func calendarTaskViewModePicker(forceIconOnly: Bool?) -> some View {
-        let usesIconOnlySegments = forceIconOnly ?? usesIconOnlyMacDisplayModePicker
-
-        return RoutinaGlassSegmentedControl(
+        RoutinaGlassSegmentedControl(
             accessibilityLabel: "Calendar task view",
             options: DayPlanCalendarTaskViewMode.allCases,
             selection: calendarTaskViewMode,
-            minimumSegmentWidth: usesIconOnlySegments ? 42 : 74,
-            horizontalPadding: usesIconOnlySegments ? 8 : 11
+            minimumSegmentWidth: 74,
+            horizontalPadding: 11
         ) { mode in
-            if usesIconOnlySegments {
-                Image(systemName: mode.systemImage)
-                    .accessibilityLabel(mode.title)
-                    .help(mode.title)
-            } else {
-                Label(mode.title, systemImage: mode.systemImage)
-                    .labelStyle(.titleAndIcon)
-            }
+            Label(mode.title, systemImage: mode.systemImage)
+                .labelStyle(.titleAndIcon)
         }
-        .frame(
-            width: usesIconOnlySegments
-                ? DayPlanHeaderRangePickerVisibility.iconOnlyCalendarTaskViewModePickerWidth
-                : DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth
-        )
+        .frame(width: DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth)
         .accessibilityLabel("Calendar task view")
+    }
+
+    @ViewBuilder
+    private func plannerDisplayModeControl(usesCompactControls: Bool) -> some View {
+        if usesCompactControls {
+            Picker("Planner view", selection: displayMode) {
+                ForEach(DayPlanDisplayMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: DayPlanHeaderRangePickerVisibility.compactDisplayModePickerWidth)
+            .accessibilityLabel("Planner view")
+        } else {
+            displayModePicker
+        }
+    }
+
+    @ViewBuilder
+    private func calendarTaskViewModeControl(usesCompactControls: Bool) -> some View {
+        if usesCompactControls {
+            Picker("Calendar task view", selection: calendarTaskViewMode) {
+                ForEach(DayPlanCalendarTaskViewMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: DayPlanHeaderRangePickerVisibility.compactCalendarTaskViewModePickerWidth)
+            .accessibilityLabel("Calendar task view")
+        } else {
+            calendarTaskViewModePicker
+        }
+    }
+
+    @ViewBuilder
+    private func visibleRangeModeControl(usesCompactControls: Bool) -> some View {
+        if usesCompactControls {
+            Picker("Planner range", selection: visibleRangeModeBinding) {
+                ForEach(planner.availableVisibleRangeModes) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: DayPlanHeaderRangePickerVisibility.compactVisibleRangeModePickerWidth)
+            .accessibilityLabel("Planner range")
+        } else {
+            visibleRangeModePicker
+        }
     }
 
     private var visibleRangeModeBinding: Binding<DayPlanVisibleRangeMode> {
@@ -1161,22 +1123,12 @@ private struct DayPlanHeaderView: View {
         showsDisplayModePicker ? displayMode.wrappedValue : .calendar
     }
 
-    private var usesIconOnlyMacDisplayModePicker: Bool {
-#if os(macOS)
-        DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
-            availableWidth: Double(effectiveMacHeaderAvailableWidth),
-            isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
-        )
-#else
-        false
-#endif
-    }
-
     private var usesIconOnlyMacDatePickerButton: Bool {
 #if os(macOS)
         DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-            availableWidth: Double(effectiveMacHeaderAvailableWidth),
-            regularDateControlsWidth: Double(macHeaderActiveRegularDateControlsWidth)
+            usesCompactControls: usesCompactMacHeaderControls,
+            showsCalendarControlSet: effectiveDisplayMode == .calendar,
+            showsExtraUtilityControl: macFocusControlIsVisible
         )
 #else
         false
@@ -1184,18 +1136,10 @@ private struct DayPlanHeaderView: View {
     }
 
     private var effectiveMacHeaderAvailableWidth: CGFloat {
-        if let parentAvailableWidth, parentAvailableWidth > 0 {
-            return parentAvailableWidth
-        }
-        return macHeaderAvailableWidth
-    }
-
-    private var macHeaderActiveRegularDateControlsWidth: CGFloat {
         CGFloat(
-            DayPlanHeaderRangePickerVisibility.regularDateControlsWidth(
-                showsRangePicker: shouldShowMacHeaderRangePicker,
-                fullRegularDateControlsWidth: Double(macHeaderFullRegularDateControlsWidth),
-                collapsedRegularDateControlsWidth: Double(macHeaderCollapsedRegularDateControlsWidth)
+            DayPlanHeaderRangePickerVisibility.effectiveAvailableWidth(
+                parentWidth: parentAvailableWidth.map(Double.init),
+                measuredWidth: Double(macHeaderAvailableWidth)
             )
         )
     }
@@ -1205,66 +1149,62 @@ private struct DayPlanHeaderView: View {
 enum DayPlanHeaderRangePickerVisibility {
     static let segmentedControlSpacing: CGFloat = 16
     static let displayModePickerWidth: CGFloat = 220
-    static let iconOnlyDisplayModePickerWidth: CGFloat = 100
+    static let compactDisplayModePickerWidth: CGFloat = 124
     static let calendarTaskViewModePickerWidth: CGFloat = 190
-    static let iconOnlyCalendarTaskViewModePickerWidth: CGFloat = 100
+    static let compactCalendarTaskViewModePickerWidth: CGFloat = 112
     static let visibleRangeModePickerWidth: CGFloat = 234
-    static let inspectorRangePickerMinimumAvailableWidth: Double = 860
-    static let iconOnlyDisplayModePickerMaximumAvailableWidth: Double = 860
-    static let compactDatePickerButtonMaximumAvailableWidth: Double = 660
+    static let compactVisibleRangeModePickerWidth: CGFloat = 96
+    static let compactTransitionReserveWidth: Double = 120
+    static let minimumRegularCalendarHeaderAvailableWidth: Double = 1520
+    static let minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth: Double = 1720
 
-    static func shouldShow(
-        availableWidth: Double,
-        fullControlsWidth: Double,
-        isTaskDetailInspectorPresented: Bool,
-        visibleRangeMode: DayPlanVisibleRangeMode
-    ) -> Bool {
-        if isTaskDetailInspectorPresented {
-            guard visibleRangeMode != .day else { return false }
-            guard availableWidth >= inspectorRangePickerMinimumAvailableWidth else { return false }
-        }
-        guard availableWidth > 0, fullControlsWidth > 0 else {
-            return !isTaskDetailInspectorPresented
-        }
-        return fullControlsWidth <= availableWidth + 0.5
-    }
-
-    static func shouldUseIconOnlyDisplayModePicker(
-        availableWidth: Double,
-        isTaskDetailInspectorPresented: Bool
-    ) -> Bool {
-        guard isTaskDetailInspectorPresented, availableWidth > 0 else { return false }
-        return availableWidth < iconOnlyDisplayModePickerMaximumAvailableWidth
-    }
-
-    static func shouldUseIconOnlyDatePickerButton(
-        availableWidth: Double,
-        regularDateControlsWidth: Double
-    ) -> Bool {
-        guard availableWidth > 0 else { return false }
-        guard regularDateControlsWidth > 0 else {
-            return availableWidth < compactDatePickerButtonMaximumAvailableWidth
-        }
-        return regularDateControlsWidth > availableWidth + 0.5
-    }
-
-    static func regularDateControlsWidth(
-        showsRangePicker: Bool,
-        fullRegularDateControlsWidth: Double,
-        collapsedRegularDateControlsWidth: Double
+    static func effectiveAvailableWidth(
+        parentWidth: Double?,
+        measuredWidth: Double
     ) -> Double {
-        showsRangePicker
-            ? fullRegularDateControlsWidth
-            : collapsedRegularDateControlsWidth
+        let positiveMeasuredWidth = measuredWidth > 0 ? measuredWidth : nil
+        let positiveParentWidth = parentWidth.flatMap { $0 > 0 ? $0 : nil }
+
+        switch (positiveParentWidth, positiveMeasuredWidth) {
+        case let (.some(parentWidth), .some(measuredWidth)):
+            return min(parentWidth, measuredWidth)
+        case let (.some(parentWidth), .none):
+            return parentWidth
+        case let (.none, .some(measuredWidth)):
+            return measuredWidth
+        case (.none, .none):
+            return 0
+        }
+    }
+
+    static func shouldUseCompactControls(
+        availableWidth: Double,
+        regularControlsWidth: Double,
+        availableRangeModeCount: Int,
+        totalRangeModeCount: Int,
+        showsCalendarControlSet: Bool = true,
+        showsExtraUtilityControl: Bool = false
+    ) -> Bool {
+        guard availableRangeModeCount >= totalRangeModeCount else { return true }
+        guard availableWidth > 0 else { return false }
+        if showsCalendarControlSet {
+            let minimumRegularWidth = showsExtraUtilityControl
+                ? minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth
+                : minimumRegularCalendarHeaderAvailableWidth
+            if availableWidth < minimumRegularWidth {
+                return true
+            }
+        }
+        guard regularControlsWidth > 0 else { return false }
+        return regularControlsWidth + compactTransitionReserveWidth > availableWidth + 0.5
     }
 
     static func shouldUseIconOnlyDatePickerButton(
-        availableWidth: Double
+        usesCompactControls: Bool,
+        showsCalendarControlSet: Bool,
+        showsExtraUtilityControl: Bool
     ) -> Bool {
-        shouldUseIconOnlyDatePickerButton(
-            availableWidth: availableWidth,
-            regularDateControlsWidth: 0
-        )
+        usesCompactControls || (showsCalendarControlSet && showsExtraUtilityControl)
     }
 }
 
@@ -1276,23 +1216,7 @@ private struct DayPlanHeaderAvailableWidthPreferenceKey: PreferenceKey {
     }
 }
 
-private struct DayPlanHeaderFullControlsWidthPreferenceKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 private struct DayPlanHeaderFullRegularDateControlsWidthPreferenceKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-private struct DayPlanHeaderCollapsedRegularDateControlsWidthPreferenceKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
 
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
@@ -1315,6 +1239,7 @@ private struct DayPlanTimelinePanelView: View {
     var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
+    var parentAvailableWidth: CGFloat? = nil
     var isExternalInspectorPresented = false
     var onSidebarPresentationRequested: (() -> Void)? = nil
     @State private var dataSnapshot = DayPlanTimelineDataSnapshot()
@@ -1377,6 +1302,7 @@ private struct DayPlanTimelinePanelView: View {
             calendarTaskViewMode: calendarTaskViewMode,
             isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented,
             isDatePickerSidebarPresented: isDatePickerSidebarPresented,
+            parentAvailableWidth: parentAvailableWidth,
             isExternalInspectorPresented: isExternalInspectorPresented,
             onSidebarPresentationRequested: onSidebarPresentationRequested
         )
@@ -2387,6 +2313,7 @@ private struct DayPlanTimelinePanelContentView: View {
     var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
+    var parentAvailableWidth: CGFloat? = nil
     var isExternalInspectorPresented = false
     var onSidebarPresentationRequested: (() -> Void)? = nil
     @State private var selectedEventID: UUID?
@@ -3000,6 +2927,13 @@ private struct DayPlanTimelinePanelContentView: View {
         )
         .onAppear {
             activatePlannerUndoManager()
+            updateAdaptiveVisibleRangeModeFromParentWidthIfAvailable()
+        }
+        .onChange(of: parentAvailableWidth) { _, _ in
+            updateAdaptiveVisibleRangeModeFromParentWidthIfAvailable()
+        }
+        .onChange(of: isExternalInspectorPresented) { _, _ in
+            updateAdaptiveVisibleRangeModeFromParentWidthIfAvailable()
         }
         .onChange(of: dataSnapshotID) { _, _ in
             dayTaskResolutionOverlay.reset()
@@ -3046,6 +2980,11 @@ private struct DayPlanTimelinePanelContentView: View {
             context: modelContext
         )
 #endif
+    }
+
+    private func updateAdaptiveVisibleRangeModeFromParentWidthIfAvailable() {
+        guard let parentAvailableWidth, parentAvailableWidth > 0 else { return }
+        updateAdaptiveVisibleRangeMode(for: parentAvailableWidth)
     }
 
     private func filteredAllDayBlocks(

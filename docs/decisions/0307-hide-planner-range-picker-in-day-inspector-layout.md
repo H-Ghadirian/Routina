@@ -4,6 +4,8 @@
 
 Accepted
 
+Range-picker hiding revised by [0609: Keep Planner Range Choices Actionable in Compact Headers](0609-keep-planner-range-choices-actionable-in-compact-headers.md).
+
 ## Date
 
 2026-06-28

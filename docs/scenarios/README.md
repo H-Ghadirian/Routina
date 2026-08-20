@@ -2420,7 +2420,7 @@ And any previous pause/resume segments for that session are replaced by one cont
 ### Planner Range Picker Follows Adaptive Visible Days
 
 Area: Planner
-Decision links: [0303](../decisions/0303-align-mac-planner-range-picker-with-adaptive-days.md)
+Decision links: [0609](../decisions/0609-keep-planner-range-choices-actionable-in-compact-headers.md), [0303](../decisions/0303-align-mac-planner-range-picker-with-adaptive-days.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
@@ -2428,6 +2428,8 @@ Coverage:
 Given Mac Planner prefers Week mode
 When the calendar column becomes wide, medium, or narrow
 Then the selected range segment and rendered calendar become Week, 3 Days, or Day respectively and previous/next navigation moves by that effective visible range
+And the range control lists only modes the current calendar width can render
+And the preferred Week mode returns when the calendar becomes wide enough again
 
 Given the user explicitly selects Day
 When the calendar column grows from narrow to wide
@@ -2572,26 +2574,24 @@ Given another eligible task has not explicitly added Heatmap
 When the user opens full Mac Task Details for that other task
 Then the heatmap stays hidden until the user adds it for that task
 
-### Planner Inspector Day Header Hides Range Picker
+### Planner Inspector Day Header Keeps Compact Range Choice
 
 Area: Planner
-Decision links: [0305](../decisions/0305-hide-planner-range-picker-when-header-cannot-fit.md), [0306](../decisions/0306-use-day-planner-width-for-task-detail-inspector-fit.md), [0307](../decisions/0307-hide-planner-range-picker-in-day-inspector-layout.md)
+Decision links: [0609](../decisions/0609-keep-planner-range-choices-actionable-in-compact-headers.md), [0306](../decisions/0306-use-day-planner-width-for-task-detail-inspector-fit.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 
 Given the Mac Planner task-detail companion pane is open
 When the effective Planner range has adapted down to Day
-Then the top `Day` / `3 Days` / `Week` segmented picker is hidden while Calendar/List, previous/next, filter, and the full date/range controls remain in the header
+Then the range control remains available as a current-value menu containing Day only
+And the Planner-view and Calendar task-view segmented controls also become current-value menus
+And previous/next, filter, and an icon-only Go to date control remain in the header
 And the calendar grid can use its compact inspector minimum width so the time column and single day column fit inside the Planner surface
 
-Given the Mac Planner task-detail companion pane is open and the range picker is already hidden
-When the Planner header becomes narrower
-Then the Calendar/List segment hides text before the date/range button switches to compact width
-
 Given the Mac Planner task-detail companion pane is open with enough room for a multi-day effective range
-When the full header controls fit on one row
-Then the top range segmented picker can remain visible
+When the Calendar header is at least 1520 points wide without the loaded Planner Focus control, or 1720 points wide with it, and the full controls fit on one row with the 120-point usability reserve
+Then the header can use segmented controls and the textual date/range button
 
 ### Planner Day Headers Open Planned Task Lists
 

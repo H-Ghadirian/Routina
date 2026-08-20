@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+The independent range-hiding fallback is revised by [0609: Keep Planner Range Choices Actionable in Compact Headers](0609-keep-planner-range-choices-actionable-in-compact-headers.md), which makes all header choices compact together and keeps the range menu available.
+
 Date: 2026-08-18
 
 Refines: [0292: Unify Planner Header Date Control](0292-unify-planner-header-date-control.md), [0305: Hide Planner Range Picker When Header Cannot Fit](0305-hide-planner-range-picker-when-header-cannot-fit.md), and [0320: Hide Planner Range Picker in Tight Inspector Layouts](0320-hide-planner-range-picker-in-tight-inspector-layouts.md)

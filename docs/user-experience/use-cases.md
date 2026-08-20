@@ -157,11 +157,11 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Turn intention into a visual day without changing every task into a deadline.
 
-**Desired experience:** The Planner distinguishes fixed schedule, all-day intent, date-only planning, and flexible work. Items can be placed, moved, reviewed, or removed from the plan while retaining their original task meaning. Editing a task's fixed scheduled time immediately moves its automatically generated block, while a block the person deliberately moved or resized remains where they placed it. Each timed placement appears once; synchronization must not multiply one block into several overlapping copies. On macOS, when the header becomes too narrow for the `Go to date` label, the control stays available as a calendar icon instead of showing an ellipsized date.
+**Desired experience:** The Planner distinguishes fixed schedule, all-day intent, date-only planning, and flexible work. Items can be placed, moved, reviewed, or removed from the plan while retaining their original task meaning. Editing a task's fixed scheduled time immediately moves its automatically generated block, while a block the person deliberately moved or resized remains where they placed it. Each timed placement appears once; synchronization must not multiply one block into several overlapping copies. On macOS, day columns become narrower while they remain readable, and the range control never offers Week or 3 Days when the current width cannot render that choice. A tight or visually crowded header keeps its current view choices available through compact menus and shows `Go to date` as a calendar icon instead of ellipsized date text. When loaded data adds the Planner Focus control in Calendar, the date control collapses to that icon independently so the remaining choices can stay expanded if they fit.
 
 **Successful outcome:** The person can see whether the day fits and adjust before committing attention.
 
-**Example:** A 10:00 appointment stays fixed, “write outline” is placed in a 45-minute block, and “buy groceries” remains an all-day intention.
+**Example:** A 10:00 appointment stays fixed, “write outline” is placed in a 45-minute block, and “buy groceries” remains an all-day intention. Narrowing the Mac window changes the range selector into a menu; if only Day and 3 Days fit, Week is absent until the window widens again.
 
 **Availability:** Production on macOS. Compact-platform planning routes may differ.
 
@@ -257,17 +257,17 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 ### UC-15 — Continue safely across devices
 
-**Situation:** The person captures on one device and later plans or reviews on another.
+**Situation:** The person captures on one device and later plans or reviews on another, starts using Routina without an Apple Account, or signs out after previously synchronizing.
 
-**Need:** Trust that personal data and durable preferences remain coherent.
+**Need:** Trust that personal data and durable preferences remain coherent, and understand which data is only on this device, which data reached iCloud, and which Apple Account owns the cloud copy.
 
-**Desired experience:** Synchronization is unobtrusive, conflicts do not silently discard history, and manual refresh reports only what it can verify. A long first refresh makes its continuing progress understandable with visible activity and an exact received-item count instead of treating elapsed time alone as failure or inventing a percentage, while later refreshes normally check only recent changes. Every manual refresh still reaches a bounded verified success or an actionable failure; on failure, existing local data stays available while Routina explains whether to check the connection, iCloud sign-in, or service availability and offers a retry. Task relationships arrive with their tasks, so a prerequisite created on Mac produces the same Linked Tasks content and effective Blocked state on iOS. Platform-specific layouts preserve the same product concepts. On iOS, the task calendar stays collapsed until it is useful, and each task remembers whether the person left its calendar expanded or collapsed when Task Details is reopened.
+**Desired experience:** Synchronization is unobtrusive, conflicts do not silently discard history, and manual refresh reports only what it can verify. Account availability is explicit before a cloud action: Routina does not describe local records as synchronized while the person is signed out, and an account transition does not silently discard, expose, upload, or merge one account's data into another account. A long first refresh makes its continuing progress understandable with visible activity and an exact received-item count instead of treating elapsed time alone as failure or inventing a percentage, while later refreshes normally check only recent changes. Every manual refresh still reaches a bounded verified success or an actionable failure; on failure, existing local data stays available while Routina explains whether to check the connection, iCloud sign-in, or service availability and offers a retry. Task relationships arrive with their tasks, so a prerequisite created on Mac produces the same Linked Tasks content and effective Blocked state on iOS. Platform-specific layouts preserve the same product concepts. On iOS, the task calendar stays collapsed until it is useful, and each task remembers whether the person left its calendar expanded or collapsed when Task Details is reopened.
 
 **Successful outcome:** The person continues the same task or review without reconstructing work.
 
-**Example:** Link a task to an unfinished prerequisite on Mac, then see the same relationship and Blocked state on iPhone after synchronization. If a deliberate refresh cannot reach iCloud, continue using the local task list, check the connection or iCloud account, and retry instead of waiting on an endless spinner.
+**Example:** Link a task to an unfinished prerequisite on Mac, then see the same relationship and Blocked state on iPhone after synchronization. If a deliberate refresh cannot reach iCloud, continue using the local task list, check the connection or iCloud account, and retry instead of waiting on an endless spinner. If the person signs out or changes accounts, explain the status and the effect on both local and cloud copies before any merge or removal.
 
-**Availability:** Production where iCloud is configured and available.
+**Availability:** Local use is production; cross-device continuity requires iCloud to be configured and an Apple Account to be available. The signed-out and account-transition safeguards described above are intended behavior but are not fully implemented or device-verified yet.
 
 ### UC-16 — Back up, recover, or reset personal data safely
 

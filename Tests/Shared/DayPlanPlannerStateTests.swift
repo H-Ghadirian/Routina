@@ -226,7 +226,7 @@ struct DayPlanPlannerStateTests {
         #expect(DayPlanHeaderRangePickerVisibility.displayModePickerWidth >= 220)
         #expect(
             DayPlanHeaderRangePickerVisibility.displayModePickerWidth
-                > DayPlanHeaderRangePickerVisibility.iconOnlyDisplayModePickerWidth
+                > DayPlanHeaderRangePickerVisibility.compactDisplayModePickerWidth
         )
     }
 
@@ -235,7 +235,16 @@ struct DayPlanPlannerStateTests {
         #expect(DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth >= 190)
         #expect(
             DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth
-                > DayPlanHeaderRangePickerVisibility.iconOnlyCalendarTaskViewModePickerWidth
+                > DayPlanHeaderRangePickerVisibility.compactCalendarTaskViewModePickerWidth
+        )
+    }
+
+    @Test
+    func compactRangePickerReservesRoomForItsCurrentChoice() {
+        #expect(DayPlanHeaderRangePickerVisibility.compactVisibleRangeModePickerWidth >= 96)
+        #expect(
+            DayPlanHeaderRangePickerVisibility.visibleRangeModePickerWidth
+                > DayPlanHeaderRangePickerVisibility.compactVisibleRangeModePickerWidth
         )
     }
 
@@ -356,10 +365,12 @@ struct DayPlanPlannerStateTests {
 
         #expect(planner.visibleRangeMode == .week)
         #expect(planner.visibleDates(calendar: calendar).count == 7)
+        #expect(planner.availableVisibleRangeModes == [.day, .threeDays, .week])
 
         planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 650, calendar: calendar, context: context)
 
         #expect(planner.visibleRangeMode == .threeDays)
+        #expect(planner.availableVisibleRangeModes == [.day, .threeDays])
         #expect(planner.visibleDates(calendar: calendar) == [
             try #require(date("2026-05-02T00:00:00Z")),
             try #require(date("2026-05-03T00:00:00Z")),
@@ -368,7 +379,13 @@ struct DayPlanPlannerStateTests {
 
         planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 420, calendar: calendar, context: context)
 
+        #expect(planner.visibleRangeMode == .threeDays)
+        #expect(planner.visibleDates(calendar: calendar).count == 3)
+
+        planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 350, calendar: calendar, context: context)
+
         #expect(planner.visibleRangeMode == .day)
+        #expect(planner.availableVisibleRangeModes == [.day])
         #expect(planner.visibleDates(calendar: calendar) == [
             try #require(date("2026-05-03T00:00:00Z")),
         ])
@@ -400,12 +417,30 @@ struct DayPlanPlannerStateTests {
             context: context
         )
 
-        #expect(planner.visibleRangeMode == .threeDays)
-        #expect(planner.visibleDates(calendar: calendar) == [
-            try #require(date("2026-05-02T00:00:00Z")),
-            try #require(date("2026-05-03T00:00:00Z")),
-            try #require(date("2026-05-04T00:00:00Z")),
-        ])
+        #expect(planner.visibleRangeMode == .week)
+        #expect(planner.visibleDates(calendar: calendar).count == 7)
+    }
+
+    @Test
+    func adaptiveRangeUsesTheSameMinimumDayWidthAsCalendarRendering() {
+        let weekMinimumWidth = Double(
+            DayPlanWeekCalendarSizing.timeColumnWidth
+                + CGFloat(DayPlanVisibleRangeMode.week.visibleDayCount)
+                    * DayPlanWeekCalendarSizing.minimumDayWidth(
+                        isExternalInspectorPresented: false
+                    )
+        )
+
+        #expect(
+            DayPlanPlannerState.adaptiveVisibleRangeMode(
+                forAvailableWidth: weekMinimumWidth
+            ) == .week
+        )
+        #expect(
+            DayPlanPlannerState.adaptiveVisibleRangeMode(
+                forAvailableWidth: weekMinimumWidth - 1
+            ) == .threeDays
+        )
     }
 
     @Test
@@ -435,7 +470,7 @@ struct DayPlanPlannerStateTests {
         let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
         let planner = DayPlanPlannerState(selectedDate: selectedDate)
 
-        planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 420, calendar: calendar, context: context)
+        planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 350, calendar: calendar, context: context)
         planner.setVisibleRangeMode(.day, calendar: calendar, context: context)
         planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 1_200, calendar: calendar, context: context)
 
@@ -453,7 +488,7 @@ struct DayPlanPlannerStateTests {
         let planner = DayPlanPlannerState(selectedDate: selectedDate)
 
         planner.setVisibleRangeMode(.threeDays, calendar: calendar, context: context)
-        planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 420, calendar: calendar, context: context)
+        planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 350, calendar: calendar, context: context)
         #expect(planner.visibleRangeMode == .day)
 
         planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 1_200, calendar: calendar, context: context)
@@ -467,142 +502,179 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func headerRangePickerHidesWhenTaskInspectorUsesDayLayout() {
+    func plannerHeaderUsesRegularControlsWhenEveryRangeAndTheFullRowFit() {
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldShow(
-                availableWidth: 500,
-                fullControlsWidth: 480,
-                isTaskDetailInspectorPresented: true,
-                visibleRangeMode: .day
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 1600,
+                regularControlsWidth: 760,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3
             ) == false
         )
     }
 
     @Test
-    func headerRangePickerCanShowInRoomyTaskInspectorMultiDayLayout() {
+    func plannerHeaderUsesCompactControlsWhenTheRegularRowWouldOverflow() {
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldShow(
-                availableWidth: 900,
-                fullControlsWidth: 760,
-                isTaskDetailInspectorPresented: true,
-                visibleRangeMode: .threeDays
-            )
-        )
-    }
-
-    @Test
-    func headerRangePickerHidesInTightTaskInspectorMultiDayLayout() {
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldShow(
-                availableWidth: 820,
-                fullControlsWidth: 620,
-                isTaskDetailInspectorPresented: true,
-                visibleRangeMode: .threeDays
-            ) == false
-        )
-    }
-
-    @Test
-    func inspectorHeaderCompactsDisplayModeBeforeDateButton() {
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
-                availableWidth: 900,
-                isTaskDetailInspectorPresented: true
-            ) == false
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
-                availableWidth: 820,
-                isTaskDetailInspectorPresented: true
-            )
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-                availableWidth: 820,
-                regularDateControlsWidth: 760
-            ) == false
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-                availableWidth: 620,
-                regularDateControlsWidth: 580
-            ) == false
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-                availableWidth: 620,
-                regularDateControlsWidth: 700
-            )
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
-                availableWidth: 820,
-                isTaskDetailInspectorPresented: false
-            ) == false
-        )
-    }
-
-    @Test
-    func datePickerButtonSwitchesToIconOnlyBeforeRegularDateTextOverflows() {
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-                availableWidth: 760,
-                regularDateControlsWidth: 760
-            ) == false
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
                 availableWidth: 759,
-                regularDateControlsWidth: 760
+                regularControlsWidth: 760,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3
+            )
+        )
+    }
+
+    @Test
+    func plannerHeaderCompactsBeforeTheRegularRowConsumesItsBreathingRoom() {
+        #expect(DayPlanHeaderRangePickerVisibility.compactTransitionReserveWidth >= 120)
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 1579,
+                regularControlsWidth: 1460,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3
+            )
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 1581,
+                regularControlsWidth: 1460,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3
+            ) == false
+        )
+    }
+
+    @Test
+    func plannerHeaderUsesCompactControlsWhenTheCalendarRowIsVisuallyCrowded() {
+        #expect(DayPlanHeaderRangePickerVisibility.minimumRegularCalendarHeaderAvailableWidth >= 1520)
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 1519,
+                regularControlsWidth: 760,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3
+            )
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 1519,
+                regularControlsWidth: 760,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3,
+                showsCalendarControlSet: false
+            ) == false
+        )
+    }
+
+    @Test
+    func plannerHeaderUsesCompactControlsEarlierWhenFocusControlIsVisible() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth
+                > DayPlanHeaderRangePickerVisibility.minimumRegularCalendarHeaderAvailableWidth
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 1600,
+                regularControlsWidth: 760,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3,
+                showsExtraUtilityControl: true
+            )
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 1600,
+                regularControlsWidth: 760,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3
+            ) == false
+        )
+    }
+
+    @Test
+    func plannerHeaderUsesIconOnlyDateButtonWhenFocusControlIsVisible() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                usesCompactControls: false,
+                showsCalendarControlSet: true,
+                showsExtraUtilityControl: true
             )
         )
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                usesCompactControls: false,
+                showsCalendarControlSet: true,
+                showsExtraUtilityControl: false
+            ) == false
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                usesCompactControls: false,
+                showsCalendarControlSet: false,
+                showsExtraUtilityControl: true
+            ) == false
+        )
+    }
+
+    @Test
+    func plannerHeaderUsesTheTighterVisibleWidthWhenParentWidthIsOptimistic() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.effectiveAvailableWidth(
+                parentWidth: 1800,
+                measuredWidth: 1480
+            ) == 1480
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.effectiveAvailableWidth(
+                parentWidth: 1480,
+                measuredWidth: 1800
+            ) == 1480
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.effectiveAvailableWidth(
+                parentWidth: 1800,
+                measuredWidth: 0
+            ) == 1800
+        )
+    }
+
+    @Test
+    func plannerHeaderUsesCompactControlsWhenTheCalendarCannotOfferEveryRange() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
                 availableWidth: 900,
-                regularDateControlsWidth: 760
-            ) == false
-        )
-    }
-
-    @Test
-    func datePickerFitUsesFullRowWhileRangePickerRemainsVisible() {
-        let availableWidth = 900.0
-        let showsRangePicker = DayPlanHeaderRangePickerVisibility.shouldShow(
-            availableWidth: availableWidth,
-            fullControlsWidth: 860,
-            isTaskDetailInspectorPresented: false,
-            visibleRangeMode: .threeDays
-        )
-        let activeRegularWidth = DayPlanHeaderRangePickerVisibility.regularDateControlsWidth(
-            showsRangePicker: showsRangePicker,
-            fullRegularDateControlsWidth: 980,
-            collapsedRegularDateControlsWidth: 740
-        )
-
-        #expect(showsRangePicker)
-        #expect(activeRegularWidth == 980)
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-                availableWidth: availableWidth,
-                regularDateControlsWidth: activeRegularWidth
+                regularControlsWidth: 760,
+                availableRangeModeCount: 2,
+                totalRangeModeCount: 3
             )
         )
     }
 
     @Test
-    func headerRangePickerStillHidesWhenFullHeaderDoesNotFit() {
+    func plannerHeaderUsesKnownCalendarWidthBeforeItsRegularWidthIsMeasured() {
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldShow(
-                availableWidth: 420,
-                fullControlsWidth: 620,
-                isTaskDetailInspectorPresented: false,
-                visibleRangeMode: .day
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 900,
+                regularControlsWidth: 0,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3
+            )
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+                availableWidth: 900,
+                regularControlsWidth: 0,
+                availableRangeModeCount: 3,
+                totalRangeModeCount: 3,
+                showsCalendarControlSet: false
             ) == false
         )
     }
 
     @Test
-    func regularPlannerCalendarKeepsExistingMinimumWidth() {
+    func regularPlannerCalendarCanCompressToTheReadableCompactDayWidth() {
         #expect(
             DayPlanWeekCalendarSizing.minimumCalendarWidth(isExternalInspectorPresented: false)
                 == 420
@@ -616,7 +688,7 @@ struct DayPlanPlannerStateTests {
                 availableWidth: 160,
                 dayCount: 1,
                 isExternalInspectorPresented: false
-            ) == 120
+            ) == 96
         )
     }
 
