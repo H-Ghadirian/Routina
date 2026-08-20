@@ -120,7 +120,9 @@ extension HomeTCAView {
             },
             isCreatingTaskFromSearch: isToolbarSearchCreateInProgress,
             canCreateTaskFromSearch: canCreateTaskFromToolbarSearch,
-            onSearchSubmit: createTaskFromToolbarSearch,
+            onSearchSubmit: { rawText in
+                createTaskFromToolbarSearch(rawText)
+            },
             onSearchCommandSubmit: openAddTaskFromToolbarSearch,
             onAddEvent: openAddEvent,
             onAddEmotion: openAddEmotion,
