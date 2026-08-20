@@ -168,6 +168,7 @@ enum FocusSessionTagRecency {
 }
 
 struct FocusSessionStartDefaults: Equatable {
+    static let rememberedDurationDefaultsKey = "macFocusTimerLastChoiceDuration"
     static let fallbackDuration: TimeInterval = 25 * 60
     static let standardDurationOptions: [TimeInterval] = [
         0,
@@ -181,9 +182,30 @@ struct FocusSessionStartDefaults: Equatable {
     let duration: TimeInterval
     let tagName: String?
 
+    static func rememberedDuration(
+        defaults: UserDefaults = SharedDefaults.app
+    ) -> TimeInterval? {
+        guard let storedValue = defaults.object(forKey: rememberedDurationDefaultsKey) as? NSNumber else {
+            return nil
+        }
+
+        let duration = storedValue.doubleValue
+        guard duration.isFinite, duration >= 0 else { return nil }
+        return duration
+    }
+
+    static func rememberDuration(
+        _ duration: TimeInterval,
+        defaults: UserDefaults = SharedDefaults.app
+    ) {
+        guard duration.isFinite, duration >= 0 else { return }
+        defaults.set(duration, forKey: rememberedDurationDefaultsKey)
+    }
+
     static func latest(
         focusSessions: [FocusSession],
-        availableTags: [String]
+        availableTags: [String],
+        rememberedDuration: TimeInterval? = nil
     ) -> Self {
         let latestSession = focusSessions
             .filter { $0.isTaskFocus || $0.isTagFocus }
@@ -196,13 +218,17 @@ struct FocusSessionStartDefaults: Equatable {
             }?
             .session
 
+        let validRememberedDuration = rememberedDuration.flatMap { value in
+            value.isFinite && value >= 0 ? value : nil
+        }
         guard let latestSession else {
-            return Self(duration: fallbackDuration, tagName: nil)
+            return Self(duration: validRememberedDuration ?? fallbackDuration, tagName: nil)
         }
 
-        let duration = latestSession.plannedDurationSeconds.isFinite
+        let historyDuration = latestSession.plannedDurationSeconds.isFinite
             ? max(0, latestSession.plannedDurationSeconds)
             : fallbackDuration
+        let duration = validRememberedDuration ?? historyDuration
         let tagName = latestSession.focusTagName.flatMap { recentTag in
             availableTags.first { availableTag in
                 RoutineTag.normalized(availableTag) == RoutineTag.normalized(recentTag)

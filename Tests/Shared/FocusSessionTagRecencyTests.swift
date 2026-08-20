@@ -117,4 +117,36 @@ struct FocusSessionStartDefaultsTests {
 
         #expect(options == expected)
     }
+
+    @Test
+    func rememberedDurationOverridesHistoryAndSurvivesPersistence() {
+        let suiteName = "FocusSessionStartDefaultsTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let latestFocus = FocusSession(
+            taskID: UUID(),
+            startedAt: Date(timeIntervalSinceReferenceDate: 100),
+            plannedDurationSeconds: 15 * 60
+        )
+
+        let expectedDuration = TimeInterval(45 * 60)
+        FocusSessionStartDefaults.rememberDuration(expectedDuration, defaults: defaults)
+
+        #expect(FocusSessionStartDefaults.rememberedDuration(defaults: defaults) == expectedDuration)
+        #expect(
+            FocusSessionStartDefaults.latest(
+                focusSessions: [latestFocus],
+                availableTags: [],
+                rememberedDuration: FocusSessionStartDefaults.rememberedDuration(defaults: defaults)
+            ) == FocusSessionStartDefaults(duration: expectedDuration, tagName: nil)
+        )
+        #expect(
+            FocusSessionStartDefaults.latest(
+                focusSessions: [],
+                availableTags: [],
+                rememberedDuration: FocusSessionStartDefaults.rememberedDuration(defaults: defaults)
+            ) == FocusSessionStartDefaults(duration: expectedDuration, tagName: nil)
+        )
+    }
 }

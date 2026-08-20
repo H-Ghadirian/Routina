@@ -9,6 +9,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
     let availableTags: [String]
     @State private var searchText = ""
     @State private var selectedDuration: TimeInterval
+    @State private var lastChoiceDuration: TimeInterval
     @State private var selectedTag: String?
 
     init(
@@ -19,6 +20,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         self.tasks = tasks
         self.availableTags = availableTags
         _selectedDuration = State(initialValue: defaults.duration)
+        _lastChoiceDuration = State(initialValue: defaults.duration)
         _selectedTag = State(initialValue: defaults.tagName)
     }
 
@@ -118,9 +120,17 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
 
     private var durationPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Duration")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Duration")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 8)
+
+                Text("Last choice: \(durationTitle(lastChoiceDuration))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -138,6 +148,8 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
 
         return Button {
             selectedDuration = duration
+            lastChoiceDuration = duration
+            FocusSessionStartDefaults.rememberDuration(duration)
         } label: {
             Text(durationTitle(duration))
                 .font(.caption.weight(.semibold))
@@ -287,6 +299,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
                 context: modelContext,
                 calendar: calendar
             )
+            FocusSessionStartDefaults.rememberDuration(selectedDuration)
             dismiss()
         } catch {
             NSLog("Failed to start focus from toolbar tag picker: \(error.localizedDescription)")
@@ -301,6 +314,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
                 context: modelContext,
                 calendar: calendar
             )
+            FocusSessionStartDefaults.rememberDuration(selectedDuration)
             dismiss()
         } catch {
             NSLog("Failed to start focus from toolbar task picker: \(error.localizedDescription)")

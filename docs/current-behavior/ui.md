@@ -53,6 +53,8 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 
 ## Current Contract
 
+- The Mac Planner Focus picker shows the locally remembered duration as Last choice and selects it by default. It uses the latest attributed Focus session only when no picker duration has been saved, while task selection remains explicit.
+
 - Visible button targets are interactive across their full visual surface, not only across their text, emoji, or icon.
 - Native SwiftUI button styles may own their native hit areas.
 - Custom or plain buttons must make the intended button surface fill the target and define a matching `contentShape`.

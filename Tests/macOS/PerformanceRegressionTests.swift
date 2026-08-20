@@ -33,9 +33,12 @@ final class PerformanceRegressionTests: XCTestCase {
             "Focus should open its sheet directly instead of presenting duration choices first."
         )
         XCTAssertTrue(pickerSource.contains("private var durationPicker: some View"))
+        XCTAssertTrue(pickerSource.contains("Last choice:"))
+        XCTAssertTrue(pickerSource.contains("FocusSessionStartDefaults.rememberDuration(selectedDuration)"))
         XCTAssertTrue(pickerSource.contains("plannedDurationSeconds: selectedDuration"))
         XCTAssertFalse(pickerSource.contains("focusSessions.reduce"))
         XCTAssertTrue(platformSource.contains("private func presentHomeToolbarFocusPicker()"))
+        XCTAssertTrue(platformSource.contains("FocusSessionStartDefaults.rememberedDuration()"))
         XCTAssertTrue(platformSource.contains("FocusSessionStartDefaults.latest("))
         XCTAssertTrue(homeSource.contains(".sheet(isPresented: $isHomeToolbarFocusPickerPresented)"))
         XCTAssertFalse(homeSource.contains("homeToolbarFocusPickerDuration"))

@@ -72,6 +72,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
 - [0448](../decisions/0448-complete-planned-tasks-inline-from-calendar-list.md)
 - [0600](../decisions/0600-edit-recorded-tag-focus-from-mac-planner.md)
+- [0620](../decisions/0620-remember-last-mac-focus-picker-duration.md)
 - [0606](../decisions/0606-show-icon-only-go-to-date-button-before-label-truncation.md)
 - [0607](../decisions/0607-persist-planner-placement-ownership.md)
 - [0609](../decisions/0609-keep-planner-range-choices-actionable-in-compact-headers.md)
@@ -79,6 +80,8 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0613](../decisions/0613-measure-loaded-planner-header-against-visible-width.md)
 
 ## Current Contract
+
+- The Mac Planner Focus sheet stores the duration selected in its picker in device-local preferences, shows it as Last choice, and selects it by default on the next opening. That remembered duration takes precedence over attributed Focus-session history; history remains the fallback when no picker choice has been saved, and the default is 25 minutes when neither source has a value.
 
 - Timeline activity is evidence for completed, missed, canceled, sleep, place, note, emotion, event, and accepted focus activity.
 - Timeline list surfaces show newest activity first in normal, non-inverted lists, with date headers above their rows.

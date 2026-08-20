@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0217 — Remember picker state separately from session history](0217-remember-picker-state-separately-from-session-history.md)
 - [0216 — Inherit exact availability when entering a time range](0216-inherit-exact-availability-when-entering-a-time-range.md)
 - [0215 — Keep interactive parser containers independent from transient eligibility](0215-keep-interactive-parser-containers-independent-from-transient-eligibility.md)
 - [0214 — Preserve Quick Add preview state across compatible reparses](0214-preserve-quick-add-preview-state-across-compatible-reparses.md)

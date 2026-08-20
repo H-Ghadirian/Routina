@@ -188,9 +188,11 @@ extension HomeTCAView {
             focusSessions: focusSessions
         )
         homeToolbarFocusPickerAvailableTags = availableTags
+        let rememberedDuration = FocusSessionStartDefaults.rememberedDuration()
         homeToolbarFocusPickerDefaults = FocusSessionStartDefaults.latest(
             focusSessions: focusSessions,
-            availableTags: availableTags
+            availableTags: availableTags,
+            rememberedDuration: rememberedDuration
         )
         isHomeToolbarFocusPickerPresented = true
     }

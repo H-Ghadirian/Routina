@@ -2430,6 +2430,11 @@ When the person opens the Focus sheet again
 Then `Count up · #HSE` is selected by default
 And the person can repeat it with Start or change duration and attribution in that same sheet
 
+Given the person selected a duration in the Focus sheet
+When the person reopens the sheet after canceling or starting that flow
+Then the duration is labeled `Last choice`
+And it is selected by default
+
 Given a newer unassigned Focus exists or the latest attributed tag is no longer available
 When the person opens the Focus sheet
 Then unassigned Focus does not replace the attributed duration default
