@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0617](0617-generate-editable-quick-add-titles-from-pasted-links.md) refines [0074](0074-parse-mac-add-task-title.md), [0211](0211-support-titled-task-links.md), [0315](0315-merge-mac-quick-add-into-toolbar-search.md), and [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md):** pasted URLs become task links immediately, URL-only input gets an editable deterministic title, and Mac Quick Add can improve it asynchronously from public webpage metadata without delaying creation or overwriting user edits.
+
 - **[0616](0616-interpret-unqualified-quick-add-dates-as-availability.md) refines [0074](0074-parse-mac-add-task-title.md), [0185](0185-limit-exact-reminders-to-todos.md), [0197](0197-separate-todo-date-and-time-availability.md), and [0315](0315-merge-mac-quick-add-into-toolbar-search.md):** unqualified one-off dates and times become exact availability, deadline words remain explicit, and timed Mac Quick Add asks for an optional reminder before saving.
 
 - **[0615](0615-group-and-control-pending-notification-occurrences.md) revises [0611](0611-list-actual-pending-notifications-in-settings.md) and refines [0192](0192-support-event-notifications.md), [0210](0210-store-durable-preferences-in-swiftdata.md), and [0412](0412-add-advanced-recurrence-beside-simple.md):** Settings groups actual pending requests by task or event and lets a person remove or pause one device-local occurrence without changing source data or allowing schedule reconciliation to recreate it.
@@ -755,6 +757,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0617](0617-generate-editable-quick-add-titles-from-pasted-links.md) | Generate Editable Quick Add Titles from Pasted Links | Accepted | 2026-08-20 |
 | [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md) | Interpret Unqualified Quick Add Dates as Availability | Accepted | 2026-08-20 |
 | [0615](0615-group-and-control-pending-notification-occurrences.md) | Group and Control Pending Notification Occurrences | Accepted | 2026-08-18 |
 | [0611](0611-list-actual-pending-notifications-in-settings.md) | List Actual Pending Notifications in Settings | Accepted | 2026-08-18 |

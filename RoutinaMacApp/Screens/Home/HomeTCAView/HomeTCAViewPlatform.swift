@@ -817,11 +817,19 @@ extension HomeTCAView {
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
         content
             .overlay(alignment: .top) {
-                if showsHomeToolbarSearch, let toolbarSearchCreateDraft, isToolbarSearchExpanded {
+                if showsHomeToolbarSearch,
+                   let toolbarSearchCreateDraft,
+                   isToolbarSearchExpanded || isToolbarSearchTaskTitleFocused {
                     HomeMacToolbarSearchParserPreview(
                         draft: toolbarSearchCreateDraft,
+                        taskTitle: toolbarSearchTaskTitleBinding(for: toolbarSearchCreateDraft),
+                        isTaskTitleFocused: $isToolbarSearchTaskTitleFocused,
                         reminderChoice: $toolbarSearchReminderChoice,
-                        customReminderAt: $toolbarSearchCustomReminderAt
+                        customReminderAt: $toolbarSearchCustomReminderAt,
+                        linkMetadataStatus: toolbarSearchLinkMetadataStatus,
+                        onTaskTitleSubmit: {
+                            createTaskFromToolbarSearch(searchTextBinding.wrappedValue)
+                        }
                     )
                         .frame(
                             width: HomeMacToolbarSearchLayout.focusedWidth,
@@ -919,9 +927,14 @@ extension HomeTCAView {
                 .easeOut(duration: 0.18),
                 value: store.taskCreationConfirmation
             )
-            .onChange(of: searchTextBinding.wrappedValue) { _, _ in
+            .onChange(of: searchTextBinding.wrappedValue) { _, newValue in
                 toolbarSearchReminderChoice = .none
                 toolbarSearchCustomReminderAt = Date()
+                resetToolbarSearchLinkTitleState(for: newValue)
+            }
+            .task(id: toolbarSearchLinkResolutionID) {
+                guard let draft = toolbarSearchCreateDraft else { return }
+                await resolveToolbarSearchLinkTitle(for: draft)
             }
             .alert("Could Not Create Task", isPresented: toolbarSearchCreateErrorBinding) {
                 Button("OK", role: .cancel) {
@@ -967,6 +980,86 @@ extension HomeTCAView {
         return draft
     }
 
+    private var toolbarSearchLinkResolutionID: String? {
+        guard let draft = toolbarSearchCreateDraft,
+              let linkURL = draft.primaryLinkURL else {
+            return nil
+        }
+        return "\(searchTextBinding.wrappedValue)|\(linkURL.absoluteString)"
+    }
+
+    private func toolbarSearchTaskTitleBinding(
+        for draft: RoutinaQuickAddDraft
+    ) -> Binding<String> {
+        Binding(
+            get: { toolbarSearchEffectiveTaskTitle(for: draft) },
+            set: { newValue in
+                toolbarSearchTaskTitleSourceText = searchTextBinding.wrappedValue
+                toolbarSearchEditableTaskTitle = newValue
+                toolbarSearchTaskTitleWasEdited = true
+            }
+        )
+    }
+
+    private func toolbarSearchEffectiveTaskTitle(for draft: RoutinaQuickAddDraft) -> String {
+        guard toolbarSearchTaskTitleSourceText == searchTextBinding.wrappedValue else {
+            return draft.name
+        }
+        return toolbarSearchEditableTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? draft.name
+            : toolbarSearchEditableTaskTitle
+    }
+
+    private func resetToolbarSearchLinkTitleState(for rawText: String) {
+        toolbarSearchTaskTitleSourceText = rawText
+        toolbarSearchEditableTaskTitle = RoutinaQuickAddParser.parse(
+            rawText,
+            calendar: calendar,
+            includingPlaces: isPlacesEnabled
+        )?.name ?? ""
+        toolbarSearchTaskTitleWasEdited = false
+        toolbarSearchResolvedLinkTitle = nil
+        toolbarSearchLinkMetadataStatus = .idle
+    }
+
+    @MainActor
+    private func resolveToolbarSearchLinkTitle(for draft: RoutinaQuickAddDraft) async {
+        guard let linkURL = draft.primaryLinkURL else { return }
+        let sourceText = searchTextBinding.wrappedValue
+
+        if toolbarSearchTaskTitleSourceText != sourceText {
+            resetToolbarSearchLinkTitleState(for: sourceText)
+        }
+        guard RoutinaQuickAddLinkSupport.canFetchMetadata(for: linkURL) else {
+            toolbarSearchLinkMetadataStatus = .unavailable
+            return
+        }
+
+        toolbarSearchLinkMetadataStatus = .loading
+        let metadataTitle = await HomeMacLinkMetadataResolver.title(for: linkURL)
+        guard !Task.isCancelled,
+              searchTextBinding.wrappedValue == sourceText,
+              toolbarSearchCreateDraft?.primaryLinkURL == linkURL else {
+            return
+        }
+
+        guard let metadataTitle else {
+            toolbarSearchLinkMetadataStatus = .unavailable
+            return
+        }
+
+        toolbarSearchResolvedLinkTitle = metadataTitle
+        toolbarSearchLinkMetadataStatus = .resolved
+        if draft.usesGeneratedLinkName,
+           !toolbarSearchTaskTitleWasEdited,
+           let suggestedTitle = RoutinaQuickAddLinkSupport.taskTitle(
+               fromMetadataTitle: metadataTitle,
+               url: linkURL
+           ) {
+            toolbarSearchEditableTaskTitle = suggestedTitle
+        }
+    }
+
     private func createTaskFromToolbarSearch(_ rawText: String) {
         let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty,
@@ -981,6 +1074,11 @@ extension HomeTCAView {
             eventDate: toolbarSearchCreateDraft?.exactAvailabilityDate(calendar: calendar),
             customDate: toolbarSearchCustomReminderAt
         )
+        let createDraft = toolbarSearchCreateDraft
+        let taskTitle = createDraft.map(toolbarSearchEffectiveTaskTitle)
+        let primaryLinkTitle = toolbarSearchTaskTitleSourceText == rawText
+            ? toolbarSearchResolvedLinkTitle
+            : nil
 
         Task { @MainActor in
             defer { isToolbarSearchCreateInProgress = false }
@@ -991,10 +1089,14 @@ extension HomeTCAView {
                     context: modelContext,
                     calendar: calendar,
                     includingPlaces: isPlacesEnabled,
-                    reminderAt: reminderAt
+                    reminderAt: reminderAt,
+                    taskNameOverride: taskTitle,
+                    primaryLinkTitle: primaryLinkTitle
                 )
                 searchTextBinding.wrappedValue = ""
                 toolbarSearchReminderChoice = .none
+                resetToolbarSearchLinkTitleState(for: "")
+                isToolbarSearchTaskTitleFocused = false
                 handleQuickAddCreated(result)
             } catch {
                 toolbarSearchCreateErrorMessage = error.localizedDescription

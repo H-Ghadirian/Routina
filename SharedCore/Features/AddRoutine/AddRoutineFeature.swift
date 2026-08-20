@@ -873,6 +873,13 @@ struct AddRoutineFeature: Reducer {
 
         AddRoutineValidationEditor.setRoutineName(draft.name, state: &state)
 
+        if !draft.linkItems.isEmpty {
+            AddRoutineBasicsEditor.setLink(
+                RoutineTask.linkEditorText(for: draft.linkItems),
+                basics: &state.basics
+            )
+        }
+
         if draft.hasDetectedSchedule {
             applyQuickAddSchedule(from: draft, state: &state)
         }

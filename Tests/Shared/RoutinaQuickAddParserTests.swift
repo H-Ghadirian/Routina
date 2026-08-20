@@ -196,6 +196,56 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
+    func parseYouTubeURLAsLinkWithImmediateFallbackTitle() throws {
+        let rawURL = "https://www.youtube.com/watch?v=abc123&t=15s#comments"
+        let draft = try #require(RoutinaQuickAddParser.parse(rawURL))
+
+        #expect(draft.name == "Watch YouTube video")
+        #expect(draft.usesGeneratedLinkName)
+        #expect(draft.linkItems == [RoutineTaskLink(title: nil, url: rawURL)])
+        #expect(draft.tags.isEmpty)
+        #expect(draft.placeName == nil)
+        #expect(draft.hasDetectedMetadata)
+        #expect(draft.summaryText == "Todo · Link · YouTube")
+    }
+
+    @Test
+    func parseLinkBesideExplicitTaskNamePreservesUserTitle() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Watch this later https://youtu.be/abc123"
+        ))
+
+        #expect(draft.name == "Watch this later")
+        #expect(!draft.usesGeneratedLinkName)
+        #expect(draft.linkItems.map(\.url) == ["https://youtu.be/abc123"])
+    }
+
+    @Test
+    func linkMetadataTitleCreatesTaskFriendlyYouTubeTitle() throws {
+        let url = try #require(URL(string: "https://youtube.com/watch?v=abc123"))
+
+        #expect(RoutinaQuickAddLinkSupport.taskTitle(
+            fromMetadataTitle: "  Better   Mobility — YouTube ",
+            url: url
+        ) == "Watch: Better Mobility")
+        #expect(RoutinaQuickAddLinkSupport.resolvedLinkTitle(
+            from: "  Better   Mobility — YouTube ",
+            url: url
+        ) == "Better Mobility")
+    }
+
+    @Test
+    func linkMetadataFetchRejectsPrivateAndCredentialedURLs() throws {
+        let publicURL = try #require(URL(string: "https://example.com/article"))
+        let localURL = try #require(URL(string: "http://127.0.0.1:8080/private"))
+        let credentialedURL = try #require(URL(string: "https://user:secret@example.com/private"))
+
+        #expect(RoutinaQuickAddLinkSupport.canFetchMetadata(for: publicURL))
+        #expect(!RoutinaQuickAddLinkSupport.canFetchMetadata(for: localURL))
+        #expect(!RoutinaQuickAddLinkSupport.canFetchMetadata(for: credentialedURL))
+    }
+
+    @Test
     func parseFixedIntervalRoutine() throws {
         let draft = try #require(RoutinaQuickAddParser.parse(
             "Buy coffee beans every 20 days",
@@ -347,6 +397,26 @@ struct RoutinaQuickAddParserTests {
         #expect(task.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 15, minute: 0))
         #expect(task.deadline == nil)
         #expect(task.reminderAt == reminderAt)
+    }
+
+    @Test
+    func createTaskPersistsResolvedLinkAndEditableTitleOverride() async throws {
+        let context = makeInMemoryContext()
+        let rawURL = "https://www.youtube.com/watch?v=abc123"
+
+        let result = try await RoutinaQuickAddService.createTask(
+            from: rawURL,
+            context: context,
+            taskNameOverride: "Watch my mobility routine",
+            primaryLinkTitle: "Better Mobility — YouTube"
+        )
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let task = try #require(tasks.first { $0.id == result.taskID })
+
+        #expect(task.name == "Watch my mobility routine")
+        #expect(task.linkItems == [RoutineTaskLink(title: "Better Mobility", url: rawURL)])
+        #expect(result.draft.name == "Watch my mobility routine")
     }
 
     @Test

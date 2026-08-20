@@ -1562,6 +1562,39 @@ When the person instead enters `Submit claim by 25 August 15:00`
 Then Quick Add creates a deadline at that date and time
 And it still does not infer a separate reminder
 
+### Quick Add Turns a Pasted Link Into an Editable Named Task
+
+Area: Tasks
+Decision links: [0074](../decisions/0074-parse-mac-add-task-title.md), [0211](../decisions/0211-support-titled-task-links.md), [0315](../decisions/0315-merge-mac-quick-add-into-toolbar-search.md), [0617](../decisions/0617-generate-editable-quick-add-titles-from-pasted-links.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/RoutinaQuickAddParserTests.swift`
+- `Tests/Shared/AddRoutineFeatureTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given the person pastes only a public YouTube URL into Quick Add
+When the shared parser runs
+Then it removes the whole URL before interpreting tags, places, dates, and times
+And it attaches the URL as a task link
+And it immediately proposes `Watch YouTube video` as an editable fallback title
+
+When Mac toolbar metadata resolves before creation and the person has not edited the title
+Then the preview replaces the fallback with a task-friendly page-specific title such as `Watch: Better Mobility`
+And it preserves the resolved page title on the task link
+
+When the person edits the proposed task title
+Then a later metadata result does not replace that edit
+And Return creates the task with the title currently displayed
+
+When metadata is unavailable, unsafe to fetch, still loading, or fails
+Then Return remains available without waiting
+And the task keeps its editable deterministic fallback and attached link
+And Routina never renames the task after creation
+
+Given text appears beside the URL
+When Quick Add parses the input
+Then that text remains the task title rather than being replaced by webpage metadata
+
 ### Mac Toolbar Search Shows Every Eligible Suppressed Task Match
 
 Area: Tasks / Planner

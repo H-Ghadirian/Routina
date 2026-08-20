@@ -2,6 +2,8 @@ import Foundation
 
 struct RoutinaQuickAddDraft: Equatable, Sendable {
     var name: String
+    var usesGeneratedLinkName: Bool
+    var linkItems: [RoutineTaskLink]
     var scheduleMode: RoutineScheduleMode
     var frequencyInDays: Int
     var recurrenceRule: RoutineRecurrenceRule
@@ -23,6 +25,7 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
 
     var hasDetectedMetadata: Bool {
         hasDetectedSchedule
+            || !linkItems.isEmpty
             || !tags.isEmpty
             || placeName != nil
             || hasExplicitPriority
@@ -53,7 +56,15 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
             parts.append("\(estimatedDurationMinutes)m")
         }
 
+        if let primaryLinkURL {
+            parts.append("Link · \(RoutinaQuickAddLinkSupport.sourceName(for: primaryLinkURL))")
+        }
+
         return parts.joined(separator: " · ")
+    }
+
+    var primaryLinkURL: URL? {
+        linkItems.first.flatMap { URL(string: $0.url) }
     }
 
     private var scheduleSummary: String {
@@ -98,6 +109,7 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
             frequencyInDays: frequencyInDays,
             recurrenceRule: recurrenceRule,
             emoji: "✨",
+            linkItems: linkItems,
             deadline: deadline,
             availabilityStartDate: availabilityStartDate,
             availabilityEndDate: availabilityEndDate,
@@ -128,6 +140,8 @@ enum RoutinaQuickAddParser {
         var working = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !working.isEmpty else { return nil }
 
+        let linkItems = extractLinks(from: &working)
+
         let tags = extractTokens(
             pattern: "(?:^|\\s)#([^\\s#@!]+)",
             from: &working
@@ -150,11 +164,18 @@ enum RoutinaQuickAddParser {
         )
         let durationMinutes = extractDurationMinutes(from: &working)
 
-        let name = cleanedName(from: working)
+        let explicitName = cleanedName(from: working)
+        let usesGeneratedLinkName = explicitName.isEmpty && !linkItems.isEmpty
+        let name = usesGeneratedLinkName
+            ? linkItems.first.flatMap { URL(string: $0.url) }
+                .map(RoutinaQuickAddLinkSupport.fallbackTaskTitle) ?? "Open link"
+            : explicitName
         guard !name.isEmpty else { return nil }
 
         return RoutinaQuickAddDraft(
             name: name,
+            usesGeneratedLinkName: usesGeneratedLinkName,
+            linkItems: linkItems,
             scheduleMode: schedule.scheduleMode,
             frequencyInDays: schedule.frequencyInDays,
             recurrenceRule: schedule.recurrenceRule,
@@ -639,6 +660,21 @@ enum RoutinaQuickAddParser {
             .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters))
     }
 
+    private static func extractLinks(from working: inout String) -> [RoutineTaskLink] {
+        let pattern = #"((?:https?://|www\.)[^\s<>\"']+)"#
+        let trailingPunctuation = CharacterSet(charactersIn: ".,;:!?)]}")
+        var links: [RoutineTaskLink] = []
+
+        while let match = removeFirstMatch(pattern: pattern, from: &working),
+              let rawLink = match.groups.first {
+            let trimmedLink = rawLink.trimmingCharacters(in: trailingPunctuation)
+            guard let sanitizedLink = RoutineTask.sanitizedLink(trimmedLink) else { continue }
+            links.append(RoutineTaskLink(title: nil, url: sanitizedLink))
+        }
+
+        return RoutineTaskLinkStorage.sanitizedItems(links)
+    }
+
     private static func extractTokens(pattern: String, from working: inout String) -> [String] {
         var tokens: [String] = []
         while let match = removeFirstMatch(pattern: pattern, from: &working) {
@@ -767,6 +803,113 @@ enum RoutinaQuickAddParser {
     ) -> Date {
         let start = calendar.startOfDay(for: day)
         return timeOfDay?.date(on: start, calendar: calendar) ?? start
+    }
+}
+
+enum RoutinaQuickAddLinkSupport {
+    static func fallbackTaskTitle(for url: URL) -> String {
+        if isYouTubeURL(url) {
+            return "Watch YouTube video"
+        }
+        if isGitHubURL(url) {
+            return "Review GitHub link"
+        }
+        return "Open \(sourceName(for: url))"
+    }
+
+    static func taskTitle(fromMetadataTitle rawTitle: String, url: URL) -> String? {
+        guard let pageTitle = cleanedMetadataTitle(rawTitle, url: url) else { return nil }
+        if isYouTubeURL(url) {
+            return hasActionPrefix(pageTitle, prefix: "Watch") ? pageTitle : "Watch: \(pageTitle)"
+        }
+        if isGitHubURL(url) {
+            return hasActionPrefix(pageTitle, prefix: "Review") ? pageTitle : "Review: \(pageTitle)"
+        }
+        return pageTitle
+    }
+
+    static func cleanedMetadataTitle(_ rawTitle: String, url: URL) -> String? {
+        var title = rawTitle
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return nil }
+
+        if isYouTubeURL(url) {
+            title = title.replacingOccurrences(
+                of: #"\s*[-|–—]\s*YouTube\s*$"#,
+                with: "",
+                options: [.regularExpression, .caseInsensitive]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return title.isEmpty ? nil : title
+    }
+
+    static func sourceName(for url: URL) -> String {
+        if isYouTubeURL(url) { return "YouTube" }
+        if isGitHubURL(url) { return "GitHub" }
+
+        let host = normalizedHost(for: url)
+        return host.isEmpty ? "link" : host
+    }
+
+    static func canFetchMetadata(for url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased(),
+              ["http", "https"].contains(scheme),
+              url.user == nil,
+              url.password == nil else {
+            return false
+        }
+
+        let host = normalizedHost(for: url)
+        guard !host.isEmpty,
+              host != "localhost",
+              !host.hasSuffix(".localhost"),
+              !host.hasSuffix(".local"),
+              host != "::1",
+              host != "0.0.0.0",
+              !host.hasPrefix("127."),
+              !host.hasPrefix("10."),
+              !host.hasPrefix("192.168.") else {
+            return false
+        }
+
+        if host.hasPrefix("172."),
+           let secondOctet = host.split(separator: ".").dropFirst().first.flatMap({ Int($0) }),
+           (16...31).contains(secondOctet) {
+            return false
+        }
+
+        return true
+    }
+
+    static func resolvedLinkTitle(from rawTitle: String, url: URL) -> String? {
+        cleanedMetadataTitle(rawTitle, url: url)
+    }
+
+    private static func hasActionPrefix(_ title: String, prefix: String) -> Bool {
+        title.range(
+            of: "^\(NSRegularExpression.escapedPattern(for: prefix))(?:\\s|:)",
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil
+    }
+
+    private static func isYouTubeURL(_ url: URL) -> Bool {
+        let host = normalizedHost(for: url)
+        return host == "youtube.com" || host.hasSuffix(".youtube.com") || host == "youtu.be"
+    }
+
+    private static func isGitHubURL(_ url: URL) -> Bool {
+        let host = normalizedHost(for: url)
+        return host == "github.com" || host.hasSuffix(".github.com")
+    }
+
+    private static func normalizedHost(for url: URL) -> String {
+        var host = url.host?.lowercased() ?? ""
+        if host.hasPrefix("www.") {
+            host.removeFirst(4)
+        }
+        return host
     }
 }
 

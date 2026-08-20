@@ -1,4 +1,5 @@
 import AppKit
+import LinkPresentation
 import SwiftUI
 
 struct HomeMacTopToolbarChrome: View {
@@ -628,11 +629,22 @@ enum HomeMacToolbarSearchReminderChoice: String, CaseIterable, Identifiable {
     }
 }
 
+enum HomeMacToolbarLinkMetadataStatus: Equatable {
+    case idle
+    case loading
+    case resolved
+    case unavailable
+}
+
 struct HomeMacToolbarSearchParserPreview: View {
     @Environment(\.calendar) private var calendar
     let draft: RoutinaQuickAddDraft
+    @Binding var taskTitle: String
+    @Binding var isTaskTitleFocused: Bool
     @Binding var reminderChoice: HomeMacToolbarSearchReminderChoice
     @Binding var customReminderAt: Date
+    let linkMetadataStatus: HomeMacToolbarLinkMetadataStatus
+    let onTaskTitleSubmit: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -646,10 +658,22 @@ struct HomeMacToolbarSearchParserPreview: View {
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 16)
 
-                Text(draft.name)
+                TextField("Task title", text: $taskTitle) { isEditing in
+                    isTaskTitleFocused = isEditing
+                }
+                    .textFieldStyle(.roundedBorder)
                     .font(.headline)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                    .accessibilityLabel("Task title")
+                    .onSubmit(onTaskTitleSubmit)
+                    .onExitCommand {
+                        isTaskTitleFocused = false
+                    }
+
+                if linkMetadataStatus == .loading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .help("Fetching the link title")
+                }
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -768,6 +792,15 @@ struct HomeMacToolbarSearchParserPreview: View {
             ))
         }
 
+        if let primaryLinkURL = draft.primaryLinkURL {
+            let statusText = linkMetadataStatus == .loading ? " · Fetching title…" : ""
+            rows.append(ParsedRow(
+                title: "Link",
+                value: "\(RoutinaQuickAddLinkSupport.sourceName(for: primaryLinkURL))\(statusText)",
+                systemImage: "link"
+            ))
+        }
+
         return rows
     }
 
@@ -799,6 +832,23 @@ struct HomeMacToolbarSearchParserPreview: View {
         let systemImage: String
 
         var id: String { "\(title):\(value)" }
+    }
+}
+
+@MainActor
+enum HomeMacLinkMetadataResolver {
+    static func title(for url: URL) async -> String? {
+        guard RoutinaQuickAddLinkSupport.canFetchMetadata(for: url) else { return nil }
+
+        let provider = LPMetadataProvider()
+        provider.timeout = 8
+        do {
+            let metadata = try await provider.startFetchingMetadata(for: url)
+            guard let title = metadata.title else { return nil }
+            return RoutinaQuickAddLinkSupport.resolvedLinkTitle(from: title, url: url)
+        } catch {
+            return nil
+        }
     }
 }
 

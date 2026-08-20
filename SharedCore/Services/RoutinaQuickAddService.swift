@@ -71,14 +71,35 @@ enum RoutinaQuickAddService {
         referenceDate: Date = .now,
         calendar: Calendar = .current,
         includingPlaces: Bool = SharedDefaults.app[.appSettingPlacesEnabled],
-        reminderAt: Date? = nil
+        reminderAt: Date? = nil,
+        taskNameOverride: String? = nil,
+        primaryLinkTitle: String? = nil
     ) async throws -> RoutinaQuickAddCreateResult {
         guard var draft = RoutinaQuickAddParser.parse(
             text,
             referenceDate: referenceDate,
             calendar: calendar,
             includingPlaces: includingPlaces
-        ), let trimmedName = RoutineTask.trimmedName(draft.name),
+        ) else {
+            throw RoutinaQuickAddError.emptyInput
+        }
+
+        if let taskNameOverride,
+           let trimmedOverride = RoutineTask.trimmedName(taskNameOverride),
+           !trimmedOverride.isEmpty {
+            draft.name = trimmedOverride
+        }
+        if let primaryLinkTitle,
+           let firstLink = draft.linkItems.first,
+           let url = URL(string: firstLink.url),
+           let resolvedTitle = RoutinaQuickAddLinkSupport.resolvedLinkTitle(
+               from: primaryLinkTitle,
+               url: url
+           ) {
+            draft.linkItems[0].title = resolvedTitle
+        }
+
+        guard let trimmedName = RoutineTask.trimmedName(draft.name),
            !trimmedName.isEmpty
         else {
             throw RoutinaQuickAddError.emptyInput

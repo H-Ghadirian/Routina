@@ -1171,6 +1171,25 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func applyQuickAddDraftFromLink_populatesEditableTitleAndLink() async {
+        let rawURL = "https://www.youtube.com/watch?v=abc123"
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: rawURL)
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: makeDate("2026-08-20T10:00:00Z"))
+        }
+
+        await store.send(.applyQuickAddDraftFromName) {
+            $0.basics.routineName = "Watch YouTube video"
+            $0.basics.routineLink = rawURL
+        }
+    }
+
+    @Test
     func saveTapped_appliesQuickAddDraftFromNameBeforeDelegating() async {
         let store = TestStore(
             initialState: makeState(
