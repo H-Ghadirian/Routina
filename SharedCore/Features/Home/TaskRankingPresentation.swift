@@ -411,6 +411,7 @@ struct TaskRankingPresentation: Equatable {
         valueMode: TaskRankingValueMode = .base,
         referenceDate: Date,
         calendar: Calendar,
+        completionDatesByTaskID: [UUID: Set<Date>] = [:],
         scopePath: [UUID] = []
     ) -> Self {
         let taskIDs = Set(tasks.map(\.id))
@@ -418,6 +419,12 @@ struct TaskRankingPresentation: Equatable {
         let taskLadderExclusionFlagIDs = RoutineFlagRules.normalizedFlagIDs(
             for: .hideFromTaskLadder,
             in: flagRules
+        )
+        let relationshipBlockedTaskIDs = HomeDisplayFilterSupport.activeRelationshipBlockedTaskIDs(
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            completionDatesByTaskID: completionDatesByTaskID
         )
         let eligibleTasks = tasks.filter { task in
             let isHiddenFromTaskLadder = task.flags.contains { flag in
@@ -427,6 +434,7 @@ struct TaskRankingPresentation: Equatable {
                 && !task.isCompletedOneOff
                 && !task.isCanceledOneOff
                 && task.todoState != .blocked
+                && !relationshipBlockedTaskIDs.contains(task.id)
                 && !isHiddenFromTaskLadder
         }
         let eligibleTasksByID = Dictionary(

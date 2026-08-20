@@ -14,6 +14,7 @@ struct TaskRankingFeature {
     @ObservableState
     struct State: Equatable {
         var tasks: [RoutineTask] = []
+        var completionDatesByTaskID: [UUID: Set<Date>] = [:]
         var flagRules: [RoutineFlagRule] = []
         var organization = TaskLadderOrganization()
         var metric: TaskRankingMetric = .pressure
@@ -67,7 +68,7 @@ struct TaskRankingFeature {
         case onDisappear
         case refresh
         case routineDataChanged
-        case tasksLoaded([RoutineTask], [RoutineFlagRule], TaskLadderOrganization)
+        case tasksLoaded([RoutineTask], [RoutineFlagRule], TaskLadderOrganization, [UUID: Set<Date>])
         case flagRulesChanged
         case organizationChanged
         case loadFailed(String)
@@ -125,8 +126,9 @@ struct TaskRankingFeature {
                 }
                 .cancellable(id: CancelID.automaticRefresh, cancelInFlight: true)
 
-            case let .tasksLoaded(tasks, flagRules, organization):
+            case let .tasksLoaded(tasks, flagRules, organization, completionDatesByTaskID):
                 state.tasks = tasks
+                state.completionDatesByTaskID = completionDatesByTaskID
                 state.flagRules = RoutineFlagRules.sanitized(flagRules)
                 state.organization = organization.sanitized(validTaskIDs: Set(tasks.map(\.id)))
                 state.isLoading = false
@@ -392,6 +394,7 @@ struct TaskRankingFeature {
             valueMode: effectiveValueMode,
             referenceDate: now,
             calendar: calendar,
+            completionDatesByTaskID: state.completionDatesByTaskID,
             scopePath: state.scopePath
         )
     }
@@ -432,10 +435,16 @@ struct TaskRankingFeature {
         .run { @MainActor send in
             do {
                 let tasks = try modelContext().fetch(FetchDescriptor<RoutineTask>())
+                let logs = try modelContext().fetch(FetchDescriptor<RoutineLog>())
+                let completionDatesByTaskID = HomeTaskSupport.makeDoneStats(
+                    tasks: tasks,
+                    logs: logs
+                ).completedDatesByTaskID
                 await send(.tasksLoaded(
                     tasks,
                     appSettingsClient.flagRules(),
-                    appSettingsClient.taskLadderOrganization()
+                    appSettingsClient.taskLadderOrganization(),
+                    completionDatesByTaskID
                 ))
             } catch {
                 await send(.loadFailed("Couldn’t load task ranking. \(error.localizedDescription)"))

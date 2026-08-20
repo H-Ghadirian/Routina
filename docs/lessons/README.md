@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 - [0208 — Preserve the meaning of parsed task dates](0208-preserve-the-meaning-of-parsed-task-dates.md)
+- [0207 — Exclude relationship-blocked Task Ladder rows](0207-exclude-relationship-blocked-task-ladder-rows.md)
 - [0206 — Parse combined natural-language dates as one unit](0206-parse-combined-natural-language-dates-as-one-unit.md)
 
 - [0199 — Separate layout transitions from history reconciliation](0199-separate-layout-transitions-from-history-reconciliation.md)

@@ -69,6 +69,83 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func relationshipBlockedTasksStayOutOfTheLadderEvenWhenStoredStateIsActionable() {
+        let blocker = RoutineTask(
+            name: "Finish prerequisite",
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.ready.rawValue
+        )
+        let blocked = RoutineTask(
+            name: "Dependent task",
+            pressure: .high,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: blocker.id, kind: .blockedBy)
+            ],
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.inProgress.rawValue
+        )
+
+        let presentation = TaskRankingPresentation.make(
+            tasks: [blocker, blocked],
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(presentation.taskCount == 1)
+        #expect(presentation.eligibleTaskIDs == Set([blocker.id]))
+        #expect(!presentation.sections.flatMap { $0.tasks }.contains(where: { $0.id == blocked.id }))
+    }
+
+    @Test
+    func repeatingRelationshipBlockersUseCompletionHistoryHandoffs() {
+        let olderBlockerCompletion = Date(timeIntervalSince1970: 200)
+        let dependentCompletion = Date(timeIntervalSince1970: 300)
+        let newerBlockerCompletion = Date(timeIntervalSince1970: 400)
+        let blocker = RoutineTask(
+            name: "Repeating prerequisite",
+            pressure: .medium
+        )
+        let dependent = RoutineTask(
+            name: "Repeating dependent",
+            pressure: .high,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: blocker.id, kind: .blockedBy)
+            ]
+        )
+
+        let stillBlocked = TaskRankingPresentation.make(
+            tasks: [blocker, dependent],
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            completionDatesByTaskID: [
+                blocker.id: [olderBlockerCompletion],
+                dependent.id: [dependentCompletion]
+            ]
+        )
+        let unlocked = TaskRankingPresentation.make(
+            tasks: [blocker, dependent],
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            completionDatesByTaskID: [
+                blocker.id: [newerBlockerCompletion],
+                dependent.id: [dependentCompletion]
+            ]
+        )
+
+        #expect(!stillBlocked.eligibleTaskIDs.contains(dependent.id))
+        #expect(unlocked.eligibleTaskIDs.contains(dependent.id))
+    }
+
+    @Test
     func taskLadderFlagRuleExcludesOnlyTasksWithTheMatchingFlag() {
         let excluded = RoutineTask(name: "Excluded", pressure: .high, flags: ["Someday"])
         let included = RoutineTask(name: "Included", pressure: .high, flags: ["Current"])
@@ -191,7 +268,11 @@ struct TaskRankingPresentationTests {
         let rejected = RoutineTask(name: "Rejected", pressure: .medium)
         let hidden = RoutineTask(name: "Hidden", pressure: .medium, flags: ["Someday"])
         let cycle = RoutineTask(name: "Cycle", pressure: .medium)
-        let moveMe = RoutineTask(name: "Move me", pressure: .medium)
+        let moveMe = RoutineTask(
+            name: "Move me",
+            pressure: .medium,
+            lastDone: referenceDate
+        )
         exercise.replaceRelationships([
             RoutineTaskRelationship(targetTaskID: gym.id, kind: .related),
             RoutineTaskRelationship(targetTaskID: placed.id, kind: .blocks),
