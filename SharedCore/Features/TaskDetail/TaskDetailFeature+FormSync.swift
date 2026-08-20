@@ -64,6 +64,8 @@ extension TaskDetailFeature {
         state.editChecklistValidationMessage = nil
         state.editSelectedPlaceIDs = state.task.placeIDs
         state.editSelectedPlaceID = state.editSelectedPlaceIDs.first
+        state.editDestinationAddress = state.task.destinationAddress ?? ""
+        state.editDestinationCoordinate = state.task.destinationCoordinate
         state.editColor = state.task.color
 
         let recurrenceRule = state.task.recurrenceRule

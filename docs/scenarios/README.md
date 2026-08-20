@@ -72,6 +72,25 @@ When the person opens Task Details
 Then the status metadata includes a `Reminder` row with that saved date and time
 And the person can verify the reminder without opening Edit Task
 
+### Task Destinations Stay Separate From Saved Places
+
+Area: Tasks / iOS and macOS Task Forms and Details
+Decision links: [0618](../decisions/0618-keep-task-destinations-independent-from-saved-places.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDestinationTests.swift`
+
+Given a person enters a task destination address and confirms a map result
+When the task is saved and later opened in Task Details
+Then the address and map coordinate are still present
+And the task does not acquire a saved Place link or Places beta dependency
+
+When the person edits the resolved address
+Then the map pin is cleared until the new address is looked up
+
+When the person taps Apple Maps or Google Maps on iPhone
+Then Routina opens the matching provider URL for the stored address and coordinates
+
 
 ### Home And Task Detail Use The Latest Recorded Completion
 

@@ -103,6 +103,8 @@ struct TaskDetailFeature: Reducer {
         var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
         var editSelectedPlaceID: UUID?
         var editSelectedPlaceIDs: [UUID] = []
+        var editDestinationAddress: String = ""
+        var editDestinationCoordinate: LocationCoordinate?
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
         var editRecurrenceDraft: RoutineRecurrenceDraft = RoutineRecurrenceDraft(cadence: .none)
@@ -462,6 +464,8 @@ struct TaskDetailFeature: Reducer {
         case availableRelationshipTasksLoaded([RoutineTaskRelationshipCandidate])
         case editSelectedPlaceChanged(UUID?)
         case editSelectedPlaceIDsChanged([UUID])
+        case editDestinationAddressChanged(String)
+        case editDestinationCoordinateChanged(LocationCoordinate?)
         case editToggleTagSelection(String)
         case editToggleFlagSelection(String)
         case editToggleGoalSelection(RoutineGoalSummary)
@@ -1745,6 +1749,14 @@ struct TaskDetailFeature: Reducer {
                 placeIDs,
                 state: &state
             )
+
+        case let .editDestinationAddressChanged(address):
+            state.editDestinationAddress = address
+            return .none
+
+        case let .editDestinationCoordinateChanged(coordinate):
+            state.editDestinationCoordinate = coordinate
+            return .none
 
         case let .editToggleTagSelection(tag):
             return tagGoalRelationshipEditActionHandler().editToggleTagSelection(

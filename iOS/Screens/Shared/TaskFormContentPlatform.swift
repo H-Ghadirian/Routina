@@ -197,6 +197,8 @@ struct TaskFormContent: View {
             switch $0 {
             case .place:
                 return isPlacesEnabled
+            case .destination:
+                return true
             case .notes, .voiceNote:
                 return isNotesEnabled
             case .goals:
@@ -296,6 +298,8 @@ struct TaskFormContent: View {
             if isPlacesEnabled {
                 placeSection
             }
+        case .destination:
+            destinationSection
         case .repeatPattern:
             if presentation.showsRepeatControls {
                 repeatPatternSections
@@ -457,6 +461,10 @@ struct TaskFormContent: View {
         }
     }
 
+    private var destinationSection: some View {
+        TaskFormIOSDestinationSection(model: model)
+    }
+
     @ViewBuilder
     private var repeatPatternSections: some View {
         TaskFormIOSRepeatPatternSections(model: model, presentation: presentation)
@@ -515,6 +523,7 @@ private extension TaskFormCompactSection {
         case .steps: return "Steps"
         case .checklist: return "Checklist"
         case .place: return "Places"
+        case .destination: return "Address"
         case .repeatPattern: return "Repeat"
         case .delete: return "Delete task"
         }
@@ -548,6 +557,7 @@ private extension TaskFormCompactSection {
         case .steps: return "list.number"
         case .checklist: return "checklist"
         case .place: return "mappin.and.ellipse"
+        case .destination: return "mappin.and.ellipse"
         case .repeatPattern: return "repeat"
         case .delete: return "trash"
         }

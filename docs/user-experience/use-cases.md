@@ -43,6 +43,22 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Availability:** Production. Exact combinations depend on task type and platform.
 
+### UC-02a — Keep a task's destination easy to reach
+
+**Situation:** A task happens at a specific address, such as a clinic, shop, or meeting place, and the person may need directions later.
+
+**Need:** Keep the address with the task and open it in a map app without turning it into a reusable geofenced Place.
+
+**Desired experience:** Add Task and Edit Task let the person enter an address and explicitly find its map location. Task Details show the address and map together, with Apple Maps and Google Maps actions on iPhone. A typed address remains useful even when lookup cannot find coordinates.
+
+**Successful outcome:** The person can confirm where the task happens from Task Details and start navigation without reopening the editor or recreating the address in another app.
+
+**Example:** “Physiotherapist” stores “Alexanderplatz 1, Berlin”; Task Details show the address and map, and tapping Apple Maps or Google Maps opens that destination.
+
+**Availability:** Production on iOS and macOS; provider actions are available where the corresponding URL handler is supported.
+
+**Evidence:** User-requested destination workflow on 2026-08-20.
+
 ### UC-03 — Create a routine that matches real life
 
 **Situation:** A responsibility repeats, but repetition may be fixed, interval-based, gentle, checklist-based, or waiting for the person to activate it again after completion.

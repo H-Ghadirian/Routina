@@ -139,6 +139,10 @@ struct TaskFormModel {
     var selectedPlaceID: Binding<UUID?>
     var selectedPlaceIDs: Binding<[UUID]> = .constant([])
 
+    // MARK: Destination
+    var destinationAddress: Binding<String> = .constant("")
+    var destinationCoordinate: Binding<LocationCoordinate?> = .constant(nil)
+
     // MARK: Recurrence
     var recurrenceDraft: Binding<RoutineRecurrenceDraft> = .constant(
         RoutineRecurrenceDraft(cadence: .none)
@@ -711,6 +715,9 @@ extension TaskFormModel {
         }
         if !selectedPlaceIDsValue.isEmpty {
             sections.insert(.place)
+        }
+        if hasText(destinationAddress.wrappedValue) || destinationCoordinate.wrappedValue != nil {
+            sections.insert(.destination)
         }
 
         return sections

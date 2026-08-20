@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0618](0618-keep-task-destinations-independent-from-saved-places.md):** task destinations store an optional address and coordinates separately from beta saved Places; forms can resolve an address, Task Details show its map, and iPhone offers Apple Maps and Google Maps actions without enabling geofencing or check-in.
+
 - **[0617](0617-generate-editable-quick-add-titles-from-pasted-links.md) refines [0074](0074-parse-mac-add-task-title.md), [0211](0211-support-titled-task-links.md), [0315](0315-merge-mac-quick-add-into-toolbar-search.md), and [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md):** pasted URLs become task links immediately, URL-only input gets an editable deterministic title, and Mac Quick Add can improve it asynchronously from public webpage metadata without delaying creation or overwriting user edits.
 
 - **[0616](0616-interpret-unqualified-quick-add-dates-as-availability.md) refines [0074](0074-parse-mac-add-task-title.md), [0185](0185-limit-exact-reminders-to-todos.md), [0197](0197-separate-todo-date-and-time-availability.md), and [0315](0315-merge-mac-quick-add-into-toolbar-search.md):** unqualified one-off dates and times become exact availability, deadline words remain explicit, and timed Mac Quick Add asks for an optional reminder before saving.

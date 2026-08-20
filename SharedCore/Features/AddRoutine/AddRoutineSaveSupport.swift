@@ -105,6 +105,9 @@ struct AddRoutineSaveRequest: Equatable {
     let voiceNote: RoutineVoiceNote?
     let selectedPlaceID: UUID?
     let selectedPlaceIDs: [UUID]
+    let destinationAddress: String?
+    let destinationLatitude: Double?
+    let destinationLongitude: Double?
     let tags: [String]
     let flags: [String]
     let goals: [RoutineGoalSummary]
@@ -157,6 +160,9 @@ struct AddRoutineSaveRequest: Equatable {
         voiceNote: RoutineVoiceNote? = nil,
         selectedPlaceID: UUID? = nil,
         selectedPlaceIDs: [UUID] = [],
+        destinationAddress: String? = nil,
+        destinationLatitude: Double? = nil,
+        destinationLongitude: Double? = nil,
         tags: [String] = [],
         flags: [String] = [],
         goals: [RoutineGoalSummary] = [],
@@ -244,6 +250,13 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.selectedPlaceID = resolvedPlaceIDs.first
         self.selectedPlaceIDs = resolvedPlaceIDs
+        self.destinationAddress = RoutineTask.sanitizedDestinationAddress(destinationAddress)
+        let destinationCoordinate = RoutineTask.sanitizedDestinationCoordinate(
+            latitude: destinationLatitude,
+            longitude: destinationLongitude
+        )
+        self.destinationLatitude = destinationCoordinate?.latitude
+        self.destinationLongitude = destinationCoordinate?.longitude
         self.tags = RoutineTag.deduplicated(tags)
         self.flags = RoutineFlag.deduplicated(flags)
         self.goals = RoutineGoalSummary.sanitized(goals)
@@ -391,6 +404,13 @@ struct AddRoutineSaveRequest: Equatable {
             basics.selectedPlaceIDs.isEmpty ? basics.selectedPlaceID.map { [$0] } ?? [] : basics.selectedPlaceIDs
         )
         self.selectedPlaceID = selectedPlaceIDs.first
+        self.destinationAddress = RoutineTask.sanitizedDestinationAddress(basics.destinationAddress)
+        let destinationCoordinate = RoutineTask.sanitizedDestinationCoordinate(
+            latitude: basics.destinationLatitude,
+            longitude: basics.destinationLongitude
+        )
+        self.destinationLatitude = destinationCoordinate?.latitude
+        self.destinationLongitude = destinationCoordinate?.longitude
         self.tags = RoutineTag.deduplicated(organization.routineTags)
         self.flags = RoutineFlag.deduplicated(organization.routineFlags)
         self.goals = organization.routineGoals

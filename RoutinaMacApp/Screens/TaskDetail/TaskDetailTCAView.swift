@@ -525,6 +525,9 @@ struct TaskDetailTCAView: View {
                 routineHeaderSection
                 doneOccurrenceSection
                 notificationDisabledWarningSection
+                if store.task.hasDestination {
+                    destinationSection
+                }
                 if shouldShowFocusSessionSection {
                     focusSessionSection
                 }
@@ -588,6 +591,15 @@ struct TaskDetailTCAView: View {
             allTasks: focusSessionTaskCandidates,
             blockingFocusTitle: blockingFocusTitle,
             onCompletedDuration: addCompletedFocusToTimeSpent
+        )
+    }
+
+    private var destinationSection: some View {
+        TaskDetailDestinationSectionView(
+            address: store.task.destinationAddress,
+            coordinate: store.task.destinationCoordinate,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke
         )
     }
 

@@ -21,6 +21,13 @@ enum CloudKitDirectPullTaskPayloadApplier {
         task.voiceNoteDurationSeconds = payload.voiceNoteDurationSeconds
         task.voiceNoteCreatedAt = payload.voiceNoteCreatedAt
         task.placeIDs = payload.placeIDs ?? payload.placeID.map { [$0] } ?? []
+        task.destinationAddress = RoutineTask.sanitizedDestinationAddress(payload.destinationAddress)
+        let destinationCoordinate = RoutineTask.sanitizedDestinationCoordinate(
+            latitude: payload.destinationLatitude,
+            longitude: payload.destinationLongitude
+        )
+        task.destinationLatitude = destinationCoordinate?.latitude
+        task.destinationLongitude = destinationCoordinate?.longitude
         if let tags = payload.tags {
             task.tags = tags
         }
@@ -187,6 +194,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
             voiceNoteCreatedAt: payload.voiceNoteCreatedAt,
             placeID: payload.placeID,
             placeIDs: payload.placeIDs ?? payload.placeID.map { [$0] } ?? [],
+            destinationAddress: payload.destinationAddress,
+            destinationLatitude: payload.destinationLatitude,
+            destinationLongitude: payload.destinationLongitude,
             tags: payload.tags ?? [],
             flags: payload.flags ?? [],
             goalIDs: payload.goalIDs ?? [],

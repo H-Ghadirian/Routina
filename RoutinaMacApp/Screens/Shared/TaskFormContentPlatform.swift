@@ -306,6 +306,8 @@ struct TaskFormContent: View {
             if isPlacesEnabled {
                 placesCard
             }
+        case .destination:
+            destinationCard
         case .importanceUrgency:  importanceCard
         case .tags:               tagsCard
         case .goals:              goalsCard
@@ -489,6 +491,11 @@ struct TaskFormContent: View {
             isPlaceManagerPresented = true
         }
         .id(FormSection.places)
+    }
+
+    private var destinationCard: some View {
+        TaskFormMacDestinationCard(model: model)
+            .id(FormSection.destination)
     }
 
     // MARK: Importance & Urgency

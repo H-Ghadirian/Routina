@@ -44,6 +44,9 @@ enum CloudSharingService {
         var voiceNoteCreatedAt: Date?
         var placeID: UUID?
         var placeIDs: [UUID]?
+        var destinationAddress: String?
+        var destinationLatitude: Double?
+        var destinationLongitude: Double?
         var tags: [String]
         var flags: [String]?
         var goalIDs: [UUID]?
@@ -318,6 +321,9 @@ extension CloudSharingService.SharedTaskPayload {
         self.voiceNoteCreatedAt = task.voiceNoteCreatedAt
         self.placeID = task.placeID
         self.placeIDs = task.placeIDs.isEmpty ? nil : task.placeIDs
+        self.destinationAddress = task.destinationAddress
+        self.destinationLatitude = task.destinationLatitude
+        self.destinationLongitude = task.destinationLongitude
         self.tags = task.tags
         self.flags = task.flags.isEmpty ? nil : task.flags
         self.goalIDs = task.goalIDs
@@ -411,6 +417,13 @@ extension CloudSharingService.SharedTaskPayload {
         task.voiceNoteDurationSeconds = voiceNoteDurationSeconds
         task.voiceNoteCreatedAt = voiceNoteCreatedAt
         task.placeIDs = placeIDs ?? placeID.map { [$0] } ?? []
+        task.destinationAddress = RoutineTask.sanitizedDestinationAddress(destinationAddress)
+        let destinationCoordinate = RoutineTask.sanitizedDestinationCoordinate(
+            latitude: destinationLatitude,
+            longitude: destinationLongitude
+        )
+        task.destinationLatitude = destinationCoordinate?.latitude
+        task.destinationLongitude = destinationCoordinate?.longitude
         task.tags = tags
         task.flags = flags ?? []
         task.goalIDs = goalIDs ?? []
@@ -495,6 +508,9 @@ private extension RoutineTask {
             voiceNoteCreatedAt: payload.voiceNoteCreatedAt,
             placeID: payload.placeID,
             placeIDs: payload.placeIDs ?? payload.placeID.map { [$0] } ?? [],
+            destinationAddress: payload.destinationAddress,
+            destinationLatitude: payload.destinationLatitude,
+            destinationLongitude: payload.destinationLongitude,
             tags: payload.tags,
             flags: payload.flags ?? [],
             goalIDs: payload.goalIDs ?? [],

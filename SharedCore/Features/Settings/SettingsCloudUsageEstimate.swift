@@ -167,6 +167,9 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var hasVoiceNote: Bool
         var placeID: UUID?
         var placeIDsStorage: String
+        var destinationAddress: String?
+        var destinationLatitude: Double?
+        var destinationLongitude: Double?
         var tagsStorage: String
         var goalIDsStorage: String
         var eventIDsStorage: String
@@ -227,6 +230,9 @@ struct CloudUsageEstimate: Equatable, Sendable {
             hasVoiceNote = task.hasVoiceNote
             placeID = task.placeID
             placeIDsStorage = task.placeIDsStorage
+            destinationAddress = task.destinationAddress
+            destinationLatitude = task.destinationLatitude
+            destinationLongitude = task.destinationLongitude
             tagsStorage = task.tagsStorage
             goalIDsStorage = task.goalIDsStorage
             eventIDsStorage = task.eventIDsStorage

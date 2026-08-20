@@ -288,6 +288,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
     case steps
     case checklist
     case place
+    case destination
     case repeatPattern
     case delete
 
@@ -318,6 +319,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
         .steps,
         .checklist,
         .place,
+        .destination,
         .repeatPattern,
         .delete
     ]

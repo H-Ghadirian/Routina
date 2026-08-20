@@ -348,6 +348,9 @@ detailBody
                 )
                 notificationDisabledWarningSection
                 calendarSection
+                if store.task.hasDestination {
+                    destinationSection
+                }
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
@@ -393,6 +396,9 @@ detailBody
                     pauseArchivePresentation: pauseArchivePresentation
                 )
                 calendarSection
+                if store.task.hasDestination {
+                    destinationSection
+                }
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
@@ -427,6 +433,15 @@ detailBody
             sessions: focusSessions,
             allTasks: focusSessionTaskCandidates,
             blockingFocusTitle: blockingFocusTitle
+        )
+    }
+
+    private var destinationSection: some View {
+        TaskDetailDestinationSectionView(
+            address: store.task.destinationAddress,
+            coordinate: store.task.destinationCoordinate,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke
         )
     }
 

@@ -655,6 +655,8 @@ extension TaskDetailFeature {
             attachments: request.attachments,
             placeID: request.placeID,
             placeIDs: request.placeIDs,
+            destinationAddress: request.destinationAddress,
+            destinationCoordinate: request.destinationCoordinate,
             tags: request.tags,
             flags: request.flags,
             goals: request.goals,
@@ -707,6 +709,8 @@ extension TaskDetailFeature {
         attachments: [AttachmentItem],
         placeID: UUID?,
         placeIDs: [UUID],
+        destinationAddress: String?,
+        destinationCoordinate: LocationCoordinate?,
         tags: [String],
         flags: [String],
         goals: [RoutineGoalSummary],
@@ -796,6 +800,8 @@ extension TaskDetailFeature {
                     context.insert(newAtt)
                 }
                 task.placeIDs = RoutinePlaceIDStorage.sanitized(placeIDs.isEmpty ? placeID.map { [$0] } ?? [] : placeIDs)
+                task.destinationAddress = RoutineTask.sanitizedDestinationAddress(destinationAddress)
+                task.destinationCoordinate = destinationCoordinate
                 task.tags = tags
                 task.flags = flags
                 task.goalIDs = try RoutineGoalPersistence.ensureGoals(goals, in: context)

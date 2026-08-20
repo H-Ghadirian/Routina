@@ -38,6 +38,9 @@ enum CloudKitDirectPullTaskRecordParser {
         let reminderAtValue = dateValue(in: record, keys: ["reminderAt", "REMINDERAT", "zreminderat", "ZREMINDERAT", "cd_reminderat"])
         let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
         let placeIDsStorageValue = stringValue(in: record, keys: storageKeys("placeIDsStorage"))
+        let destinationAddressValue = stringValue(in: record, keys: storageKeys("destinationAddress"))
+        let destinationLatitudeValue = doubleValue(in: record, keys: storageKeys("destinationLatitude"))
+        let destinationLongitudeValue = doubleValue(in: record, keys: storageKeys("destinationLongitude"))
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
         let flagsStorageValue = stringValue(in: record, keys: storageKeys("flagsStorage"))
         let goalIDsStorageValue = stringValue(
@@ -342,6 +345,9 @@ enum CloudKitDirectPullTaskRecordParser {
                 || availabilityStartDateValue != nil
                 || availabilityEndDateValue != nil
                 || placeIDValue != nil
+                || destinationAddressValue != nil
+                || destinationLatitudeValue != nil
+                || destinationLongitudeValue != nil
                 || tagsStorageValue != nil
                 || flagsStorageValue != nil
                 || goalIDsStorageValue != nil
@@ -422,6 +428,9 @@ enum CloudKitDirectPullTaskRecordParser {
             reminderAt: reminderAtValue,
             placeID: placeIDValue,
             placeIDs: placeIDsStorageValue.map(RoutinePlaceIDStorage.deserialize),
+            destinationAddress: destinationAddressValue,
+            destinationLatitude: destinationLatitudeValue,
+            destinationLongitude: destinationLongitudeValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),
             flags: flagsStorageValue.map(RoutineFlag.deserialize),
             goalIDs: goalIDsStorageValue.map(RoutineGoalIDStorage.deserialize),

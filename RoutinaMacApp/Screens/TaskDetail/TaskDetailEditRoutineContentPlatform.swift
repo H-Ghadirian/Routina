@@ -197,6 +197,14 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editSelectedPlaceIDs },
                 set: { store.send(.editSelectedPlaceIDsChanged($0)) }
             ),
+            destinationAddress: Binding(
+                get: { store.editDestinationAddress },
+                set: { store.send(.editDestinationAddressChanged($0)) }
+            ),
+            destinationCoordinate: Binding(
+                get: { store.editDestinationCoordinate },
+                set: { store.send(.editDestinationCoordinateChanged($0)) }
+            ),
             recurrenceDraft: Binding(
                 get: { store.candidateRecurrenceDraft },
                 set: { store.send(.editRecurrenceDraftChanged($0)) }

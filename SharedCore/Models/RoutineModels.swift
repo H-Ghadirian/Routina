@@ -30,6 +30,9 @@ final class RoutineTask {
     var voiceNoteCreatedAt: Date?
     var placeID: UUID?
     var placeIDsStorage: String = ""
+    var destinationAddress: String?
+    var destinationLatitude: Double?
+    var destinationLongitude: Double?
     var tagsStorage: String = ""
     var flagsStorage: String = ""
     var stepsStorage: String = ""
@@ -114,6 +117,23 @@ final class RoutineTask {
 
     var hasVoiceNote: Bool {
         voiceNoteData?.isEmpty == false
+    }
+
+    var destinationCoordinate: LocationCoordinate? {
+        get {
+            Self.sanitizedDestinationCoordinate(
+                latitude: destinationLatitude,
+                longitude: destinationLongitude
+            )
+        }
+        set {
+            destinationLatitude = newValue?.latitude
+            destinationLongitude = newValue?.longitude
+        }
+    }
+
+    var hasDestination: Bool {
+        destinationAddress != nil || destinationCoordinate != nil
     }
 
     var voiceNote: RoutineVoiceNote? {
@@ -492,6 +512,9 @@ final class RoutineTask {
         voiceNoteCreatedAt: Date? = nil,
         placeID: UUID? = nil,
         placeIDs: [UUID] = [],
+        destinationAddress: String? = nil,
+        destinationLatitude: Double? = nil,
+        destinationLongitude: Double? = nil,
         tags: [String] = [],
         flags: [String] = [],
         goalIDs: [UUID] = [],
@@ -599,6 +622,17 @@ final class RoutineTask {
         let resolvedPlaceIDs = RoutinePlaceIDStorage.sanitized(placeIDs.isEmpty ? placeID.map { [$0] } ?? [] : placeIDs)
         self.placeID = resolvedPlaceIDs.first
         self.placeIDsStorage = RoutinePlaceIDStorage.serialize(resolvedPlaceIDs)
+        self.destinationAddress = Self.sanitizedDestinationAddress(destinationAddress)
+        if let coordinate = Self.sanitizedDestinationCoordinate(
+            latitude: destinationLatitude,
+            longitude: destinationLongitude
+        ) {
+            self.destinationLatitude = coordinate.latitude
+            self.destinationLongitude = coordinate.longitude
+        } else {
+            self.destinationLatitude = nil
+            self.destinationLongitude = nil
+        }
         self.tagsStorage = RoutineTag.serialize(tags)
         self.flagsStorage = RoutineFlag.serialize(flags)
         self.goalIDsStorage = RoutineGoalIDStorage.serialize(goalIDs)
@@ -791,6 +825,26 @@ final class RoutineTask {
         RoutineModelValueSanitizer.sanitizedDescription(description)
     }
 
+    static func sanitizedDestinationAddress(_ address: String?) -> String? {
+        guard let address else { return nil }
+        let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    static func sanitizedDestinationCoordinate(
+        latitude: Double?,
+        longitude: Double?
+    ) -> LocationCoordinate? {
+        guard let latitude,
+              let longitude,
+              latitude.isFinite,
+              longitude.isFinite,
+              (-90...90).contains(latitude),
+              (-180...180).contains(longitude)
+        else { return nil }
+        return LocationCoordinate(latitude: latitude, longitude: longitude)
+    }
+
     static func sanitizedLink(_ link: String?) -> String? {
         RoutineModelValueSanitizer.sanitizedLink(link)
     }
@@ -961,6 +1015,9 @@ final class RoutineTask {
             voiceNoteCreatedAt: voiceNoteCreatedAt,
             placeID: placeID,
             placeIDs: placeIDs,
+            destinationAddress: destinationAddress,
+            destinationLatitude: destinationLatitude,
+            destinationLongitude: destinationLongitude,
             tags: tags,
             flags: flags,
             goalIDs: goalIDs,

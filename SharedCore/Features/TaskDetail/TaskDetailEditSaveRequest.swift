@@ -28,6 +28,8 @@ struct TaskDetailEditSaveRequest: Equatable {
     var attachments: [AttachmentItem]
     var placeID: UUID?
     var placeIDs: [UUID]
+    var destinationAddress: String?
+    var destinationCoordinate: LocationCoordinate?
     var tags: [String]
     var flags: [String]
     var goals: [RoutineGoalSummary]
@@ -187,6 +189,8 @@ struct TaskDetailEditSaveRequestBuilder {
             attachments: state.editAttachments,
             placeID: state.editSelectedPlaceIDs.first,
             placeIDs: state.editSelectedPlaceIDs,
+            destinationAddress: RoutineTask.sanitizedDestinationAddress(state.editDestinationAddress),
+            destinationCoordinate: state.editDestinationCoordinate,
             tags: RoutineTag.deduplicated(state.editRoutineTags),
             flags: RoutineFlag.deduplicated(state.editRoutineFlags),
             goals: state.editRoutineGoals,
@@ -329,6 +333,8 @@ extension TaskDetailFeature {
         updatedTask.placeIDs = RoutinePlaceIDStorage.sanitized(
             request.placeIDs.isEmpty ? request.placeID.map { [$0] } ?? [] : request.placeIDs
         )
+        updatedTask.destinationAddress = RoutineTask.sanitizedDestinationAddress(request.destinationAddress)
+        updatedTask.destinationCoordinate = request.destinationCoordinate
         updatedTask.tags = request.tags
         updatedTask.flags = request.flags
         updatedTask.goalIDs = RoutineGoalIDStorage.sanitized(request.goals.map(\.id))

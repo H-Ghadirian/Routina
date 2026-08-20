@@ -27,6 +27,8 @@ struct TaskDetailEditChangeRequest {
     let taskAttachments: [AttachmentItem]
     let selectedPlaceID: UUID?
     let selectedPlaceIDs: [UUID]
+    let destinationAddress: String?
+    let destinationCoordinate: LocationCoordinate?
     let tags: [String]
     let flags: [String]
     let availableGoals: [RoutineGoalSummary]
@@ -95,6 +97,8 @@ struct TaskDetailEditChangeRequest {
         self.taskAttachments = state.taskAttachments
         self.selectedPlaceID = state.editSelectedPlaceID
         self.selectedPlaceIDs = state.editSelectedPlaceIDs
+        self.destinationAddress = RoutineTask.sanitizedDestinationAddress(state.editDestinationAddress)
+        self.destinationCoordinate = state.editDestinationCoordinate
         self.tags = state.editRoutineTags
         self.flags = state.editRoutineFlags
         self.availableGoals = state.availableGoals
@@ -213,6 +217,8 @@ enum TaskDetailEditChangeDetector {
             || RoutinePlaceIDStorage.sanitized(
                 request.selectedPlaceIDs.isEmpty ? request.selectedPlaceID.map { [$0] } ?? [] : request.selectedPlaceIDs
             ) != task.placeIDs
+            || request.destinationAddress != task.destinationAddress
+            || request.destinationCoordinate != task.destinationCoordinate
             || candidateTags != currentTags
             || candidateFlags != currentFlags
             || candidateGoalIDs != currentGoalIDs

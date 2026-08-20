@@ -64,6 +64,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var voiceNote: RoutineVoiceNote?
     var attachments: [AttachmentItem] = []
     var selectedPlaceIDs: [UUID] = []
+    var destinationAddress: String?
+    var destinationLatitude: Double?
+    var destinationLongitude: Double?
     var routineColor: RoutineTaskColor = .none
     var estimatedDurationMinutes: Int?
     var actualDurationMinutes: Int?
@@ -142,6 +145,13 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         selectedPlaceIDs = RoutinePlaceIDStorage.sanitized(
             basics.selectedPlaceIDs.isEmpty ? basics.selectedPlaceID.map { [$0] } ?? [] : basics.selectedPlaceIDs
         )
+        destinationAddress = RoutineTask.sanitizedDestinationAddress(basics.destinationAddress)
+        let destinationCoordinate = RoutineTask.sanitizedDestinationCoordinate(
+            latitude: basics.destinationLatitude,
+            longitude: basics.destinationLongitude
+        )
+        destinationLatitude = destinationCoordinate?.latitude
+        destinationLongitude = destinationCoordinate?.longitude
         routineColor = basics.routineColor
         estimatedDurationMinutes = basics.estimatedDurationMinutes
         actualDurationMinutes = basics.actualDurationMinutes
@@ -211,6 +221,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             || voiceNote != nil
             || !attachments.isEmpty
             || !selectedPlaceIDs.isEmpty
+            || destinationAddress != nil
+            || destinationLatitude != nil
+            || destinationLongitude != nil
             || routineColor != .none
             || estimatedDurationMinutes != nil
             || actualDurationMinutes != nil
@@ -286,6 +299,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         state.basics.attachments = attachments
         state.basics.selectedPlaceIDs = availableSelectedPlaceIDs(in: state)
         state.basics.selectedPlaceID = state.basics.selectedPlaceIDs.first
+        state.basics.destinationAddress = destinationAddress ?? ""
+        state.basics.destinationLatitude = destinationLatitude
+        state.basics.destinationLongitude = destinationLongitude
         state.basics.routineColor = routineColor
         state.basics.estimatedDurationMinutes = estimatedDurationMinutes
         state.basics.actualDurationMinutes = actualDurationMinutes

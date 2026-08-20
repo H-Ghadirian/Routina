@@ -20,6 +20,9 @@ extension CloudKitDirectPullService {
         var reminderAt: Date?
         var placeID: UUID?
         var placeIDs: [UUID]?
+        var destinationAddress: String?
+        var destinationLatitude: Double?
+        var destinationLongitude: Double?
         var tags: [String]?
         var flags: [String]?
         var goalIDs: [UUID]?

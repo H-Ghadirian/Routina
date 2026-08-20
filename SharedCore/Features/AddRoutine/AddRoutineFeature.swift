@@ -94,6 +94,8 @@ struct AddRoutineFeature: Reducer {
         case availablePlacesChanged([RoutinePlaceSummary])
         case selectedPlaceChanged(UUID?)
         case selectedPlaceIDsChanged([UUID])
+        case destinationAddressChanged(String)
+        case destinationCoordinateChanged(LocationCoordinate?)
         case routineColorChanged(RoutineTaskColor)
         case estimatedDurationChanged(Int?)
         case actualDurationChanged(Int?)
@@ -767,6 +769,15 @@ struct AddRoutineFeature: Reducer {
                 placeIDs,
                 basics: &state.basics
             )
+            return .none
+
+        case let .destinationAddressChanged(address):
+            state.basics.destinationAddress = address
+            return .none
+
+        case let .destinationCoordinateChanged(coordinate):
+            state.basics.destinationLatitude = coordinate?.latitude
+            state.basics.destinationLongitude = coordinate?.longitude
             return .none
 
         case let .routineColorChanged(color):

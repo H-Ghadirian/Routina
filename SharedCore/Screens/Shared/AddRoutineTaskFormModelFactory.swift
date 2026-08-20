@@ -179,6 +179,19 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.basics.selectedPlaceIDs },
                 send: AddRoutineFeature.Action.selectedPlaceIDsChanged
             ),
+            destinationAddress: binding(
+                get: { store.basics.destinationAddress },
+                send: AddRoutineFeature.Action.destinationAddressChanged
+            ),
+            destinationCoordinate: binding(
+                get: {
+                    RoutineTask.sanitizedDestinationCoordinate(
+                        latitude: store.basics.destinationLatitude,
+                        longitude: store.basics.destinationLongitude
+                    )
+                },
+                send: AddRoutineFeature.Action.destinationCoordinateChanged
+            ),
             recurrenceDraft: binding(
                 get: { store.candidateRecurrenceDraft },
                 send: AddRoutineFeature.Action.recurrenceDraftChanged

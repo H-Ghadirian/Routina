@@ -25,6 +25,9 @@ struct AddRoutineBasicsState: Equatable {
     var attachments: [AttachmentItem] = []
     var selectedPlaceID: UUID?
     var selectedPlaceIDs: [UUID] = []
+    var destinationAddress: String = ""
+    var destinationLatitude: Double?
+    var destinationLongitude: Double?
     var routineColor: RoutineTaskColor = .none
     var estimatedDurationMinutes: Int?
     var actualDurationMinutes: Int?
