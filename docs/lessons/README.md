@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0210 — Reuse Mac task-form tag and flag presentation work](0210-reuse-mac-task-form-tag-and-flag-presentation-work.md)
 - [0209 — Treat attached interactive previews as one focus boundary](0209-treat-attached-interactive-previews-as-one-focus-boundary.md)
 - [0208 — Preserve the meaning of parsed task dates](0208-preserve-the-meaning-of-parsed-task-dates.md)
 - [0207 — Exclude relationship-blocked Task Ladder rows](0207-exclude-relationship-blocked-task-ladder-rows.md)

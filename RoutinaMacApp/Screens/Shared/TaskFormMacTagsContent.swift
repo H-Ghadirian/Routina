@@ -8,26 +8,30 @@ struct TaskFormMacTagsContent: View {
     @State private var showsAllAvailableFlags = false
 
     var body: some View {
+        let tagPresentation = makeTagPresentation()
+        let flagPresentation = makeFlagPresentation()
+        let tagAutocompleteSuggestion = model.tagAutocompleteSuggestion
+
         VStack(alignment: .leading, spacing: 10) {
-            tagComposer
-            tagChipsContent
-            flagEditor
+            tagComposer(suggestion: tagAutocompleteSuggestion)
+            tagChipsContent(presentation: tagPresentation)
+            flagEditor(presentation: flagPresentation)
         }
     }
 
-    private var tagComposer: some View {
+    private func tagComposer(suggestion: String?) -> some View {
         HStack(spacing: 10) {
             ZStack(alignment: .trailing) {
                 MacTagAutocompleteTextField(
                     placeholder: "health, focus, morning",
                     text: model.tagDraft,
-                    suggestion: model.tagAutocompleteSuggestion,
+                    suggestion: suggestion,
                     onSubmit: model.onAddTag,
                     onAcceptSuggestion: model.acceptTagAutocompleteSuggestion
                 )
                 .frame(height: 28)
 
-                if let suggestion = model.tagAutocompleteSuggestion {
+                if let suggestion {
                     Button {
                         model.acceptTagAutocompleteSuggestion()
                     } label: {
@@ -74,30 +78,35 @@ struct TaskFormMacTagsContent: View {
     }
 
     @ViewBuilder
-    private var tagChipsContent: some View {
-        if !model.routineTags.isEmpty || !unselectedRelatedTags.isEmpty || !unselectedAvailableTags.isEmpty {
+    private func tagChipsContent(presentation: TagPresentation) -> some View {
+        if !presentation.selectedTags.isEmpty
+            || !presentation.relatedTags.isEmpty
+            || !presentation.availableTags.isEmpty {
             HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(model.routineTags, id: \.self) { tag in
+                ForEach(presentation.selectedTags, id: \.self) { tag in
                     selectedTagButton(tag)
                 }
 
-                ForEach(unselectedRelatedTags, id: \.self) { tag in
+                ForEach(presentation.relatedTags, id: \.self) { tag in
                     relatedTagButton(tag)
                 }
 
-                ForEach(visibleAvailableTags, id: \.self) { tag in
-                    availableTagButton(tag)
+                ForEach(presentation.visibleAvailableTags, id: \.self) { tag in
+                    availableTagButton(
+                        tag,
+                        summary: presentation.availableTagSummariesByNormalized[RoutineTag.normalized(tag) ?? ""]
+                    )
                 }
 
-                if canToggleAvailableTags {
-                    availableTagsExpansionButton
+                if presentation.canToggleAvailableTags {
+                    availableTagsExpansionButton(count: presentation.availableTags.count)
                 }
             }
             .padding(.vertical, 4)
         }
     }
 
-    private var flagEditor: some View {
+    private func flagEditor(presentation: FlagPresentation) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Flags")
                 .font(.footnote.weight(.semibold))
@@ -142,14 +151,14 @@ struct TaskFormMacTagsContent: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if !unselectedAvailableFlags.isEmpty {
+            if !presentation.availableFlags.isEmpty {
                 HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-                    ForEach(visibleAvailableFlags, id: \.self) { flag in
+                    ForEach(presentation.visibleAvailableFlags, id: \.self) { flag in
                         availableFlagButton(flag)
                     }
 
-                    if canToggleAvailableFlags {
-                        availableFlagsExpansionButton
+                    if presentation.canToggleAvailableFlags {
+                        availableFlagsExpansionButton(count: presentation.availableFlags.count)
                     }
                 }
             }
@@ -157,22 +166,7 @@ struct TaskFormMacTagsContent: View {
         .padding(.top, 4)
     }
 
-    private var unselectedAvailableFlags: [String] {
-        model.availableFlags.filter { !RoutineFlag.contains($0, in: model.routineFlags) }
-    }
-
-    private var visibleAvailableFlags: [String] {
-        TaskFormFlagSuggestionPresentation.visibleAvailableFlags(
-            unselectedAvailableFlags,
-            showsAll: showsAllAvailableFlags
-        )
-    }
-
-    private var canToggleAvailableFlags: Bool {
-        unselectedAvailableFlags.count > TaskFormFlagSuggestionPresentation.collapsedLimit
-    }
-
-    private var availableFlagsExpansionButton: some View {
+    private func availableFlagsExpansionButton(count: Int) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 showsAllAvailableFlags.toggle()
@@ -181,7 +175,7 @@ struct TaskFormMacTagsContent: View {
             HStack(spacing: 6) {
                 Image(systemName: showsAllAvailableFlags ? "chevron.up" : "chevron.down")
                     .font(.caption.weight(.semibold))
-                Text(showsAllAvailableFlags ? "Show less" : "Show all (\(unselectedAvailableFlags.count))")
+                Text(showsAllAvailableFlags ? "Show less" : "Show all (\(count))")
                     .lineLimit(1)
             }
             .foregroundStyle(.secondary)
@@ -217,7 +211,7 @@ struct TaskFormMacTagsContent: View {
         .accessibilityLabel("Add flag \(flag)")
     }
 
-    private var availableTagsExpansionButton: some View {
+    private func availableTagsExpansionButton(count: Int) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 showsAllAvailableTags.toggle()
@@ -226,7 +220,7 @@ struct TaskFormMacTagsContent: View {
             HStack(spacing: 6) {
                 Image(systemName: showsAllAvailableTags ? "chevron.up" : "chevron.down")
                     .font(.caption.weight(.semibold))
-                Text(showsAllAvailableTags ? "Show less" : "Show all (\(unselectedAvailableTags.count))")
+                Text(showsAllAvailableTags ? "Show less" : "Show all (\(count))")
                     .lineLimit(1)
             }
             .foregroundStyle(.secondary)
@@ -279,11 +273,7 @@ struct TaskFormMacTagsContent: View {
         .accessibilityLabel("Add suggested related tag \(tag)")
     }
 
-    private func availableTagButton(_ tag: String) -> some View {
-        let summary = model.availableTagSummaries.first(where: {
-            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
-        })
-
+    private func availableTagButton(_ tag: String, summary: RoutineTagSummary?) -> some View {
         return Button { model.onToggleTagSelection(tag) } label: {
             HStack(spacing: 6) {
                 Image(systemName: "plus.circle")
@@ -306,26 +296,57 @@ struct TaskFormMacTagsContent: View {
         .accessibilityLabel("Add tag \(tag)")
     }
 
-    private var unselectedRelatedTags: [String] {
-        model.suggestedRelatedTags.filter { !RoutineTag.contains($0, in: model.routineTags) }
-    }
-
-    private var unselectedAvailableTags: [String] {
-        model.availableTags.filter {
-            !RoutineTag.contains($0, in: model.routineTags)
-                && !RoutineTag.contains($0, in: unselectedRelatedTags)
+    private func makeTagPresentation() -> TagPresentation {
+        let selectedTags = model.routineTags
+        let selectedNormalized = Set(selectedTags.compactMap(RoutineTag.normalized))
+        let relatedTags = model.suggestedRelatedTags.filter { tag in
+            guard let normalizedTag = RoutineTag.normalized(tag) else { return false }
+            return !selectedNormalized.contains(normalizedTag)
         }
-    }
+        let relatedNormalized = Set(relatedTags.compactMap(RoutineTag.normalized))
+        let availableTags = model.availableTags.filter { tag in
+            guard let normalizedTag = RoutineTag.normalized(tag) else { return false }
+            return !selectedNormalized.contains(normalizedTag)
+                && !relatedNormalized.contains(normalizedTag)
+        }
+        let summariesByNormalized = model.availableTagSummaries.reduce(
+            into: [String: RoutineTagSummary]()
+        ) { summaries, summary in
+            guard let normalizedName = RoutineTag.normalized(summary.name),
+                  summaries[normalizedName] == nil else {
+                return
+            }
+            summaries[normalizedName] = summary
+        }
 
-    private var visibleAvailableTags: [String] {
-        TaskFormMacTagSuggestionPresentation.visibleAvailableTags(
-            unselectedAvailableTags,
-            showsAll: showsAllAvailableTags
+        return TagPresentation(
+            selectedTags: selectedTags,
+            relatedTags: relatedTags,
+            availableTags: availableTags,
+            visibleAvailableTags: TaskFormMacTagSuggestionPresentation.visibleAvailableTags(
+                availableTags,
+                showsAll: showsAllAvailableTags
+            ),
+            canToggleAvailableTags: availableTags.count > TaskFormMacTagSuggestionPresentation.collapsedLimit,
+            availableTagSummariesByNormalized: summariesByNormalized
         )
     }
 
-    private var canToggleAvailableTags: Bool {
-        unselectedAvailableTags.count > TaskFormMacTagSuggestionPresentation.collapsedLimit
+    private func makeFlagPresentation() -> FlagPresentation {
+        let selectedFlags = Set(model.routineFlags.compactMap(RoutineFlag.normalized))
+        let availableFlags = model.availableFlags.filter { flag in
+            guard let normalizedFlag = RoutineFlag.normalized(flag) else { return false }
+            return !selectedFlags.contains(normalizedFlag)
+        }
+
+        return FlagPresentation(
+            availableFlags: availableFlags,
+            visibleAvailableFlags: TaskFormFlagSuggestionPresentation.visibleAvailableFlags(
+                availableFlags,
+                showsAll: showsAllAvailableFlags
+            ),
+            canToggleAvailableFlags: availableFlags.count > TaskFormFlagSuggestionPresentation.collapsedLimit
+        )
     }
 
     private func tagChipTitle(tag: String, summary: RoutineTagSummary?) -> String {
@@ -334,6 +355,21 @@ struct TaskFormMacTagsContent: View {
             summary: summary,
             mode: model.tagCounterDisplayMode
         )
+    }
+
+    private struct TagPresentation {
+        let selectedTags: [String]
+        let relatedTags: [String]
+        let availableTags: [String]
+        let visibleAvailableTags: [String]
+        let canToggleAvailableTags: Bool
+        let availableTagSummariesByNormalized: [String: RoutineTagSummary]
+    }
+
+    private struct FlagPresentation {
+        let availableFlags: [String]
+        let visibleAvailableFlags: [String]
+        let canToggleAvailableFlags: Bool
     }
 }
 
