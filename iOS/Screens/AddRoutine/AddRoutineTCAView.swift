@@ -19,6 +19,7 @@ struct AddRoutineTCAView: View {
     ) var isPlacesEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
+    @Environment(\.calendar) var calendar
 
     var body: some View {
 NavigationStack {

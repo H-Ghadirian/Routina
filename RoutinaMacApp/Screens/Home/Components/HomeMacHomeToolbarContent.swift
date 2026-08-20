@@ -593,9 +593,46 @@ struct HomeMacToolbarSearchField: View {
     }
 }
 
+enum HomeMacToolbarSearchReminderChoice: String, CaseIterable, Identifiable {
+    case none
+    case oneHour
+    case twoHours
+    case oneDay
+    case custom
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .none: return "No reminder"
+        case .oneHour: return "1 hour before"
+        case .twoHours: return "2 hours before"
+        case .oneDay: return "1 day before"
+        case .custom: return "Custom date/time"
+        }
+    }
+
+    func reminderDate(eventDate: Date?, customDate: Date) -> Date? {
+        switch self {
+        case .none:
+            return nil
+        case .oneHour:
+            return eventDate?.addingTimeInterval(-60 * 60)
+        case .twoHours:
+            return eventDate?.addingTimeInterval(-2 * 60 * 60)
+        case .oneDay:
+            return eventDate?.addingTimeInterval(-24 * 60 * 60)
+        case .custom:
+            return eventDate == nil ? nil : customDate
+        }
+    }
+}
+
 struct HomeMacToolbarSearchParserPreview: View {
     @Environment(\.calendar) private var calendar
     let draft: RoutinaQuickAddDraft
+    @Binding var reminderChoice: HomeMacToolbarSearchReminderChoice
+    @Binding var customReminderAt: Date
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -620,6 +657,42 @@ struct HomeMacToolbarSearchParserPreview: View {
                     parsedRow(row)
                 }
             }
+
+            if let eventDate = draft.exactAvailabilityDate(calendar: calendar) {
+                Divider()
+
+                HStack(spacing: 10) {
+                    Label("Reminder?", systemImage: "bell")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Picker("Reminder", selection: $reminderChoice) {
+                        ForEach(HomeMacToolbarSearchReminderChoice.allCases) { choice in
+                            Text(choice.title).tag(choice)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 170)
+
+                    if reminderChoice == .custom {
+                        DatePicker(
+                            "Custom reminder",
+                            selection: $customReminderAt,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                        .labelsHidden()
+                        .fixedSize()
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .onChange(of: reminderChoice) { _, choice in
+                    if choice == .custom {
+                        customReminderAt = eventDate
+                    }
+                }
+            }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
@@ -632,7 +705,6 @@ struct HomeMacToolbarSearchParserPreview: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
         }
-        .allowsHitTesting(false)
     }
 
     private var parsedRows: [ParsedRow] {
@@ -642,6 +714,18 @@ struct HomeMacToolbarSearchParserPreview: View {
             rows.append(ParsedRow(
                 title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle routine" : "Repeats",
                 value: draft.recurrenceRule.displayText(calendar: calendar),
+                systemImage: "calendar"
+            ))
+        } else if let availabilityDate = draft.exactAvailabilityDate(calendar: calendar) {
+            rows.append(ParsedRow(
+                title: "Available",
+                value: availabilityDate.formatted(date: .abbreviated, time: .shortened),
+                systemImage: "calendar"
+            ))
+        } else if let availabilityStartDate = draft.availabilityStartDate {
+            rows.append(ParsedRow(
+                title: "Available",
+                value: availabilityStartDate.formatted(date: .abbreviated, time: .omitted),
                 systemImage: "calendar"
             ))
         } else if let deadline = draft.deadline {

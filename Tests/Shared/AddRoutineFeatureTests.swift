@@ -507,6 +507,34 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func reminderChoicesUseExactTodoAvailabilityAsTheEventTime() async {
+        let eventDay = makeDate("2026-08-25T00:00:00Z")
+        let eventTime = makeDate("2026-08-25T15:00:00Z")
+        let oneHourBefore = makeDate("2026-08-25T14:00:00Z")
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(availabilityStartDate: eventDay),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .oneOff,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: RoutineTimeOfDay(hour: 15, minute: 0)
+                )
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: makeDate("2026-08-20T10:00:00Z"))
+        }
+
+        await store.send(.reminderEnabledChanged(true)) {
+            $0.basics.reminderAt = eventTime
+        }
+        await store.send(.reminderLeadMinutesChanged(60)) {
+            $0.basics.reminderAt = oneHourBefore
+        }
+    }
+
+    @Test
     func availableRelationshipTasksChanged_prunesMissingRelationships() async {
         let keptID = UUID()
         let removedID = UUID()
@@ -1155,29 +1183,30 @@ struct AddRoutineFeatureTests {
         }
 
         let calendar = makeTestCalendar()
-        let expectedDeadline = calendar.date(from: DateComponents(
+        let expectedAvailability = calendar.date(from: DateComponents(
             timeZone: calendar.timeZone,
             year: 2026,
             month: 4,
-            day: 24,
-            hour: 20,
-            minute: 0
+            day: 24
         ))
 
         await store.send(.saveTapped) {
             $0.isSaving = true
             $0.basics.routineName = "Pay rent"
-            $0.basics.deadline = expectedDeadline
-            $0.basics.reminderAt = expectedDeadline
+            $0.basics.availabilityStartDate = expectedAvailability
+            $0.basics.plannedDate = expectedAvailability
             $0.organization.routineTags = ["finance"]
+            $0.schedule.recurrenceHasExplicitTime = true
+            $0.schedule.recurrenceTimeOfDay = RoutineTimeOfDay(hour: 20, minute: 0)
         }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Pay rent",
             frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
+            recurrenceRule: .interval(days: 1, at: RoutineTimeOfDay(hour: 20, minute: 0)),
             emoji: "✨",
-            deadline: expectedDeadline,
-            reminderAt: expectedDeadline,
+            availabilityStartDate: expectedAvailability,
+            plannedDate: expectedAvailability,
+            calendar: calendar,
             tags: ["finance"],
             scheduleMode: .oneOff
         ))))

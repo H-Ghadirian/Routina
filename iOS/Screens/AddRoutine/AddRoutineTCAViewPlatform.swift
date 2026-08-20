@@ -59,7 +59,8 @@ extension AddRoutineTCAView {
         AddRoutineTaskFormModelFactory(
             store: store,
             emojiOptions: emojiOptions,
-            isEmojiPickerPresented: $isEmojiPickerPresented
+            isEmojiPickerPresented: $isEmojiPickerPresented,
+            calendar: calendar
         )
         .make()
     }

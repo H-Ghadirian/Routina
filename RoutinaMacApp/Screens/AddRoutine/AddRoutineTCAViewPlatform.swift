@@ -96,6 +96,7 @@ extension AddRoutineTCAView {
             store: store,
             emojiOptions: emojiOptions,
             isEmojiPickerPresented: $isEmojiPickerPresented,
+            calendar: calendar,
             nameFocus: $isRoutineNameFocused,
             nameFocusRequestID: formCoordinator.nameFocusRequestID
         )

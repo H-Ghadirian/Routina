@@ -37,6 +37,7 @@ struct AddRoutineTaskFormModelFactory {
     let store: StoreOf<AddRoutineFeature>
     let emojiOptions: [String]
     let isEmojiPickerPresented: Binding<Bool>
+    var calendar: Calendar = .current
     var nameFocus: FocusState<Bool>.Binding?
     var nameFocusRequestID = 0
 
@@ -87,6 +88,16 @@ struct AddRoutineTaskFormModelFactory {
                 send: AddRoutineFeature.Action.reminderEnabledChanged
             ),
             reminderAt: binding(get: { store.basics.reminderAt ?? Date() }, send: AddRoutineFeature.Action.reminderDateChanged),
+            reminderEventDate: reminderEventDate,
+            reminderLeadMinutes: binding(
+                get: {
+                    TaskFormReminderLeadTime.matchedLeadMinutes(
+                        eventDate: reminderEventDate,
+                        reminderAt: store.basics.reminderAt
+                    )
+                },
+                send: AddRoutineFeature.Action.reminderLeadMinutesChanged
+            ),
             importance: binding(get: { store.basics.importance }, send: AddRoutineFeature.Action.importanceChanged),
             urgency: binding(get: { store.basics.urgency }, send: AddRoutineFeature.Action.urgencyChanged),
             pressure: binding(get: { store.basics.pressure }, send: AddRoutineFeature.Action.pressureChanged),
@@ -259,6 +270,18 @@ struct AddRoutineTaskFormModelFactory {
             isSaving: store.isSaving,
             autofocusName: true,
             onDelete: nil
+        )
+    }
+
+    private var reminderEventDate: Date? {
+        TaskFormReminderLeadTime.eventDate(
+            scheduleMode: store.schedule.scheduleMode,
+            deadline: store.basics.deadline,
+            recurrenceRule: store.candidateRecurrenceRule,
+            availabilityStartDate: store.basics.availabilityStartDate,
+            availabilityEndDate: store.basics.availabilityEndDate,
+            referenceDate: Date(),
+            calendar: calendar
         )
     }
 

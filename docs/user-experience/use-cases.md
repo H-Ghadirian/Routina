@@ -19,11 +19,13 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Save a clear task in seconds without deciding every scheduling detail now.
 
-**Desired experience:** The shortest path asks for a meaningful title and confirms the save. Dates, recurrence, duration, tags, links, notes, and other details can be added when useful. A longer thought can open the full editor without retyping the title. Task count never blocks capture or redirects the person into a purchase flow.
+**Desired experience:** The shortest path asks for a meaningful title and confirms the save. Common natural-language dates and times are recognized when typed with the title, including a weekday plus day and month followed by a 24-hour time. An unqualified one-off date/time means when the task is available, while `due` or `by` explicitly means a deadline. Exact availability offers an optional reminder choice before saving and never silently creates one. Dates, recurrence, duration, tags, links, notes, and other details can be added when useful. A longer thought can open the full editor without retyping the title. Task count never blocks capture or redirects the person into a purchase flow.
 
 **Successful outcome:** The person trusts that the item is saved, regardless of how many other tasks they keep, and can return to what they were doing.
 
-**Example:** “Book dentist appointment” is captured immediately. The person later adds a weekday availability window and a reminder.
+**Example:** “Book dentist appointment” is captured immediately and can be refined later. “Physiotherapist Tuesday, 25 August 15:00” is captured as a task named “Physiotherapist,” available on that date at 15:00, with a visible choice of no reminder, one or two hours before, one day before, or a custom reminder.
+
+**Evidence:** User-reported capture failure on 2026-08-20.
 
 **Availability:** Production on iOS and macOS; entry points differ by platform.
 

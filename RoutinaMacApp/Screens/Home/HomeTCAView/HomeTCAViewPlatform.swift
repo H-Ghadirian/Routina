@@ -818,7 +818,11 @@ extension HomeTCAView {
         content
             .overlay(alignment: .top) {
                 if showsHomeToolbarSearch, let toolbarSearchCreateDraft, isToolbarSearchExpanded {
-                    HomeMacToolbarSearchParserPreview(draft: toolbarSearchCreateDraft)
+                    HomeMacToolbarSearchParserPreview(
+                        draft: toolbarSearchCreateDraft,
+                        reminderChoice: $toolbarSearchReminderChoice,
+                        customReminderAt: $toolbarSearchCustomReminderAt
+                    )
                         .frame(
                             width: HomeMacToolbarSearchLayout.focusedWidth,
                             alignment: .leading
@@ -830,7 +834,6 @@ extension HomeTCAView {
                         )
                         .transition(.opacity.combined(with: .move(edge: .top)))
                         .zIndex(20)
-                        .allowsHitTesting(false)
                 }
             }
             .overlay(alignment: .topTrailing) {
@@ -916,6 +919,10 @@ extension HomeTCAView {
                 .easeOut(duration: 0.18),
                 value: store.taskCreationConfirmation
             )
+            .onChange(of: searchTextBinding.wrappedValue) { _, _ in
+                toolbarSearchReminderChoice = .none
+                toolbarSearchCustomReminderAt = Date()
+            }
             .alert("Could Not Create Task", isPresented: toolbarSearchCreateErrorBinding) {
                 Button("OK", role: .cancel) {
                     toolbarSearchCreateErrorMessage = nil
@@ -970,6 +977,10 @@ extension HomeTCAView {
 
         toolbarSearchCreateErrorMessage = nil
         isToolbarSearchCreateInProgress = true
+        let reminderAt = toolbarSearchReminderChoice.reminderDate(
+            eventDate: toolbarSearchCreateDraft?.exactAvailabilityDate(calendar: calendar),
+            customDate: toolbarSearchCustomReminderAt
+        )
 
         Task { @MainActor in
             defer { isToolbarSearchCreateInProgress = false }
@@ -979,9 +990,11 @@ extension HomeTCAView {
                     from: trimmedText,
                     context: modelContext,
                     calendar: calendar,
-                    includingPlaces: isPlacesEnabled
+                    includingPlaces: isPlacesEnabled,
+                    reminderAt: reminderAt
                 )
                 searchTextBinding.wrappedValue = ""
+                toolbarSearchReminderChoice = .none
                 handleQuickAddCreated(result)
             } catch {
                 toolbarSearchCreateErrorMessage = error.localizedDescription

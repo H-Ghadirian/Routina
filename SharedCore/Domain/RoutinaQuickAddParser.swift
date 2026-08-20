@@ -5,6 +5,8 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
     var scheduleMode: RoutineScheduleMode
     var frequencyInDays: Int
     var recurrenceRule: RoutineRecurrenceRule
+    var availabilityStartDate: Date?
+    var availabilityEndDate: Date?
     var deadline: Date?
     var reminderAt: Date?
     var tags: [String]
@@ -28,7 +30,11 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
     }
 
     var hasDetectedSchedule: Bool {
-        scheduleMode != .oneOff || deadline != nil || reminderAt != nil
+        scheduleMode != .oneOff
+            || availabilityStartDate != nil
+            || availabilityEndDate != nil
+            || deadline != nil
+            || reminderAt != nil
     }
 
     var summaryText: String {
@@ -53,8 +59,16 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
     private var scheduleSummary: String {
         switch scheduleMode {
         case .oneOff:
-            guard let deadline else { return "Todo" }
-            return "Todo due \(deadline.formatted(date: .abbreviated, time: .shortened))"
+            if let availabilityDate = exactAvailabilityDate() {
+                return "Todo at \(availabilityDate.formatted(date: .abbreviated, time: .shortened))"
+            }
+            if let availabilityStartDate {
+                return "Todo on \(availabilityStartDate.formatted(date: .abbreviated, time: .omitted))"
+            }
+            if let deadline {
+                return "Todo due \(deadline.formatted(date: .abbreviated, time: .shortened))"
+            }
+            return "Todo"
         case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist:
             return "Gentle routine · \(recurrenceRule.displayText())"
         case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist:
@@ -68,13 +82,26 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
         }
     }
 
-    func saveRequest(placeID: UUID?) -> AddRoutineSaveRequest {
+    func exactAvailabilityDate(calendar: Calendar = .current) -> Date? {
+        guard scheduleMode == .oneOff,
+              let availabilityStartDate,
+              availabilityEndDate == nil,
+              let timeOfDay = recurrenceRule.timeOfDay else {
+            return nil
+        }
+        return timeOfDay.date(on: availabilityStartDate, calendar: calendar)
+    }
+
+    func saveRequest(placeID: UUID?, calendar: Calendar = .current) -> AddRoutineSaveRequest {
         AddRoutineSaveRequest(
             name: name,
             frequencyInDays: frequencyInDays,
             recurrenceRule: recurrenceRule,
             emoji: "✨",
             deadline: deadline,
+            availabilityStartDate: availabilityStartDate,
+            availabilityEndDate: availabilityEndDate,
+            calendar: calendar,
             reminderAt: reminderAt,
             priority: hasExplicitPriority
                 ? AddRoutinePriorityMatrix.priority(importance: importance, urgency: urgency)
@@ -131,6 +158,8 @@ enum RoutinaQuickAddParser {
             scheduleMode: schedule.scheduleMode,
             frequencyInDays: schedule.frequencyInDays,
             recurrenceRule: schedule.recurrenceRule,
+            availabilityStartDate: schedule.availabilityStartDate,
+            availabilityEndDate: schedule.availabilityEndDate,
             deadline: schedule.deadline,
             reminderAt: schedule.reminderAt,
             tags: tags,
@@ -147,6 +176,8 @@ enum RoutinaQuickAddParser {
         var scheduleMode: RoutineScheduleMode = .oneOff
         var frequencyInDays: Int = 1
         var recurrenceRule: RoutineRecurrenceRule = .interval(days: 1)
+        var availabilityStartDate: Date?
+        var availabilityEndDate: Date?
         var deadline: Date?
         var reminderAt: Date?
     }
@@ -301,21 +332,43 @@ enum RoutinaQuickAddParser {
             )
         }
 
-        if removeFirstMatch(
-            pattern: "(?:^|\\s)(?:due\\s+)?today(?=\\s|$)",
-            from: &working
-        ) != nil {
-            let deadline = date(on: referenceDate, timeOfDay: timeOfDay, calendar: calendar)
-            return ParsedSchedule(deadline: deadline, reminderAt: deadline)
+        if let absoluteDate = extractAbsoluteDate(
+            from: &working,
+            timeOfDay: timeOfDay,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) {
+            return oneOffSchedule(
+                on: absoluteDate.date,
+                timeOfDay: timeOfDay,
+                isDeadline: absoluteDate.isDeadline,
+                calendar: calendar
+            )
         }
 
-        if removeFirstMatch(
-            pattern: "(?:^|\\s)(?:due\\s+|by\\s+)?tomorrow(?=\\s|$)",
+        if let match = removeFirstMatch(
+            pattern: "(?:^|\\s)(?:(due|by)\\s+)?today(?=\\s|$)",
             from: &working
-        ) != nil {
+        ) {
+            return oneOffSchedule(
+                on: referenceDate,
+                timeOfDay: timeOfDay,
+                isDeadline: !match.groups[0].isEmpty,
+                calendar: calendar
+            )
+        }
+
+        if let match = removeFirstMatch(
+            pattern: "(?:^|\\s)(?:(due|by)\\s+)?tomorrow(?=\\s|$)",
+            from: &working
+        ) {
             let tomorrow = calendar.date(byAdding: .day, value: 1, to: referenceDate) ?? referenceDate
-            let deadline = date(on: tomorrow, timeOfDay: timeOfDay, calendar: calendar)
-            return ParsedSchedule(deadline: deadline, reminderAt: deadline)
+            return oneOffSchedule(
+                on: tomorrow,
+                timeOfDay: timeOfDay,
+                isDeadline: !match.groups[0].isEmpty,
+                calendar: calendar
+            )
         }
 
         if let match = removeFirstMatch(
@@ -328,10 +381,140 @@ enum RoutinaQuickAddParser {
                 calendar: calendar
             )
             let deadline = date(on: dueDate, timeOfDay: timeOfDay, calendar: calendar)
-            return ParsedSchedule(deadline: deadline, reminderAt: deadline)
+            return ParsedSchedule(deadline: deadline)
         }
 
         return ParsedSchedule()
+    }
+
+    private struct ParsedAbsoluteDate {
+        var date: Date
+        var isDeadline: Bool
+    }
+
+    private static func extractAbsoluteDate(
+        from working: inout String,
+        timeOfDay: RoutineTimeOfDay?,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> ParsedAbsoluteDate? {
+        var candidateWorking = working
+        guard let match = removeFirstMatch(
+            pattern: #"(?:^|\s)(?:(due|by|on)\s+)?(?:(monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)\s*,?\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)(?:\s*,?\s*(\d{4}))?(?=\s|$)"#,
+            from: &candidateWorking
+        ),
+        let day = Int(match.groups[2]),
+        let month = monthNumber(for: match.groups[3])
+        else {
+            return nil
+        }
+
+        let expectedWeekday = match.groups[1].isEmpty
+            ? nil
+            : weekdayNumber(for: match.groups[1])
+        let explicitYear = Int(match.groups[4])
+        guard let resolvedDay = resolvedAbsoluteDay(
+            day: day,
+            month: month,
+            explicitYear: explicitYear,
+            expectedWeekday: expectedWeekday,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) else {
+            return nil
+        }
+
+        working = candidateWorking
+        return ParsedAbsoluteDate(
+            date: date(on: resolvedDay, timeOfDay: timeOfDay, calendar: calendar),
+            isDeadline: ["due", "by"].contains(match.groups[0].lowercased())
+        )
+    }
+
+    private static func oneOffSchedule(
+        on day: Date,
+        timeOfDay: RoutineTimeOfDay?,
+        isDeadline: Bool,
+        calendar: Calendar
+    ) -> ParsedSchedule {
+        if isDeadline {
+            return ParsedSchedule(
+                deadline: date(on: day, timeOfDay: timeOfDay, calendar: calendar)
+            )
+        }
+
+        return ParsedSchedule(
+            recurrenceRule: .interval(days: 1, at: timeOfDay),
+            availabilityStartDate: calendar.startOfDay(for: day)
+        )
+    }
+
+    private static func resolvedAbsoluteDay(
+        day: Int,
+        month: Int,
+        explicitYear: Int?,
+        expectedWeekday: Int?,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Date? {
+        if let explicitYear {
+            guard let candidate = validDate(
+                year: explicitYear,
+                month: month,
+                day: day,
+                calendar: calendar
+            ), matches(expectedWeekday: expectedWeekday, date: candidate, calendar: calendar) else {
+                return nil
+            }
+            return candidate
+        }
+
+        let referenceDay = calendar.startOfDay(for: referenceDate)
+        let referenceYear = calendar.component(.year, from: referenceDay)
+        for year in referenceYear...(referenceYear + 14) {
+            guard let candidate = validDate(
+                year: year,
+                month: month,
+                day: day,
+                calendar: calendar
+            ), candidate >= referenceDay else {
+                continue
+            }
+            guard matches(expectedWeekday: expectedWeekday, date: candidate, calendar: calendar) else {
+                continue
+            }
+            return candidate
+        }
+        return nil
+    }
+
+    private static func validDate(
+        year: Int,
+        month: Int,
+        day: Int,
+        calendar: Calendar
+    ) -> Date? {
+        let components = DateComponents(
+            timeZone: calendar.timeZone,
+            year: year,
+            month: month,
+            day: day
+        )
+        guard let candidate = calendar.date(from: components) else { return nil }
+        let resolved = calendar.dateComponents([.year, .month, .day], from: candidate)
+        guard resolved.year == year, resolved.month == month, resolved.day == day else {
+            return nil
+        }
+        return calendar.startOfDay(for: candidate)
+    }
+
+    private static func matches(
+        expectedWeekday: Int?,
+        date: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard let expectedWeekday else { return true }
+        return calendar.component(.weekday, from: date) == expectedWeekday
     }
 
     private static func extractPriority(
@@ -396,10 +579,13 @@ enum RoutinaQuickAddParser {
             return RoutineTimeOfDay(hour: hour, minute: minute)
         }
 
+        var candidateWorking = working
         if let match = removeFirstMatch(
-            pattern: "(?:^|\\s)at\\s+(\\d{1,2}):(\\d{2})(?=\\s|$)",
-            from: &working
-        ), let hour = Int(match.groups[0]), let minute = Int(match.groups[1]) {
+            pattern: "(?:^|\\s)(?:at\\s+)?(\\d{1,2}):(\\d{2})(?=\\s|$)",
+            from: &candidateWorking
+        ), let hour = Int(match.groups[0]), let minute = Int(match.groups[1]),
+           (0...23).contains(hour), (0...59).contains(minute) {
+            working = candidateWorking
             return RoutineTimeOfDay(hour: hour, minute: minute)
         }
 
@@ -499,6 +685,24 @@ enum RoutinaQuickAddParser {
         case "thursday", "thu": return 5
         case "friday", "fri": return 6
         case "saturday", "sat": return 7
+        default: return nil
+        }
+    }
+
+    private static func monthNumber(for value: String) -> Int? {
+        switch value.lowercased() {
+        case "january", "jan": return 1
+        case "february", "feb": return 2
+        case "march", "mar": return 3
+        case "april", "apr": return 4
+        case "may": return 5
+        case "june", "jun": return 6
+        case "july", "jul": return 7
+        case "august", "aug": return 8
+        case "september", "sep", "sept": return 9
+        case "october", "oct": return 10
+        case "november", "nov": return 11
+        case "december", "dec": return 12
         default: return nil
         }
     }

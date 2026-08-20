@@ -1541,6 +1541,27 @@ And the toolbar shows a visible Return-to-create hint for that no-result query
 And when that no-result query leaves the task-list sidebar empty, the sidebar uses the Planner Timeline no-results subtext and shows a `Create task` button that opens the full Add Task form with the query in the Identity task-name field
 And if the query includes quick-add syntax such as `today`, `every day`, or `#home`, the toolbar shows a flat same-width parser preview below the field before creation without duplicating the Return-to-create hint
 
+### Quick Add Recognizes Explicit Day-Month Dates and Bare 24-Hour Times
+
+Area: Tasks
+Decision links: [0072](../decisions/0072-unify-ios-task-add-and-quick-add.md), [0074](../decisions/0074-parse-mac-add-task-title.md), [0315](../decisions/0315-merge-mac-quick-add-into-toolbar-search.md), [0616](../decisions/0616-interpret-unqualified-quick-add-dates-as-availability.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/RoutinaQuickAddParserTests.swift`
+
+Given the reference date is Thursday, 20 August 2026
+When the person enters `Physiotherapist Tuesday, 25 August 15:00` through a shared Smart Add or Quick Add surface
+Then the parser returns the task name `Physiotherapist`
+And it sets one-off `At date` availability to Tuesday, 25 August 2026
+And it sets `At time` availability to 15:00
+And it does not infer a deadline or reminder
+And the parser preview recognizes scheduling metadata before the task is saved
+And Mac toolbar Quick Add offers no reminder, one hour, two hours, one day, and custom date/time choices before creation
+
+When the person instead enters `Submit claim by 25 August 15:00`
+Then Quick Add creates a deadline at that date and time
+And it still does not infer a separate reminder
+
 ### Mac Toolbar Search Shows Every Eligible Suppressed Task Match
 
 Area: Tasks / Planner

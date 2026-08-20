@@ -528,6 +528,18 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                 value: draft.recurrenceRule.displayText(calendar: smartNameCalendar),
                 systemImage: "calendar"
             ))
+        } else if let availabilityDate = draft.exactAvailabilityDate(calendar: smartNameCalendar) {
+            rows.append(SmartNameRow(
+                title: "Available",
+                value: availabilityDate.formatted(date: .abbreviated, time: .shortened),
+                systemImage: "calendar"
+            ))
+        } else if let availabilityStartDate = draft.availabilityStartDate {
+            rows.append(SmartNameRow(
+                title: "Available",
+                value: availabilityStartDate.formatted(date: .abbreviated, time: .omitted),
+                systemImage: "calendar"
+            ))
         } else if let deadline = draft.deadline {
             rows.append(SmartNameRow(
                 title: "Due",

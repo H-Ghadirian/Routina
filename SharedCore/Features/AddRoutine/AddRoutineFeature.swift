@@ -21,6 +21,7 @@ struct AddRoutineFeature: Reducer {
         case plannedDateChanged(Date?)
         case reminderEnabledChanged(Bool)
         case reminderDateChanged(Date)
+        case reminderLeadMinutesChanged(Int?)
         case priorityChanged(RoutineTaskPriority)
         case importanceChanged(RoutineTaskImportance)
         case urgencyChanged(RoutineTaskUrgency)
@@ -351,15 +352,32 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case let .reminderEnabledChanged(isEnabled):
-            AddRoutineFormEditor.setReminderEnabled(
-                isEnabled,
-                now: now,
-                basics: &state.basics
-            )
+            let eventDate: Date?
+            if state.schedule.scheduleMode == .oneOff,
+               state.basics.deadline == nil,
+               state.basics.availabilityStartDate == nil {
+                eventDate = nil
+            } else {
+                eventDate = reminderEventDate(for: state)
+            }
+            state.basics.reminderAt = isEnabled
+                ? (state.basics.reminderAt ?? eventDate ?? now)
+                : nil
             return .none
 
         case let .reminderDateChanged(reminderDate):
             state.basics.reminderAt = reminderDate
+            return .none
+
+        case let .reminderLeadMinutesChanged(leadMinutes):
+            guard let leadMinutes,
+                  let eventDate = reminderEventDate(for: state) else {
+                return .none
+            }
+            state.basics.reminderAt = TaskFormReminderLeadTime.reminderDate(
+                eventDate: eventDate,
+                leadMinutes: leadMinutes
+            )
             return .none
 
         case let .priorityChanged(priority):
@@ -898,11 +916,17 @@ struct AddRoutineFeature: Reducer {
         if draft.scheduleMode == .oneOff {
             state.basics.deadline = draft.deadline
             state.basics.reminderAt = draft.reminderAt
+            state.basics.availabilityStartDate = draft.availabilityStartDate
+            state.basics.availabilityEndDate = draft.availabilityEndDate
+            applyTimeConstraint(from: draft.recurrenceRule, state: &state)
+            enforcePlanningRules(state: &state)
             return
         }
 
         state.basics.deadline = nil
         state.basics.reminderAt = nil
+        state.basics.availabilityStartDate = nil
+        state.basics.availabilityEndDate = nil
 
         let recurrenceRule = draft.recurrenceRule
         if let advanced = recurrenceRule.advanced {
@@ -963,6 +987,18 @@ struct AddRoutineFeature: Reducer {
             scheduleMutationHandler().setRecurrenceHasExplicitTime(false, state: &state)
             scheduleMutationHandler().setRecurrenceHasTimeRange(false, state: &state)
         }
+    }
+
+    private func reminderEventDate(for state: State) -> Date? {
+        TaskFormReminderLeadTime.eventDate(
+            scheduleMode: state.schedule.scheduleMode,
+            deadline: state.basics.deadline,
+            recurrenceRule: state.candidateRecurrenceRule,
+            availabilityStartDate: state.basics.availabilityStartDate,
+            availabilityEndDate: state.basics.availabilityEndDate,
+            referenceDate: now,
+            calendar: calendar
+        )
     }
 
     private func matchingPlaceID(

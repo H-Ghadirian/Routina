@@ -70,7 +70,8 @@ enum RoutinaQuickAddService {
         context: ModelContext,
         referenceDate: Date = .now,
         calendar: Calendar = .current,
-        includingPlaces: Bool = SharedDefaults.app[.appSettingPlacesEnabled]
+        includingPlaces: Bool = SharedDefaults.app[.appSettingPlacesEnabled],
+        reminderAt: Date? = nil
     ) async throws -> RoutinaQuickAddCreateResult {
         guard var draft = RoutinaQuickAddParser.parse(
             text,
@@ -84,6 +85,7 @@ enum RoutinaQuickAddService {
         }
 
         draft.name = trimmedName
+        draft.reminderAt = reminderAt ?? draft.reminderAt
 
         if try HomeDeduplicationSupport.hasDuplicateRoutineName(trimmedName, in: context) {
             throw RoutinaQuickAddError.duplicateTaskName(trimmedName)
@@ -91,7 +93,7 @@ enum RoutinaQuickAddService {
 
         draft.tags = try canonicalTags(for: draft.tags, context: context)
         let place = includingPlaces ? try matchedPlace(named: draft.placeName, context: context) : nil
-        let request = draft.saveRequest(placeID: place?.id)
+        let request = draft.saveRequest(placeID: place?.id, calendar: calendar)
         let goalIDs = try RoutineGoalPersistence.ensureGoals(request.goals, in: context)
         let task = HomeAddRoutineSupport.makeRoutine(
             from: request,

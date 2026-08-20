@@ -330,6 +330,8 @@ struct TaskDetailEditRoutineContent: View {
             scheduleMode: store.editScheduleMode,
             deadline: store.editDeadline,
             recurrenceRule: store.candidateRecurrenceRule,
+            availabilityStartDate: store.editAvailabilityStartDate,
+            availabilityEndDate: store.editAvailabilityEndDate,
             referenceDate: Date(),
             calendar: calendar
         )

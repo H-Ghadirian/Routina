@@ -286,6 +286,8 @@ struct HomeTCAView: View {
     @State var toolbarSearchFocusDismissRequestID = 0
     @State var isToolbarSearchCreateInProgress = false
     @State var toolbarSearchCreateErrorMessage: String?
+    @State var toolbarSearchReminderChoice: HomeMacToolbarSearchReminderChoice = .none
+    @State var toolbarSearchCustomReminderAt = Date()
     @State var macHomeNoticeToast: MacHomeNoticeToast?
     @State var isMacWindowFullscreen = false
     @State var isEventEditorPresented = false

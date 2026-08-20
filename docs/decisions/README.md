@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0616](0616-interpret-unqualified-quick-add-dates-as-availability.md) refines [0074](0074-parse-mac-add-task-title.md), [0185](0185-limit-exact-reminders-to-todos.md), [0197](0197-separate-todo-date-and-time-availability.md), and [0315](0315-merge-mac-quick-add-into-toolbar-search.md):** unqualified one-off dates and times become exact availability, deadline words remain explicit, and timed Mac Quick Add asks for an optional reminder before saving.
+
 - **[0615](0615-group-and-control-pending-notification-occurrences.md) revises [0611](0611-list-actual-pending-notifications-in-settings.md) and refines [0192](0192-support-event-notifications.md), [0210](0210-store-durable-preferences-in-swiftdata.md), and [0412](0412-add-advanced-recurrence-beside-simple.md):** Settings groups actual pending requests by task or event and lets a person remove or pause one device-local occurrence without changing source data or allowing schedule reconciliation to recreate it.
 
 - **[0611](0611-list-actual-pending-notifications-in-settings.md) refines [0185](0185-limit-exact-reminders-to-todos.md), [0192](0192-support-event-notifications.md), and [0412](0412-add-advanced-recurrence-beside-simple.md):** iOS and macOS Settings show the chronological pending requests actually queued with the system, including separate rolling Advanced occurrences, without reconstructing notifications from Planner or task data.
@@ -753,6 +755,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md) | Interpret Unqualified Quick Add Dates as Availability | Accepted | 2026-08-20 |
 | [0615](0615-group-and-control-pending-notification-occurrences.md) | Group and Control Pending Notification Occurrences | Accepted | 2026-08-18 |
 | [0611](0611-list-actual-pending-notifications-in-settings.md) | List Actual Pending Notifications in Settings | Accepted | 2026-08-18 |
 | [0610](0610-expose-product-help-through-local-ai-connections.md) | Expose Product Help Through Local AI Connections | Accepted | 2026-08-18 |

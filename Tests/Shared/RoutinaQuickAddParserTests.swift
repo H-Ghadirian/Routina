@@ -78,27 +78,121 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
-    func parseTomorrowTodoWithDeadline() throws {
+    func parseTomorrowTodoWithExactAvailability() throws {
         let calendar = makeTestCalendar()
         let draft = try #require(RoutinaQuickAddParser.parse(
             "Pay rent tomorrow at 8pm #finance",
             referenceDate: makeDate("2026-04-23T10:00:00Z"),
             calendar: calendar
         ))
-        let expectedDeadline = try #require(calendar.date(from: DateComponents(
+        let expectedAvailability = try #require(calendar.date(from: DateComponents(
             timeZone: calendar.timeZone,
             year: 2026,
             month: 4,
-            day: 24,
-            hour: 20,
-            minute: 0
+            day: 24
         )))
 
         #expect(draft.name == "Pay rent")
         #expect(draft.scheduleMode == .oneOff)
-        #expect(draft.deadline == expectedDeadline)
-        #expect(draft.reminderAt == expectedDeadline)
+        #expect(draft.availabilityStartDate == expectedAvailability)
+        #expect(draft.availabilityEndDate == nil)
+        #expect(draft.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 20, minute: 0))
+        #expect(draft.deadline == nil)
+        #expect(draft.reminderAt == nil)
         #expect(draft.tags == ["finance"])
+    }
+
+    @Test
+    func parseWeekdayDayMonthAndBare24HourTimeAsTodoAvailability() throws {
+        let calendar = makeTestCalendar()
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Physiotherapist Tuesday, 25 August 15:00",
+            referenceDate: makeDate("2026-08-20T10:00:00Z"),
+            calendar: calendar
+        ))
+        let expectedAvailability = try #require(calendar.date(from: DateComponents(
+            timeZone: calendar.timeZone,
+            year: 2026,
+            month: 8,
+            day: 25
+        )))
+        let expectedEvent = RoutineTimeOfDay(hour: 15, minute: 0)
+            .date(on: expectedAvailability, calendar: calendar)
+
+        #expect(draft.name == "Physiotherapist")
+        #expect(draft.scheduleMode == .oneOff)
+        #expect(draft.availabilityStartDate == expectedAvailability)
+        #expect(draft.availabilityEndDate == nil)
+        #expect(draft.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 15, minute: 0))
+        #expect(draft.exactAvailabilityDate(calendar: calendar) == expectedEvent)
+        #expect(draft.deadline == nil)
+        #expect(draft.reminderAt == nil)
+        #expect(draft.hasDetectedSchedule)
+    }
+
+    @Test
+    func parseDayMonthWithoutYearUsesItsNextOccurrence() throws {
+        let calendar = makeTestCalendar()
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Dentist 5 January at 09:30",
+            referenceDate: makeDate("2026-08-20T10:00:00Z"),
+            calendar: calendar
+        ))
+        let expectedAvailability = try #require(calendar.date(from: DateComponents(
+            timeZone: calendar.timeZone,
+            year: 2027,
+            month: 1,
+            day: 5
+        )))
+
+        #expect(draft.name == "Dentist")
+        #expect(draft.availabilityStartDate == expectedAvailability)
+        #expect(draft.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 9, minute: 30))
+        #expect(draft.deadline == nil)
+        #expect(draft.reminderAt == nil)
+    }
+
+    @Test
+    func parseWeekdayDisambiguatesTheInferredYear() throws {
+        let calendar = makeTestCalendar()
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Physiotherapist Wednesday, 25 August 15:00",
+            referenceDate: makeDate("2026-08-26T10:00:00Z"),
+            calendar: calendar
+        ))
+        let expectedAvailability = try #require(calendar.date(from: DateComponents(
+            timeZone: calendar.timeZone,
+            year: 2027,
+            month: 8,
+            day: 25
+        )))
+
+        #expect(draft.name == "Physiotherapist")
+        #expect(draft.availabilityStartDate == expectedAvailability)
+        #expect(draft.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 15, minute: 0))
+    }
+
+    @Test
+    func parseExplicitDueDateAsDeadlineWithoutAddingReminder() throws {
+        let calendar = makeTestCalendar()
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Submit claim by 25 August 15:00",
+            referenceDate: makeDate("2026-08-20T10:00:00Z"),
+            calendar: calendar
+        ))
+        let expectedDeadline = try #require(calendar.date(from: DateComponents(
+            timeZone: calendar.timeZone,
+            year: 2026,
+            month: 8,
+            day: 25,
+            hour: 15,
+            minute: 0
+        )))
+
+        #expect(draft.name == "Submit claim")
+        #expect(draft.availabilityStartDate == nil)
+        #expect(draft.deadline == expectedDeadline)
+        #expect(draft.reminderAt == nil)
     }
 
     @Test
@@ -220,6 +314,39 @@ struct RoutinaQuickAddParserTests {
         #expect(task.focusModeEnabled)
         #expect(task.priority == .high)
         #expect(result.matchedPlaceName == "Balcony")
+    }
+
+    @Test
+    func createTaskPersistsExactAvailabilityAndChosenReminderWithoutDeadline() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let expectedAvailability = try #require(calendar.date(from: DateComponents(
+            timeZone: calendar.timeZone,
+            year: 2026,
+            month: 8,
+            day: 25
+        )))
+        let eventDate = RoutineTimeOfDay(hour: 15, minute: 0)
+            .date(on: expectedAvailability, calendar: calendar)
+        let reminderAt = eventDate.addingTimeInterval(-60 * 60)
+
+        let result = try await RoutinaQuickAddService.createTask(
+            from: "Physiotherapist Tuesday, 25 August 15:00",
+            context: context,
+            referenceDate: makeDate("2026-08-20T10:00:00Z"),
+            calendar: calendar,
+            reminderAt: reminderAt
+        )
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let task = try #require(tasks.first { $0.id == result.taskID })
+
+        #expect(task.name == "Physiotherapist")
+        #expect(task.availabilityStartDate == expectedAvailability)
+        #expect(task.availabilityEndDate == nil)
+        #expect(task.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 15, minute: 0))
+        #expect(task.deadline == nil)
+        #expect(task.reminderAt == reminderAt)
     }
 
     @Test

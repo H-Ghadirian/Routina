@@ -20,6 +20,7 @@ struct AddRoutineTCAView: View {
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
     @Environment(\.addEditFormCoordinator) var formCoordinator
+    @Environment(\.calendar) var calendar
 
     var body: some View {
 NavigationStack {

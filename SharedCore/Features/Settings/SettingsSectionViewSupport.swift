@@ -368,7 +368,11 @@ enum SettingsQuickAddSyntaxGuide {
         ),
         SettingsQuickAddExample(
             phrase: "Read for 25m today",
-            result: "Creates a todo due today and enables a 25-minute focus estimate."
+            result: "Creates a todo available today and enables a 25-minute focus estimate."
+        ),
+        SettingsQuickAddExample(
+            phrase: "Physiotherapist 25 August 15:00",
+            result: "Creates a todo available on the next 25 August at 15:00."
         )
     ]
 
@@ -376,10 +380,12 @@ enum SettingsQuickAddSyntaxGuide {
         SettingsQuickAddSyntaxGroup(
             title: "Dates",
             rows: [
-                SettingsQuickAddSyntaxItem(syntax: "today", detail: "Due today."),
-                SettingsQuickAddSyntaxItem(syntax: "tomorrow", detail: "Due tomorrow."),
+                SettingsQuickAddSyntaxItem(syntax: "today", detail: "Available today."),
+                SettingsQuickAddSyntaxItem(syntax: "tomorrow", detail: "Available tomorrow."),
                 SettingsQuickAddSyntaxItem(syntax: "due Friday", detail: "Due on the next Friday."),
-                SettingsQuickAddSyntaxItem(syntax: "by Friday", detail: "Also sets the next Friday deadline.")
+                SettingsQuickAddSyntaxItem(syntax: "by Friday", detail: "Also sets the next Friday deadline."),
+                SettingsQuickAddSyntaxItem(syntax: "25 August", detail: "Available on the next 25 August."),
+                SettingsQuickAddSyntaxItem(syntax: "Tuesday, 25 August", detail: "Accepts a matching weekday too.")
             ]
         ),
         SettingsQuickAddSyntaxGroup(
@@ -387,7 +393,7 @@ enum SettingsQuickAddSyntaxGuide {
             rows: [
                 SettingsQuickAddSyntaxItem(syntax: "at 9am", detail: "Sets a morning time."),
                 SettingsQuickAddSyntaxItem(syntax: "at 9:30pm", detail: "Sets an evening time."),
-                SettingsQuickAddSyntaxItem(syntax: "at 14:30", detail: "Uses 24-hour time.")
+                SettingsQuickAddSyntaxItem(syntax: "15:00 / at 15:00", detail: "Uses 24-hour time.")
             ]
         ),
         SettingsQuickAddSyntaxGroup(

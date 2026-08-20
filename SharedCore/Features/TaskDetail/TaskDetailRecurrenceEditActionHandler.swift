@@ -446,6 +446,8 @@ struct TaskDetailRecurrenceEditActionHandler {
             scheduleMode: state.editScheduleMode,
             deadline: state.editDeadline,
             recurrenceRule: state.candidateRecurrenceRule,
+            availabilityStartDate: state.editAvailabilityStartDate,
+            availabilityEndDate: state.editAvailabilityEndDate,
             referenceDate: now(),
             calendar: calendar
         )
