@@ -102,7 +102,7 @@ enum NotificationCoordinator {
     static let snoozeActionIdentifier = "ROUTINE_SNOOZE"
     static let eventNotificationIdentifierPrefix = "event-"
     private static let advancedOccurrenceNotificationLimit = 12
-    private static let advancedOccurrenceIdentifierMarker = ".occurrence."
+    private static let advancedOccurrenceIdentifierMarker = NotificationRequestMetadata.advancedOccurrenceIdentifierMarker
 
     static func shouldScheduleNotification(
         for task: RoutineTask,
@@ -397,6 +397,13 @@ enum NotificationCoordinator {
         for payload: NotificationPayload,
         now: Date = Date()
     ) -> UNCalendarNotificationTrigger {
+        createNotificationTrigger(at: resolvedNotificationDate(for: payload, now: now))
+    }
+
+    static func resolvedNotificationDate(
+        for payload: NotificationPayload,
+        now: Date = Date()
+    ) -> Date {
         let calendar = Calendar.current
 
         let targetDate: Date
@@ -422,11 +429,13 @@ enum NotificationCoordinator {
         } else {
             safeDate = NotificationPreferences.nextReminderDate(after: now, calendar: calendar)
         }
-        let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: safeDate)
-        return UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        return NotificationSchedulingOverrideStore.normalizedOccurrenceDate(safeDate)
     }
 
-    static func createNotificationContent(for payload: NotificationPayload) -> UNMutableNotificationContent {
+    static func createNotificationContent(
+        for payload: NotificationPayload,
+        originalScheduledAt: Date? = nil
+    ) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         let trimmedName = payload.name?.trimmingCharacters(in: .whitespacesAndNewlines)
         let fallbackTitle: String
@@ -450,6 +459,12 @@ enum NotificationCoordinator {
             }
             content.interruptionLevel = .timeSensitive
             content.relevanceScore = 1.0
+            addSchedulingMetadata(
+                to: content,
+                payload: payload,
+                sourceTitle: "\(emojiPrefix)\(titleName)",
+                originalScheduledAt: originalScheduledAt
+            )
             return content
         }
 
@@ -476,6 +491,12 @@ enum NotificationCoordinator {
         content.categoryIdentifier = categoryIdentifier
         content.interruptionLevel = payload.usesExactTime ? .timeSensitive : .active
         content.relevanceScore = payload.usesExactTime ? 1.0 : 0.5
+        addSchedulingMetadata(
+            to: content,
+            payload: payload,
+            sourceTitle: "\(emojiPrefix)\(titleName)",
+            originalScheduledAt: originalScheduledAt
+        )
         return content
     }
 
@@ -540,26 +561,137 @@ enum NotificationCoordinator {
         }
 
         cancelNotification(payload.identifier)
+        let now = Date()
         if !payload.recurrenceOccurrenceDates.isEmpty {
             for (index, occurrence) in payload.recurrenceOccurrenceDates
                 .prefix(advancedOccurrenceNotificationLimit)
                 .enumerated() {
                 let occurrencePayload = payload.forRecurrenceOccurrence(occurrence)
+                let originalScheduledAt = resolvedNotificationDate(for: occurrencePayload, now: now)
+                guard let scheduledAt = await effectiveScheduledDate(
+                    sourceIdentifier: payload.identifier,
+                    originalScheduledAt: originalScheduledAt,
+                    now: now
+                ) else {
+                    continue
+                }
                 let request = UNNotificationRequest(
                     identifier: advancedOccurrenceIdentifier(base: payload.identifier, index: index),
-                    content: createNotificationContent(for: occurrencePayload),
-                    trigger: createNotificationTrigger(for: occurrencePayload)
+                    content: createNotificationContent(
+                        for: occurrencePayload,
+                        originalScheduledAt: originalScheduledAt
+                    ),
+                    trigger: createNotificationTrigger(at: scheduledAt)
                 )
                 try? await UNUserNotificationCenter.current().add(request)
             }
             return
         }
+        let originalScheduledAt = resolvedNotificationDate(for: payload, now: now)
+        guard let scheduledAt = await effectiveScheduledDate(
+            sourceIdentifier: payload.identifier,
+            originalScheduledAt: originalScheduledAt,
+            now: now
+        ) else {
+            return
+        }
         let request = UNNotificationRequest(
             identifier: payload.identifier,
-            content: createNotificationContent(for: payload),
-            trigger: createNotificationTrigger(for: payload)
+            content: createNotificationContent(
+                for: payload,
+                originalScheduledAt: originalScheduledAt
+            ),
+            trigger: createNotificationTrigger(at: scheduledAt)
         )
         try? await UNUserNotificationCenter.current().add(request)
+    }
+
+    static func removeScheduledNotification(_ notification: ScheduledNotificationSummary) async {
+        if let originalScheduledAt = notification.originalScheduledAt {
+            await NotificationSchedulingOverrideStore.shared.skip(
+                sourceIdentifier: notification.sourceIdentifier,
+                originalScheduledAt: originalScheduledAt
+            )
+        }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [notification.identifier]
+        )
+    }
+
+    static func pauseScheduledNotification(
+        _ notification: ScheduledNotificationSummary,
+        until requestedDate: Date
+    ) async {
+        guard let originalScheduledAt = notification.originalScheduledAt else { return }
+        let now = Date()
+        let pausedUntil = NotificationSchedulingOverrideStore.normalizedOccurrenceDate(
+            max(requestedDate, now.addingTimeInterval(60))
+        )
+        await NotificationSchedulingOverrideStore.shared.pause(
+            sourceIdentifier: notification.sourceIdentifier,
+            originalScheduledAt: originalScheduledAt,
+            until: pausedUntil,
+            now: now
+        )
+
+        let center = UNUserNotificationCenter.current()
+        let requests = await center.pendingNotificationRequests()
+        guard let request = requests.first(where: { $0.identifier == notification.identifier }) else {
+            return
+        }
+        center.removePendingNotificationRequests(withIdentifiers: [notification.identifier])
+        let pausedRequest = UNNotificationRequest(
+            identifier: notification.identifier,
+            content: request.content,
+            trigger: createNotificationTrigger(at: pausedUntil)
+        )
+        try? await center.add(pausedRequest)
+    }
+
+    static func effectiveScheduledDate(
+        sourceIdentifier: String,
+        originalScheduledAt: Date,
+        now: Date,
+        overrideStore: NotificationSchedulingOverrideStore = .shared
+    ) async -> Date? {
+        guard let schedulingOverride = await overrideStore.schedulingOverride(
+            sourceIdentifier: sourceIdentifier,
+            originalScheduledAt: originalScheduledAt,
+            now: now
+        ) else {
+            return originalScheduledAt
+        }
+        switch schedulingOverride {
+        case .skip:
+            return nil
+        case let .pause(until: pausedUntil):
+            return pausedUntil > now ? pausedUntil : nil
+        }
+    }
+
+    private static func createNotificationTrigger(at date: Date) -> UNCalendarNotificationTrigger {
+        let triggerDate = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: date
+        )
+        return UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+    }
+
+    private static func addSchedulingMetadata(
+        to content: UNMutableNotificationContent,
+        payload: NotificationPayload,
+        sourceTitle: String,
+        originalScheduledAt: Date?
+    ) {
+        var userInfo = content.userInfo
+        userInfo[NotificationRequestMetadata.sourceIdentifierKey] = payload.identifier
+        userInfo[NotificationRequestMetadata.sourceKindKey] = payload.kind.rawValue
+        userInfo[NotificationRequestMetadata.sourceTitleKey] = sourceTitle
+        if let originalScheduledAt {
+            userInfo[NotificationRequestMetadata.originalScheduledAtKey] =
+                NotificationSchedulingOverrideStore.normalizedOccurrenceDate(originalScheduledAt).timeIntervalSince1970
+        }
+        content.userInfo = userInfo
     }
 
     private static func advancedNotificationOccurrenceDates(

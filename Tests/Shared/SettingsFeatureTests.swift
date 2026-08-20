@@ -447,6 +447,7 @@ struct SettingsFeatureTests {
 
         await store.send(.toggleNotifications(false)) {
             $0.notifications.notificationsEnabled = false
+            $0.notifications.hasLoadedScheduledNotifications = true
         }
 
         #expect(persistedValue.value == false)
@@ -1135,7 +1136,10 @@ struct SettingsFeatureTests {
         }
 
         await store.receive(.settingsDefaultsResetAuthenticationFinished(.success)) {
-            $0.notifications = SettingsNotificationsState(notificationReminderTime: defaultReminderTime)
+            $0.notifications = SettingsNotificationsState(
+                notificationReminderTime: defaultReminderTime,
+                hasLoadedScheduledNotifications: true
+            )
             $0.appearance = SettingsAppearanceState(
                 appLockMethodDescription: "Touch ID or your Mac password",
                 settingsResetStatusMessage: "Settings were reset to defaults."

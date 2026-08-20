@@ -35,6 +35,9 @@ struct SettingsFeature {
         case showDoneCountInToolbarToggled(Bool)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
+        case scheduledNotificationsLoaded([ScheduledNotificationSummary])
+        case removeScheduledNotificationTapped(ScheduledNotificationSummary)
+        case pauseScheduledNotificationTapped(ScheduledNotificationSummary, until: Date)
         case openAppSettingsTapped
         case openLocationSettingsTapped
         case gitHubScopeChanged(GitHubStatsScope)
@@ -319,6 +322,9 @@ struct SettingsFeature {
                         false,
                         state: &state.notifications
                     )
+                    SettingsNotificationsEditor.clearScheduledNotifications(
+                        state: &state.notifications
+                    )
                     appSettingsClient.setNotificationsEnabled(false)
                     return .run { _ in
                         await SettingsNotificationsExecution.disableNotifications(
@@ -341,14 +347,22 @@ struct SettingsFeature {
                 )
                 appSettingsClient.setNotificationsEnabled(isGranted)
 
-                guard isGranted else { return .none }
-                return .run { @MainActor _ in
+                guard isGranted else {
+                    SettingsNotificationsEditor.clearScheduledNotifications(
+                        state: &state.notifications
+                    )
+                    return .none
+                }
+                state.notifications.hasLoadedScheduledNotifications = false
+                return .run { @MainActor send in
                     await SettingsNotificationsExecution.reconcileAuthorizationResult(
                         isGranted: isGranted,
                         modelContext: self.modelContext,
                         appSettingsClient: self.appSettingsClient,
                         notificationClient: self.notificationClient
                     )
+                    let notifications = await self.notificationClient.pendingScheduledNotifications()
+                    send(.scheduledNotificationsLoaded(notifications))
                 }
 
             case .notificationReminderTimeChanged(let reminderTime):
@@ -360,13 +374,37 @@ struct SettingsFeature {
 
                 let notificationsEnabled = state.notifications.notificationsEnabled
                 guard notificationsEnabled else { return .none }
-                return .run { @MainActor _ in
+                state.notifications.hasLoadedScheduledNotifications = false
+                return .run { @MainActor send in
                     await SettingsNotificationsExecution.reconcileReminderChange(
                         notificationsEnabled: notificationsEnabled,
                         modelContext: self.modelContext,
                         appSettingsClient: self.appSettingsClient,
                         notificationClient: self.notificationClient
                     )
+                    let notifications = await self.notificationClient.pendingScheduledNotifications()
+                    send(.scheduledNotificationsLoaded(notifications))
+                }
+
+            case let .scheduledNotificationsLoaded(notifications):
+                SettingsNotificationsEditor.replaceScheduledNotifications(
+                    notifications,
+                    state: &state.notifications
+                )
+                return .none
+
+            case let .removeScheduledNotificationTapped(notification):
+                return .run { send in
+                    await self.notificationClient.removeScheduledNotification(notification)
+                    let notifications = await self.notificationClient.pendingScheduledNotifications()
+                    await send(.scheduledNotificationsLoaded(notifications))
+                }
+
+            case let .pauseScheduledNotificationTapped(notification, until):
+                return .run { send in
+                    await self.notificationClient.pauseScheduledNotification(notification, until)
+                    let notifications = await self.notificationClient.pendingScheduledNotifications()
+                    await send(.scheduledNotificationsLoaded(notifications))
                 }
 
             case .openAppSettingsTapped:

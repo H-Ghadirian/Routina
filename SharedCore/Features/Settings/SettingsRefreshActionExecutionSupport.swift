@@ -38,6 +38,9 @@ enum SettingsRefreshActionExecution {
                 appSettingsClient: appSettingsClient,
                 notificationClient: notificationClient
             )
+
+            let scheduledNotifications = await notificationClient.pendingScheduledNotifications()
+            send(.scheduledNotificationsLoaded(scheduledNotifications))
         }
     }
 }

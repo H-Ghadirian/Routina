@@ -20,6 +20,10 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0615](0615-group-and-control-pending-notification-occurrences.md) revises [0611](0611-list-actual-pending-notifications-in-settings.md) and refines [0192](0192-support-event-notifications.md), [0210](0210-store-durable-preferences-in-swiftdata.md), and [0412](0412-add-advanced-recurrence-beside-simple.md):** Settings groups actual pending requests by task or event and lets a person remove or pause one device-local occurrence without changing source data or allowing schedule reconciliation to recreate it.
+
+- **[0611](0611-list-actual-pending-notifications-in-settings.md) refines [0185](0185-limit-exact-reminders-to-todos.md), [0192](0192-support-event-notifications.md), and [0412](0412-add-advanced-recurrence-beside-simple.md):** iOS and macOS Settings show the chronological pending requests actually queued with the system, including separate rolling Advanced occurrences, without reconstructing notifications from Planner or task data.
+
 - **[0610](0610-expose-product-help-through-local-ai-connections.md) refines [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md), [0573](0573-centralize-user-perspective-product-documentation.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** the Mac app and embedded MCP helper share a curated user-facing Routina help catalog; product-help lookup never loads the personal task snapshot, and AI Connections explains setup, example questions, limitations, privacy, and recovery.
 
 - **[0608](0608-keep-mac-task-detail-close-transition-free-of-history-work.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) and [0296](0296-present-mac-task-details-as-planner-inspector.md):** closing the Mac task-detail companion pane keeps adaptive range changes free of Focus-history reconciliation, batches changed Focus blocks by day, skips no-op saves, and releases deferred Home refresh only after the pane transition quiet window.
@@ -749,6 +753,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0615](0615-group-and-control-pending-notification-occurrences.md) | Group and Control Pending Notification Occurrences | Accepted | 2026-08-18 |
+| [0611](0611-list-actual-pending-notifications-in-settings.md) | List Actual Pending Notifications in Settings | Accepted | 2026-08-18 |
 | [0610](0610-expose-product-help-through-local-ai-connections.md) | Expose Product Help Through Local AI Connections | Accepted | 2026-08-18 |
 | [0608](0608-keep-mac-task-detail-close-transition-free-of-history-work.md) | Keep Mac Task Detail Close Transitions Free of History Work | Accepted | 2026-08-18 |
 | [0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md) | Expose Time-Based Ladder Values in Task Forms and Details | Accepted | 2026-08-18 |

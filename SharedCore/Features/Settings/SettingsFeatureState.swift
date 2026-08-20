@@ -50,6 +50,12 @@ struct SettingsNotificationsState: Equatable {
     var notificationsEnabled: Bool = false
     var systemSettingsNotificationsEnabled: Bool = true
     var notificationReminderTime: Date = Date()
+    var scheduledNotifications: [ScheduledNotificationSummary] = []
+    var hasLoadedScheduledNotifications: Bool = false
+
+    var scheduledNotificationGroups: [ScheduledNotificationGroup] {
+        ScheduledNotificationGroup.groups(from: scheduledNotifications)
+    }
 }
 
 struct SettingsDevicesState: Equatable {

@@ -37,6 +37,15 @@ struct SettingsFeatureDependencyTests {
             horizontalAccuracy: 20,
             timestamp: makeDate("2026-03-20T10:00:00Z")
         )
+        let scheduledNotifications = [
+            ScheduledNotificationSummary(
+                identifier: "scheduled-reminder",
+                title: "📚 Read is due",
+                subtitle: "Due today",
+                body: "Tap Done when finished.",
+                scheduledAt: makeDate("2026-03-21T08:00:00Z")
+            )
+        ]
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: "cloudKitSyncDiagnostics.summary")
         defaults.removeObject(forKey: "cloudKitSyncDiagnostics.timestamp")
@@ -125,6 +134,7 @@ struct SettingsFeatureDependencyTests {
                 )
             }
             $0.notificationClient.systemNotificationsAuthorized = { true }
+            $0.notificationClient.pendingScheduledNotifications = { scheduledNotifications }
             $0.locationClient.snapshot = { _ in snapshot }
         }
 
@@ -208,6 +218,10 @@ struct SettingsFeatureDependencyTests {
             $0.places.locationAuthorizationStatus = .authorizedAlways
             $0.places.lastKnownLocationCoordinate = snapshot.coordinate
         }
+        await store.receive(.scheduledNotificationsLoaded(scheduledNotifications)) {
+            $0.notifications.scheduledNotifications = scheduledNotifications
+            $0.notifications.hasLoadedScheduledNotifications = true
+        }
     }
 
     @Test
@@ -218,7 +232,19 @@ struct SettingsFeatureDependencyTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                notifications: .init(notificationsEnabled: true)
+                notifications: .init(
+                    notificationsEnabled: true,
+                    scheduledNotifications: [
+                        ScheduledNotificationSummary(
+                            identifier: "scheduled-reminder",
+                            title: "Read is due",
+                            subtitle: "",
+                            body: "Due today.",
+                            scheduledAt: makeDate("2026-03-21T08:00:00Z")
+                        )
+                    ],
+                    hasLoadedScheduledNotifications: true
+                )
             )
         ) {
             SettingsFeature()
@@ -234,10 +260,114 @@ struct SettingsFeatureDependencyTests {
 
         await store.send(.toggleNotifications(false)) {
             $0.notifications.notificationsEnabled = false
+            $0.notifications.scheduledNotifications = []
         }
 
         #expect(capturedNotificationPreference.value == false)
         #expect(cancelAllCallCount.value == 1)
+    }
+
+    @Test
+    func removeScheduledNotification_removesOnlySelectedOccurrenceAndRefreshesList() async {
+        let context = makeInMemoryContext()
+        let selected = ScheduledNotificationSummary(
+            identifier: "task.occurrence.0",
+            sourceIdentifier: "task",
+            sourceKind: .task,
+            sourceTitle: "🪴 Water plants",
+            title: "🪴 Water plants is due",
+            subtitle: "Scheduled for 8:00 AM",
+            body: "Due today.",
+            scheduledAt: makeDate("2099-03-04T08:00:00Z")
+        )
+        let remaining = ScheduledNotificationSummary(
+            identifier: "task.occurrence.1",
+            sourceIdentifier: "task",
+            sourceKind: .task,
+            sourceTitle: "🪴 Water plants",
+            title: "🪴 Water plants is due",
+            subtitle: "Scheduled for 8:00 AM",
+            body: "Due today.",
+            scheduledAt: makeDate("2099-03-05T08:00:00Z")
+        )
+        let removed = LockIsolated<ScheduledNotificationSummary?>(nil)
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                notifications: .init(
+                    scheduledNotifications: [selected, remaining],
+                    hasLoadedScheduledNotifications: true
+                )
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.removeScheduledNotification = { notification in
+                removed.setValue(notification)
+            }
+            $0.notificationClient.pendingScheduledNotifications = { [remaining] }
+        }
+
+        await store.send(.removeScheduledNotificationTapped(selected))
+        await store.receive(.scheduledNotificationsLoaded([remaining])) {
+            $0.notifications.scheduledNotifications = [remaining]
+        }
+
+        #expect(removed.value == selected)
+    }
+
+    @Test
+    func pauseScheduledNotification_reschedulesOnlySelectedOccurrenceAndRefreshesList() async {
+        let context = makeInMemoryContext()
+        let originalDate = makeDate("2099-03-04T08:00:00Z")
+        let pausedDate = makeDate("2099-03-04T09:00:00Z")
+        let selected = ScheduledNotificationSummary(
+            identifier: "task.occurrence.0",
+            sourceIdentifier: "task",
+            sourceKind: .task,
+            sourceTitle: "🪴 Water plants",
+            title: "🪴 Water plants is due",
+            subtitle: "Scheduled for 8:00 AM",
+            body: "Due today.",
+            scheduledAt: originalDate
+        )
+        let updated = ScheduledNotificationSummary(
+            identifier: selected.identifier,
+            sourceIdentifier: selected.sourceIdentifier,
+            sourceKind: selected.sourceKind,
+            sourceTitle: selected.sourceTitle,
+            title: selected.title,
+            subtitle: selected.subtitle,
+            body: selected.body,
+            scheduledAt: pausedDate,
+            originalScheduledAt: originalDate
+        )
+        let paused = LockIsolated<(ScheduledNotificationSummary, Date)?>(nil)
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                notifications: .init(
+                    scheduledNotifications: [selected],
+                    hasLoadedScheduledNotifications: true
+                )
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.pauseScheduledNotification = { notification, until in
+                paused.setValue((notification, until))
+            }
+            $0.notificationClient.pendingScheduledNotifications = { [updated] }
+        }
+
+        await store.send(.pauseScheduledNotificationTapped(selected, until: pausedDate))
+        await store.receive(.scheduledNotificationsLoaded([updated])) {
+            $0.notifications.scheduledNotifications = [updated]
+        }
+
+        #expect(paused.value?.0 == selected)
+        #expect(paused.value?.1 == pausedDate)
+        #expect(store.state.notifications.scheduledNotificationGroups.first?.notifications == [updated])
     }
 
     @Test

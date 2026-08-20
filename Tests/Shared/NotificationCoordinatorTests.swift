@@ -12,6 +12,193 @@ import UserNotifications
 @Suite(.serialized)
 struct NotificationCoordinatorTests {
     @Test
+    func scheduledNotificationSummaries_useSystemTriggerDatesAndSortChronologically() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let earlierDate = makeDate("2099-01-02T08:30:00Z")
+        let laterDate = makeDate("2099-02-03T09:45:00Z")
+
+        let earlierContent = UNMutableNotificationContent()
+        earlierContent.title = " Earlier reminder "
+        earlierContent.subtitle = "Due today"
+        var earlierComponents = calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: earlierDate
+        )
+        earlierComponents.calendar = calendar
+        earlierComponents.timeZone = calendar.timeZone
+        let earlierRequest = UNNotificationRequest(
+            identifier: "earlier",
+            content: earlierContent,
+            trigger: UNCalendarNotificationTrigger(
+                dateMatching: earlierComponents,
+                repeats: false
+            )
+        )
+
+        let laterContent = UNMutableNotificationContent()
+        laterContent.title = "Later reminder"
+        laterContent.body = "Open Routina to review it."
+        var laterComponents = calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: laterDate
+        )
+        laterComponents.calendar = calendar
+        laterComponents.timeZone = calendar.timeZone
+        let laterRequest = UNNotificationRequest(
+            identifier: "later",
+            content: laterContent,
+            trigger: UNCalendarNotificationTrigger(
+                dateMatching: laterComponents,
+                repeats: false
+            )
+        )
+
+        let undatedContent = UNMutableNotificationContent()
+        undatedContent.title = "Undated reminder"
+        let undatedRequest = UNNotificationRequest(
+            identifier: "undated",
+            content: undatedContent,
+            trigger: nil
+        )
+
+        let summaries = NotificationClient.scheduledNotificationSummaries(
+            from: [undatedRequest, laterRequest, earlierRequest]
+        )
+
+        #expect(summaries.map(\.identifier) == ["earlier", "later", "undated"])
+        #expect(summaries[0].title == "Earlier reminder")
+        #expect(summaries[0].scheduledAt == earlierDate)
+        #expect(summaries[0].detailText == "Due today")
+        #expect(summaries[1].scheduledAt == laterDate)
+        #expect(summaries[1].detailText == "Open Routina to review it.")
+        #expect(summaries[2].scheduledAt == nil)
+    }
+
+    @Test
+    func scheduledNotificationSummaries_groupOccurrencesUsingStableRequestMetadata() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let taskID = UUID()
+        let firstOriginalDate = makeDate("2099-03-04T08:00:00Z")
+        let secondOriginalDate = makeDate("2099-03-05T08:00:00Z")
+        let pausedDate = makeDate("2099-03-04T09:00:00Z")
+        let payload = NotificationPayload(
+            identifier: taskID.uuidString,
+            name: "Water plants",
+            emoji: "🪴",
+            interval: 1,
+            lastDone: nil,
+            dueDate: firstOriginalDate,
+            triggerDate: firstOriginalDate,
+            isOneOffTask: false,
+            isCustomReminder: false,
+            isArchived: false,
+            usesExactTime: true,
+            isChecklistDriven: false,
+            isChecklistCompletionRoutine: false,
+            nextDueChecklistItemTitle: nil
+        )
+
+        func request(identifier: String, originalDate: Date, scheduledDate: Date) -> UNNotificationRequest {
+            var components = calendar.dateComponents(
+                [.year, .month, .day, .hour, .minute],
+                from: scheduledDate
+            )
+            components.calendar = calendar
+            components.timeZone = calendar.timeZone
+            return UNNotificationRequest(
+                identifier: identifier,
+                content: NotificationCoordinator.createNotificationContent(
+                    for: payload,
+                    originalScheduledAt: originalDate
+                ),
+                trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            )
+        }
+
+        let summaries = NotificationClient.scheduledNotificationSummaries(
+            from: [
+                request(
+                    identifier: "\(taskID.uuidString).occurrence.1",
+                    originalDate: secondOriginalDate,
+                    scheduledDate: secondOriginalDate
+                ),
+                request(
+                    identifier: "\(taskID.uuidString).occurrence.0",
+                    originalDate: firstOriginalDate,
+                    scheduledDate: pausedDate
+                )
+            ]
+        )
+        let groups = ScheduledNotificationGroup.groups(from: summaries)
+
+        #expect(summaries.map(\.sourceIdentifier) == [taskID.uuidString, taskID.uuidString])
+        #expect(summaries.first?.sourceKind == .task)
+        #expect(summaries.first?.sourceTitle == "🪴 Water plants")
+        #expect(summaries.first?.originalScheduledAt == firstOriginalDate)
+        #expect(summaries.first?.scheduledAt == pausedDate)
+        #expect(summaries.first?.isPaused == true)
+        #expect(groups.count == 1)
+        #expect(groups.first?.title == "🪴 Water plants")
+        #expect(groups.first?.notifications.count == 2)
+    }
+
+    @Test
+    func occurrenceOverrideStore_keepsSkipAndPauseAcrossSchedulerRebuilds() async {
+        let suiteName = "NotificationSchedulingOverrideStoreTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let overrideStore = NotificationSchedulingOverrideStore(
+            defaults: defaults,
+            storageKey: "test-overrides"
+        )
+        let sourceIdentifier = UUID().uuidString
+        let now = makeDate("2099-04-01T07:00:00Z")
+        let originalDate = makeDate("2099-04-01T08:00:45Z")
+        let normalizedOriginalDate = makeDate("2099-04-01T08:00:00Z")
+
+        await overrideStore.skip(
+            sourceIdentifier: sourceIdentifier,
+            originalScheduledAt: originalDate,
+            now: now
+        )
+
+        let skippedDate = await NotificationCoordinator.effectiveScheduledDate(
+            sourceIdentifier: sourceIdentifier,
+            originalScheduledAt: normalizedOriginalDate,
+            now: now,
+            overrideStore: overrideStore
+        )
+        #expect(skippedDate == nil)
+
+        let requestedPauseDate = makeDate("2099-04-01T09:30:45Z")
+        let normalizedPauseDate = makeDate("2099-04-01T09:30:00Z")
+        await overrideStore.pause(
+            sourceIdentifier: sourceIdentifier,
+            originalScheduledAt: originalDate,
+            until: requestedPauseDate,
+            now: now
+        )
+
+        let pausedDate = await NotificationCoordinator.effectiveScheduledDate(
+            sourceIdentifier: sourceIdentifier,
+            originalScheduledAt: normalizedOriginalDate,
+            now: now,
+            overrideStore: overrideStore
+        )
+        #expect(pausedDate == normalizedPauseDate)
+
+        let unrelatedDate = await NotificationCoordinator.effectiveScheduledDate(
+            sourceIdentifier: sourceIdentifier,
+            originalScheduledAt: makeDate("2099-04-02T08:00:00Z"),
+            now: now,
+            overrideStore: overrideStore
+        )
+        #expect(unrelatedDate == makeDate("2099-04-02T08:00:00Z"))
+    }
+
+    @Test
     func shouldScheduleNotification_returnsFalseForSoftRoutine() {
         let task = RoutineTask(
             name: "Travel",

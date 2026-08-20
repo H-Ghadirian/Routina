@@ -30,6 +30,21 @@ enum SettingsNotificationsEditor {
         state.systemSettingsNotificationsEnabled = isEnabled
     }
 
+    static func replaceScheduledNotifications(
+        _ notifications: [ScheduledNotificationSummary],
+        state: inout SettingsNotificationsState
+    ) {
+        state.scheduledNotifications = notifications
+        state.hasLoadedScheduledNotifications = true
+    }
+
+    static func clearScheduledNotifications(
+        state: inout SettingsNotificationsState
+    ) {
+        state.scheduledNotifications = []
+        state.hasLoadedScheduledNotifications = true
+    }
+
     static func refreshFromSettings(
         notificationsEnabled: Bool,
         reminderTime: Date,

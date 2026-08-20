@@ -721,6 +721,39 @@ When they review the connection guide
 Then it explains setup, product-help and personal-task question examples, read-only limitations, privacy, and recovery
 And every copyable example-question surface is clickable across its full visible area
 
+### Settings Groups and Controls Every Actually Pending Notification
+
+Area: Settings / Notifications
+Decision links: [0615](../decisions/0615-group-and-control-pending-notification-occurrences.md), [0611](../decisions/0611-list-actual-pending-notifications-in-settings.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/NotificationCoordinatorTests.swift`
+- `Tests/Shared/SettingsFeatureDependencyTests.swift`
+
+Given the system has pending Routina notification requests with different trigger times
+When the person opens Notifications settings on iOS or macOS
+Then Settings groups every request by its originating task or event and orders groups by their earliest request
+And expanding a group shows its requests chronologically with title, trigger time, and available explanatory text
+And a routine with several rolling Advanced occurrences appears as several rows in one group
+And the count represents queued occurrences rather than distinct tasks
+
+Given a task group has several queued occurrences
+When the person removes one occurrence
+Then only that system request disappears on this device
+And later notification reconciliation does not recreate it
+And the task, recurrence, sibling occurrences, and other devices are unchanged
+
+Given a queued occurrence has not fired
+When the person pauses it with a preset or chosen later time
+Then only that request moves to the later time and shows its original time
+And later notification reconciliation preserves the replacement time
+And the task or event schedule is unchanged
+
+Given no pending request exists
+When the list finishes loading
+Then Settings explains whether notifications are off in Routina, disabled in system settings, or simply have nothing scheduled
+And Planner entries, delivered alerts, and future occurrences not registered with the system are not invented as list rows
+
 ### Support Diagnostics Report the Signed CloudKit Environment
 
 Area: Settings / Other

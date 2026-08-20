@@ -66,6 +66,16 @@ extension NotificationClient {
             @unknown default:
                 return false
             }
+        },
+        pendingScheduledNotifications: {
+            let requests = await UNUserNotificationCenter.current().pendingNotificationRequests()
+            return NotificationClient.scheduledNotificationSummaries(from: requests)
+        },
+        removeScheduledNotification: { notification in
+            await NotificationCoordinator.removeScheduledNotification(notification)
+        },
+        pauseScheduledNotification: { notification, until in
+            await NotificationCoordinator.pauseScheduledNotification(notification, until: until)
         }
     )
 

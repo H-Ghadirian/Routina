@@ -153,7 +153,10 @@ enum SettingsAppearanceEditor {
         notificationReminderTime: Date,
         state: inout SettingsFeatureState
     ) {
-        state.notifications = SettingsNotificationsState(notificationReminderTime: notificationReminderTime)
+        state.notifications = SettingsNotificationsState(
+            notificationReminderTime: notificationReminderTime,
+            hasLoadedScheduledNotifications: true
+        )
         state.appearance = SettingsAppearanceState(
             appLockMethodDescription: deviceAuthenticationStatus.methodDescription,
             appLockUnavailableReason: deviceAuthenticationStatus.unavailableReason,

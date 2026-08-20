@@ -142,7 +142,7 @@ private struct SettingsMacNotificationsDetailView: View {
     var body: some View {
 SettingsMacDetailShell(
     title: "Notifications",
-    subtitle: "Choose if Routina should remind you and when those reminders should arrive."
+    subtitle: "Choose when Routina should remind you and review every notification currently scheduled on this Mac."
 ) {
     SettingsMacDetailCard(title: "Routine Reminders") {
         Toggle("Enable notifications", isOn: notificationsBinding)
@@ -156,6 +156,37 @@ SettingsMacDetailShell(
         .disabled(store.notifications.notificationsEnabled == false)
 
         Text("Notifications include quick actions for Done and Snooze.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: scheduledNotificationsTitle) {
+        if store.notifications.hasLoadedScheduledNotifications == false {
+            HStack(spacing: 10) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Loading scheduled notifications…")
+                    .foregroundStyle(.secondary)
+            }
+        } else if store.notifications.scheduledNotifications.isEmpty {
+            Text(scheduledNotificationsEmptyText)
+                .foregroundStyle(.secondary)
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(store.notifications.scheduledNotificationGroups) { group in
+                    SettingsMacScheduledNotificationGroup(
+                        group: group,
+                        store: store
+                    )
+
+                    if group.id != store.notifications.scheduledNotificationGroups.last?.id {
+                        Divider()
+                    }
+                }
+            }
+        }
+
+        Text("Notifications are grouped by task or event. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this Mac.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }
@@ -187,6 +218,213 @@ SettingsMacDetailShell(
             get: { store.notifications.notificationReminderTime },
             set: { store.send(.notificationReminderTimeChanged($0)) }
         )
+    }
+
+    private var scheduledNotificationsTitle: String {
+        let count = store.notifications.scheduledNotifications.count
+        return count == 0 ? "Scheduled Notifications" : "Scheduled Notifications (\(count))"
+    }
+
+    private var scheduledNotificationsEmptyText: String {
+        if store.notifications.notificationsEnabled == false {
+            return "Turn on notifications to schedule reminders."
+        }
+        if store.notifications.systemSettingsNotificationsEnabled == false {
+            return "Notifications are disabled in system settings, so nothing is scheduled."
+        }
+        return "No notifications are currently scheduled."
+    }
+}
+
+private struct SettingsMacScheduledNotificationGroup: View {
+    let group: ScheduledNotificationGroup
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(group.notifications) { notification in
+                    SettingsMacScheduledNotificationRow(
+                        notification: notification,
+                        store: store
+                    )
+
+                    if notification.id != group.notifications.last?.id {
+                        Divider()
+                    }
+                }
+            }
+            .padding(.top, 8)
+            .padding(.leading, 4)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: group.sourceKind == .event ? "calendar" : "checkmark.circle")
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(group.title)
+                        .font(.body.weight(.medium))
+                    Text(notificationCountText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+    }
+
+    private var notificationCountText: String {
+        let count = group.notifications.count
+        return count == 1 ? "1 scheduled notification" : "\(count) scheduled notifications"
+    }
+}
+
+private struct SettingsMacScheduledNotificationRow: View {
+    let notification: ScheduledNotificationSummary
+    let store: StoreOf<SettingsFeature>
+    @State private var isCustomPausePresented = false
+    @State private var customPauseDate = Date()
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Label(scheduledTimeText, systemImage: notification.isPaused ? "clock.badge" : "clock")
+                    .font(.subheadline.weight(.medium))
+
+                Text(notification.title.isEmpty ? "Routina notification" : notification.title)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if notification.isPaused, let originalScheduledAt = notification.originalScheduledAt {
+                    Text("Originally \(originalScheduledAt.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !notification.detailText.isEmpty {
+                    Text(notification.detailText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            notificationActionsMenu
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(isPresented: $isCustomPausePresented) {
+            SettingsMacCustomNotificationPauseSheet(
+                pauseDate: $customPauseDate,
+                minimumDate: customPauseMinimumDate,
+                onCancel: { isCustomPausePresented = false },
+                onPause: {
+                    pause(until: customPauseDate)
+                    isCustomPausePresented = false
+                }
+            )
+        }
+    }
+
+    private var scheduledTimeText: String {
+        notification.scheduledAt?.formatted(date: .abbreviated, time: .shortened)
+            ?? "Scheduled time unavailable"
+    }
+
+    private var notificationActionsMenu: some View {
+        Menu {
+            Menu("Pause") {
+                Button("15 Minutes") {
+                    pause(by: 15 * 60)
+                }
+                Button("1 Hour") {
+                    pause(by: 60 * 60)
+                }
+                Button("Tomorrow") {
+                    pauseUntilTomorrow()
+                }
+                Button("Choose Date & Time…") {
+                    customPauseDate = pauseBaseDate.addingTimeInterval(60 * 60)
+                    isCustomPausePresented = true
+                }
+            }
+
+            Divider()
+
+            Button("Remove", role: .destructive) {
+                store.send(.removeScheduledNotificationTapped(notification))
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.title3)
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .accessibilityLabel("Actions for scheduled notification")
+    }
+
+    private func pause(by interval: TimeInterval) {
+        pause(until: pauseBaseDate.addingTimeInterval(interval))
+    }
+
+    private func pauseUntilTomorrow() {
+        pause(
+            until: Calendar.current.date(byAdding: .day, value: 1, to: pauseBaseDate)
+                ?? pauseBaseDate.addingTimeInterval(24 * 60 * 60)
+        )
+    }
+
+    private func pause(until date: Date) {
+        store.send(
+            .pauseScheduledNotificationTapped(
+                notification,
+                until: date
+            )
+        )
+    }
+
+    private var pauseBaseDate: Date {
+        max(notification.scheduledAt ?? Date(), Date())
+    }
+
+    private var customPauseMinimumDate: Date {
+        pauseBaseDate.addingTimeInterval(60)
+    }
+}
+
+private struct SettingsMacCustomNotificationPauseSheet: View {
+    @Binding var pauseDate: Date
+    let minimumDate: Date
+    let onCancel: () -> Void
+    let onPause: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Pause Notification")
+                .font(.title2.weight(.semibold))
+
+            Text("Choose a later time for this occurrence. The task or event schedule will not change.")
+                .foregroundStyle(.secondary)
+
+            DatePicker(
+                "Pause until",
+                selection: $pauseDate,
+                in: minimumDate...,
+                displayedComponents: [.date, .hourAndMinute]
+            )
+
+            HStack {
+                Spacer()
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                Button("Pause", action: onPause)
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(24)
+        .frame(width: 420)
     }
 }
 

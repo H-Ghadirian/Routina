@@ -388,6 +388,30 @@ List {
             .foregroundStyle(.secondary)
     }
 
+    Section {
+        if store.notifications.hasLoadedScheduledNotifications == false {
+            HStack(spacing: 10) {
+                ProgressView()
+                Text("Loading scheduled notifications…")
+                    .foregroundStyle(.secondary)
+            }
+        } else if store.notifications.scheduledNotifications.isEmpty {
+            Text(scheduledNotificationsEmptyText)
+                .foregroundStyle(.secondary)
+        } else {
+            ForEach(store.notifications.scheduledNotificationGroups) { group in
+                SettingsIOSScheduledNotificationGroup(
+                    group: group,
+                    store: store
+                )
+            }
+        }
+    } header: {
+        Text(scheduledNotificationsTitle)
+    } footer: {
+        Text("Notifications are grouped by task or event. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this device.")
+    }
+
     if store.notifications.systemSettingsNotificationsEnabled == false {
         Section("System Settings") {
             Button("Allow Notifications in System Settings") {
@@ -414,5 +438,202 @@ List {
             get: { store.notifications.notificationReminderTime },
             set: { store.send(.notificationReminderTimeChanged($0)) }
         )
+    }
+
+    private var scheduledNotificationsTitle: String {
+        let count = store.notifications.scheduledNotifications.count
+        return count == 0 ? "Scheduled Notifications" : "Scheduled Notifications (\(count))"
+    }
+
+    private var scheduledNotificationsEmptyText: String {
+        if store.notifications.notificationsEnabled == false {
+            return "Turn on notifications to schedule reminders."
+        }
+        if store.notifications.systemSettingsNotificationsEnabled == false {
+            return "Notifications are disabled in system settings, so nothing is scheduled."
+        }
+        return "No notifications are currently scheduled."
+    }
+}
+
+private struct SettingsIOSScheduledNotificationGroup: View {
+    let group: ScheduledNotificationGroup
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        DisclosureGroup {
+            ForEach(group.notifications) { notification in
+                SettingsIOSScheduledNotificationRow(
+                    notification: notification,
+                    store: store
+                )
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: group.sourceKind == .event ? "calendar" : "checkmark.circle")
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(group.title)
+                        .font(.body.weight(.medium))
+                    Text(notificationCountText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+    }
+
+    private var notificationCountText: String {
+        let count = group.notifications.count
+        return count == 1 ? "1 scheduled notification" : "\(count) scheduled notifications"
+    }
+}
+
+private struct SettingsIOSScheduledNotificationRow: View {
+    let notification: ScheduledNotificationSummary
+    let store: StoreOf<SettingsFeature>
+    @State private var isCustomPausePresented = false
+    @State private var customPauseDate = Date()
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                Label(scheduledTimeText, systemImage: notification.isPaused ? "clock.badge" : "clock")
+                    .font(.subheadline.weight(.medium))
+
+                Text(notification.title.isEmpty ? "Routina notification" : notification.title)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if notification.isPaused, let originalScheduledAt = notification.originalScheduledAt {
+                    Text("Originally \(originalScheduledAt.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !notification.detailText.isEmpty {
+                    Text(notification.detailText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            notificationActionsMenu
+        }
+        .sheet(isPresented: $isCustomPausePresented) {
+            SettingsIOSCustomNotificationPauseSheet(
+                pauseDate: $customPauseDate,
+                minimumDate: customPauseMinimumDate,
+                onCancel: { isCustomPausePresented = false },
+                onPause: {
+                    pause(until: customPauseDate)
+                    isCustomPausePresented = false
+                }
+            )
+            .presentationDetents([.medium])
+        }
+    }
+
+    private var scheduledTimeText: String {
+        notification.scheduledAt?.formatted(date: .abbreviated, time: .shortened)
+            ?? "Scheduled time unavailable"
+    }
+
+    private var notificationActionsMenu: some View {
+        Menu {
+            Menu("Pause") {
+                Button("15 Minutes") {
+                    pause(by: 15 * 60)
+                }
+                Button("1 Hour") {
+                    pause(by: 60 * 60)
+                }
+                Button("Tomorrow") {
+                    pauseUntilTomorrow()
+                }
+                Button("Choose Date & Time…") {
+                    customPauseDate = pauseBaseDate.addingTimeInterval(60 * 60)
+                    isCustomPausePresented = true
+                }
+            }
+
+            Divider()
+
+            Button("Remove", role: .destructive) {
+                store.send(.removeScheduledNotificationTapped(notification))
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.title3)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Actions for scheduled notification")
+    }
+
+    private func pause(by interval: TimeInterval) {
+        pause(until: pauseBaseDate.addingTimeInterval(interval))
+    }
+
+    private func pauseUntilTomorrow() {
+        pause(
+            until: Calendar.current.date(byAdding: .day, value: 1, to: pauseBaseDate)
+                ?? pauseBaseDate.addingTimeInterval(24 * 60 * 60)
+        )
+    }
+
+    private func pause(until date: Date) {
+        store.send(
+            .pauseScheduledNotificationTapped(
+                notification,
+                until: date
+            )
+        )
+    }
+
+    private var pauseBaseDate: Date {
+        max(notification.scheduledAt ?? Date(), Date())
+    }
+
+    private var customPauseMinimumDate: Date {
+        pauseBaseDate.addingTimeInterval(60)
+    }
+}
+
+private struct SettingsIOSCustomNotificationPauseSheet: View {
+    @Binding var pauseDate: Date
+    let minimumDate: Date
+    let onCancel: () -> Void
+    let onPause: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    DatePicker(
+                        "Pause until",
+                        selection: $pauseDate,
+                        in: minimumDate...,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                } footer: {
+                    Text("This changes only the selected notification occurrence, not the task or event schedule.")
+                }
+            }
+            .navigationTitle("Pause Notification")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Pause", action: onPause)
+                }
+            }
+        }
     }
 }

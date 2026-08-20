@@ -33,11 +33,11 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Express those meanings independently.
 
-**Desired experience:** Routina uses distinct controls and plain summaries for availability, plan, deadline, and reminder. Changing one does not silently rewrite the others except where the relationship is explicit and previewed.
+**Desired experience:** Routina uses distinct controls and plain summaries for availability, plan, deadline, and reminder. Changing one does not silently rewrite the others except where the relationship is explicit and previewed. Before relying on alerts, the person can review every notification actually queued on the current device, grouped by task or event. They can expand one source to see its chronological occurrences, remove one occurrence, or postpone it without changing the source schedule or another device.
 
-**Successful outcome:** The task appears when and where the person expects, with the right level of urgency.
+**Successful outcome:** The task appears when and where the person expects, with the right level of urgency, and the person can verify and adjust individual reminders the device is currently prepared to deliver.
 
-**Example:** A report becomes available Monday, is planned for Tuesday, is due Friday, and has a Thursday reminder.
+**Example:** A report becomes available Monday, is planned for Tuesday, is due Friday, and has a Thursday reminder. In Notifications settings, the report group contains that queued reminder; postponing it one hour leaves the Friday deadline and the task unchanged.
 
 **Availability:** Production. Exact combinations depend on task type and platform.
 
