@@ -828,7 +828,10 @@ extension HomeTCAView {
                         customReminderAt: $toolbarSearchCustomReminderAt,
                         linkMetadataStatus: toolbarSearchLinkMetadataStatus,
                         onTaskTitleSubmit: {
-                            createTaskFromToolbarSearch(searchTextBinding.wrappedValue)
+                            createTaskFromToolbarSearch(
+                                searchTextBinding.wrappedValue,
+                                draft: toolbarSearchCreateDraft
+                            )
                         }
                     )
                         .frame(
@@ -1060,7 +1063,10 @@ extension HomeTCAView {
         }
     }
 
-    private func createTaskFromToolbarSearch(_ rawText: String) {
+    private func createTaskFromToolbarSearch(
+        _ rawText: String,
+        draft: RoutinaQuickAddDraft? = nil
+    ) {
         let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty,
               !isToolbarSearchCreateInProgress,
@@ -1070,11 +1076,11 @@ extension HomeTCAView {
 
         toolbarSearchCreateErrorMessage = nil
         isToolbarSearchCreateInProgress = true
+        let createDraft = draft ?? toolbarSearchCreateDraft
         let reminderAt = toolbarSearchReminderChoice.reminderDate(
-            eventDate: toolbarSearchCreateDraft?.exactAvailabilityDate(calendar: calendar),
+            eventDate: createDraft?.exactAvailabilityDate(calendar: calendar),
             customDate: toolbarSearchCustomReminderAt
         )
-        let createDraft = toolbarSearchCreateDraft
         let taskTitle = createDraft.map(toolbarSearchEffectiveTaskTitle)
         let primaryLinkTitle = toolbarSearchTaskTitleSourceText == rawText
             ? toolbarSearchResolvedLinkTitle
