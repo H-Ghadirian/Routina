@@ -1581,6 +1581,7 @@ Decision links: [0072](../decisions/0072-unify-ios-task-add-and-quick-add.md), [
 Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/RoutinaQuickAddParserTests.swift`
+- `Tests/macOS/HomeMacToolbarQuickAddSubmissionTests.swift`
 
 Given the reference date is Thursday, 20 August 2026
 When the person enters `Physiotherapist Tuesday, 25 August 15:00` through a shared Smart Add or Quick Add surface
@@ -1592,12 +1593,14 @@ And the parser preview recognizes scheduling metadata before the task is saved
 And Mac toolbar Quick Add offers no reminder, one hour, two hours, one day, and custom date/time choices before creation
 
 When the person selects two hours before and presses Enter from the attached Quick Add preview
-
 Then the created task stores a reminder two hours before its exact availability time
-
 And reopening Edit Task shows that reminder enabled with the saved time
 And clicking the Reminder control or choosing one of its menu items keeps the search pill and parser preview open
 And interacting with the custom date picker also keeps the parser preview open
+
+When the person selects two hours before and then appends `#health` or another character to the same Quick Add composition
+Then the reparsed preview keeps the two-hours-before choice
+And replacing or clearing the task starts with no reminder
 
 When the person clicks elsewhere in the same Home window or presses Escape
 Then the search pill and parser preview dismiss together
@@ -1614,6 +1617,7 @@ Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavio
 Coverage:
 - `Tests/Shared/RoutinaQuickAddParserTests.swift`
 - `Tests/Shared/AddRoutineFeatureTests.swift`
+- `Tests/macOS/HomeMacToolbarQuickAddSubmissionTests.swift`
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given the person pastes only a public YouTube URL into Quick Add
@@ -1628,7 +1632,10 @@ And it preserves the resolved page title on the task link
 
 When the person edits the proposed task title
 Then a later metadata result does not replace that edit
+And appending `#watch` or another character keeps that edited title
+And the unchanged URL does not start another metadata request
 And Return creates the task with the title currently displayed
+And the submitted title comes from the same immutable preview snapshot as any selected reminder
 
 When metadata is unavailable, unsafe to fetch, still loading, or fails
 Then Return remains available without waiting

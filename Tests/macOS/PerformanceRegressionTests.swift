@@ -1574,10 +1574,21 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("customReminderAt: $toolbarSearchCustomReminderAt"))
         XCTAssertTrue(platformSource.contains("taskTitle: toolbarSearchTaskTitleBinding"))
         XCTAssertTrue(platformSource.contains("resolveToolbarSearchLinkTitle"))
-        XCTAssertTrue(platformSource.contains("taskNameOverride: taskTitle"))
+        XCTAssertTrue(platformSource.contains("reconcileToolbarSearchPreviewState"))
+        XCTAssertTrue(platformSource.contains("RoutinaQuickAddDraftContinuity.canPreservePreviewState"))
+        XCTAssertTrue(platformSource.contains("return linkURL.absoluteString"))
+        XCTAssertFalse(platformSource.contains("toolbarSearchTaskTitleSourceText"))
+        XCTAssertFalse(
+            platformSource.contains(".onChange(of: searchTextBinding.wrappedValue) { _, newValue in\n                toolbarSearchReminderChoice = .none"),
+            "Compatible Quick Add query edits must not unconditionally clear the selected reminder."
+        )
+        XCTAssertTrue(platformSource.contains("submission: HomeMacToolbarQuickAddSubmission? = nil"))
+        XCTAssertTrue(platformSource.contains("submission: submission"))
+        XCTAssertTrue(platformSource.contains("reminderAt: resolvedSubmission?.reminderAt"))
+        XCTAssertTrue(platformSource.contains("taskNameOverride: resolvedSubmission?.taskTitle"))
         XCTAssertTrue(source.contains("LPMetadataProvider"))
         XCTAssertTrue(source.contains("TextField(\"Task title\", text: $taskTitle)"))
-        XCTAssertTrue(source.contains(".onSubmit(onTaskTitleSubmit)"))
+        XCTAssertTrue(source.contains("onSubmit(HomeMacToolbarQuickAddSubmission("))
         XCTAssertTrue(source.contains("Fetching title…"))
         XCTAssertTrue(source.contains("No reminder"))
         XCTAssertTrue(source.contains("1 hour before"))

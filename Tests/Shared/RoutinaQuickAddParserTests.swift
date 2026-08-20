@@ -210,6 +210,81 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
+    func previewContinuityPreservesStateWhenAddingATagToTheSameLink() throws {
+        let previousText = "https://www.youtube.com/watch?v=abc123"
+        let currentText = "\(previousText) #mobility"
+        let previousDraft = try #require(RoutinaQuickAddParser.parse(previousText))
+        let currentDraft = try #require(RoutinaQuickAddParser.parse(currentText))
+
+        #expect(RoutinaQuickAddDraftContinuity.canPreservePreviewState(
+            previousText: previousText,
+            currentText: currentText,
+            previousDraft: previousDraft,
+            currentDraft: currentDraft
+        ))
+    }
+
+    @Test
+    func previewContinuityPreservesStateWhileStartingATag() throws {
+        let previousText = "Physiotherapist Tuesday, 25 August 15:00"
+        let currentText = "\(previousText) #"
+        let previousDraft = try #require(RoutinaQuickAddParser.parse(previousText))
+        let currentDraft = try #require(RoutinaQuickAddParser.parse(currentText))
+
+        #expect(RoutinaQuickAddDraftContinuity.canPreservePreviewState(
+            previousText: previousText,
+            currentText: currentText,
+            previousDraft: previousDraft,
+            currentDraft: currentDraft
+        ))
+    }
+
+    @Test
+    func previewContinuityPreservesStateForOneCharacterTaskEdit() throws {
+        let previousText = "Physiotherapist Tuesday, 25 August 15:00"
+        let currentText = "Physiotherapists Tuesday, 25 August 15:00"
+        let previousDraft = try #require(RoutinaQuickAddParser.parse(previousText))
+        let currentDraft = try #require(RoutinaQuickAddParser.parse(currentText))
+
+        #expect(RoutinaQuickAddDraftContinuity.canPreservePreviewState(
+            previousText: previousText,
+            currentText: currentText,
+            previousDraft: previousDraft,
+            currentDraft: currentDraft
+        ))
+    }
+
+    @Test
+    func previewContinuityStartsFreshForAReplacementTask() throws {
+        let previousText = "Physiotherapist Tuesday, 25 August 15:00"
+        let currentText = "Dentist Friday, 28 August 09:00"
+        let previousDraft = try #require(RoutinaQuickAddParser.parse(previousText))
+        let currentDraft = try #require(RoutinaQuickAddParser.parse(currentText))
+
+        #expect(!RoutinaQuickAddDraftContinuity.canPreservePreviewState(
+            previousText: previousText,
+            currentText: currentText,
+            previousDraft: previousDraft,
+            currentDraft: currentDraft
+        ))
+    }
+
+    @Test
+    func previewContinuityStartsFreshForADifferentLink() throws {
+        let previousText = "https://www.youtube.com/watch?v=abc123"
+        let currentText = "https://www.youtube.com/watch?v=xyz789"
+        let previousDraft = try #require(RoutinaQuickAddParser.parse(previousText))
+        let currentDraft = try #require(RoutinaQuickAddParser.parse(currentText))
+
+        #expect(!RoutinaQuickAddDraftContinuity.canPreservePreviewState(
+            previousText: previousText,
+            currentText: currentText,
+            previousDraft: previousDraft,
+            currentDraft: currentDraft
+        ))
+    }
+
+    @Test
     func parseLinkBesideExplicitTaskNamePreservesUserTitle() throws {
         let draft = try #require(RoutinaQuickAddParser.parse(
             "Watch this later https://youtu.be/abc123"

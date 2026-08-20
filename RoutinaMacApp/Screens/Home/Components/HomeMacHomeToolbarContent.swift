@@ -629,6 +629,26 @@ enum HomeMacToolbarSearchReminderChoice: String, CaseIterable, Identifiable {
     }
 }
 
+struct HomeMacToolbarQuickAddSubmission: Equatable {
+    let taskTitle: String
+    let reminderAt: Date?
+
+    init(
+        draft: RoutinaQuickAddDraft,
+        taskTitle: String,
+        reminderChoice: HomeMacToolbarSearchReminderChoice,
+        customReminderAt: Date,
+        calendar: Calendar
+    ) {
+        let trimmedTitle = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.taskTitle = trimmedTitle.isEmpty ? draft.name : trimmedTitle
+        self.reminderAt = reminderChoice.reminderDate(
+            eventDate: draft.exactAvailabilityDate(calendar: calendar),
+            customDate: customReminderAt
+        )
+    }
+}
+
 enum HomeMacToolbarLinkMetadataStatus: Equatable {
     case idle
     case loading
@@ -644,7 +664,7 @@ struct HomeMacToolbarSearchParserPreview: View {
     @Binding var reminderChoice: HomeMacToolbarSearchReminderChoice
     @Binding var customReminderAt: Date
     let linkMetadataStatus: HomeMacToolbarLinkMetadataStatus
-    let onTaskTitleSubmit: () -> Void
+    let onSubmit: (HomeMacToolbarQuickAddSubmission) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -664,7 +684,15 @@ struct HomeMacToolbarSearchParserPreview: View {
                     .textFieldStyle(.roundedBorder)
                     .font(.headline)
                     .accessibilityLabel("Task title")
-                    .onSubmit(onTaskTitleSubmit)
+                    .onSubmit {
+                        onSubmit(HomeMacToolbarQuickAddSubmission(
+                            draft: draft,
+                            taskTitle: taskTitle,
+                            reminderChoice: reminderChoice,
+                            customReminderAt: customReminderAt,
+                            calendar: calendar
+                        ))
+                    }
                     .onExitCommand {
                         isTaskTitleFocused = false
                     }

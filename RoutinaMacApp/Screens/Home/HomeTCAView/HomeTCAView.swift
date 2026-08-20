@@ -290,8 +290,8 @@ struct HomeTCAView: View {
     @State var toolbarSearchCustomReminderAt = Date()
     @State var toolbarSearchEditableTaskTitle = ""
     @State var isToolbarSearchTaskTitleFocused = false
-    @State var toolbarSearchTaskTitleSourceText = ""
     @State var toolbarSearchTaskTitleWasEdited = false
+    @State var toolbarSearchLinkMetadataURL: URL?
     @State var toolbarSearchResolvedLinkTitle: String?
     @State var toolbarSearchLinkMetadataStatus: HomeMacToolbarLinkMetadataStatus = .idle
     @State var macHomeNoticeToast: MacHomeNoticeToast?

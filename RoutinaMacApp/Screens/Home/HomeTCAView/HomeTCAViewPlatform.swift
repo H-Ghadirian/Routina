@@ -829,10 +829,11 @@ extension HomeTCAView {
                         reminderChoice: $toolbarSearchReminderChoice,
                         customReminderAt: $toolbarSearchCustomReminderAt,
                         linkMetadataStatus: toolbarSearchLinkMetadataStatus,
-                        onTaskTitleSubmit: {
+                        onSubmit: { submission in
                             createTaskFromToolbarSearch(
                                 searchTextBinding.wrappedValue,
-                                draft: toolbarSearchCreateDraft
+                                draft: toolbarSearchCreateDraft,
+                                submission: submission
                             )
                         }
                     )
@@ -932,13 +933,18 @@ extension HomeTCAView {
                 .easeOut(duration: 0.18),
                 value: store.taskCreationConfirmation
             )
-            .onChange(of: searchTextBinding.wrappedValue) { _, newValue in
-                toolbarSearchReminderChoice = .none
-                toolbarSearchCustomReminderAt = Date()
-                resetToolbarSearchLinkTitleState(for: newValue)
+            .onChange(of: searchTextBinding.wrappedValue) { oldValue, newValue in
+                reconcileToolbarSearchPreviewState(
+                    previousText: oldValue,
+                    currentText: newValue
+                )
             }
             .task(id: toolbarSearchLinkResolutionID) {
-                guard let draft = toolbarSearchCreateDraft else { return }
+                guard let draft = RoutinaQuickAddParser.parse(
+                    searchTextBinding.wrappedValue,
+                    calendar: calendar,
+                    includingPlaces: isPlacesEnabled
+                ) else { return }
                 await resolveToolbarSearchLinkTitle(for: draft)
             }
             .alert("Could Not Create Task", isPresented: toolbarSearchCreateErrorBinding) {
@@ -986,11 +992,15 @@ extension HomeTCAView {
     }
 
     private var toolbarSearchLinkResolutionID: String? {
-        guard let draft = toolbarSearchCreateDraft,
+        guard let draft = RoutinaQuickAddParser.parse(
+            searchTextBinding.wrappedValue,
+            calendar: calendar,
+            includingPlaces: isPlacesEnabled
+        ),
               let linkURL = draft.primaryLinkURL else {
             return nil
         }
-        return "\(searchTextBinding.wrappedValue)|\(linkURL.absoluteString)"
+        return linkURL.absoluteString
     }
 
     private func toolbarSearchTaskTitleBinding(
@@ -999,7 +1009,6 @@ extension HomeTCAView {
         Binding(
             get: { toolbarSearchEffectiveTaskTitle(for: draft) },
             set: { newValue in
-                toolbarSearchTaskTitleSourceText = searchTextBinding.wrappedValue
                 toolbarSearchEditableTaskTitle = newValue
                 toolbarSearchTaskTitleWasEdited = true
             }
@@ -1007,34 +1016,78 @@ extension HomeTCAView {
     }
 
     private func toolbarSearchEffectiveTaskTitle(for draft: RoutinaQuickAddDraft) -> String {
-        guard toolbarSearchTaskTitleSourceText == searchTextBinding.wrappedValue else {
-            return draft.name
-        }
         return toolbarSearchEditableTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? draft.name
             : toolbarSearchEditableTaskTitle
     }
 
-    private func resetToolbarSearchLinkTitleState(for rawText: String) {
-        toolbarSearchTaskTitleSourceText = rawText
-        toolbarSearchEditableTaskTitle = RoutinaQuickAddParser.parse(
-            rawText,
+    private func reconcileToolbarSearchPreviewState(
+        previousText: String,
+        currentText: String
+    ) {
+        let previousDraft = RoutinaQuickAddParser.parse(
+            previousText,
             calendar: calendar,
             includingPlaces: isPlacesEnabled
-        )?.name ?? ""
+        )
+        let currentDraft = RoutinaQuickAddParser.parse(
+            currentText,
+            calendar: calendar,
+            includingPlaces: isPlacesEnabled
+        )
+
+        guard RoutinaQuickAddDraftContinuity.canPreservePreviewState(
+            previousText: previousText,
+            currentText: currentText,
+            previousDraft: previousDraft,
+            currentDraft: currentDraft
+        ) else {
+            resetToolbarSearchPreviewState(for: currentDraft)
+            return
+        }
+
+        guard !toolbarSearchTaskTitleWasEdited,
+              let currentDraft else {
+            return
+        }
+        toolbarSearchEditableTaskTitle = defaultToolbarSearchTaskTitle(for: currentDraft)
+    }
+
+    private func resetToolbarSearchPreviewState(for draft: RoutinaQuickAddDraft?) {
+        toolbarSearchReminderChoice = .none
+        toolbarSearchCustomReminderAt = Date()
+        toolbarSearchEditableTaskTitle = draft?.name ?? ""
         toolbarSearchTaskTitleWasEdited = false
+        toolbarSearchLinkMetadataURL = nil
         toolbarSearchResolvedLinkTitle = nil
         toolbarSearchLinkMetadataStatus = .idle
+    }
+
+    private func defaultToolbarSearchTaskTitle(for draft: RoutinaQuickAddDraft) -> String {
+        guard draft.usesGeneratedLinkName,
+              toolbarSearchLinkMetadataURL == draft.primaryLinkURL,
+              let toolbarSearchResolvedLinkTitle,
+              let linkURL = draft.primaryLinkURL else {
+            return draft.name
+        }
+        return RoutinaQuickAddLinkSupport.taskTitle(
+            fromMetadataTitle: toolbarSearchResolvedLinkTitle,
+            url: linkURL
+        ) ?? draft.name
     }
 
     @MainActor
     private func resolveToolbarSearchLinkTitle(for draft: RoutinaQuickAddDraft) async {
         guard let linkURL = draft.primaryLinkURL else { return }
-        let sourceText = searchTextBinding.wrappedValue
-
-        if toolbarSearchTaskTitleSourceText != sourceText {
-            resetToolbarSearchLinkTitleState(for: sourceText)
+        if toolbarSearchLinkMetadataURL == linkURL {
+            switch toolbarSearchLinkMetadataStatus {
+            case .resolved, .unavailable:
+                return
+            case .idle, .loading:
+                break
+            }
         }
+        toolbarSearchLinkMetadataURL = linkURL
         guard RoutinaQuickAddLinkSupport.canFetchMetadata(for: linkURL) else {
             toolbarSearchLinkMetadataStatus = .unavailable
             return
@@ -1043,8 +1096,13 @@ extension HomeTCAView {
         toolbarSearchLinkMetadataStatus = .loading
         let metadataTitle = await HomeMacLinkMetadataResolver.title(for: linkURL)
         guard !Task.isCancelled,
-              searchTextBinding.wrappedValue == sourceText,
-              toolbarSearchCreateDraft?.primaryLinkURL == linkURL else {
+              toolbarSearchLinkMetadataURL == linkURL,
+              let currentDraft = RoutinaQuickAddParser.parse(
+                  searchTextBinding.wrappedValue,
+                  calendar: calendar,
+                  includingPlaces: isPlacesEnabled
+              ),
+              currentDraft.primaryLinkURL == linkURL else {
             return
         }
 
@@ -1055,7 +1113,7 @@ extension HomeTCAView {
 
         toolbarSearchResolvedLinkTitle = metadataTitle
         toolbarSearchLinkMetadataStatus = .resolved
-        if draft.usesGeneratedLinkName,
+        if currentDraft.usesGeneratedLinkName,
            !toolbarSearchTaskTitleWasEdited,
            let suggestedTitle = RoutinaQuickAddLinkSupport.taskTitle(
                fromMetadataTitle: metadataTitle,
@@ -1067,7 +1125,8 @@ extension HomeTCAView {
 
     private func createTaskFromToolbarSearch(
         _ rawText: String,
-        draft: RoutinaQuickAddDraft? = nil
+        draft: RoutinaQuickAddDraft? = nil,
+        submission: HomeMacToolbarQuickAddSubmission? = nil
     ) {
         let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty,
@@ -1078,13 +1137,21 @@ extension HomeTCAView {
 
         toolbarSearchCreateErrorMessage = nil
         isToolbarSearchCreateInProgress = true
-        let createDraft = draft ?? toolbarSearchCreateDraft
-        let reminderAt = toolbarSearchReminderChoice.reminderDate(
-            eventDate: createDraft?.exactAvailabilityDate(calendar: calendar),
-            customDate: toolbarSearchCustomReminderAt
+        let createDraft = draft ?? RoutinaQuickAddParser.parse(
+            trimmedText,
+            calendar: calendar,
+            includingPlaces: isPlacesEnabled
         )
-        let taskTitle = createDraft.map(toolbarSearchEffectiveTaskTitle)
-        let primaryLinkTitle = toolbarSearchTaskTitleSourceText == rawText
+        let resolvedSubmission = submission ?? createDraft.map { draft in
+            HomeMacToolbarQuickAddSubmission(
+                draft: draft,
+                taskTitle: toolbarSearchEffectiveTaskTitle(for: draft),
+                reminderChoice: toolbarSearchReminderChoice,
+                customReminderAt: toolbarSearchCustomReminderAt,
+                calendar: calendar
+            )
+        }
+        let primaryLinkTitle = createDraft?.primaryLinkURL == toolbarSearchLinkMetadataURL
             ? toolbarSearchResolvedLinkTitle
             : nil
 
@@ -1097,13 +1164,12 @@ extension HomeTCAView {
                     context: modelContext,
                     calendar: calendar,
                     includingPlaces: isPlacesEnabled,
-                    reminderAt: reminderAt,
-                    taskNameOverride: taskTitle,
+                    reminderAt: resolvedSubmission?.reminderAt,
+                    taskNameOverride: resolvedSubmission?.taskTitle,
                     primaryLinkTitle: primaryLinkTitle
                 )
                 searchTextBinding.wrappedValue = ""
-                toolbarSearchReminderChoice = .none
-                resetToolbarSearchLinkTitleState(for: "")
+                resetToolbarSearchPreviewState(for: nil)
                 isToolbarSearchTaskTitleFocused = false
                 handleQuickAddCreated(result)
             } catch {

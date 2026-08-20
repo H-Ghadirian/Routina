@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0214 — Preserve Quick Add preview state across compatible reparses](0214-preserve-quick-add-preview-state-across-compatible-reparses.md)
+- [0213 — Snapshot editable Quick Add values at submission](0213-snapshot-editable-quick-add-values-at-submission.md)
 - [0212 — Show saved reminders in Task Details](0212-show-saved-reminders-in-task-details.md)
 - [0211 — Persist the reminder from the active Quick Add preview](0211-persist-the-reminder-from-the-active-quick-add-preview.md)
 - [0210 — Reuse Mac task-form tag and flag presentation work](0210-reuse-mac-task-form-tag-and-flag-presentation-work.md)

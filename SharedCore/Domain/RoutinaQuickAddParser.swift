@@ -130,6 +130,83 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
     }
 }
 
+enum RoutinaQuickAddDraftContinuity {
+    static func canPreservePreviewState(
+        previousText: String,
+        currentText: String,
+        previousDraft: RoutinaQuickAddDraft?,
+        currentDraft: RoutinaQuickAddDraft?
+    ) -> Bool {
+        let previousText = previousText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let currentText = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !previousText.isEmpty, !currentText.isEmpty else { return false }
+
+        let previousLink = previousDraft?.primaryLinkURL
+        let currentLink = currentDraft?.primaryLinkURL
+        if previousLink != currentLink,
+           previousLink != nil || currentLink != nil {
+            return false
+        }
+        if previousLink != nil {
+            return true
+        }
+
+        if currentText.hasPrefix(previousText)
+            || previousText.hasPrefix(currentText)
+            || differsByAtMostOneCharacter(previousText, currentText) {
+            return true
+        }
+
+        guard let previousName = normalizedName(previousDraft?.name),
+              let currentName = normalizedName(currentDraft?.name) else {
+            return false
+        }
+        return previousName == currentName
+    }
+
+    private static func normalizedName(_ name: String?) -> String? {
+        guard let normalized = name?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current),
+              !normalized.isEmpty else {
+            return nil
+        }
+        return normalized
+    }
+
+    private static func differsByAtMostOneCharacter(_ lhs: String, _ rhs: String) -> Bool {
+        let lhs = Array(lhs)
+        let rhs = Array(rhs)
+        let difference = lhs.count - rhs.count
+        guard abs(difference) <= 1 else { return false }
+
+        if difference == 0 {
+            return zip(lhs, rhs).lazy.filter { pair in
+                pair.0 != pair.1
+            }.count <= 1
+        }
+
+        let shorter = difference < 0 ? lhs : rhs
+        let longer = difference < 0 ? rhs : lhs
+        var shorterIndex = 0
+        var longerIndex = 0
+        var skippedCharacter = false
+
+        while shorterIndex < shorter.count, longerIndex < longer.count {
+            if shorter[shorterIndex] == longer[longerIndex] {
+                shorterIndex += 1
+                longerIndex += 1
+            } else if skippedCharacter {
+                return false
+            } else {
+                skippedCharacter = true
+                longerIndex += 1
+            }
+        }
+        return true
+    }
+}
+
 enum RoutinaQuickAddParser {
     static func parse(
         _ input: String,
