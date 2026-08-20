@@ -729,6 +729,11 @@ struct HomeMacToolbarSearchParserPreview: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
         }
+        .background {
+            HomeMacToolbarSearchInteractionRegionView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(false)
+        }
     }
 
     private var parsedRows: [ParsedRow] {
@@ -912,7 +917,8 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
 
         private func handleMouseDown(_ event: NSEvent) {
             guard let view,
-                  let window = view.window else {
+                  let window = view.window,
+                  event.window === window else {
                 return
             }
 
@@ -923,6 +929,14 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
             }
 
             guard parent.isFocused else { return }
+
+            if HomeMacToolbarSearchInteractionBoundary.clickIsInsideParserPreview(
+                event,
+                relativeTo: view
+            ) {
+                return
+            }
+
             dismissFocusedSearch(in: window)
         }
 
@@ -1001,6 +1015,71 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
         coordinator: Coordinator
     ) {
         coordinator.removeMouseDownMonitor()
+    }
+}
+
+private struct HomeMacToolbarSearchInteractionRegionView: NSViewRepresentable {
+    func makeNSView(context: Context) -> HomeMacToolbarSearchInteractionRegionNSView {
+        HomeMacToolbarSearchInteractionRegionNSView()
+    }
+
+    func updateNSView(
+        _ nsView: HomeMacToolbarSearchInteractionRegionNSView,
+        context: Context
+    ) {}
+}
+
+private final class HomeMacToolbarSearchInteractionRegionNSView: NSView {
+    override var isOpaque: Bool { false }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        nil
+    }
+}
+
+@MainActor
+private enum HomeMacToolbarSearchInteractionBoundary {
+    static func clickIsInsideParserPreview(
+        _ event: NSEvent,
+        relativeTo referenceView: NSView
+    ) -> Bool {
+        guard let window = referenceView.window,
+              event.window === window,
+              let contentView = window.contentView else {
+            return false
+        }
+
+        return containsParserPreview(
+            event.locationInWindow,
+            in: contentView
+        )
+    }
+
+    static func currentMouseDownIsInsideParserPreview(
+        relativeTo referenceView: NSView
+    ) -> Bool {
+        guard let event = NSApp.currentEvent,
+              event.type == .leftMouseDown
+                || event.type == .rightMouseDown
+                || event.type == .otherMouseDown else {
+            return false
+        }
+
+        return clickIsInsideParserPreview(event, relativeTo: referenceView)
+    }
+
+    private static func containsParserPreview(
+        _ windowLocation: NSPoint,
+        in view: NSView
+    ) -> Bool {
+        if let region = view as? HomeMacToolbarSearchInteractionRegionNSView {
+            let regionLocation = region.convert(windowLocation, from: nil)
+            return region.bounds.insetBy(dx: -2, dy: -2).contains(regionLocation)
+        }
+
+        return view.subviews.contains { subview in
+            containsParserPreview(windowLocation, in: subview)
+        }
     }
 }
 
@@ -1150,6 +1229,11 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         func controlTextDidEndEditing(_ notification: Notification) {
             syncSearchText(from: notification.object)
             guard handledFocusRequestID == parent.focusRequestID else { return }
+            if let textField,
+               HomeMacToolbarSearchInteractionBoundary
+                .currentMouseDownIsInsideParserPreview(relativeTo: textField) {
+                return
+            }
             parent.isFocused = false
         }
 

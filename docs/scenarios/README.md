@@ -1557,6 +1557,11 @@ And it sets `At time` availability to 15:00
 And it does not infer a deadline or reminder
 And the parser preview recognizes scheduling metadata before the task is saved
 And Mac toolbar Quick Add offers no reminder, one hour, two hours, one day, and custom date/time choices before creation
+And clicking the Reminder control or choosing one of its menu items keeps the search pill and parser preview open
+And interacting with the custom date picker also keeps the parser preview open
+
+When the person clicks elsewhere in the same Home window or presses Escape
+Then the search pill and parser preview dismiss together
 
 When the person instead enters `Submit claim by 25 August 15:00`
 Then Quick Add creates a deadline at that date and time

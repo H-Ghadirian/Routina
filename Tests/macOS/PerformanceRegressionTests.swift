@@ -1423,6 +1423,13 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]"))
         XCTAssertTrue(source.contains("clickIsInsideVisiblePill"))
         XCTAssertTrue(source.contains("view.bounds.insetBy(dx: -2, dy: -2).contains(viewLocation)"))
+        XCTAssertTrue(source.contains("HomeMacToolbarSearchInteractionRegionView()"))
+        XCTAssertTrue(source.contains("clickIsInsideParserPreview("))
+        XCTAssertTrue(source.contains("currentMouseDownIsInsideParserPreview(relativeTo: textField)"))
+        XCTAssertTrue(
+            source.contains("event.window === window else"),
+            "Picker menu-window events must not be mistaken for clicks outside the Quick Add surface."
+        )
         XCTAssertTrue(source.contains("parent.isFocused = true\n                parent.focusRequestID += 1"))
         XCTAssertTrue(source.contains("view.setPrefersIBeamCursor(isFocused)"))
         XCTAssertTrue(source.contains("window.invalidateCursorRects(for: self)"))
