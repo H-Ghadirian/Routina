@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0212 — Show saved reminders in Task Details](0212-show-saved-reminders-in-task-details.md)
 - [0211 — Persist the reminder from the active Quick Add preview](0211-persist-the-reminder-from-the-active-quick-add-preview.md)
 - [0210 — Reuse Mac task-form tag and flag presentation work](0210-reuse-mac-task-form-tag-and-flag-presentation-work.md)
 - [0209 — Treat attached interactive previews as one focus boundary](0209-treat-attached-interactive-previews-as-one-focus-boundary.md)

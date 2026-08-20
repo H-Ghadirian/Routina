@@ -358,6 +358,29 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func statusMetadataShowsSavedOneOffReminder() {
+        let reminderAt = makeDate("2026-08-25T13:00:00Z")
+        let task = RoutineTask(
+            name: "Physiotherapist",
+            reminderAt: reminderAt,
+            scheduleMode: .oneOff
+        )
+        let state = TaskDetailFeature.State(task: task)
+
+        let items = TaskDetailStatusMetadataPresentation.items(
+            for: state,
+            showSelectedDate: false,
+            displayedActualDurationText: nil,
+            dueDateMetadataDisplayText: nil
+        )
+
+        #expect(TaskDetailStatusMetadataPresentation.hasVisibleMetadata(for: state))
+        #expect(items.first { $0.id == "reminder" }?.label == "Reminder")
+        #expect(items.first { $0.id == "reminder" }?.value == state.reminderMetadataText)
+        #expect(items.first { $0.id == "reminder" }?.systemImage == "bell.fill")
+    }
+
+    @Test
     func statusMetadataSummarizesVoiceNotesAsAttachments() {
         let task = RoutineTask(
             name: "Call supplier",

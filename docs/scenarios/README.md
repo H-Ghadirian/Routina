@@ -59,6 +59,20 @@ When the task has a resolved relationship
 Then Linked Tasks is visible before `Add more details`
 
 
+### Task Details Show A Saved One-Off Reminder
+
+Area: Tasks / iOS and macOS Task Details
+Decision links: [0185](../decisions/0185-limit-exact-reminders-to-todos.md), [0424](../decisions/0424-make-task-detail-priority-optional.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+
+Given a one-off todo has a saved reminder date and time
+When the person opens Task Details
+Then the status metadata includes a `Reminder` row with that saved date and time
+And the person can verify the reminder without opening Edit Task
+
+
 ### Home And Task Detail Use The Latest Recorded Completion
 
 Area: Tasks / Home

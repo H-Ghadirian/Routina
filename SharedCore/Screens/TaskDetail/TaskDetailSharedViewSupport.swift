@@ -431,6 +431,7 @@ enum TaskDetailStatusMetadataPresentation {
             || (showsPlaces && state.linkedPlaceSummary != nil)
             || state.task.pausedAt != nil
             || state.dueDateMetadataText != nil
+            || state.reminderMetadataText != nil
             || state.scheduledTimeBlockMetadataText != nil
             || state.shouldShowSelectedDateMetadata
             || !state.task.tags.isEmpty
@@ -480,6 +481,17 @@ enum TaskDetailStatusMetadataPresentation {
             )
         } else if let dueDateMetadataDisplayText {
             items.append(.init(id: "due", label: "Due", value: dueDateMetadataDisplayText))
+        }
+
+        if let reminderMetadataText = state.reminderMetadataText {
+            items.append(
+                .init(
+                    id: "reminder",
+                    label: "Reminder",
+                    value: reminderMetadataText,
+                    systemImage: "bell.fill"
+                )
+            )
         }
 
         if showSelectedDate && state.shouldShowSelectedDateMetadata {
