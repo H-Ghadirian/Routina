@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0215 — Keep interactive parser containers independent from transient eligibility](0215-keep-interactive-parser-containers-independent-from-transient-eligibility.md)
 - [0214 — Preserve Quick Add preview state across compatible reparses](0214-preserve-quick-add-preview-state-across-compatible-reparses.md)
 - [0213 — Snapshot editable Quick Add values at submission](0213-snapshot-editable-quick-add-values-at-submission.md)
 - [0212 — Show saved reminders in Task Details](0212-show-saved-reminders-in-task-details.md)

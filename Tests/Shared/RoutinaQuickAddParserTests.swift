@@ -285,6 +285,73 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
+    func previewPinningDoesNotBeginBeforeAConfirmedDetectedDraft() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse("Physiotherapist"))
+
+        #expect(RoutinaQuickAddPreviewPinning.updatedDraft(
+            currentText: "Physiotherapist",
+            currentDraft: draft,
+            pinnedDraft: nil,
+            canBeginPresentation: false
+        ) == nil)
+    }
+
+    @Test
+    func previewPinningBeginsWithAConfirmedDetectedDraft() throws {
+        let text = "Physiotherapist Tuesday, 25 August 15:00"
+        let draft = try #require(RoutinaQuickAddParser.parse(text))
+
+        #expect(RoutinaQuickAddPreviewPinning.updatedDraft(
+            currentText: text,
+            currentDraft: draft,
+            pinnedDraft: nil,
+            canBeginPresentation: true
+        ) == draft)
+    }
+
+    @Test
+    func previewPinningUpdatesInPlaceWhenMetadataIsTemporarilyAbsent() throws {
+        let detectedText = "Physiotherapist Tuesday, 25 August 15:00"
+        let detectedDraft = try #require(RoutinaQuickAddParser.parse(detectedText))
+        let currentDraft = try #require(RoutinaQuickAddParser.parse("Physiotherapist"))
+        #expect(!currentDraft.hasDetectedMetadata)
+
+        #expect(RoutinaQuickAddPreviewPinning.updatedDraft(
+            currentText: "Physiotherapist",
+            currentDraft: currentDraft,
+            pinnedDraft: detectedDraft,
+            canBeginPresentation: false
+        ) == currentDraft)
+    }
+
+    @Test
+    func previewPinningKeepsItsContainerThroughAnUnparsableIntermediateValue() throws {
+        let detectedText = "Physiotherapist Tuesday, 25 August 15:00"
+        let detectedDraft = try #require(RoutinaQuickAddParser.parse(detectedText))
+
+        #expect(RoutinaQuickAddPreviewPinning.updatedDraft(
+            currentText: "#",
+            currentDraft: nil,
+            pinnedDraft: detectedDraft,
+            canBeginPresentation: false
+        ) == detectedDraft)
+    }
+
+    @Test
+    func previewPinningClearsWithTheSearchText() throws {
+        let detectedDraft = try #require(RoutinaQuickAddParser.parse(
+            "Physiotherapist Tuesday, 25 August 15:00"
+        ))
+
+        #expect(RoutinaQuickAddPreviewPinning.updatedDraft(
+            currentText: "",
+            currentDraft: nil,
+            pinnedDraft: detectedDraft,
+            canBeginPresentation: false
+        ) == nil)
+    }
+
+    @Test
     func parseLinkBesideExplicitTaskNamePreservesUserTitle() throws {
         let draft = try #require(RoutinaQuickAddParser.parse(
             "Watch this later https://youtu.be/abc123"

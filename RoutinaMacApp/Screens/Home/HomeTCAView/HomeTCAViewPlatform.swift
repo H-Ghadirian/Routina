@@ -820,19 +820,22 @@ extension HomeTCAView {
         content
             .overlay(alignment: .top) {
                 if showsHomeToolbarSearch,
-                   let toolbarSearchCreateDraft,
+                   let toolbarSearchPinnedParserPreviewDraft,
                    isToolbarSearchExpanded || isToolbarSearchTaskTitleFocused {
                     HomeMacToolbarSearchParserPreview(
-                        draft: toolbarSearchCreateDraft,
-                        taskTitle: toolbarSearchTaskTitleBinding(for: toolbarSearchCreateDraft),
+                        draft: toolbarSearchPinnedParserPreviewDraft,
+                        taskTitle: toolbarSearchTaskTitleBinding(
+                            for: toolbarSearchPinnedParserPreviewDraft
+                        ),
                         isTaskTitleFocused: $isToolbarSearchTaskTitleFocused,
                         reminderChoice: $toolbarSearchReminderChoice,
                         customReminderAt: $toolbarSearchCustomReminderAt,
                         linkMetadataStatus: toolbarSearchLinkMetadataStatus,
+                        isUpdating: toolbarSearchParserPreviewIsUpdating,
                         onSubmit: { submission in
                             createTaskFromToolbarSearch(
                                 searchTextBinding.wrappedValue,
-                                draft: toolbarSearchCreateDraft,
+                                draft: toolbarSearchPinnedParserPreviewDraft,
                                 submission: submission
                             )
                         }
@@ -927,7 +930,7 @@ extension HomeTCAView {
             }
             .animation(
                 .easeOut(duration: 0.12),
-                value: toolbarSearchCreateDraft
+                value: toolbarSearchPinnedParserPreviewDraft != nil
             )
             .animation(
                 .easeOut(duration: 0.18),
@@ -938,6 +941,21 @@ extension HomeTCAView {
                     previousText: oldValue,
                     currentText: newValue
                 )
+            }
+            .onChange(of: toolbarSearchCreateDraft, initial: true) { _, draft in
+                guard let draft else { return }
+                toolbarSearchPinnedParserPreviewDraft = RoutinaQuickAddPreviewPinning.updatedDraft(
+                    currentText: searchTextBinding.wrappedValue,
+                    currentDraft: draft,
+                    pinnedDraft: toolbarSearchPinnedParserPreviewDraft,
+                    canBeginPresentation: true
+                )
+            }
+            .onChange(of: toolbarSearchHasConfirmedResult) { _, hasConfirmedResult in
+                if hasConfirmedResult {
+                    toolbarSearchPinnedParserPreviewDraft = nil
+                    isToolbarSearchTaskTitleFocused = false
+                }
             }
             .task(id: toolbarSearchLinkResolutionID) {
                 guard let draft = RoutinaQuickAddParser.parse(
@@ -991,6 +1009,23 @@ extension HomeTCAView {
         return draft
     }
 
+    private var toolbarSearchHasConfirmedResult: Bool {
+        isMacSearchPresentationCurrent && toolbarSearchHasResult
+    }
+
+    private var toolbarSearchParserPreviewIsUpdating: Bool {
+        guard !searchTextBinding.wrappedValue
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty else {
+            return false
+        }
+        return RoutinaQuickAddParser.parse(
+            searchTextBinding.wrappedValue,
+            calendar: calendar,
+            includingPlaces: isPlacesEnabled
+        ) == nil
+    }
+
     private var toolbarSearchLinkResolutionID: String? {
         guard let draft = RoutinaQuickAddParser.parse(
             searchTextBinding.wrappedValue,
@@ -1035,6 +1070,12 @@ extension HomeTCAView {
             calendar: calendar,
             includingPlaces: isPlacesEnabled
         )
+        toolbarSearchPinnedParserPreviewDraft = RoutinaQuickAddPreviewPinning.updatedDraft(
+            currentText: currentText,
+            currentDraft: currentDraft,
+            pinnedDraft: toolbarSearchPinnedParserPreviewDraft,
+            canBeginPresentation: false
+        )
 
         guard RoutinaQuickAddDraftContinuity.canPreservePreviewState(
             previousText: previousText,
@@ -1042,7 +1083,10 @@ extension HomeTCAView {
             previousDraft: previousDraft,
             currentDraft: currentDraft
         ) else {
-            resetToolbarSearchPreviewState(for: currentDraft)
+            resetToolbarSearchPreviewState(
+                for: currentDraft,
+                clearsPinnedDraft: false
+            )
             return
         }
 
@@ -1053,7 +1097,10 @@ extension HomeTCAView {
         toolbarSearchEditableTaskTitle = defaultToolbarSearchTaskTitle(for: currentDraft)
     }
 
-    private func resetToolbarSearchPreviewState(for draft: RoutinaQuickAddDraft?) {
+    private func resetToolbarSearchPreviewState(
+        for draft: RoutinaQuickAddDraft?,
+        clearsPinnedDraft: Bool = true
+    ) {
         toolbarSearchReminderChoice = .none
         toolbarSearchCustomReminderAt = Date()
         toolbarSearchEditableTaskTitle = draft?.name ?? ""
@@ -1061,6 +1108,9 @@ extension HomeTCAView {
         toolbarSearchLinkMetadataURL = nil
         toolbarSearchResolvedLinkTitle = nil
         toolbarSearchLinkMetadataStatus = .idle
+        if clearsPinnedDraft {
+            toolbarSearchPinnedParserPreviewDraft = nil
+        }
     }
 
     private func defaultToolbarSearchTaskTitle(for draft: RoutinaQuickAddDraft) -> String {

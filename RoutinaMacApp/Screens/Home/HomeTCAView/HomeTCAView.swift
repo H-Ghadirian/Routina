@@ -294,6 +294,7 @@ struct HomeTCAView: View {
     @State var toolbarSearchLinkMetadataURL: URL?
     @State var toolbarSearchResolvedLinkTitle: String?
     @State var toolbarSearchLinkMetadataStatus: HomeMacToolbarLinkMetadataStatus = .idle
+    @State var toolbarSearchPinnedParserPreviewDraft: RoutinaQuickAddDraft?
     @State var macHomeNoticeToast: MacHomeNoticeToast?
     @State var isMacWindowFullscreen = false
     @State var isEventEditorPresented = false

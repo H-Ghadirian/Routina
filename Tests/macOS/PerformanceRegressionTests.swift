@@ -1576,6 +1576,14 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("resolveToolbarSearchLinkTitle"))
         XCTAssertTrue(platformSource.contains("reconcileToolbarSearchPreviewState"))
         XCTAssertTrue(platformSource.contains("RoutinaQuickAddDraftContinuity.canPreservePreviewState"))
+        XCTAssertTrue(platformSource.contains("toolbarSearchPinnedParserPreviewDraft"))
+        XCTAssertTrue(platformSource.contains("RoutinaQuickAddPreviewPinning.updatedDraft"))
+        XCTAssertTrue(platformSource.contains("toolbarSearchHasConfirmedResult"))
+        XCTAssertTrue(platformSource.contains("value: toolbarSearchPinnedParserPreviewDraft != nil"))
+        XCTAssertFalse(
+            platformSource.contains("value: toolbarSearchCreateDraft\n"),
+            "Transient parser eligibility must not own the detected-details container transition."
+        )
         XCTAssertTrue(platformSource.contains("return linkURL.absoluteString"))
         XCTAssertFalse(platformSource.contains("toolbarSearchTaskTitleSourceText"))
         XCTAssertFalse(
@@ -1595,6 +1603,7 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("2 hours before"))
         XCTAssertTrue(source.contains("1 day before"))
         XCTAssertTrue(source.contains("Custom date/time"))
+        XCTAssertTrue(source.contains("Updating details…"))
         XCTAssertTrue(platformSource.contains("HomeMacToolbarSearchLayout.focusedWidth"))
         XCTAssertTrue(platformSource.contains("HomeMacToolbarSearchLayout.parserPreviewTopPadding"))
         XCTAssertTrue(source.contains("static let parserPreviewTrailingPadding: CGFloat = 22"))

@@ -207,6 +207,23 @@ enum RoutinaQuickAddDraftContinuity {
     }
 }
 
+enum RoutinaQuickAddPreviewPinning {
+    static func updatedDraft(
+        currentText: String,
+        currentDraft: RoutinaQuickAddDraft?,
+        pinnedDraft: RoutinaQuickAddDraft?,
+        canBeginPresentation: Bool
+    ) -> RoutinaQuickAddDraft? {
+        guard !currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        if pinnedDraft != nil {
+            return currentDraft ?? pinnedDraft
+        }
+        return canBeginPresentation ? currentDraft : nil
+    }
+}
+
 enum RoutinaQuickAddParser {
     static func parse(
         _ input: String,

@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0619](0619-pin-mac-quick-add-details-through-transient-reparses.md) refines [0315](0315-merge-mac-quick-add-into-toolbar-search.md), [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md), and [0617](0617-generate-editable-quick-add-titles-from-pasted-links.md):** once Mac Quick Add shows Detected details for a confirmed create candidate, the container remains mounted through partial parser input and asynchronous search refreshes, updates its contents in place, and dismisses only when the composition ends or becomes a confirmed existing-result search.
+
 - **[0618](0618-keep-task-destinations-independent-from-saved-places.md):** task destinations store an optional address and coordinates separately from beta saved Places; forms can resolve an address, Task Details show its map, and iPhone offers Apple Maps and Google Maps actions without enabling geofencing or check-in.
 
 - **[0617](0617-generate-editable-quick-add-titles-from-pasted-links.md) refines [0074](0074-parse-mac-add-task-title.md), [0211](0211-support-titled-task-links.md), [0315](0315-merge-mac-quick-add-into-toolbar-search.md), and [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md):** pasted URLs become task links immediately, URL-only input gets an editable deterministic title, and Mac Quick Add can improve it asynchronously from public webpage metadata without delaying creation or overwriting user edits.

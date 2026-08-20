@@ -1562,7 +1562,7 @@ And normal non-fullscreen windows keep the same custom toolbar alignment
 ### Mac Toolbar Search Creates Only When Search Has No Result
 
 Area: Other
-Decision links: [0315](../decisions/0315-merge-mac-quick-add-into-toolbar-search.md), [0378](../decisions/0378-open-mac-add-task-from-toolbar-search-command-return.md), [0389](../decisions/0389-create-task-from-mac-search-empty-state.md)
+Decision links: [0315](../decisions/0315-merge-mac-quick-add-into-toolbar-search.md), [0378](../decisions/0378-open-mac-add-task-from-toolbar-search-command-return.md), [0389](../decisions/0389-create-task-from-mac-search-empty-state.md), [0619](../decisions/0619-pin-mac-quick-add-details-through-transient-reparses.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
@@ -1573,6 +1573,13 @@ Then Routina creates a task through Quick Add only if that query has no matching
 And the toolbar shows a visible Return-to-create hint for that no-result query
 And when that no-result query leaves the task-list sidebar empty, the sidebar uses the Planner Timeline no-results subtext and shows a `Create task` button that opens the full Add Task form with the query in the Identity task-name field
 And if the query includes quick-add syntax such as `today`, `every day`, or `#home`, the toolbar shows a flat same-width parser preview below the field before creation without duplicating the Return-to-create hint
+
+Given that Detected details preview has appeared for a confirmed no-result create candidate
+When live search refreshes or the current non-empty parser input becomes temporarily incomplete
+Then the existing rectangle remains mounted in the same position
+And its newest valid content updates in place
+And an unparsable intermediate value shows `Updating details…` without stale interactive controls
+And a confirmed existing task or Timeline-style result dismisses the rectangle
 
 ### Quick Add Recognizes Explicit Day-Month Dates and Bare 24-Hour Times
 
