@@ -1589,6 +1589,7 @@ Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavio
 Coverage:
 - `Tests/Shared/RoutinaQuickAddParserTests.swift`
 - `Tests/macOS/HomeMacToolbarQuickAddSubmissionTests.swift`
+- `Tests/iOS/IOSSmartAddDetectedChipsTests.swift`
 
 Given the reference date is Thursday, 20 August 2026
 When the person enters `Physiotherapist Tuesday, 25 August 15:00` through a shared Smart Add or Quick Add surface
@@ -1615,6 +1616,10 @@ Then the search pill and parser preview dismiss together
 When the person instead enters `Submit claim by 25 August 15:00`
 Then Quick Add creates a deadline at that date and time
 And it still does not infer a separate reminder
+
+When the same input is entered through iOS Smart Add
+Then the Detected section includes an `Available` row with the parsed date and time
+And the Add action remains enabled for the parsed task
 
 ### Editing Exact Availability Into A Time Range Inherits The Start
 

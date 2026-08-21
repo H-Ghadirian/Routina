@@ -692,7 +692,7 @@ private struct IOSSmartAddTaskSheet: View {
     }
 }
 
-private struct IOSSmartAddDetectedChips: View {
+struct IOSSmartAddDetectedChips: View {
     let draft: RoutinaQuickAddDraft
     @Environment(\.calendar) private var calendar
 
@@ -722,7 +722,7 @@ private struct IOSSmartAddDetectedChips: View {
         ] + detectedDetailRows(for: draft, calendar: calendar)
     }
 
-    private static func detectedDetailRows(
+    static func detectedDetailRows(
         for draft: RoutinaQuickAddDraft,
         calendar: Calendar = .current
     ) -> [DetectedChip] {
@@ -732,6 +732,15 @@ private struct IOSSmartAddDetectedChips: View {
             chips.append(DetectedChip(
                 title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle routine" : "Repeats",
                 value: draft.recurrenceRule.displayText(calendar: calendar),
+                systemImage: "calendar"
+            ))
+        } else if draft.availabilityStartDate != nil || draft.availabilityEndDate != nil {
+            let value = draft.exactAvailabilityDate(calendar: calendar)
+                .map { "Todo at \($0.formatted(date: .abbreviated, time: .shortened))" }
+                ?? draft.scheduleSummaryText
+            chips.append(DetectedChip(
+                title: "Available",
+                value: value,
                 systemImage: "calendar"
             ))
         } else if let deadline = draft.deadline {
@@ -801,7 +810,7 @@ private struct IOSSmartAddDetectedChips: View {
         .accessibilityElement(children: .combine)
     }
 
-    private struct DetectedChip: Identifiable {
+    struct DetectedChip: Identifiable {
         let title: String
         let value: String
         let systemImage: String
