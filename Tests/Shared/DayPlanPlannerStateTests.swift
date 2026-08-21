@@ -4661,6 +4661,84 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func plannerDayHeaderTaskCountKeepsItsNumericLabelIntrinsicWidth() throws {
+        let headerSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekDayHeader.swift"
+        )
+        let countStart = try #require(
+            headerSource.range(of: "Label(dayTaskTotalText, systemImage: \"list.bullet\")")
+        )
+        let countEnd = try #require(
+            headerSource.range(
+                of: "if unplannedCompletedCount > 0",
+                range: countStart.upperBound..<headerSource.endIndex
+            )
+        )
+        let countSource = String(headerSource[countStart.lowerBound..<countEnd.lowerBound])
+
+        #expect(countSource.contains(".lineLimit(1)"))
+        #expect(countSource.contains(".labelStyle(.titleAndIcon)"))
+        #expect(countSource.contains(".fixedSize(horizontal: true, vertical: false)"))
+        #expect(countSource.contains(".frame(minWidth: 48, minHeight: 28)"))
+    }
+
+    @Test
+    func plannerBlockCardsPrioritizeVisibilityWithoutReorderingFieldsWhenWidthIsTight() throws {
+        let cardSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanBlockCard.swift"
+        )
+
+        #expect(cardSource.components(separatedBy: "ViewThatFits(in: .horizontal)").count == 5)
+        #expect(cardSource.contains(".fixedSize(horizontal: true, vertical: false)"))
+
+        let tinyStart = try #require(cardSource.range(of: "private var tinyContent: some View {"))
+        let tinyEnd = try #require(
+            cardSource.range(
+                of: "private var shortContent: some View {",
+                range: tinyStart.upperBound..<cardSource.endIndex
+            )
+        )
+        let tinySource = String(cardSource[tinyStart.lowerBound..<tinyEnd.lowerBound])
+        let tinyIconIndex = try #require(tinySource.range(of: "miniIcon"))
+        let tinyTitleIndex = try #require(tinySource.range(of: "Text(block.titleSnapshot)"))
+        let tinyTimeIndex = try #require(
+            tinySource.range(of: "Text(\"\\(effectiveDurationMinutes)m\")")
+        )
+
+        #expect(tinyIconIndex.lowerBound < tinyTitleIndex.lowerBound)
+        #expect(tinyTitleIndex.lowerBound < tinyTimeIndex.lowerBound)
+        #expect(tinySource.contains("titleOnlyContent(font: .caption2.weight(.semibold))"))
+
+        let compactStart = try #require(cardSource.range(of: "private var compactContent: some View {"))
+        let compactEnd = try #require(
+            cardSource.range(
+                of: "private var largeContent: some View {",
+                range: compactStart.upperBound..<cardSource.endIndex
+            )
+        )
+        let compactSource = String(cardSource[compactStart.lowerBound..<compactEnd.lowerBound])
+        let compactIconIndex = try #require(compactSource.range(of: "miniIcon"))
+        let compactTextIndex = try #require(compactSource.range(of: "textStack("))
+
+        #expect(compactIconIndex.lowerBound < compactTextIndex.lowerBound)
+        #expect(compactSource.contains("titleOnlyContent(font: .caption.weight(.semibold), lineLimit: 2)"))
+
+        let largeStart = try #require(cardSource.range(of: "private var largeContent: some View {"))
+        let largeEnd = try #require(
+            cardSource.range(
+                of: "private func titleOnlyContent(font: Font, lineLimit: Int = 1) -> some View {",
+                range: largeStart.upperBound..<cardSource.endIndex
+            )
+        )
+        let largeSource = String(cardSource[largeStart.lowerBound..<largeEnd.lowerBound])
+        let avatarIndex = try #require(largeSource.range(of: "DayPlanTaskAvatar("))
+        let largeTextIndex = try #require(largeSource.range(of: "textStack("))
+
+        #expect(avatarIndex.lowerBound < largeTextIndex.lowerBound)
+        #expect(largeSource.contains("titleOnlyContent(font: .subheadline.weight(.semibold), lineLimit: 2)"))
+    }
+
+    @Test
     func updatingCompletedTagFocusMovesItsPlannerEvidenceAndDuration() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

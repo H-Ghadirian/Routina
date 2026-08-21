@@ -41,6 +41,9 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0221 — Keep Planner day-header counts readable](0221-keep-planner-day-header-counts-readable.md)
+- [0220 — Preserve Planner card positions when prioritizing visibility](0220-preserve-planner-card-positions-when-prioritizing-visibility.md)
+- [0219 — Prioritize Planner block titles in narrow cards](0219-prioritize-planner-block-titles-in-narrow-cards.md)
 - [0218 — Show one-off availability in iOS Smart Add](0218-show-one-off-availability-in-ios-smart-add.md)
 - [0217 — Remember picker state separately from session history](0217-remember-picker-state-separately-from-session-history.md)
 - [0216 — Inherit exact availability when entering a time range](0216-inherit-exact-availability-when-entering-a-time-range.md)

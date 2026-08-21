@@ -20,6 +20,10 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0623](0623-keep-planner-day-header-task-counts-unellipsized.md):** Mac Planner day-header task-count labels reserve their intrinsic width so a visible numeric count is not ellipsized when the compact button fits; the count remains capped at `99+` visually and full in accessibility text.
+
+- **[0622](0622-preserve-planner-card-positions-while-prioritizing-visibility.md) supersedes [0621](superseded/0621-prioritize-planner-block-title-in-constrained-widths.md):** Mac Planner Schedule cards preserve their original field positions while progressively hiding the leading emoji or status icon, then time or range, so the title remains visible in the narrowest layouts.
+
 - **[0620](0620-remember-last-mac-focus-picker-duration.md) refines [0603](0603-start-mac-focus-from-one-recalling-sheet.md):** the Mac Focus sheet stores its selected duration locally, labels it as Last choice, selects it by default on the next opening, and falls back to attributed Focus history only when no picker choice has been saved.
 
 - **[0619](0619-pin-mac-quick-add-details-through-transient-reparses.md) refines [0315](0315-merge-mac-quick-add-into-toolbar-search.md), [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md), and [0617](0617-generate-editable-quick-add-titles-from-pasted-links.md):** once Mac Quick Add shows Detected details for a confirmed create candidate, the container remains mounted through partial parser input and asynchronous search refreshes, updates its contents in place, and dismisses only when the composition ends or becomes a confirmed existing-result search.
@@ -771,6 +775,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0623](0623-keep-planner-day-header-task-counts-unellipsized.md) | Keep Planner Day Header Task Counts Unellipsized | Accepted | 2026-08-21 |
+| [0622](0622-preserve-planner-card-positions-while-prioritizing-visibility.md) | Preserve Planner Card Positions While Prioritizing Visibility | Accepted | 2026-08-21 |
 | [0617](0617-generate-editable-quick-add-titles-from-pasted-links.md) | Generate Editable Quick Add Titles from Pasted Links | Accepted | 2026-08-20 |
 | [0616](0616-interpret-unqualified-quick-add-dates-as-availability.md) | Interpret Unqualified Quick Add Dates as Availability | Accepted | 2026-08-20 |
 | [0615](0615-group-and-control-pending-notification-occurrences.md) | Group and Control Pending Notification Occurrences | Accepted | 2026-08-18 |

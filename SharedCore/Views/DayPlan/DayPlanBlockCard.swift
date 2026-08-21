@@ -201,6 +201,20 @@ struct DayPlanBlockCard: View {
     @ViewBuilder
     private var cardContent: some View {
         if layoutHeight < 36 {
+            tinyContent
+        } else if layoutHeight < 48 {
+            shortContent
+        } else if layoutHeight < 74 {
+            compactContent
+        } else {
+            largeContent
+        }
+    }
+
+    private var tinyContent: some View {
+        // Preserve the original leading icon position while progressively
+        // removing lower-priority fields when the card cannot fit them.
+        ViewThatFits(in: .horizontal) {
             HStack(spacing: 5) {
                 miniIcon
 
@@ -216,7 +230,29 @@ struct DayPlanBlockCard: View {
                     .monospacedDigit()
                     .lineLimit(1)
             }
-        } else if layoutHeight < 48 {
+            .fixedSize(horizontal: true, vertical: false)
+
+            HStack(spacing: 5) {
+                Text(block.titleSnapshot)
+                    .font(.caption2.weight(.semibold))
+                    .lineLimit(1)
+
+                Spacer(minLength: 4)
+
+                Text("\(effectiveDurationMinutes)m")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+            .fixedSize(horizontal: true, vertical: false)
+
+            titleOnlyContent(font: .caption2.weight(.semibold))
+        }
+    }
+
+    private var shortContent: some View {
+        ViewThatFits(in: .horizontal) {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 5) {
                     miniIcon
@@ -232,48 +268,82 @@ struct DayPlanBlockCard: View {
                     .monospacedDigit()
                     .lineLimit(1)
             }
-        } else if layoutHeight < 74 {
-            compactContent
-        } else {
-            largeContent
-        }
-    }
+            .fixedSize(horizontal: true, vertical: false)
 
-    private var largeContent: some View {
-        HStack(alignment: .top, spacing: 8) {
-            DayPlanTaskAvatar(emoji: block.emojiSnapshot, tint: tint)
-                .frame(width: 28, height: 28)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(block.titleSnapshot)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
 
-            textStack(
-                titleFont: .subheadline.weight(.semibold),
-                rangeFont: .caption
-            )
-            .layoutPriority(1)
+                Text(rangeText)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+            .fixedSize(horizontal: true, vertical: false)
 
-            Spacer(minLength: 0)
+            titleOnlyContent(font: .caption.weight(.semibold))
         }
     }
 
     private var compactContent: some View {
-        HStack(alignment: .top, spacing: 6) {
-            miniIcon
-                .padding(.top, 1)
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 6) {
+                miniIcon
+                    .padding(.top, 1)
+
+                textStack(
+                    titleFont: .caption.weight(.semibold),
+                    rangeFont: .caption2
+                )
+
+                Spacer(minLength: 0)
+            }
+            .fixedSize(horizontal: true, vertical: false)
 
             textStack(
                 titleFont: .caption.weight(.semibold),
                 rangeFont: .caption2
             )
-            .layoutPriority(1)
+            .fixedSize(horizontal: true, vertical: false)
 
-            Spacer(minLength: 0)
+            titleOnlyContent(font: .caption.weight(.semibold), lineLimit: 2)
         }
     }
 
-    private var textOnlyContent: some View {
-        textStack(
-            titleFont: .caption.weight(.semibold),
-            rangeFont: .caption2
-        )
+    private var largeContent: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 8) {
+                DayPlanTaskAvatar(emoji: block.emojiSnapshot, tint: tint)
+                    .frame(width: 28, height: 28)
+
+                textStack(
+                    titleFont: .subheadline.weight(.semibold),
+                    rangeFont: .caption
+                )
+
+                Spacer(minLength: 0)
+            }
+            .fixedSize(horizontal: true, vertical: false)
+
+            textStack(
+                titleFont: .subheadline.weight(.semibold),
+                rangeFont: .caption
+            )
+            .fixedSize(horizontal: true, vertical: false)
+
+            titleOnlyContent(font: .subheadline.weight(.semibold), lineLimit: 2)
+        }
+    }
+
+    private func titleOnlyContent(font: Font, lineLimit: Int = 1) -> some View {
+        Text(block.titleSnapshot)
+            .font(font)
+            .foregroundStyle(.primary)
+            .lineLimit(lineLimit)
+            .minimumScaleFactor(0.82)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func textStack(titleFont: Font, rangeFont: Font) -> some View {
