@@ -2,7 +2,7 @@
 
 Area: Tasks / iOS Task Details
 
-Decision links: [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md)
+Decision links: [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md), [0625](../decisions/0625-group-task-detail-add-detail-with-edit.md)
 
 Current behavior: [Tasks](../current-behavior/tasks.md)
 
@@ -21,4 +21,4 @@ And accessibility Dynamic Type sizes stack the controls vertically
 And every visible control has a semibold label, visible stroke, explicit accessibility value, and 44-point-high target
 
 When one of these fields is hidden because it has no saved value
-Then `Add more details` continues to offer that field independently
+Then the header's `Add a detail` chooser continues to offer that field independently

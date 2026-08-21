@@ -6,6 +6,8 @@ Date: 2026-08-09
 
 Refines: [0521 Group Secondary Mac Task Detail Actions](0521-group-secondary-mac-task-detail-actions.md)
 
+Refined by: [0536 Match Mac Task Detail Overflow to Toolbar Chrome](0536-match-mac-task-detail-overflow-to-toolbar-chrome.md) and [0626 Join Mac Task Detail Completion and Overflow](0626-join-mac-task-detail-completion-and-overflow.md).
+
 ## Context
 
 The secondary-action menu correctly grouped lifecycle and destructive controls,

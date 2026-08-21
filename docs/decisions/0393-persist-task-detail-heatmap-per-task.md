@@ -6,6 +6,8 @@ Status: Accepted
 
 Refines: [0381 Make Mac Task Detail Heatmap Optional](0381-make-mac-task-detail-heatmap-optional.md)
 
+Refined by: [0625 Group Task Detail Add Detail With Edit](0625-group-task-detail-add-detail-with-edit.md), which moves the Heatmap entry point into the grouped header chooser while preserving per-task persistence.
+
 ## Context
 
 Decision 0381 made the full Mac Task Detail done heatmap optional and session-local so default task details stayed compact. In practice, adding `Heatmap` from `Add more details` and then seeing it disappear the next time that same task was opened felt like the app forgot an explicit user choice.

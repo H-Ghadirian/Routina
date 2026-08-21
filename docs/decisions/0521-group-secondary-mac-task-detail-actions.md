@@ -6,6 +6,8 @@ Date: 2026-08-09
 
 Refines: [0335 Move Mac Task Detail Actions Into Detail Content](0335-move-mac-task-detail-actions-into-detail-content.md) and [0487 Allow Archiving One-Off Tasks](0487-allow-archiving-one-off-tasks.md)
 
+Refined by: [0626 Join Mac Task Detail Completion and Overflow](0626-join-mac-task-detail-completion-and-overflow.md), which joins the visible Done action and its secondary overflow into one segmented lifecycle control.
+
 ## Context
 
 Full Mac Task Details showed Done, Archive or Pause, and Cancel todo together in

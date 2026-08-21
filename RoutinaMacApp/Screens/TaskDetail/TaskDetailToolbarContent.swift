@@ -48,6 +48,7 @@ struct TaskDetailActionClusterView: View {
     private enum Metrics {
         static let controlHeight: CGFloat = 34
         static let iconControlWidth: CGFloat = 42
+        static let lifecycleMenuWidth: CGFloat = 36
         static let clusterHorizontalPadding: CGFloat = 12
         static let textCornerRadius: CGFloat = 10
         static let iconCornerRadius: CGFloat = 8
@@ -60,10 +61,12 @@ struct TaskDetailActionClusterView: View {
     let onMinimizeFullscreen: (() -> Void)?
     let onClose: (() -> Void)?
     let isTaskSharingEnabled: Bool
+    let optionalDetailActions: [TaskDetailOptionalAction]
 
     @State private var isPauseUntilPresented = false
     @State private var isTaskLifecycleActionsMenuPresented = false
     @State private var taskLifecycleActionsMenuRequestID = 0
+    @State private var isAddDetailChooserPresented = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -75,12 +78,7 @@ struct TaskDetailActionClusterView: View {
                 CloudSharingToolbarButton(task: store.task)
             }
             if showsFullDetailActions && showsEditButton {
-                toolbarIconButton(
-                    title: "Edit",
-                    systemImage: "square.and.pencil"
-                ) {
-                    store.send(.setEditSheet(true))
-                }
+                editToolbarControl
             }
             if let onExpandCompanion {
                 toolbarIconButton(
@@ -115,23 +113,57 @@ struct TaskDetailActionClusterView: View {
                 store.send(.pauseUntilTapped(pauseUntil))
             }
         }
+        .onChange(of: optionalDetailActions.map(\.id)) { _, actionIDs in
+            if actionIDs.isEmpty {
+                isAddDetailChooserPresented = false
+            }
+        }
+        .onChange(of: store.task.id) { _, _ in
+            isAddDetailChooserPresented = false
+        }
     }
 
     @ViewBuilder
     private var actionButtons: some View {
+        if showsFullDetailActions {
+            taskLifecycleControl
+        } else {
+            completionActionButton(isGrouped: false)
+        }
+    }
+
+    private var taskLifecycleControl: some View {
+        HStack(spacing: 0) {
+            completionActionButton(isGrouped: true)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.18))
+                .frame(width: 1, height: 20)
+
+            taskLifecycleActionsMenu
+        }
+        .background(
+            RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous)
+                .fill(Color.secondary.opacity(0.10))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous)
+                .stroke(Color.secondary.opacity(0.14), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous))
+        .fixedSize()
+    }
+
+    private func completionActionButton(isGrouped: Bool) -> some View {
         Button {
             store.send(store.completionButtonAction)
         } label: {
-            completionActionLabel
+            completionActionLabel(isGrouped: isGrouped)
         }
         .buttonStyle(.plain)
         .disabled(store.isCompletionButtonDisabled)
         .help(store.completionButtonTitle)
         .accessibilityLabel(store.completionButtonTitle)
-
-        if showsFullDetailActions {
-            taskLifecycleActionsMenu
-        }
     }
 
     private var taskLifecycleActionsMenu: some View {
@@ -221,13 +253,27 @@ struct TaskDetailActionClusterView: View {
     }
 
     private var taskLifecycleActionsMenuLabel: some View {
-        toolbarIconChrome(isActive: isTaskLifecycleActionsMenuPresented) {
-            Text("⋮")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(
-                    isTaskLifecycleActionsMenuPresented ? Color.primary : Color.secondary
-                )
-        }
+        Text("⋮")
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(
+                isTaskLifecycleActionsMenuPresented ? Color.primary : Color.secondary
+            )
+            .frame(width: Metrics.lifecycleMenuWidth, height: Metrics.controlHeight)
+            .background(
+                isTaskLifecycleActionsMenuPresented
+                    ? Color.accentColor.opacity(0.14)
+                    : Color.secondary.opacity(0.10)
+            )
+            .overlay(
+                Rectangle()
+                    .stroke(
+                        isTaskLifecycleActionsMenuPresented
+                            ? Color.accentColor.opacity(0.24)
+                            : Color.clear,
+                        lineWidth: 1
+                    )
+            )
+            .contentShape(Rectangle())
     }
 
     private var showsFullDetailActions: Bool {
@@ -270,7 +316,96 @@ struct TaskDetailActionClusterView: View {
         }
     }
 
-    private var completionActionLabel: some View {
+    @ViewBuilder
+    private var editToolbarControl: some View {
+        if optionalDetailActions.isEmpty {
+            toolbarIconButton(
+                title: "Edit task",
+                systemImage: "square.and.pencil"
+            ) {
+                store.send(.setEditSheet(true))
+            }
+        } else {
+            HStack(spacing: 0) {
+                Button {
+                    store.send(.setEditSheet(true))
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: Metrics.iconControlWidth, height: Metrics.controlHeight)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Edit task")
+                .accessibilityLabel("Edit task")
+
+                Divider()
+                    .frame(height: 20)
+
+                Button {
+                    isAddDetailChooserPresented.toggle()
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(
+                            isAddDetailChooserPresented ? Color.primary : Color.secondary
+                        )
+                        .frame(width: 24, height: Metrics.controlHeight)
+                        .background(
+                            isAddDetailChooserPresented
+                                ? Color.accentColor.opacity(0.14)
+                                : Color.clear
+                        )
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Add a detail")
+                .accessibilityLabel("Add a detail")
+                .accessibilityValue(
+                    optionalDetailActions.count == 1
+                        ? "1 available option"
+                        : "\(optionalDetailActions.count) available options"
+                )
+                .popover(isPresented: $isAddDetailChooserPresented, arrowEdge: .top) {
+                    TaskDetailAddDetailChooserView(
+                        actions: optionalDetailActions,
+                        onSelect: selectOptionalDetailAction
+                    )
+                    .frame(width: 300, height: addDetailChooserHeight)
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous)
+                    .fill(Color.secondary.opacity(0.10))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous)
+                    .stroke(
+                        isAddDetailChooserPresented
+                            ? Color.accentColor.opacity(0.24)
+                            : Color.secondary.opacity(0.14),
+                        lineWidth: 1
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous))
+            .fixedSize()
+        }
+    }
+
+    private var addDetailChooserHeight: CGFloat {
+        min(max(CGFloat(optionalDetailActions.count) * 40 + 58, 138), 430)
+    }
+
+    private func selectOptionalDetailAction(_ action: TaskDetailOptionalAction) {
+        isAddDetailChooserPresented = false
+        Task { @MainActor in
+            await Task.yield()
+            action.perform()
+        }
+    }
+
+    private func completionActionLabel(isGrouped: Bool) -> some View {
         HStack(spacing: 6) {
             if let systemImage = store.completionButtonSystemImage {
                 Image(systemName: systemImage)
@@ -284,10 +419,18 @@ struct TaskDetailActionClusterView: View {
         .padding(.horizontal, 16)
         .frame(minWidth: 68, minHeight: Metrics.controlHeight)
         .background(
-            RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: isGrouped ? 0 : Metrics.textCornerRadius,
+                style: .continuous
+            )
                 .fill(completionTint)
         )
-        .contentShape(RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous))
+        .contentShape(
+            RoundedRectangle(
+                cornerRadius: isGrouped ? 0 : Metrics.textCornerRadius,
+                style: .continuous
+            )
+        )
         .opacity(store.isCompletionButtonDisabled ? 0.55 : 1)
     }
 

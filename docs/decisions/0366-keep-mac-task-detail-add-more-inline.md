@@ -6,6 +6,8 @@ Status: Accepted
 
 Refines: [0100 Reveal Task Form Details by Section](0100-reveal-task-form-details-by-section.md), [0335 Move Mac Task Detail Actions Into Detail Content](0335-move-mac-task-detail-actions-into-detail-content.md)
 
+Refined by: [0625 Group Task Detail Add Detail With Edit](0625-group-task-detail-add-detail-with-edit.md), which moves the entry point into the grouped header Edit control while retaining this decision's inline field behavior.
+
 ## Context
 
 Task Detail already used field-specific `Add more details` actions, but the actions behaved inconsistently on Mac. Detail-owned controls such as comments, time, pressure, state, and checklist stayed on the task detail screen, while richer metadata such as tags, goals, places, notes, links, color, media, and files switched the whole surface into Edit Task with the requested form section revealed.

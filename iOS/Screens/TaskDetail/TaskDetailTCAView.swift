@@ -70,6 +70,8 @@ struct TaskDetailTCAView: View {
     @State private var isThinkingNeededControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var requestedEditSection: TaskFormCompactSection?
+    @State private var isAddDetailChooserPresented = false
+    @State private var pendingOptionalDetailAction: TaskDetailOptionalAction?
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
@@ -137,7 +139,9 @@ detailBody
         showsCollapsedTaskTitle: showsCollapsedTaskTitle,
         canSaveCurrentEdit: canSaveCurrentEdit,
         isTaskSharingEnabled: isTaskSharingEnabled,
-        onShare: { isCloudSharingPresented = true }
+        onShare: { isCloudSharingPresented = true },
+        optionalDetailActionCount: optionalDetailActions.count,
+        onAddDetail: { isAddDetailChooserPresented = true }
     )
 }
 .routinaPlatformEditPresentation(
@@ -153,6 +157,29 @@ detailBody
         selectedEmoji: presentationRouting.editRoutineEmoji,
         emojis: allEmojiOptions
     )
+}
+.sheet(
+    isPresented: $isAddDetailChooserPresented,
+    onDismiss: performPendingOptionalDetailAction
+) {
+    NavigationStack {
+        TaskDetailAddDetailChooserView(
+            actions: optionalDetailActions,
+            showsHeader: false,
+            onSelect: selectOptionalDetailAction
+        )
+        .navigationTitle("Add a detail")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") {
+                    isAddDetailChooserPresented = false
+                }
+            }
+        }
+    }
+    .presentationDetents([.medium, .large])
+    .presentationDragIndicator(.visible)
 }
 .sheet(isPresented: $isRelationshipGraphPresented) {
     TaskRelationshipGraphSheet(
@@ -234,6 +261,8 @@ detailBody
     showsCollapsedTaskTitle = false
     isCommentComposerVisible = false
     isTemporalWeightEditorPresented = false
+    isAddDetailChooserPresented = false
+    pendingOptionalDetailAction = nil
     resetRevealedOptionalControls()
     syncAvailableEvents()
     Task {
@@ -372,7 +401,6 @@ detailBody
                 if hasTaskExtras {
                     taskExtrasSection
                 }
-                optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -420,7 +448,6 @@ detailBody
                 if hasTaskExtras {
                     taskExtrasSection
                 }
-                optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -469,21 +496,6 @@ detailBody
             onDeleteComment: { store.send(.detailCommentDeleteTapped($0)) }
         )
         .id(store.task.id)
-    }
-
-    @ViewBuilder
-    private var optionalActionsSection: some View {
-        if shouldShowOptionalActionsSection {
-            TaskDetailOptionalActionsSectionView(
-                actions: optionalDetailActions,
-                background: routineLogsBackground,
-                stroke: TaskDetailPlatformStyle.sectionCardStroke
-            )
-        }
-    }
-
-    private var shouldShowOptionalActionsSection: Bool {
-        !optionalDetailActions.isEmpty
     }
 
     private var optionalDetailActions: [TaskDetailOptionalAction] {
@@ -588,13 +600,18 @@ detailBody
             })
         }
 
-        if !hasTaskExtras {
-            actions.append(TaskDetailOptionalAction(title: "Details", systemImage: "square.and.pencil") {
-                store.send(.setEditSheet(true))
-            })
-        }
-
         return actions
+    }
+
+    private func selectOptionalDetailAction(_ action: TaskDetailOptionalAction) {
+        pendingOptionalDetailAction = action
+        isAddDetailChooserPresented = false
+    }
+
+    private func performPendingOptionalDetailAction() {
+        guard let action = pendingOptionalDetailAction else { return }
+        pendingOptionalDetailAction = nil
+        action.perform()
     }
 
     private var shouldShowCommentsSection: Bool {

@@ -13,6 +13,10 @@ Accepted
 - [0468: Model Task Thinking Needed Separately](0468-model-task-thinking-needed-separately.md)
 - [0563: Present Importance and Urgency as Independent Task Controls](0563-present-importance-and-urgency-as-independent-task-controls.md)
 
+## Refined By
+
+- [0625: Group Task Detail Add Detail With Edit](0625-group-task-detail-add-detail-with-edit.md)
+
 ## Context
 
 iOS Task Details presented Importance, Urgency, and Pressure together in the task header, but placed Thinking needed inside the separate primary-action card. The split made four closely related task-selection signals harder to scan and made Thinking appear connected to completion rather than descriptive task context.

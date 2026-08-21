@@ -1,10 +1,10 @@
 # 0508: Keep iOS Add More Details Last
 
-Status: Accepted
+Status: Superseded by [0625 Group Task Detail Add Detail With Edit](../0625-group-task-detail-add-detail-with-edit.md)
 
 Date: 2026-08-08
 
-Refines: [0188 Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0425 Make Task Detail History Optional](0425-make-task-detail-history-optional.md)
+Refines: [0188 Prefer Self-Explanatory UI Over Instructional Copy](../0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0425 Make Task Detail History Optional](../0425-make-task-detail-history-optional.md)
 
 ## Context
 

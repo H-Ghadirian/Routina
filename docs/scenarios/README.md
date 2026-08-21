@@ -45,7 +45,7 @@ And no purchase paywall, entitlement check, or development override participates
 ### Task Details Hide Empty Linked Tasks
 
 Area: Tasks / iOS and macOS Task Details
-Decision links: [0100](../decisions/0100-reveal-task-form-details-by-section.md), [0366](../decisions/0366-keep-mac-task-detail-add-more-inline.md), [0624](../decisions/0624-hide-empty-linked-tasks-by-default.md)
+Decision links: [0100](../decisions/0100-reveal-task-form-details-by-section.md), [0366](../decisions/0366-keep-mac-task-detail-add-more-inline.md), [0624](../decisions/0624-hide-empty-linked-tasks-by-default.md), [0625](../decisions/0625-group-task-detail-add-detail-with-edit.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
@@ -53,10 +53,10 @@ Coverage:
 Given a task has no resolved linked tasks
 When the person opens its iOS or macOS Task Details
 Then the Linked Tasks section is absent
-And `Add more details` offers `Linked Task` as the manual relationship entry point
+And the header's `Add a detail` chooser offers `Linked Task` as the manual relationship entry point
 
 When the task has a resolved relationship
-Then Linked Tasks is visible before `Add more details`
+Then Linked Tasks is visible in the normal detail content
 
 
 ### Task Details Show A Saved One-Off Reminder
@@ -484,7 +484,7 @@ Then it batches the tombstones and scans each related model family once for the 
 ### iOS Task Detail Keeps Maintenance Actions Together
 
 Area: Tasks / UI
-Decision links: [0584](../decisions/0584-group-ios-task-maintenance-in-navigation-overflow.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md)
+Decision links: [0584](../decisions/0584-group-ios-task-maintenance-in-navigation-overflow.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md), [0625](../decisions/0625-group-task-detail-add-detail-with-edit.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
@@ -495,13 +495,14 @@ Then Share Link, Copy Link, and confirmed Delete Task are available there
 And an unfinished one-off task also offers Cancel todo under its existing eligibility rules
 And Cancel todo is absent from the primary action card
 And Delete Task is absent from the iOS Edit Task form
-And Edit and optional Cloud sharing remain direct navigation-bar actions
+And the grouped pencil remains a direct Edit action
+And its adjacent chevron opens the `Add a detail` sheet instead of adding that command to the maintenance menu
 And the vertical-dot trigger has a bold, comfortably legible size beside Edit
 
 ### iOS Task Detail Keeps Primary Context Easy To Scan
 
 Area: Tasks / UI
-Decision links: [0597](../decisions/0597-show-ios-task-detail-title-after-header-scrolls-away.md), [0595](../decisions/0595-keep-task-completion-colors-consistent-across-platforms.md), [0594](../decisions/0594-simplify-ios-task-detail-scan-and-action-hierarchy.md), [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md), [0585](../decisions/0585-persist-ios-task-detail-calendar-expansion-per-task.md), [0508](../decisions/0508-keep-ios-add-more-details-last.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md)
+Decision links: [0597](../decisions/0597-show-ios-task-detail-title-after-header-scrolls-away.md), [0595](../decisions/0595-keep-task-completion-colors-consistent-across-platforms.md), [0594](../decisions/0594-simplify-ios-task-detail-scan-and-action-hierarchy.md), [0586](../decisions/0586-group-ios-task-detail-priority-context-in-the-header.md), [0585](../decisions/0585-persist-ios-task-detail-calendar-expansion-per-task.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md), [0625](../decisions/0625-group-task-detail-add-detail-with-edit.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
@@ -535,7 +536,8 @@ Then a text-only task name appears in the navigation principal without an emoji 
 When the person continues scrolling until Calendar and later detail sections reach the top of the viewport
 Then that navigation title remains visible
 And scrolling the full title back into view hides that navigation title again
-And `Add more details` explains its badge as `1 option` or `<count> options`
+And no scrolling `Add more details` card appears after the visible task content
+And the grouped Edit chevron presents the currently available actions in an `Add a detail` sheet
 
 ### Task Detail Flags Use Available Width
 
@@ -1380,7 +1382,7 @@ Coverage:
 
 Given an internal record-shaped row is presented as a routine in full Mac Task Details
 And its task-level time control is not already visible
-When the user clicks `Time` under `Add more details`
+When the user chooses `Time` from the header's `Add a detail` popover
 Then the Time action disappears and the expanded Effort editor appears in the routine header
 And stored estimate or story-point metadata cannot make Time unreachable
 And normal routines do not acquire the record-only task-level time editor
@@ -2650,11 +2652,11 @@ Coverage:
 
 Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is off
 When the user opens full Mac Task Details for a task with no linked events
-Then the `Add more details` section does not expose an Events action
+Then the `Add a detail` popover does not expose an Events action
 
 Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is on
 When the user opens full Mac Task Details for a task with no linked events
-Then the `Add more details` section can expose an Events action
+Then the `Add a detail` popover can expose an Events action
 
 ### Mac Task Details Persist Heatmap Per Task
 
@@ -2666,7 +2668,7 @@ Coverage:
 - `Tests/Shared/SettingsRoutineDataPersistenceTests.swift`
 
 Given the user opens full Mac Task Details for a routine that has not explicitly added Heatmap
-When the user chooses `Heatmap` from `Add more details`
+When the user chooses `Heatmap` from the header's `Add a detail` popover
 Then that task stores the heatmap as visible in full Mac Task Details
 
 Given another eligible task has not explicitly added Heatmap
@@ -3158,17 +3160,26 @@ And task-relationship review excludes the task as both a review source and a sug
 ### Mac Task Detail Keeps Secondary Lifecycle Actions Together
 
 Area: Tasks / macOS UI
-Decision links: [0527](../decisions/0527-keep-mac-task-detail-overflow-compact-and-stateful.md), [0521](../decisions/0521-group-secondary-mac-task-detail-actions.md), [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0335](../decisions/0335-move-mac-task-detail-actions-into-detail-content.md)
+Decision links: [0527](../decisions/0527-keep-mac-task-detail-overflow-compact-and-stateful.md), [0521](../decisions/0521-group-secondary-mac-task-detail-actions.md), [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0335](../decisions/0335-move-mac-task-detail-actions-into-detail-content.md), [0625](../decisions/0625-group-task-detail-add-detail-with-edit.md), [0626](../decisions/0626-join-mac-task-detail-completion-and-overflow.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
 
 Given full Mac Task Details is open
+Then Done and `⋮` share one rounded lifecycle control with no inter-button gap
+And Done retains its semantic completion tint while the neutral `⋮` segment remains visually secondary
+And each segment owns its full hit surface and triggers only its own action
 When the person opens the vertical `⋮` task-action menu
 Then one-off tasks offer Archive or Restore and eligible Cancel todo, while routines offer Pause or Resume
 And Delete is a separated destructive menu item that still requires confirmation
 And Done remains the only visible task lifecycle action
-And the `⋮` button has a circular accent highlight only while its compact native menu is open
+And only the `⋮` segment receives a restrained accent treatment while its compact native menu is open
+And `Add a detail` is absent from that maintenance menu
+
+When optional detail actions remain
+Then Edit is a split header control whose pencil opens full Edit Task directly
+And the narrow chevron opens an anchored `Add a detail` popover
+And Task Details has no wide scrolling Add More card
 
 Given an archived one-off task
 When the person chooses `Restore`

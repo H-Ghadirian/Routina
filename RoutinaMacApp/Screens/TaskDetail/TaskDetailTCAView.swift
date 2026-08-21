@@ -23,10 +23,6 @@ struct TaskDetailTCAView: View {
         var showsEditingEntryPoints: Bool {
             self == .fullDetail
         }
-
-        var showsOptionalActionsSection: Bool {
-            self == .fullDetail
-        }
     }
 
     let store: StoreOf<TaskDetailFeature>
@@ -342,7 +338,6 @@ struct TaskDetailTCAView: View {
                     taskExtrasSection
                 }
                 inlineEditSectionsView
-                optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -553,7 +548,6 @@ struct TaskDetailTCAView: View {
                     taskExtrasSection
                 }
                 inlineEditSectionsView
-                optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -568,7 +562,8 @@ struct TaskDetailTCAView: View {
             onExpandCompanion: presentation == .companionPane ? onExpandCompanion : nil,
             onMinimizeFullscreen: presentation == .fullDetail ? onMinimizeFullscreen : nil,
             onClose: presentation == .companionPane ? onCloseCompanion : onCloseFullscreen,
-            isTaskSharingEnabled: presentation == .fullDetail && isTaskSharingEnabled
+            isTaskSharingEnabled: presentation == .fullDetail && isTaskSharingEnabled,
+            optionalDetailActions: presentation.showsEditingEntryPoints ? optionalDetailActions : []
         )
     }
 
@@ -634,21 +629,6 @@ struct TaskDetailTCAView: View {
             onDeleteComment: { store.send(.detailCommentDeleteTapped($0)) }
         )
         .id(store.task.id)
-    }
-
-    @ViewBuilder
-    private var optionalActionsSection: some View {
-        if shouldShowOptionalActionsSection {
-            TaskDetailOptionalActionsSectionView(
-                actions: optionalDetailActions,
-                background: routineLogsBackground,
-                stroke: TaskDetailPlatformStyle.sectionCardStroke
-            )
-        }
-    }
-
-    private var shouldShowOptionalActionsSection: Bool {
-        presentation.showsOptionalActionsSection && !optionalDetailActions.isEmpty
     }
 
     private var optionalDetailActions: [TaskDetailOptionalAction] {

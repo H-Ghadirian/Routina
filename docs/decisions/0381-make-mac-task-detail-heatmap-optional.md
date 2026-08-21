@@ -6,7 +6,7 @@ Date: 2026-07-13
 
 Refines: [0366 Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md), [0380 Add Record Task Type](0380-add-record-task-type.md)
 
-Refined by: [0393 Persist Task Detail Heatmap Per Task](0393-persist-task-detail-heatmap-per-task.md)
+Refined by: [0393 Persist Task Detail Heatmap Per Task](0393-persist-task-detail-heatmap-per-task.md), [0625 Group Task Detail Add Detail With Edit](0625-group-task-detail-add-detail-with-edit.md)
 
 ## Context
 

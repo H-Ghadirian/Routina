@@ -8,6 +8,8 @@ struct TaskDetailToolbarContent: ToolbarContent {
     let canSaveCurrentEdit: Bool
     let isTaskSharingEnabled: Bool
     let onShare: () -> Void
+    let optionalDetailActionCount: Int
+    let onAddDetail: () -> Void
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .principal) {
@@ -51,10 +53,37 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     }
                 }
 
-                Button {
-                    store.send(.setEditSheet(true))
-                } label: {
-                    Label("Edit", systemImage: "square.and.pencil")
+                if optionalDetailActionCount > 0 {
+                    ControlGroup {
+                        Button {
+                            store.send(.setEditSheet(true))
+                        } label: {
+                            Image(systemName: "square.and.pencil")
+                                .frame(minWidth: 32, minHeight: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Edit task")
+
+                        Button(action: onAddDetail) {
+                            Image(systemName: "chevron.down")
+                                .font(.caption.weight(.bold))
+                                .frame(minWidth: 32, minHeight: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Add a detail")
+                        .accessibilityValue(
+                            optionalDetailActionCount == 1
+                                ? "1 available option"
+                                : "\(optionalDetailActionCount) available options"
+                        )
+                    }
+                    .accessibilityElement(children: .contain)
+                } else {
+                    Button {
+                        store.send(.setEditSheet(true))
+                    } label: {
+                        Label("Edit", systemImage: "square.and.pencil")
+                    }
                 }
 
                 Menu {

@@ -54,6 +54,10 @@ struct TaskDetailPlatformActionParityTests {
         #expect(toolbarSource.contains(".minimumScaleFactor(0.75)"))
         #expect(toolbarSource.contains(".allowsTightening(true)"))
         #expect(!toolbarSource.contains("RoutinaDeepLinkShareMenu("))
+        #expect(toolbarSource.contains("ControlGroup {"))
+        #expect(toolbarSource.contains("optionalDetailActionCount"))
+        #expect(toolbarSource.contains("Button(action: onAddDetail)"))
+        #expect(toolbarSource.contains(".accessibilityLabel(\"Add a detail\")"))
         #expect(!actionControlsSource.contains("TaskDetailCancelTodoButton"))
         #expect(!editSource.contains("onDelete:"))
     }
@@ -92,12 +96,21 @@ struct TaskDetailPlatformActionParityTests {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift"
         )
+        let lifecycleControl = try Self.sourceSection(
+            startingAt: "private var taskLifecycleControl",
+            endingAt: "private func completionActionButton",
+            in: source
+        )
         let overflowMenu = try Self.sourceSection(
             startingAt: "private var taskLifecycleActionsMenu",
             endingAt: "private var showsFullDetailActions: Bool",
             in: source
         )
 
+        #expect(lifecycleControl.contains("HStack(spacing: 0)"))
+        #expect(lifecycleControl.contains("completionActionButton(isGrouped: true)"))
+        #expect(lifecycleControl.contains("taskLifecycleActionsMenu"))
+        #expect(lifecycleControl.contains(".clipShape(RoundedRectangle(cornerRadius: Metrics.textCornerRadius"))
         #expect(!overflowMenu.contains("Menu {"))
         #expect(overflowMenu.contains("TaskDetailOverflowMenuPresenter("))
         #expect(overflowMenu.contains("taskLifecycleActionsMenuRequestID &+= 1"))
@@ -110,30 +123,84 @@ struct TaskDetailPlatformActionParityTests {
         #expect(overflowMenu.contains("role: .destructive"))
         #expect(overflowMenu.contains("Text(\"⋮\")"))
         #expect(overflowMenu.contains("isTaskLifecycleActionsMenuPresented"))
-        #expect(overflowMenu.contains("toolbarIconChrome(isActive: isTaskLifecycleActionsMenuPresented)"))
+        #expect(overflowMenu.contains(".frame(width: Metrics.lifecycleMenuWidth, height: Metrics.controlHeight)"))
+        #expect(overflowMenu.contains("Color.accentColor.opacity(0.14)"))
+        #expect(overflowMenu.contains(".contentShape(Rectangle())"))
+        #expect(!overflowMenu.contains("toolbarIconChrome(isActive: isTaskLifecycleActionsMenuPresented)"))
         #expect(!overflowMenu.contains("Circle()"))
         #expect(source.contains("menu.popUp("))
         #expect(source.contains("NSColor.systemRed"))
     }
 
     @Test
-    func iosAddMoreDetailsSectionIsLastForTodosAndRoutines() throws {
-        let source = try Self.sourceFile(
+    func taskDetailGroupsAddDetailWithEditWithoutUsingMaintenanceOverflow() throws {
+        let macToolbarSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift"
+        )
+        let iosToolbarSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailToolbarContent.swift"
+        )
+        let iosDetailSource = try Self.sourceFile(
             "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
         )
-        let todoContent = try Self.sourceSection(
-            startingAt: "private var todoDetailContent",
-            endingAt: "private var taskDetailContent",
-            in: source
+        let macEditControl = try Self.sourceSection(
+            startingAt: "private var editToolbarControl",
+            endingAt: "private func completionActionLabel",
+            in: macToolbarSource
         )
-        let routineContent = try Self.sourceSection(
-            startingAt: "private var taskDetailContent",
-            endingAt: "private var focusSessionSection",
-            in: source
+        let macMaintenanceMenu = try Self.sourceSection(
+            startingAt: "private var taskLifecycleActionsMenuElements",
+            endingAt: "private var taskLifecycleActionsMenuLabel",
+            in: macToolbarSource
         )
 
-        try assertOptionalActionsAreLast(in: todoContent)
-        try assertOptionalActionsAreLast(in: routineContent)
+        #expect(macEditControl.contains("store.send(.setEditSheet(true))"))
+        #expect(macEditControl.contains("isAddDetailChooserPresented.toggle()"))
+        #expect(macEditControl.contains("TaskDetailAddDetailChooserView("))
+        #expect(macEditControl.contains(".accessibilityLabel(\"Add a detail\")"))
+        #expect(!macMaintenanceMenu.contains("Add a detail"))
+        #expect(iosToolbarSource.contains("ControlGroup {"))
+        #expect(iosToolbarSource.contains("Button(action: onAddDetail)"))
+        #expect(iosDetailSource.contains(".presentationDetents([.medium, .large])"))
+        #expect(iosDetailSource.contains("onDismiss: performPendingOptionalDetailAction"))
+    }
+
+    @Test
+    func taskDetailsMoveAddDetailOutOfTheScrollingContent() throws {
+        let iosSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let macSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let iosTodoContent = try Self.sourceSection(
+            startingAt: "private var todoDetailContent",
+            endingAt: "private var taskDetailContent",
+            in: iosSource
+        )
+        let iosRoutineContent = try Self.sourceSection(
+            startingAt: "private var taskDetailContent",
+            endingAt: "private var focusSessionSection",
+            in: iosSource
+        )
+        let macTodoContent = try Self.sourceSection(
+            startingAt: "private var todoDetailContent",
+            endingAt: "private var todoStateTimingSummary",
+            in: macSource
+        )
+        let macRoutineContent = try Self.sourceSection(
+            startingAt: "private var taskDetailContent",
+            endingAt: "private var taskDetailActionCluster",
+            in: macSource
+        )
+
+        #expect(!iosTodoContent.contains("optionalActionsSection"))
+        #expect(!iosRoutineContent.contains("optionalActionsSection"))
+        #expect(!macTodoContent.contains("optionalActionsSection"))
+        #expect(!macRoutineContent.contains("optionalActionsSection"))
+        #expect(iosSource.contains("isAddDetailChooserPresented"))
+        #expect(iosSource.contains("TaskDetailAddDetailChooserView("))
+        #expect(macSource.contains("optionalDetailActions: presentation.showsEditingEntryPoints"))
     }
 
     @Test
@@ -181,12 +248,14 @@ struct TaskDetailPlatformActionParityTests {
     }
 
     @Test
-    func iosAddMoreDetailsExplainsItsOptionCount() throws {
+    func addDetailChooserExplainsItsAvailableOptionCount() throws {
         let source = try Self.sourceFile(
             "SharedCore/Screens/TaskDetail/TaskDetailExtrasSectionView.swift"
         )
 
-        #expect(source.contains("countText: actions.count == 1 ? \"1 option\" : \"\\(actions.count) options\""))
+        #expect(source.contains("actions.count == 1 ? \"1 available\" : \"\\(actions.count) available\""))
+        #expect(source.contains(".frame(maxWidth: .infinity, minHeight: 40"))
+        #expect(source.contains(".contentShape(Rectangle())"))
     }
 
     @Test
@@ -257,12 +326,6 @@ struct TaskDetailPlatformActionParityTests {
         #expect(optionalActions.contains("if !shouldShowRelationshipsSection"))
         #expect(optionalActions.contains("title: \"Linked Task\""))
         #expect(optionalActions.contains("inlineEditSectionAction(title: \"Linked Task\", section: .linkedTasks)"))
-    }
-
-    private func assertOptionalActionsAreLast(in content: String) throws {
-        let optionalActions = try #require(content.range(of: "optionalActionsSection"))
-        let extras = try #require(content.range(of: "taskExtrasSection"))
-        #expect(extras.upperBound < optionalActions.lowerBound)
     }
 
     private static func sourceSection(

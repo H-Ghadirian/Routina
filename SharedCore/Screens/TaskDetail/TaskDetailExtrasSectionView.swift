@@ -103,73 +103,81 @@ struct TaskDetailExtrasSectionView: View {
     }
 }
 
-struct TaskDetailOptionalActionsSectionView: View {
+struct TaskDetailAddDetailChooserView: View {
     let actions: [TaskDetailOptionalAction]
-    let background: Color
-    let stroke: Color
-
-    @State private var isExpanded = false
+    var showsHeader = true
+    let onSelect: (TaskDetailOptionalAction) -> Void
+    @State private var hoveredActionID: String?
 
     var body: some View {
-        TaskDetailSectionCardView(background: background, stroke: stroke) {
-            VStack(alignment: .leading, spacing: 12) {
-                TaskDetailCollapsibleSectionHeaderView(
-                    title: "Add more details",
-                    count: actions.count,
-                    countText: actions.count == 1 ? "1 option" : "\(actions.count) options",
-                    isExpanded: isExpanded,
-                    onToggle: { isExpanded.toggle() }
-                )
+        VStack(alignment: .leading, spacing: 0) {
+            if showsHeader {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text("Add a detail")
+                        .font(.headline)
 
-                if isExpanded {
-                    optionalActionGrid
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    Spacer(minLength: 12)
+
+                    Text(optionCountText)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+
+                Divider()
+            }
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 2) {
+                    ForEach(actions) { action in
+                        actionButton(action)
+                    }
+                }
+                .padding(6)
             }
         }
-        .clipped()
     }
 
-    @ViewBuilder
-    private var actionButtons: some View {
-        ForEach(actions) { action in
-            actionButton(action)
-        }
-    }
-
-    private var optionalActionGrid: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 124), spacing: 8)],
-            alignment: .leading,
-            spacing: 8
-        ) {
-            actionButtons
-        }
+    private var optionCountText: String {
+        actions.count == 1 ? "1 available" : "\(actions.count) available"
     }
 
     private func actionButton(_ action: TaskDetailOptionalAction) -> some View {
-        Button(action: action.perform) {
-            actionButtonLabel(action)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .routinaGlassCard(
-                    cornerRadius: 8,
-                    tint: .secondary,
-                    tintOpacity: 0.08,
-                    interactive: true
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        Button {
+            onSelect(action)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: action.systemImage)
+                    .frame(width: 20)
+                    .foregroundStyle(.secondary)
+
+                Text(action.title)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private func actionButtonLabel(_ action: TaskDetailOptionalAction) -> some View {
-        Label(action.title, systemImage: action.systemImage)
-            .font(.subheadline)
-            .lineLimit(1)
-            .minimumScaleFactor(0.85)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(
+                    hoveredActionID == action.id
+                        ? Color.accentColor.opacity(0.12)
+                        : Color.secondary.opacity(0.001)
+                )
+        }
+        .onHover { isHovered in
+            hoveredActionID = isHovered ? action.id : nil
+        }
     }
 }
 

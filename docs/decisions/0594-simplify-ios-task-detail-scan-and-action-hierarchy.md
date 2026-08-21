@@ -16,13 +16,14 @@ Accepted
 
 - [0597: Show iOS Task Detail Title After Header Scrolls Away](0597-show-ios-task-detail-title-after-header-scrolls-away.md)
 - [0595: Keep Task Completion Colors Consistent Across Platforms](0595-keep-task-completion-colors-consistent-across-platforms.md)
+- [0625: Group Task Detail Add Detail With Edit](0625-group-task-detail-add-detail-with-edit.md)
 
 ## Refines
 
 - [0188: Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md)
 - [0264: Match Button Hit Areas to Visual Surfaces](0264-match-button-hit-areas-to-visual-surfaces.md)
 - [0507: Clarify iOS Task Detail Action Hierarchy](0507-clarify-ios-task-detail-action-hierarchy.md)
-- [0508: Keep iOS Add More Details Last](0508-keep-ios-add-more-details-last.md)
+- [0508: Keep iOS Add More Details Last](superseded/0508-keep-ios-add-more-details-last.md)
 - [0585: Persist iOS Task Detail Calendar Expansion Per Task](0585-persist-ios-task-detail-calendar-expansion-per-task.md)
 - [0586: Group iOS Task Detail Priority Context in the Header](0586-group-ios-task-detail-priority-context-in-the-header.md)
 

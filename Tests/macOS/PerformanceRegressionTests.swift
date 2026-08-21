@@ -118,25 +118,27 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
-    func testMacTaskDetailCompletionActionPrecedesTaskSpecificActions() throws {
+    func testMacTaskDetailCompletionAndOverflowShareLifecycleControl() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift"
         )
-        let actionButtonsStart = try XCTUnwrap(
-            source.range(of: "private var actionButtons: some View")
+        let lifecycleControlStart = try XCTUnwrap(
+            source.range(of: "private var taskLifecycleControl: some View")
         )
-        let overflowMenuStart = try XCTUnwrap(
+        let completionButtonStart = try XCTUnwrap(
             source.range(
-                of: "private var taskLifecycleActionsMenu: some View",
-                range: actionButtonsStart.upperBound..<source.endIndex
+                of: "private func completionActionButton",
+                range: lifecycleControlStart.upperBound..<source.endIndex
             )
         )
-        let actionButtonsSource = source[actionButtonsStart.lowerBound..<overflowMenuStart.lowerBound]
+        let lifecycleControlSource = source[
+            lifecycleControlStart.lowerBound..<completionButtonStart.lowerBound
+        ]
         let completionAction = try XCTUnwrap(
-            actionButtonsSource.range(of: "store.send(store.completionButtonAction)")
+            lifecycleControlSource.range(of: "completionActionButton(isGrouped: true)")
         )
         let moreActionsMenu = try XCTUnwrap(
-            actionButtonsSource.range(of: "taskLifecycleActionsMenu")
+            lifecycleControlSource.range(of: "taskLifecycleActionsMenu")
         )
 
         XCTAssertLessThan(
@@ -144,12 +146,22 @@ final class PerformanceRegressionTests: XCTestCase {
             moreActionsMenu.lowerBound,
             "Done must remain left of the overflow menu for secondary task actions."
         )
+        XCTAssertTrue(
+            lifecycleControlSource.contains("HStack(spacing: 0)"),
+            "Done and its related overflow must share one joined control without an inter-button gap."
+        )
+        XCTAssertTrue(
+            lifecycleControlSource.contains(
+                ".clipShape(RoundedRectangle(cornerRadius: Metrics.textCornerRadius"
+            ),
+            "The lifecycle control must own one shared rounded outer shape."
+        )
         XCTAssertFalse(
-            actionButtonsSource.contains("store.send(.cancelTodo)"),
+            lifecycleControlSource.contains("store.send(.cancelTodo)"),
             "Cancel Todo belongs in the overflow menu instead of competing with Done."
         )
         XCTAssertFalse(
-            actionButtonsSource.contains("store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)"),
+            lifecycleControlSource.contains("store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)"),
             "Archive/Restore and Pause/Resume belong in the overflow menu instead of competing with Done."
         )
     }

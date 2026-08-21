@@ -6,6 +6,8 @@ Date: 2026-08-11
 
 Refines: [0527 Keep Mac Task Detail Overflow Compact and Stateful](0527-keep-mac-task-detail-overflow-compact-and-stateful.md)
 
+Refined by: [0626 Join Mac Task Detail Completion and Overflow](0626-join-mac-task-detail-completion-and-overflow.md), which moves the overflow chrome into the neutral segment of a joined lifecycle control beside Done.
+
 ## Context
 
 The bare idle vertical-overflow trigger read as an unexplained dark gap in the
