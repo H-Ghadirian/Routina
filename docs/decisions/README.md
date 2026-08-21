@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0629](0629-consolidate-task-detail-rich-content.md) refines [0124](0124-support-multiple-task-links.md), [0211](0211-support-titled-task-links.md), [0469](0469-store-task-descriptions-separately-from-notes.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0627](0627-group-mac-task-detail-tags-and-flags.md), and [0628](0628-adapt-mac-task-detail-labels-to-available-width.md):** Task Details group Description, Links, Image, Files, Voice Note, and Notes in one semantically labeled content card; Mac removes its duplicate link-only `DETAILS` header box while keeping full images out of the compact overview.
 - **[0628](0628-adapt-mac-task-detail-labels-to-available-width.md) refines [0627](0627-group-mac-task-detail-tags-and-flags.md), [0499](0499-explain-applied-flags-in-task-details.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** the shared Mac Task Detail label card uses one unwrapped Tags-and-Flags row when the complete content fits, then falls back to two labeled rows with wrapping chip collections when it does not.
 - **[0627](0627-group-mac-task-detail-tags-and-flags.md) refines [0497](0497-use-flags-for-task-behavior-rules.md), [0499](0499-explain-applied-flags-in-task-details.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** Mac Task Details place assigned Tags and Flags in one neutral metadata card while retaining separate labels, a divider, and the orange Flag-chip semantics.
 - **[0626](0626-join-mac-task-detail-completion-and-overflow.md) refines [0521](0521-group-secondary-mac-task-detail-actions.md) and [0536](0536-match-mac-task-detail-overflow-to-toolbar-chrome.md):** full Mac Task Details joins Done and the neutral `⋮` segment in one lifecycle control while preserving independent hit targets, primary completion color, native menu behavior, and destructive safeguards.
@@ -779,6 +780,9 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0629](0629-consolidate-task-detail-rich-content.md) | Consolidate Task Detail Rich Content | Accepted | 2026-08-21 |
+| [0628](0628-adapt-mac-task-detail-labels-to-available-width.md) | Adapt Mac Task Detail Labels to Available Width | Accepted | 2026-08-21 |
+| [0627](0627-group-mac-task-detail-tags-and-flags.md) | Group Mac Task Detail Tags and Flags | Accepted | 2026-08-21 |
 | [0626](0626-join-mac-task-detail-completion-and-overflow.md) | Join Mac Task Detail Completion and Overflow | Accepted | 2026-08-21 |
 | [0625](0625-group-task-detail-add-detail-with-edit.md) | Group Task Detail Add Detail With Edit | Accepted | 2026-08-21 |
 | [0624](0624-hide-empty-linked-tasks-by-default.md) | Hide Empty Linked Tasks by Default | Accepted | 2026-08-21 |

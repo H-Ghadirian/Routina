@@ -94,6 +94,49 @@ struct TaskDetailMacHeaderControlLayoutTests {
         #expect(wrappedRows.contains("TaskDetailFlagChip(flag: flag)"))
     }
 
+    @Test
+    func taskContentUsesSemanticGroupsAndKeepsLinksOutOfTheMacHeader() throws {
+        let headerSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailMacHeaderSupplementaryContent.swift"
+        )
+        let detailSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let contentSource = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailExtrasSectionView.swift"
+        )
+        let extrasVisibility = try Self.sourceSection(
+            startingAt: "private var hasTaskExtras: Bool",
+            endingAt: "private var shouldShowHeatmapSection",
+            in: detailSource
+        )
+        let extrasCard = try Self.sourceSection(
+            startingAt: "private var taskExtrasSection: some View",
+            endingAt: "private var linkedEventsSection",
+            in: detailSource
+        )
+
+        #expect(!headerSource.contains("resolvedLinkURLs"))
+        #expect(!headerSource.contains("Text(\"DETAILS\")"))
+        #expect(extrasVisibility.contains("|| !store.task.resolvedLinkURLs.isEmpty"))
+        #expect(extrasCard.contains("links: store.task.resolvedLinkURLs"))
+        #expect(!extrasCard.contains("links: []"))
+        #expect(!contentSource.contains("Text(\"Details\")"))
+
+        let description = try #require(contentSource.range(of: "contentGroup(title: \"DESCRIPTION\")"))
+        let links = try #require(contentSource.range(of: "contentGroup(title: \"LINKS\")"))
+        let image = try #require(contentSource.range(of: "contentGroup(title: \"IMAGE\")"))
+        let files = try #require(contentSource.range(of: "contentGroup(title: attachments.count == 1 ? \"FILE\" : \"FILES\")"))
+        let voiceNote = try #require(contentSource.range(of: "contentGroup(title: \"VOICE NOTE\")"))
+        let notes = try #require(contentSource.range(of: "contentGroup(title: \"NOTES\")"))
+
+        #expect(description.lowerBound < links.lowerBound)
+        #expect(links.lowerBound < image.lowerBound)
+        #expect(image.lowerBound < files.lowerBound)
+        #expect(files.lowerBound < voiceNote.lowerBound)
+        #expect(voiceNote.lowerBound < notes.lowerBound)
+    }
+
     private static func sourceSection(
         startingAt startMarker: String,
         endingAt endMarker: String,

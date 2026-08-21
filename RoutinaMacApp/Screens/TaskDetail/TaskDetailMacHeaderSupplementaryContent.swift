@@ -45,37 +45,9 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
     private var metadataRow: some View {
         let flags = RoutineFlag.deduplicated(task.flags)
         let hasLabels = !task.tags.isEmpty || !flags.isEmpty
-        let hasLinks = !task.resolvedLinkURLs.isEmpty
         let hasPoints = !task.isOneOffTask && task.storyPoints != nil
 
-        if hasLinks && hasPoints {
-            VStack(alignment: .leading, spacing: 8) {
-                ViewThatFits(in: .horizontal) {
-                    TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
-                        detailsBox(minHeight: minHeight)
-                    } trailing: { minHeight in
-                        pointsBox(minHeight: minHeight)
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        detailsBox()
-                        pointsBox()
-                    }
-                }
-
-                if hasLabels {
-                    labelsBox(flags: flags)
-                }
-            }
-        } else if hasLinks {
-            VStack(alignment: .leading, spacing: 8) {
-                detailsBox()
-
-                if hasLabels {
-                    labelsBox(flags: flags)
-                }
-            }
-        } else if hasLabels && hasPoints {
+        if hasLabels && hasPoints {
             ViewThatFits(in: .horizontal) {
                 TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
                     labelsBox(flags: flags, minHeight: minHeight)
@@ -193,39 +165,6 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .detailHeaderBoxStyle(tint: .purple, minHeight: minHeight)
-        }
-    }
-
-    @ViewBuilder
-    private func detailsBox(minHeight: CGFloat? = nil) -> some View {
-        let links = task.resolvedLinkURLs
-
-        if !links.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("DETAILS")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(links) { link in
-                        Link(destination: link.url) {
-                            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                Image(systemName: "link")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.blue)
-                                Text(link.text)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.blue)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.leading)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                        .taskDetailCopyableText(link.text)
-                    }
-                }
-            }
-            .detailHeaderBoxStyle(minHeight: minHeight)
         }
     }
 

@@ -14,48 +14,65 @@ struct TaskDetailExtrasSectionView: View {
     let onOpenAttachment: (AttachmentItem) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Details")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 14) {
+            if let taskDescription {
+                contentGroup(title: "DESCRIPTION") {
+                    formattedText(taskDescription)
+                }
+            }
+
+            if !links.isEmpty {
+                contentGroup(title: "LINKS") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(links) { link in
+                            Link(destination: link.url) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "link")
+                                        .foregroundStyle(.blue)
+                                    Text(link.text)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.blue)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .taskDetailCopyableText(link.url.absoluteString)
+                        }
+                    }
+                }
+            }
 
             if let imageData {
-                imageContent(for: imageData)
+                contentGroup(title: "IMAGE") {
+                    imageContent(for: imageData)
+                }
+            }
+
+            if !attachments.isEmpty {
+                contentGroup(title: attachments.count == 1 ? "FILE" : "FILES") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(attachments) { item in
+                            TaskDetailAttachmentRow(
+                                item: item,
+                                onSave: { onSaveAttachment(item) },
+                                onOpen: { onOpenAttachment(item) }
+                            )
+                        }
+                    }
+                }
             }
 
             if let voiceNote {
-                TaskVoiceNotePlaybackControl(voiceNote: voiceNote)
-            }
-
-            ForEach(attachments) { item in
-                TaskDetailAttachmentRow(
-                    item: item,
-                    onSave: { onSaveAttachment(item) },
-                    onOpen: { onOpenAttachment(item) }
-                )
-            }
-
-            if let taskDescription {
-                formattedTextBlock(title: "Description", text: taskDescription)
+                contentGroup(title: "VOICE NOTE") {
+                    TaskVoiceNotePlaybackControl(voiceNote: voiceNote)
+                }
             }
 
             if let notes {
-                formattedTextBlock(title: "Notes", text: notes)
-            }
-
-            ForEach(links) { link in
-                Link(destination: link.url) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "link")
-                            .foregroundStyle(.blue)
-                        Text(link.text)
-                            .font(.subheadline)
-                            .foregroundStyle(.blue)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                contentGroup(title: "NOTES") {
+                    formattedText(notes)
                 }
-                .taskDetailCopyableText(link.url.absoluteString)
             }
         }
         .padding(12)
@@ -67,17 +84,25 @@ struct TaskDetailExtrasSectionView: View {
         )
     }
 
-    private func formattedTextBlock(title: String, text: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+    private func contentGroup<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.caption.weight(.semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
-            RoutinaFormattedText(text)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-                .taskDetailCopyableText(text)
+            content()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func formattedText(_ text: String) -> some View {
+        RoutinaFormattedText(text)
+            .font(.subheadline)
+            .foregroundStyle(.primary)
+            .fixedSize(horizontal: false, vertical: true)
+            .taskDetailCopyableText(text)
     }
 
     @ViewBuilder

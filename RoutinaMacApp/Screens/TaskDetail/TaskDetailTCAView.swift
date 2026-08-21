@@ -886,6 +886,7 @@ struct TaskDetailTCAView: View {
             || store.task.hasImage
             || (isNotesEnabled && store.task.hasVoiceNote)
             || !store.taskAttachments.isEmpty
+            || !store.task.resolvedLinkURLs.isEmpty
     }
 
     private var shouldShowHeatmapSection: Bool {
@@ -1274,7 +1275,7 @@ struct TaskDetailTCAView: View {
             attachments: store.taskAttachments,
             taskDescription: store.task.taskDescription,
             notes: isNotesEnabled ? CalendarTaskImportSupport.displayNotes(from: store.task.notes) : nil,
-            links: [],
+            links: store.task.resolvedLinkURLs,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onOpenImage: openTaskImage(data:),

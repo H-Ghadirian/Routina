@@ -59,6 +59,21 @@ When the task has a resolved relationship
 Then Linked Tasks is visible in the normal detail content
 
 
+### Task Details Group Rich Content Semantically
+
+Area: Tasks / iOS and macOS Task Details
+Decision links: [0124](../decisions/0124-support-multiple-task-links.md), [0211](../decisions/0211-support-titled-task-links.md), [0469](../decisions/0469-store-task-descriptions-separately-from-notes.md), [0629](../decisions/0629-consolidate-task-detail-rich-content.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailMacHeaderControlLayoutTests.swift`
+
+Given a task has a titled link and an image
+When the person opens Task Details
+Then the shared content card identifies `LINKS` and `IMAGE` without a generic `Details` heading
+And Mac does not repeat the link in a link-only `DETAILS` header box
+And the full image remains in scrolling content instead of displacing the compact task overview
+
+
 ### Task Details Show A Saved One-Off Reminder
 
 Area: Tasks / iOS and macOS Task Details
