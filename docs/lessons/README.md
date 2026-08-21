@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0222 — Hide empty linked-task sections](0222-hide-empty-linked-task-sections.md)
 - [0221 — Keep Planner day-header counts readable](0221-keep-planner-day-header-counts-readable.md)
 - [0220 — Preserve Planner card positions when prioritizing visibility](0220-preserve-planner-card-positions-when-prioritizing-visibility.md)
 - [0219 — Prioritize Planner block titles in narrow cards](0219-prioritize-planner-block-titles-in-narrow-cards.md)

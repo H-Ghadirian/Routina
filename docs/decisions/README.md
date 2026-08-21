@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0624](0624-hide-empty-linked-tasks-by-default.md) refines [0100](0100-reveal-task-form-details-by-section.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), and [0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md):** iOS and macOS Task Details hide the empty Linked Tasks card; Add More Details remains the relationship entry point until a resolved link exists.
 - **[0623](0623-keep-planner-day-header-task-counts-unellipsized.md):** Mac Planner day-header task-count labels reserve their intrinsic width so a visible numeric count is not ellipsized when the compact button fits; the count remains capped at `99+` visually and full in accessibility text.
 
 - **[0622](0622-preserve-planner-card-positions-while-prioritizing-visibility.md) supersedes [0621](superseded/0621-prioritize-planner-block-title-in-constrained-widths.md):** Mac Planner Schedule cards preserve their original field positions while progressively hiding the leading emoji or status icon, then time or range, so the title remains visible in the narrowest layouts.
