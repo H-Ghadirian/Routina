@@ -84,18 +84,13 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
                                     .foregroundStyle(.primary)
                             }
 
-                            Picker("", selection: Binding(
-                                get: { relationship.kind },
-                                set: { addRelationship(relationship.taskID, $0) }
-                            )) {
-                                ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
-                                    Label(kind.title, systemImage: kind.systemImage).tag(kind)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .font(.caption)
-                            .labelsHidden()
-                            .padding(.leading, -8)
+                            TaskRelationshipKindMenuPicker(
+                                selection: Binding(
+                                    get: { relationship.kind },
+                                    set: { addRelationship(relationship.taskID, $0) }
+                                ),
+                                fillsAvailableWidth: false
+                            )
                         }
 
                         Spacer(minLength: 0)
@@ -134,13 +129,10 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
     private var relationshipActions: some View {
         if let createLinkedTask {
             HStack(spacing: 12) {
-                Picker("", selection: $selectedRelationshipKind) {
-                    ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
-                        Label(kind.title, systemImage: kind.systemImage).tag(kind)
-                    }
-                }
-                .labelsHidden()
-                .fixedSize()
+                TaskRelationshipKindMenuPicker(
+                    selection: $selectedRelationshipKind,
+                    fillsAvailableWidth: false
+                )
 
                 Button {
                     createLinkedTask(selectedRelationshipKind)
@@ -174,6 +166,8 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
     let candidates: [RoutineTaskRelationshipCandidate]
     let linkedTaskIDs: Set<UUID>
     let onSelect: (UUID, RoutineTaskRelationshipKind) -> Void
+    let sourceTaskTitle: String?
+    let createLinkedTask: ((RoutineTaskRelationshipKind) -> Void)?
 
     private let searchField: (Binding<String>) -> SearchField
     private let suggestionConfiguration: TaskRelationshipSuggestionPickerConfiguration?
@@ -181,6 +175,7 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var selectedKind: RoutineTaskRelationshipKind = .related
+    @State private var selectedCandidateID: UUID?
     @State private var isShowingSuggestions = false
 
     init(
@@ -188,12 +183,16 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
         linkedTaskIDs: Set<UUID>,
         initialKind: RoutineTaskRelationshipKind,
         onSelect: @escaping (UUID, RoutineTaskRelationshipKind) -> Void,
+        sourceTaskTitle: String? = nil,
+        createLinkedTask: ((RoutineTaskRelationshipKind) -> Void)? = nil,
         suggestionConfiguration: TaskRelationshipSuggestionPickerConfiguration? = nil,
         @ViewBuilder searchField: @escaping (Binding<String>) -> SearchField
     ) {
         self.candidates = candidates
         self.linkedTaskIDs = linkedTaskIDs
         self.onSelect = onSelect
+        self.sourceTaskTitle = sourceTaskTitle
+        self.createLinkedTask = createLinkedTask
         self.suggestionConfiguration = suggestionConfiguration
         self.searchField = searchField
         _selectedKind = State(initialValue: initialKind)
@@ -208,17 +207,26 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
         TaskRelationshipCandidateSearch.filteredCandidates(availableCandidates, matching: searchText)
     }
 
+    private var selectedCandidate: RoutineTaskRelationshipCandidate? {
+        filteredCandidates.first { $0.id == selectedCandidateID }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 12) {
-                    TaskRelationshipKindChipPicker(selection: $selectedKind)
+                    if let sourceTaskTitle = normalizedSourceTaskTitle {
+                        Text("Link another task to \u{201c}\(sourceTaskTitle)\u{201d}")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
 
                     if let suggestionConfiguration {
                         relationshipSourceControls(configuration: suggestionConfiguration)
                     }
 
                     if !isShowingSuggestions {
+                        relationshipTypeSelector
                         taskSearchField
                     }
                 }
@@ -247,6 +255,22 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                     }
                 }
             }
+        }
+    }
+
+    private var normalizedSourceTaskTitle: String? {
+        guard let sourceTaskTitle else { return nil }
+        let trimmedTitle = sourceTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedTitle.isEmpty ? nil : trimmedTitle
+    }
+
+    private var relationshipTypeSelector: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Relationship")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            TaskRelationshipKindMenuPicker(selection: $selectedKind)
         }
     }
 
@@ -279,7 +303,7 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
             Button {
                 isShowingSuggestions = false
             } label: {
-                Label("Link manually", systemImage: "magnifyingglass")
+                Label("Search", systemImage: "magnifyingglass")
                     .frame(maxWidth: .infinity)
                     .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
@@ -297,7 +321,7 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                     } else {
                         Image(systemName: "sparkles")
                     }
-                    Text("Suggest")
+                    Text("Suggestions")
                 }
                 .frame(maxWidth: .infinity)
                 .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -316,6 +340,18 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
     @ViewBuilder
     private var manualTaskSelection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if let createLinkedTask {
+                Button {
+                    createLinkedTask(selectedKind)
+                    dismiss()
+                } label: {
+                    Label(TaskRelationshipActionPresentation.createTaskTitle, systemImage: "plus.circle")
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.bordered)
+            }
+
             Text("Choose Task")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -337,8 +373,7 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                     VStack(spacing: 0) {
                         ForEach(filteredCandidates) { candidate in
                             Button {
-                                onSelect(candidate.id, selectedKind)
-                                dismiss()
+                                selectedCandidateID = candidate.id
                             } label: {
                                 HStack(spacing: 10) {
                                     Text(candidate.emoji)
@@ -347,16 +382,33 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(candidate.displayName)
                                             .foregroundStyle(.primary)
-                                        Text(selectedKind.title)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+
+                                        if candidate.status != .onTrack {
+                                            Label(candidate.status.title, systemImage: candidate.status.systemImage)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
 
                                     Spacer(minLength: 0)
+
+                                    if selectedCandidateID == candidate.id {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(.tint)
+                                    }
                                 }
+                                .padding(.horizontal, 10)
                                 .padding(.vertical, 10)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(
+                                            selectedCandidateID == candidate.id
+                                                ? Color.accentColor.opacity(0.12)
+                                                : Color.clear
+                                        )
+                                )
                             }
                             .buttonStyle(.plain)
 
@@ -367,7 +419,41 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                     }
                 }
             }
+
+            if let selectedCandidate {
+                relationshipConfirmation(for: selectedCandidate)
+            }
         }
+    }
+
+    private func relationshipConfirmation(
+        for candidate: RoutineTaskRelationshipCandidate
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(
+                TaskRelationshipActionPresentation.effectDescription(
+                    kind: selectedKind,
+                    sourceTaskTitle: normalizedSourceTaskTitle ?? "This task",
+                    targetTaskTitle: candidate.displayName
+                )
+            )
+            .font(.subheadline)
+            .fixedSize(horizontal: false, vertical: true)
+
+            Button("Add Relationship") {
+                onSelect(candidate.id, selectedKind)
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(12)
+        .routinaGlassCard(
+            cornerRadius: 12,
+            tint: selectedKind == .related ? .secondary : .accentColor,
+            tintOpacity: 0.09,
+            interactive: false
+        )
     }
 
     @ViewBuilder
@@ -426,17 +512,13 @@ struct TaskRelationshipSuggestionCard: View {
 
                 Spacer(minLength: 0)
 
-                Picker("", selection: Binding(
-                    get: { suggestion.kind },
-                    set: { onChangeKind(suggestion.targetTaskID, $0) }
-                )) {
-                    ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
-                        Label(kind.title, systemImage: kind.systemImage).tag(kind)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .fixedSize()
+                TaskRelationshipKindMenuPicker(
+                    selection: Binding(
+                        get: { suggestion.kind },
+                        set: { onChangeKind(suggestion.targetTaskID, $0) }
+                    ),
+                    fillsAvailableWidth: false
+                )
             }
 
             Text(suggestion.reason)
@@ -468,36 +550,62 @@ struct TaskRelationshipSuggestionCard: View {
     }
 }
 
-private struct TaskRelationshipKindChipPicker: View {
+struct TaskRelationshipKindMenuPicker: View {
     @Binding var selection: RoutineTaskRelationshipKind
+    var fillsAvailableWidth = true
 
     var body: some View {
-        HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-            ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
+        Menu {
+            relationshipSection("General", kinds: [.related])
+            relationshipSection("Dependency", kinds: [.blockedBy, .blocks])
+            relationshipSection("Automatic Completion", kinds: [.doneWhen, .completes])
+            relationshipSection("Optional Completion", kinds: [.canBeCompletedBy, .canComplete])
+        } label: {
+            HStack(spacing: 8) {
+                Label(selection.sentenceFragment, systemImage: selection.systemImage)
+                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .font(.subheadline.weight(.medium))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .frame(maxWidth: fillsAvailableWidth ? .infinity : nil, alignment: .leading)
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .routinaGlassCard(
+                cornerRadius: 10,
+                tint: .secondary,
+                tintOpacity: 0.10,
+                interactive: true
+            )
+        }
+        .buttonStyle(.plain)
+        .fixedSize(horizontal: !fillsAvailableWidth, vertical: false)
+        .accessibilityLabel("Relationship")
+        .accessibilityValue(selection.sentenceFragment)
+    }
+
+    @ViewBuilder
+    private func relationshipSection(
+        _ title: String,
+        kinds: [RoutineTaskRelationshipKind]
+    ) -> some View {
+        Section(title) {
+            ForEach(kinds, id: \.self) { kind in
                 Button {
                     selection = kind
                 } label: {
-                    Label(kind.title, systemImage: kind.systemImage)
-                        .font(.caption.weight(.semibold))
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .foregroundStyle(selection == kind ? Color.accentColor : Color.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .routinaGlassPill(
-                            tint: selection == kind ? Color.accentColor : Color.secondary,
-                            tintOpacity: selection == kind ? 0.18 : 0.10,
-                            interactive: true
-                        )
-                        .contentShape(Capsule(style: .continuous))
+                    Label(
+                        kind.sentenceFragment,
+                        systemImage: selection == kind ? "checkmark" : kind.systemImage
+                    )
                 }
-                .buttonStyle(.plain)
-                .accessibilityValue(selection == kind ? "Selected" : "")
-                .accessibilityAddTraits(selection == kind ? .isSelected : [])
             }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Relationship Type")
     }
 }
 

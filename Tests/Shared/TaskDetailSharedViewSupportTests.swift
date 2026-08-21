@@ -14,8 +14,70 @@ import Testing
 struct TaskDetailSharedViewSupportTests {
     @Test
     func linkedTaskActionsNameCreationAndExistingTaskLinkingDistinctly() {
-        #expect(TaskRelationshipActionPresentation.createTaskTitle == "Create New Task")
-        #expect(TaskRelationshipActionPresentation.linkTaskTitle == "Link a Task")
+        #expect(TaskRelationshipActionPresentation.createTaskTitle == "Create and Link New Task")
+        #expect(TaskRelationshipActionPresentation.linkTaskTitle == "Link Existing Task")
+    }
+
+    @Test
+    func relationshipKindsReadAsSentenceFragmentsFromTheCurrentTask() {
+        #expect(RoutineTaskRelationshipKind.related.sentenceFragment == "is related to")
+        #expect(RoutineTaskRelationshipKind.blockedBy.sentenceFragment == "is blocked by")
+        #expect(RoutineTaskRelationshipKind.blocks.sentenceFragment == "blocks")
+        #expect(RoutineTaskRelationshipKind.doneWhen.sentenceFragment == "is done when")
+        #expect(RoutineTaskRelationshipKind.completes.sentenceFragment == "completes")
+        #expect(RoutineTaskRelationshipKind.canBeCompletedBy.sentenceFragment == "can be completed by")
+        #expect(RoutineTaskRelationshipKind.canComplete.sentenceFragment == "can complete")
+    }
+
+    @Test
+    func behaviorBearingRelationshipsExplainTheirDirectionBeforeSaving() {
+        #expect(
+            TaskRelationshipActionPresentation.effectDescription(
+                kind: .blockedBy,
+                sourceTaskTitle: "Walk in the Zoo",
+                targetTaskTitle: "Buy tickets"
+            ) == "\u{201c}Walk in the Zoo\u{201d} stays blocked until \u{201c}Buy tickets\u{201d} is completed."
+        )
+        #expect(
+            TaskRelationshipActionPresentation.effectDescription(
+                kind: .completes,
+                sourceTaskTitle: "Go to the gym",
+                targetTaskTitle: "Exercise"
+            ) == "Completing \u{201c}Go to the gym\u{201d} automatically completes \u{201c}Exercise\u{201d}."
+        )
+        #expect(
+            TaskRelationshipActionPresentation.effectDescription(
+                kind: .related,
+                sourceTaskTitle: "Walk in the Zoo",
+                targetTaskTitle: "Reward myself"
+            ) == "\u{201c}Walk in the Zoo\u{201d} and \u{201c}Reward myself\u{201d} are related. Neither task affects the other."
+        )
+    }
+
+    @Test
+    func linkTaskComposerGroupsKindsAndConfirmsManualSelection() throws {
+        let source = try Self.sourceFile("SharedCore/Views/TaskRelationshipsEditor.swift")
+
+        #expect(source.contains("relationshipSection(\"General\", kinds: [.related])"))
+        #expect(source.contains("relationshipSection(\"Dependency\", kinds: [.blockedBy, .blocks])"))
+        #expect(source.contains("relationshipSection(\"Automatic Completion\", kinds: [.doneWhen, .completes])"))
+        #expect(source.contains("relationshipSection(\"Optional Completion\", kinds: [.canBeCompletedBy, .canComplete])"))
+        #expect(source.contains("if !isShowingSuggestions {\n                        relationshipTypeSelector"))
+        #expect(source.contains("selectedCandidateID = candidate.id"))
+        #expect(source.contains("Button(\"Add Relationship\")"))
+    }
+
+    @Test
+    func linkedTasksCardUsesCountAndOneMacAddEntryPoint() throws {
+        let source = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailRelationshipsSectionView.swift"
+        )
+
+        #expect(source.contains("Text(relationshipCount.formatted())"))
+        #expect(source.contains("if let onLinkExistingTask"))
+        #expect(source.contains("Label(\"Add\", systemImage: \"plus\")"))
+        #expect(!source.contains("@Binding var selectedRelationshipKind"))
+        #expect(!source.contains("TaskRelationshipActionPresentation.linkTaskTitle"))
     }
 
     @Test

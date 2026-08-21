@@ -13,6 +13,10 @@ Accepted
 - [0486 Suggest Confirmed Task Relationships On Device](0486-suggest-confirmed-task-relationships-on-device.md)
 - [0506 Make Apple Intelligence Relationship Suggestions macOS-Only](0506-make-apple-intelligence-relationship-suggestions-macos-only.md)
 
+## Refined By
+
+- [0630 Compose Task Relationships With Grouped Sentence Fragments](0630-compose-task-relationships-with-grouped-sentence-fragments.md)
+
 ## Context
 
 The Mac Linked Tasks card exposed an AI `Suggest` button and explanatory copy

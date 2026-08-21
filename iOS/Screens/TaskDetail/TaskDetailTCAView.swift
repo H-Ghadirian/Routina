@@ -1220,7 +1220,6 @@ detailBody
     private var relationshipsSection: some View {
         TaskDetailRelationshipsSectionView(
             groups: store.groupedResolvedRelationships,
-            selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
             showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
             background: routineLogsBackground,

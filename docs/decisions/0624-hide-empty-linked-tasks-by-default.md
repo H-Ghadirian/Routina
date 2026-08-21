@@ -17,6 +17,7 @@ Accepted
 ## Refined By
 
 - [0625 Group Task Detail Add Detail With Edit](0625-group-task-detail-add-detail-with-edit.md)
+- [0630 Compose Task Relationships With Grouped Sentence Fragments](0630-compose-task-relationships-with-grouped-sentence-fragments.md)
 
 ## Context
 

@@ -63,16 +63,6 @@ struct TaskDetailPresentationRouting {
         )
     }
 
-    var linkedTaskRelationshipKind: Binding<RoutineTaskRelationshipKind> {
-        Binding(
-            get: { MainActor.assumeIsolated { store.addLinkedTaskRelationshipKind } },
-            set: { kind in
-                MainActor.assumeIsolated {
-                    _ = store.send(.addLinkedTaskRelationshipKindChanged(kind))
-                }
-            }
-        )
-    }
 }
 
 extension Store where State == TaskDetailFeature.State, Action == TaskDetailFeature.Action {

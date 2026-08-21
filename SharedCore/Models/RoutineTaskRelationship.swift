@@ -28,6 +28,25 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
         }
     }
 
+    var sentenceFragment: String {
+        switch self {
+        case .related:
+            return "is related to"
+        case .blocks:
+            return "blocks"
+        case .blockedBy:
+            return "is blocked by"
+        case .doneWhen:
+            return "is done when"
+        case .completes:
+            return "completes"
+        case .canBeCompletedBy:
+            return "can be completed by"
+        case .canComplete:
+            return "can complete"
+        }
+    }
+
     var systemImage: String {
         switch self {
         case .related:

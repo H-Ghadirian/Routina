@@ -1,8 +1,34 @@
 import SwiftUI
 
 enum TaskRelationshipActionPresentation {
-    static let createTaskTitle = "Create New Task"
-    static let linkTaskTitle = "Link a Task"
+    static let createTaskTitle = "Create and Link New Task"
+    static let linkTaskTitle = "Link Existing Task"
+
+    static func effectDescription(
+        kind: RoutineTaskRelationshipKind,
+        sourceTaskTitle: String,
+        targetTaskTitle: String
+    ) -> String {
+        let source = "\u{201c}\(sourceTaskTitle)\u{201d}"
+        let target = "\u{201c}\(targetTaskTitle)\u{201d}"
+
+        switch kind {
+        case .related:
+            return "\(source) and \(target) are related. Neither task affects the other."
+        case .blockedBy:
+            return "\(source) stays blocked until \(target) is completed."
+        case .blocks:
+            return "\(target) stays blocked until \(source) is completed."
+        case .doneWhen:
+            return "Completing \(target) automatically completes \(source)."
+        case .completes:
+            return "Completing \(source) automatically completes \(target)."
+        case .canBeCompletedBy:
+            return "When \(target) is completed in Task Details, Routina can ask whether to also complete \(source)."
+        case .canComplete:
+            return "When \(source) is completed in Task Details, Routina can ask whether to also complete \(target)."
+        }
+    }
 }
 
 struct TaskDetailGoalsHeaderBoxView: View {
@@ -74,7 +100,6 @@ private struct TaskDetailGoalChip: View {
 
 struct TaskDetailRelationshipsSectionView: View {
     let groups: [(kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])]
-    @Binding var selectedRelationshipKind: RoutineTaskRelationshipKind
     let showsVisualizeButton: Bool
     let isVisualizeDisabled: Bool
     let background: Color
@@ -89,12 +114,17 @@ struct TaskDetailRelationshipsSectionView: View {
             VStack(alignment: .leading, spacing: 12) {
                 header
 
-                ForEach(groups, id: \.kind) { group in
+                ForEach(Array(groups.enumerated()), id: \.element.kind) { index, group in
                     relationshipGroup(group)
-                    Divider()
+
+                    if index < groups.count - 1 || onLinkExistingTask == nil {
+                        Divider()
+                    }
                 }
 
-                addRelationshipControls
+                if onLinkExistingTask == nil {
+                    addRelationshipControls
+                }
             }
         }
     }
@@ -103,6 +133,13 @@ struct TaskDetailRelationshipsSectionView: View {
         HStack {
             Text("Linked Tasks")
                 .font(.headline)
+
+            Text(relationshipCount.formatted())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
 
             Spacer(minLength: 0)
 
@@ -117,14 +154,31 @@ struct TaskDetailRelationshipsSectionView: View {
                 .controlSize(.small)
                 .disabled(isVisualizeDisabled)
             }
+
+            if let onLinkExistingTask {
+                Button {
+                    onLinkExistingTask()
+                } label: {
+                    Label("Add", systemImage: "plus")
+                        .font(.caption.weight(.semibold))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel("Add linked task")
+            }
         }
+    }
+
+    private var relationshipCount: Int {
+        groups.reduce(0) { $0 + $1.items.count }
     }
 
     private func relationshipGroup(
         _ group: (kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(group.kind.title, systemImage: group.kind.systemImage)
+            Label(group.kind.sentenceFragment, systemImage: group.kind.systemImage)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -194,44 +248,14 @@ struct TaskDetailRelationshipsSectionView: View {
     }
 
     private var addRelationshipControls: some View {
-        HStack(spacing: 8) {
-            Picker("", selection: $selectedRelationshipKind) {
-                ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
-                    Label(kind.title, systemImage: kind.systemImage).tag(kind)
-                }
-            }
-            .labelsHidden()
-            .fixedSize()
-
-            if let onLinkExistingTask {
-                Button {
-                    onOpenAddLinkedTask()
-                } label: {
-                    Label(TaskRelationshipActionPresentation.createTaskTitle, systemImage: "plus.circle")
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.borderless)
-
-                Button {
-                    onLinkExistingTask()
-                } label: {
-                    Label(TaskRelationshipActionPresentation.linkTaskTitle, systemImage: "link")
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.borderless)
-            } else {
-                Button {
-                    onOpenAddLinkedTask()
-                } label: {
-                    Label("Add Linked Task", systemImage: "plus")
-                        .font(.subheadline)
-                }
-                .buttonStyle(.borderless)
-            }
+        Button {
+            onOpenAddLinkedTask()
+        } label: {
+            Label("Add Linked Task", systemImage: "plus")
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.borderless)
     }
 }

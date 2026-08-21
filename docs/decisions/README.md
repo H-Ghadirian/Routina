@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), [0409](0409-add-manual-can-complete-task-links.md), [0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md), and [0624](0624-hide-empty-linked-tasks-by-default.md):** Routina keeps all seven task-relationship meanings but composes them through one grouped sentence-fragment menu; Mac manual linking stages a candidate, previews its directional effect, and requires `Add Relationship`, while the existing Linked Tasks card uses a count and one header `Add` action.
 - **[0629](0629-consolidate-task-detail-rich-content.md) refines [0124](0124-support-multiple-task-links.md), [0211](0211-support-titled-task-links.md), [0469](0469-store-task-descriptions-separately-from-notes.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0627](0627-group-mac-task-detail-tags-and-flags.md), and [0628](0628-adapt-mac-task-detail-labels-to-available-width.md):** Task Details group Description, Links, Image, Files, Voice Note, and Notes in one semantically labeled content card; Mac removes its duplicate link-only `DETAILS` header box while keeping full images out of the compact overview.
 - **[0628](0628-adapt-mac-task-detail-labels-to-available-width.md) refines [0627](0627-group-mac-task-detail-tags-and-flags.md), [0499](0499-explain-applied-flags-in-task-details.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** the shared Mac Task Detail label card uses one unwrapped Tags-and-Flags row when the complete content fits, then falls back to two labeled rows with wrapping chip collections when it does not.
 - **[0627](0627-group-mac-task-detail-tags-and-flags.md) refines [0497](0497-use-flags-for-task-behavior-rules.md), [0499](0499-explain-applied-flags-in-task-details.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** Mac Task Details place assigned Tags and Flags in one neutral metadata card while retaining separate labels, a divider, and the orange Flag-chip semantics.
@@ -242,7 +243,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 - **[0513](0513-defer-ios-screen-time-blocking-until-distribution-approval.md) refines [0085](0085-shield-apps-and-websites-during-focus.md):** iOS development retains Screen Time app and website blocking, while production omits its UI, implementation, and Family Controls entitlement until Apple grants distribution approval.
 
-- **[0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md):** Mac Task Detail keeps manual linking in its `Link Task` sheet, where an explicit Suggest mode replaces manual search with loading and confirmed relationship proposals.
+- **[0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md), with its sheet controls refined by [0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md), refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md):** Mac Task Detail keeps manual linking in its `Link Task` sheet, where an explicit Suggestions mode replaces manual search with loading and confirmed relationship proposals.
 
 - **[0511](0511-pause-custom-mac-super-sections.md) refines [0419](0419-nest-custom-subsections-under-super-sections.md), [0446](0446-edit-custom-section-paths-in-mac-task-forms.md), and [0450](0450-use-progressive-custom-section-management.md):** A custom Mac super section can pause its currently assigned or tag-routed active tasks as one tracked snapshot, keeping the section visibly resumable without reviving independently paused tasks.
 
@@ -780,6 +781,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md) | Compose Task Relationships With Grouped Sentence Fragments | Accepted | 2026-08-21 |
 | [0629](0629-consolidate-task-detail-rich-content.md) | Consolidate Task Detail Rich Content | Accepted | 2026-08-21 |
 | [0628](0628-adapt-mac-task-detail-labels-to-available-width.md) | Adapt Mac Task Detail Labels to Available Width | Accepted | 2026-08-21 |
 | [0627](0627-group-mac-task-detail-tags-and-flags.md) | Group Mac Task Detail Tags and Flags | Accepted | 2026-08-21 |

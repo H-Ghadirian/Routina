@@ -839,6 +839,12 @@ struct TaskDetailTCAView: View {
             onSelect: { taskID, kind in
                 store.send(.detailLinkExistingTask(taskID, kind))
             },
+            sourceTaskTitle: store.task.name,
+            createLinkedTask: { kind in
+                store.send(.addLinkedTaskRelationshipKindChanged(kind))
+                isExistingTaskLinkerPresented = false
+                store.send(.openAddLinkedTask)
+            },
             suggestionConfiguration: relationshipSuggestionConfiguration
         ) { searchText in
             TextField("Search tasks", text: searchText)
@@ -1507,7 +1513,6 @@ struct TaskDetailTCAView: View {
     private var relationshipsSection: some View {
         TaskDetailRelationshipsSectionView(
             groups: store.groupedResolvedRelationships,
-            selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
             showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
             background: routineLogsBackground,

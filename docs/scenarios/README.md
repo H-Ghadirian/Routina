@@ -937,9 +937,10 @@ Given Routina adds custom or third-party cryptography, encrypted communications,
 When the next production release is prepared
 Then the export classification must be reassessed before relying on the existing declaration
 
-### Mac Linked-Task Actions Stay Distinct
+### Mac Linked-Task Composer Keeps Direction and Actions Clear
 
 Area: Tasks
+Decision links: [0630](../decisions/0630-compose-task-relationships-with-grouped-sentence-fragments.md), [0512](../decisions/0512-present-mac-relationship-suggestions-in-link-task-sheet.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
@@ -948,19 +949,30 @@ Coverage:
 - `Tests/Shared/HomeFeatureSelectionRouterTests.swift`
 - `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
 
-Given a task is open in Mac Task Details or Edit Task
-When the linked-task controls are shown
-Then both surfaces show a compact relationship picker before `Create New Task` and `Link a Task`
-And `Create New Task` opens task creation with the chosen inverse relationship preselected
-And `Link a Task` opens the existing-task relationship picker initialized to the chosen relationship
-And the two different behaviors are not presented under the same ambiguous label
+Given a task with existing relationships is open in Mac Task Details
+When the Linked Tasks card is shown
+Then its header shows the resolved relationship count and one `Add` action
+And existing relationships are grouped under sentence fragments from the current task's perspective
+And the card does not retain a permanent relationship picker or duplicate create/link actions
 
 Given a task with existing relationships is open in Mac Task Details
-When the user clicks the visible section's `Link a Task` button once
-Then the existing-task picker opens directly
-And no second Linked Tasks editor or second `Link a Task` button is inserted below the section
+When the user clicks the visible section's `Add` button once
+Then the Link Task composer opens directly
+And no second Linked Tasks editor or duplicate action row is inserted below the section
 And the picker lists every other task in Home's loaded catalog except tasks already linked to the open task
-And choosing a task persists that relationship without requiring a second Save action
+And `Create and Link New Task` remains distinct from choosing an existing task
+
+Given the Link Task composer is in Search mode
+When the person chooses a relationship and an existing task
+Then all seven relationship meanings remain available in grouped General, Dependency, Automatic Completion, and Optional Completion menu sections
+And the candidate row does not repeat the globally selected relationship
+And choosing the candidate does not mutate either task
+And Routina explains the directional consequence using both task names
+And `Add Relationship` persists the relationship without requiring a separate full Edit save
+
+Given the Link Task composer is in Suggestions mode
+Then the manual global relationship menu and task search are hidden
+And each suggested card owns its editable grouped relationship menu and confirmation action
 
 ### Home and Task Detail State Reflect Unresolved Prerequisites
 
@@ -1030,7 +1042,7 @@ Then A remains Blocked
 ### Mac Task Relationship Suggestions Require Confirmation
 
 Area: Tasks / AI
-Decision links: [0512](../decisions/0512-present-mac-relationship-suggestions-in-link-task-sheet.md), [0506](../decisions/0506-make-apple-intelligence-relationship-suggestions-macos-only.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0488](../decisions/0488-prioritize-grounded-task-relationship-analysis.md)
+Decision links: [0630](../decisions/0630-compose-task-relationships-with-grouped-sentence-fragments.md), [0512](../decisions/0512-present-mac-relationship-suggestions-in-link-task-sheet.md), [0506](../decisions/0506-make-apple-intelligence-relationship-suggestions-macos-only.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0488](../decisions/0488-prioritize-grounded-task-relationship-analysis.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/IOSAppleIntelligenceAvailabilityTests.swift`
@@ -1038,8 +1050,9 @@ Coverage:
 - `Tests/Shared/TaskRelationshipReviewFeatureTests.swift`
 
 Given a task is open in Mac Task Details
-When the person opens `Link a Task` and chooses `Suggest`
+When the person opens `Add` and chooses `Suggestions`
 Then the Link Task sheet hides its manual task-search field
+And it hides the manual global relationship menu
 And it shows a loading indicator until the relationship request finishes
 And the Task Details card does not show a separate Suggest action or explanatory placeholder
 Then Routina sends a bounded set of active, unlinked task summaries to the
@@ -2244,8 +2257,8 @@ Given Mac task details show a task that is currently inside a visible sidebar se
 When the detail header is rendered
 Then the section breadcrumb appears directly below the task title and above status, completion, and other metadata
 
-Given Task Details shows an existing task and a selected relationship type
-When the user chooses `Add Linked Task` to create a new task
+Given the Mac Link Task composer shows an existing task and a selected relationship type
+When the user chooses `Create and Link New Task`
 Then the Add Task form immediately shows the existing task as a linked task using the inverse relationship type
 
 Given Mac Task Details is open from an unfiltered task list
