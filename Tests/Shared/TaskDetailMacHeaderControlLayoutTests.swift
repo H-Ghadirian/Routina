@@ -40,6 +40,60 @@ struct TaskDetailMacHeaderControlLayoutTests {
         #expect(routineControls.contains("taskDetailPrioritySection"))
     }
 
+    @Test
+    func tagsAndFlagsShareOneAdaptiveNeutralMacMetadataCard() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailMacHeaderSupplementaryContent.swift"
+        )
+        let body = try Self.sourceSection(
+            startingAt: "var body: some View",
+            endingAt: "@ViewBuilder\n    private var metadataRow",
+            in: source
+        )
+        let metadataRow = try Self.sourceSection(
+            startingAt: "private var metadataRow: some View",
+            endingAt: "private func labelsBox",
+            in: source
+        )
+        let labelsBox = try Self.sourceSection(
+            startingAt: "private func labelsBox",
+            endingAt: "private func singleLineLabelsRow",
+            in: source
+        )
+        let singleLineRow = try Self.sourceSection(
+            startingAt: "private func singleLineLabelsRow",
+            endingAt: "private func wrappedLabelsRows",
+            in: source
+        )
+        let wrappedRows = try Self.sourceSection(
+            startingAt: "private func wrappedLabelsRows",
+            endingAt: "private func labelsHeading",
+            in: source
+        )
+
+        #expect(body.contains("metadataRow"))
+        #expect(!body.contains("flagsBox"))
+        #expect(metadataRow.contains("let hasLabels = !task.tags.isEmpty || !flags.isEmpty"))
+        #expect(metadataRow.contains("labelsBox(flags: flags)"))
+        #expect(labelsBox.contains("ViewThatFits(in: .horizontal)"))
+        #expect(labelsBox.contains("singleLineLabelsRow(flags: flags)"))
+        #expect(labelsBox.contains("wrappedLabelsRows(flags: flags)"))
+        #expect(labelsBox.contains(".detailHeaderBoxStyle(minHeight: minHeight)"))
+        #expect(!labelsBox.contains("detailHeaderBoxStyle(tint: .orange"))
+        #expect(singleLineRow.contains("HStack(alignment: .center, spacing: 10)"))
+        #expect(singleLineRow.contains("labelsHeading(\"TAGS\")"))
+        #expect(singleLineRow.contains("labelsHeading(\"FLAGS\")"))
+        #expect(singleLineRow.contains(".fixedSize(horizontal: true, vertical: true)"))
+        #expect(!singleLineRow.contains("HomeFilterFlowLayout"))
+        #expect(wrappedRows.contains("VStack(alignment: .leading, spacing: 10)"))
+        #expect(wrappedRows.contains("labelsHeading(\"TAGS\")"))
+        #expect(wrappedRows.contains("labelsHeading(\"FLAGS\")"))
+        #expect(wrappedRows.contains("HomeFilterFlowLayout"))
+        #expect(wrappedRows.contains(".frame(maxWidth: .infinity, alignment: .leading)"))
+        #expect(wrappedRows.contains("Divider()"))
+        #expect(wrappedRows.contains("TaskDetailFlagChip(flag: flag)"))
+    }
+
     private static func sourceSection(
         startingAt startMarker: String,
         endingAt endMarker: String,

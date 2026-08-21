@@ -37,83 +37,146 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             calendarDisclosure
             metadataRow
-            flagsBox
             goalsBox
         }
     }
 
     @ViewBuilder
     private var metadataRow: some View {
-        let hasTags = !task.tags.isEmpty
+        let flags = RoutineFlag.deduplicated(task.flags)
+        let hasLabels = !task.tags.isEmpty || !flags.isEmpty
         let hasLinks = !task.resolvedLinkURLs.isEmpty
         let hasPoints = !task.isOneOffTask && task.storyPoints != nil
 
         if hasLinks && hasPoints {
-            ViewThatFits(in: .horizontal) {
-                TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
-                    detailsBox(includesTags: hasTags, minHeight: minHeight)
-                } trailing: { minHeight in
-                    pointsBox(minHeight: minHeight)
+            VStack(alignment: .leading, spacing: 8) {
+                ViewThatFits(in: .horizontal) {
+                    TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
+                        detailsBox(minHeight: minHeight)
+                    } trailing: { minHeight in
+                        pointsBox(minHeight: minHeight)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        detailsBox()
+                        pointsBox()
+                    }
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    detailsBox(includesTags: hasTags)
-                    pointsBox()
+                if hasLabels {
+                    labelsBox(flags: flags)
                 }
             }
         } else if hasLinks {
-            detailsBox(includesTags: hasTags)
-        } else if hasTags && hasPoints {
+            VStack(alignment: .leading, spacing: 8) {
+                detailsBox()
+
+                if hasLabels {
+                    labelsBox(flags: flags)
+                }
+            }
+        } else if hasLabels && hasPoints {
             ViewThatFits(in: .horizontal) {
                 TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
-                    tagsBox(minHeight: minHeight)
+                    labelsBox(flags: flags, minHeight: minHeight)
                 } trailing: { minHeight in
                     pointsBox(minHeight: minHeight)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    tagsBox()
+                    labelsBox(flags: flags)
                     pointsBox()
                 }
             }
-        } else if hasTags {
-            tagsBox()
+        } else if hasLabels {
+            labelsBox(flags: flags)
         } else if hasPoints {
             pointsBox()
         }
     }
 
-    private func tagsBox(minHeight: CGFloat? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("TAGS")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
-                ForEach(task.tags, id: \.self) { tag in
-                    statusTagChip(tag)
-                }
-            }
+    private func labelsBox(flags: [String], minHeight: CGFloat? = nil) -> some View {
+        ViewThatFits(in: .horizontal) {
+            singleLineLabelsRow(flags: flags)
+            wrappedLabelsRows(flags: flags)
         }
         .detailHeaderBoxStyle(minHeight: minHeight)
     }
 
-    @ViewBuilder
-    private var flagsBox: some View {
-        let flags = RoutineFlag.deduplicated(task.flags)
-        if !flags.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("FLAGS")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
+    private func singleLineLabelsRow(flags: [String]) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            if !task.tags.isEmpty {
+                labelsHeading("TAGS")
 
-                HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                HStack(spacing: 6) {
+                    ForEach(task.tags, id: \.self) { tag in
+                        statusTagChip(tag)
+                    }
+                }
+            }
+
+            if !task.tags.isEmpty && !flags.isEmpty {
+                Divider()
+                    .frame(height: 28)
+            }
+
+            if !flags.isEmpty {
+                labelsHeading("FLAGS")
+
+                HStack(spacing: 6) {
                     ForEach(flags, id: \.self) { flag in
                         TaskDetailFlagChip(flag: flag)
                     }
                 }
             }
-            .detailHeaderBoxStyle(tint: .orange)
         }
+        .fixedSize(horizontal: true, vertical: true)
+    }
+
+    private func wrappedLabelsRows(flags: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if !task.tags.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    labelsHeading("TAGS")
+                        .frame(minHeight: 28, alignment: .center)
+
+                    HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                        ForEach(task.tags, id: \.self) { tag in
+                            statusTagChip(tag)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if !task.tags.isEmpty && !flags.isEmpty {
+                Divider()
+                    .padding(.vertical, 2)
+            }
+
+            if !flags.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    labelsHeading("FLAGS")
+                        .frame(minHeight: 28, alignment: .center)
+
+                    HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                        ForEach(flags, id: \.self) { flag in
+                            TaskDetailFlagChip(flag: flag)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func labelsHeading(_ title: String) -> some View {
+        Text(title)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .fixedSize()
     }
 
     @ViewBuilder
@@ -134,47 +197,31 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
     }
 
     @ViewBuilder
-    private func detailsBox(includesTags: Bool, minHeight: CGFloat? = nil) -> some View {
+    private func detailsBox(minHeight: CGFloat? = nil) -> some View {
         let links = task.resolvedLinkURLs
-        let tags = includesTags ? task.tags : []
 
-        if !links.isEmpty || !tags.isEmpty {
+        if !links.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("DETAILS")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                if !tags.isEmpty {
-                    HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
-                        ForEach(tags, id: \.self) { tag in
-                            statusTagChip(tag)
-                        }
-                    }
-                }
-
-                if !tags.isEmpty && !links.isEmpty {
-                    Divider()
-                        .padding(.vertical, 2)
-                }
-
-                if !links.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(links) { link in
-                            Link(destination: link.url) {
-                                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                    Image(systemName: "link")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.blue)
-                                    Text(link.text)
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.blue)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.leading)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(links) { link in
+                        Link(destination: link.url) {
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Image(systemName: "link")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.blue)
+                                Text(link.text)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.blue)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
-                            .taskDetailCopyableText(link.text)
                         }
+                        .taskDetailCopyableText(link.text)
                     }
                 }
             }

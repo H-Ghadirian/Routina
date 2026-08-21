@@ -578,6 +578,26 @@ When the tag chips are rendered
 Then each chip uses its intrinsic width instead of a narrow adaptive grid cell
 And tags wrap onto a later row only when their combined widths exceed the card width
 
+### Mac Task Detail Adaptively Groups Tags and Flags Without Mixing Their Meaning
+
+Area: Tasks / macOS UI
+Decision links: [0628](../decisions/0628-adapt-mac-task-detail-labels-to-available-width.md), [0627](../decisions/0627-group-mac-task-detail-tags-and-flags.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md), [0499](../decisions/0499-explain-applied-flags-in-task-details.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailMacHeaderControlLayoutTests.swift`
+
+Given a Mac Task Detail has at least one assigned Tag or Flag
+When its supplementary metadata is shown
+Then Tags and Flags appear inside one neutral card
+And each present group keeps its own heading and chip treatment
+When the complete unwrapped content fits the card
+Then the groups share one horizontal row with a vertical divider
+When that complete row does not fit
+Then the card uses separate labeled rows with a horizontal divider
+And each unusually large chip collection may wrap within its own row
+And a divider appears only when both groups are present
+And Flag chips retain their orange flag semantics without tinting the whole shared card
+
 ### iOS Tag Browser Preserves Task Editing
 
 Area: Tasks / UI
