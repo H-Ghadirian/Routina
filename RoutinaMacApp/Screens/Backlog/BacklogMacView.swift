@@ -32,19 +32,6 @@ struct BacklogMacView: View {
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             store.send(.routineDataChanged)
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    store.send(.refresh)
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .frame(width: 22, height: 22)
-                        .contentShape(Rectangle())
-                }
-                .help("Refresh Backlog")
-                .disabled(store.isLoading)
-            }
-        }
     }
 
     private var sidebar: some View {
@@ -59,6 +46,17 @@ struct BacklogMacView: View {
                     Text(backlogCountLabel)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+
+                    Button {
+                        store.send(.refresh)
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .frame(width: 24, height: 24)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Refresh Backlog")
+                    .disabled(store.isLoading)
                 }
 
                 Text("Tasks kept off your everyday radar")

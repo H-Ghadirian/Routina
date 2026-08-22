@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0632](0632-integrate-mac-workspaces-in-the-main-window.md) revises the presentation portions of [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0332](0332-remove-settings-from-mac-home-toolbar-strip.md):** macOS uses a labeled main-window workspace menu; Backlog and Task Ladder render as full-size peer workspaces in that window, Settings remains a standard settings window, New stays separate, and right-side panes remain contextual rather than becoming another global drawer.
 - **[0631](0631-remove-apple-intelligence-task-relationship-suggestions.md) revises [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md), and supersedes the relationship-suggestion-only decisions:** Routina removes Apple Intelligence task-relationship suggestions and the Mac review window while preserving the grouped manual relationship composer and every confirmed relationship behavior.
 - **[0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), [0409](0409-add-manual-can-complete-task-links.md), [0512](superseded/0512-present-mac-relationship-suggestions-in-link-task-sheet.md), and [0624](0624-hide-empty-linked-tasks-by-default.md), with its Suggestions mode removed by [0631](0631-remove-apple-intelligence-task-relationship-suggestions.md):** Routina keeps all seven task-relationship meanings but composes them through one grouped sentence-fragment menu; Mac manual linking stages a candidate, previews its directional effect, and requires `Add Relationship`, while the existing Linked Tasks card uses a count and one header `Add` action.
 - **[0629](0629-consolidate-task-detail-rich-content.md) refines [0124](0124-support-multiple-task-links.md), [0211](0211-support-titled-task-links.md), [0469](0469-store-task-descriptions-separately-from-notes.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0627](0627-group-mac-task-detail-tags-and-flags.md), and [0628](0628-adapt-mac-task-detail-labels-to-available-width.md):** Task Details group Description, Links, Image, Files, Voice Note, and Notes in one semantically labeled content card; Mac removes its duplicate link-only `DETAILS` header box while keeping full images out of the compact overview.
@@ -148,7 +149,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 - **[0562](0562-exclude-blocked-tasks-from-mac-task-ladder.md) refines [0561](0561-add-separate-mac-task-ranking-ladder.md):** Mac Task Ladder contains actionable tasks only, excluding blocked tickets alongside other unavailable work.
 
-- **[0561](0561-add-separate-mac-task-ranking-ladder.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Task Ladder is a separate active-task ranking workspace with independently persisted categorical tie-break ladders and a read-only estimated-time sort.
+- **[0561](0561-add-separate-mac-task-ranking-ladder.md), with its separate-window presentation revised by [0632](0632-integrate-mac-workspaces-in-the-main-window.md), refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Task Ladder is an active-task ranking workspace with independently persisted categorical tie-break ladders and a read-only estimated-time sort.
 
 - **[0560](0560-cache-sidebar-filter-summary-counts.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Home filter summaries reuse the visible count stored with the cached task-list presentation instead of scanning the whole task catalog from the sidebar render path.
 
@@ -178,7 +179,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 - **[0547](0547-verify-final-ios-release-build-state.md) refines [0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md):** iOS device verification belongs only to the exact final worktree state and requires a complete, signed app product before installation.
 
-- **[0546](0546-separate-mac-backlog-from-the-radar-sidebar.md) refines [0394](0394-add-custom-mac-sidebar-task-sections.md), [0419](0419-nest-custom-subsections-under-super-sections.md), and [0498](0498-filter-task-lists-by-flags.md):** Mac Backlog is a separate window that keeps explicitly assigned sections and automatically surfaced Flag-hidden tasks off the everyday Home sidebar radar.
+- **[0546](0546-separate-mac-backlog-from-the-radar-sidebar.md), with its separate-window presentation revised by [0632](0632-integrate-mac-workspaces-in-the-main-window.md), refines [0394](0394-add-custom-mac-sidebar-task-sections.md), [0419](0419-nest-custom-subsections-under-super-sections.md), and [0498](0498-filter-task-lists-by-flags.md):** Mac Backlog keeps explicitly assigned sections and automatically surfaced Flag-hidden tasks off the everyday Home sidebar radar.
 
 - **[0545](0545-bound-ios-foreground-focus-reconciliation.md) refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0542](0542-use-validated-release-device-traces-for-ios-performance-investigations.md), and [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md):** foreground Focus reconciliation queries only active CloudKit Focus rows, while full-zone deletion cleanup is batched per pull.
 
@@ -768,6 +769,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0632](0632-integrate-mac-workspaces-in-the-main-window.md) | Integrate Mac Workspaces in the Main Window | Accepted | 2026-08-22 |
 | [0631](0631-remove-apple-intelligence-task-relationship-suggestions.md) | Remove Apple Intelligence Task Relationship Suggestions | Accepted | 2026-08-21 |
 | [0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md) | Compose Task Relationships With Grouped Sentence Fragments | Accepted | 2026-08-21 |
 | [0629](0629-consolidate-task-detail-rich-content.md) | Consolidate Task Detail Rich Content | Accepted | 2026-08-21 |

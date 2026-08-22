@@ -1,62 +1,8 @@
 import SwiftUI
 
-struct HomeMacSidebarModeStripView: View {
-    enum PresentationStyle {
-        case sidebar
-        case toolbar
-
-        var height: CGFloat {
-            switch self {
-            case .sidebar: return 42
-            case .toolbar: return 28
-            }
-        }
-
-        var padding: CGFloat {
-            switch self {
-            case .sidebar: return 4
-            case .toolbar: return 2
-            }
-        }
-
-        var cornerRadius: CGFloat {
-            switch self {
-            case .sidebar: return 13
-            case .toolbar: return 9
-            }
-        }
-
-        var selectedCornerRadius: CGFloat {
-            switch self {
-            case .sidebar: return 10
-            case .toolbar: return 7
-            }
-        }
-
-        var iconSize: CGFloat {
-            switch self {
-            case .sidebar: return 15
-            case .toolbar: return 12
-            }
-        }
-
-        var segmentWidth: CGFloat? {
-            switch self {
-            case .sidebar: return nil
-            case .toolbar: return 26
-            }
-        }
-
-        var separatorVerticalPadding: CGFloat {
-            switch self {
-            case .sidebar: return 8
-            case .toolbar: return 5
-            }
-        }
-    }
-
+struct HomeMacWorkspaceToolbarControls: View {
     @Binding var selectedMode: HomeFeature.MacSidebarMode
-    let presentationStyle: PresentationStyle
+    let onOpenSettings: () -> Void
     let onAddEvent: () -> Void
     let onAddEmotion: () -> Void
     let onAddNote: () -> Void
@@ -64,6 +10,7 @@ struct HomeMacSidebarModeStripView: View {
     let onAddTask: () -> Void
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
+
     @AppStorage(
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
@@ -89,92 +36,75 @@ struct HomeMacSidebarModeStripView: View {
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
 
-    init(
-        selectedMode: Binding<HomeFeature.MacSidebarMode>,
-        presentationStyle: PresentationStyle = .sidebar,
-        onAddEvent: @escaping () -> Void,
-        onAddEmotion: @escaping () -> Void,
-        onAddNote: @escaping () -> Void,
-        onAddGoal: @escaping () -> Void,
-        onAddTask: @escaping () -> Void,
-        onCheckIn: @escaping () -> Void,
-        onStartAway: @escaping () -> Void
-    ) {
-        self._selectedMode = selectedMode
-        self.presentationStyle = presentationStyle
-        self.onAddEvent = onAddEvent
-        self.onAddEmotion = onAddEmotion
-        self.onAddNote = onAddNote
-        self.onAddGoal = onAddGoal
-        self.onAddTask = onAddTask
-        self.onCheckIn = onCheckIn
-        self.onStartAway = onStartAway
+    var body: some View {
+        HStack(spacing: 8) {
+            workspaceMenu
+            addControl
+        }
+        .fixedSize(horizontal: true, vertical: false)
     }
 
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(displayedSidebarStripModes) { mode in
-                if mode == .addTask {
-                    addControl
-                } else {
-                    Button {
-                        selectedMode = mode
-                    } label: {
-                        sidebarModeLabel(for: mode)
+    private var workspaceMenu: some View {
+        Menu {
+            ForEach(availableWorkspaceModes) { mode in
+                Button {
+                    selectedMode = mode
+                } label: {
+                    Label {
+                        Text(mode.workspaceTitle)
+                    } icon: {
+                        Image(systemName: mode == selectedMode ? "checkmark" : mode.workspaceSystemImage)
                     }
-                    .buttonStyle(.plain)
-                    .modeStripItemFrame(presentationStyle)
-                    .accessibilityLabel(mode.sidebarStripTitle)
-                    .help(mode.sidebarStripTitle)
-                }
-
-                if shouldShowAddSeparator(after: mode) {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: 1)
-                        .padding(.vertical, presentationStyle.separatorVerticalPadding)
                 }
             }
+
+            Divider()
+
+            Button(action: onOpenSettings) {
+                Label("Settings…", systemImage: "gearshape")
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: selectedMode.workspaceSystemImage)
+                    .font(.system(size: 12, weight: .semibold))
+
+                Text(selectedMode.workspaceTitle)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 10)
+            .frame(height: 32)
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .routinaGlassPanel(
+                cornerRadius: 10,
+                tint: .secondary,
+                tintOpacity: 0.10,
+                interactive: true
+            )
         }
-        .frame(height: presentationStyle.height)
-        .padding(presentationStyle.padding)
-        .routinaGlassPanel(
-            cornerRadius: presentationStyle.cornerRadius,
-            tint: .secondary,
-            tintOpacity: 0.10
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: presentationStyle.cornerRadius, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-        )
-        .fixedSize(horizontal: presentationStyle == .toolbar, vertical: false)
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .accessibilityLabel("Workspace: \(selectedMode.workspaceTitle)")
+        .help("Switch workspace")
     }
 
-    private var displayedSidebarStripModes: [HomeFeature.MacSidebarMode] {
-        var modes = HomeFeature.MacSidebarMode.sidebarStripModes
-        if presentationStyle == .toolbar {
-            modes.removeAll { $0 == .settings }
+    private var availableWorkspaceModes: [HomeFeature.MacSidebarMode] {
+        HomeFeature.MacSidebarMode.workspaceModes.filter { mode in
+            switch mode {
+            case .goals:
+                return isGoalsTabEnabled
+            case .adventure:
+                return isAdventureMapEnabled
+            default:
+                return true
+            }
         }
-
-        if isGoalsTabEnabled && isAdventureMapEnabled {
-            return modes
-        }
-        if isGoalsTabEnabled {
-            return modes.filter { $0 != .adventure }
-        }
-        if isAdventureMapEnabled {
-            return modes.filter { $0 != .goals }
-        }
-        return modes.filter { $0 != .goals && $0 != .adventure }
-    }
-
-    private var addSeparatorAnchorMode: HomeFeature.MacSidebarMode? {
-        displayedSidebarStripModes.last { $0 != .addTask }
-    }
-
-    private func shouldShowAddSeparator(after mode: HomeFeature.MacSidebarMode) -> Bool {
-        displayedSidebarStripModes.contains(.addTask)
-            && mode == addSeparatorAnchorMode
     }
 
     @ViewBuilder
@@ -183,11 +113,10 @@ struct HomeMacSidebarModeStripView: View {
             Button {
                 performAddMenuAction(shortcut)
             } label: {
-                sidebarModeLabel(for: .addTask)
+                addControlLabel
             }
             .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
             .buttonStyle(.plain)
-            .modeStripItemFrame(presentationStyle)
             .accessibilityLabel(shortcut.commandTitle)
             .help(shortcut.commandTitle)
         } else {
@@ -201,16 +130,35 @@ struct HomeMacSidebarModeStripView: View {
                 if shortcut == .checkIn {
                     Divider()
                 }
-                addMenuButton(for: shortcut)
+
+                Button {
+                    performAddMenuAction(shortcut)
+                } label: {
+                    Label(shortcut.title, systemImage: shortcut.systemImage)
+                }
+                .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
             }
         } label: {
-            sidebarModeLabel(for: .addTask)
+            addControlLabel
         }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .modeStripItemFrame(presentationStyle)
-        .accessibilityLabel("Add")
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .accessibilityLabel("New")
         .help(helpLabelForAddMenu)
+    }
+
+    private var addControlLabel: some View {
+        Image(systemName: "plus")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(Color.accentColor)
+            .frame(width: 32, height: 32)
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .routinaGlassPanel(
+                cornerRadius: 10,
+                tint: .secondary,
+                tintOpacity: 0.10,
+                interactive: true
+            )
     }
 
     private var visibleAddMenuShortcuts: [MacAddMenuShortcut] {
@@ -226,15 +174,6 @@ struct HomeMacSidebarModeStripView: View {
     private var onlyVisibleAddMenuShortcut: MacAddMenuShortcut? {
         let shortcuts = visibleAddMenuShortcuts
         return shortcuts.count == 1 ? shortcuts[0] : nil
-    }
-
-    private func addMenuButton(for shortcut: MacAddMenuShortcut) -> some View {
-        Button {
-            performAddMenuAction(shortcut)
-        } label: {
-            addMenuLabel(for: shortcut)
-        }
-        .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
     }
 
     private func performAddMenuAction(_ shortcut: MacAddMenuShortcut) {
@@ -256,10 +195,6 @@ struct HomeMacSidebarModeStripView: View {
         }
     }
 
-    private func addMenuLabel(for shortcut: MacAddMenuShortcut) -> some View {
-        Label(shortcut.title, systemImage: shortcut.systemImage)
-    }
-
     private var helpLabelForAddMenu: String {
         let personalActions: [String] = [
             areMacEventEmotionActionsEnabled ? "event" : nil,
@@ -274,70 +209,32 @@ struct HomeMacSidebarModeStripView: View {
         }
         return "Add \(personalPrefix)task\(placeAction)\(awayAction)"
     }
+}
 
-    private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {
-        let isSelected = selectedMode == mode
-        let isAddTab = mode == .addTask
-
-        return ZStack {
-            RoundedRectangle(cornerRadius: presentationStyle.selectedCornerRadius, style: .continuous)
-                .fill(Color.clear)
-                .routinaIf(isSelected) { view in
-                    view.routinaGlassCard(
-                        cornerRadius: presentationStyle.selectedCornerRadius,
-                        tint: .accentColor,
-                        tintOpacity: 0.42,
-                        interactive: true
-                    )
-                }
-
-            Image(systemName: sidebarModeIcon(for: mode))
-                .font(.system(size: presentationStyle.iconSize, weight: .semibold))
-                .foregroundStyle(
-                    isSelected ? Color.white : (isAddTab ? Color.accentColor : Color.secondary)
-                )
+extension HomeFeature.MacSidebarMode {
+    var workspaceTitle: String {
+        switch self {
+        case .routines:
+            return "Planner"
+        case .addTask:
+            return "New Task"
+        default:
+            return rawValue
         }
-        .modeStripLabelFrame(presentationStyle)
-        .contentShape(Rectangle())
     }
 
-    private func sidebarModeIcon(for mode: HomeFeature.MacSidebarMode) -> String {
-        switch mode {
-        case .routines: return "checklist"
+    var workspaceSystemImage: String {
+        switch self {
+        case .routines: return "calendar"
         case .board: return "square.grid.3x3.topleft.filled"
         case .goals: return "target"
         case .adventure: return "map.fill"
         case .timeline: return "clock.arrow.circlepath"
         case .stats: return "chart.bar.xaxis"
+        case .backlog: return "tray.full"
+        case .taskLadder: return "list.number"
         case .settings: return "gearshape"
         case .addTask: return "plus"
-        }
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func modeStripItemFrame(
-        _ presentationStyle: HomeMacSidebarModeStripView.PresentationStyle
-    ) -> some View {
-        switch presentationStyle {
-        case .sidebar:
-            frame(maxWidth: .infinity)
-        case .toolbar:
-            frame(width: presentationStyle.segmentWidth)
-        }
-    }
-
-    @ViewBuilder
-    func modeStripLabelFrame(
-        _ presentationStyle: HomeMacSidebarModeStripView.PresentationStyle
-    ) -> some View {
-        switch presentationStyle {
-        case .sidebar:
-            frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .toolbar:
-            frame(width: presentationStyle.segmentWidth)
-                .frame(maxHeight: .infinity)
         }
     }
 }

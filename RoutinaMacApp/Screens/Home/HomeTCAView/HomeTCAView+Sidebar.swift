@@ -14,6 +14,8 @@ extension HomeTCAView {
 
     var isMacTimelineMode: Bool { visibleMacSidebarMode == .timeline }
     var isMacStatsMode: Bool { visibleMacSidebarMode == .stats || visibleMacSidebarMode == .adventure }
+    var isMacBacklogMode: Bool { visibleMacSidebarMode == .backlog }
+    var isMacTaskLadderMode: Bool { visibleMacSidebarMode == .taskLadder }
     var isMacSettingsMode: Bool { visibleMacSidebarMode == .settings }
     var isMacRoutinesMode: Bool { visibleMacSidebarMode == .routines }
     var isMacBoardMode: Bool { visibleMacSidebarMode == .board }
@@ -44,6 +46,10 @@ extension HomeTCAView {
             return "Timeline"
         case .stats:
             return "Stats"
+        case .backlog:
+            return "Backlog"
+        case .taskLadder:
+            return "Task Ladder"
         case .settings:
             return "Settings"
         case .addTask:
@@ -91,6 +97,10 @@ extension HomeTCAView {
             return "Filter Timeline"
         case .stats:
             return "Stats"
+        case .backlog:
+            return "Backlog"
+        case .taskLadder:
+            return "Task Ladder"
         case .settings:
             return "Settings"
         case .addTask:
@@ -116,7 +126,7 @@ extension HomeTCAView {
             return macHasTimelineFiltersApplied
         case .routines, .board:
             return macHasTaskListFiltersApplied
-        case .goals, .adventure, .stats, .settings, .addTask:
+        case .goals, .adventure, .stats, .backlog, .taskLadder, .settings, .addTask:
             return false
         }
     }
@@ -188,7 +198,7 @@ extension HomeTCAView {
             macActiveTimelineFiltersSummary
         case .routines, .board:
             macActiveTaskFiltersSummary
-        case .goals, .adventure, .stats, .settings, .addTask:
+        case .goals, .adventure, .stats, .backlog, .taskLadder, .settings, .addTask:
             nil
         }
     }
@@ -260,6 +270,8 @@ extension HomeTCAView {
                 case .adventure: openAdventureInSidebar()
                 case .timeline:  openTimelineInSidebar()
                 case .stats:     openStatsInSidebar()
+                case .backlog:   openBacklogInMainWindow()
+                case .taskLadder: openTaskLadderInMainWindow()
                 case .settings:  openSettingsInSidebar()
                 case .addTask:   openAddTask()
                 }
@@ -457,6 +469,26 @@ extension HomeTCAView {
         isAwayStartPresented = false
         macHomeProgressMode = .stats
         store.send(.macSidebarModeChanged(.stats))
+    }
+
+    func openBacklogInMainWindow() {
+        prepareForWorkspaceChange()
+        store.send(.macSidebarModeChanged(.backlog))
+    }
+
+    func openTaskLadderInMainWindow() {
+        prepareForWorkspaceChange()
+        store.send(.macSidebarModeChanged(.taskLadder))
+    }
+
+    private func prepareForWorkspaceChange() {
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        isAwayStartPresented = false
+        selectedNoteID = nil
+        taskDetailPanePlacement = nil
+        store.send(.setMacFilterDetailPresented(false))
     }
 
     func openSettingsInSidebar() {

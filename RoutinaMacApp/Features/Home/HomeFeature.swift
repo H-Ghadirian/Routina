@@ -37,27 +37,20 @@ struct HomeFeature {
         case adventure = "Adventure"
         case timeline = "Timeline"
         case stats    = "Stats"
+        case backlog = "Backlog"
+        case taskLadder = "Task Ladder"
         case settings = "Settings"
         case addTask  = "Add Task"
 
         var id: Self { self }
 
-        var sidebarStripTitle: String {
-            switch self {
-            case .routines:
-                return "Tasks"
-            default:
-                return rawValue
-            }
-        }
-
-        static let sidebarStripModes: [Self] = [
+        static let workspaceModes: [Self] = [
             .routines,
+            .backlog,
+            .taskLadder,
             .goals,
             .adventure,
-            .stats,
-            .settings,
-            .addTask
+            .stats
         ]
     }
 
@@ -2026,7 +2019,7 @@ struct HomeFeature {
             return .routines
         case .adventure:
             return .adventure
-        case .routines, .goals, .timeline, .stats, .settings:
+        case .routines, .goals, .timeline, .stats, .backlog, .taskLadder, .settings:
             return mode
         }
     }

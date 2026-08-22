@@ -8,6 +8,10 @@ Accepted
 
 2026-07-04
 
+## Revised By
+
+- [0632: Integrate Mac Workspaces in the Main Window](0632-integrate-mac-workspaces-in-the-main-window.md) restores a visible Settings entry inside the labeled workspace menu while continuing to open Settings as a standard macOS settings window rather than an embedded workspace.
+
 ## Refines
 
 - [0311: Move Mac Home Mode Strip to Toolbar](0311-move-mac-home-mode-strip-to-toolbar.md)

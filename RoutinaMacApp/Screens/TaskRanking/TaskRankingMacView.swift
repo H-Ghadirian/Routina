@@ -24,12 +24,18 @@ struct TaskRankingMacView: View {
     @State private var temporalWeightTaskID: UUID?
 
     var body: some View {
-        HSplitView {
-            rankingList
-                .frame(minWidth: 340, idealWidth: 440, maxWidth: 560)
+        VStack(spacing: 0) {
+            workspaceControls
 
-            taskDetail
-                .frame(minWidth: 620, maxWidth: .infinity, maxHeight: .infinity)
+            Divider()
+
+            HSplitView {
+                rankingList
+                    .frame(minWidth: 340, idealWidth: 440, maxWidth: 560)
+
+                taskDetail
+                    .frame(minWidth: 620, maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
@@ -53,81 +59,6 @@ struct TaskRankingMacView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             store.send(.routineDataChanged)
-        }
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 10) {
-                    Picker("Rank by", selection: Binding(
-                        get: { store.metric },
-                        set: { store.send(.metricChanged($0)) }
-                    )) {
-                        ForEach(TaskRankingMetric.allCases) { metric in
-                            Text(metric.title).tag(metric)
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(width: 170)
-
-                    if store.metric.supportsTemporalWeight {
-                        Picker("Values", selection: Binding(
-                            get: { store.valueMode },
-                            set: { store.send(.valueModeChanged($0)) }
-                        )) {
-                            ForEach(TaskRankingValueMode.allCases) { mode in
-                                Text(mode.title).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .frame(width: 120)
-                        .help("Base shows saved values; Now applies each repeating task’s due-date rule")
-                    }
-                }
-            }
-
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button("New Container Group…") {
-                        editingGroupID = nil
-                        isGroupEditorPresented = true
-                    }
-
-                    Button("Use Repeating Task as Group…") {
-                        repeatingTaskGroupParentID = nil
-                        isRepeatingTaskGroupEditorPresented = true
-                    }
-                    .disabled(!store.tasks.contains {
-                        !$0.isOneOffTask
-                            && store.presentation.eligibleTaskIDs.contains($0.id)
-                    })
-                } label: {
-                    Label("Add Task Ladder Group", systemImage: "folder.badge.plus")
-                        .frame(minWidth: 22, minHeight: 22)
-                        .contentShape(Rectangle())
-                }
-                .help("Create a container group or use a repeating task as a group")
-            }
-
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    store.send(.directionToggled)
-                } label: {
-                    Label(store.metric.directionTitle(isReversed: store.isReversed), systemImage: "arrow.up.arrow.down")
-                }
-                .help("Reverse order: \(store.metric.directionTitle(isReversed: !store.isReversed))")
-            }
-
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    store.send(.refresh)
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .frame(width: 22, height: 22)
-                        .contentShape(Rectangle())
-                }
-                .help("Refresh task ranking")
-                .disabled(store.isLoading)
-            }
         }
         .alert(
             "Task Ranking",
@@ -198,6 +129,88 @@ struct TaskRankingMacView: View {
                 )
             }
         }
+    }
+
+    private var workspaceControls: some View {
+        HStack(spacing: 10) {
+            Text(store.scopeParentName ?? "Task Ladder")
+                .font(.headline)
+                .lineLimit(1)
+
+            Spacer(minLength: 12)
+
+            Picker("Rank by", selection: Binding(
+                get: { store.metric },
+                set: { store.send(.metricChanged($0)) }
+            )) {
+                ForEach(TaskRankingMetric.allCases) { metric in
+                    Text(metric.title).tag(metric)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 170)
+
+            if store.metric.supportsTemporalWeight {
+                Picker("Values", selection: Binding(
+                    get: { store.valueMode },
+                    set: { store.send(.valueModeChanged($0)) }
+                )) {
+                    ForEach(TaskRankingValueMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 120)
+                .help("Base shows saved values; Now applies each repeating task’s due-date rule")
+            }
+
+            Menu {
+                Button("New Container Group…") {
+                    editingGroupID = nil
+                    isGroupEditorPresented = true
+                }
+
+                Button("Use Repeating Task as Group…") {
+                    repeatingTaskGroupParentID = nil
+                    isRepeatingTaskGroupEditorPresented = true
+                }
+                .disabled(!store.tasks.contains {
+                    !$0.isOneOffTask
+                        && store.presentation.eligibleTaskIDs.contains($0.id)
+                })
+            } label: {
+                Label("Add Task Ladder Group", systemImage: "folder.badge.plus")
+                    .frame(minWidth: 24, minHeight: 24)
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .help("Create a container group or use a repeating task as a group")
+
+            Button {
+                store.send(.directionToggled)
+            } label: {
+                Label(
+                    store.metric.directionTitle(isReversed: store.isReversed),
+                    systemImage: "arrow.up.arrow.down"
+                )
+            }
+            .help("Reverse order: \(store.metric.directionTitle(isReversed: !store.isReversed))")
+
+            Button {
+                store.send(.refresh)
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .help("Refresh task ranking")
+            .disabled(store.isLoading)
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 52)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.35))
     }
 
     private var rankingList: some View {

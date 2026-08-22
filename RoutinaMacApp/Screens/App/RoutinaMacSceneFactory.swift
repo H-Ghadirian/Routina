@@ -18,7 +18,9 @@ enum RoutinaMacSceneFactory {
                         store: store.scope(state: \.home, action: \.home),
                         settingsStore: store.scope(state: \.settings, action: \.settings),
                         goalsStore: store.scope(state: \.goals, action: \.goals),
-                        statsStore: store.scope(state: \.stats, action: \.stats)
+                        statsStore: store.scope(state: \.stats, action: \.stats),
+                        backlogStore: store.scope(state: \.backlog, action: \.backlog),
+                        taskRankingStore: store.scope(state: \.taskRanking, action: \.taskRanking)
                     )
                     .frame(
                         minWidth: RoutinaMacWindowSizing.minWidth,
@@ -71,48 +73,6 @@ enum RoutinaMacSceneFactory {
                     }
                     .awayModeGate()
                     .sleepModeGate()
-                }
-            }
-        )
-    }
-
-    @MainActor
-    static func makeBacklogRoot(persistence: PersistenceController) -> AnyView {
-        let store = Store(initialState: BacklogFeature.State()) {
-            BacklogFeature()
-        } withDependencies: {
-            $0.modelContext = { @MainActor in persistence.container.mainContext }
-        }
-
-        return AnyView(
-            RoutinaMacAppThemeRoot {
-                AppLockGate {
-                    BacklogMacView(store: store)
-                        .frame(minWidth: 980, minHeight: 620)
-                        .modelContainer(persistence.container)
-                        .awayModeGate()
-                        .sleepModeGate()
-                }
-            }
-        )
-    }
-
-    @MainActor
-    static func makeTaskRankingRoot(persistence: PersistenceController) -> AnyView {
-        let store = Store(initialState: TaskRankingFeature.State()) {
-            TaskRankingFeature()
-        } withDependencies: {
-            $0.modelContext = { @MainActor in persistence.container.mainContext }
-        }
-
-        return AnyView(
-            RoutinaMacAppThemeRoot {
-                AppLockGate {
-                    TaskRankingMacView(store: store)
-                        .frame(minWidth: 980, minHeight: 620)
-                        .modelContainer(persistence.container)
-                        .awayModeGate()
-                        .sleepModeGate()
                 }
             }
         )

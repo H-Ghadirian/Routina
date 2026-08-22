@@ -139,11 +139,14 @@ struct HomeTCAView: View {
     let settingsStore: StoreOf<SettingsFeature>
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>?
+    let backlogStore: StoreOf<BacklogFeature>
+    let taskRankingStore: StoreOf<TaskRankingFeature>
     let openActiveFocusTarget: (RoutinaDeepLink?) -> Void
     @State var addEditFormCoordinator = AddEditFormCoordinator()
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
     @Environment(\.modelContext) var modelContext
+    @Environment(\.openWindow) var openWindow
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
@@ -395,6 +398,8 @@ struct HomeTCAView: View {
         settingsStore: StoreOf<SettingsFeature>,
         goalsStore: StoreOf<GoalsFeature>,
         statsStore: StoreOf<StatsFeature>? = nil,
+        backlogStore: StoreOf<BacklogFeature>,
+        taskRankingStore: StoreOf<TaskRankingFeature>,
         openActiveFocusTarget: @escaping (RoutinaDeepLink?) -> Void = { deepLink in
             guard let deepLink else {
                 RoutinaMacWindowRouter.shared.openHomeAndActivate()
@@ -408,6 +413,8 @@ struct HomeTCAView: View {
         self.settingsStore = settingsStore
         self.goalsStore = goalsStore
         self.statsStore = statsStore
+        self.backlogStore = backlogStore
+        self.taskRankingStore = taskRankingStore
         self.openActiveFocusTarget = openActiveFocusTarget
         self.externalSearchText = searchText
     }

@@ -41,6 +41,10 @@ struct HomeMacSidebarPresentation {
             return "Timeline"
         case .stats:
             return "Stats"
+        case .backlog:
+            return "Backlog"
+        case .taskLadder:
+            return "Task Ladder"
         case .settings:
             return "Settings"
         case .addTask:
@@ -56,9 +60,10 @@ struct HomeMacSidebarPresentation {
                 || selectedTimelineImportanceUrgencyFilter != nil
                 || !selectedTimelineExcludedTags.isEmpty
         }
-        if mode == .goals { return false }
-        if mode == .adventure { return false }
-        if mode == .stats { return false }
+        if mode == .goals || mode == .adventure || mode == .stats
+            || mode == .backlog || mode == .taskLadder {
+            return false
+        }
         return taskListMode != .all || selectedFilter != .all || hasActiveOptionalFilters
     }
 
@@ -76,6 +81,10 @@ struct HomeMacSidebarPresentation {
             return "Filter Timeline"
         case .stats:
             return "Stats"
+        case .backlog:
+            return "Backlog"
+        case .taskLadder:
+            return "Task Ladder"
         case .settings:
             return "Settings"
         case .addTask:

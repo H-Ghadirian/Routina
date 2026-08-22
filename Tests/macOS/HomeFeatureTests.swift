@@ -129,17 +129,19 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func macSidebarModeStripModes_excludesTimelineAndBoardModes() {
-        #expect(HomeFeature.MacSidebarMode.sidebarStripModes == [
+    func macWorkspaceModes_includePrimaryWorkspacesWithoutActions() {
+        #expect(HomeFeature.MacSidebarMode.workspaceModes == [
             .routines,
+            .backlog,
+            .taskLadder,
             .goals,
+            .adventure,
             .stats,
-            .settings,
-            .addTask
         ])
-        #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.timeline))
-        #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.board))
-        #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.adventure))
+        #expect(!HomeFeature.MacSidebarMode.workspaceModes.contains(.timeline))
+        #expect(!HomeFeature.MacSidebarMode.workspaceModes.contains(.board))
+        #expect(!HomeFeature.MacSidebarMode.workspaceModes.contains(.settings))
+        #expect(!HomeFeature.MacSidebarMode.workspaceModes.contains(.addTask))
     }
 
     @Test

@@ -36,6 +36,7 @@ private struct HomeMacCommandWindowNumberView: NSViewRepresentable {
 
 struct HomeMacSidebarCommandRouter<Content: View>: View {
     @State private var commandWindowNumber: Int?
+    @State private var handledWorkspaceNavigationRequestIDs: Set<UUID> = []
 
     let content: Content
     let mode: HomeFeature.MacSidebarMode
@@ -49,6 +50,8 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
     let onOpenAway: () -> Void
     let onOpenTimeline: () -> Void
     let onOpenStats: () -> Void
+    let onOpenBacklog: () -> Void
+    let onOpenTaskLadder: () -> Void
     let onScrollSelectedTaskInSidebar: () -> Void
     let onModeChanged: (HomeFeature.MacSidebarMode) -> Void
 
@@ -65,6 +68,8 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         onOpenAway: @escaping () -> Void,
         onOpenTimeline: @escaping () -> Void,
         onOpenStats: @escaping () -> Void,
+        onOpenBacklog: @escaping () -> Void,
+        onOpenTaskLadder: @escaping () -> Void,
         onScrollSelectedTaskInSidebar: @escaping () -> Void,
         onModeChanged: @escaping (HomeFeature.MacSidebarMode) -> Void
     ) {
@@ -80,6 +85,8 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         self.onOpenAway = onOpenAway
         self.onOpenTimeline = onOpenTimeline
         self.onOpenStats = onOpenStats
+        self.onOpenBacklog = onOpenBacklog
+        self.onOpenTaskLadder = onOpenTaskLadder
         self.onScrollSelectedTaskInSidebar = onScrollSelectedTaskInSidebar
         self.onModeChanged = onModeChanged
     }
@@ -123,6 +130,14 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenStatsInSidebar)) { _ in
                 onOpenStats()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenBacklogInMainWindow)) { notification in
+                guard shouldHandleWorkspaceNavigationRequest(notification) else { return }
+                onOpenBacklog()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenTaskLadderInMainWindow)) { notification in
+                guard shouldHandleWorkspaceNavigationRequest(notification) else { return }
+                onOpenTaskLadder()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacScrollSelectedTaskInSidebar)) { notification in
                 guard shouldHandleCommandNotification(notification) else { return }
                 onScrollSelectedTaskInSidebar()
@@ -148,5 +163,14 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
             return true
         }
         return keyWindowNumber == commandWindowNumber
+    }
+
+    private func shouldHandleWorkspaceNavigationRequest(_ notification: Notification) -> Bool {
+        guard let requestID = notification.object as? UUID else { return true }
+        guard !handledWorkspaceNavigationRequestIDs.contains(requestID) else { return false }
+        var handledRequestIDs = handledWorkspaceNavigationRequestIDs
+        handledRequestIDs.insert(requestID)
+        handledWorkspaceNavigationRequestIDs = handledRequestIDs
+        return true
     }
 }

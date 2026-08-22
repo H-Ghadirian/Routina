@@ -17,6 +17,8 @@ struct AppFeature {
         var timeline = TimelineFeature.State()
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
+        var backlog = BacklogFeature.State()
+        var taskRanking = TaskRankingFeature.State()
     }
 
     @CasePathable
@@ -27,6 +29,8 @@ struct AppFeature {
         case timeline(TimelineFeature.Action)
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
+        case backlog(BacklogFeature.Action)
+        case taskRanking(TaskRankingFeature.Action)
         case onAppear
         case cloudSettingsChanged
         case openDeepLink(RoutinaDeepLink)
@@ -49,6 +53,12 @@ struct AppFeature {
         }
         Scope(state: \.settings, action: \.settings) {
             SettingsFeature()
+        }
+        Scope(state: \.backlog, action: \.backlog) {
+            BacklogFeature()
+        }
+        Scope(state: \.taskRanking, action: \.taskRanking) {
+            TaskRankingFeature()
         }
         Reduce { state, action in
             if let interaction = performanceInteraction(for: action) {

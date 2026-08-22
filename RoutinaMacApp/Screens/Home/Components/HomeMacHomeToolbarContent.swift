@@ -16,6 +16,7 @@ struct HomeMacTopToolbarChrome: View {
     let showsProgressModePicker: Bool
     let showsPlaces: Bool
     let showsSearch: Bool
+    let showsSidebarToggle: Bool
     @Binding var progressMode: MacHomeProgressMode
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     @Binding var searchText: String
@@ -39,6 +40,7 @@ struct HomeMacTopToolbarChrome: View {
     let onAddTask: () -> Void
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
+    let onOpenSettings: () -> Void
     let isBoardInspectorPresented: Bool
     let onToggleBoardInspector: () -> Void
     let onToggleSidebar: () -> Void
@@ -48,11 +50,13 @@ struct HomeMacTopToolbarChrome: View {
         .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
-            HomeMacSidebarVisibilityToolbarButton(
-                isCollapsed: isSidebarCollapsed,
-                onToggle: onToggleSidebar
-            )
-            .padding(.leading, HomeMacToolbarSearchLayout.sidebarToggleLeadingPadding)
+            if showsSidebarToggle {
+                HomeMacSidebarVisibilityToolbarButton(
+                    isCollapsed: isSidebarCollapsed,
+                    onToggle: onToggleSidebar
+                )
+                .padding(.leading, HomeMacToolbarSearchLayout.sidebarToggleLeadingPadding)
+            }
         }
         .background(HomeMacToolbarSearchLayout.toolbarBackground)
         .overlay(alignment: .bottom) {
@@ -121,9 +125,9 @@ struct HomeMacTopToolbarChrome: View {
 
     private var toolbarCommandCluster: some View {
         HStack(spacing: 10) {
-            HomeMacSidebarModeStripView(
+            HomeMacWorkspaceToolbarControls(
                 selectedMode: $selectedSidebarMode,
-                presentationStyle: .toolbar,
+                onOpenSettings: onOpenSettings,
                 onAddEvent: onAddEvent,
                 onAddEmotion: onAddEmotion,
                 onAddNote: onAddNote,

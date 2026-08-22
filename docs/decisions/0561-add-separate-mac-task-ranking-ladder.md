@@ -8,6 +8,10 @@ Accepted
 
 2026-08-13
 
+## Revised By
+
+- [0632: Integrate Mac Workspaces in the Main Window](0632-integrate-mac-workspaces-in-the-main-window.md) replaces the separate Task Ladder window with a full-size workspace inside the main Mac window while preserving the ranking behavior defined here.
+
 ## Context
 
 Backlog intentionally organizes tasks kept away from the daily Home radar. It

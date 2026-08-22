@@ -104,6 +104,7 @@ extension HomeTCAView {
             showsProgressModePicker: showsProgressModePickerInToolbar,
             showsPlaces: isPlacesEnabled,
             showsSearch: showsHomeToolbarSearch,
+            showsSidebarToggle: !isMacBacklogMode && !isMacTaskLadderMode,
             progressMode: macHomeProgressModeBinding,
             selectedSidebarMode: macSidebarModeBinding,
             searchText: searchTextBinding,
@@ -131,6 +132,9 @@ extension HomeTCAView {
             onAddTask: openAddTask,
             onCheckIn: openCheckInFromAddMenu,
             onStartAway: openAwayFromAddMenu,
+            onOpenSettings: {
+                openWindow(id: RoutinaMacSceneID.settings)
+            },
             isBoardInspectorPresented: isMacBoardTicketInspectorPresented,
             onToggleBoardInspector: toggleMacBoardTicketInspector,
             onToggleSidebar: toggleMacHomeSidebar
@@ -148,7 +152,10 @@ extension HomeTCAView {
     }
 
     private var showsHomeToolbarSearch: Bool {
-        !isMacStatsMode && !isMacAddTaskMode
+        !isMacStatsMode
+            && !isMacAddTaskMode
+            && !isMacBacklogMode
+            && !isMacTaskLadderMode
     }
 
     private var homeToolbarMode: HomeMacTopToolbarChrome.Mode {
@@ -249,7 +256,13 @@ extension HomeTCAView {
     @ViewBuilder
     var platformNavigationContent: some View {
         ZStack(alignment: .top) {
-            HomeMacNavigationContent(
+            Group {
+                if isMacBacklogMode {
+                    BacklogMacView(store: backlogStore)
+                } else if isMacTaskLadderMode {
+                    TaskRankingMacView(store: taskRankingStore)
+                } else {
+                    HomeMacNavigationContent(
                 isBoardMode: isMacBoardMode,
                 isGoalsMode: isMacGoalsMode,
                 isBoardInspectorPresented: macBoardInspectorPresentedBinding,
@@ -424,6 +437,8 @@ extension HomeTCAView {
                         macTodoBoardDetailView
                     } boardInspectorView: {
                         macBoardTaskInspector
+                    }
+                }
                     }
                 }
             }
@@ -686,6 +701,8 @@ extension HomeTCAView {
             onOpenAway: openAwayFromAddMenu,
             onOpenTimeline: openTimelineInSidebar,
             onOpenStats: openStatsInSidebar,
+            onOpenBacklog: openBacklogInMainWindow,
+            onOpenTaskLadder: openTaskLadderInMainWindow,
             onScrollSelectedTaskInSidebar: scrollSelectedTaskInMacSidebar
         ) { mode in
             if mode == .settings {
@@ -1496,6 +1513,8 @@ struct HomeMacView: View {
     let settingsStore: StoreOf<SettingsFeature>
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>
+    let backlogStore: StoreOf<BacklogFeature>
+    let taskRankingStore: StoreOf<TaskRankingFeature>
 
     var body: some View {
         HomeTCAView(
@@ -1503,6 +1522,8 @@ struct HomeMacView: View {
             settingsStore: settingsStore,
             goalsStore: goalsStore,
             statsStore: statsStore,
+            backlogStore: backlogStore,
+            taskRankingStore: taskRankingStore,
             openActiveFocusTarget: { deepLink in
                 guard let deepLink else { return }
                 appStore.send(.openDeepLink(deepLink))

@@ -51,9 +51,9 @@ public enum RoutinaHelpCatalog {
         RoutinaHelpTopic(
             id: "task-ladder",
             title: "Task Ladder",
-            summary: "Task Ladder is a separate macOS workspace for comparing active tasks by one value at a time.",
+            summary: "Task Ladder is a full-size workspace in the main macOS window for comparing active tasks by one value at a time.",
             details: [
-                "Open it from the Routinam menu. It can compare Pressure, Urgency, Importance, Thinking needed, or Estimated time.",
+                "Choose Task Ladder from the main window’s workspace menu or press Shift-Command-R. It can compare Pressure, Urgency, Importance, Thinking needed, or Estimated time.",
                 "Pressure, Urgency, Importance, and Thinking needed use value sections such as High, Medium, Low, and No value. Moving a task across sections changes only the selected value; ordering within a section is a separate tie-break for that value.",
                 "Estimated time is a factual numeric sort, so it cannot be manually reordered. Task Ladder placement is independent of Home, Backlog, and task-completion relationships.",
                 "Paused, snoozed, blocked, completed, canceled, archived, and tasks hidden by a matching Flag do not appear. Groups can collect comparable tasks into smaller nested ladders."
@@ -223,12 +223,12 @@ public enum RoutinaHelpCatalog {
         RoutinaHelpTopic(
             id: "backlog",
             title: "Backlog",
-            summary: "Backlog is a separate macOS workspace for work intentionally kept off the everyday Home radar.",
+            summary: "Backlog is a full-size workspace in the main macOS window for work intentionally kept off the everyday Home radar.",
             details: [
-                "Open it from Routinam > Backlog or press Shift-Command-B.",
+                "Choose Backlog from the main window’s workspace menu or press Shift-Command-B.",
                 "Create at least one Backlog section before Home or a task form can offer Backlog destinations. Routina has no generic unsectioned Backlog destination.",
                 "Moving a task to a Backlog section removes it from normal Home placement without completing, pausing, or deleting it. Move to Radar returns it to ordinary Home placement.",
-                "The separate beta Board backlog is unrelated and does not create sections in the dedicated Backlog window."
+                "The separate beta Board backlog is unrelated and does not create sections in the Backlog workspace."
             ],
             aliases: [
                 "off radar",

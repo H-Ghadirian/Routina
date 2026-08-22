@@ -21,6 +21,8 @@ struct HomeFeatureMacNavigationRouter {
             let preservesTaskListPresentation = previousMode == .addTask
                 || previousMode == .stats
                 || previousMode == .adventure
+                || previousMode == .backlog
+                || previousMode == .taskLadder
                 || previousSidebarSelection.isTimelineEntry
             if !preservesTaskListPresentation,
                let effect = taskListModeSyncEffectForSelectedTask(state) {
@@ -45,7 +47,7 @@ struct HomeFeatureMacNavigationRouter {
             dismissAddRoutineSheet(&state)
             state.macSidebarSelection = nil
 
-        case .goals, .timeline, .settings:
+        case .goals, .timeline, .backlog, .taskLadder, .settings:
             dismissAddRoutineSheet(&state)
             state.macSidebarSelection = nil
             HomeSelectionEditor.clearTaskSelection(&state.selection)

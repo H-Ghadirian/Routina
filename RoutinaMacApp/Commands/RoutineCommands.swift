@@ -3,8 +3,6 @@ import SwiftUI
 
 enum RoutinaMacSceneID {
     static let home = "routina-home"
-    static let backlog = "routina-backlog"
-    static let taskRanking = "routina-task-ranking"
     static let settings = "routina-settings"
 }
 
@@ -12,6 +10,8 @@ extension Notification.Name {
     static let routinaMacOpenRoutinesInSidebar = Notification.Name("routina.mac.openRoutinesInSidebar")
     static let routinaMacOpenTimelineInSidebar = Notification.Name("routina.mac.openTimelineInSidebar")
     static let routinaMacOpenStatsInSidebar = Notification.Name("routina.mac.openStatsInSidebar")
+    static let routinaMacOpenBacklogInMainWindow = Notification.Name("routina.mac.openBacklogInMainWindow")
+    static let routinaMacOpenTaskLadderInMainWindow = Notification.Name("routina.mac.openTaskLadderInMainWindow")
     static let routinaMacOpenAddTask = Notification.Name("routina.mac.openAddTask")
     static let routinaMacOpenAddEvent = Notification.Name("routina.mac.openAddEvent")
     static let routinaMacOpenAddEmotion = Notification.Name("routina.mac.openAddEmotion")
@@ -23,6 +23,24 @@ extension Notification.Name {
     static let routinaMacScrollSelectedTaskInSidebar = Notification.Name("routina.mac.scrollSelectedTaskInSidebar")
     static let routinaMacNavigateBack = Notification.Name("routina.mac.navigateBack")
     static let routinaMacNavigateForward = Notification.Name("routina.mac.navigateForward")
+}
+
+@MainActor
+enum RoutinaMacWorkspaceNavigation {
+    static func request(_ notificationName: Notification.Name) {
+        let requestID = UUID()
+        post(notificationName, requestID: requestID)
+
+        [0.1, 0.3, 0.7].forEach { delay in
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                post(notificationName, requestID: requestID)
+            }
+        }
+    }
+
+    private static func post(_ notificationName: Notification.Name, requestID: UUID) {
+        NotificationCenter.default.post(name: notificationName, object: requestID)
+    }
 }
 
 enum RoutinaMacCommandNotification {
@@ -125,12 +143,14 @@ struct RoutineCommands: Commands {
             .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.modifiers)
 
             Button("Backlog") {
-                openWindow(id: RoutinaMacSceneID.backlog)
+                openWindow(id: RoutinaMacSceneID.home)
+                RoutinaMacWorkspaceNavigation.request(.routinaMacOpenBacklogInMainWindow)
             }
             .keyboardShortcut("b", modifiers: [.command, .shift])
 
             Button("Task Ladder") {
-                openWindow(id: RoutinaMacSceneID.taskRanking)
+                openWindow(id: RoutinaMacSceneID.home)
+                RoutinaMacWorkspaceNavigation.request(.routinaMacOpenTaskLadderInMainWindow)
             }
             .keyboardShortcut("r", modifiers: [.command, .shift])
 
