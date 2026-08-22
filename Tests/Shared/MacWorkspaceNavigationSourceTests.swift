@@ -33,7 +33,10 @@ struct MacWorkspaceNavigationSourceTests {
         #expect(homeFeatureSource.contains("static let workspaceModes: [Self]"))
         #expect(!sceneSource.contains("Window(\"Backlog\""))
         #expect(!sceneSource.contains("Window(\"Task Ladder\""))
-        #expect(platformSource.contains("BacklogMacView(store: backlogStore)"))
+        #expect(platformSource.contains("BacklogMacView("))
+        #expect(platformSource.contains("store: backlogStore"))
+        #expect(platformSource.contains("onShowTaskInPlanner: showBacklogTaskInPlanner"))
+        #expect(platformSource.contains("onShowTaskInTimeline: showBacklogTaskInTimeline"))
         #expect(platformSource.contains("TaskRankingMacView(store: taskRankingStore)"))
         #expect(toolbarSource.contains("HomeMacWorkspaceToolbarControls("))
         #expect(controlsSource.contains("private var workspaceMenu: some View"))
@@ -42,6 +45,81 @@ struct MacWorkspaceNavigationSourceTests {
         #expect(commandSource.contains("openWindow(id: RoutinaMacSceneID.home)"))
         #expect(commandSource.contains(".routinaMacOpenBacklogInMainWindow"))
         #expect(commandSource.contains(".routinaMacOpenTaskLadderInMainWindow"))
+    }
+
+    @Test
+    func topSearchIsWorkspaceAwareForPlannerBacklogAndTaskLadder() throws {
+        let platformSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
+        )
+        let backlogSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Backlog/BacklogMacView.swift"
+        )
+        let ladderSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+
+        #expect(platformSource.contains("searchText: toolbarSearchTextBinding"))
+        #expect(platformSource.contains("get: { backlogStore.searchText }"))
+        #expect(platformSource.contains("get: { taskRankingStore.searchText }"))
+        #expect(platformSource.contains("showBacklogTaskInPlanner"))
+        #expect(platformSource.contains("showBacklogTaskInTimeline"))
+        #expect(!backlogSource.contains("TextField(\"Search backlog\""))
+        #expect(backlogSource.contains("Found outside Backlog"))
+        #expect(backlogSource.contains("Button(\"Show in Planner\")"))
+        #expect(backlogSource.contains("Button(\"Show in Timeline\")"))
+        #expect(backlogSource.contains("showsPrincipalToolbarTitle: false"))
+        #expect(ladderSource.contains("Found in Task Ladder"))
+        #expect(ladderSource.contains("Outside Task Ladder"))
+        #expect(ladderSource.contains("showsPrincipalToolbarTitle: false"))
+    }
+
+    @Test
+    func backlogWorkspaceDepartureRemovesEmbeddedDetailBeforeChangingSplitLayouts() throws {
+        let sidebarSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift"
+        )
+        let backlogFeatureSource = try Self.sourceFile(
+            "RoutinaMacApp/Features/Backlog/BacklogFeature.swift"
+        )
+
+        #expect(sidebarSource.contains("backlogStore.send(.workspaceDeactivated)"))
+        #expect(sidebarSource.contains("DispatchQueue.main.async"))
+        #expect(backlogFeatureSource.contains("case workspaceDeactivated"))
+        #expect(backlogFeatureSource.contains("state.taskDetailState = nil"))
+    }
+
+    @Test
+    func backlogCreationChooserNamesTheDestinationInUserTerms() throws {
+        let homeSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift"
+        )
+        let platformSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
+        )
+
+        #expect(homeSource.contains("Where should this task go?"))
+        #expect(homeSource.contains("Button(\"Main task list\")"))
+        #expect(homeSource.contains("add the task to your main task list"))
+        #expect(!homeSource.contains("Button(\"Radar\")"))
+        #expect(platformSource.contains("title: \"Backlog › \\(section.title)\""))
+        #expect(platformSource.contains("title: \"Backlog › \\(section.title) › \\(subsection.title)\""))
+    }
+
+    @Test
+    func macSectionSettingsSeparatesRadarAndBacklogCatalogs() throws {
+        let sectionsSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Settings/SettingsMacTaskSectionsDetailView.swift"
+        )
+
+        #expect(sectionsSource.contains("@State private var selectedSurface: HomeTaskSectionSurface = .radar"))
+        #expect(sectionsSource.contains("Picker(\"Section destination\", selection: $selectedSurface)"))
+        #expect(sectionsSource.contains("Text(\"Main task list\")"))
+        #expect(sectionsSource.contains("Text(\"Backlog\")"))
+        #expect(sectionsSource.contains(".pickerStyle(.segmented)"))
+        #expect(sectionsSource.contains("surface: selectedSurface"))
+        #expect(sectionsSource.contains("topLevelSections(\n            in: customTaskSections,\n            surface: selectedSurface"))
+        #expect(sectionsSource.contains("movingSection(\n            section.id,\n            by: offset,\n            surface:"))
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

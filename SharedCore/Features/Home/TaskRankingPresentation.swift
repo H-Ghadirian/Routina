@@ -283,6 +283,168 @@ enum TaskRankingMetricValue: Equatable, Hashable, Sendable {
     }
 }
 
+/// Search stays separate from the ranked snapshot so a query can find nested
+/// tasks without flattening or re-sorting the ladder itself.
+struct TaskRankingSearchPresentation: Equatable {
+    struct Match: Identifiable, Equatable {
+        let task: RoutineTask
+        /// The ladder scope in which the task is a directly visible row.
+        let scopePath: [UUID]
+        let locationTitle: String
+
+        var id: UUID { task.id }
+    }
+
+    struct OutsideMatch: Identifiable, Equatable {
+        let task: RoutineTask
+        let reason: String
+
+        var id: UUID { task.id }
+    }
+
+    let matches: [Match]
+    let outsideMatches: [OutsideMatch]
+
+    static var empty: Self { Self(matches: [], outsideMatches: []) }
+
+    static func make(
+        tasks: [RoutineTask],
+        organization: TaskLadderOrganization,
+        eligibleTaskIDs: Set<UUID>,
+        flagRules: [RoutineFlagRule],
+        metric: TaskRankingMetric,
+        valueMode: TaskRankingValueMode,
+        searchText: String,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Self {
+        guard let normalizedQuery = HomeTaskSearchIndex.query(searchText) else {
+            return .empty
+        }
+
+        let tasksByID = Dictionary(
+            tasks.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let groupsByID = Dictionary(
+            organization.groups.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        func scopePath(for taskID: UUID) -> [UUID] {
+            var reversedPath: [UUID] = []
+            var visited: Set<UUID> = [taskID]
+            var parent = organization.parent(of: taskID)
+
+            while let currentParent = parent {
+                let parentID = currentParent.rawID
+                guard visited.insert(parentID).inserted else { break }
+                switch currentParent {
+                case .group:
+                    guard groupsByID[parentID] != nil else { break }
+                    reversedPath.append(parentID)
+                    parent = nil
+                case .task:
+                    guard eligibleTaskIDs.contains(parentID) else {
+                        parent = nil
+                        continue
+                    }
+                    reversedPath.append(parentID)
+                    parent = organization.parent(of: parentID)
+                }
+            }
+            return Array(reversedPath.reversed())
+        }
+
+        func pathTitles(for path: [UUID]) -> [String] {
+            path.compactMap { nodeID in
+                if let group = groupsByID[nodeID] {
+                    return group.displayName
+                }
+                return tasksByID[nodeID]?.name.flatMap(RoutineTask.trimmedName)
+            }
+        }
+
+        let matchingTasks = tasks.compactMap { task -> (RoutineTask, [UUID], [String])? in
+            let path = scopePath(for: task.id)
+            let titles = pathTitles(for: path)
+            let index = HomeTaskSearchIndex.make(
+                name: task.name ?? "",
+                emoji: task.emoji ?? "",
+                taskDescription: task.taskDescription,
+                notes: task.notes,
+                placeName: task.destinationAddress,
+                tags: task.tags + titles,
+                flags: task.flags,
+                goalTitles: []
+            )
+            guard index.contains(normalizedQuery) else { return nil }
+            return (task, path, titles)
+        }
+
+        let matches = matchingTasks.compactMap { task, path, titles -> Match? in
+            guard eligibleTaskIDs.contains(task.id) else { return nil }
+            let valueTitle = metric.value(
+                for: task,
+                mode: valueMode,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )?.title ?? metric.missingValueTitle
+            return Match(
+                task: task,
+                scopePath: path,
+                locationTitle: (["Task Ladder"] + titles + [valueTitle])
+                    .joined(separator: " › ")
+            )
+        }.sorted(by: matchComesBefore)
+
+        let ladderExclusionFlagIDs = RoutineFlagRules.normalizedFlagIDs(
+            for: .hideFromTaskLadder,
+            in: flagRules
+        )
+        let outsideMatches = matchingTasks.compactMap { task, _, _ -> OutsideMatch? in
+            guard !eligibleTaskIDs.contains(task.id) else { return nil }
+            let reason: String
+            if task.isArchived(referenceDate: referenceDate, calendar: calendar) {
+                reason = "Archived"
+            } else if task.isCompletedOneOff {
+                reason = "Completed"
+            } else if task.isCanceledOneOff {
+                reason = "Canceled"
+            } else if task.todoState == .blocked {
+                reason = "Blocked"
+            } else if task.flags.contains(where: { flag in
+                RoutineFlag.normalized(flag).map(ladderExclusionFlagIDs.contains) ?? false
+            }) {
+                reason = "Hidden from Task Ladder by Flag"
+            } else {
+                reason = "Unavailable while a linked prerequisite is incomplete"
+            }
+            return OutsideMatch(task: task, reason: reason)
+        }.sorted { lhs, rhs in
+            taskComesBefore(lhs.task, rhs.task)
+        }
+
+        return Self(matches: matches, outsideMatches: outsideMatches)
+    }
+
+    private static func matchComesBefore(_ lhs: Match, _ rhs: Match) -> Bool {
+        if lhs.locationTitle != rhs.locationTitle {
+            return lhs.locationTitle.localizedCaseInsensitiveCompare(rhs.locationTitle) == .orderedAscending
+        }
+        return taskComesBefore(lhs.task, rhs.task)
+    }
+
+    private static func taskComesBefore(_ lhs: RoutineTask, _ rhs: RoutineTask) -> Bool {
+        let lhsName = lhs.name ?? ""
+        let rhsName = rhs.name ?? ""
+        let comparison = lhsName.localizedCaseInsensitiveCompare(rhsName)
+        return comparison == .orderedSame
+            ? lhs.id.uuidString < rhs.id.uuidString
+            : comparison == .orderedAscending
+    }
+}
+
 /// A stable, feature-owned snapshot consumed directly by the scrolling Mac task-ranking view.
 struct TaskRankingPresentation: Equatable {
     struct LinkedTaskChildSuggestion: Identifiable, Equatable, Sendable {

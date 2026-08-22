@@ -3,6 +3,18 @@ import SwiftUI
 
 struct BacklogMacView: View {
     let store: StoreOf<BacklogFeature>
+    let onShowTaskInPlanner: (UUID, String) -> Void
+    let onShowTaskInTimeline: (UUID, String) -> Void
+
+    init(
+        store: StoreOf<BacklogFeature>,
+        onShowTaskInPlanner: @escaping (UUID, String) -> Void = { _, _ in },
+        onShowTaskInTimeline: @escaping (UUID, String) -> Void = { _, _ in }
+    ) {
+        self.store = store
+        self.onShowTaskInPlanner = onShowTaskInPlanner
+        self.onShowTaskInTimeline = onShowTaskInTimeline
+    }
 
     @AppStorage(
         UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
@@ -69,10 +81,6 @@ struct BacklogMacView: View {
 
             Divider()
 
-            searchControl
-                .padding(.horizontal, 12)
-                .padding(.top, 12)
-
             newSectionControl
                 .padding(12)
 
@@ -81,11 +89,14 @@ struct BacklogMacView: View {
             if store.isLoading && store.presentation.isEmpty {
                 ProgressView("Loading Backlog…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if isSearching && store.presentation.taskCount == 0 {
+            } else if isSearching
+                        && store.presentation.taskCount == 0
+                        && store.presentation.outsideBacklogResults.isEmpty {
                 ContentUnavailableView.search(text: store.searchText)
                     .padding(20)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if store.presentation.isEmpty {
+            } else if store.presentation.isEmpty
+                        && store.presentation.outsideBacklogResults.isEmpty {
                 ContentUnavailableView(
                     "Backlog is clear",
                     systemImage: "tray",
@@ -103,45 +114,16 @@ struct BacklogMacView: View {
                         if !store.presentation.hiddenByFlagTasks.isEmpty {
                             automaticFlagSection
                         }
+
+                        if !store.presentation.outsideBacklogResults.isEmpty {
+                            outsideBacklogSection
+                        }
                     }
                     .padding(10)
                 }
             }
         }
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.45))
-    }
-
-    private var searchControl: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-
-            TextField("Search backlog", text: searchTextBinding)
-                .textFieldStyle(.plain)
-
-            if !store.searchText.isEmpty {
-                Button {
-                    store.send(.searchTextChanged(""))
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 18, height: 18)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Clear Backlog search")
-            }
-        }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color(nsColor: .textBackgroundColor))
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.24), lineWidth: 1)
-        }
     }
 
     private var newSectionControl: some View {
@@ -278,6 +260,95 @@ struct BacklogMacView: View {
         }
     }
 
+    private var outsideBacklogSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(store.presentation.taskCount == 0 ? "No matches in Backlog" : "Found outside Backlog")
+                    .font(.caption.weight(.semibold))
+
+                if store.presentation.taskCount == 0 {
+                    Text("Found outside Backlog")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 8)
+
+            ForEach(store.presentation.outsideBacklogResults) { result in
+                outsideBacklogResultRow(result)
+            }
+        }
+        .padding(.top, store.presentation.taskCount == 0 ? 2 : 8)
+    }
+
+    private func outsideBacklogResultRow(
+        _ result: BacklogTaskListPresentation.OutsideBacklogResult
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                store.send(.taskSelected(result.task.id))
+            } label: {
+                HStack(spacing: 9) {
+                    Text(result.task.emoji ?? "✨")
+                        .font(.body)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(result.task.name ?? "Untitled task")
+                            .font(.subheadline.weight(.medium))
+                            .lineLimit(2)
+
+                        Text(result.locationTitle)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open \(result.task.name ?? "Untitled task") task details")
+
+            HStack(spacing: 7) {
+                Button("Open Task") {
+                    store.send(.taskSelected(result.task.id))
+                }
+
+                switch result.revealDestination {
+                case .planner:
+                    Button("Show in Planner") {
+                        onShowTaskInPlanner(result.task.id, store.searchText)
+                    }
+                case .timeline:
+                    Button("Show in Timeline") {
+                        onShowTaskInTimeline(result.task.id, store.searchText)
+                    }
+                }
+
+                Menu("Move to Backlog…") {
+                    ForEach(backlogDestinations) { destination in
+                        Button(destination.title) {
+                            store.send(.moveTask(result.task.id, to: destination.id))
+                        }
+                    }
+                }
+                .disabled(backlogDestinations.isEmpty)
+            }
+            .controlSize(.small)
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Color(nsColor: .textBackgroundColor).opacity(0.68))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        }
+    }
+
     private func newSubsectionControl(for parentSectionID: UUID) -> some View {
         let draft = Binding(
             get: { newSubsectionTitleBySectionID[parentSectionID, default: ""] },
@@ -381,7 +452,10 @@ struct BacklogMacView: View {
             state: \.taskDetailState,
             action: \.taskDetail
         ) {
-            TaskDetailTCAView(store: detailStore)
+            TaskDetailTCAView(
+                store: detailStore,
+                showsPrincipalToolbarTitle: false
+            )
         } else {
             ContentUnavailableView(
                 "Select a backlog task",
@@ -395,20 +469,13 @@ struct BacklogMacView: View {
     private var backlogCountLabel: String {
         let count = store.presentation.taskCount
         if isSearching {
-            return count == 1 ? "1 result" : "\(count) results"
+            return count == 1 ? "1 in Backlog" : "\(count) in Backlog"
         }
         return count == 1 ? "1 task" : "\(count) tasks"
     }
 
     private var isSearching: Bool {
         HomeTaskSearchIndex.query(store.searchText) != nil
-    }
-
-    private var searchTextBinding: Binding<String> {
-        Binding(
-            get: { store.searchText },
-            set: { store.send(.searchTextChanged($0)) }
-        )
     }
 
     private var backlogDestinations: [BacklogDestination] {

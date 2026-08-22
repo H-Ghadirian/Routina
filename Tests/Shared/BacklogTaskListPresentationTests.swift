@@ -168,4 +168,71 @@ struct BacklogTaskListPresentationTests {
 
         #expect(presentation.isEmpty)
     }
+
+    @Test
+    func searchKeepsMatchingRadarTasksOutsideBacklogWithTheirLocation() throws {
+        let somedayID = UUID()
+        let futureID = UUID()
+        let backlogTask = RoutineTask(
+            name: "Read a novel",
+            customTaskSectionID: somedayID
+        )
+        let radarTask = RoutineTask(
+            name: "Read mail",
+            customTaskSectionID: futureID,
+            scheduleMode: .oneOff
+        )
+        let sections = [
+            HomeCustomTaskSection(
+                id: somedayID,
+                surface: .backlog,
+                title: "Someday",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: futureID,
+                surface: .radar,
+                title: "Future",
+                createdAt: nil
+            )
+        ]
+
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [backlogTask, radarTask],
+            customSections: sections,
+            flagRules: [],
+            searchText: "read mail",
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        #expect(presentation.taskCount == 0)
+        let result = try #require(presentation.outsideBacklogResults.first)
+        #expect(result.task.id == radarTask.id)
+        #expect(result.locationTitle == "Radar › Future")
+        #expect(result.revealDestination == .planner)
+    }
+
+    @Test
+    func completedSearchMatchesRevealTheirActivityInTimeline() throws {
+        let completedTask = RoutineTask(
+            name: "Watch the recording",
+            scheduleMode: .oneOff,
+            lastDone: Date(timeIntervalSince1970: 500)
+        )
+
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [completedTask],
+            customSections: [],
+            flagRules: [],
+            searchText: "watch",
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        let result = try #require(presentation.outsideBacklogResults.first)
+        #expect(result.task.id == completedTask.id)
+        #expect(result.locationTitle == "Completed")
+        #expect(result.revealDestination == .timeline)
+    }
 }

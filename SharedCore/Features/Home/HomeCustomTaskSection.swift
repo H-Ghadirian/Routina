@@ -366,6 +366,7 @@ enum HomeCustomTaskSectionStorage {
     static func movingSection(
         _ sectionID: UUID,
         by offset: Int,
+        surface: HomeTaskSectionSurface? = nil,
         in sections: [HomeCustomTaskSection]
     ) -> [HomeCustomTaskSection]? {
         guard offset == -1 || offset == 1 else { return nil }
@@ -378,6 +379,7 @@ enum HomeCustomTaskSectionStorage {
         let parentSectionID = sanitizedSections[sectionIndex].parentSectionID
         let siblingIndices = sanitizedSections.indices.filter {
             sanitizedSections[$0].parentSectionID == parentSectionID
+                && (surface == nil || sanitizedSections[$0].surface == surface)
         }
         guard let siblingPosition = siblingIndices.firstIndex(of: sectionIndex) else {
             return nil

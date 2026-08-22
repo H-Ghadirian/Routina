@@ -168,7 +168,7 @@ And the manual Refresh Backlog control remains immediately available when no ref
 ### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
 
 Area: Tasks / Mac Backlog
-Decision links: [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
@@ -180,11 +180,52 @@ Then the super section remains visible and can immediately create one level of s
 And either hierarchy level can be collapsed across its full visible header surface
 
 Given Backlog contains tasks in direct sections, nested subsections, and `Hidden by flag`
-When the person enters a Backlog search query
+When the person enters a query in the persistent top search/create field
 Then only matching tasks and their hierarchy are shown
 And title, description, notes, destination, tags, Flags, and section path can match
 And matching hierarchy is revealed without changing stored disclosure choices
-And a no-match query shows a retrieval-only empty state without offering task creation
+And the Backlog sidebar does not duplicate the top search field
+
+Given `Read mail` exists on `Radar › Future` and is not in Backlog
+When the person searches Backlog for `Read mail`
+Then the task appears under `Found outside Backlog` with its real location
+And it is not counted as a Backlog result
+And clicking its summary opens Task Details
+And the person can show it in Planner with the query preserved or move it to an explicit Backlog destination
+And task creation is not offered for the existing match
+
+Given a completed one-off task matches a Backlog search
+When it appears under `Found outside Backlog`
+Then its contextual reveal action says `Show in Timeline` instead of `Show in Planner`
+And choosing it opens filtered Timeline activity for the same query
+
+Given Backlog is showing an embedded Task Detail
+When the person changes the main workspace to Planner
+Then the embedded detail contributes no second native principal title above the shared toolbar
+And Routina clears that detail before replacing the Backlog split hierarchy
+And the main window reaches Planner without an AppKit split-view constraint crash
+
+Given no task matches a Backlog query
+When the person chooses to create it
+Then Routina asks for an explicit Backlog section or a deliberate Radar destination
+
+### Mac Task Ladder Search Preserves Ranking Context
+
+Area: Tasks / Mac Task Ladder
+Decision links: [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0632](../decisions/0632-integrate-mac-workspaces-in-the-main-window.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+- `Tests/Shared/MacWorkspaceNavigationSourceTests.swift`
+
+Given a matching task is nested inside a Task Ladder group
+When the person searches from the persistent top field
+Then the result reports its group path and current metric value
+And choosing `Locate` enters the owning scope, reveals and highlights the ranked row, and does not reorder the Ladder
+
+Given a matching task is excluded by lifecycle, Blocked state, a Flag, or an unfinished prerequisite
+Then the task appears separately under `Outside Task Ladder` with the reason
+And an existing global match suppresses creation even when it is outside the active Ladder
 
 ### Mac Task Detail Closes Without Historical Refresh Work
 
@@ -2139,6 +2180,29 @@ Then pressing Tab completes the tag, committing it renders an individually remov
 Given several custom super sections exist in Mac Settings -> Sections
 When the user scans and edits the catalog
 Then compact color-and-summary headers keep one editor expanded at a time, the full header surface toggles disclosure, move and delete actions stay in More menus, and Save or revert controls appear only for unfinished fields
+
+### Mac Settings Separates Task Section Surfaces
+
+Area: Tasks / Settings / Mac Sections
+Decision links: [0635](../decisions/0635-separate-mac-settings-section-surfaces.md), [0285](../decisions/0285-clarify-mac-sidebar-section-surfaces.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/MacWorkspaceNavigationSourceTests.swift`
+- `Tests/Shared/HomeCustomTaskSectionStorageTests.swift`
+
+Given the catalog contains custom sections for the Main task list and Backlog
+When the user opens Mac Settings -> Sections
+Then a segmented picker offers `Main task list` and `Backlog`
+And only the selected surface's top-level section cards are shown
+And the new-section composer creates a section in the selected surface
+
+When the user reorders a top-level section
+Then it moves only among sections in the selected surface
+And its existing ID, subsection hierarchy, and surface assignment remain unchanged
+
+When the user switches surfaces
+Then an expanded section from the previous surface is no longer shown as expanded
+And subsections remain available inside their parent section when that surface is selected
 
 Given a section name or automatic-tag draft is unfinished
 When a color, order, neighboring section, or external catalog value is persisted

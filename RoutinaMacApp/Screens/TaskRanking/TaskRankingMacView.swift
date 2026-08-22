@@ -250,65 +250,208 @@ struct TaskRankingMacView: View {
             if store.isLoading && store.presentation.isEmpty {
                 ProgressView("Loading active tasks…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if store.presentation.isEmpty {
+            } else if store.presentation.isEmpty
+                        && store.searchPresentation.matches.isEmpty
+                        && store.searchPresentation.outsideMatches.isEmpty {
                 ContentUnavailableView(
-                    emptyStateTitle,
-                    systemImage: "line.3.horizontal.decrease.circle",
-                    description: Text(emptyStateDescription)
+                    isSearching ? "No Task Ladder matches" : emptyStateTitle,
+                    systemImage: isSearching ? "magnifyingglass" : "line.3.horizontal.decrease.circle",
+                    description: Text(
+                        isSearching
+                            ? "Try a different task name, tag, Flag, note, or group path."
+                            : emptyStateDescription
+                    )
                 )
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        if !store.presentation.linkedTaskChildSuggestions.isEmpty {
-                            linkedTaskChildSuggestionsHeader
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            if isSearching {
+                                taskLadderSearchResults
 
-                            ForEach(store.presentation.linkedTaskChildSuggestions) { suggestion in
-                                VStack(spacing: 0) {
-                                    linkedTaskChildSuggestionRow(suggestion)
-
-                                    if suggestion.id != store.presentation.linkedTaskChildSuggestions.last?.id {
-                                        Divider().padding(.leading, 12)
-                                    }
-                                }
-                                .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
+                                Color.clear
+                                    .frame(height: 12)
+                                    .accessibilityHidden(true)
                             }
 
-                            Color.clear
-                                .frame(height: 12)
-                                .accessibilityHidden(true)
-                        }
+                            if !store.presentation.linkedTaskChildSuggestions.isEmpty {
+                                linkedTaskChildSuggestionsHeader
 
-                        ForEach(store.presentation.sections) { section in
-                            let isCollapsed = collapsedSectionIDs.contains(section.id)
+                                ForEach(store.presentation.linkedTaskChildSuggestions) { suggestion in
+                                    VStack(spacing: 0) {
+                                        linkedTaskChildSuggestionRow(suggestion)
 
-                            Section {
-                                if !isCollapsed {
-                                    ForEach(section.tasks) { task in
-                                        VStack(spacing: 0) {
-                                            rankingRow(task, in: section)
-                                            if task.id != section.tasks.last?.id {
-                                                Divider().padding(.leading, 12)
-                                            }
+                                        if suggestion.id != store.presentation.linkedTaskChildSuggestions.last?.id {
+                                            Divider().padding(.leading, 12)
                                         }
-                                        .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
                                     }
+                                    .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
                                 }
 
                                 Color.clear
                                     .frame(height: 12)
                                     .accessibilityHidden(true)
-                            } header: {
-                                rankingSectionHeader(section, isCollapsed: isCollapsed)
+                            }
+
+                            ForEach(store.presentation.sections) { section in
+                                let containsSearchMatch = section.tasks.contains {
+                                    store.currentScopeSearchMatchTaskIDs.contains($0.id)
+                                }
+                                let isCollapsed = collapsedSectionIDs.contains(section.id)
+                                    && !containsSearchMatch
+
+                                Section {
+                                    if !isCollapsed {
+                                        ForEach(section.tasks) { task in
+                                            VStack(spacing: 0) {
+                                                rankingRow(task, in: section)
+                                                if task.id != section.tasks.last?.id {
+                                                    Divider().padding(.leading, 12)
+                                                }
+                                            }
+                                            .id(task.id)
+                                            .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
+                                        }
+                                    }
+
+                                    Color.clear
+                                        .frame(height: 12)
+                                        .accessibilityHidden(true)
+                                } header: {
+                                    rankingSectionHeader(section, isCollapsed: isCollapsed)
+                                }
                             }
                         }
+                        .padding(12)
                     }
-                    .padding(12)
+                    .onChange(of: store.selectedTaskID) { _, selectedTaskID in
+                        guard let selectedTaskID,
+                              store.currentScopeSearchMatchTaskIDs.contains(selectedTaskID) else { return }
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            proxy.scrollTo(selectedTaskID, anchor: .center)
+                        }
+                    }
+                    .onChange(of: store.searchLocateRequestID) { _, _ in
+                        guard let selectedTaskID = store.selectedTaskID,
+                              store.currentScopeSearchMatchTaskIDs.contains(selectedTaskID) else { return }
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            proxy.scrollTo(selectedTaskID, anchor: .center)
+                        }
+                    }
                 }
             }
         }
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.42))
+    }
+
+    @ViewBuilder
+    private var taskLadderSearchResults: some View {
+        if store.searchPresentation.matches.isEmpty
+            && store.searchPresentation.outsideMatches.isEmpty {
+            ContentUnavailableView.search(text: store.searchText)
+                .padding(.vertical, 18)
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                if !store.searchPresentation.matches.isEmpty {
+                    searchResultHeader(
+                        title: "Found in Task Ladder",
+                        count: store.searchPresentation.matches.count
+                    )
+
+                    ForEach(store.searchPresentation.matches) { match in
+                        Button {
+                            store.send(.searchMatchSelected(match.task.id))
+                        } label: {
+                            HStack(spacing: 9) {
+                                Text(match.task.emoji ?? "✨")
+
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(match.task.name ?? "Untitled task")
+                                        .font(.subheadline.weight(.medium))
+                                        .lineLimit(2)
+
+                                    Text(match.locationTitle)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+
+                                Spacer(minLength: 4)
+
+                                Text("Locate")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tint)
+                            }
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .background(
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(Color.accentColor.opacity(0.08))
+                        )
+                    }
+                }
+
+                if !store.searchPresentation.outsideMatches.isEmpty {
+                    searchResultHeader(
+                        title: "Outside Task Ladder",
+                        count: store.searchPresentation.outsideMatches.count
+                    )
+                    .padding(.top, store.searchPresentation.matches.isEmpty ? 0 : 6)
+
+                    ForEach(store.searchPresentation.outsideMatches) { match in
+                        Button {
+                            store.send(.taskSelected(match.task.id))
+                        } label: {
+                            HStack(spacing: 9) {
+                                Text(match.task.emoji ?? "✨")
+
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(match.task.name ?? "Untitled task")
+                                        .font(.subheadline.weight(.medium))
+                                        .lineLimit(2)
+
+                                    Text(match.reason)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+
+                                Spacer(minLength: 4)
+
+                                Text("Open")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tint)
+                            }
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .background(
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(Color.secondary.opacity(0.08))
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private func searchResultHeader(title: String, count: Int) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+            Text("\(count)")
+                .font(.caption2.weight(.semibold).monospacedDigit())
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 4)
     }
 
     private var linkedTaskChildSuggestionsHeader: some View {
@@ -537,7 +680,13 @@ struct TaskRankingMacView: View {
         }
         .padding(.leading, 12)
         .padding(.trailing, 8)
-        .background(isSelected ? Color.accentColor.opacity(0.14) : .clear)
+        .background(
+            isSelected
+                ? Color.accentColor.opacity(0.14)
+                : store.currentScopeSearchMatchTaskIDs.contains(task.id)
+                    ? Color.yellow.opacity(0.12)
+                    : .clear
+        )
         .contextMenu {
             if isGroup {
                 Button("Show Group Details") {
@@ -650,7 +799,10 @@ struct TaskRankingMacView: View {
             state: \.taskDetailState,
             action: \.taskDetail
         ) {
-            TaskDetailTCAView(store: detailStore)
+            TaskDetailTCAView(
+                store: detailStore,
+                showsPrincipalToolbarTitle: false
+            )
         } else if let group = store.detailGroup {
             TaskLadderGroupDetailView(
                 group: group,
@@ -671,6 +823,10 @@ struct TaskRankingMacView: View {
     }
 
     private var taskCountLabel: String {
+        if isSearching {
+            let count = store.searchPresentation.matches.count
+            return count == 1 ? "1 Ladder match" : "\(count) Ladder matches"
+        }
         let count = store.presentation.taskCount
         if !store.scopePath.isEmpty {
             return count == 1 ? "1 task" : "\(count) tasks"
@@ -693,6 +849,10 @@ struct TaskRankingMacView: View {
 
     private var ladderTitle: String {
         store.scopeParentName ?? "Task Ladder"
+    }
+
+    private var isSearching: Bool {
+        HomeTaskSearchIndex.query(store.searchText) != nil
     }
 
     private var emptyStateTitle: String {

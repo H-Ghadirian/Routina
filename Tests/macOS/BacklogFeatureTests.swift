@@ -76,4 +76,25 @@ struct BacklogFeatureTests {
             $0.isLoading = false
         }
     }
+
+    @Test
+    func deactivatingWorkspaceClearsEmbeddedTaskDetailBeforeLayoutChanges() async {
+        let task = RoutineTask(name: "Read mail", scheduleMode: .oneOff)
+        var initialState = BacklogFeature.State()
+        initialState.tasks = [task]
+        initialState.selectedTaskID = task.id
+        initialState.taskDetailState = HomeTaskSupport.makeTaskDetailState(
+            for: task,
+            now: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+        let store = TestStore(initialState: initialState) {
+            BacklogFeature()
+        }
+
+        await store.send(.workspaceDeactivated) {
+            $0.selectedTaskID = nil
+            $0.taskDetailState = nil
+        }
+    }
 }

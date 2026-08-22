@@ -15,6 +15,11 @@ private enum HomeMacSearchPresentationPolicy {
     static let inputDebounce: Duration = .milliseconds(120)
 }
 
+struct HomeBacklogCreationDestination: Identifiable {
+    let id: UUID
+    let title: String
+}
+
 extension View {
     func routinaHomeSidebarColumnWidth() -> some View {
         navigationSplitViewColumnWidth(
@@ -107,7 +112,7 @@ extension HomeTCAView {
             showsSidebarToggle: !isMacBacklogMode && !isMacTaskLadderMode,
             progressMode: macHomeProgressModeBinding,
             selectedSidebarMode: macSidebarModeBinding,
-            searchText: searchTextBinding,
+            searchText: toolbarSearchTextBinding,
             isSearchTextFocused: $isToolbarSearchTextFocused,
             isSearchExpanded: $isToolbarSearchExpanded,
             searchVisiblePillWidth: $toolbarSearchVisiblePillWidth,
@@ -154,8 +159,22 @@ extension HomeTCAView {
     private var showsHomeToolbarSearch: Bool {
         !isMacStatsMode
             && !isMacAddTaskMode
-            && !isMacBacklogMode
-            && !isMacTaskLadderMode
+    }
+
+    var toolbarSearchTextBinding: Binding<String> {
+        if isMacBacklogMode {
+            return Binding(
+                get: { backlogStore.searchText },
+                set: { backlogStore.send(.searchTextChanged($0)) }
+            )
+        }
+        if isMacTaskLadderMode {
+            return Binding(
+                get: { taskRankingStore.searchText },
+                set: { taskRankingStore.send(.searchTextChanged($0)) }
+            )
+        }
+        return searchTextBinding
     }
 
     private var homeToolbarMode: HomeMacTopToolbarChrome.Mode {
@@ -258,7 +277,11 @@ extension HomeTCAView {
         ZStack(alignment: .top) {
             Group {
                 if isMacBacklogMode {
-                    BacklogMacView(store: backlogStore)
+                    BacklogMacView(
+                        store: backlogStore,
+                        onShowTaskInPlanner: showBacklogTaskInPlanner,
+                        onShowTaskInTimeline: showBacklogTaskInTimeline
+                    )
                 } else if isMacTaskLadderMode {
                     TaskRankingMacView(store: taskRankingStore)
                 } else {
@@ -853,7 +876,7 @@ extension HomeTCAView {
                         isUpdating: toolbarSearchParserPreviewIsUpdating,
                         onSubmit: { submission in
                             createTaskFromToolbarSearch(
-                                searchTextBinding.wrappedValue,
+                                toolbarSearchTextBinding.wrappedValue,
                                 draft: toolbarSearchPinnedParserPreviewDraft,
                                 submission: submission
                             )
@@ -955,7 +978,7 @@ extension HomeTCAView {
                 .easeOut(duration: 0.18),
                 value: store.taskCreationConfirmation
             )
-            .onChange(of: searchTextBinding.wrappedValue) { oldValue, newValue in
+            .onChange(of: toolbarSearchTextBinding.wrappedValue) { oldValue, newValue in
                 reconcileToolbarSearchPreviewState(
                     previousText: oldValue,
                     currentText: newValue
@@ -964,7 +987,7 @@ extension HomeTCAView {
             .onChange(of: toolbarSearchCreateDraft, initial: true) { _, draft in
                 guard let draft else { return }
                 toolbarSearchPinnedParserPreviewDraft = RoutinaQuickAddPreviewPinning.updatedDraft(
-                    currentText: searchTextBinding.wrappedValue,
+                    currentText: toolbarSearchTextBinding.wrappedValue,
                     currentDraft: draft,
                     pinnedDraft: toolbarSearchPinnedParserPreviewDraft,
                     canBeginPresentation: true
@@ -978,7 +1001,7 @@ extension HomeTCAView {
             }
             .task(id: toolbarSearchLinkResolutionID) {
                 guard let draft = RoutinaQuickAddParser.parse(
-                    searchTextBinding.wrappedValue,
+                    toolbarSearchTextBinding.wrappedValue,
                     calendar: calendar,
                     includingPlaces: isPlacesEnabled
                 ) else { return }
@@ -1007,17 +1030,17 @@ extension HomeTCAView {
     }
 
     var canCreateTaskFromToolbarSearch: Bool {
-        let trimmedText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedText = toolbarSearchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
         return !trimmedText.isEmpty
             && !isToolbarSearchCreateInProgress
-            && isMacSearchPresentationCurrent
-            && !toolbarSearchHasResult
+            && isActiveToolbarSearchPresentationCurrent
+            && !activeToolbarSearchHasResult
     }
 
     private var toolbarSearchCreateDraft: RoutinaQuickAddDraft? {
         guard canCreateTaskFromToolbarSearch,
               let draft = RoutinaQuickAddParser.parse(
-                searchTextBinding.wrappedValue,
+                toolbarSearchTextBinding.wrappedValue,
                 calendar: calendar,
                 includingPlaces: isPlacesEnabled
               ),
@@ -1029,17 +1052,33 @@ extension HomeTCAView {
     }
 
     private var toolbarSearchHasConfirmedResult: Bool {
-        isMacSearchPresentationCurrent && toolbarSearchHasResult
+        isActiveToolbarSearchPresentationCurrent && activeToolbarSearchHasResult
+    }
+
+    private var isActiveToolbarSearchPresentationCurrent: Bool {
+        isMacBacklogMode || isMacTaskLadderMode || isMacSearchPresentationCurrent
+    }
+
+    private var activeToolbarSearchHasResult: Bool {
+        if isMacBacklogMode {
+            return backlogStore.presentation.taskCount > 0
+                || !backlogStore.presentation.outsideBacklogResults.isEmpty
+        }
+        if isMacTaskLadderMode {
+            return !taskRankingStore.searchPresentation.matches.isEmpty
+                || !taskRankingStore.searchPresentation.outsideMatches.isEmpty
+        }
+        return toolbarSearchHasResult
     }
 
     private var toolbarSearchParserPreviewIsUpdating: Bool {
-        guard !searchTextBinding.wrappedValue
+        guard !toolbarSearchTextBinding.wrappedValue
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .isEmpty else {
             return false
         }
         return RoutinaQuickAddParser.parse(
-            searchTextBinding.wrappedValue,
+            toolbarSearchTextBinding.wrappedValue,
             calendar: calendar,
             includingPlaces: isPlacesEnabled
         ) == nil
@@ -1047,7 +1086,7 @@ extension HomeTCAView {
 
     private var toolbarSearchLinkResolutionID: String? {
         guard let draft = RoutinaQuickAddParser.parse(
-            searchTextBinding.wrappedValue,
+            toolbarSearchTextBinding.wrappedValue,
             calendar: calendar,
             includingPlaces: isPlacesEnabled
         ),
@@ -1167,7 +1206,7 @@ extension HomeTCAView {
         guard !Task.isCancelled,
               toolbarSearchLinkMetadataURL == linkURL,
               let currentDraft = RoutinaQuickAddParser.parse(
-                  searchTextBinding.wrappedValue,
+                  toolbarSearchTextBinding.wrappedValue,
                   calendar: calendar,
                   includingPlaces: isPlacesEnabled
               ),
@@ -1204,6 +1243,11 @@ extension HomeTCAView {
             return
         }
 
+        if isMacBacklogMode {
+            presentBacklogSearchCreationChoices(for: trimmedText)
+            return
+        }
+
         toolbarSearchCreateErrorMessage = nil
         isToolbarSearchCreateInProgress = true
         let createDraft = draft ?? RoutinaQuickAddParser.parse(
@@ -1237,7 +1281,7 @@ extension HomeTCAView {
                     taskNameOverride: resolvedSubmission?.taskTitle,
                     primaryLinkTitle: primaryLinkTitle
                 )
-                searchTextBinding.wrappedValue = ""
+                toolbarSearchTextBinding.wrappedValue = ""
                 resetToolbarSearchPreviewState(for: nil)
                 isToolbarSearchTaskTitleFocused = false
                 handleQuickAddCreated(result)
@@ -1249,7 +1293,13 @@ extension HomeTCAView {
 
     func openAddTaskFromToolbarSearch(_ rawText: String) {
         let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedText.isEmpty else { return }
+        guard !trimmedText.isEmpty,
+              !hasToolbarSearchResult(for: trimmedText) else { return }
+
+        if isMacBacklogMode {
+            presentBacklogSearchCreationChoices(for: trimmedText)
+            return
+        }
 
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -1258,7 +1308,7 @@ extension HomeTCAView {
         addEditFormCoordinator.resetRevealedTaskFormSections()
         isToolbarSearchTextFocused = false
         toolbarSearchFocusDismissRequestID += 1
-        searchTextBinding.wrappedValue = ""
+        toolbarSearchTextBinding.wrappedValue = ""
         quickAddCreatedToast = nil
         store.send(.openAddTaskSheet(seedName: trimmedText))
         scheduleAddTaskNameFocus()
@@ -1266,30 +1316,110 @@ extension HomeTCAView {
 
     private func hasToolbarSearchResult(for searchText: String) -> Bool {
         hasTaskSearchResult(for: searchText)
-            || hasTimelineSearchResult(for: searchText)
+            || (!isMacBacklogMode
+                && !isMacTaskLadderMode
+                && hasTimelineSearchResult(for: searchText))
     }
 
     private func hasTaskSearchResult(for searchText: String) -> Bool {
-        let displays = store.routineDisplays
-            + store.awayRoutineDisplays
-            + store.archivedRoutineDisplays
-            + store.boardTodoDisplays
-
-        return displays.contains { task in
-            taskMatchesToolbarSearch(task, searchText: searchText)
+        guard let normalizedQuery = HomeTaskSearchIndex.query(searchText) else { return false }
+        let tasks: [RoutineTask]
+        if isMacBacklogMode {
+            tasks = backlogStore.tasks
+        } else if isMacTaskLadderMode {
+            tasks = taskRankingStore.tasks
+        } else {
+            tasks = store.routineTasks
+        }
+        return tasks.contains { task in
+            let pathTitles = task.customTaskSectionID.flatMap {
+                HomeCustomTaskSectionStorage.pathTitles(for: $0, in: customTaskSections)
+            } ?? []
+            return HomeTaskSearchIndex.make(
+                name: task.name ?? "",
+                emoji: task.emoji ?? "",
+                taskDescription: task.taskDescription,
+                notes: task.notes,
+                placeName: task.destinationAddress,
+                tags: task.tags + pathTitles,
+                flags: task.flags,
+                goalTitles: []
+            ).contains(normalizedQuery)
         }
     }
 
-    private func taskMatchesToolbarSearch(
-        _ task: HomeFeature.RoutineDisplay,
-        searchText: String
-    ) -> Bool {
-        task.name.localizedCaseInsensitiveContains(searchText)
-            || task.emoji.localizedCaseInsensitiveContains(searchText)
-            || (task.notes?.localizedCaseInsensitiveContains(searchText) ?? false)
-            || (task.placeName?.localizedCaseInsensitiveContains(searchText) ?? false)
-            || RoutineTag.matchesQuery(searchText, in: task.tags)
-            || task.goalTitles.contains { $0.localizedCaseInsensitiveContains(searchText) }
+    private func presentBacklogSearchCreationChoices(for taskName: String) {
+        toolbarSearchCreateErrorMessage = nil
+        isToolbarSearchTextFocused = false
+        toolbarSearchFocusDismissRequestID += 1
+        pendingBacklogSearchCreationText = taskName
+    }
+
+    var backlogSearchCreationDestinations: [HomeBacklogCreationDestination] {
+        HomeCustomTaskSectionStorage.topLevelSections(
+            in: customTaskSections,
+            surface: .backlog
+        ).flatMap { section in
+            [HomeBacklogCreationDestination(id: section.id, title: "Backlog › \(section.title)")]
+                + HomeCustomTaskSectionStorage.subsections(
+                    of: section.id,
+                    in: customTaskSections
+                ).map { subsection in
+                    HomeBacklogCreationDestination(
+                        id: subsection.id,
+                        title: "Backlog › \(section.title) › \(subsection.title)"
+                    )
+                }
+        }
+    }
+
+    func createBacklogSearchTask(in sectionID: UUID?) {
+        guard let taskName = pendingBacklogSearchCreationText else { return }
+        pendingBacklogSearchCreationText = nil
+        backlogStore.send(.searchTextChanged(""))
+        resetToolbarSearchPreviewState(for: nil)
+        isToolbarSearchTaskTitleFocused = false
+        quickAddCreatedToast = nil
+        if let sectionID {
+            store.send(.openAddTaskInCustomSectionWithName(sectionID, taskName))
+        } else {
+            store.send(.openAddTaskSheet(seedName: taskName))
+        }
+        scheduleAddTaskNameFocus()
+    }
+
+    private func showBacklogTaskInPlanner(_ taskID: UUID, searchText: String) {
+        leaveBacklogAfterClosingEmbeddedTaskDetail {
+            store.send(.macSidebarModeChanged(.routines))
+            searchTextBinding.wrappedValue = searchText
+            macSearchPresentationText = searchText
+            openMacTaskDetails(taskID, presentation: .plannerPane)
+        }
+    }
+
+    private func showBacklogTaskInTimeline(_ taskID: UUID, searchText: String) {
+        leaveBacklogAfterClosingEmbeddedTaskDetail {
+            openTimelineInSidebar()
+            searchTextBinding.wrappedValue = searchText
+            macSearchPresentationText = searchText
+            macTimelineSidebarScrollRequest = timelineEntries
+                .first(where: { $0.taskID == taskID })
+                .map { MacTimelineSidebarScrollRequest(entryID: $0.id) }
+        }
+    }
+
+    private func leaveBacklogAfterClosingEmbeddedTaskDetail(
+        _ completion: @escaping @MainActor () -> Void
+    ) {
+        guard backlogStore.taskDetailState != nil else {
+            completion()
+            return
+        }
+
+        backlogStore.send(.workspaceDeactivated)
+        DispatchQueue.main.async {
+            completion()
+        }
     }
 
     private func handleQuickAddCreated(_ result: RoutinaQuickAddCreateResult) {

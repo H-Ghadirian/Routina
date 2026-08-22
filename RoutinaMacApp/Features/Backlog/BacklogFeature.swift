@@ -26,6 +26,7 @@ struct BacklogFeature {
     enum Action: Equatable {
         case onAppear
         case onDisappear
+        case workspaceDeactivated
         case refresh
         case routineDataChanged
         case automaticRefresh
@@ -59,6 +60,12 @@ struct BacklogFeature {
                     .cancel(id: CancelID.automaticRefresh),
                     state.selectedTaskID.map { .cancel(id: CancelID.taskDetail($0)) } ?? .none
                 )
+
+            case .workspaceDeactivated:
+                let selectedTaskID = state.selectedTaskID
+                state.selectedTaskID = nil
+                state.taskDetailState = nil
+                return selectedTaskID.map { .cancel(id: CancelID.taskDetail($0)) } ?? .none
 
             case .refresh:
                 guard !state.isLoading else { return .none }

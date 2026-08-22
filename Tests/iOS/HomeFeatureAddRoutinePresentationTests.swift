@@ -137,6 +137,33 @@ struct HomeFeatureAddRoutinePresentationTests {
     }
 
     @Test
+    func openAddTaskInCustomSectionWithNameSeedsBothNameAndPath() async throws {
+        let context = makeInMemoryContext()
+        let sectionID = UUID()
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(
+            .openAddTaskInCustomSectionWithName(sectionID, "Read later")
+        ) {
+            $0.macSidebarMode = .addTask
+            $0.isAddRoutineSheetPresented = true
+            $0.addRoutineState = AddRoutineFeature.State(
+                basics: AddRoutineBasicsState(routineName: "Read later"),
+                organization: AddRoutineOrganizationState(
+                    customTaskSectionID: sectionID,
+                    availableTagSummaries: [],
+                    existingRoutineNames: []
+                )
+            )
+        }
+    }
+
+    @Test
     func openAddLinkedTask_presentsAddRoutineSeededWithInverseRelationship() async throws {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Office")

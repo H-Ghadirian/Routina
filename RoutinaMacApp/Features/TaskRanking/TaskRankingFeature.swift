@@ -21,7 +21,11 @@ struct TaskRankingFeature {
         var valueMode: TaskRankingValueMode = .base
         var reversedMetrics: Set<TaskRankingMetric> = []
         var scopePath: [UUID] = []
+        var searchText = ""
         var presentation = TaskRankingPresentation.empty()
+        var searchPresentation = TaskRankingSearchPresentation.empty
+        var currentScopeSearchMatchTaskIDs: Set<UUID> = []
+        var searchLocateRequestID = 0
         var selectedTaskID: UUID?
         var selectedGroupID: UUID?
         var taskDetailState: TaskDetailFeature.State?
@@ -78,6 +82,8 @@ struct TaskRankingFeature {
         case valueModeChanged(TaskRankingValueMode)
         case temporalBoundaryReached
         case directionToggled
+        case searchTextChanged(String)
+        case searchMatchSelected(UUID)
         case taskSelected(UUID)
         case groupSelected(UUID)
         case childLadderOpened(UUID)
@@ -202,6 +208,25 @@ struct TaskRankingFeature {
                 }
                 rebuildPresentation(&state)
                 return .none
+
+            case let .searchTextChanged(searchText):
+                guard state.searchText != searchText else { return .none }
+                state.searchText = searchText
+                rebuildSearchPresentation(&state)
+                return .none
+
+            case let .searchMatchSelected(taskID):
+                guard let match = state.searchPresentation.matches.first(where: {
+                    $0.task.id == taskID
+                }),
+                      let task = state.tasks.first(where: { $0.id == taskID }) else {
+                    return .none
+                }
+                state.scopePath = match.scopePath
+                rebuildPresentation(&state)
+                selectTask(task, state: &state)
+                state.searchLocateRequestID &+= 1
+                return .send(.taskDetail(.onAppear))
 
             case let .taskSelected(taskID):
                 guard let task = state.tasks.first(where: { $0.id == taskID }) else { return .none }
@@ -396,6 +421,27 @@ struct TaskRankingFeature {
             calendar: calendar,
             completionDatesByTaskID: state.completionDatesByTaskID,
             scopePath: state.scopePath
+        )
+        rebuildSearchPresentation(&state)
+    }
+
+    private func rebuildSearchPresentation(_ state: inout State) {
+        let effectiveValueMode = state.metric.supportsTemporalWeight ? state.valueMode : .base
+        state.searchPresentation = TaskRankingSearchPresentation.make(
+            tasks: state.tasks,
+            organization: state.organization,
+            eligibleTaskIDs: state.presentation.eligibleTaskIDs,
+            flagRules: state.flagRules,
+            metric: state.metric,
+            valueMode: effectiveValueMode,
+            searchText: state.searchText,
+            referenceDate: now,
+            calendar: calendar
+        )
+        let scopePath = state.scopePath
+        let matches = state.searchPresentation.matches
+        state.currentScopeSearchMatchTaskIDs = Set(
+            matches.lazy.filter { $0.scopePath == scopePath }.map(\.task.id)
         )
     }
 

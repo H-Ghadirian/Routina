@@ -303,6 +303,44 @@ struct HomeCustomTaskSectionStorageTests {
     }
 
     @Test
+    func movingTopLevelSectionsCanStayWithinTheirSurface() throws {
+        let radarFirstID = UUID()
+        let backlogID = UUID()
+        let radarSecondID = UUID()
+        let sections = [
+            HomeCustomTaskSection(
+                id: radarFirstID,
+                surface: .radar,
+                title: "Radar first",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: backlogID,
+                surface: .backlog,
+                title: "Backlog",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: radarSecondID,
+                surface: .radar,
+                title: "Radar second",
+                createdAt: nil
+            )
+        ]
+
+        let reordered = try #require(
+            HomeCustomTaskSectionStorage.movingSection(
+                radarSecondID,
+                by: -1,
+                surface: .radar,
+                in: sections
+            )
+        )
+
+        #expect(reordered.map(\.id) == [radarSecondID, backlogID, radarFirstID])
+    }
+
+    @Test
     func syncingPersistencePreservesUnsavedLocalDrafts() {
         let sectionID = UUID()
         let original = HomeCustomTaskSection(

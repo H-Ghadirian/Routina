@@ -744,6 +744,53 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func taskLadderSearchFindsNestedTasksWithoutFlatteningTheirLocation() throws {
+        let referenceDate = Date(timeIntervalSince1970: 1_000)
+        let calendar = Calendar(identifier: .gregorian)
+        let parent = RoutineTask(name: "Mail project", pressure: .high)
+        let child = RoutineTask(name: "Read message", pressure: .medium)
+        let hidden = RoutineTask(
+            name: "Read private mail",
+            pressure: .low,
+            flags: ["No ladder"]
+        )
+        let organization = TaskLadderOrganization(
+            placements: [TaskLadderPlacement(taskID: child.id, parent: .task(parent.id))],
+            taskGroupIDs: [parent.id]
+        )
+        let flagRules = [RoutineFlagRule(flag: "No ladder", kind: .hideFromTaskLadder)]
+        let ranking = TaskRankingPresentation.make(
+            tasks: [parent, child, hidden],
+            organization: organization,
+            flagRules: flagRules,
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let search = TaskRankingSearchPresentation.make(
+            tasks: [parent, child, hidden],
+            organization: organization,
+            eligibleTaskIDs: ranking.eligibleTaskIDs,
+            flagRules: flagRules,
+            metric: .pressure,
+            valueMode: .base,
+            searchText: "read",
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let match = try #require(search.matches.first)
+        #expect(match.task.id == child.id)
+        #expect(match.scopePath == [parent.id])
+        #expect(match.locationTitle == "Task Ladder › Mail project › Medium pressure")
+        let outsideMatch = try #require(search.outsideMatches.first)
+        #expect(outsideMatch.task.id == hidden.id)
+        #expect(outsideMatch.reason == "Hidden from Task Ladder by Flag")
+    }
+
+    @Test
     func taskLadderOffersBaseNowAndTemporalRuleEditing() throws {
         let viewSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"

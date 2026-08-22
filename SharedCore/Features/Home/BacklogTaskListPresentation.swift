@@ -3,6 +3,19 @@ import Foundation
 /// A stable, reducer-owned snapshot for the Mac Backlog window.  The main
 /// sidebar intentionally does not build this presentation while it scrolls.
 struct BacklogTaskListPresentation: Equatable {
+    struct OutsideBacklogResult: Identifiable, Equatable {
+        enum RevealDestination: Equatable {
+            case planner
+            case timeline
+        }
+
+        let task: RoutineTask
+        let locationTitle: String
+        let revealDestination: RevealDestination
+
+        var id: UUID { task.id }
+    }
+
     struct Subsection: Identifiable, Equatable {
         let section: HomeCustomTaskSection
         let tasks: [RoutineTask]
@@ -23,6 +36,10 @@ struct BacklogTaskListPresentation: Equatable {
     /// Tasks hidden by a Flag remain discoverable even before the person gives
     /// them an explicit Backlog path.
     let hiddenByFlagTasks: [RoutineTask]
+    /// Matching tasks that exist, but are not currently owned by Backlog.  They
+    /// remain separate from the scoped result count so search never implies
+    /// that a Radar or archived task belongs to Backlog.
+    let outsideBacklogResults: [OutsideBacklogResult]
 
     var taskCount: Int {
         sections.reduce(0) { $0 + $1.taskCount } + hiddenByFlagTasks.count
@@ -33,7 +50,7 @@ struct BacklogTaskListPresentation: Equatable {
     }
 
     static var empty: Self {
-        Self(sections: [], hiddenByFlagTasks: [])
+        Self(sections: [], hiddenByFlagTasks: [], outsideBacklogResults: [])
     }
 
     static func make(
@@ -103,7 +120,43 @@ struct BacklogTaskListPresentation: Equatable {
                 && matchesSearch(task, normalizedQuery: normalizedSearchQuery)
         })
 
-        return Self(sections: presentationSections, hiddenByFlagTasks: hiddenByFlagTasks)
+        let backlogTaskIDs = Set(
+            tasksBySectionID.values.flatMap { $0.map(\.id) }
+                + hiddenByFlagTasks.map(\.id)
+        )
+        let radarSections = sections.filter { $0.surface == .radar }
+        let outsideBacklogResults: [OutsideBacklogResult]
+        if normalizedSearchQuery == nil {
+            outsideBacklogResults = []
+        } else {
+            outsideBacklogResults = sorted(tasks.filter { task in
+                !backlogTaskIDs.contains(task.id)
+                    && matchesSearch(
+                        task,
+                        normalizedQuery: normalizedSearchQuery,
+                        pathTitles: task.customTaskSectionID.flatMap {
+                            HomeCustomTaskSectionStorage.pathTitles(for: $0, in: radarSections)
+                        } ?? []
+                    )
+            }).map { task in
+                OutsideBacklogResult(
+                    task: task,
+                    locationTitle: outsideBacklogLocationTitle(
+                        for: task,
+                        radarSections: radarSections,
+                        referenceDate: referenceDate,
+                        calendar: calendar
+                    ),
+                    revealDestination: task.isCompletedOneOff ? .timeline : .planner
+                )
+            }
+        }
+
+        return Self(
+            sections: presentationSections,
+            hiddenByFlagTasks: hiddenByFlagTasks,
+            outsideBacklogResults: outsideBacklogResults
+        )
     }
 
     private static func matchesSearch(
@@ -133,6 +186,32 @@ struct BacklogTaskListPresentation: Equatable {
         !task.isArchived(referenceDate: referenceDate, calendar: calendar)
             && !task.isCompletedOneOff
             && !task.isCanceledOneOff
+    }
+
+    private static func outsideBacklogLocationTitle(
+        for task: RoutineTask,
+        radarSections: [HomeCustomTaskSection],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> String {
+        if task.isArchived(referenceDate: referenceDate, calendar: calendar) {
+            return "Archived"
+        }
+        if task.isCompletedOneOff {
+            return "Completed"
+        }
+        if task.isCanceledOneOff {
+            return "Canceled"
+        }
+        if let sectionID = task.customTaskSectionID,
+           let pathTitles = HomeCustomTaskSectionStorage.pathTitles(
+               for: sectionID,
+               in: radarSections
+           ),
+           !pathTitles.isEmpty {
+            return (["Radar"] + pathTitles).joined(separator: " › ")
+        }
+        return task.isDailyRoutineForTaskList ? "Radar › Today" : "Radar › Future"
     }
 
     private static func sorted(_ tasks: [RoutineTask]) -> [RoutineTask] {

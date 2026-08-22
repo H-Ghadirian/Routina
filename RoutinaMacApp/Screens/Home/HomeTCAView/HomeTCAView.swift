@@ -298,6 +298,7 @@ struct HomeTCAView: View {
     @State var toolbarSearchResolvedLinkTitle: String?
     @State var toolbarSearchLinkMetadataStatus: HomeMacToolbarLinkMetadataStatus = .idle
     @State var toolbarSearchPinnedParserPreviewDraft: RoutinaQuickAddDraft?
+    @State var pendingBacklogSearchCreationText: String?
     @State var macHomeNoticeToast: MacHomeNoticeToast?
     @State var isMacWindowFullscreen = false
     @State var isEventEditorPresented = false
@@ -459,6 +460,34 @@ homeContent
                         availableTags: homeToolbarFocusPickerAvailableTags,
                         defaults: homeToolbarFocusPickerDefaults
                     )
+                }
+                .confirmationDialog(
+                    "Where should this task go?",
+                    isPresented: Binding(
+                        get: { pendingBacklogSearchCreationText != nil },
+                        set: { isPresented in
+                            if !isPresented {
+                                pendingBacklogSearchCreationText = nil
+                            }
+                        }
+                    ),
+                    titleVisibility: .visible
+                ) {
+                    ForEach(backlogSearchCreationDestinations) { destination in
+                        Button(destination.title) {
+                            createBacklogSearchTask(in: destination.id)
+                        }
+                    }
+
+                    Button("Main task list") {
+                        createBacklogSearchTask(in: nil)
+                    }
+
+                    Button("Cancel", role: .cancel) {
+                        pendingBacklogSearchCreationText = nil
+                    }
+                } message: {
+                    Text("Choose a Backlog section, or add the task to your main task list.")
                 }
                 .task {
                     syncFileAttachmentTaskIDs()

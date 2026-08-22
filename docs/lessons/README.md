@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0224 — Release embedded detail chrome before changing workspace layout](0224-release-embedded-detail-chrome-before-workspace-layout.md)
 - [0223 — Keep empty organization containers reachable](0223-keep-empty-organization-containers-reachable.md)
 - [0222 — Hide empty linked-task sections](0222-hide-empty-linked-task-sections.md)
 - [0221 — Keep Planner day-header counts readable](0221-keep-planner-day-header-counts-readable.md)

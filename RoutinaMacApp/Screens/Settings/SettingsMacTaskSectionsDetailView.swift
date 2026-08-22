@@ -17,6 +17,7 @@ struct SettingsMacTaskSectionsDetailView: View {
     @State private var newSectionTitle = ""
     @State private var newSubsectionTitles: [UUID: String] = [:]
     @State private var drafts = HomeCustomTaskSectionDraftState()
+    @State private var selectedSurface: HomeTaskSectionSurface = .radar
     @State private var expandedSectionID: UUID?
     @State private var didInitializeExpansion = false
     @State private var pendingDeleteSection: HomeCustomTaskSection?
@@ -54,6 +55,9 @@ struct SettingsMacTaskSectionsDetailView: View {
             syncRenameDrafts()
             normalizeExpandedSection()
         }
+        .onChange(of: selectedSurface) { _, _ in
+            normalizeExpandedSection()
+        }
         .alert(deleteConfirmationTitle, isPresented: $isDeleteConfirmationPresented) {
             Button("Delete", role: .destructive) {
                 confirmDeleteSection()
@@ -71,12 +75,16 @@ struct SettingsMacTaskSectionsDetailView: View {
     }
 
     private var superSections: [HomeCustomTaskSection] {
-        HomeCustomTaskSectionStorage.topLevelSections(in: customTaskSections)
+        HomeCustomTaskSectionStorage.topLevelSections(
+            in: customTaskSections,
+            surface: selectedSurface
+        )
     }
 
     private var canCreateSection: Bool {
         guard let result = HomeCustomTaskSectionStorage.upsertingSection(
             title: newSectionTitle,
+            surface: selectedSurface,
             in: customTaskSections
         ) else {
             return false
@@ -86,8 +94,17 @@ struct SettingsMacTaskSectionsDetailView: View {
 
     private var newSectionComposer: some View {
         VStack(alignment: .leading, spacing: 6) {
+            Picker("Section destination", selection: $selectedSurface) {
+                Text("Main task list")
+                    .tag(HomeTaskSectionSurface.radar)
+                Text("Backlog")
+                    .tag(HomeTaskSectionSurface.backlog)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Section destination")
+
             HStack(spacing: 10) {
-                TextField("New section name", text: $newSectionTitle)
+                TextField(newSectionPlaceholder, text: $newSectionTitle)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(createSection)
 
@@ -128,10 +145,10 @@ struct SettingsMacTaskSectionsDetailView: View {
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("No custom sections")
+                Text("No \(selectedSurface.displayName) sections")
                     .font(.subheadline.weight(.semibold))
 
-                Text("Add one above to create a new task-list area.")
+                Text("Add one above to create a new section in this area.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -754,6 +771,7 @@ struct SettingsMacTaskSectionsDetailView: View {
         HomeCustomTaskSectionStorage.movingSection(
             section.id,
             by: offset,
+            surface: section.parentSectionID == nil ? section.surface : nil,
             in: customTaskSections
         ) != nil
     }
@@ -765,6 +783,7 @@ struct SettingsMacTaskSectionsDetailView: View {
         guard let sections = HomeCustomTaskSectionStorage.movingSection(
             section.id,
             by: offset,
+            surface: section.parentSectionID == nil ? section.surface : nil,
             in: customTaskSections
         ) else {
             return
@@ -902,6 +921,7 @@ struct SettingsMacTaskSectionsDetailView: View {
     private func createSection() {
         guard let result = HomeCustomTaskSectionStorage.upsertingSection(
             title: newSectionTitle,
+            surface: selectedSurface,
             in: customTaskSections
         ),
               result.sections.count > customTaskSections.count else {
@@ -1053,6 +1073,10 @@ struct SettingsMacTaskSectionsDetailView: View {
         didInitializeExpansion = true
     }
 
+    private var newSectionPlaceholder: String {
+        "New \(selectedSurface.displayName.lowercased()) section"
+    }
+
     private func normalizeExpandedSection() {
         guard let expandedSectionID else { return }
         if !superSections.contains(where: { $0.id == expandedSectionID }) {
@@ -1119,6 +1143,17 @@ struct SettingsMacTaskSectionsDetailView: View {
             NotificationCenter.default.postRoutineDidUpdate()
         } catch {
             statusMessage = "Section was removed, but task assignments could not be refreshed."
+        }
+    }
+}
+
+private extension HomeTaskSectionSurface {
+    var displayName: String {
+        switch self {
+        case .radar:
+            return "Main task list"
+        case .backlog:
+            return "Backlog"
         }
     }
 }

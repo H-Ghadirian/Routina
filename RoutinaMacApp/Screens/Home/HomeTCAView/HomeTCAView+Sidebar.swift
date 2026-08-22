@@ -263,20 +263,34 @@ extension HomeTCAView {
         Binding(
             get: { visibleMacSidebarMode },
             set: { mode in
-                switch resolvedMacSidebarMode(mode) {
-                case .routines:  showRoutinesInSidebar()
-                case .board:     openBoardInSidebar()
-                case .goals:     openGoalsInSidebar()
-                case .adventure: openAdventureInSidebar()
-                case .timeline:  openTimelineInSidebar()
-                case .stats:     openStatsInSidebar()
-                case .backlog:   openBacklogInMainWindow()
-                case .taskLadder: openTaskLadderInMainWindow()
-                case .settings:  openSettingsInSidebar()
-                case .addTask:   openAddTask()
-                }
+                selectMacWorkspace(resolvedMacSidebarMode(mode))
             }
         )
+    }
+
+    private func selectMacWorkspace(_ mode: MacSidebarMode) {
+        if isMacBacklogMode,
+           mode != .backlog,
+           backlogStore.taskDetailState != nil {
+            backlogStore.send(.workspaceDeactivated)
+            DispatchQueue.main.async {
+                selectMacWorkspace(mode)
+            }
+            return
+        }
+
+        switch mode {
+        case .routines:  showRoutinesInSidebar()
+        case .board:     openBoardInSidebar()
+        case .goals:     openGoalsInSidebar()
+        case .adventure: openAdventureInSidebar()
+        case .timeline:  openTimelineInSidebar()
+        case .stats:     openStatsInSidebar()
+        case .backlog:   openBacklogInMainWindow()
+        case .taskLadder: openTaskLadderInMainWindow()
+        case .settings:  openSettingsInSidebar()
+        case .addTask:   openAddTask()
+        }
     }
 
     var mainDetailModeBinding: Binding<MacHomeDetailMode> {
