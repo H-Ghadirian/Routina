@@ -52,6 +52,104 @@ struct BacklogTaskListPresentationTests {
     }
 
     @Test
+    func keepsEmptyBacklogSuperSectionsAndSubsectionsReachable() throws {
+        let somedayID = UUID()
+        let researchID = UUID()
+        let sections = [
+            HomeCustomTaskSection(
+                id: somedayID,
+                surface: .backlog,
+                title: "Someday",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: researchID,
+                parentSectionID: somedayID,
+                surface: .backlog,
+                title: "Research",
+                createdAt: nil
+            )
+        ]
+
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [],
+            customSections: sections,
+            flagRules: [],
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        let section = try #require(presentation.sections.first)
+        #expect(section.id == somedayID)
+        #expect(section.subsections.map(\.id) == [researchID])
+        #expect(presentation.taskCount == 0)
+        #expect(!presentation.isEmpty)
+    }
+
+    @Test
+    func searchFiltersEveryBacklogGroupAndRetainsMatchingHierarchy() throws {
+        let writingID = UUID()
+        let researchID = UUID()
+        let writingTask = RoutineTask(name: "Draft article", customTaskSectionID: writingID)
+        let nestedTask = RoutineTask(
+            name: "Read sources",
+            notes: "Interview Ada",
+            customTaskSectionID: researchID
+        )
+        let hiddenTask = RoutineTask(name: "Call carpenter", flags: ["Off radar"])
+        let sections = [
+            HomeCustomTaskSection(
+                id: writingID,
+                surface: .backlog,
+                title: "Writing",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: researchID,
+                parentSectionID: writingID,
+                surface: .backlog,
+                title: "Research",
+                createdAt: nil
+            )
+        ]
+        let flagRules = [RoutineFlagRule(flag: "Off radar", kind: .hideFromTaskLists)]
+
+        let noteMatch = BacklogTaskListPresentation.make(
+            tasks: [writingTask, nestedTask, hiddenTask],
+            customSections: sections,
+            flagRules: flagRules,
+            searchText: "interview",
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+        let section = try #require(noteMatch.sections.first)
+        #expect(section.tasks.isEmpty)
+        #expect(section.subsections.first?.tasks.map(\.id) == [nestedTask.id])
+        #expect(noteMatch.hiddenByFlagTasks.isEmpty)
+
+        let pathMatch = BacklogTaskListPresentation.make(
+            tasks: [writingTask, nestedTask, hiddenTask],
+            customSections: sections,
+            flagRules: flagRules,
+            searchText: "research",
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+        #expect(pathMatch.sections.first?.subsections.first?.tasks.map(\.id) == [nestedTask.id])
+
+        let hiddenMatch = BacklogTaskListPresentation.make(
+            tasks: [writingTask, nestedTask, hiddenTask],
+            customSections: sections,
+            flagRules: flagRules,
+            searchText: "carpenter",
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+        #expect(hiddenMatch.sections.isEmpty)
+        #expect(hiddenMatch.hiddenByFlagTasks.map(\.id) == [hiddenTask.id])
+    }
+
+    @Test
     func doesNotTurnCompletedFlaggedTodosIntoAnUnboundedBacklogHistory() {
         let completed = RoutineTask(
             name: "Already done",

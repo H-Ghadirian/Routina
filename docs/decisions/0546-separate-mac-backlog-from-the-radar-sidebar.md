@@ -12,6 +12,10 @@ Accepted
 
 - [0632: Integrate Mac Workspaces in the Main Window](0632-integrate-mac-workspaces-in-the-main-window.md) replaces the separate Backlog window with a full-size workspace inside the main Mac window while preserving the off-radar data and behavior defined here.
 
+## Refined By
+
+- [0633: Make Mac Backlog Hierarchical and Searchable](0633-make-mac-backlog-hierarchical-and-searchable.md) keeps empty Backlog paths reachable and adds workspace-local search.
+
 ## Context
 
 The Mac Home sidebar is most useful when it is a short, deliberate radar of

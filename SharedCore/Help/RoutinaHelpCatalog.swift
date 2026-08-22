@@ -227,6 +227,8 @@ public enum RoutinaHelpCatalog {
             details: [
                 "Choose Backlog from the main window’s workspace menu or press Shift-Command-B.",
                 "Create at least one Backlog section before Home or a task form can offer Backlog destinations. Routina has no generic unsectioned Backlog destination.",
+                "Backlog super sections can contain one level of subsection. Empty sections stay visible so you can add a subsection immediately, and both levels can collapse.",
+                "Use Search backlog to find deferred tasks by their text, tags, Flags, destination, or Backlog path without moving them back to the everyday task list.",
                 "Moving a task to a Backlog section removes it from normal Home placement without completing, pausing, or deleting it. Move to Radar returns it to ordinary Home placement.",
                 "The separate beta Board backlog is unrelated and does not create sections in the Backlog workspace."
             ],

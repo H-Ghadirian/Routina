@@ -95,7 +95,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Search without losing the surrounding workspace or accidentally creating a duplicate.
 
-**Desired experience:** Search accepts typing immediately, returns understandable matches, and keeps clear recovery paths when filters or normal placement hide a known item. A broader query includes every eligible item that a more specific version of the same query can find, even when other matches already occupy normal task-list sections. Creating from a no-result query is offered only when it will not encourage an obvious duplicate.
+**Desired experience:** Search accepts typing immediately, returns understandable matches, and keeps clear recovery paths when filters or normal placement hide a known item. A broader query includes every eligible item that a more specific version of the same query can find, even when other matches already occupy normal task-list sections. Mac Backlog has its own search so deferred tasks can be found in place; matching super-section and subsection context remains visible without changing the person's normal disclosure choices. Creating from a no-result query is offered only when it will not encourage an obvious duplicate, and Backlog search remains retrieval-only rather than becoming another task-creation field.
 
 **Successful outcome:** The person opens the intended item or confidently creates a new one.
 
@@ -153,15 +153,15 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Move it off the radar while retaining searchability, context, and a return path.
 
-**Desired experience:** Pausing, archiving, backlog organization, and visibility rules have distinct meanings. Backlog is a labeled, full-size workspace in the main Mac window rather than a detached window or hidden app-menu command. The item is not lost, completed, or silently rescheduled. Configuring Flag behavior stays progressive: each Flag shows only the rules already attached to it, `Add Rule` lists the remaining behaviors, and every attached rule can be removed in place.
+**Desired experience:** Pausing, archiving, backlog organization, and visibility rules have distinct meanings. Backlog is a labeled, full-size workspace in the main Mac window rather than a detached window or hidden app-menu command. It supports the same understandable super-section plus one-level subsection organization as the Mac task-list sidebar, keeps newly created empty sections visible so they can be organized immediately, and lets each level collapse without hiding search matches. The item is not lost, completed, or silently rescheduled. Configuring Flag behavior stays progressive: each Flag shows only the rules already attached to it, `Add Rule` lists the remaining behaviors, and every attached rule can be removed in place.
 
 **Successful outcome:** Everyday views remain manageable and deferred work can be recovered deliberately.
 
-**Example:** A future home-renovation idea moves to Backlog and can later return to normal task lists. Its Backlog Flag shows only its chosen task-list rule instead of every behavior Routina supports.
+**Example:** A future home-renovation idea moves to `Home › Renovation` in Backlog and can later return to normal task lists. Searching for “carpenter” reveals it in that hierarchy even when its section was collapsed. Its Backlog Flag shows only its chosen task-list rule instead of every behavior Routina supports.
 
 **Current limitation:** Mac Backlog has no unsectioned explicit destination. The person must create a section in the Backlog workspace before Home's `Move to` menu or a task form's `Path` menu offers `Backlog › <section>`. Those menus do not explain the missing prerequisite when no Backlog section exists, and the beta Board's separately named backlog can add ambiguity.
 
-**Evidence:** User feedback and supplied macOS screenshots on 2026-08-17 confirmed that the expected Backlog destinations were absent when the catalog contained only ordinary Radar sections. User feedback and supplied macOS screenshots on 2026-08-22 established the need to make Backlog, Task Ladder, and Settings easier to find while avoiding another competing drawer.
+**Evidence:** User feedback and supplied macOS screenshots on 2026-08-17 confirmed that the expected Backlog destinations were absent when the catalog contained only ordinary Radar sections. User feedback and supplied macOS screenshots on 2026-08-22 established the need to make Backlog, Task Ladder, and Settings easier to find while avoiding another competing drawer. User feedback on 2026-08-22 additionally established the need for sidebar-like Backlog super/subsections and in-workspace Backlog search.
 
 **Availability:** Mixed; pause and archive are broadly available, while the integrated Backlog workspace is on macOS.
 

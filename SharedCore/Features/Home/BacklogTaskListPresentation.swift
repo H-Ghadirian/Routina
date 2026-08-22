@@ -29,7 +29,7 @@ struct BacklogTaskListPresentation: Equatable {
     }
 
     var isEmpty: Bool {
-        taskCount == 0
+        sections.isEmpty && hiddenByFlagTasks.isEmpty
     }
 
     static var empty: Self {
@@ -40,14 +40,30 @@ struct BacklogTaskListPresentation: Equatable {
         tasks: [RoutineTask],
         customSections: [HomeCustomTaskSection],
         flagRules: [RoutineFlagRule],
+        searchText: String = "",
         referenceDate: Date,
         calendar: Calendar
     ) -> Self {
         let sections = HomeCustomTaskSectionStorage.sanitized(customSections)
         let backlogSections = sections.filter { $0.surface == .backlog }
         let backlogSectionIDs = Set(backlogSections.map(\.id))
+        let normalizedSearchQuery = HomeTaskSearchIndex.query(searchText)
+        let pathTitlesBySectionID = Dictionary(uniqueKeysWithValues: backlogSections.map { section in
+            (
+                section.id,
+                HomeCustomTaskSectionStorage.pathTitles(for: section.id, in: backlogSections) ?? [section.title]
+            )
+        })
         let tasksBySectionID = Dictionary(grouping: tasks.filter { task in
-            task.customTaskSectionID.map(backlogSectionIDs.contains) ?? false
+            guard let sectionID = task.customTaskSectionID,
+                  backlogSectionIDs.contains(sectionID) else {
+                return false
+            }
+            return matchesSearch(
+                task,
+                normalizedQuery: normalizedSearchQuery,
+                pathTitles: pathTitlesBySectionID[sectionID] ?? []
+            )
         }) { $0.customTaskSectionID! }
 
         let topLevelSections = HomeCustomTaskSectionStorage.topLevelSections(
@@ -56,7 +72,7 @@ struct BacklogTaskListPresentation: Equatable {
         )
         let presentationSections = topLevelSections.compactMap { section -> Section? in
             let directTasks = sorted(tasksBySectionID[section.id] ?? [])
-            let subsections = HomeCustomTaskSectionStorage.subsections(
+            let allSubsections = HomeCustomTaskSectionStorage.subsections(
                 of: section.id,
                 in: backlogSections
             ).map { subsection in
@@ -65,8 +81,13 @@ struct BacklogTaskListPresentation: Equatable {
                     tasks: sorted(tasksBySectionID[subsection.id] ?? [])
                 )
             }
+            let subsections = normalizedSearchQuery == nil
+                ? allSubsections
+                : allSubsections.filter { !$0.tasks.isEmpty }
 
-            guard !directTasks.isEmpty || subsections.contains(where: { !$0.tasks.isEmpty }) else {
+            guard normalizedSearchQuery == nil
+                    || !directTasks.isEmpty
+                    || !subsections.isEmpty else {
                 return nil
             }
             return Section(section: section, tasks: directTasks, subsections: subsections)
@@ -79,9 +100,29 @@ struct BacklogTaskListPresentation: Equatable {
                 return false
             }
             return RoutineFlagRules.hidesFromTaskLists(flags: task.flags, rules: flagRules)
+                && matchesSearch(task, normalizedQuery: normalizedSearchQuery)
         })
 
         return Self(sections: presentationSections, hiddenByFlagTasks: hiddenByFlagTasks)
+    }
+
+    private static func matchesSearch(
+        _ task: RoutineTask,
+        normalizedQuery: String?,
+        pathTitles: [String] = []
+    ) -> Bool {
+        guard let normalizedQuery else { return true }
+        return HomeTaskSearchIndex.make(
+            name: task.name ?? "",
+            emoji: task.emoji ?? "",
+            taskDescription: task.taskDescription,
+            notes: task.notes,
+            placeName: task.destinationAddress,
+            tags: task.tags + pathTitles,
+            flags: task.flags,
+            goalTitles: []
+        )
+        .contains(normalizedQuery)
     }
 
     private static func isActiveBacklogCandidate(

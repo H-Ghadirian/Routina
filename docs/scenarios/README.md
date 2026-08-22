@@ -165,6 +165,27 @@ And it waits for the semantic update burst to settle before performing one refre
 And an automatic refresh does not enter the user-visible loading state
 And the manual Refresh Backlog control remains immediately available when no refresh is in progress
 
+### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
+
+Area: Tasks / Mac Backlog
+Decision links: [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/BacklogTaskListPresentationTests.swift`
+- `Tests/macOS/BacklogFeatureTests.swift`
+
+Given a person creates an empty Backlog super section
+When its cached task presentation contains no assigned task
+Then the super section remains visible and can immediately create one level of subsection
+And either hierarchy level can be collapsed across its full visible header surface
+
+Given Backlog contains tasks in direct sections, nested subsections, and `Hidden by flag`
+When the person enters a Backlog search query
+Then only matching tasks and their hierarchy are shown
+And title, description, notes, destination, tags, Flags, and section path can match
+And matching hierarchy is revealed without changing stored disclosure choices
+And a no-match query shows a retrieval-only empty state without offering task creation
+
 ### Mac Task Detail Closes Without Historical Refresh Work
 
 Area: Tasks / Planner / Performance

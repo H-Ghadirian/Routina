@@ -10,6 +10,8 @@ struct BacklogMacView: View {
     ) private var customTaskSectionsRawValue = ""
     @State private var newSectionTitle = ""
     @State private var newSubsectionTitleBySectionID: [UUID: String] = [:]
+    @State private var collapsedSectionIDs: Set<UUID> = []
+    @State private var collapsedSubsectionIDs: Set<UUID> = []
 
     var body: some View {
         HSplitView {
@@ -67,6 +69,10 @@ struct BacklogMacView: View {
 
             Divider()
 
+            searchControl
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+
             newSectionControl
                 .padding(12)
 
@@ -74,6 +80,10 @@ struct BacklogMacView: View {
 
             if store.isLoading && store.presentation.isEmpty {
                 ProgressView("Loading Backlog…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if isSearching && store.presentation.taskCount == 0 {
+                ContentUnavailableView.search(text: store.searchText)
+                    .padding(20)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if store.presentation.isEmpty {
                 ContentUnavailableView(
@@ -101,9 +111,42 @@ struct BacklogMacView: View {
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.45))
     }
 
+    private var searchControl: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField("Search backlog", text: searchTextBinding)
+                .textFieldStyle(.plain)
+
+            if !store.searchText.isEmpty {
+                Button {
+                    store.send(.searchTextChanged(""))
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 18, height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Clear Backlog search")
+            }
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(nsColor: .textBackgroundColor))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.secondary.opacity(0.24), lineWidth: 1)
+        }
+    }
+
     private var newSectionControl: some View {
         HStack(spacing: 8) {
-            TextField("New backlog section", text: $newSectionTitle)
+            TextField("New super section", text: $newSectionTitle)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit(createBacklogSection)
 
@@ -113,57 +156,103 @@ struct BacklogMacView: View {
     }
 
     private func backlogSection(_ section: BacklogTaskListPresentation.Section) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 7) {
-                Image(systemName: "folder.fill")
-                    .foregroundStyle(sectionColor(section.section))
+        let isExpanded = isSearching || !collapsedSectionIDs.contains(section.id)
 
-                Text(section.section.title)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
+        return VStack(alignment: .leading, spacing: 5) {
+            Button {
+                toggleSection(section.id)
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(sectionColor(section.section))
+                        .frame(width: 12)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
 
-                Text("\(section.taskCount)")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    Image(systemName: "folder.fill")
+                        .foregroundStyle(sectionColor(section.section))
 
-                Spacer(minLength: 0)
+                    Text(section.section.title)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+
+                    Spacer(minLength: 0)
+
+                    Text("\(section.taskCount)")
+                        .font(.caption2.weight(.medium).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             }
-            .padding(.horizontal, 8)
-            .padding(.top, 2)
+            .buttonStyle(.plain)
 
-            ForEach(section.tasks) { task in
-                taskRow(task, pathTitle: section.section.title)
-            }
+            if isExpanded {
+                ForEach(section.tasks) { task in
+                    taskRow(task, pathTitle: section.section.title)
+                }
 
-            ForEach(section.subsections) { subsection in
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "folder")
-                            .foregroundStyle(.secondary)
+                ForEach(section.subsections) { subsection in
+                    backlogSubsection(subsection, parentSection: section.section)
+                }
 
-                        Text(subsection.section.title)
-                            .font(.caption.weight(.medium))
-
-                        Text("\(subsection.tasks.count)")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.leading, 18)
-                    .padding(.top, 4)
-
-                    ForEach(subsection.tasks) { task in
-                        taskRow(
-                            task,
-                            pathTitle: "\(section.section.title) › \(subsection.section.title)",
-                            indentation: 14
-                        )
-                    }
+                if !isSearching {
+                    newSubsectionControl(for: section.section.id)
+                        .padding(.leading, 18)
+                        .padding(.top, 3)
                 }
             }
+        }
+    }
 
-            newSubsectionControl(for: section.section.id)
+    private func backlogSubsection(
+        _ subsection: BacklogTaskListPresentation.Subsection,
+        parentSection: HomeCustomTaskSection
+    ) -> some View {
+        let isExpanded = isSearching || !collapsedSubsectionIDs.contains(subsection.id)
+
+        return VStack(alignment: .leading, spacing: 5) {
+            Button {
+                toggleSubsection(subsection.id)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 10)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+
+                    Image(systemName: "folder")
+                        .foregroundStyle(.secondary)
+
+                    Text(subsection.section.title)
+                        .font(.caption.weight(.medium))
+
+                    Spacer(minLength: 0)
+
+                    Text("\(subsection.tasks.count)")
+                        .font(.caption2.weight(.medium).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
                 .padding(.leading, 18)
-                .padding(.top, 3)
+                .padding(.trailing, 8)
+                .padding(.vertical, 5)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                ForEach(subsection.tasks) { task in
+                    taskRow(
+                        task,
+                        pathTitle: "\(parentSection.title) › \(subsection.section.title)",
+                        indentation: 14
+                    )
+                }
+            }
         }
     }
 
@@ -305,7 +394,21 @@ struct BacklogMacView: View {
 
     private var backlogCountLabel: String {
         let count = store.presentation.taskCount
+        if isSearching {
+            return count == 1 ? "1 result" : "\(count) results"
+        }
         return count == 1 ? "1 task" : "\(count) tasks"
+    }
+
+    private var isSearching: Bool {
+        HomeTaskSearchIndex.query(store.searchText) != nil
+    }
+
+    private var searchTextBinding: Binding<String> {
+        Binding(
+            get: { store.searchText },
+            set: { store.send(.searchTextChanged($0)) }
+        )
     }
 
     private var backlogDestinations: [BacklogDestination] {
@@ -360,6 +463,24 @@ struct BacklogMacView: View {
         customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded(sections)
         AppSettingsPersistenceMirror.schedule()
         store.send(.customSectionsChanged(sections))
+    }
+
+    private func toggleSection(_ sectionID: UUID) {
+        guard !isSearching else { return }
+        if collapsedSectionIDs.contains(sectionID) {
+            collapsedSectionIDs.remove(sectionID)
+        } else {
+            collapsedSectionIDs.insert(sectionID)
+        }
+    }
+
+    private func toggleSubsection(_ subsectionID: UUID) {
+        guard !isSearching else { return }
+        if collapsedSubsectionIDs.contains(subsectionID) {
+            collapsedSubsectionIDs.remove(subsectionID)
+        } else {
+            collapsedSubsectionIDs.insert(subsectionID)
+        }
     }
 
     private func sectionColor(_ section: HomeCustomTaskSection) -> Color {

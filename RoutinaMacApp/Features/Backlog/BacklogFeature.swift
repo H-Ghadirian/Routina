@@ -16,6 +16,7 @@ struct BacklogFeature {
         var customSections: [HomeCustomTaskSection] = []
         var flagRules: [RoutineFlagRule] = []
         var presentation = BacklogTaskListPresentation.empty
+        var searchText = ""
         var selectedTaskID: UUID?
         var taskDetailState: TaskDetailFeature.State?
         var isLoading = false
@@ -32,6 +33,7 @@ struct BacklogFeature {
         case loadFailed(String)
         case customSectionsChanged([HomeCustomTaskSection])
         case customSectionsDeleted([HomeCustomTaskSection], Set<UUID>)
+        case searchTextChanged(String)
         case taskSelected(UUID)
         case taskDetail(TaskDetailFeature.Action)
         case moveTask(UUID, to: UUID?)
@@ -105,6 +107,12 @@ struct BacklogFeature {
                 guard !removedSectionIDs.isEmpty else { return .none }
                 return clearDeletedSectionAssignments(removedSectionIDs)
 
+            case let .searchTextChanged(searchText):
+                guard state.searchText != searchText else { return .none }
+                state.searchText = searchText
+                rebuildPresentation(&state)
+                return .none
+
             case let .taskSelected(taskID):
                 guard let task = state.tasks.first(where: { $0.id == taskID }) else { return .none }
                 state.selectedTaskID = taskID
@@ -140,6 +148,7 @@ struct BacklogFeature {
             tasks: state.tasks,
             customSections: state.customSections,
             flagRules: state.flagRules,
+            searchText: state.searchText,
             referenceDate: now,
             calendar: calendar
         )
