@@ -2,20 +2,24 @@
 
 ## Status
 
-Accepted
+Superseded
 
 ## Date
 
 2026-08-08
 
+## Superseded By
+
+- [0631 Remove Apple Intelligence Task Relationship Suggestions](../0631-remove-apple-intelligence-task-relationship-suggestions.md)
+
 ## Refines
 
-- [0486 Suggest Confirmed Task Relationships On Device](0486-suggest-confirmed-task-relationships-on-device.md)
+- [0486 Suggest Confirmed Task Relationships On Device](../0486-suggest-confirmed-task-relationships-on-device.md)
 - [0506 Make Apple Intelligence Relationship Suggestions macOS-Only](0506-make-apple-intelligence-relationship-suggestions-macos-only.md)
 
 ## Refined By
 
-- [0630 Compose Task Relationships With Grouped Sentence Fragments](0630-compose-task-relationships-with-grouped-sentence-fragments.md)
+- [0630 Compose Task Relationships With Grouped Sentence Fragments](../0630-compose-task-relationships-with-grouped-sentence-fragments.md)
 
 ## Context
 

@@ -73,16 +73,6 @@ private enum GitLabStatsClientKey: DependencyKey {
     static let testValue = GitLabStatsClient.noop
 }
 
-private enum TaskRelationshipSuggestionClientKey: DependencyKey {
-    static let liveValue = TaskRelationshipSuggestionClient.live
-    static let testValue = TaskRelationshipSuggestionClient.noop
-}
-
-private enum TaskRelationshipReviewProgressClientKey: DependencyKey {
-    static let liveValue = TaskRelationshipReviewProgressClient.live
-    static let testValue = TaskRelationshipReviewProgressClient.noop
-}
-
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -119,11 +109,6 @@ extension DependencyValues {
         set { self[AppSettingsClientKey.self] = newValue }
     }
 
-    var taskRelationshipReviewProgressClient: TaskRelationshipReviewProgressClient {
-        get { self[TaskRelationshipReviewProgressClientKey.self] }
-        set { self[TaskRelationshipReviewProgressClientKey.self] = newValue }
-    }
-
     var creationDraftClient: CreationDraftClient {
         get { self[CreationDraftClientKey.self] }
         set { self[CreationDraftClientKey.self] = newValue }
@@ -152,11 +137,6 @@ extension DependencyValues {
     var gitHubStatsClient: GitHubStatsClient {
         get { self[GitHubStatsClientKey.self] }
         set { self[GitHubStatsClientKey.self] = newValue }
-    }
-
-    var taskRelationshipSuggestionClient: TaskRelationshipSuggestionClient {
-        get { self[TaskRelationshipSuggestionClientKey.self] }
-        set { self[TaskRelationshipSuggestionClientKey.self] = newValue }
     }
 
     var gitLabStatsClient: GitLabStatsClient {

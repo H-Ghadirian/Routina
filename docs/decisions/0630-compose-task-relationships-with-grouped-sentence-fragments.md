@@ -13,8 +13,12 @@ Accepted
 - [0188 Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md)
 - [0264 Match Button Hit Areas to Visual Surfaces](0264-match-button-hit-areas-to-visual-surfaces.md)
 - [0409 Add Manual Can Complete Task Links](0409-add-manual-can-complete-task-links.md)
-- [0512 Present Mac Relationship Suggestions in the Link Task Sheet](0512-present-mac-relationship-suggestions-in-link-task-sheet.md)
+- [0512 Present Mac Relationship Suggestions in the Link Task Sheet](superseded/0512-present-mac-relationship-suggestions-in-link-task-sheet.md)
 - [0624 Hide Empty Linked Tasks by Default](0624-hide-empty-linked-tasks-by-default.md)
+
+## Revised By
+
+- [0631 Remove Apple Intelligence Task Relationship Suggestions](0631-remove-apple-intelligence-task-relationship-suggestions.md), which removes the Suggestions mode while retaining the grouped manual relationship composer.
 
 ## Context
 

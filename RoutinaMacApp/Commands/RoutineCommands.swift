@@ -6,7 +6,6 @@ enum RoutinaMacSceneID {
     static let backlog = "routina-backlog"
     static let taskRanking = "routina-task-ranking"
     static let settings = "routina-settings"
-    static let taskRelationshipReview = "routina-task-relationship-review"
 }
 
 extension Notification.Name {
@@ -142,12 +141,6 @@ struct RoutineCommands: Commands {
                 )
             }
             .keyboardShortcut("l", modifiers: [.command, .shift])
-
-            Button("Review Task Relationships…") {
-                openWindow(id: RoutinaMacSceneID.taskRelationshipReview)
-            }
-
-            Divider()
 
             #if !SWIFT_PACKAGE
             if areMacEventEmotionActionsEnabled {

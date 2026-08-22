@@ -1,17 +1,6 @@
 import Foundation
 import SwiftUI
 
-struct TaskRelationshipSuggestionPickerConfiguration {
-    let hasCandidates: Bool
-    let suggestions: [TaskRelationshipSuggestion]
-    let isLoading: Bool
-    let message: String?
-    let requestSuggestions: () -> Void
-    let changeSuggestionKind: (UUID, RoutineTaskRelationshipKind) -> Void
-    let acceptSuggestion: (UUID) -> Void
-    let dismissSuggestion: (UUID) -> Void
-}
-
 struct TaskRelationshipsEditor<SearchField: View>: View {
     let relationships: [RoutineTaskRelationship]
     let candidates: [RoutineTaskRelationshipCandidate]
@@ -170,13 +159,11 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
     let createLinkedTask: ((RoutineTaskRelationshipKind) -> Void)?
 
     private let searchField: (Binding<String>) -> SearchField
-    private let suggestionConfiguration: TaskRelationshipSuggestionPickerConfiguration?
 
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var selectedKind: RoutineTaskRelationshipKind = .related
     @State private var selectedCandidateID: UUID?
-    @State private var isShowingSuggestions = false
 
     init(
         candidates: [RoutineTaskRelationshipCandidate],
@@ -185,7 +172,6 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
         onSelect: @escaping (UUID, RoutineTaskRelationshipKind) -> Void,
         sourceTaskTitle: String? = nil,
         createLinkedTask: ((RoutineTaskRelationshipKind) -> Void)? = nil,
-        suggestionConfiguration: TaskRelationshipSuggestionPickerConfiguration? = nil,
         @ViewBuilder searchField: @escaping (Binding<String>) -> SearchField
     ) {
         self.candidates = candidates
@@ -193,7 +179,6 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
         self.onSelect = onSelect
         self.sourceTaskTitle = sourceTaskTitle
         self.createLinkedTask = createLinkedTask
-        self.suggestionConfiguration = suggestionConfiguration
         self.searchField = searchField
         _selectedKind = State(initialValue: initialKind)
     }
@@ -221,26 +206,14 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    if let suggestionConfiguration {
-                        relationshipSourceControls(configuration: suggestionConfiguration)
-                    }
-
-                    if !isShowingSuggestions {
-                        relationshipTypeSelector
-                        taskSearchField
-                    }
+                    relationshipTypeSelector
+                    taskSearchField
                 }
                 .padding()
 
                 Divider()
 
-                Group {
-                    if isShowingSuggestions, let suggestionConfiguration {
-                        suggestionResults(configuration: suggestionConfiguration)
-                    } else {
-                        manualTaskSelection
-                    }
-                }
+                manualTaskSelection
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -294,47 +267,6 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.08, interactive: true)
-    }
-
-    private func relationshipSourceControls(
-        configuration: TaskRelationshipSuggestionPickerConfiguration
-    ) -> some View {
-        HStack(spacing: 8) {
-            Button {
-                isShowingSuggestions = false
-            } label: {
-                Label("Search", systemImage: "magnifyingglass")
-                    .frame(maxWidth: .infinity)
-                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-            .buttonStyle(.bordered)
-            .tint(isShowingSuggestions ? .secondary : .accentColor)
-
-            Button {
-                isShowingSuggestions = true
-                configuration.requestSuggestions()
-            } label: {
-                HStack(spacing: 6) {
-                    if configuration.isLoading {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Image(systemName: "sparkles")
-                    }
-                    Text("Suggestions")
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-            .buttonStyle(.bordered)
-            .tint(isShowingSuggestions ? .accentColor : .secondary)
-            .disabled(configuration.isLoading || !configuration.hasCandidates)
-            .accessibilityLabel(
-                configuration.isLoading
-                    ? "Analyzing task relationships"
-                    : "Find task relationship suggestions"
-            )
-        }
     }
 
     @ViewBuilder
@@ -456,98 +388,6 @@ struct TaskRelationshipPickerSheet<SearchField: View>: View {
         )
     }
 
-    @ViewBuilder
-    private func suggestionResults(
-        configuration: TaskRelationshipSuggestionPickerConfiguration
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Suggested relationships", systemImage: "sparkles")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            if configuration.isLoading {
-                VStack(alignment: .leading, spacing: 10) {
-                    ProgressView()
-                    Text("Finding relevant task relationships…")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            } else if configuration.suggestions.isEmpty {
-                Text(configuration.message ?? "No suggestions yet.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(configuration.suggestions) { suggestion in
-                            TaskRelationshipSuggestionCard(
-                                suggestion: suggestion,
-                                onChangeKind: configuration.changeSuggestionKind,
-                                onAccept: configuration.acceptSuggestion,
-                                onDismiss: configuration.dismissSuggestion
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct TaskRelationshipSuggestionCard: View {
-    let suggestion: TaskRelationshipSuggestion
-    let onChangeKind: (UUID, RoutineTaskRelationshipKind) -> Void
-    let onAccept: (UUID) -> Void
-    let onDismiss: (UUID) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(suggestion.targetTaskEmoji)
-
-                Text(suggestion.targetTaskTitle)
-                    .font(.subheadline.weight(.medium))
-
-                Spacer(minLength: 0)
-
-                TaskRelationshipKindMenuPicker(
-                    selection: Binding(
-                        get: { suggestion.kind },
-                        set: { onChangeKind(suggestion.targetTaskID, $0) }
-                    ),
-                    fillsAvailableWidth: false
-                )
-            }
-
-            Text(suggestion.reason)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 8) {
-                Button("Dismiss", role: .cancel) {
-                    onDismiss(suggestion.targetTaskID)
-                }
-                .buttonStyle(.bordered)
-                .frame(maxWidth: .infinity)
-
-                Button("Confirm") {
-                    onAccept(suggestion.targetTaskID)
-                }
-                .buttonStyle(.borderedProminent)
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .padding(12)
-        .routinaGlassCard(
-            cornerRadius: 12,
-            tint: .accentColor,
-            tintOpacity: 0.08,
-            interactive: false
-        )
-    }
 }
 
 struct TaskRelationshipKindMenuPicker: View {

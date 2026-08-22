@@ -350,7 +350,6 @@ let package = Package(
                 "SharedCore/Features/TaskDetail/TaskDetailStepChecklistEditActionHandler.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailStatusMutationHandler.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailTagGoalRelationshipEditActionHandler.swift",
-                "SharedCore/Features/TaskDetail/TaskRelationshipReviewFeature.swift",
                 "SharedCore/Persistence/PersistenceController.swift",
                 "SharedCore/Persistence/RoutinaUndoSupport.swift",
                 "SharedCore/Screens/TaskDetail/Graph/RelationshipGraphEdge.swift",

@@ -3,36 +3,6 @@ import Foundation
 import SwiftData
 
 extension TaskDetailFeature {
-    func loadRelationshipSuggestions(taskID: UUID) -> Effect<Action> {
-        .run { @MainActor send in
-            do {
-                let context = modelContext()
-                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                guard let sourceTask = tasks.first(where: { $0.id == taskID }) else {
-                    send(.relationshipSuggestionsFailed(taskID, "This task is no longer available."))
-                    return
-                }
-                let request = TaskRelationshipSuggestionRequest.make(
-                    source: sourceTask,
-                    from: tasks,
-                    referenceDate: now,
-                    calendar: calendar,
-                    customTaskSections: appSettingsClient.customTaskSections()
-                )
-                guard !request.candidates.isEmpty else {
-                    send(.relationshipSuggestionsLoaded(taskID, []))
-                    return
-                }
-                let suggestions = try await taskRelationshipSuggestionClient.suggest(request)
-                send(.relationshipSuggestionsLoaded(taskID, suggestions))
-            } catch {
-                let message = (error as? LocalizedError)?.errorDescription
-                    ?? "Couldn’t analyze task relationships. Try again."
-                send(.relationshipSuggestionsFailed(taskID, message))
-            }
-        }
-    }
-
     func handleOnAppear(taskID: UUID) -> Effect<Action> {
         .run { @MainActor send in
             do {

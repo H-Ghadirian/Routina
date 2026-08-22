@@ -844,31 +844,11 @@ struct TaskDetailTCAView: View {
                 store.send(.addLinkedTaskRelationshipKindChanged(kind))
                 isExistingTaskLinkerPresented = false
                 store.send(.openAddLinkedTask)
-            },
-            suggestionConfiguration: relationshipSuggestionConfiguration
+            }
         ) { searchText in
             TextField("Search tasks", text: searchText)
                 .routinaTaskRelationshipSearchFieldPlatform()
         }
-    }
-
-    private var relationshipSuggestionConfiguration: TaskRelationshipSuggestionPickerConfiguration {
-        TaskRelationshipSuggestionPickerConfiguration(
-            hasCandidates: !store.availableRelationshipTasks.isEmpty,
-            suggestions: store.relationshipSuggestions,
-            isLoading: store.isLoadingRelationshipSuggestions,
-            message: store.relationshipSuggestionMessage,
-            requestSuggestions: { store.send(.relationshipSuggestionsRequested) },
-            changeSuggestionKind: { taskID, kind in
-                store.send(.relationshipSuggestionKindChanged(taskID, kind))
-            },
-            acceptSuggestion: { taskID in
-                store.send(.acceptRelationshipSuggestion(taskID))
-            },
-            dismissSuggestion: { taskID in
-                store.send(.dismissRelationshipSuggestion(taskID))
-            }
-        )
     }
 
     private var shouldShowCommentsSection: Bool {

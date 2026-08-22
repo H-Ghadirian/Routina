@@ -20,13 +20,14 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
-- **[0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), [0409](0409-add-manual-can-complete-task-links.md), [0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md), and [0624](0624-hide-empty-linked-tasks-by-default.md):** Routina keeps all seven task-relationship meanings but composes them through one grouped sentence-fragment menu; Mac manual linking stages a candidate, previews its directional effect, and requires `Add Relationship`, while the existing Linked Tasks card uses a count and one header `Add` action.
+- **[0631](0631-remove-apple-intelligence-task-relationship-suggestions.md) revises [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md), and supersedes the relationship-suggestion-only decisions:** Routina removes Apple Intelligence task-relationship suggestions and the Mac review window while preserving the grouped manual relationship composer and every confirmed relationship behavior.
+- **[0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), [0409](0409-add-manual-can-complete-task-links.md), [0512](superseded/0512-present-mac-relationship-suggestions-in-link-task-sheet.md), and [0624](0624-hide-empty-linked-tasks-by-default.md), with its Suggestions mode removed by [0631](0631-remove-apple-intelligence-task-relationship-suggestions.md):** Routina keeps all seven task-relationship meanings but composes them through one grouped sentence-fragment menu; Mac manual linking stages a candidate, previews its directional effect, and requires `Add Relationship`, while the existing Linked Tasks card uses a count and one header `Add` action.
 - **[0629](0629-consolidate-task-detail-rich-content.md) refines [0124](0124-support-multiple-task-links.md), [0211](0211-support-titled-task-links.md), [0469](0469-store-task-descriptions-separately-from-notes.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0627](0627-group-mac-task-detail-tags-and-flags.md), and [0628](0628-adapt-mac-task-detail-labels-to-available-width.md):** Task Details group Description, Links, Image, Files, Voice Note, and Notes in one semantically labeled content card; Mac removes its duplicate link-only `DETAILS` header box while keeping full images out of the compact overview.
 - **[0628](0628-adapt-mac-task-detail-labels-to-available-width.md) refines [0627](0627-group-mac-task-detail-tags-and-flags.md), [0499](0499-explain-applied-flags-in-task-details.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** the shared Mac Task Detail label card uses one unwrapped Tags-and-Flags row when the complete content fits, then falls back to two labeled rows with wrapping chip collections when it does not.
 - **[0627](0627-group-mac-task-detail-tags-and-flags.md) refines [0497](0497-use-flags-for-task-behavior-rules.md), [0499](0499-explain-applied-flags-in-task-details.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** Mac Task Details place assigned Tags and Flags in one neutral metadata card while retaining separate labels, a divider, and the orange Flag-chip semantics.
 - **[0626](0626-join-mac-task-detail-completion-and-overflow.md) refines [0521](0521-group-secondary-mac-task-detail-actions.md) and [0536](0536-match-mac-task-detail-overflow-to-toolbar-chrome.md):** full Mac Task Details joins Done and the neutral `⋮` segment in one lifecycle control while preserving independent hit targets, primary completion color, native menu behavior, and destructive safeguards.
 - **[0625](0625-group-task-detail-add-detail-with-edit.md) supersedes [0508](superseded/0508-keep-ios-add-more-details-last.md) and refines the existing task-detail progressive-disclosure and action-hierarchy decisions:** iOS and full Mac Task Details remove the scrolling Add More card and group a field chooser with Edit; Mac uses an anchored popover and iOS uses a sheet, while the maintenance overflow remains separate.
-- **[0624](0624-hide-empty-linked-tasks-by-default.md) refines [0100](0100-reveal-task-form-details-by-section.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), and [0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md), with its entry-point presentation refined by [0625](0625-group-task-detail-add-detail-with-edit.md):** iOS and macOS Task Details hide the empty Linked Tasks card; Add a detail remains the relationship entry point until a resolved link exists.
+- **[0624](0624-hide-empty-linked-tasks-by-default.md) refines [0100](0100-reveal-task-form-details-by-section.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), and [0512](superseded/0512-present-mac-relationship-suggestions-in-link-task-sheet.md), with its entry-point presentation refined by [0625](0625-group-task-detail-add-detail-with-edit.md):** iOS and macOS Task Details hide the empty Linked Tasks card; Add a detail remains the relationship entry point until a resolved link exists.
 - **[0623](0623-keep-planner-day-header-task-counts-unellipsized.md):** Mac Planner day-header task-count labels reserve their intrinsic width so a visible numeric count is not ellipsized when the compact button fits; the count remains capped at `99+` visually and full in accessibility text.
 
 - **[0622](0622-preserve-planner-card-positions-while-prioritizing-visibility.md) supersedes [0621](superseded/0621-prioritize-planner-block-title-in-constrained-widths.md):** Mac Planner Schedule cards preserve their original field positions while progressively hiding the leading emoji or status icon, then time or range, so the title remains visible in the narrowest layouts.
@@ -243,8 +244,6 @@ User-experience documents explain who needs what and what success looks like. De
 
 - **[0513](0513-defer-ios-screen-time-blocking-until-distribution-approval.md) refines [0085](0085-shield-apps-and-websites-during-focus.md):** iOS development retains Screen Time app and website blocking, while production omits its UI, implementation, and Family Controls entitlement until Apple grants distribution approval.
 
-- **[0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md), with its sheet controls refined by [0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md), refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md):** Mac Task Detail keeps manual linking in its `Link Task` sheet, where an explicit Suggestions mode replaces manual search with loading and confirmed relationship proposals.
-
 - **[0511](0511-pause-custom-mac-super-sections.md) refines [0419](0419-nest-custom-subsections-under-super-sections.md), [0446](0446-edit-custom-section-paths-in-mac-task-forms.md), and [0450](0450-use-progressive-custom-section-management.md):** A custom Mac super section can pause its currently assigned or tag-routed active tasks as one tracked snapshot, keeping the section visibly resumable without reviving independently paused tasks.
 
 - **[0510](0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md), [0444](0444-log-completion-duration-without-a-specific-time.md), and [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md):** Confirming a synthetic one-off Time block records its scheduled interval as specific completed work and Task Detail keeps that block's date/time visible as Schedule metadata.
@@ -254,8 +253,6 @@ User-experience documents explain who needs what and what success looks like. De
 - **[0508](superseded/0508-keep-ios-add-more-details-last.md), superseded by [0625](0625-group-task-detail-add-detail-with-edit.md):** iOS Task Details formerly placed `Add more details` after all currently visible task content for both todos and routines.
 
 - **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](0424-make-task-detail-priority-optional.md):** iOS Task Details puts overall Priority above its component values, groups Pressure with metadata, keeps Done as the sole prominent action, and labels a second cadence-free completion explicitly.
-
-- **[0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** iOS Task Details keeps manual task linking but removes Apple Intelligence relationship suggestions; macOS retains both its on-demand Suggest action and relationship-review window.
 
 - **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
 
@@ -325,8 +322,6 @@ These are ordered from newest resolver to oldest resolver.
 
 - **[0513](0513-defer-ios-screen-time-blocking-until-distribution-approval.md) refines [0085](0085-shield-apps-and-websites-during-focus.md):** Until Apple grants Family Controls distribution approval, iOS development retains Screen Time app and website blocking while production omits the UI, implementation, and entitlement; macOS blocking is unchanged.
 
-- **[0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md):** Mac Task Detail puts the Apple Intelligence entry point, loading state, and proposal review in the Link Task sheet, while manual search stays separately available in that sheet and iOS remains manual-only.
-
 - **[0511](0511-pause-custom-mac-super-sections.md) refines [0419](0419-nest-custom-subsections-under-super-sections.md), [0446](0446-edit-custom-section-paths-in-mac-task-forms.md), and [0450](0450-use-progressive-custom-section-management.md):** Pausing a Mac super section uses the ordinary task pause lifecycle for its current assigned and tag-routed snapshot; the section remains visibly resumable and resuming excludes independently paused tasks.
 
 - **[0510](0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md), [0444](0444-log-completion-duration-without-a-specific-time.md), and [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md):** Confirming a synthetic one-off Time block writes its scheduled finish and duration as specific completed work, while Task Detail continues to show that one-off block's date/time as Schedule metadata.
@@ -335,8 +330,6 @@ These are ordered from newest resolver to oldest resolver.
 
 
 - **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](0424-make-task-detail-priority-optional.md):** iOS Task Details puts overall Priority above its component values, groups Pressure with metadata, keeps Done as the sole prominent action, and labels a second cadence-free completion explicitly.
-
-- **[0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** iOS Task Details keeps manual task linking but removes Apple Intelligence relationship suggestions; macOS retains both its on-demand Suggest action and relationship-review window.
 
 - **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
 
@@ -358,21 +351,15 @@ These are ordered from newest resolver to oldest resolver.
 
 - **[0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md) refines [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md):** Eligible Standard multi-day `After done` routines assume each overdue day until one individual confirmation resets the rolling anchor; bulk confirmation is unavailable.
 
-- **[0493](0493-prioritize-actionable-relationship-proposals-in-mac-review.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** The Mac relationship-review sidebar shows pending proposals first and keeps the remaining audit catalog in an initially collapsed `Other tasks` group without green unchanged checks.
-
 - **[0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md) refines [0487](0487-allow-archiving-one-off-tasks.md) and [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md):** Eligible one-off tasks with one exact date and a scheduled Time block can opt into a synthetic assumed-done occurrence for that one date.
-
-- **[0491](0491-keep-dismissed-relationship-feedback-local-and-fingerprint-scoped.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and [0488](0488-prioritize-grounded-task-relationship-analysis.md):** Dismissing a relationship suggestion stores only device-local, fingerprint-scoped pair feedback; unchanged dismissed pairs are removed before candidate selection, while any task change expires the feedback and confirmation remains the sole relationship write.
 
 - **[0490](0490-exclude-assumed-done-tasks-from-help-me-choose.md) refines [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md), [0486](0486-suggest-confirmed-task-relationships-on-device.md), and [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md):** Help me choose excludes a task with a currently assumed-done occurrence before relationship filtering, missing-metadata counts, comparisons, and ranking.
 
 - **[0489](0489-expand-auto-assume-done-to-scheduled-repeats.md) refines [0259](0259-allow-daily-checklist-auto-assumed-completion.md), [0387](0387-keep-completed-scheduled-blocks-visible.md), and [0398](0398-move-auto-assume-done-to-tracking.md):** Eligible repeating Tasks and Tracking entries can opt into synthetic assumed-done occurrences on their scheduled days; task-backed Calendar blocks remain visible unless that task opts to hide assumed-done blocks.
 
-- **[0488](0488-prioritize-grounded-task-relationship-analysis.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md):** Task-relationship review prioritizes grounded candidate evidence and concrete reasons over suggestion volume; its updated analysis fingerprint makes existing reviews eligible for one improved pass.
+- **[0487](0487-allow-archiving-one-off-tasks.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and is revised by [0583](0583-keep-task-creation-unlimited.md) and [0631](0631-remove-apple-intelligence-task-relationship-suggestions.md):** One-off tasks can be archived and restored without changing their scheduling data; they leave active surfaces, notifications, guided `Add missing…` reviews, and Help me choose while archived, without affecting task capacity.
 
-- **[0487](0487-allow-archiving-one-off-tasks.md) refines [0486](0486-suggest-confirmed-task-relationships-on-device.md) and is revised by [0583](0583-keep-task-creation-unlimited.md):** One-off tasks can be archived and restored without changing their scheduling data; they leave active surfaces, notifications, guided `Add missing…` reviews, Help me choose, and task-relationship review while archived, without affecting task capacity.
-
-- **[0486](0486-suggest-confirmed-task-relationships-on-device.md) refines [0409](0409-add-manual-can-complete-task-links.md), [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md), and [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md):** Task Details and a Mac application-menu review window use bounded on-device AI to propose validated relationships, persist nothing before user confirmation, and exclude confirmed unresolved prerequisites from Help me choose before readiness and ranking.
+- **[0486](0486-suggest-confirmed-task-relationships-on-device.md), revised by [0631](0631-remove-apple-intelligence-task-relationship-suggestions.md), refines [0409](0409-add-manual-can-complete-task-links.md), [0472](0472-broker-local-ai-access-through-an-app-owned-snapshot.md), and [0481](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md):** AI proposal and review surfaces are removed; confirmed manual unresolved prerequisites continue to be excluded from Help me choose before readiness and ranking.
 
 - **[0485](0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md) supersedes [0483](superseded/0483-progressively-suggest-ios-task-choice-tags.md) and [0482](superseded/0482-use-opt-in-tag-preferences-to-refine-ios-task-choice.md):** Routina removes manual tag-preference setup, prompts, persistence, and task-choice ranking while automatic tag intelligence is designed separately.
 
@@ -781,6 +768,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0631](0631-remove-apple-intelligence-task-relationship-suggestions.md) | Remove Apple Intelligence Task Relationship Suggestions | Accepted | 2026-08-21 |
 | [0630](0630-compose-task-relationships-with-grouped-sentence-fragments.md) | Compose Task Relationships With Grouped Sentence Fragments | Accepted | 2026-08-21 |
 | [0629](0629-consolidate-task-detail-rich-content.md) | Consolidate Task Detail Rich Content | Accepted | 2026-08-21 |
 | [0628](0628-adapt-mac-task-detail-labels-to-available-width.md) | Adapt Mac Task Detail Labels to Available Width | Accepted | 2026-08-21 |
@@ -861,22 +849,23 @@ These are ordered from newest resolver to oldest resolver.
 | [0517](0517-sandbox-embedded-mcp-helper.md) | Sandbox the Embedded MCP Helper | Accepted | 2026-08-09 |
 | [0516](0516-make-support-diagnostics-copyable.md) | Make Support Diagnostics Copyable | Accepted | 2026-08-09 |
 | [0515](0515-report-signed-cloudkit-environment-in-diagnostics.md) | Report Signed CloudKit Environment in Diagnostics | Accepted | 2026-08-09 |
-| [0512](0512-present-mac-relationship-suggestions-in-link-task-sheet.md) | Present Mac Relationship Suggestions in Link Task Sheet | Accepted | 2026-08-08 |
+| [0512](superseded/0512-present-mac-relationship-suggestions-in-link-task-sheet.md) | Present Mac Relationship Suggestions in Link Task Sheet | Superseded | 2026-08-08 |
 | [0513](0513-defer-ios-screen-time-blocking-until-distribution-approval.md) | Defer iOS Screen Time Blocking Until Distribution Approval | Accepted | 2026-08-09 |
 | [0511](0511-pause-custom-mac-super-sections.md) | Pause Custom Mac Super Sections | Accepted | 2026-08-08 |
 | [0510](0510-confirm-auto-assumed-one-off-time-blocks-as-planned-intervals.md) | Confirm Auto-Assumed One-Off Time Blocks As Planned Intervals | Accepted | 2026-08-08 |
 | [0509](0509-collapse-calendar-list-assumed-done-sections.md) | Collapse Calendar List Assumed-Done Sections | Accepted | 2026-08-08 |
 | [0508](superseded/0508-keep-ios-add-more-details-last.md) | Keep iOS Add More Details Last | Superseded | 2026-08-08 |
 | [0507](0507-clarify-ios-task-detail-action-hierarchy.md) | Clarify iOS Task Detail Action Hierarchy | Accepted | 2026-08-08 |
-| [0506](0506-make-apple-intelligence-relationship-suggestions-macos-only.md) | Make Apple Intelligence Relationship Suggestions macOS-Only | Accepted | 2026-08-08 |
+| [0506](superseded/0506-make-apple-intelligence-relationship-suggestions-macos-only.md) | Make Apple Intelligence Relationship Suggestions macOS-Only | Superseded | 2026-08-08 |
 | [0502](0502-keep-mac-task-forms-and-search-input-frame-safe.md) | Keep Mac Task Forms and Search Input Frame-Safe | Accepted | 2026-08-07 |
 | [0495](0495-let-task-list-filters-hide-assumed-done-rows.md) | Let Task-List Filters Hide Assumed-Done Rows | Accepted | 2026-08-07 |
 | [0494](0494-allow-auto-assume-done-for-rolling-after-completion-routines.md) | Allow Auto-Assume Done For Rolling After-Completion Routines | Accepted | 2026-08-07 |
-| [0493](0493-prioritize-actionable-relationship-proposals-in-mac-review.md) | Prioritize Actionable Relationship Proposals In Mac Review | Accepted | 2026-08-07 |
+| [0493](superseded/0493-prioritize-actionable-relationship-proposals-in-mac-review.md) | Prioritize Actionable Relationship Proposals In Mac Review | Superseded | 2026-08-07 |
 | [0492](0492-allow-auto-assume-done-for-one-off-scheduled-blocks.md) | Allow Auto-Assume Done For One-Off Scheduled Blocks | Accepted | 2026-08-07 |
+| [0491](superseded/0491-keep-dismissed-relationship-feedback-local-and-fingerprint-scoped.md) | Keep Dismissed Relationship Feedback Local and Fingerprint Scoped | Superseded | 2026-08-07 |
 | [0490](0490-exclude-assumed-done-tasks-from-help-me-choose.md) | Exclude Assumed-Done Tasks From Help Me Choose | Accepted | 2026-08-06 |
 | [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md) | Expand Auto-Assume Done to Scheduled Repeats | Accepted | 2026-08-06 |
-| [0488](0488-prioritize-grounded-task-relationship-analysis.md) | Prioritize Grounded Task Relationship Analysis | Accepted | 2026-08-06 |
+| [0488](superseded/0488-prioritize-grounded-task-relationship-analysis.md) | Prioritize Grounded Task Relationship Analysis | Superseded | 2026-08-06 |
 | [0487](0487-allow-archiving-one-off-tasks.md) | Allow Archiving One-Off Tasks | Accepted | 2026-08-06 |
 | [0486](0486-suggest-confirmed-task-relationships-on-device.md) | Suggest Confirmed Task Relationships On Device | Accepted | 2026-08-06 |
 | [0485](0485-remove-opt-in-tag-preferences-pending-automatic-tag-intelligence.md) | Remove Opt-In Tag Preferences Pending Automatic Tag Intelligence | Accepted | 2026-08-06 |

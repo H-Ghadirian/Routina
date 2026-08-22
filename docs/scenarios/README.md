@@ -940,7 +940,7 @@ Then the export classification must be reassessed before relying on the existing
 ### Mac Linked-Task Composer Keeps Direction and Actions Clear
 
 Area: Tasks
-Decision links: [0630](../decisions/0630-compose-task-relationships-with-grouped-sentence-fragments.md), [0512](../decisions/0512-present-mac-relationship-suggestions-in-link-task-sheet.md)
+Decision links: [0631](../decisions/0631-remove-apple-intelligence-task-relationship-suggestions.md), [0630](../decisions/0630-compose-task-relationships-with-grouped-sentence-fragments.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
@@ -962,17 +962,13 @@ And no second Linked Tasks editor or duplicate action row is inserted below the 
 And the picker lists every other task in Home's loaded catalog except tasks already linked to the open task
 And `Create and Link New Task` remains distinct from choosing an existing task
 
-Given the Link Task composer is in Search mode
+Given the Link Task composer is open
 When the person chooses a relationship and an existing task
 Then all seven relationship meanings remain available in grouped General, Dependency, Automatic Completion, and Optional Completion menu sections
 And the candidate row does not repeat the globally selected relationship
 And choosing the candidate does not mutate either task
 And Routina explains the directional consequence using both task names
 And `Add Relationship` persists the relationship without requiring a separate full Edit save
-
-Given the Link Task composer is in Suggestions mode
-Then the manual global relationship menu and task search are hidden
-And each suggested card owns its editable grouped relationship menu and confirmation action
 
 ### Home and Task Detail State Reflect Unresolved Prerequisites
 
@@ -1039,99 +1035,24 @@ And A's next pass is Blocked until B completes again
 Given B is paused before it has completed the current chain step
 Then A remains Blocked
 
-### Mac Task Relationship Suggestions Require Confirmation
+### Task Relationship Creation Remains Manual
 
-Area: Tasks / AI
-Decision links: [0630](../decisions/0630-compose-task-relationships-with-grouped-sentence-fragments.md), [0512](../decisions/0512-present-mac-relationship-suggestions-in-link-task-sheet.md), [0506](../decisions/0506-make-apple-intelligence-relationship-suggestions-macos-only.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0488](../decisions/0488-prioritize-grounded-task-relationship-analysis.md)
+Area: Tasks / Trust
+Decision links: [0631](../decisions/0631-remove-apple-intelligence-task-relationship-suggestions.md), [0630](../decisions/0630-compose-task-relationships-with-grouped-sentence-fragments.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
-- `Tests/Shared/IOSAppleIntelligenceAvailabilityTests.swift`
+- `Tests/Shared/TaskRelationshipSuggestionRemovalTests.swift`
 - `Tests/Shared/TaskDetailEditSaveTests.swift`
-- `Tests/Shared/TaskRelationshipReviewFeatureTests.swift`
 
-Given a task is open in Mac Task Details
-When the person opens `Add` and chooses `Suggestions`
-Then the Link Task sheet hides its manual task-search field
-And it hides the manual global relationship menu
-And it shows a loading indicator until the relationship request finishes
-And the Task Details card does not show a separate Suggest action or explanatory placeholder
-Then Routina sends a bounded set of active, unlinked task summaries to the
-on-device model
-And those summaries include bounded task paths, descriptions, deadlines,
-planned and availability dates, scheduling context, steps, and checklist items
-And a large catalog sends only the at-most-eight candidates with shared tags, path
-components, or specific work words, while generic and common work words never fill
-the request with arbitrary tasks
-And a shared path alone never proves a relationship
-And it accepts only known task IDs with `Blocked by`, `Blocks`, or `Related` types
-and reasons that cite a concrete task detail
-And no task relationship changes from a suggestion alone
+Given a person wants to connect two tasks on iOS or macOS
+When they open the linked-task composer
+Then Routina offers manual relationship selection and task search
+And it does not offer Apple Intelligence relationship suggestions
+And the Mac application menu has no relationship-review window
 
-Given a validated relationship suggestion is visible
-When the person changes its type and confirms it
-Then Routina persists the edited type through the existing relationship mutation
-And dismissing a suggestion instead leaves both tasks unchanged
-
-Given Apple Intelligence is unavailable or no useful relationship is found
-When the suggestion request finishes
-Then the Link Task sheet explains the outcome
-And the existing manual relationship actions remain available
-
-Given a task is open in iOS Task Details
-When the person reviews Linked Tasks
-Then the manual linked-task controls remain available
-And no Apple Intelligence Suggest action, explanation, status message, or suggestion card is shown
-
-Given the Mac app is active
-When the person chooses `Review Task Relationships…` from the Routinam menu
-Then a dedicated relationship-review window opens with the active task catalog
-And it distinguishes durable reviewed tasks from new or changed tasks
-And it shows each resolved custom-section path where available
-And opening the window does not automatically submit every task for analysis
-
-Given a task is selected in the Mac relationship-review window
-When the person asks to find possible relationships
-Then only a bounded relevant candidate set is analyzed
-And each proposal can be changed to `Blocked by`, `Blocks`, or `Related`
-And Confirm persists through the same app-owned relationship mutation as Task Details
-And Dismiss leaves task data unchanged and does not repeat that pair in the session
-
-Given the Mac relationship-review window contains multiple active tasks
-When the person explicitly chooses `Reanalyze all tasks`
-Then Routina builds one immutable bounded-summary catalog and checks every active
-source task sequentially
-And the window shows the current task, checked-task count, and proposal count
-And stopping the run preserves proposals already found
-And the collected review queue keeps one proposal per task pair
-And every relationship still requires an individual Confirm action
-And opening the window alone never starts the all-task analysis
-
-Given some active tasks have a matching persisted relationship-review fingerprint
-and another task is newly added or changes its relationship-relevant summary
-When the person chooses `Analyze new & changed`
-Then only the new or changed source tasks are submitted to the model
-And every existing task still participates in bounded candidate selection
-And `Blocks` can represent an unchanged existing task depending on the new source
-And priority, ranking, or completion-history-only changes do not trigger analysis
-
-Given analysis finds no proposal or the person resolves every proposal for a task
-When review progress is saved
-Then the current versioned fingerprint is stored locally for that task
-And reopening the review window treats the unchanged task as current
-And failed tasks, unresolved proposals, deleted progress entries, and tasks whose
-relationship-relevant fingerprint changed remain eligible or are pruned as appropriate
-
-Given the person wants to reconsider unchanged tasks
-When they choose `Reanalyze all tasks` from `More`
-Then every active task is processed using the same cancellable bounded batch path
-
-Given one source task causes a recoverable model or guardrail error during an
-all-task analysis
-When Routina records that source-task failure
-Then the failed task remains unchecked and is marked as needing retry
-And analysis continues with every later active task
-And only unavailable Apple Intelligence, cancellation, or a catalog failure stops
-the complete batch
+When the person selects an existing task
+Then Routina explains the directional effect using both task names
+And it waits for `Add Relationship` before changing either task
 
 ### Cadence-Free Repeating Tasks Stay Reusable
 
@@ -3183,10 +3104,10 @@ Then each metric uses a compact icon/title header, one-line value, and optional 
 And tiles use the dense metric-tile height rather than the prior spacious card height
 And macOS cards and iOS Compact-mode rows remain unchanged
 
-### One-Off Task Archiving Keeps It Out of Suggestions
+### One-Off Task Archiving Keeps It Out of Active Guidance
 
 Area: Tasks / Lifecycle
-Decision links: [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0583](../decisions/0583-keep-task-creation-unlimited.md)
+Decision links: [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0486](../decisions/0486-suggest-confirmed-task-relationships-on-device.md), [0583](../decisions/0583-keep-task-creation-unlimited.md), [0631](../decisions/0631-remove-apple-intelligence-task-relationship-suggestions.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/TaskDetailFeatureTests.swift`
@@ -3196,14 +3117,12 @@ Coverage:
 - `Tests/Shared/MissingEstimatedDurationDataFeatureTests.swift`
 - `Tests/Shared/MissingTaskMetadataFeatureTests.swift`
 - `Tests/Shared/TaskChoiceFeatureTests.swift`
-- `Tests/Shared/TaskRelationshipReviewFeatureTests.swift`
 
 Given an unfinished one-off task is active
 When the person chooses `Archive` from its Mac Task Detail overflow menu or Home row context menu
 Then Routina moves it to Archived, cancels its notification, and keeps its task data intact
 And every guided `Add missing…` review excludes the task
 And Help me choose excludes the task before metadata readiness, comparison, and ranking
-And task-relationship review excludes the task as both a review source and a suggestion candidate
 
 ### Mac Task Detail Keeps Secondary Lifecycle Actions Together
 
@@ -3231,7 +3150,7 @@ And Task Details has no wide scrolling Add More card
 
 Given an archived one-off task
 When the person chooses `Restore`
-Then it returns to active task placement and guided-review, Help me choose, and task-relationship-review eligibility
+Then it returns to active task placement, guided-review, and Help me choose eligibility
 And Routina clears only its archived state without creating or shifting recurrence data
 
 ### iOS Task Choice Learns Condition-Relevant Tie-Breaks

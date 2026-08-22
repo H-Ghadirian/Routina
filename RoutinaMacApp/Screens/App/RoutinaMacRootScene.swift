@@ -8,7 +8,6 @@ struct RoutinaMacRootScene: Scene {
     private let backlogRoot: AnyView
     private let taskRankingRoot: AnyView
     private let settingsRoot: AnyView
-    private let taskRelationshipReviewRoot: AnyView
     private let focusTimerStatusStore: RoutinaMacFocusTimerStatusStore
     private let widgetRefreshScheduler: RoutinaMacWidgetRefreshScheduler
     private let aiSnapshotScheduler: RoutinaMacAIReadOnlySnapshotScheduler
@@ -23,9 +22,6 @@ struct RoutinaMacRootScene: Scene {
         self.backlogRoot = RoutinaMacSceneFactory.makeBacklogRoot(persistence: persistence)
         self.taskRankingRoot = RoutinaMacSceneFactory.makeTaskRankingRoot(persistence: persistence)
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
-        self.taskRelationshipReviewRoot = RoutinaMacSceneFactory.makeTaskRelationshipReviewRoot(
-            persistence: persistence
-        )
         self.focusTimerStatusStore = focusTimerStatusStore
         self.widgetRefreshScheduler = RoutinaMacWidgetRefreshScheduler(persistence: persistence)
         self.aiSnapshotScheduler = RoutinaMacAIReadOnlySnapshotScheduler(persistence: persistence)
@@ -120,17 +116,6 @@ struct RoutinaMacRootScene: Scene {
             RoutineCommands()
         }
 
-        Window("Review Task Relationships", id: RoutinaMacSceneID.taskRelationshipReview) {
-            taskRelationshipReviewRoot
-                .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
-                .background(RoutinaMacUndoBridge(persistence: persistence))
-        }
-        .windowResizability(.contentMinSize)
-        .defaultSize(width: 980, height: 680)
-        .defaultLaunchBehavior(.suppressed)
-        .commands {
-            RoutineCommands()
-        }
     }
 
     @MainActor

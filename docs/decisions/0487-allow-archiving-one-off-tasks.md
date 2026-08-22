@@ -12,6 +12,10 @@ Accepted
 
 [0486 Suggest Confirmed Task Relationships On Device](0486-suggest-confirmed-task-relationships-on-device.md)
 
+## Revised By
+
+- [0631 Remove Apple Intelligence Task Relationship Suggestions](0631-remove-apple-intelligence-task-relationship-suggestions.md), which removes relationship-review eligibility while retaining the archived task lifecycle.
+
 Revised by: [0583 Keep Task Creation Unlimited](0583-keep-task-creation-unlimited.md)
 
 ## Context

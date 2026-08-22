@@ -14,6 +14,10 @@ Accepted
 [0472 Broker Local AI Access Through an App-Owned Snapshot](0472-broker-local-ai-access-through-an-app-owned-snapshot.md),
 and [0481 Learn Task-Choice Tie-Breaks After Metadata Readiness](0481-learn-task-choice-tie-breaks-after-metadata-readiness.md)
 
+## Revised By
+
+- [0631 Remove Apple Intelligence Task Relationship Suggestions](0631-remove-apple-intelligence-task-relationship-suggestions.md), which removes every AI suggestion and review surface while preserving manual relationship behavior and confirmed relationship effects.
+
 ## Context
 
 Routina already stores typed task relationships and resolves inverse links, but

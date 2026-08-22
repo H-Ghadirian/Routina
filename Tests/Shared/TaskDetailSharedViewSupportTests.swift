@@ -62,7 +62,8 @@ struct TaskDetailSharedViewSupportTests {
         #expect(source.contains("relationshipSection(\"Dependency\", kinds: [.blockedBy, .blocks])"))
         #expect(source.contains("relationshipSection(\"Automatic Completion\", kinds: [.doneWhen, .completes])"))
         #expect(source.contains("relationshipSection(\"Optional Completion\", kinds: [.canBeCompletedBy, .canComplete])"))
-        #expect(source.contains("if !isShowingSuggestions {\n                        relationshipTypeSelector"))
+        #expect(source.contains("TaskRelationshipKindMenuPicker(selection: $selectedKind)"))
+        #expect(!source.contains("isShowingSuggestions"))
         #expect(source.contains("selectedCandidateID = candidate.id"))
         #expect(source.contains("Button(\"Add Relationship\")"))
     }

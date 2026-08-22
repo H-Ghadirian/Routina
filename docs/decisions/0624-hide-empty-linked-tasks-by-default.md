@@ -12,7 +12,7 @@ Accepted
 
 - [0100 Reveal Task Form Details by Section](0100-reveal-task-form-details-by-section.md)
 - [0366 Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md)
-- [0512 Present Mac Relationship Suggestions in the Link Task Sheet](0512-present-mac-relationship-suggestions-in-link-task-sheet.md)
+- [0512 Present Mac Relationship Suggestions in the Link Task Sheet](superseded/0512-present-mac-relationship-suggestions-in-link-task-sheet.md)
 
 ## Refined By
 

@@ -2,15 +2,19 @@
 
 ## Status
 
-Accepted
+Superseded
 
 ## Date
 
 2026-08-07
 
+## Superseded By
+
+- [0631 Remove Apple Intelligence Task Relationship Suggestions](../0631-remove-apple-intelligence-task-relationship-suggestions.md)
+
 ## Refines
 
-[0486 Suggest Confirmed Task Relationships On Device](0486-suggest-confirmed-task-relationships-on-device.md)
+[0486 Suggest Confirmed Task Relationships On Device](../0486-suggest-confirmed-task-relationships-on-device.md)
 and [0488 Prioritize Grounded Task Relationship Analysis](0488-prioritize-grounded-task-relationship-analysis.md)
 
 ## Context
