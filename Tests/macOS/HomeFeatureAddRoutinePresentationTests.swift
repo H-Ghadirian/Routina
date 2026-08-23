@@ -84,6 +84,50 @@ struct HomeFeatureAddRoutinePresentationTests {
     }
 
     @Test
+    func addRoutineCancel_fromBacklogRestoresBacklogWorkspace() async {
+        let context = makeInMemoryContext()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                isMacFilterDetailPresented: true,
+                macSidebarMode: .backlog
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.macSidebarModeChanged(.addTask)) {
+            $0.macSidebarMode = .addTask
+            $0.macSidebarSelection = nil
+            $0.isMacFilterDetailPresented = false
+            $0.navigation.addTaskReturnMode = .backlog
+        }
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.backlog.rawValue)
+
+        await store.send(.setAddRoutineSheet(true)) {
+            $0.isAddRoutineSheetPresented = true
+            $0.addRoutineState = AddRoutineFeature.State(
+                organization: AddRoutineOrganizationState(
+                    availableTagSummaries: [],
+                    existingRoutineNames: []
+                )
+            )
+        }
+
+        await store.send(.addRoutineSheet(.delegate(.didCancel))) {
+            $0.isAddRoutineSheetPresented = false
+            $0.addRoutineState = nil
+            $0.macSidebarMode = .backlog
+            $0.navigation.addTaskReturnMode = nil
+        }
+
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.backlog.rawValue)
+    }
+
+    @Test
     func setAddRoutineSheet_seedsExistingNamesFromLoadedTasks() async {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚", tags: ["Learning"])

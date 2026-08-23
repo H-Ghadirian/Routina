@@ -12,7 +12,12 @@ struct HomeFeatureMacNavigationRouter {
         let resolvedMode: HomeFeature.MacSidebarMode = mode
         let previousMode = state.macSidebarMode
         let previousSidebarSelection = state.macSidebarSelection
-        state.macSidebarMode = resolvedMode
+        if resolvedMode == .addTask {
+            state.navigation.enterAddTask()
+        } else {
+            state.macSidebarMode = resolvedMode
+            state.navigation.addTaskReturnMode = nil
+        }
         state.presentation.isMacFilterDetailPresented = false
         switch resolvedMode {
         case .routines:

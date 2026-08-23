@@ -25,4 +25,17 @@ struct HomeMacNavigationState: Equatable {
     var sidebarMode: HomeFeature.MacSidebarMode = .routines
     var sidebarSelection: HomeFeature.MacSidebarSelection? = nil
     var selectedSettingsSection: SettingsMacSection? = .notifications
+    var addTaskReturnMode: HomeFeature.MacSidebarMode? = nil
+
+    mutating func enterAddTask() {
+        if sidebarMode != .addTask {
+            addTaskReturnMode = sidebarMode
+        }
+        sidebarMode = .addTask
+    }
+
+    mutating func leaveAddTask(returningTo mode: HomeFeature.MacSidebarMode? = nil) {
+        sidebarMode = mode ?? addTaskReturnMode ?? .routines
+        addTaskReturnMode = nil
+    }
 }

@@ -110,6 +110,30 @@ Then a compact `Assumed done` pill replaces the visible instructional paragraph
 And `Confirm done` remains the direct prominent action
 And the menu lists `Not today — hide until tomorrow` before a divider and the pause actions
 
+### iOS Task Detail History Stays Compact And Correctable
+
+Area: Tasks / iOS Task Details
+Decision links: [0645](../decisions/0645-make-ios-task-history-compact-and-actionable.md), [0425](../decisions/0425-make-task-detail-history-optional.md), [0264](../decisions/0264-match-button-hit-areas-to-visual-surfaces.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+
+Given History is visible in iOS Task Details
+When the person reviews completion activity
+Then the History container and rows use neutral surfaces without task-colored glow
+And each row shows its outcome once with one semantic icon
+And the normal date/time and optional Persian date use separate lines
+And time spent appears inline only when a duration was recorded
+
+When the person needs to add time or correct an activity
+Then each row exposes a 44-point actions menu with Add/Edit Time and Undo/Remove
+And swiping reveals the correction without performing it automatically
+And Undo uses orange while destructive removal uses red
+
+Given the same task is open in macOS Task Details
+Then its existing desktop History presentation remains unchanged
+
 ### Task Destinations Stay Separate From Saved Places
 
 Area: Tasks / iOS and macOS Task Forms and Details
@@ -196,6 +220,7 @@ Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
 - `Tests/macOS/BacklogFeatureTests.swift`
+- `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
 
 Given a person creates an empty Backlog super section
 When its cached task presentation contains no assigned task
@@ -238,6 +263,11 @@ And the main window reaches Planner without an AppKit split-view constraint cras
 Given no task matches a Backlog query
 When the person chooses to create it
 Then Routina asks for an explicit Backlog section or a deliberate Radar destination
+
+Given Backlog is the active Mac workspace
+When the person opens Add Task from New and cancels without saving
+Then Routina returns to Backlog instead of showing Planner
+And Backlog remains the relaunch destination while the transient Add Task workspace is open
 
 ### Mac Backlog Applies Tag Rules to Unassigned Hidden Tasks
 
@@ -651,6 +681,26 @@ Given Task Details is hosted from Home or Timeline on iPhone or iPad
 When the person taps the visible Add-a-detail chevron surface
 Then the task-detail presentation route opens the `Add a detail` sheet
 And SwiftUI toolbar rehosting cannot detach the control from its sheet state
+
+### Mac Task Detail Progressively Reveals Task Ladder Value Options
+
+Area: Tasks / macOS Task Details
+Decision links: [0563](../decisions/0563-present-importance-and-urgency-as-independent-task-controls.md), [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md), [0644](../decisions/0644-progressively-reveal-mac-task-detail-value-options.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailMacHeaderControlLayoutTests.swift`
+
+Given Mac Task Details shows Importance, Urgency, Pressure, and Thinking needed
+Then every field name and current value is visible without showing every alternative
+And the controls use intrinsic widths with small fixed gaps instead of equal-width columns
+When the person selects a current value
+Then that field's complete segmented picker reveals horizontally in place
+And controls after it move right while the selected control keeps its leading position
+And any previously expanded value picker collapses
+When the person chooses an option
+Then the new current value remains visible and the picker collapses
+And opening another task resets the temporary expansion state
+And Reduce Motion applies the same state changes without the transition
 
 ### iOS Task Detail Keeps Primary Context Easy To Scan
 
@@ -1075,7 +1125,7 @@ Given Routina adds custom or third-party cryptography, encrypted communications,
 When the next production release is prepared
 Then the export classification must be reassessed before relying on the existing declaration
 
-### Mac Linked-Task Composer Keeps Direction and Actions Clear
+### Task-Detail Linked-Task Composer Keeps Direction and Actions Clear
 
 Area: Tasks
 Decision links: [0631](../decisions/0631-remove-apple-intelligence-task-relationship-suggestions.md), [0630](../decisions/0630-compose-task-relationships-with-grouped-sentence-fragments.md)
@@ -1086,19 +1136,25 @@ Coverage:
 - `Tests/Shared/HomeFeatureTaskDetailActionRouterTests.swift`
 - `Tests/Shared/HomeFeatureSelectionRouterTests.swift`
 - `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
+- `Tests/iOS/HomeFeatureAddRoutinePresentationTests.swift`
 
-Given a task with existing relationships is open in Mac Task Details
+Given a task with existing relationships is open in iOS or Mac Task Details
 When the Linked Tasks card is shown
 Then its header shows the resolved relationship count and one `Add` action
 And existing relationships are grouped under sentence fragments from the current task's perspective
 And the card does not retain a permanent relationship picker or duplicate create/link actions
 
-Given a task with existing relationships is open in Mac Task Details
+Given a task with existing relationships is open in iOS or Mac Task Details
 When the user clicks the visible section's `Add` button once
 Then the Link Task composer opens directly
 And no second Linked Tasks editor or duplicate action row is inserted below the section
 And the picker lists every other task in Home's loaded catalog except tasks already linked to the open task
 And `Create and Link New Task` remains distinct from choosing an existing task
+
+Given a task with no existing relationships is open in iOS Task Details
+When the person chooses `Linked Task` from `Add a detail`
+Then the same Link Task composer opens
+And the person can search for an existing task or create and link a new task
 
 Given the Link Task composer is open
 When the person chooses a relationship and an existing task
@@ -1361,14 +1417,29 @@ Then only the chosen section appears and the form scrolls it into view
 
 Given Add Task or Edit Task shows its primary configuration
 Then Behavior & Schedule owns timing and completion behavior
-And Task Ladder values owns Importance, Urgency, Pressure, Thinking, and Changes over time
+And Task Ladder values owns Importance, Urgency, Pressure, and Thinking
 And Organization owns Path, Tags, Flags, and repeating-task Task Ladder grouping
 
-Given Changes over time is not eligible
+Given the task is one-time
+Then Changes over time is absent
+And the four Task Ladder values remain available
+
+Given the task is repeating but Changes over time is not yet eligible
 Then the Task Ladder values section remains visible
 And it names the concrete Behavior & Schedule choice required to enable the rule
 
-Given an eligible rule is configured
+Given an eligible repeating task is edited on Mac
+Then Importance, Urgency, and Pressure each show their Base value and a target menu containing `No change`
+And no global enable toggle or per-metric checkbox is shown
+When the person chooses the first higher target
+Then the shared timing menu appears
+And choosing Gradually reveals the lead-day stepper
+And one live summary names the timing and each changed Base-to-target pair
+And a quiet note says changed values remain until completion and then reset
+When every target returns to `No change`
+Then the rule is removed
+
+Given an eligible rule is configured on iOS
 Then its preview shows Base after completion, the lead-window or pre-due state, due-date targets, and after-due values until completion
 
 ### Wide Mac Task Forms Keep Scheduling Controls Grouped

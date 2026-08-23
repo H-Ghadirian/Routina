@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0233 — Preserve the launching workspace across transient task creation](0233-preserve-the-launching-workspace-across-transient-task-creation.md)
+- [0232 — Wire shared workflows into every platform entry point](0232-wire-shared-workflows-into-every-platform-entry-point.md)
 - [0231 — Keep toolbar sheet state in the task-detail presentation model](0231-keep-toolbar-sheet-state-in-task-detail-presentation-model.md)
 - [0230 — Retire pre-release concepts through the whole stack](0230-retire-pre-release-concepts-through-the-whole-stack.md)
 - [0229 — Keep retired task types out of active guidance](0229-keep-retired-task-types-out-of-active-guidance.md)

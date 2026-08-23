@@ -57,6 +57,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 ## Current Contract
 
 - The macOS main window uses a labeled workspace menu for Planner, Backlog, Task Ladder, Stats, and enabled Goals or Adventure surfaces. Backlog and Task Ladder replace the main content as full-size peer workspaces instead of opening separate windows. Settings is visible in the menu but opens the standard macOS Settings window, and New remains a separate action.
+- Mac Add Task is a transient workspace. Cancel returns to the workspace that launched it, including Backlog, while a successful full-form save keeps the existing behavior of selecting the new task in Planner. If the app relaunches while Add Task was open, the launching workspace—not Add Task—is the restored destination.
 - The native left task sidebar and its titlebar toggle belong to Planner-style task navigation; Backlog and Task Ladder hide that toggle while their full workspace is active. Right-side panes remain contextual companions for filters, Go to date, and task details, with one companion role active at a time. Routina does not place global navigation in a second right drawer or a modal overlay drawer.
 - The Mac Planner Focus picker shows the locally remembered duration as Last choice and selects it by default. It uses the latest attributed Focus session only when no picker duration has been saved, while task selection remains explicit.
 

@@ -358,7 +358,7 @@ extension HomeFeature {
         }
 
         let saveEffect = addRoutineActionHandler().finishSave(task, state: &state)
-        state.macSidebarMode = .routines
+        state.navigation.leaveAddTask(returningTo: .routines)
         state.presentation.isMacFilterDetailPresented = false
         resetTaskVisibilityFiltersForSavedTask(state: &state)
         state.macSidebarSelection = .task(task.id)

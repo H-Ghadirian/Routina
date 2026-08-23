@@ -869,7 +869,7 @@ struct HomeFeature {
             dismissSheet: { state in
                 addRoutinePresentationRouter().dismissSheet(state: &state)
                 if state.macSidebarMode == .addTask {
-                    state.macSidebarMode = .routines
+                    state.navigation.leaveAddTask()
                     state.presentation.isMacFilterDetailPresented = false
                     persistTemporaryViewState(state)
                 }
@@ -1197,7 +1197,7 @@ struct HomeFeature {
                 return .none
 
             case let .openAddTaskSheet(seedName):
-                state.macSidebarMode = .addTask
+                state.navigation.enterAddTask()
                 state.macSidebarSelection = nil
                 addRoutinePresentationRouter().setSheet(
                     true,
@@ -1208,7 +1208,7 @@ struct HomeFeature {
                 return .none
 
             case let .openAddTaskInCustomSection(sectionID):
-                state.macSidebarMode = .addTask
+                state.navigation.enterAddTask()
                 state.macSidebarSelection = nil
                 addRoutinePresentationRouter().setSheet(
                     true,
@@ -1219,7 +1219,7 @@ struct HomeFeature {
                 return .none
 
             case let .openAddTaskInCustomSectionWithName(sectionID, seedName):
-                state.macSidebarMode = .addTask
+                state.navigation.enterAddTask()
                 state.macSidebarSelection = nil
                 addRoutinePresentationRouter().setSheet(
                     true,
@@ -2016,11 +2016,14 @@ struct HomeFeature {
     }
 
     private func persistTemporaryViewState(_ state: State) {
+        let persistedMacSidebarMode = state.macSidebarMode == .addTask
+            ? state.navigation.addTaskReturnMode ?? .routines
+            : normalizedMacSidebarMode(state.macSidebarMode)
         appSettingsClient.setTemporaryViewState(
             HomeFeatureTemporaryViewStateSupport.makeTemporaryViewState(
                 from: state,
                 existing: appSettingsClient.temporaryViewState(),
-                macSidebarModeRawValue: normalizedMacSidebarMode(state.macSidebarMode).rawValue,
+                macSidebarModeRawValue: persistedMacSidebarMode.rawValue,
                 macSelectedSettingsSectionRawValue: state.selectedSettingsSection?.rawValue
             )
         )
