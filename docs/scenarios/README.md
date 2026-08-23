@@ -168,7 +168,7 @@ And the manual Refresh Backlog control remains immediately available when no ref
 ### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
 
 Area: Tasks / Mac Backlog
-Decision links: [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
@@ -185,6 +185,13 @@ Then only matching tasks and their hierarchy are shown
 And title, description, notes, destination, tags, Flags, and section path can match
 And matching hierarchy is revealed without changing stored disclosure choices
 And the Backlog sidebar does not duplicate the top search field
+
+Given a task is visible in the Main task list
+When the person opens its `Move to > Backlog` menu
+Then Backlog destinations appear beneath one `Backlog` submenu
+And a section with subsections opens one additional level
+And `New Backlog Super Section…` creates a Backlog section and assigns the selected task
+And the Backlog workspace does not show a permanent section-name composer
 
 Given `Read mail` exists on `Radar › Future` and is not in Backlog
 When the person searches Backlog for `Read mail`
@@ -208,6 +215,27 @@ And the main window reaches Planner without an AppKit split-view constraint cras
 Given no task matches a Backlog query
 When the person chooses to create it
 Then Routina asks for an explicit Backlog section or a deliberate Radar destination
+
+### Mac Backlog Applies Tag Rules to Unassigned Hidden Tasks
+
+Area: Tasks / Mac Backlog / Sections
+Decision links: [0640](../decisions/0640-route-unassigned-backlog-candidates-by-tags.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0460](../decisions/0460-match-custom-section-tags-by-any-or-all.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/BacklogTaskListPresentationTests.swift`
+
+Given an active unfinished task is hidden from normal task lists by a configured Flag and has no custom section
+When a Backlog super section has an `Any` or `All` tag rule matching that task
+Then the cached Backlog presentation shows the task in the first matching super section
+And the task is removed from `Hidden by flag`
+
+Given a task already has an explicit Radar or Backlog section assignment
+When another Backlog super section's tag rule matches its tags
+Then the explicit assignment remains authoritative
+
+Given an ordinary Radar task has no custom section and matches a Backlog tag rule
+When Backlog rebuilds its presentation
+Then the task is not pulled into Backlog
 
 ### Mac Task Ladder Search Preserves Ranking Context
 

@@ -130,6 +130,9 @@ extension HomeTCAView {
             },
             createCustomSection: {
                 presentCustomTaskSectionPrompt(for: task.taskID)
+            },
+            createBacklogSection: {
+                presentCustomTaskSectionPrompt(for: task.taskID, surface: .backlog)
             }
         )
 
@@ -277,9 +280,14 @@ extension HomeTCAView {
         }
     }
 
-    func presentCustomTaskSectionPrompt(for taskID: UUID?, parentSectionID: UUID? = nil) {
+    func presentCustomTaskSectionPrompt(
+        for taskID: UUID?,
+        parentSectionID: UUID? = nil,
+        surface: HomeTaskSectionSurface = .radar
+    ) {
         pendingCustomTaskSectionTaskID = taskID
         pendingCustomTaskSectionParentID = parentSectionID
+        pendingCustomTaskSectionSurface = surface
         customTaskSectionNameDraft = ""
         isCustomTaskSectionPromptPresented = true
     }
@@ -288,6 +296,7 @@ extension HomeTCAView {
         guard let result = HomeCustomTaskSectionStorage.upsertingSection(
             title: customTaskSectionNameDraft,
             parentSectionID: pendingCustomTaskSectionParentID,
+            surface: pendingCustomTaskSectionSurface,
             in: customTaskSections
         ) else {
             return
@@ -306,6 +315,7 @@ extension HomeTCAView {
         customTaskSectionNameDraft = ""
         pendingCustomTaskSectionTaskID = nil
         pendingCustomTaskSectionParentID = nil
+        pendingCustomTaskSectionSurface = .radar
     }
 
     func presentCustomTaskSectionRenamePrompt(sectionID: UUID, title: String) {
@@ -369,10 +379,15 @@ extension HomeTCAView {
     }
 
     func applyCustomTaskSectionPrompt<Content: View>(to view: Content) -> some View {
-        view.alert(
-            pendingCustomTaskSectionParentID == nil ? "New Super Section" : "New Subsection",
-            isPresented: $isCustomTaskSectionPromptPresented
-        ) {
+        let title = if pendingCustomTaskSectionParentID != nil {
+            "New Subsection"
+        } else if pendingCustomTaskSectionSurface == .backlog {
+            "New Backlog Super Section"
+        } else {
+            "New Main Task List Super Section"
+        }
+
+        return view.alert(title, isPresented: $isCustomTaskSectionPromptPresented) {
             TextField("Name", text: $customTaskSectionNameDraft)
             Button("Create") {
                 confirmCustomTaskSectionPrompt()
@@ -542,7 +557,8 @@ extension NSMenu {
         taskID: UUID,
         commandHandler: HomeTaskRowCommandHandler,
         moveToCustomSection: @escaping (UUID?) -> Void,
-        createCustomSection: @escaping () -> Void
+        createCustomSection: @escaping () -> Void,
+        createBacklogSection: @escaping () -> Void
     ) {
         let item = NSMenuItem(title: "Move to", action: nil, keyEquivalent: "")
         item.image = NSImage(
@@ -553,17 +569,18 @@ extension NSMenu {
         let submenu = NSMenu(title: "Move to")
         var hasSectionItems = false
 
-        for section in HomeCustomTaskSectionStorage.topLevelSections(in: customSections) {
-            let sectionTitle = section.surface == .backlog
-                ? "Backlog › \(section.title)"
-                : section.title
+        let topLevelSections = HomeCustomTaskSectionStorage.topLevelSections(in: customSections)
+        let radarSections = topLevelSections.filter { $0.surface == .radar }
+        let backlogSections = topLevelSections.filter { $0.surface == .backlog }
+
+        for section in radarSections {
             let subsections = HomeCustomTaskSectionStorage.subsections(
                 of: section.id,
                 in: customSections
             )
             if subsections.isEmpty {
                 submenu.addActionItem(
-                    title: sectionTitle,
+                    title: section.title,
                     systemImage: "rectangle.stack",
                     isEnabled: currentCustomSectionID != section.id && !section.isPaused
                 ) {
@@ -571,17 +588,17 @@ extension NSMenu {
                 }
             } else {
                 let sectionItem = NSMenuItem(
-                    title: sectionTitle,
+                    title: section.title,
                     action: nil,
                     keyEquivalent: ""
                 )
                 sectionItem.image = NSImage(
                     systemSymbolName: "rectangle.stack",
-                    accessibilityDescription: sectionTitle
+                    accessibilityDescription: section.title
                 )
-                let sectionSubmenu = NSMenu(title: sectionTitle)
+                let sectionSubmenu = NSMenu(title: section.title)
                 sectionSubmenu.addActionItem(
-                    title: "In \(sectionTitle)",
+                    title: "In \(section.title)",
                     systemImage: "rectangle.stack",
                     isEnabled: currentCustomSectionID != section.id && !section.isPaused
                 ) {
@@ -602,8 +619,70 @@ extension NSMenu {
             hasSectionItems = true
         }
 
+        if !backlogSections.isEmpty || !radarSections.isEmpty {
+            submenu.addItem(.separator())
+        }
+
+        let backlogItem = NSMenuItem(title: "Backlog", action: nil, keyEquivalent: "")
+        backlogItem.image = NSImage(
+            systemSymbolName: "archivebox",
+            accessibilityDescription: "Backlog"
+        )
+        let backlogSubmenu = NSMenu(title: "Backlog")
+        for section in backlogSections {
+            let subsections = HomeCustomTaskSectionStorage.subsections(
+                of: section.id,
+                in: customSections
+            )
+            if subsections.isEmpty {
+                backlogSubmenu.addActionItem(
+                    title: section.title,
+                    systemImage: "rectangle.stack",
+                    isEnabled: currentCustomSectionID != section.id && !section.isPaused
+                ) {
+                    moveToCustomSection(section.id)
+                }
+            } else {
+                let sectionItem = NSMenuItem(title: section.title, action: nil, keyEquivalent: "")
+                sectionItem.image = NSImage(
+                    systemSymbolName: "rectangle.stack",
+                    accessibilityDescription: section.title
+                )
+                let sectionSubmenu = NSMenu(title: section.title)
+                sectionSubmenu.addActionItem(
+                    title: "In \(section.title)",
+                    systemImage: "rectangle.stack",
+                    isEnabled: currentCustomSectionID != section.id && !section.isPaused
+                ) {
+                    moveToCustomSection(section.id)
+                }
+                for subsection in subsections {
+                    sectionSubmenu.addActionItem(
+                        title: subsection.title,
+                        systemImage: "rectangle.inset.filled",
+                        isEnabled: currentCustomSectionID != subsection.id && !section.isPaused
+                    ) {
+                        moveToCustomSection(subsection.id)
+                    }
+                }
+                sectionItem.submenu = sectionSubmenu
+                backlogSubmenu.addItem(sectionItem)
+            }
+        }
+        if !backlogSections.isEmpty {
+            backlogSubmenu.addItem(.separator())
+        }
+        backlogSubmenu.addActionItem(
+            title: "New Backlog Super Section...",
+            systemImage: "plus.rectangle",
+            action: createBacklogSection
+        )
+        backlogItem.submenu = backlogSubmenu
+        submenu.addItem(backlogItem)
+        hasSectionItems = true
+
         submenu.addActionItem(
-            title: "New Super Section...",
+            title: "New Main Task List Super Section...",
             systemImage: "plus.rectangle"
         ) {
             createCustomSection()

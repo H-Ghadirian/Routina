@@ -71,9 +71,33 @@ struct BacklogTaskListPresentation: Equatable {
                 HomeCustomTaskSectionStorage.pathTitles(for: section.id, in: backlogSections) ?? [section.title]
             )
         })
-        let tasksBySectionID = Dictionary(grouping: tasks.filter { task in
-            guard let sectionID = task.customTaskSectionID,
-                  backlogSectionIDs.contains(sectionID) else {
+        let topLevelSections = HomeCustomTaskSectionStorage.topLevelSections(
+            in: backlogSections,
+            surface: .backlog
+        )
+        let automaticSectionIDByTaskID: [UUID: UUID] = Dictionary(uniqueKeysWithValues: tasks.compactMap { task in
+            guard task.customTaskSectionID == nil,
+                  isActiveBacklogCandidate(task, referenceDate: referenceDate, calendar: calendar),
+                  RoutineFlagRules.hidesFromTaskLists(flags: task.flags, rules: flagRules),
+                  let section = topLevelSections.first(where: { section in
+                      !section.rules.isEmpty && section.rules.matchesTags(task.tags)
+                  }) else {
+                return nil
+            }
+            return (task.id, section.id)
+        })
+        let backlogSectionIDByTaskID: [UUID: UUID] = Dictionary(uniqueKeysWithValues: tasks.compactMap { task in
+            if let explicitSectionID = task.customTaskSectionID,
+               backlogSectionIDs.contains(explicitSectionID) {
+                return (task.id, explicitSectionID)
+            }
+            guard let automaticSectionID = automaticSectionIDByTaskID[task.id] else {
+                return nil
+            }
+            return (task.id, automaticSectionID)
+        })
+        let tasksBySectionID: [UUID: [RoutineTask]] = Dictionary(grouping: tasks.filter { task in
+            guard let sectionID = backlogSectionIDByTaskID[task.id] else {
                 return false
             }
             return matchesSearch(
@@ -81,12 +105,8 @@ struct BacklogTaskListPresentation: Equatable {
                 normalizedQuery: normalizedSearchQuery,
                 pathTitles: pathTitlesBySectionID[sectionID] ?? []
             )
-        }) { $0.customTaskSectionID! }
+        }) { backlogSectionIDByTaskID[$0.id]! }
 
-        let topLevelSections = HomeCustomTaskSectionStorage.topLevelSections(
-            in: backlogSections,
-            surface: .backlog
-        )
         let presentationSections = topLevelSections.compactMap { section -> Section? in
             let directTasks = sorted(tasksBySectionID[section.id] ?? [])
             let allSubsections = HomeCustomTaskSectionStorage.subsections(
@@ -112,6 +132,7 @@ struct BacklogTaskListPresentation: Equatable {
 
         let hiddenByFlagTasks = sorted(tasks.filter { task in
             guard task.customTaskSectionID.map(backlogSectionIDs.contains) != true,
+                  automaticSectionIDByTaskID[task.id] == nil,
                   isActiveBacklogCandidate(task, referenceDate: referenceDate, calendar: calendar)
             else {
                 return false
@@ -209,9 +230,9 @@ struct BacklogTaskListPresentation: Equatable {
                in: radarSections
            ),
            !pathTitles.isEmpty {
-            return (["Radar"] + pathTitles).joined(separator: " › ")
+            return (["Main task list"] + pathTitles).joined(separator: " › ")
         }
-        return task.isDailyRoutineForTaskList ? "Radar › Today" : "Radar › Future"
+        return task.isDailyRoutineForTaskList ? "Main task list › Today" : "Main task list › Future"
     }
 
     private static func sorted(_ tasks: [RoutineTask]) -> [RoutineTask] {

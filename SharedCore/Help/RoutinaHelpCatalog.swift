@@ -224,14 +224,14 @@ public enum RoutinaHelpCatalog {
         RoutinaHelpTopic(
             id: "backlog",
             title: "Backlog",
-            summary: "Backlog is a full-size workspace in the main macOS window for work intentionally kept off the everyday Home radar.",
+            summary: "Backlog is a full-size workspace in the main macOS window for work intentionally kept off the main task list.",
             details: [
                 "Choose Backlog from the main window’s workspace menu or press Shift-Command-B.",
-                "Create at least one Backlog section before Home or a task form can offer Backlog destinations. Routina has no generic unsectioned Backlog destination.",
+                "Routina has no generic unsectioned Backlog destination. A Home task's Move to > Backlog menu can create a new Backlog super section and assign that task; Settings can create an empty section for later use.",
                 "Backlog super sections can contain one level of subsection. Empty sections stay visible so you can add a subsection immediately, and both levels can collapse.",
                 "In macOS Settings -> Sections, use the Main task list / Backlog segmented picker to see and create sections for one workspace surface at a time. Subsections stay with their parent surface.",
                 "Use the persistent top search to find deferred tasks by their text, tags, Flags, destination, or Backlog path. A matching task outside Backlog is labelled with its real location. Click its summary to open Task Details; active organizational matches can be shown in Planner, completed one-off matches can be shown in Timeline, and either can be moved to an explicit Backlog section without creating a duplicate.",
-                "Moving a task to a Backlog section removes it from normal Home placement without completing, pausing, or deleting it. Move to Radar (the main task list) returns it to ordinary Home placement.",
+                "Moving a task to a Backlog section removes it from normal Home placement without completing, pausing, or deleting it. Move to Main Task List returns it to ordinary Home placement.",
                 "The separate beta Board backlog is unrelated and does not create sections in the Backlog workspace."
             ],
             aliases: [

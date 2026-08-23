@@ -21,6 +21,8 @@ struct BacklogMacView: View {
         store: SharedDefaults.app
     ) private var customTaskSectionsRawValue = ""
     @State private var newSectionTitle = ""
+    @State private var newSectionTaskID: UUID?
+    @State private var isNewSectionPromptPresented = false
     @State private var newSubsectionTitleBySectionID: [UUID: String] = [:]
     @State private var collapsedSectionIDs: Set<UUID> = []
     @State private var collapsedSubsectionIDs: Set<UUID> = []
@@ -45,6 +47,16 @@ struct BacklogMacView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             store.send(.routineDataChanged)
+        }
+        .alert("New Backlog Super Section", isPresented: $isNewSectionPromptPresented) {
+            TextField("Name", text: $newSectionTitle)
+            Button("Create") {
+                createBacklogSection()
+            }
+            .disabled(HomeCustomTaskSectionStorage.sanitizedTitle(newSectionTitle) == nil)
+            Button("Cancel", role: .cancel) {
+                resetNewSectionPrompt()
+            }
         }
     }
 
@@ -73,16 +85,11 @@ struct BacklogMacView: View {
                     .disabled(store.isLoading)
                 }
 
-                Text("Tasks kept off your everyday radar")
+                Text("Tasks kept off your main task list")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             .padding(16)
-
-            Divider()
-
-            newSectionControl
-                .padding(12)
 
             Divider()
 
@@ -100,7 +107,7 @@ struct BacklogMacView: View {
                 ContentUnavailableView(
                     "Backlog is clear",
                     systemImage: "tray",
-                    description: Text("Create a section for work you want off your main task list, or use a hiding Flag.")
+                    description: Text("Move a task here from the main task list, or create a Backlog section in Settings.")
                 )
                 .padding(20)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -124,17 +131,6 @@ struct BacklogMacView: View {
             }
         }
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.45))
-    }
-
-    private var newSectionControl: some View {
-        HStack(spacing: 8) {
-            TextField("New super section", text: $newSectionTitle)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit(createBacklogSection)
-
-            Button("Add", action: createBacklogSection)
-                .disabled(HomeCustomTaskSectionStorage.sanitizedTitle(newSectionTitle) == nil)
-        }
     }
 
     private func backlogSection(_ section: BacklogTaskListPresentation.Section) -> some View {
@@ -328,13 +324,8 @@ struct BacklogMacView: View {
                 }
 
                 Menu("Move to Backlog…") {
-                    ForEach(backlogDestinations) { destination in
-                        Button(destination.title) {
-                            store.send(.moveTask(result.task.id, to: destination.id))
-                        }
-                    }
+                    backlogMoveMenuItems(for: result.task.id)
                 }
-                .disabled(backlogDestinations.isEmpty)
             }
             .controlSize(.small)
         }
@@ -421,15 +412,11 @@ struct BacklogMacView: View {
             }
 
             Menu("Move to Backlog") {
-                ForEach(backlogDestinations) { destination in
-                    Button(destination.title) {
-                        store.send(.moveTask(task.id, to: destination.id))
-                    }
-                }
+                backlogMoveMenuItems(for: task.id)
             }
 
             if task.customTaskSectionID != nil {
-                Button("Move to Radar") {
+                Button("Move to Main Task List") {
                     store.send(.moveTask(task.id, to: nil))
                 }
             }
@@ -478,23 +465,57 @@ struct BacklogMacView: View {
         HomeTaskSearchIndex.query(store.searchText) != nil
     }
 
-    private var backlogDestinations: [BacklogDestination] {
-        HomeCustomTaskSectionStorage.topLevelSections(
+    @ViewBuilder
+    private func backlogMoveMenuItems(for taskID: UUID) -> some View {
+        let sections = HomeCustomTaskSectionStorage.topLevelSections(
             in: store.customSections,
             surface: .backlog
-        ).flatMap { section in
-            let parent = BacklogDestination(id: section.id, title: section.title)
+        )
+
+        ForEach(sections) { section in
             let subsections = HomeCustomTaskSectionStorage.subsections(
                 of: section.id,
                 in: store.customSections
-            ).map { subsection in
-                BacklogDestination(
-                    id: subsection.id,
-                    title: "\(section.title) › \(subsection.title)"
-                )
+            )
+
+            if subsections.isEmpty {
+                Button(section.title) {
+                    store.send(.moveTask(taskID, to: section.id))
+                }
+            } else {
+                Menu(section.title) {
+                    Button("In \(section.title)") {
+                        store.send(.moveTask(taskID, to: section.id))
+                    }
+
+                    ForEach(subsections) { subsection in
+                        Button(subsection.title) {
+                            store.send(.moveTask(taskID, to: subsection.id))
+                        }
+                    }
+                }
             }
-            return [parent] + subsections
         }
+
+        if !sections.isEmpty {
+            Divider()
+        }
+
+        Button("New Backlog Super Section…") {
+            presentNewBacklogSection(for: taskID)
+        }
+    }
+
+    private func presentNewBacklogSection(for taskID: UUID) {
+        newSectionTaskID = taskID
+        newSectionTitle = ""
+        isNewSectionPromptPresented = true
+    }
+
+    private func resetNewSectionPrompt() {
+        isNewSectionPromptPresented = false
+        newSectionTitle = ""
+        newSectionTaskID = nil
     }
 
     private func createBacklogSection() {
@@ -505,8 +526,11 @@ struct BacklogMacView: View {
         ) else {
             return
         }
-        newSectionTitle = ""
         persistCustomSections(update.sections)
+        if let taskID = newSectionTaskID {
+            store.send(.moveTask(taskID, to: update.section.id))
+        }
+        resetNewSectionPrompt()
     }
 
     private func createBacklogSubsection(_ parentSectionID: UUID) {
@@ -554,9 +578,4 @@ struct BacklogMacView: View {
         guard let colorHex = section.colorHex else { return .accentColor }
         return Color(hex: colorHex)
     }
-}
-
-private struct BacklogDestination: Identifiable {
-    let id: UUID
-    let title: String
 }

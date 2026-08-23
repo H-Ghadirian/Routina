@@ -668,6 +668,13 @@ final class PerformanceRegressionTests: XCTestCase {
             "A burst of semantic updates must keep one pending Backlog refresh."
         )
         XCTAssertTrue(featureSource.contains(".cancel(id: CancelID.automaticRefresh)"))
+        XCTAssertFalse(
+            viewSource.contains("newSectionControl"),
+            "Backlog should not reserve a permanent section composer above its task list."
+        )
+        XCTAssertTrue(viewSource.contains("New Backlog Super Section…"))
+        XCTAssertTrue(viewSource.contains("Move a task here from the main task list"))
+        XCTAssertTrue(viewSource.contains("backlogMoveMenuItems(for:"))
     }
 
     func testCloudSyncFanInThrottlesSurfaceRefreshes() throws {

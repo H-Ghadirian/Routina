@@ -52,6 +52,79 @@ struct BacklogTaskListPresentationTests {
     }
 
     @Test
+    func routesMatchingUnassignedFlaggedTasksIntoBacklogSuperSections() throws {
+        let writingID = UUID()
+        let readingID = UUID()
+        let matchingTask = RoutineTask(
+            name: "Read sources",
+            tags: ["Research"],
+            flags: ["Off radar"]
+        )
+        let unmatchedTask = RoutineTask(
+            name: "Call carpenter",
+            tags: ["Home"],
+            flags: ["Off radar"]
+        )
+        let explicitlyAssignedTask = RoutineTask(
+            name: "Already organized",
+            customTaskSectionID: readingID,
+            tags: ["Research"],
+            flags: ["Off radar"]
+        )
+        let sections = [
+            HomeCustomTaskSection(
+                id: writingID,
+                surface: .backlog,
+                title: "Writing",
+                createdAt: nil,
+                rules: HomeCustomTaskSectionRules(tagNames: ["Research"])
+            ),
+            HomeCustomTaskSection(
+                id: readingID,
+                surface: .backlog,
+                title: "Reading",
+                createdAt: nil
+            )
+        ]
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [matchingTask, unmatchedTask, explicitlyAssignedTask],
+            customSections: sections,
+            flagRules: [RoutineFlagRule(flag: "Off radar", kind: .hideFromTaskLists)],
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        let writingSection = try #require(presentation.sections.first)
+        #expect(writingSection.section.id == writingID)
+        #expect(writingSection.tasks.map { $0.id } == [matchingTask.id])
+        #expect(presentation.sections.last?.section.id == readingID)
+        #expect(presentation.sections.last?.tasks.map { $0.id } == [explicitlyAssignedTask.id])
+        #expect(presentation.hiddenByFlagTasks.map { $0.id } == [unmatchedTask.id])
+    }
+
+    @Test
+    func doesNotRouteOrdinaryRadarTasksIntoBacklogByTagRule() {
+        let task = RoutineTask(name: "Read sources", tags: ["Research"])
+        let section = HomeCustomTaskSection(
+            surface: .backlog,
+            title: "Writing",
+            createdAt: nil,
+            rules: HomeCustomTaskSectionRules(tagNames: ["Research"])
+        )
+
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [task],
+            customSections: [section],
+            flagRules: [],
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        #expect(presentation.taskCount == 0)
+        #expect(presentation.outsideBacklogResults.isEmpty)
+    }
+
+    @Test
     func keepsEmptyBacklogSuperSectionsAndSubsectionsReachable() throws {
         let somedayID = UUID()
         let researchID = UUID()
@@ -209,7 +282,7 @@ struct BacklogTaskListPresentationTests {
         #expect(presentation.taskCount == 0)
         let result = try #require(presentation.outsideBacklogResults.first)
         #expect(result.task.id == radarTask.id)
-        #expect(result.locationTitle == "Radar › Future")
+        #expect(result.locationTitle == "Main task list › Future")
         #expect(result.revealDestination == .planner)
     }
 

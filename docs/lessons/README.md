@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0228 — Create Backlog sections at the point of use](0228-create-backlog-sections-at-the-point-of-use.md)
+- [0227 — Route Backlog tag rules through the presentation model](0227-route-backlog-tag-rules-through-the-presentation-model.md)
 - [0226 — Scope section-name uniqueness to the workspace surface](0226-allow-identical-section-names-across-surfaces.md)
 - [0225 — Keep Mac Settings disclosure content inside its card](0225-keep-mac-settings-disclosure-content-inside-its-card.md)
 

@@ -351,6 +351,7 @@ struct HomeTCAView: View {
     @State var customTaskSectionNameDraft = ""
     @State var pendingCustomTaskSectionTaskID: UUID?
     @State var pendingCustomTaskSectionParentID: UUID?
+    @State var pendingCustomTaskSectionSurface: HomeTaskSectionSurface = .radar
     @State var isCustomTaskSectionRenamePromptPresented = false
     @State var pendingRenameCustomTaskSectionID: UUID?
     @State var customTaskSectionRenameDraft = ""
