@@ -8,6 +8,26 @@ import Testing
 @MainActor
 struct TaskDetailFeatureTests {
     @Test
+    func setAddDetailChooserPresented_togglesStableSheetPresentation() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.setAddDetailChooserPresented(true)) {
+            $0.isAddDetailChooserPresented = true
+        }
+
+        await store.send(.setAddDetailChooserPresented(false)) {
+            $0.isAddDetailChooserPresented = false
+        }
+    }
+
+    @Test
     func setDeleteConfirmation_togglesAlertPresentation() async {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")

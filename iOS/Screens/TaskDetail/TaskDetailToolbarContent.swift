@@ -9,7 +9,6 @@ struct TaskDetailToolbarContent: ToolbarContent {
     let isTaskSharingEnabled: Bool
     let onShare: () -> Void
     let optionalDetailActionCount: Int
-    let onAddDetail: () -> Void
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .principal) {
@@ -64,10 +63,12 @@ struct TaskDetailToolbarContent: ToolbarContent {
                         }
                         .accessibilityLabel("Edit task")
 
-                        Button(action: onAddDetail) {
+                        Button {
+                            store.send(.setAddDetailChooserPresented(true))
+                        } label: {
                             Image(systemName: "chevron.down")
                                 .font(.caption.weight(.bold))
-                                .frame(minWidth: 32, minHeight: 32)
+                                .frame(minWidth: 44, minHeight: 44)
                                 .contentShape(Rectangle())
                         }
                         .accessibilityLabel("Add a detail")

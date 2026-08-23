@@ -49,6 +49,8 @@ Decision links: [0100](../decisions/0100-reveal-task-form-details-by-section.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+- `Tests/iOS/TaskDetailFeatureTests.swift`
+- `Tests/iOSUI/RoutinaUITests.swift`
 
 Given a task has no resolved linked tasks
 When the person opens its iOS or macOS Task Details
@@ -623,6 +625,11 @@ And Delete Task is absent from the iOS Edit Task form
 And the grouped pencil remains a direct Edit action
 And its adjacent chevron opens the `Add a detail` sheet instead of adding that command to the maintenance menu
 And the vertical-dot trigger has a bold, comfortably legible size beside Edit
+
+Given Task Details is hosted from Home or Timeline on iPhone or iPad
+When the person taps the visible Add-a-detail chevron surface
+Then the task-detail presentation route opens the `Add a detail` sheet
+And SwiftUI toolbar rehosting cannot detach the control from its sheet state
 
 ### iOS Task Detail Keeps Primary Context Easy To Scan
 

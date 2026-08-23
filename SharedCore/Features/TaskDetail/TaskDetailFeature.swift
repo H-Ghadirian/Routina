@@ -42,6 +42,7 @@ struct TaskDetailFeature: Reducer {
         var isDoneToday: Bool = false
         var isAssumedDoneToday: Bool = false
         var isEditSheetPresented: Bool = false
+        var isAddDetailChooserPresented: Bool = false
         var editRoutineName: String = ""
         var editCustomTaskSectionID: UUID?
         var editRoutineEmoji: String = "✨"
@@ -384,6 +385,7 @@ struct TaskDetailFeature: Reducer {
         case markOccurrenceMissed(Date)
         case markOccurrenceCanceled(Date)
         case setEditSheet(Bool)
+        case setAddDetailChooserPresented(Bool)
         case prepareInlineEdit
         case editRoutineNameChanged(String)
         case editCustomTaskSectionChanged(UUID?)
@@ -1372,6 +1374,10 @@ struct TaskDetailFeature: Reducer {
 
         case let .setEditSheet(isPresented):
             return dialogLifecycleActionHandler().setEditSheet(isPresented, state: &state)
+
+        case let .setAddDetailChooserPresented(isPresented):
+            state.isAddDetailChooserPresented = isPresented
+            return .none
 
         case .prepareInlineEdit:
             return dialogLifecycleActionHandler().prepareInlineEdit(state: &state)

@@ -19,6 +19,17 @@ struct TaskDetailPresentationRouting {
         )
     }
 
+    var addDetailChooser: Binding<Bool> {
+        Binding(
+            get: { MainActor.assumeIsolated { store.isAddDetailChooserPresented } },
+            set: { isPresented in
+                MainActor.assumeIsolated {
+                    _ = store.send(.setAddDetailChooserPresented(isPresented))
+                }
+            }
+        )
+    }
+
     var deleteConfirmation: Binding<Bool> {
         Binding(
             get: { MainActor.assumeIsolated { store.isDeleteConfirmationPresented } },
