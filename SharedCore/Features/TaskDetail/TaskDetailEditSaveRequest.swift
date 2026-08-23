@@ -178,7 +178,7 @@ struct TaskDetailEditSaveRequestBuilder {
             temporalWeightRule: RoutineTaskTemporalWeightResolver.sanitizedRule(
                 state.editTemporalWeightRule,
                 scheduleMode: scheduleMode,
-                trackingCadenceEnabled: trackingCadenceEnabled,
+                cadenceEnabled: trackingCadenceEnabled,
                 importance: state.editImportance,
                 urgency: state.editUrgency,
                 pressure: state.editPressure

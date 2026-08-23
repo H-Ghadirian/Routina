@@ -3,7 +3,17 @@ import Foundation
 enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     case routine = "Routine"
     case todo = "Todo"
+    /// Persisted compatibility value only. Product surfaces present this as a routine.
     case record = "Tracking"
+
+    var userFacingTitle: String {
+        switch self {
+        case .routine, .record:
+            return "Routine"
+        case .todo:
+            return "Todo"
+        }
+    }
 
     var defaultEmoji: String {
         switch self {

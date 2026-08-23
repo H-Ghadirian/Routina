@@ -26,8 +26,9 @@ the person still needs to know that the task will become important, urgent, or
 high-pressure on the due date or during a lead window.
 
 The same distinction must be visible without making one-off tasks, Gentle
-routines, tracking entries, or cadence-free routines appear to have due-date
-heating behavior they cannot use.
+routines, cadence-free routines, or legacy internal `record`-shaped rows appear
+to have due-date heating behavior they cannot use. That internal compatibility
+shape is not a user-facing task type or Flag.
 
 ## Decision
 

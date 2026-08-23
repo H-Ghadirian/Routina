@@ -775,9 +775,7 @@ struct TaskFormContent: View {
 
     private var previewTitle: String {
         let trimmed = model.name.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        let taskTypeTitle = model.taskType.wrappedValue == .record
-            ? RoutineTaskType.routine.rawValue.lowercased()
-            : model.taskType.wrappedValue.rawValue.lowercased()
+        let taskTypeTitle = model.taskType.wrappedValue.userFacingTitle.lowercased()
         return trimmed.isEmpty
             ? "New \(taskTypeTitle)"
             : trimmed

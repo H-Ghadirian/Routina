@@ -58,7 +58,9 @@ struct TaskFormPresentationTests {
 
     @Test
     func userFacingTaskTypeSelectorsOmitInternalRecordCompatibility() {
-        #expect(RoutineTaskType.record.rawValue == "Tracking")
+        #expect(RoutineTaskType.record.userFacingTitle == "Routine")
+        #expect(RoutineTaskType.allCases.map(\.userFacingTitle) == ["Routine", "Todo", "Routine"])
+        #expect(!RoutineTaskType.allCases.map(\.userFacingTitle).contains("Tracking"))
         #expect(RoutineTaskType.record.pluralTitle == "Routines")
         #expect(HomeTaskListMode.allCases == [.all, .routines, .todos])
         #expect(!TimelineFilterType.allCases.map(\.rawValue).contains("Records"))

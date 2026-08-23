@@ -747,7 +747,7 @@ extension TaskDetailFeature {
                 task.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
                     temporalWeightRule,
                     scheduleMode: scheduleMode,
-                    trackingCadenceEnabled: scheduleMode.taskType == .todo
+                    cadenceEnabled: scheduleMode.taskType == .todo
                         ? true
                         : trackingCadenceEnabled,
                     importance: importance,

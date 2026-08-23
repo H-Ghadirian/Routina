@@ -662,7 +662,7 @@ final class RoutineTask {
             RoutineTaskTemporalWeightResolver.sanitizedRule(
                 temporalWeightRule,
                 scheduleMode: resolvedScheduleMode,
-                trackingCadenceEnabled: resolvedTrackingCadenceEnabled,
+                cadenceEnabled: resolvedTrackingCadenceEnabled,
                 importance: importance,
                 urgency: urgency,
                 pressure: pressure

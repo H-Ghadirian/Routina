@@ -283,7 +283,7 @@ struct GoalsFeature {
         }
 
         var kindText: String {
-            taskType == .record ? "Routine" : taskType.rawValue
+            taskType.userFacingTitle
         }
 
         var stateText: String {

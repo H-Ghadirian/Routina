@@ -171,7 +171,7 @@ struct AddRoutineFeature: Reducer {
         guard let rule = state.basics.temporalWeightRule else { return }
         guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
             scheduleMode: state.schedule.scheduleMode,
-            trackingCadenceEnabled: state.schedule.scheduleMode.taskType == .todo
+            cadenceEnabled: state.schedule.scheduleMode.taskType == .todo
                 ? true
                 : state.basics.trackingCadenceEnabled
         ) else {

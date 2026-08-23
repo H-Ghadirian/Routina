@@ -31,8 +31,10 @@ scrolling row builders.
 ## Decision
 
 A repeating Due routine with active cadence can optionally store a time-based
-Task Ladder rule. Gentle routines, tracking records, cadence-free routines, and
-one-off todos do not use this rule.
+Task Ladder rule. Gentle routines, cadence-free routines, one-off todos, and
+legacy internal `record`-shaped rows do not use this rule. The last category is
+not a user-facing task type or Flag; every product surface presents such rows as
+routines under Decision 0436.
 
 The task's stored Importance, Urgency, and Pressure remain its baseline. The rule
 can independently choose a higher due-date target for any of those dimensions

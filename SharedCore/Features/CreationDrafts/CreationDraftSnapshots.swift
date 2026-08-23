@@ -415,7 +415,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             : state.basics.trackingCadenceEnabled
         guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
             scheduleMode: state.schedule.scheduleMode,
-            trackingCadenceEnabled: trackingCadenceEnabled
+            cadenceEnabled: trackingCadenceEnabled
         ) else {
             return nil
         }

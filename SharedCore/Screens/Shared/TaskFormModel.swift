@@ -536,7 +536,7 @@ extension TaskFormModel {
     var supportsTemporalWeightValues: Bool {
         RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
             scheduleMode: scheduleMode.wrappedValue,
-            trackingCadenceEnabled: trackingCadenceEnabled.wrappedValue
+            cadenceEnabled: trackingCadenceEnabled.wrappedValue
         )
     }
 

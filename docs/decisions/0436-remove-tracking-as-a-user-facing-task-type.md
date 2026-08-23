@@ -23,6 +23,7 @@ requires a visible compatibility surface.
 Routina presents only `Routines` and `Todos` as task-type categories:
 
 - Add and Edit forms use `One-time` and `Repeating`.
+- `Tracking` is not a Flag, and no `Track this routine` compatibility control is shown.
 - Home and Timeline filters do not offer Tracking.
 - Mac Home has no dedicated Tracking section.
 - Stats has no Tracking filter, count, time card, or dashboard item.

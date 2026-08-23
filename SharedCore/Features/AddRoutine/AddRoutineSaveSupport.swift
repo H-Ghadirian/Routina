@@ -237,7 +237,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
             temporalWeightRule,
             scheduleMode: scheduleMode,
-            trackingCadenceEnabled: resolvedTrackingCadenceEnabled,
+            cadenceEnabled: resolvedTrackingCadenceEnabled,
             importance: importance,
             urgency: urgency,
             pressure: pressure
@@ -392,7 +392,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
             basics.temporalWeightRule,
             scheduleMode: schedule.scheduleMode,
-            trackingCadenceEnabled: trackingCadenceEnabled,
+            cadenceEnabled: trackingCadenceEnabled,
             importance: basics.importance,
             urgency: basics.urgency,
             pressure: basics.pressure

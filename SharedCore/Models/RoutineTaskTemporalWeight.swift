@@ -111,32 +111,32 @@ struct RoutineTaskEffectiveWeights: Equatable, Sendable {
 enum RoutineTaskTemporalWeightResolver {
     static func supportsTemporalWeight(
         scheduleMode: RoutineScheduleMode,
-        trackingCadenceEnabled: Bool
+        cadenceEnabled: Bool
     ) -> Bool {
         scheduleMode.taskType == .routine
             && scheduleMode.scheduleBehavior == .fixed
             && scheduleMode.usesRoutineCadence
-            && trackingCadenceEnabled
+            && cadenceEnabled
     }
 
     static func supportsTemporalWeight(_ task: RoutineTask) -> Bool {
         supportsTemporalWeight(
             scheduleMode: task.scheduleMode,
-            trackingCadenceEnabled: task.trackingCadenceEnabled
+            cadenceEnabled: task.trackingCadenceEnabled
         )
     }
 
     static func sanitizedRule(
         _ rule: RoutineTaskTemporalWeightRule?,
         scheduleMode: RoutineScheduleMode,
-        trackingCadenceEnabled: Bool,
+        cadenceEnabled: Bool,
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
         pressure: RoutineTaskPressure
     ) -> RoutineTaskTemporalWeightRule? {
         guard supportsTemporalWeight(
             scheduleMode: scheduleMode,
-            trackingCadenceEnabled: trackingCadenceEnabled
+            cadenceEnabled: cadenceEnabled
         ) else {
             return nil
         }
@@ -154,7 +154,7 @@ enum RoutineTaskTemporalWeightResolver {
         sanitizedRule(
             rule,
             scheduleMode: task.scheduleMode,
-            trackingCadenceEnabled: task.trackingCadenceEnabled,
+            cadenceEnabled: task.trackingCadenceEnabled,
             importance: task.importance,
             urgency: task.urgency,
             pressure: task.pressure

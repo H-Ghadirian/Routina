@@ -366,7 +366,7 @@ Then effective value sections are read-only
 And an adjusted task row explains its due timing
 And an inherited container group uses its actionable direct children's Now values
 
-Given a task is Gentle, tracking-only, cadence-free, or one-off
+Given a task is Gentle, cadence-free, one-off, or a legacy internal record-shaped row
 When Task Ladder resolves its values
 Then no time-based rule changes its Base value
 
@@ -1223,6 +1223,7 @@ Given the user opens task creation, Home or Timeline filters, Stats, or custom-s
 When task-type choices and reports are presented
 Then only Routines and Todos are exposed as task types
 And no filter, section, rule, badge, query alias, count, time card, or dashboard item exposes the retired type
+And no Flag or task-form control is named `Tracking` or `Track this routine`
 
 Given an internal record-shaped development row is encountered
 When Home, Timeline, Planner, or Stats presents or filters it

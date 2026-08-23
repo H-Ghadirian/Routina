@@ -1118,6 +1118,14 @@ struct TaskRankingPresentationTests {
         )
     }
 
+    @Test
+    func temporalValuesRejectLegacyRecordRowsWithoutACompatibilitySetupPath() {
+        let task = RoutineTask(name: "Legacy", scheduleMode: .record)
+
+        #expect(!RoutineTaskTemporalWeightResolver.supportsTemporalWeight(task))
+        #expect(task.scheduleMode.taskType.userFacingTitle == "Routine")
+    }
+
     private static func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
