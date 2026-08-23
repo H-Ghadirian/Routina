@@ -16,9 +16,36 @@ struct TaskDetailPlatformActionParityTests {
         #expect(!routineActions.contains("Start ongoing"))
         #expect(!routineActions.contains("startOngoingButton"))
         #expect(!routineActions.contains(".startOngoingTapped"))
+        #expect(routineActions.contains("routineLifecycleControl"))
+        #expect(routineActions.contains("HStack(spacing: 0)"))
         #expect(routineActions.contains("routineActionsMenu"))
-        #expect(routineActions.contains("More routine actions"))
+        #expect(routineActions.contains("Image(systemName: \"chevron.down\")"))
+        #expect(routineActions.contains(".frame(width: 54)"))
+        #expect(routineActions.contains(".frame(minHeight: 50, maxHeight: .infinity)"))
+        #expect(routineActions.contains(".contentShape(Rectangle())"))
+        #expect(routineActions.contains(".accessibilityLabel(\"More routine actions\")"))
         #expect(routineActions.contains("Not today — hide until tomorrow"))
+        #expect(routineActions.contains("Divider()"))
+
+        let notToday = try #require(routineActions.range(of: "store.send(.notTodayTapped)"))
+        let pause = try #require(routineActions.range(of: "store.send(.pauseTapped)"))
+        #expect(notToday.lowerBound < pause.lowerBound)
+    }
+
+    @Test
+    func iosAssumedDoneUsesACompactStatusPillInsteadOfInstructionalCopy() throws {
+        let detailSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let actionControlsSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+
+        #expect(detailSource.contains("titleSupplementaryContent: { assumedDoneStatusPill }"))
+        #expect(detailSource.contains("guard !store.isSelectedDateAssumedDone else { return nil }"))
+        #expect(detailSource.contains("if store.isSelectedDateAssumedDone"))
+        #expect(actionControlsSource.contains("Label(\"Assumed done\", systemImage: \"checkmark.circle.dashed\")"))
+        #expect(actionControlsSource.contains(".accessibilityHint(\"This day is provisional until you confirm it\")"))
     }
 
     @Test
@@ -56,7 +83,8 @@ struct TaskDetailPlatformActionParityTests {
         #expect(!toolbarSource.contains("RoutinaDeepLinkShareMenu("))
         #expect(toolbarSource.contains("ControlGroup {"))
         #expect(toolbarSource.contains("optionalDetailActionCount"))
-        #expect(toolbarSource.contains("Button(action: onAddDetail)"))
+        #expect(toolbarSource.contains("store.send(.setAddDetailChooserPresented(true))"))
+        #expect(toolbarSource.contains(".frame(minWidth: 44, minHeight: 44)"))
         #expect(toolbarSource.contains(".accessibilityLabel(\"Add a detail\")"))
         #expect(!actionControlsSource.contains("TaskDetailCancelTodoButton"))
         #expect(!editSource.contains("onDelete:"))
@@ -160,7 +188,9 @@ struct TaskDetailPlatformActionParityTests {
         #expect(macEditControl.contains(".accessibilityLabel(\"Add a detail\")"))
         #expect(!macMaintenanceMenu.contains("Add a detail"))
         #expect(iosToolbarSource.contains("ControlGroup {"))
-        #expect(iosToolbarSource.contains("Button(action: onAddDetail)"))
+        #expect(iosToolbarSource.contains("store.send(.setAddDetailChooserPresented(true))"))
+        #expect(iosDetailSource.contains("isPresented: presentationRouting.addDetailChooser"))
+        #expect(iosDetailSource.contains("store.send(.setAddDetailChooserPresented(false))"))
         #expect(iosDetailSource.contains(".presentationDetents([.medium, .large])"))
         #expect(iosDetailSource.contains("onDismiss: performPendingOptionalDetailAction"))
     }
@@ -198,7 +228,7 @@ struct TaskDetailPlatformActionParityTests {
         #expect(!iosRoutineContent.contains("optionalActionsSection"))
         #expect(!macTodoContent.contains("optionalActionsSection"))
         #expect(!macRoutineContent.contains("optionalActionsSection"))
-        #expect(iosSource.contains("isAddDetailChooserPresented"))
+        #expect(iosSource.contains("presentationRouting.addDetailChooser"))
         #expect(iosSource.contains("TaskDetailAddDetailChooserView("))
         #expect(macSource.contains("optionalDetailActions: presentation.showsEditingEntryPoints"))
     }

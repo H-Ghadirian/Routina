@@ -94,7 +94,11 @@ struct TaskDetailRoutinePrimaryActionSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TaskDetailPrimaryActionButton(store: store)
+            if showsPauseResumeControl {
+                routineLifecycleControl
+            } else {
+                TaskDetailPrimaryActionButton(store: store)
+            }
 
             if store.shouldShowBulkConfirmAssumedDays {
                 Button(store.bulkConfirmAssumedDaysTitle) {
@@ -106,7 +110,6 @@ struct TaskDetailRoutinePrimaryActionSection: View {
                 .frame(maxWidth: .infinity)
             }
 
-            secondaryActionControls
             explanatoryMessages
         }
         .padding(16)
@@ -120,11 +123,43 @@ struct TaskDetailRoutinePrimaryActionSection: View {
         }
     }
 
-    @ViewBuilder
-    private var secondaryActionControls: some View {
-        if showsPauseResumeControl {
+    private var routineLifecycleControl: some View {
+        HStack(spacing: 0) {
+            Button {
+                store.send(store.completionButtonAction)
+            } label: {
+                TaskDetailCompletionButtonLabel(
+                    title: TaskDetailIOSCompletionPresentation.title(for: store.state),
+                    systemImage: TaskDetailIOSCompletionPresentation.systemImage(for: store.state)
+                )
+                .font(.body.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(
+                TaskDetailJoinedLifecyclePrimaryButtonStyle(
+                    tint: TaskDetailPresentation.completionActionTint(
+                        isOngoingMultiDayRoutine: store.task.isMultiDayRoutine && store.task.isOngoing,
+                        canUndoSelectedDate: store.canUndoSelectedDate
+                    )
+                )
+            )
+            .disabled(store.isCompletionButtonDisabled)
+
+            Rectangle()
+                .fill(Color.secondary.opacity(0.22))
+                .frame(width: 1)
+                .padding(.vertical, 12)
+
             routineActionsMenu
         }
+        .background(Color.secondary.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        )
+        .accessibilityElement(children: .contain)
     }
 
     private var showsPauseResumeControl: Bool {
@@ -141,6 +176,16 @@ struct TaskDetailRoutinePrimaryActionSection: View {
 
     private var routineActionsMenu: some View {
         Menu {
+            if pauseArchivePresentation.secondaryActionTitle != nil {
+                Button {
+                    store.send(.notTodayTapped)
+                } label: {
+                    Label("Not today — hide until tomorrow", systemImage: "moon.zzz.fill")
+                }
+
+                Divider()
+            }
+
             if store.task.isArchived() {
                 Button {
                     store.send(.resumeTapped)
@@ -166,22 +211,17 @@ struct TaskDetailRoutinePrimaryActionSection: View {
                     Label(pauseUntilActionTitle, systemImage: "clock.arrow.circlepath")
                 }
             }
-
-            if pauseArchivePresentation.secondaryActionTitle != nil {
-                Button {
-                    store.send(.notTodayTapped)
-                } label: {
-                    Label("Not today — hide until tomorrow", systemImage: "moon.zzz.fill")
-                }
-            }
         } label: {
-            Label("More routine actions", systemImage: "ellipsis.circle")
-                .font(.subheadline.weight(.medium))
+            Image(systemName: "chevron.down")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.primary)
+                .frame(width: 54)
+                .frame(minHeight: 50, maxHeight: .infinity)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.bordered)
-        .tint(.secondary)
-        .routinaPlatformSecondaryActionControlSize()
-        .accessibilityHint("Pause, resume, choose a pause end time, or hide this routine until tomorrow")
+        .buttonStyle(.plain)
+        .accessibilityLabel("More routine actions")
+        .accessibilityHint("Not today, pause, pause until, or resume this routine")
     }
 
     private var pauseUntilActionTitle: String {
@@ -210,6 +250,42 @@ struct TaskDetailRoutinePrimaryActionSection: View {
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+private struct TaskDetailJoinedLifecyclePrimaryButtonStyle: ButtonStyle {
+    let tint: Color
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(.white.opacity(isEnabled ? 1 : 0.72))
+            .background(
+                tint.opacity(
+                    isEnabled
+                        ? (configuration.isPressed ? 0.78 : 1)
+                        : 0.38
+                )
+            )
+    }
+}
+
+struct TaskDetailAssumedDoneStatusPill: View {
+    var body: some View {
+        Label("Assumed done", systemImage: "checkmark.circle.dashed")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.mint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: .mint, tintOpacity: 0.12)
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(Color.mint.opacity(0.24), lineWidth: 1)
+            )
+            .fixedSize(horizontal: true, vertical: false)
+            .accessibilityLabel("Assumed done")
+            .accessibilityHint("This day is provisional until you confirm it")
     }
 }
 

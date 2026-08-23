@@ -46,6 +46,69 @@ struct RoutinaUITests {
 
     @MainActor
     @Test
+    func taskDetailAddDetailChevronOpensChooser() {
+        let app = makeApp()
+        app.launch()
+        #expect(app.wait(for: .runningForeground, timeout: 10))
+
+        let routineName = "Add-detail-\(UUID().uuidString.prefix(6))"
+        addRoutine(named: String(routineName), in: app)
+
+        let row = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", String(routineName))
+        ).firstMatch
+        row.tap()
+
+        let addDetailButton = app.buttons["Add a detail"]
+        #expect(addDetailButton.waitForExistence(timeout: 10))
+        addDetailButton.tap()
+
+        let chooserNavigationBar = app.navigationBars["Add a detail"]
+        #expect(chooserNavigationBar.waitForExistence(timeout: 10))
+        #expect(app.buttons["History"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    @Test
+    func timelineTaskDetailAddDetailChevronOpensChooser() {
+        let app = makeApp()
+        app.launch()
+        #expect(app.wait(for: .runningForeground, timeout: 10))
+
+        let routineName = "Timeline-detail-\(UUID().uuidString.prefix(6))"
+        addRoutine(named: String(routineName), in: app)
+
+        let homeRow = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", String(routineName))
+        ).firstMatch
+        homeRow.tap()
+
+        let doneButton = app.buttons["Done"]
+        #expect(doneButton.waitForExistence(timeout: 10))
+        doneButton.tap()
+        #expect(app.buttons["Undo"].waitForExistence(timeout: 10))
+
+        let timelineTab = app.buttons["Timeline"].firstMatch
+        #expect(timelineTab.waitForExistence(timeout: 10))
+        timelineTab.tap()
+
+        let timelineRow = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", String(routineName))
+        ).firstMatch
+        #expect(timelineRow.waitForExistence(timeout: 10))
+        timelineRow.tap()
+
+        let addDetailButton = app.buttons["Add a detail"]
+        #expect(addDetailButton.waitForExistence(timeout: 10))
+        addDetailButton.tap()
+
+        let chooserNavigationBar = app.navigationBars["Add a detail"]
+        #expect(chooserNavigationBar.waitForExistence(timeout: 10))
+        #expect(app.buttons["History"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    @Test
     func statsShowsActiveAndArchivedRoutineCounts() {
         let app = makeApp()
         app.launch()
@@ -99,7 +162,11 @@ struct RoutinaUITests {
 
     @MainActor
     private func homeAddRoutineButton(in app: XCUIApplication) -> XCUIElement {
-        app.navigationBars.buttons["Add Task"].firstMatch
+        let navigationButton = app.navigationBars.buttons["Add Task"].firstMatch
+        if navigationButton.waitForExistence(timeout: 2) {
+            return navigationButton
+        }
+        return app.buttons["New"].firstMatch
     }
 
     @MainActor
@@ -108,14 +175,24 @@ struct RoutinaUITests {
         #expect(addRoutineButton.waitForExistence(timeout: 10))
         addRoutineButton.tap()
 
-        let nameField = app.textFields["Task name"]
-        #expect(nameField.waitForExistence(timeout: 10))
-        nameField.tap()
-        nameField.typeText(routineName)
+        let fullEditorNameField = app.textFields["Task name"]
+        if fullEditorNameField.waitForExistence(timeout: 2) {
+            fullEditorNameField.tap()
+            fullEditorNameField.typeText(routineName)
 
-        let saveButton = app.navigationBars.buttons["Save"]
-        #expect(saveButton.waitForExistence(timeout: 10))
-        saveButton.tap()
+            let saveButton = app.navigationBars.buttons["Save"]
+            #expect(saveButton.waitForExistence(timeout: 10))
+            saveButton.tap()
+        } else {
+            let quickAddField = app.textFields.firstMatch
+            #expect(quickAddField.waitForExistence(timeout: 10))
+            quickAddField.tap()
+            quickAddField.typeText(routineName)
+
+            let addButton = app.buttons["Add"].firstMatch
+            #expect(addButton.waitForExistence(timeout: 10))
+            addButton.tap()
+        }
 
         let row = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", routineName)).firstMatch
         #expect(row.waitForExistence(timeout: 10))

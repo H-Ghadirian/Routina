@@ -68,7 +68,6 @@ struct TaskDetailTCAView: View {
     @State private var isTodoStateControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var requestedEditSection: TaskFormCompactSection?
-    @State private var isAddDetailChooserPresented = false
     @State private var pendingOptionalDetailAction: TaskDetailOptionalAction?
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State var isEditEmojiPickerPresented = false
@@ -138,8 +137,7 @@ detailBody
         canSaveCurrentEdit: canSaveCurrentEdit,
         isTaskSharingEnabled: isTaskSharingEnabled,
         onShare: { isCloudSharingPresented = true },
-        optionalDetailActionCount: optionalDetailActions.count,
-        onAddDetail: { isAddDetailChooserPresented = true }
+        optionalDetailActionCount: optionalDetailActions.count
     )
 }
 .routinaPlatformEditPresentation(
@@ -157,7 +155,7 @@ detailBody
     )
 }
 .sheet(
-    isPresented: $isAddDetailChooserPresented,
+    isPresented: presentationRouting.addDetailChooser,
     onDismiss: performPendingOptionalDetailAction
 ) {
     NavigationStack {
@@ -171,7 +169,7 @@ detailBody
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {
-                    isAddDetailChooserPresented = false
+                    store.send(.setAddDetailChooserPresented(false))
                 }
             }
         }
@@ -259,7 +257,7 @@ detailBody
     showsCollapsedTaskTitle = false
     isCommentComposerVisible = false
     isTemporalWeightEditorPresented = false
-    isAddDetailChooserPresented = false
+    store.send(.setAddDetailChooserPresented(false))
     pendingOptionalDetailAction = nil
     resetRevealedOptionalControls()
     syncAvailableEvents()
@@ -555,7 +553,7 @@ detailBody
 
     private func selectOptionalDetailAction(_ action: TaskDetailOptionalAction) {
         pendingOptionalDetailAction = action
-        isAddDetailChooserPresented = false
+        store.send(.setAddDetailChooserPresented(false))
     }
 
     private func performPendingOptionalDetailAction() {
@@ -794,20 +792,21 @@ detailBody
             statusContextMessage: statusContextMessage,
             badgeRows: todoHeaderBadgeRows,
             tags: store.task.tags,
-            flags: store.task.flags
-        ) { tag in
-            statusTagChip(tag)
-        } additionalContent: {
-            VStack(alignment: .leading, spacing: 8) {
-                taskDetailTaskLadderValuesSection
-                if shouldShowTimeControl {
-                    todoTimeSpentHeaderBox
+            flags: store.task.flags,
+            headerAccessory: { EmptyView() },
+            titleSupplementaryContent: { assumedDoneStatusPill },
+            tagChip: { tag in statusTagChip(tag) },
+            additionalContent: {
+                VStack(alignment: .leading, spacing: 8) {
+                    taskDetailTaskLadderValuesSection
+                    if shouldShowTimeControl {
+                        todoTimeSpentHeaderBox
+                    }
+                    headerGoalsBox
                 }
-                headerGoalsBox
-            }
-        } flagChip: { flag in
-            AnyView(TaskDetailFlagChip(flag: flag))
-        }
+            },
+            flagChip: { flag in AnyView(TaskDetailFlagChip(flag: flag)) }
+        )
     }
 
     private var todoStateTimingSummary: TodoStateTimingSummary? {
@@ -824,17 +823,18 @@ detailBody
             statusContextMessage: statusContextMessage,
             badgeRows: routineHeaderBadgeRows,
             tags: store.task.tags,
-            flags: store.task.flags
-        ) { tag in
-            statusTagChip(tag)
-        } additionalContent: {
-            VStack(alignment: .leading, spacing: 8) {
-                taskDetailTaskLadderValuesSection
-                headerGoalsBox
-            }
-        } flagChip: { flag in
-            AnyView(TaskDetailFlagChip(flag: flag))
-        }
+            flags: store.task.flags,
+            headerAccessory: { EmptyView() },
+            titleSupplementaryContent: { assumedDoneStatusPill },
+            tagChip: { tag in statusTagChip(tag) },
+            additionalContent: {
+                VStack(alignment: .leading, spacing: 8) {
+                    taskDetailTaskLadderValuesSection
+                    headerGoalsBox
+                }
+            },
+            flagChip: { flag in AnyView(TaskDetailFlagChip(flag: flag)) }
+        )
     }
 
     @ViewBuilder
@@ -1048,11 +1048,19 @@ detailBody
     }
 
     private var statusContextMessage: String? {
-        TaskDetailStatusMetadataPresentation.statusContextMessage(
+        guard !store.isSelectedDateAssumedDone else { return nil }
+        return TaskDetailStatusMetadataPresentation.statusContextMessage(
             for: store.state,
             showPersianDates: showPersianDates,
             style: .mobile
         )
+    }
+
+    @ViewBuilder
+    private var assumedDoneStatusPill: some View {
+        if store.isSelectedDateAssumedDone {
+            TaskDetailAssumedDoneStatusPill()
+        }
     }
 
     private var dueDateMetadataDisplayText: String? {

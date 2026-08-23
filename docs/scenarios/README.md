@@ -49,6 +49,8 @@ Decision links: [0100](../decisions/0100-reveal-task-form-details-by-section.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+- `Tests/iOS/TaskDetailFeatureTests.swift`
+- `Tests/iOSUI/RoutinaUITests.swift`
 
 Given a task has no resolved linked tasks
 When the person opens its iOS or macOS Task Details
@@ -86,6 +88,27 @@ Given a one-off todo has a saved reminder date and time
 When the person opens Task Details
 Then the status metadata includes a `Reminder` row with that saved date and time
 And the person can verify the reminder without opening Edit Task
+
+
+### iOS Task Details Join Completion And Routine Actions
+
+Area: Tasks / iOS Task Details
+Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md), [0643](../decisions/0643-join-ios-task-detail-completion-and-routine-actions.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
+- `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+
+Given a routine has a primary completion action and related routine actions
+When the person opens iOS Task Details
+Then completion and the neutral chevron menu share one full-width lifecycle control
+And each segment owns its full visual hit target and independent accessibility label
+And the top-right task-maintenance overflow remains separate
+
+Given the selected routine day is assumed done
+Then a compact `Assumed done` pill replaces the visible instructional paragraph
+And `Confirm done` remains the direct prominent action
+And the menu lists `Not today — hide until tomorrow` before a divider and the pause actions
 
 ### Task Destinations Stay Separate From Saved Places
 
@@ -623,6 +646,11 @@ And Delete Task is absent from the iOS Edit Task form
 And the grouped pencil remains a direct Edit action
 And its adjacent chevron opens the `Add a detail` sheet instead of adding that command to the maintenance menu
 And the vertical-dot trigger has a bold, comfortably legible size beside Edit
+
+Given Task Details is hosted from Home or Timeline on iPhone or iPad
+When the person taps the visible Add-a-detail chevron surface
+Then the task-detail presentation route opens the `Add a detail` sheet
+And SwiftUI toolbar rehosting cannot detach the control from its sheet state
 
 ### iOS Task Detail Keeps Primary Context Easy To Scan
 
