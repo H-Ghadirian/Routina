@@ -8,6 +8,10 @@ Accepted
 
 2026-08-23
 
+## Revised by
+
+- [0647: Scope Automatic Section Rules to Their Surface](0647-scope-automatic-section-rules-to-their-surface.md)
+
 ## Refines
 
 - [0546: Separate Mac Backlog From the Radar Sidebar](0546-separate-mac-backlog-from-the-radar-sidebar.md)

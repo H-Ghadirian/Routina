@@ -404,7 +404,7 @@ struct SettingsMacTaskSectionsDetailView: View {
                 .accessibilityLabel("Automatic tag matching")
             }
 
-            Text(tagMatchModeDescription(for: section.rules.tagMatchMode))
+            Text(tagMatchModeDescription(for: section))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -841,14 +841,16 @@ struct SettingsMacTaskSectionsDetailView: View {
         parsedTagRuleDraft(for: section) != section.rules.tagNames
     }
 
-    private func tagMatchModeDescription(
-        for matchMode: RoutineTagMatchMode
-    ) -> String {
-        switch matchMode {
-        case .any:
-            return "Unassigned tasks with any one of these tags appear in this section."
-        case .all:
-            return "Only unassigned tasks containing every one of these tags appear in this section."
+    private func tagMatchModeDescription(for section: HomeCustomTaskSection) -> String {
+        switch (section.surface, section.rules.tagMatchMode) {
+        case (.radar, .any):
+            return "Main task list tasks with any one of these tags appear here unless assigned to another Main task list section."
+        case (.radar, .all):
+            return "Main task list tasks containing every one of these tags appear here unless assigned to another Main task list section."
+        case (.backlog, .any):
+            return "Hidden tasks with any one of these tags appear here unless assigned to another Backlog section."
+        case (.backlog, .all):
+            return "Hidden tasks containing every one of these tags appear here unless assigned to another Backlog section."
         }
     }
 

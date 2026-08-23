@@ -103,6 +103,71 @@ struct BacklogTaskListPresentationTests {
     }
 
     @Test
+    func appliesBacklogTagRulesIndependentlyFromStoredRadarAssignments() throws {
+        let radarSectionID = UUID()
+        let backlogSectionID = UUID()
+        let task = RoutineTask(
+            name: "Read sources",
+            customTaskSectionID: radarSectionID,
+            tags: ["Research"],
+            flags: [RoutineFlagRuleKind.hideFromTaskLists.builtInFlagName]
+        )
+        let sections = [
+            HomeCustomTaskSection(
+                id: radarSectionID,
+                surface: .radar,
+                title: "Work",
+                createdAt: nil,
+                rules: HomeCustomTaskSectionRules(tagNames: ["Work"])
+            ),
+            HomeCustomTaskSection(
+                id: backlogSectionID,
+                surface: .backlog,
+                title: "Reading",
+                createdAt: nil,
+                rules: HomeCustomTaskSectionRules(tagNames: ["Research"])
+            )
+        ]
+        let flagRules = RoutineFlagRuleKind.builtInRules
+
+        let beforeBacklogRule = BacklogTaskListPresentation.make(
+            tasks: [task],
+            customSections: [sections[0]],
+            flagRules: flagRules,
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+        #expect(beforeBacklogRule.sections.isEmpty)
+        #expect(beforeBacklogRule.hiddenByFlagTasks.map(\.id) == [task.id])
+
+        let hiddenPresentation = BacklogTaskListPresentation.make(
+            tasks: [task],
+            customSections: sections,
+            flagRules: flagRules,
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        let backlogSection = try #require(hiddenPresentation.sections.first)
+        #expect(backlogSection.section.id == backlogSectionID)
+        #expect(backlogSection.tasks.map(\.id) == [task.id])
+        #expect(hiddenPresentation.hiddenByFlagTasks.isEmpty)
+        #expect(task.customTaskSectionID == radarSectionID)
+
+        task.flags = []
+        let visiblePresentation = BacklogTaskListPresentation.make(
+            tasks: [task],
+            customSections: sections,
+            flagRules: flagRules,
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        #expect(visiblePresentation.taskCount == 0)
+        #expect(task.customTaskSectionID == radarSectionID)
+    }
+
+    @Test
     func doesNotRouteOrdinaryRadarTasksIntoBacklogByTagRule() {
         let task = RoutineTask(name: "Read sources", tags: ["Research"])
         let section = HomeCustomTaskSection(

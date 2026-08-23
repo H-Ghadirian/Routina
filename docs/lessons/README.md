@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0234 — Scope automatic organization to its surface](0234-scope-automatic-organization-to-its-surface.md)
 - [0233 — Preserve the launching workspace across transient task creation](0233-preserve-the-launching-workspace-across-transient-task-creation.md)
 - [0232 — Wire shared workflows into every platform entry point](0232-wire-shared-workflows-into-every-platform-entry-point.md)
 - [0231 — Keep toolbar sheet state in the task-detail presentation model](0231-keep-toolbar-sheet-state-in-task-detail-presentation-model.md)

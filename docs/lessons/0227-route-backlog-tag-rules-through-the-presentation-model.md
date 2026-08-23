@@ -34,3 +34,6 @@ surface.
 tagged Backlog super section, explicit assignments are preserved, unmatched
 tasks remain in `Hidden by flag`, and ordinary Radar tasks are not pulled into
 Backlog by a matching tag rule.
+
+The cross-surface precedence detail was later corrected by
+[0234](0234-scope-automatic-organization-to-its-surface.md).

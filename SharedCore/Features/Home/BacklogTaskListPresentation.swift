@@ -76,7 +76,11 @@ struct BacklogTaskListPresentation: Equatable {
             surface: .backlog
         )
         let automaticSectionIDByTaskID: [UUID: UUID] = Dictionary(uniqueKeysWithValues: tasks.compactMap { task in
-            guard task.customTaskSectionID == nil,
+            // Main task list and Backlog sections own independent automatic
+            // rules. A stored Main task list path remains available if the
+            // hiding Flag is later removed, but does not block Backlog's
+            // presentation-only classification while the task is hidden.
+            guard task.customTaskSectionID.map(backlogSectionIDs.contains) != true,
                   isActiveBacklogCandidate(task, referenceDate: referenceDate, calendar: calendar),
                   RoutineFlagRules.hidesFromTaskLists(flags: task.flags, rules: flagRules),
                   let section = topLevelSections.first(where: { section in

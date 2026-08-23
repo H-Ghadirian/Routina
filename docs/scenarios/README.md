@@ -219,7 +219,6 @@ Decision links: [0641](../decisions/0641-create-backlog-sections-from-context.md
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
-- `Tests/macOS/BacklogFeatureTests.swift`
 - `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
 
 Given a person creates an empty Backlog super section
@@ -269,24 +268,31 @@ When the person opens Add Task from New and cancels without saving
 Then Routina returns to Backlog instead of showing Planner
 And Backlog remains the relaunch destination while the transient Add Task workspace is open
 
-### Mac Backlog Applies Tag Rules to Unassigned Hidden Tasks
+### Mac Backlog Applies Surface-Scoped Tag Rules to Hidden Tasks
 
 Area: Tasks / Mac Backlog / Sections
-Decision links: [0640](../decisions/0640-route-unassigned-backlog-candidates-by-tags.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0460](../decisions/0460-match-custom-section-tags-by-any-or-all.md)
+Decision links: [0647](../decisions/0647-scope-automatic-section-rules-to-their-surface.md), [0640](../decisions/0640-route-unassigned-backlog-candidates-by-tags.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0460](../decisions/0460-match-custom-section-tags-by-any-or-all.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
+- `Tests/macOS/BacklogFeatureTests.swift`
 
-Given an active unfinished task is hidden from normal task lists by a configured Flag and has no custom section
+Given an active unfinished task is hidden from normal task lists by a configured Flag
 When a Backlog super section has an `Any` or `All` tag rule matching that task
 Then the cached Backlog presentation shows the task in the first matching super section
 And the task is removed from `Hidden by flag`
+And creating the Backlog rule after the task already exists produces the same result
 
-Given a task already has an explicit Radar or Backlog section assignment
+Given the matching hidden task retains an explicit Main task list assignment
+When Backlog applies its independent automatic rule
+Then the task appears in the matching Backlog super section for presentation
+And the stored Main task list assignment remains unchanged for when the hiding Flag is removed
+
+Given a task already has an explicit Backlog section assignment
 When another Backlog super section's tag rule matches its tags
-Then the explicit assignment remains authoritative
+Then the explicit Backlog assignment remains authoritative
 
-Given an ordinary Radar task has no custom section and matches a Backlog tag rule
+Given an ordinary Main task list task matches a Backlog tag rule but has no hiding Flag
 When Backlog rebuilds its presentation
 Then the task is not pulled into Backlog
 
