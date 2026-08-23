@@ -64,8 +64,8 @@ struct TaskDetailEditChangeRequest {
     let hidesAssumedDoneCalendarBlock: Bool
     let autoAssumeDoneTimeOfDay: RoutineTimeOfDay
     let focusModeEnabled: Bool
-    let trackingCadenceEnabled: Bool
-    let trackingNudgesEnabled: Bool
+    let cadenceEnabled: Bool
+    let nudgesEnabled: Bool
     let pressure: RoutineTaskPressure
     let thinkingNeeded: RoutineTaskThinkingNeeded
     let task: RoutineTask
@@ -134,8 +134,8 @@ struct TaskDetailEditChangeRequest {
         self.hidesAssumedDoneCalendarBlock = state.editHidesAssumedDoneCalendarBlock
         self.autoAssumeDoneTimeOfDay = state.editAutoAssumeDoneTimeOfDay
         self.focusModeEnabled = state.editFocusModeEnabled
-        self.trackingCadenceEnabled = state.editTrackingCadenceEnabled
-        self.trackingNudgesEnabled = state.editTrackingNudgesEnabled
+        self.cadenceEnabled = state.editCadenceEnabled
+        self.nudgesEnabled = state.editNudgesEnabled
         self.pressure = state.editPressure
         self.thinkingNeeded = state.editThinkingNeeded
         self.task = state.task
@@ -236,8 +236,8 @@ enum TaskDetailEditChangeDetector {
             || normalizedHidesAssumedDoneCalendarBlock(for: request) != task.hidesAssumedDoneCalendarBlock
             || normalizedAutoAssumeDoneTimeOfDay(for: request) != normalizedAutoAssumeDoneTimeOfDay(for: task)
             || request.focusModeEnabled != task.focusModeEnabled
-            || request.trackingCadenceEnabled != task.trackingCadenceEnabled
-            || request.trackingNudgesEnabled != task.trackingNudgesEnabled
+            || request.cadenceEnabled != task.cadenceEnabled
+            || request.nudgesEnabled != task.nudgesEnabled
             || request.pressure != task.pressure
             || request.thinkingNeeded != task.thinkingNeeded
     }
@@ -282,7 +282,7 @@ enum TaskDetailEditChangeDetector {
         for request: TaskDetailEditChangeRequest
     ) -> RoutineRecurrenceDraft {
         let cadence: RoutineRecurrenceDraft.Cadence
-        if !request.scheduleMode.usesRoutineCadence || !request.trackingCadenceEnabled {
+        if !request.scheduleMode.usesRoutineCadence || !request.cadenceEnabled {
             cadence = .none
         } else if request.scheduleMode.isChecklistDrivenMode {
             cadence = .itemRunout

@@ -259,7 +259,7 @@ struct NotificationCoordinatorTests {
         )
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(in: timeRange),
             createdAt: makeDate("2026-08-01T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -307,7 +307,7 @@ struct NotificationCoordinatorTests {
             name: "Go to library",
             scheduleMode: .fixedInterval,
             recurrenceRule: .interval(days: 1),
-            trackingCadenceEnabled: false
+            cadenceEnabled: false
         )
 
         #expect(

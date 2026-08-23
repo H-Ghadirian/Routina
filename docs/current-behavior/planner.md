@@ -69,7 +69,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md)
 - [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
 - [0435](../decisions/0435-edit-calendar-list-done-times-from-mac-task-detail.md)
-- [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+- [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 - [0448](../decisions/0448-complete-planned-tasks-inline-from-calendar-list.md)
 - [0600](../decisions/0600-edit-recorded-tag-focus-from-mac-planner.md)
 - [0620](../decisions/0620-remember-last-mac-focus-picker-duration.md)

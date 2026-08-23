@@ -91,7 +91,7 @@ struct TaskFormMacEstimationCard: View {
 
     private var showsActualDurationControl: Bool {
         model.actualDurationMinutes != nil
-            && (model.taskType.wrappedValue == .todo || model.taskType.wrappedValue == .record)
+            && model.taskType.wrappedValue == .todo
     }
 
     private var storyPointsEnabledBinding: Binding<Bool> {

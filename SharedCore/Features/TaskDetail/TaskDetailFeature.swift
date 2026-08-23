@@ -126,9 +126,9 @@ struct TaskDetailFeature: Reducer {
         var editActualDurationMinutes: Int?
         var editStoryPoints: Int?
         var editFocusModeEnabled: Bool = false
-        var editTrackingCadenceEnabled: Bool = true
+        var editCadenceEnabled: Bool = true
         var editAutoPauseAfterCompletion: Bool = false
-        var editTrackingNudgesEnabled: Bool = true
+        var editNudgesEnabled: Bool = true
         var taskLadderGroupHasChildren: Bool = false
         var editTaskLadderGroupEnabled: Bool = false
         var isDeleteConfirmationPresented: Bool = false
@@ -234,7 +234,7 @@ struct TaskDetailFeature: Reducer {
             if !editScheduleMode.usesRoutineCadence {
                 cadenceOverride = RoutineRecurrenceDraft.Cadence.none
             } else if editScheduleMode.taskType != .todo,
-                      !editTrackingCadenceEnabled {
+                      !editCadenceEnabled {
                 cadenceOverride = editAutoPauseAfterCompletion
                     ? .manual
                     : RoutineRecurrenceDraft.Cadence.none
@@ -281,9 +281,9 @@ struct TaskDetailFeature: Reducer {
                 availabilityStartDate: editAvailabilityStartDate,
                 availabilityEndDate: editAvailabilityEndDate,
                 isAllDay: editIsAllDay,
-                trackingCadenceEnabled: editScheduleMode.taskType == .todo
+                cadenceEnabled: editScheduleMode.taskType == .todo
                     ? true
-                    : editTrackingCadenceEnabled,
+                    : editCadenceEnabled,
                 hasSequentialSteps: !editRoutineSteps.isEmpty,
                 hasChecklistItems: !editRoutineChecklistItems.isEmpty
                 )
@@ -298,9 +298,9 @@ struct TaskDetailFeature: Reducer {
                     availabilityStartDate: editAvailabilityStartDate,
                     availabilityEndDate: editAvailabilityEndDate,
                     isAllDay: editIsAllDay,
-                    trackingCadenceEnabled: editScheduleMode.taskType == .todo
+                    cadenceEnabled: editScheduleMode.taskType == .todo
                         ? true
-                        : editTrackingCadenceEnabled,
+                        : editCadenceEnabled,
                     hasSequentialSteps: !editRoutineSteps.isEmpty,
                     hasChecklistItems: !editRoutineChecklistItems.isEmpty
                 )
@@ -465,8 +465,8 @@ struct TaskDetailFeature: Reducer {
         case editActualDurationChanged(Int?)
         case editStoryPointsChanged(Int?)
         case editFocusModeEnabledChanged(Bool)
-        case editTrackingCadenceEnabledChanged(Bool)
-        case editTrackingNudgesEnabledChanged(Bool)
+        case editCadenceEnabledChanged(Bool)
+        case editNudgesEnabledChanged(Bool)
         case editTaskLadderGroupEnabledChanged(Bool)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
@@ -604,7 +604,7 @@ struct TaskDetailFeature: Reducer {
             scheduleMode: state.editScheduleMode,
             cadenceEnabled: state.editScheduleMode.taskType == .todo
                 ? true
-                : state.editTrackingCadenceEnabled
+                : state.editCadenceEnabled
         ) else {
             state.editTemporalWeightRule = nil
             return
@@ -871,7 +871,7 @@ struct TaskDetailFeature: Reducer {
             }
             let isHistoricalCompletion = completionDate < now && !calendar.isDate(completionDate, inSameDayAs: now)
             let previousTodoStateTitle = state.task.isOneOffTask ? state.task.todoState?.displayTitle : nil
-            if RoutineDateMath.usesExactTimedOccurrenceTracking(for: state.task) {
+            if RoutineDateMath.usesExactTimedOccurrences(for: state.task) {
                 guard RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
                     for: state.task,
                     completionDate: completionDate,
@@ -1740,13 +1740,13 @@ struct TaskDetailFeature: Reducer {
         case let .editFocusModeEnabledChanged(isEnabled):
             return basicEditActionHandler().editFocusModeEnabledChanged(isEnabled, state: &state)
 
-        case let .editTrackingCadenceEnabledChanged(isEnabled):
-            state.editTrackingCadenceEnabled = isEnabled
+        case let .editCadenceEnabledChanged(isEnabled):
+            state.editCadenceEnabled = isEnabled
             if isEnabled {
                 state.editAutoPauseAfterCompletion = false
             }
             if !isEnabled {
-                state.editTrackingNudgesEnabled = false
+                state.editNudgesEnabled = false
             }
             state.synchronizeRecurrenceDraftFromLegacy()
             if !state.canAutoAssumeDailyDone {
@@ -1756,8 +1756,8 @@ struct TaskDetailFeature: Reducer {
             sanitizeEditTemporalWeightRule(&state)
             return .none
 
-        case let .editTrackingNudgesEnabledChanged(isEnabled):
-            state.editTrackingNudgesEnabled = isEnabled
+        case let .editNudgesEnabledChanged(isEnabled):
+            state.editNudgesEnabled = isEnabled
             return .none
 
         case let .editTaskLadderGroupEnabledChanged(isEnabled):

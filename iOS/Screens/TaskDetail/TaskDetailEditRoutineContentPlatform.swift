@@ -225,13 +225,13 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editFocusModeEnabled },
                 set: { store.send(.editFocusModeEnabledChanged($0)) }
             ),
-            trackingCadenceEnabled: Binding(
-                get: { store.editTrackingCadenceEnabled },
-                set: { store.send(.editTrackingCadenceEnabledChanged($0)) }
+            cadenceEnabled: Binding(
+                get: { store.editCadenceEnabled },
+                set: { store.send(.editCadenceEnabledChanged($0)) }
             ),
-            trackingNudgesEnabled: Binding(
-                get: { store.editTrackingNudgesEnabled },
-                set: { store.send(.editTrackingNudgesEnabledChanged($0)) }
+            nudgesEnabled: Binding(
+                get: { store.editNudgesEnabled },
+                set: { store.send(.editNudgesEnabledChanged($0)) }
             ),
             color: Binding(
                 get: { store.editColor },
@@ -253,8 +253,6 @@ struct TaskDetailEditRoutineContent: View {
                     nextMode = store.editScheduleMode.taskType == .routine ? store.editScheduleMode : .fixedInterval
                 case .todo:
                     nextMode = .oneOff
-                case .record:
-                    nextMode = store.editScheduleMode.taskType == .record ? store.editScheduleMode : .record
                 }
                 store.send(.editScheduleModeChanged(nextMode))
             }

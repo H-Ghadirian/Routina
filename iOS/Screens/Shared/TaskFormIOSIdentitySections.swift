@@ -64,14 +64,12 @@ struct TaskFormIOSTaskTypeSection: View {
             return true
         case .routine:
             return presentation.showsRepeatControls && model.supportsRecurrenceAvailability
-        case .record:
-            return model.supportsRecurrenceAvailability
         }
     }
 
     private var showsRoutineDurationControl: Bool {
         switch model.taskType.wrappedValue {
-        case .routine, .record:
+        case .routine:
             return true
         case .todo:
             return false

@@ -359,9 +359,8 @@ struct MissingTaskMetadataFeature {
                         && (
                             task.hasExplicitUrgency
                                 || (
-                                    !task.showsTaskDetailPriority
-                                        && (task.priorityRawValue == noPriorityRawValue
-                                            || task.priorityRawValue == mediumPriorityRawValue)
+                                    task.priorityRawValue == noPriorityRawValue
+                                        || task.priorityRawValue == mediumPriorityRawValue
                                 )
                         )
                         && (
@@ -379,9 +378,8 @@ struct MissingTaskMetadataFeature {
                         && (
                             task.hasExplicitImportance
                                 || (
-                                    !task.showsTaskDetailPriority
-                                        && (task.priorityRawValue == noPriorityRawValue
-                                            || task.priorityRawValue == mediumPriorityRawValue)
+                                    task.priorityRawValue == noPriorityRawValue
+                                        || task.priorityRawValue == mediumPriorityRawValue
                                 )
                         )
                         && (

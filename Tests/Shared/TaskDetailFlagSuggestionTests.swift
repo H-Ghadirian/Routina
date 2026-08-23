@@ -18,12 +18,12 @@ struct TaskDetailFlagSuggestionTests {
             TaskDetailFeature()
         }
 
-        await store.send(.availableFlagsLoaded([" Tracking ", "Private", "tracking"])) {
-            $0.availableFlags = ["Tracking", "Private"]
+        await store.send(.availableFlagsLoaded([" Reference ", "Private", "reference"])) {
+            $0.availableFlags = ["Reference", "Private"]
         }
 
-        await store.send(.editToggleFlagSelection("Tracking")) {
-            $0.editRoutineFlags = ["Tracking"]
+        await store.send(.editToggleFlagSelection("Reference")) {
+            $0.editRoutineFlags = ["Reference"]
         }
     }
 
@@ -42,16 +42,16 @@ struct TaskDetailFlagSuggestionTests {
         ) {
             TaskDetailFeature()
         }
-        let rule = RoutineFlagRule(flag: "Tracking", kind: .autoAssumeDone)
+        let rule = RoutineFlagRule(flag: "Reference", kind: .autoAssumeDone)
 
-        await store.send(.availableFlagsLoaded(["Tracking"])) {
-            $0.availableFlags = ["Tracking"]
+        await store.send(.availableFlagsLoaded(["Reference"])) {
+            $0.availableFlags = ["Reference"]
         }
         await store.send(.flagRulesLoaded([rule])) {
             $0.flagRules = [rule]
         }
-        await store.send(.editToggleFlagSelection("Tracking")) {
-            $0.editFlagSelectionValidationMessage = "Tracking was not added. It is not available for tasks with steps. \(RoutineAssumedCompletion.flagRuleAvailabilitySummary)"
+        await store.send(.editToggleFlagSelection("Reference")) {
+            $0.editFlagSelectionValidationMessage = "Reference was not added. It is not available for tasks with steps. \(RoutineAssumedCompletion.flagRuleAvailabilitySummary)"
         }
     }
 
@@ -79,13 +79,13 @@ struct TaskDetailFlagSuggestionTests {
         let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         }
-        let rule = RoutineFlagRule(flag: "Tracking", kind: .autoAssumeDone)
+        let rule = RoutineFlagRule(flag: "Reference", kind: .autoAssumeDone)
 
         await store.send(.flagRulesLoaded([rule])) {
             $0.flagRules = [rule]
         }
-        await store.send(.editToggleFlagSelection("Tracking")) {
-            $0.editRoutineFlags = ["Tracking"]
+        await store.send(.editToggleFlagSelection("Reference")) {
+            $0.editRoutineFlags = ["Reference"]
         }
     }
 }

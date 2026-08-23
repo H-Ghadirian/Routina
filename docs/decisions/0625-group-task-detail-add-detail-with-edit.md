@@ -18,7 +18,7 @@ Accepted
 - [0366 Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md)
 - [0381 Make Mac Task Detail Heatmap Optional](0381-make-mac-task-detail-heatmap-optional.md)
 - [0393 Persist Task Detail Heatmap Per Task](0393-persist-task-detail-heatmap-per-task.md)
-- [0424 Make Task Detail Priority Optional](0424-make-task-detail-priority-optional.md)
+- [0424 Make Task Detail Priority Optional](superseded/0424-make-task-detail-priority-optional.md)
 - [0425 Make Task Detail History Optional](0425-make-task-detail-history-optional.md)
 - [0521 Group Secondary Mac Task Detail Actions](0521-group-secondary-mac-task-detail-actions.md)
 - [0536 Match Mac Task Detail Overflow to Toolbar Chrome](0536-match-mac-task-detail-overflow-to-toolbar-chrome.md)

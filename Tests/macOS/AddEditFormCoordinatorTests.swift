@@ -32,7 +32,7 @@ struct AddEditFormCoordinatorTests {
     @Test
     func orderedSections_identityAlwaysFirst() {
         let coordinator = AddEditFormCoordinator()
-        let available: [FormSection] = [.identity, .behavior, .tags, .notes]
+        let available: [FormSection] = [.identity, .behavior, .organization, .notes]
         let result = coordinator.orderedSections(available: available)
 
         #expect(result.first == .identity)
@@ -41,19 +41,19 @@ struct AddEditFormCoordinatorTests {
     @Test
     func orderedSections_filtersUnavailable() {
         let coordinator = AddEditFormCoordinator()
-        let available: [FormSection] = [.identity, .behavior, .tags]
+        let available: [FormSection] = [.identity, .behavior, .organization]
         let result = coordinator.orderedSections(available: available)
 
         #expect(!result.contains(.steps))
         #expect(!result.contains(.notes))
         #expect(result.contains(.behavior))
-        #expect(result.contains(.tags))
+        #expect(result.contains(.organization))
     }
 
     @Test
     func moveUp_swapsWithPreviousSection() {
         let coordinator = AddEditFormCoordinator()
-        // Default order starts with .color, .behavior, ...
+        // Use the first two entries from the current default order.
         let originalSecond = coordinator.sectionOrder[1]
         let originalFirst = coordinator.sectionOrder[0]
 
@@ -104,10 +104,10 @@ struct AddEditFormCoordinatorTests {
             coordinator.moveUp(.notes)
         }
 
-        let available: [FormSection] = [.identity, .behavior, .notes, .tags]
+        let available: [FormSection] = [.identity, .behavior, .notes, .organization]
         let result = coordinator.orderedSections(available: available)
 
-        #expect(result == [.identity, .notes, .behavior, .tags])
+        #expect(result == [.identity, .notes, .behavior, .organization])
     }
 
     @Test

@@ -123,7 +123,7 @@ struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
             let canComplete: Bool
             if isDone || task.isArchived(referenceDate: referenceDate, calendar: calendar) {
                 canComplete = false
-            } else if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            } else if RoutineDateMath.usesExactTimedOccurrences(for: task) {
                 canComplete = occurrence <= referenceDate
                     && (
                         hasRecordedMiss
@@ -164,7 +164,7 @@ struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
                 canMarkMissed: !task.isArchived(referenceDate: referenceDate, calendar: calendar)
                     && isMissedByTime
                     && !hasRecordedResolution,
-                canCancel: RoutineDateMath.usesExactTimedOccurrenceTracking(for: task)
+                canCancel: RoutineDateMath.usesExactTimedOccurrences(for: task)
                     && !task.isArchived(referenceDate: referenceDate, calendar: calendar)
                     && occurrence <= referenceDate
                     && !isDone
@@ -312,7 +312,7 @@ extension TaskDetailFeature.State {
     var isSelectedDateDone: Bool {
         let calendar = Calendar.current
         let day = resolvedSelectedDate
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             guard let occurrence = completionTargetDate ?? selectedScheduledOccurrenceDate else { return false }
             guard !hasPendingLocalRemoval(on: occurrence, calendar: calendar) else { return false }
             return logs.contains {
@@ -340,7 +340,7 @@ extension TaskDetailFeature.State {
     var isSelectedDateCanceled: Bool {
         let calendar = Calendar.current
         let day = resolvedSelectedDate
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             guard let occurrence = completionTargetDate ?? selectedScheduledOccurrenceDate else { return false }
             return logs.contains {
                 guard let timestamp = $0.timestamp else { return false }
@@ -636,7 +636,7 @@ extension TaskDetailFeature.State {
                 || isSelectedDateInFuture
                 || checklistDueItemCount == 0
         }
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             guard let completionTargetDate else { return true }
             return task.isArchived()
                 || !RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
@@ -653,9 +653,6 @@ extension TaskDetailFeature.State {
 
     /// Due date resolved from the task (one-off deadline or next recurrence).
     var resolvedDueDate: Date? {
-        if task.isRecordTask {
-            return nil
-        }
         if task.isSoftIntervalRoutine {
             return nil
         }
@@ -757,7 +754,7 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask {
             return "One-off todo"
         }
-        if !task.trackingCadenceEnabled {
+        if !task.cadenceEnabled {
             return "None"
         }
         if isChecklistDrivenFromStoredItems {

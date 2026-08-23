@@ -312,7 +312,7 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
-    func saveTapped_keepsPlannedDateForDailyRunoutTracking() async {
+    func saveTapped_dropsPlannedDateForChecklistRunoutRoutine() async {
         let calendar = makeTestCalendar()
         let plannedDate = makeDate("2026-06-10T15:30:00Z")
         let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
@@ -321,10 +321,10 @@ struct AddRoutineFeatureSaveTests {
                 basics: AddRoutineBasicsState(
                     routineName: "Groceries",
                     plannedDate: plannedDate,
-                    trackingCadenceEnabled: true
+                    cadenceEnabled: true
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
-                schedule: AddRoutineScheduleState(scheduleMode: .recordDerivedFromChecklist),
+                schedule: AddRoutineScheduleState(scheduleMode: .softDerivedFromChecklist),
                 checklist: AddRoutineChecklistState(
                     routineChecklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)]
                 )
@@ -343,8 +343,8 @@ struct AddRoutineFeatureSaveTests {
 
         await store.send(.saveTapped) { $0.isSaving = true }
 
-        #expect(capturedRequest.value?.plannedDate == calendar.startOfDay(for: plannedDate))
-        #expect(capturedRequest.value?.scheduleMode == .recordDerivedFromChecklist)
+        #expect(capturedRequest.value?.plannedDate == nil)
+        #expect(capturedRequest.value?.scheduleMode == .softDerivedFromChecklist)
         #expect(capturedRequest.value?.recurrenceRule.isDaily == true)
     }
 

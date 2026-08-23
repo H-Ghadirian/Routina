@@ -10,7 +10,7 @@ Accepted
 
 ## Refines
 
-[0424 Make Task Detail Priority Optional](0424-make-task-detail-priority-optional.md)
+[0424 Make Task Detail Priority Optional](superseded/0424-make-task-detail-priority-optional.md)
 and [0534 Present iOS Priority Controls in Dedicated Sheets](0534-present-ios-priority-controls-in-dedicated-sheets.md)
 
 ## Context

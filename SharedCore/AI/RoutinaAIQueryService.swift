@@ -192,9 +192,7 @@ private extension RoutinaAIQueryService {
             id: task.id,
             name: task.name ?? "Unnamed task",
             emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
-            kind: task.scheduleMode.taskType == .record
-                ? "record"
-                : (task.isOneOffTask ? "todo" : "routine"),
+            kind: task.isOneOffTask ? "todo" : "routine",
             primaryStatus: primaryStatus(
                 for: task,
                 isArchived: isArchived,

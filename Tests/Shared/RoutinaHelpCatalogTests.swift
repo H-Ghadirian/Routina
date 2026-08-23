@@ -39,18 +39,14 @@ struct RoutinaHelpCatalogTests {
     }
 
     @Test
-    func timeBasedAndRetiredTrackingQuestionsReturnCurrentTaskGuidance() throws {
-        let timeBased = try #require(RoutinaHelpCatalog.search("time-based values").first)
-        let tracking = try #require(RoutinaHelpCatalog.search("What does Tracking task mean?").first)
-        let details = timeBased.details.joined(separator: " ")
+    func changesOverTimeQuestionReturnsCurrentTaskGuidance() throws {
+        let result = try #require(RoutinaHelpCatalog.search("changes over time").first)
+        let details = result.details.joined(separator: " ")
 
-        #expect(timeBased.id == "repeating-tasks")
-        #expect(tracking.id == "repeating-tasks")
+        #expect(result.id == "repeating-tasks")
         #expect(details.contains("Repeating routine set to Due"))
         #expect(details.contains("active interval or calendar cadence"))
-        #expect(details.contains("no user-facing Tracking task type"))
-        #expect(details.contains("Tracking Flag"))
-        #expect(details.contains("never a setup requirement"))
+        #expect(details.contains("form explains which choice is needed"))
     }
 
     @Test

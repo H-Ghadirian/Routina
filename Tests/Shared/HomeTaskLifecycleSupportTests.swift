@@ -225,7 +225,7 @@ struct HomeTaskLifecycleSupportTests {
         let referenceDate = makeDate("2026-05-08T10:00:00Z")
         let task = RoutineTask(
             name: "Review notes",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
             createdAt: makeDate("2026-05-01T10:00:00Z"),
             autoAssumeDailyDone: true
@@ -256,7 +256,7 @@ struct HomeTaskLifecycleSupportTests {
         let referenceDate = makeDate("2026-05-08T10:00:00Z")
         let task = RoutineTask(
             name: "Review notes",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
             createdAt: makeDate("2026-05-01T10:00:00Z"),
             autoAssumeDailyDone: true
@@ -520,16 +520,15 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
-    func planTaskAllowsDailyRunoutTracking() {
+    func planTaskRejectsChecklistRunoutRoutine() {
         let calendar = makeTestCalendar()
         let task = RoutineTask(
             name: "Groceries",
             checklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)],
-            scheduleMode: .recordDerivedFromChecklist,
+            scheduleMode: .softDerivedFromChecklist,
             recurrenceRule: .interval(days: 1)
         )
         let plannedDate = makeDate("2026-06-10T16:20:00Z")
-        let normalizedDate = calendar.startOfDay(for: plannedDate)
         var tasks = [task]
 
         let update = HomeTaskLifecycleSupport.planTask(
@@ -539,8 +538,8 @@ struct HomeTaskLifecycleSupportTests {
             tasks: &tasks
         )
 
-        #expect(update == HomePlanTaskUpdate(taskID: task.id, plannedDate: normalizedDate))
-        #expect(tasks[0].plannedDate == normalizedDate)
+        #expect(update == nil)
+        #expect(tasks[0].plannedDate == nil)
     }
 
     @Test

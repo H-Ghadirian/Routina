@@ -293,10 +293,6 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
     let smartNameCalendar: Calendar
     let onApplySmartName: (() -> Void)?
     @ViewBuilder let nameField: NameField
-    @AppStorage(
-        UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
-        store: SharedDefaults.app
-    ) private var customTaskSectionsRawValue = ""
 
     var body: some View {
         TaskFormMacSectionCard(
@@ -308,129 +304,10 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
             VStack(alignment: .leading, spacing: 14) {
                 nameField
                 validationMessage
-                sidebarPathControl
                 smartNamePreview
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-
-    private var customTaskSections: [HomeCustomTaskSection] {
-        HomeCustomTaskSectionStorage.decoded(from: customTaskSectionsRawValue)
-    }
-
-    private var selectedPathTitles: [String]? {
-        guard let sectionID = model.customTaskSectionID.wrappedValue else { return nil }
-        return HomeCustomTaskSectionStorage.pathTitles(
-            for: sectionID,
-            in: customTaskSections
-        )
-    }
-
-    private var selectedPathTitle: String {
-        TaskFormSidebarPathPresentation.title(
-            explicitPathTitles: selectedPathTitles,
-            automaticPathTitles: model.automaticPathTitles
-        )
-    }
-
-    private var sidebarPathControl: some View {
-        HStack(spacing: 12) {
-            Label("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Spacer(minLength: 12)
-
-            Menu {
-                sidebarPathButton(title: "Automatic", sectionID: nil)
-
-                if !customTaskSections.isEmpty {
-                    Divider()
-                    ForEach(
-                        HomeCustomTaskSectionStorage.topLevelSections(in: customTaskSections)
-                    ) { section in
-                        let sectionTitle = section.surface == .backlog
-                            ? "Backlog › \(section.title)"
-                            : section.title
-                        let subsections = HomeCustomTaskSectionStorage.subsections(
-                            of: section.id,
-                            in: customTaskSections
-                        )
-                        if subsections.isEmpty {
-                            sidebarPathButton(
-                                title: sectionTitle,
-                                sectionID: section.id,
-                                isEnabled: !section.isPaused
-                            )
-                        } else {
-                            Menu(sectionTitle) {
-                                sidebarPathButton(
-                                    title: "Use \(sectionTitle)",
-                                    sectionID: section.id,
-                                    isEnabled: !section.isPaused
-                                )
-                                Divider()
-                                ForEach(subsections) { subsection in
-                                    sidebarPathButton(
-                                        title: subsection.title,
-                                        sectionID: subsection.id,
-                                        isEnabled: !section.isPaused
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 7) {
-                    Text(selectedPathTitle)
-                        .lineLimit(1)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2.weight(.semibold))
-                }
-                .frame(maxWidth: 360, alignment: .trailing)
-                .contentShape(Rectangle())
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize(horizontal: true, vertical: false)
-            .help("Choose a custom sidebar path, or use Automatic to follow the current sidebar rules")
-            .accessibilityLabel("Task path")
-            .accessibilityValue(selectedPathTitle)
-        }
-        .onAppear(perform: clearMissingSidebarPath)
-        .onChange(of: customTaskSectionsRawValue) { _, _ in
-            clearMissingSidebarPath()
-        }
-    }
-
-    private func sidebarPathButton(
-        title: String,
-        sectionID: UUID?,
-        isEnabled: Bool = true
-    ) -> some View {
-        Button {
-            model.customTaskSectionID.wrappedValue = sectionID
-        } label: {
-            if model.customTaskSectionID.wrappedValue == sectionID {
-                Label(title, systemImage: "checkmark")
-            } else {
-                Text(title)
-            }
-        }
-        .disabled(!isEnabled)
-    }
-
-    private func clearMissingSidebarPath() {
-        guard let sectionID = model.customTaskSectionID.wrappedValue,
-              HomeCustomTaskSectionStorage.pathTitles(
-                for: sectionID,
-                in: customTaskSections
-              ) == nil
-        else {
-            return
-        }
-        model.customTaskSectionID.wrappedValue = nil
     }
 
     @ViewBuilder
@@ -566,7 +443,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
 
         if draft.hasExplicitPriority {
             rows.append(SmartNameRow(
-                title: "Priority",
+                title: "Importance / Urgency",
                 value: "\(draft.importance.title) / \(draft.urgency.title)",
                 systemImage: "exclamationmark.triangle"
             ))
@@ -611,6 +488,139 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
         let systemImage: String
 
         var id: String { "\(title):\(value)" }
+    }
+}
+
+struct TaskFormMacPathControl: View {
+    let model: TaskFormModel
+
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
+        store: SharedDefaults.app
+    ) private var customTaskSectionsRawValue = ""
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Label("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 12)
+
+            Menu {
+                pathButton(title: "Automatic", sectionID: nil)
+                if !customTaskSections.isEmpty {
+                    Divider()
+                    ForEach(HomeCustomTaskSectionStorage.topLevelSections(in: customTaskSections)) { section in
+                        let title = section.surface == .backlog
+                            ? "Backlog › \(section.title)"
+                            : section.title
+                        let subsections = HomeCustomTaskSectionStorage.subsections(
+                            of: section.id,
+                            in: customTaskSections
+                        )
+                        if subsections.isEmpty {
+                            pathButton(title: title, sectionID: section.id, isEnabled: !section.isPaused)
+                        } else {
+                            Menu(title) {
+                                pathButton(
+                                    title: "Use \(title)",
+                                    sectionID: section.id,
+                                    isEnabled: !section.isPaused
+                                )
+                                Divider()
+                                ForEach(subsections) { subsection in
+                                    pathButton(
+                                        title: subsection.title,
+                                        sectionID: subsection.id,
+                                        isEnabled: !subsection.isPaused
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 7) {
+                    Text(selectedPathTitle).lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2.weight(.semibold))
+                }
+                .frame(maxWidth: 360, alignment: .trailing)
+                .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize(horizontal: true, vertical: false)
+            .help("Choose a sidebar path, or use Automatic")
+            .accessibilityLabel("Task path")
+            .accessibilityValue(selectedPathTitle)
+        }
+        .onAppear(perform: clearMissingPath)
+        .onChange(of: customTaskSectionsRawValue) { _, _ in clearMissingPath() }
+    }
+
+    private var customTaskSections: [HomeCustomTaskSection] {
+        HomeCustomTaskSectionStorage.decoded(from: customTaskSectionsRawValue)
+    }
+
+    private var selectedPathTitle: String {
+        TaskFormSidebarPathPresentation.title(
+            explicitPathTitles: model.customTaskSectionID.wrappedValue.flatMap {
+                HomeCustomTaskSectionStorage.pathTitles(for: $0, in: customTaskSections)
+            },
+            automaticPathTitles: model.automaticPathTitles
+        )
+    }
+
+    private func pathButton(
+        title: String,
+        sectionID: UUID?,
+        isEnabled: Bool = true
+    ) -> some View {
+        Button {
+            model.customTaskSectionID.wrappedValue = sectionID
+        } label: {
+            if model.customTaskSectionID.wrappedValue == sectionID {
+                Label(title, systemImage: "checkmark")
+            } else {
+                Text(title)
+            }
+        }
+        .disabled(!isEnabled)
+    }
+
+    private func clearMissingPath() {
+        guard let sectionID = model.customTaskSectionID.wrappedValue,
+              HomeCustomTaskSectionStorage.pathTitles(for: sectionID, in: customTaskSections) == nil
+        else { return }
+        model.customTaskSectionID.wrappedValue = nil
+    }
+}
+
+struct TaskFormMacTaskLadderGroupControl: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Toggle("Use as Task Ladder group", isOn: model.taskLadderGroupEnabled)
+                .toggleStyle(.switch)
+                .disabled(
+                    model.taskLadderGroupEnabled.wrappedValue
+                        && !model.canDisableTaskLadderGroup
+                )
+
+            Text(helpText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var helpText: String {
+        if model.taskLadderGroupEnabled.wrappedValue && !model.canDisableTaskLadderGroup {
+            return "Move its nested tasks elsewhere before turning this group off."
+        }
+        return "Give this repeating task its own nested ladder without changing its schedule."
     }
 }
 
@@ -812,6 +822,15 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var routineBehaviorControls: some View {
+        if model.supportsRoutineScheduleBehavior {
+            scheduleBehaviorControl
+            scheduleResultPreview
+                .frame(
+                    maxWidth: TaskFormMacLayoutMetrics.schedulePreviewWidth,
+                    alignment: .leading
+                )
+        }
+
         ForEach(TaskFormMacRoutineBehaviorModule.stableOrder, id: \.self) { module in
             switch module {
             case .completion:
@@ -830,33 +849,6 @@ struct TaskFormMacBehaviorCard: View {
         .animation(.easeInOut(duration: 0.18), value: hasScheduleDetails)
         .animation(.easeInOut(duration: 0.18), value: planningPlacement)
 
-        Divider()
-        taskLadderGroupControl
-    }
-
-    private var taskLadderGroupControl: some View {
-        TaskFormMacControlBlock(title: "Task Ladder") {
-            VStack(alignment: .leading, spacing: 7) {
-                Toggle("Use as Task Ladder group", isOn: model.taskLadderGroupEnabled)
-                    .toggleStyle(.switch)
-                    .disabled(
-                        model.taskLadderGroupEnabled.wrappedValue
-                            && !model.canDisableTaskLadderGroup
-                    )
-
-                Text(taskLadderGroupHelpText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    private var taskLadderGroupHelpText: String {
-        if model.taskLadderGroupEnabled.wrappedValue && !model.canDisableTaskLadderGroup {
-            return "Move its nested tasks elsewhere before turning this group off."
-        }
-        return "Give this repeating task its own nested ladder without changing how it repeats or completes."
     }
 
     private var scheduleDetailsDisclosure: some View {
@@ -864,15 +856,6 @@ struct TaskFormMacBehaviorCard: View {
             VStack(alignment: .leading, spacing: 18) {
                 if model.usesEffectiveRoutineCadence {
                     availabilityControl
-
-                    if model.supportsRoutineScheduleBehavior {
-                        scheduleBehaviorControl
-                        scheduleResultPreview
-                            .frame(
-                                maxWidth: TaskFormMacLayoutMetrics.schedulePreviewWidth,
-                                alignment: .leading
-                            )
-                    }
 
                     if model.supportsGentleNudges {
                         gentleNudgesControl
@@ -941,7 +924,7 @@ struct TaskFormMacBehaviorCard: View {
 
     private var gentleNudgesControl: some View {
         TaskFormMacControlBlock(title: "Nudges") {
-            Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+            Toggle("Nudges", isOn: model.nudgesEnabled)
                 .toggleStyle(.switch)
         }
     }
@@ -1009,7 +992,7 @@ struct TaskFormMacBehaviorCard: View {
             TaskFormMacScheduleBehaviorHint(
                 behavior: model.scheduleBehavior.wrappedValue,
                 description: schedulePreviewDescription,
-                surfacesNudges: model.trackingNudgesEnabled.wrappedValue
+                surfacesNudges: model.nudgesEnabled.wrappedValue
             )
         }
         .padding(14)
@@ -1030,7 +1013,7 @@ struct TaskFormMacBehaviorCard: View {
 
     private var schedulePreviewDescription: String {
         if model.scheduleBehavior.wrappedValue == .soft,
-           !model.trackingNudgesEnabled.wrappedValue {
+           !model.nudgesEnabled.wrappedValue {
             return "Rows stay available without cadence badges or overdue pressure."
         }
         return model.scheduleBehavior.wrappedValue.rowPreviewDescription

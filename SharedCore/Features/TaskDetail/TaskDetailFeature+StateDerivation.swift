@@ -92,7 +92,7 @@ extension TaskDetailFeature {
             return exactTimedTarget
         }
 
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             return nil
         }
 

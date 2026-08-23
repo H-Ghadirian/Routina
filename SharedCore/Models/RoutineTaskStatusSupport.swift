@@ -58,10 +58,6 @@ extension RoutineTask {
         scheduleMode == .oneOff
     }
 
-    var isRecordTask: Bool {
-        scheduleMode.taskType == .record
-    }
-
     var isRoutineTask: Bool {
         scheduleMode.taskType == .routine
     }

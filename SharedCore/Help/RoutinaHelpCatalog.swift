@@ -44,7 +44,7 @@ public enum RoutinaHelpCatalog {
         "What is the difference between Availability, Plan to do, Schedule, Deadline, and Reminder?",
         "What does Assumed done mean?",
         "What is the difference between Flags and Tags?",
-        "How do I enable time-based values?",
+        "How do I enable changes over time?",
         "How does Backlog work?"
     ]
 
@@ -303,8 +303,7 @@ public enum RoutinaHelpCatalog {
                 "A repeating task can repeat by interval, calendar pattern, checklist item runout, or have no cadence. Availability separately says whether it is all-day, at a time, in a time block, or within a window.",
                 "No schedule keeps reusable work available immediately after completion. When needed pauses it after completion until you choose Resume.",
                 "Standard completion finishes the occurrence directly. Checklist and sequential-step options can require more progress before completion.",
-                "Time-based values appear under Add details only for a Repeating routine set to Due with an active interval or calendar cadence. They are unavailable for One-time, Gentle, No schedule, and When needed tasks.",
-                "Routina has no user-facing Tracking task type, Tracking Flag, or Track this routine control. Tracking-named data is legacy internal compatibility data and is never a setup requirement."
+                "Changes over time appears with the Task Ladder values for a Repeating routine set to Due with an active interval or calendar cadence. The form explains which choice is needed when the rule is unavailable."
             ],
             aliases: [
                 "routines",
@@ -313,9 +312,8 @@ public enum RoutinaHelpCatalog {
                 "due versus gentle",
                 "no schedule",
                 "when needed",
-                "time-based values",
-                "tracking tasks",
-                "track this routine"
+                "changes over time",
+                "due-date values"
             ],
             keywords: [
                 "repeat",
@@ -328,8 +326,7 @@ public enum RoutinaHelpCatalog {
                 "resume",
                 "importance",
                 "urgency",
-                "pressure",
-                "tracking"
+                "pressure"
             ],
             platforms: ["iOS", "iPadOS", "macOS"],
             availability: "Repeating tasks are available across platforms; advanced combinations vary by task type and platform.",
@@ -338,8 +335,7 @@ public enum RoutinaHelpCatalog {
                 "What is the difference between Due and Gentle routines?",
                 "What does When needed do?",
                 "What is the difference between No schedule and When needed?",
-                "How do I enable time-based values?",
-                "What does Tracking task mean?"
+                "How do I enable changes over time?"
             ]
         )
     ]

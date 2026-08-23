@@ -1,7 +1,7 @@
 enum TaskDetailMacTimeControlPresentation {
     static func canShowTimeControl(for taskType: RoutineTaskType) -> Bool {
         switch taskType {
-        case .todo, .record:
+        case .todo:
             return true
         case .routine:
             return false
@@ -16,8 +16,6 @@ enum TaskDetailMacTimeControlPresentation {
         switch taskType {
         case .todo:
             return isTimeControlVisible || hasEffortMetadata
-        case .record:
-            return isTimeControlVisible
         case .routine:
             return false
         }

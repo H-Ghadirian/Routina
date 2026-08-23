@@ -14,7 +14,7 @@ Replacing the Simple model would make common creation slower and risk changing e
 
 ## Decision
 
-Routine and cadence-enabled Tracking forms offer `Simple` and `Advanced` recurrence models. Simple remains the default and keeps the existing Interval / Calendar controls and stored behavior unchanged.
+Repeating routine forms offer `Simple` and `Advanced` recurrence models when cadence is enabled. Simple remains the default and keeps the existing Interval / Calendar controls and stored behavior unchanged.
 
 Advanced recurrence stores a versioned structured rule beside the existing compatibility recurrence kind. It supports:
 

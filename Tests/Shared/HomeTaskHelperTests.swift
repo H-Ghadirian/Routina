@@ -24,7 +24,7 @@ struct HomeTaskHelperTests {
                 RoutineTaskRelationship(targetTaskID: keeper.id, kind: .related)
             ]
         )
-        let blocker = RoutineTask(name: "Collect tracking bug context")
+        let blocker = RoutineTask(name: "Collect bug context")
         let dependent = RoutineTask(
             name: "Release checklist",
             relationships: [

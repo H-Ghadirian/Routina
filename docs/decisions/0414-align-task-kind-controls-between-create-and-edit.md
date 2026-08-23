@@ -1,6 +1,6 @@
 # 0414 Align Task Kind Controls Between Create and Edit
 
-Status: Accepted
+Status: Superseded by [0436](superseded/0436-remove-tracking-as-a-user-facing-task-type.md) and [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 
 Date: 2026-07-22
 

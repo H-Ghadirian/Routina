@@ -66,8 +66,6 @@ struct TaskDetailTCAView: View {
     @State private var isCommentComposerVisible = false
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
-    @State private var isPressureControlRevealed = false
-    @State private var isThinkingNeededControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var requestedEditSection: TaskFormCompactSection?
     @State private var isAddDetailChooserPresented = false
@@ -279,16 +277,6 @@ detailBody
 }
 .onChange(of: store.task.actualDurationMinutes) { _, _ in
     isTimeControlRevealed = false
-}
-.onChange(of: store.task.pressure) { oldValue, newValue in
-    if oldValue != newValue {
-        isPressureControlRevealed = false
-    }
-}
-.onChange(of: store.task.thinkingNeeded) { oldValue, newValue in
-    if oldValue != newValue {
-        isThinkingNeededControlRevealed = false
-    }
 }
 .onChange(of: store.task.todoStateRawValue) { _, newValue in
     if newValue != nil {
@@ -547,44 +535,6 @@ detailBody
             })
         }
 
-        if shouldShowPressureAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Pressure", systemImage: "gauge.with.dots.needle.50percent") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    isPressureControlRevealed = true
-                }
-            })
-        }
-
-        if shouldShowTemporalWeightAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Time-based", systemImage: "flame.fill") {
-                isTemporalWeightEditorPresented = true
-            })
-        }
-
-        if shouldShowThinkingNeededAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Thinking needed", systemImage: "lightbulb") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    isThinkingNeededControlRevealed = true
-                }
-            })
-        }
-
-        if shouldShowImportanceAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Importance", systemImage: "arrow.up.circle") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    _ = store.send(.revealImportanceInTaskDetail)
-                }
-            })
-        }
-
-        if shouldShowUrgencyAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Urgency", systemImage: "clock") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    _ = store.send(.revealUrgencyInTaskDetail)
-                }
-            })
-        }
-
         if !shouldShowChecklistSection {
             actions.append(TaskDetailOptionalAction(title: "Checklist", systemImage: "checklist") {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -646,28 +596,6 @@ detailBody
             )
     }
 
-    private var shouldShowPressureControl: Bool {
-        isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
-    }
-
-    private var shouldShowThinkingNeededControl: Bool {
-        isThinkingNeededControlRevealed
-            || TaskDetailOptionalControlVisibility.showsThinkingNeeded(for: store.task)
-    }
-
-    private var shouldShowTemporalWeightAddAction: Bool {
-        store.task.temporalWeightRule == nil
-            && RoutineTaskTemporalWeightResolver.supportsTemporalWeight(store.task)
-    }
-
-    private var shouldShowImportanceControl: Bool {
-        TaskDetailOptionalControlVisibility.showsImportance(for: store.task)
-    }
-
-    private var shouldShowUrgencyControl: Bool {
-        TaskDetailOptionalControlVisibility.showsUrgency(for: store.task)
-    }
-
     private var shouldShowChecklistSection: Bool {
         isChecklistSectionRevealed || store.hasStoredChecklistItems
     }
@@ -676,29 +604,13 @@ detailBody
         canShowTodoStateControl && !shouldShowTodoStateControl
     }
 
-    private var shouldShowPressureAddAction: Bool {
-        !shouldShowPressureControl
-    }
-
-    private var shouldShowThinkingNeededAddAction: Bool {
-        !shouldShowThinkingNeededControl
-    }
-
-    private var shouldShowImportanceAddAction: Bool {
-        !shouldShowImportanceControl
-    }
-
-    private var shouldShowUrgencyAddAction: Bool {
-        !shouldShowUrgencyControl
-    }
-
     private var shouldShowTimeAddAction: Bool {
         canShowTimeControl && !shouldShowTimeControl
     }
 
     private var canShowTimeControl: Bool {
         switch store.task.scheduleMode.taskType {
-        case .todo, .record:
+        case .todo:
             return true
         case .routine:
             return false
@@ -723,8 +635,6 @@ detailBody
     private func resetRevealedOptionalControls() {
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
-        isPressureControlRevealed = false
-        isThinkingNeededControlRevealed = false
         isChecklistSectionRevealed = false
     }
 
@@ -889,14 +799,7 @@ detailBody
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                TaskDetailPriorityContextControls(
-                    store: store,
-                    showsImportance: shouldShowImportanceControl,
-                    showsUrgency: shouldShowUrgencyControl,
-                    showsPressure: shouldShowPressureControl,
-                    showsThinkingNeeded: shouldShowThinkingNeededControl
-                )
-                taskTemporalWeightSummary
+                taskDetailTaskLadderValuesSection
                 if shouldShowTimeControl {
                     todoTimeSpentHeaderBox
                 }
@@ -926,14 +829,7 @@ detailBody
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                TaskDetailPriorityContextControls(
-                    store: store,
-                    showsImportance: shouldShowImportanceControl,
-                    showsUrgency: shouldShowUrgencyControl,
-                    showsPressure: shouldShowPressureControl,
-                    showsThinkingNeeded: shouldShowThinkingNeededControl
-                )
-                taskTemporalWeightSummary
+                taskDetailTaskLadderValuesSection
                 headerGoalsBox
             }
         } flagChip: { flag in
@@ -948,14 +844,18 @@ detailBody
         }
     }
 
-    @ViewBuilder
-    private var taskTemporalWeightSummary: some View {
-        if store.task.temporalWeightRule != nil {
-            TaskTemporalWeightSummaryCard(
-                task: store.task,
-                referenceDate: referenceDate,
-                onEdit: { isTemporalWeightEditorPresented = true }
-            )
+    private var taskDetailTaskLadderValuesSection: some View {
+        TaskDetailTaskLadderValuesBox {
+            TaskDetailTaskLadderValuesControls(store: store)
+
+            if store.task.temporalWeightRule != nil {
+                Divider()
+                TaskTemporalWeightSummaryCard(
+                    task: store.task,
+                    referenceDate: referenceDate,
+                    onEdit: { isTemporalWeightEditorPresented = true }
+                )
+            }
         }
     }
 

@@ -33,9 +33,9 @@ struct AddRoutineBasicsState: Equatable {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
-    var trackingCadenceEnabled: Bool = true
+    var cadenceEnabled: Bool = true
     var autoPauseAfterCompletion: Bool = false
-    var trackingNudgesEnabled: Bool = true
+    var nudgesEnabled: Bool = true
     var taskLadderGroupEnabled: Bool = false
 }
 
@@ -176,9 +176,9 @@ struct AddRoutineFeatureState: Equatable {
                 availabilityStartDate: basics.availabilityStartDate,
                 availabilityEndDate: basics.availabilityEndDate,
                 isAllDay: basics.isAllDay,
-                trackingCadenceEnabled: schedule.scheduleMode.taskType == .todo
+                cadenceEnabled: schedule.scheduleMode.taskType == .todo
                     ? true
-                    : basics.trackingCadenceEnabled,
+                    : basics.cadenceEnabled,
                 hasSequentialSteps: !checklist.routineSteps.isEmpty,
                 hasChecklistItems: !candidateChecklistItems.isEmpty
             )
@@ -205,10 +205,10 @@ struct AddRoutineFeatureState: Equatable {
     }
 
     private var legacyCandidateRecurrenceRule: RoutineRecurrenceRule {
-        let trackingCadenceEnabled = schedule.scheduleMode.taskType == .todo
+        let cadenceEnabled = schedule.scheduleMode.taskType == .todo
             ? true
-            : basics.trackingCadenceEnabled
-        let fallbackInterval = !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled
+            : basics.cadenceEnabled
+        let fallbackInterval = !schedule.scheduleMode.usesRoutineCadence || !cadenceEnabled
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: schedule.frequencyValue,
@@ -227,11 +227,11 @@ struct AddRoutineFeatureState: Equatable {
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
-        case .routine, .record:
+        case .routine:
             break
         }
 
-        guard trackingCadenceEnabled else { return .interval(days: 1) }
+        guard cadenceEnabled else { return .interval(days: 1) }
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
@@ -281,7 +281,7 @@ struct AddRoutineFeatureState: Equatable {
         if !schedule.scheduleMode.usesRoutineCadence {
             cadenceOverride = RoutineRecurrenceDraft.Cadence.none
         } else if schedule.scheduleMode.taskType != .todo,
-                  !basics.trackingCadenceEnabled {
+                  !basics.cadenceEnabled {
             cadenceOverride = basics.autoPauseAfterCompletion
                 ? .manual
                 : RoutineRecurrenceDraft.Cadence.none
@@ -310,9 +310,9 @@ struct AddRoutineFeatureState: Equatable {
             availabilityStartDate: basics.availabilityStartDate,
             availabilityEndDate: basics.availabilityEndDate,
             isAllDay: basics.isAllDay,
-            trackingCadenceEnabled: schedule.scheduleMode.taskType == .todo
+            cadenceEnabled: schedule.scheduleMode.taskType == .todo
                 ? true
-                : basics.trackingCadenceEnabled,
+                : basics.cadenceEnabled,
             hasSequentialSteps: !checklist.routineSteps.isEmpty,
             hasChecklistItems: !checklist.routineChecklistItems.isEmpty
             )

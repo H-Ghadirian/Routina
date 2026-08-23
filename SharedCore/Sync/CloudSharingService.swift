@@ -32,7 +32,6 @@ enum CloudSharingService {
         var priority: RoutineTaskPriority
         var importance: RoutineTaskImportance
         var urgency: RoutineTaskUrgency
-        var showsTaskDetailPriority: Bool?
         var hasExplicitImportance: Bool?
         var hasExplicitUrgency: Bool?
         var pressure: RoutineTaskPressure
@@ -82,9 +81,9 @@ enum CloudSharingService {
         var actualDurationMinutes: Int?
         var storyPoints: Int?
         var focusModeEnabled: Bool
-        var trackingCadenceEnabled: Bool?
+        var cadenceEnabled: Bool?
         var autoPauseAfterCompletion: Bool?
-        var trackingNudgesEnabled: Bool?
+        var nudgesEnabled: Bool?
         var comments: [RoutineTaskComment]?
     }
 
@@ -309,7 +308,6 @@ extension CloudSharingService.SharedTaskPayload {
         self.priority = task.priority
         self.importance = task.importance
         self.urgency = task.urgency
-        self.showsTaskDetailPriority = task.showsTaskDetailPriority
         self.hasExplicitImportance = task.hasExplicitImportance
         self.hasExplicitUrgency = task.hasExplicitUrgency
         self.pressure = task.pressure
@@ -359,9 +357,9 @@ extension CloudSharingService.SharedTaskPayload {
         self.actualDurationMinutes = task.actualDurationMinutes
         self.storyPoints = task.storyPoints
         self.focusModeEnabled = task.focusModeEnabled
-        self.trackingCadenceEnabled = task.trackingCadenceEnabled
+        self.cadenceEnabled = task.cadenceEnabled
         self.autoPauseAfterCompletion = task.autoPauseAfterCompletion
-        self.trackingNudgesEnabled = task.trackingNudgesEnabled
+        self.nudgesEnabled = task.nudgesEnabled
         self.comments = task.comments
     }
 
@@ -397,13 +395,10 @@ extension CloudSharingService.SharedTaskPayload {
         task.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : (routineDurationMode ?? .oneDay)
         task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
         task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
-        task.reminderAt = scheduleMode.taskType == .record ? nil : reminderAt
+        task.reminderAt = reminderAt
         task.priority = priority
         task.importance = importance
         task.urgency = urgency
-        if let showsTaskDetailPriority {
-            task.showsTaskDetailPriority = showsTaskDetailPriority
-        }
         if let hasExplicitImportance {
             task.hasExplicitImportance = hasExplicitImportance
         }
@@ -466,12 +461,12 @@ extension CloudSharingService.SharedTaskPayload {
             task.thinkingNeeded = thinkingNeeded
         }
         task.focusModeEnabled = focusModeEnabled
-        task.trackingCadenceEnabled = scheduleMode.taskType == .todo ? true : (trackingCadenceEnabled ?? true)
+        task.cadenceEnabled = scheduleMode.taskType == .todo ? true : (cadenceEnabled ?? true)
         task.autoPauseAfterCompletion = scheduleMode.taskType != .todo
-            && !task.trackingCadenceEnabled
+            && !task.cadenceEnabled
             && (autoPauseAfterCompletion ?? false)
-        task.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
-            ? task.trackingCadenceEnabled && (trackingNudgesEnabled ?? true)
+        task.nudgesEnabled = scheduleMode.usesRoutineCadence
+            ? task.cadenceEnabled && (nudgesEnabled ?? true)
             : true
         task.comments = comments ?? []
     }
@@ -544,9 +539,9 @@ private extension RoutineTask {
             actualDurationMinutes: payload.actualDurationMinutes,
             storyPoints: payload.storyPoints,
             focusModeEnabled: payload.focusModeEnabled,
-            trackingCadenceEnabled: payload.trackingCadenceEnabled ?? true,
+            cadenceEnabled: payload.cadenceEnabled ?? true,
             autoPauseAfterCompletion: payload.autoPauseAfterCompletion ?? false,
-            trackingNudgesEnabled: payload.trackingNudgesEnabled ?? true,
+            nudgesEnabled: payload.nudgesEnabled ?? true,
             comments: payload.comments ?? []
         )
         self.linkItems = payload.linkItems
@@ -555,7 +550,6 @@ private extension RoutineTask {
             ?? []
         self.taskRankingOrderStorage = payload.taskRankingOrderStorage ?? ""
         self.temporalWeightRuleStorage = payload.temporalWeightRuleStorage ?? ""
-        self.showsTaskDetailPriority = payload.showsTaskDetailPriority ?? false
         self.hasExplicitImportance = payload.hasExplicitImportance ?? false
         self.hasExplicitUrgency = payload.hasExplicitUrgency ?? false
     }

@@ -122,7 +122,6 @@ struct SettingsTaskRowPreviewView: View {
     private var metadataText: String? {
         let items = [
             visibility.shows(.schedule) ? "Every 3 days" : nil,
-            visibility.shows(.priority) ? "Medium" : nil,
             visibility.shows(.progress) ? "Step 2 of 4" : nil,
             visibility.shows(.pressure) ? "High pressure" : nil,
             visibility.shows(.steps) ? "Next: Draft response" : nil,

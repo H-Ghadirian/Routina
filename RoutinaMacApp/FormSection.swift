@@ -6,22 +6,18 @@ import Foundation
 /// (`icon`, `formSectionView`), forcing all call sites to be updated.
 ///
 /// Declaration order is the default movable order shown in the sidebar.
-/// `rawValue` is the persistence key, so changing it would invalidate users'
-/// saved section order. Use `title` for display copy.
+/// `rawValue` is the persistence key for the current pre-release form layout.
 enum FormSection: String, CaseIterable, Hashable, Codable {
     case identity           = "Identity"
     case taskDescription    = "Description"
     case emoji              = "Emoji"
     case color              = "Color"
-    case behavior           = "Behavior"
-    case pressure           = "Pressure"
-    case temporalWeight     = "Time-based values"
-    case thinkingNeeded     = "Thinking needed"
+    case behavior           = "Behavior & Schedule"
+    case taskLadderValues   = "Task Ladder values"
+    case organization       = "Organization"
     case estimation         = "Estimation"
     case places             = "Places"
     case destination        = "Address"
-    case importanceUrgency  = "Importance & Urgency"
-    case tags               = "Tags"
     case goals              = "Goals"
     case events             = "Events"
     case linkedTasks        = "Linked tasks"
@@ -46,8 +42,6 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
 
     var addButtonTitle: String {
         switch self {
-        case .importanceUrgency:
-            return "Priority"
         case .linkURL:
             return "Links"
         case .attachment:
@@ -63,15 +57,12 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         case .identity:          return "person.fill"
         case .emoji:             return "face.smiling.fill"
         case .color:             return "paintpalette.fill"
-        case .behavior:          return "repeat"
-        case .pressure:          return "brain"
-        case .temporalWeight:    return "flame.fill"
-        case .thinkingNeeded:    return "lightbulb.fill"
+        case .behavior:          return "calendar.badge.clock"
+        case .taskLadderValues:  return "square.grid.2x2.fill"
+        case .organization:      return "tray.full.fill"
         case .estimation:        return "clock.fill"
         case .places:            return "mappin.and.ellipse"
         case .destination:       return "mappin.and.ellipse"
-        case .importanceUrgency: return "flag.fill"
-        case .tags:              return "tag.fill"
         case .goals:             return "target"
         case .events:            return "calendar"
         case .linkedTasks:       return "link"
@@ -100,7 +91,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         includesDangerZone: Bool
     ) -> [FormSection] {
         var sections: [FormSection] = includesIdentity ? [.identity] : []
-        sections += [.taskDescription, .emoji, .color, .behavior, .pressure, .temporalWeight, .thinkingNeeded, .estimation, .places, .destination, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
+        sections += [.behavior, .taskLadderValues, .organization, .taskDescription, .emoji, .color, .estimation, .places, .destination, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }
@@ -125,7 +116,13 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
             return sections
         }
 
-        let primarySections: Set<FormSection> = [.identity, .behavior, .dangerZone]
+        let primarySections: Set<FormSection> = [
+            .identity,
+            .behavior,
+            .taskLadderValues,
+            .organization,
+            .dangerZone
+        ]
         let effectiveRevealedSections = allowsOptionalChecklistReveal
             ? revealedSections
             : revealedSections.subtracting([.checklist])
@@ -139,7 +136,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
 
 extension RoutineScheduleMode {
     var isTaskFormStepBased: Bool {
-        isStandardRoutineMode || self == .oneOff || self == .record
+        isStandardRoutineMode || self == .oneOff
     }
 }
 
@@ -156,14 +153,12 @@ extension TaskFormModel {
         if color.wrappedValue != .none {
             sections.insert(.color)
         }
-        if pressure.wrappedValue != .none {
-            sections.insert(.pressure)
-        }
-        if temporalWeightRule.wrappedValue != nil {
-            sections.insert(.temporalWeight)
-        }
-        if thinkingNeeded.wrappedValue != .none {
-            sections.insert(.thinkingNeeded)
+        if importance.wrappedValue != .level2
+            || urgency.wrappedValue != .level2
+            || pressure.wrappedValue != .none
+            || thinkingNeeded.wrappedValue != .none
+            || temporalWeightRule.wrappedValue != nil {
+            sections.insert(.taskLadderValues)
         }
         if estimatedDurationMinutes.wrappedValue != nil
             || actualDurationMinutes?.wrappedValue != nil
@@ -178,9 +173,6 @@ extension TaskFormModel {
             || destinationCoordinate.wrappedValue != nil {
             sections.insert(.destination)
         }
-        if importance.wrappedValue != .level2 || urgency.wrappedValue != .level2 {
-            sections.insert(.importanceUrgency)
-        }
         if TaskFormTagFlagSectionPresentation.hasContent(
             routineTags: routineTags,
             tagDraft: tagDraft.wrappedValue,
@@ -188,7 +180,10 @@ extension TaskFormModel {
             availableFlags: availableFlags,
             flagDraft: flagDraft.wrappedValue
         ) {
-            sections.insert(.tags)
+            sections.insert(.organization)
+        }
+        if customTaskSectionID.wrappedValue != nil || taskLadderGroupEnabled.wrappedValue {
+            sections.insert(.organization)
         }
         if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
             sections.insert(.goals)
@@ -247,20 +242,18 @@ extension AddRoutineFeature.State {
         if basics.routineColor != .none {
             sections.insert(.color)
         }
-        if basics.pressure != .none {
-            sections.insert(.pressure)
-        }
-        if basics.thinkingNeeded != .none {
-            sections.insert(.thinkingNeeded)
+        if basics.importance != .level2
+            || basics.urgency != .level2
+            || basics.pressure != .none
+            || basics.thinkingNeeded != .none
+            || basics.temporalWeightRule != nil {
+            sections.insert(.taskLadderValues)
         }
         if basics.estimatedDurationMinutes != nil || basics.storyPoints != nil || basics.focusModeEnabled {
             sections.insert(.estimation)
         }
         if !basics.selectedPlaceIDs.isEmpty || basics.selectedPlaceID != nil {
             sections.insert(.places)
-        }
-        if basics.importance != .level2 || basics.urgency != .level2 {
-            sections.insert(.importanceUrgency)
         }
         if TaskFormTagFlagSectionPresentation.hasContent(
             routineTags: organization.routineTags,
@@ -269,7 +262,10 @@ extension AddRoutineFeature.State {
             availableFlags: organization.availableFlags,
             flagDraft: organization.flagDraft
         ) {
-            sections.insert(.tags)
+            sections.insert(.organization)
+        }
+        if organization.customTaskSectionID != nil || basics.taskLadderGroupEnabled {
+            sections.insert(.organization)
         }
         if !organization.routineGoals.isEmpty || hasText(organization.goalDraft) {
             sections.insert(.goals)
@@ -321,9 +317,9 @@ extension AddRoutineFeature.State {
             scheduleMode: schedule.scheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             checklistItems: candidateChecklistItems,
-            trackingCadenceEnabled: schedule.scheduleMode.taskType == .todo
+            cadenceEnabled: schedule.scheduleMode.taskType == .todo
                 ? true
-                : basics.trackingCadenceEnabled
+                : basics.cadenceEnabled
         )
     }
 }
@@ -341,11 +337,12 @@ extension TaskDetailFeature.State {
         if editColor != .none {
             sections.insert(.color)
         }
-        if editPressure != .none {
-            sections.insert(.pressure)
-        }
-        if editThinkingNeeded != .none {
-            sections.insert(.thinkingNeeded)
+        if editImportance != .level2
+            || editUrgency != .level2
+            || editPressure != .none
+            || editThinkingNeeded != .none
+            || editTemporalWeightRule != nil {
+            sections.insert(.taskLadderValues)
         }
         if editEstimatedDurationMinutes != nil
             || editActualDurationMinutes != nil
@@ -356,9 +353,6 @@ extension TaskDetailFeature.State {
         if !editSelectedPlaceIDs.isEmpty || editSelectedPlaceID != nil {
             sections.insert(.places)
         }
-        if editImportance != .level2 || editUrgency != .level2 {
-            sections.insert(.importanceUrgency)
-        }
         if TaskFormTagFlagSectionPresentation.hasContent(
             routineTags: editRoutineTags,
             tagDraft: editTagDraft,
@@ -366,7 +360,10 @@ extension TaskDetailFeature.State {
             availableFlags: availableFlags,
             flagDraft: editFlagDraft
         ) {
-            sections.insert(.tags)
+            sections.insert(.organization)
+        }
+        if editCustomTaskSectionID != nil || editTaskLadderGroupEnabled {
+            sections.insert(.organization)
         }
         if !editRoutineGoals.isEmpty || hasText(editGoalDraft) {
             sections.insert(.goals)
@@ -418,9 +415,9 @@ extension TaskDetailFeature.State {
             scheduleMode: editScheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             checklistItems: candidateChecklistItems,
-            trackingCadenceEnabled: editScheduleMode.taskType == .todo
+            cadenceEnabled: editScheduleMode.taskType == .todo
                 ? true
-                : editTrackingCadenceEnabled
+                : editCadenceEnabled
         )
     }
 

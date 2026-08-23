@@ -37,7 +37,7 @@ func makeTask(
     pausedAt: Date? = nil,
     pinnedAt: Date? = nil,
     createdAt: Date? = nil,
-    trackingCadenceEnabled: Bool = true,
+    cadenceEnabled: Bool = true,
     autoPauseAfterCompletion: Bool = false
 ) -> RoutineTask {
     let task = RoutineTask(
@@ -56,7 +56,7 @@ func makeTask(
         pausedAt: pausedAt,
         pinnedAt: pinnedAt,
         createdAt: createdAt,
-        trackingCadenceEnabled: trackingCadenceEnabled,
+        cadenceEnabled: cadenceEnabled,
         autoPauseAfterCompletion: autoPauseAfterCompletion
     )
     context.insert(task)

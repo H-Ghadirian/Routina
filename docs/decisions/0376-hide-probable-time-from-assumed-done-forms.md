@@ -10,7 +10,7 @@ Accepted
 
 ## Refined by
 
-[0398: Move Auto-Assume Done to Tracking](0398-move-auto-assume-done-to-tracking.md)
+[0489: Expand Auto-Assume Done to Scheduled Repeats](0489-expand-auto-assume-done-to-scheduled-repeats.md)
 
 ## Refines
 

@@ -708,7 +708,7 @@ struct TaskRankingMacView: View {
                 }
                 if !task.isOneOffTask {
                     if RoutineTaskTemporalWeightResolver.supportsTemporalWeight(task) {
-                        Button("Time-based Ladder Values…") {
+                        Button("Changes over Time…") {
                             temporalWeightTaskID = task.id
                         }
                     }
@@ -774,7 +774,7 @@ struct TaskRankingMacView: View {
                     Label(temporalTimingLabel, systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90")
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
-                        .accessibilityLabel("Time-based value: \(temporalTimingLabel)")
+                        .accessibilityLabel("Changed value timing: \(temporalTimingLabel)")
                 }
 
                 if metadata.childCount > 0 {

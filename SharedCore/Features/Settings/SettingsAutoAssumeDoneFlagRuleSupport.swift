@@ -22,7 +22,7 @@ extension SettingsFeature {
                     availabilityStartDate: task.availabilityStartDate,
                     availabilityEndDate: task.availabilityEndDate,
                     isAllDay: task.isAllDay,
-                    trackingCadenceEnabled: task.trackingCadenceEnabled,
+                    cadenceEnabled: task.cadenceEnabled,
                     hasSequentialSteps: task.hasSequentialSteps,
                     hasChecklistItems: task.hasChecklistItems
                 )

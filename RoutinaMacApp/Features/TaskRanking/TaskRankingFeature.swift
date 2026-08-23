@@ -550,7 +550,7 @@ struct TaskRankingFeature {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 guard let task = tasks.first(where: { $0.id == taskID }) else {
-                    await send(.loadFailed("Couldn’t find that task to update its time-based values."))
+                    await send(.loadFailed("Couldn’t find that task to update its changes over time."))
                     return
                 }
                 task.temporalWeightRule = rule
@@ -563,7 +563,7 @@ struct TaskRankingFeature {
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                await send(.loadFailed("Couldn’t update time-based values. \(error.localizedDescription)"))
+                await send(.loadFailed("Couldn’t update changes over time. \(error.localizedDescription)"))
             }
         }
     }

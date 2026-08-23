@@ -264,8 +264,7 @@ private extension RoutinaScreenshotDataSeeder {
                 storyPoints: 5,
                 focusModeEnabled: true,
                 showsTaskDetailHeatmap: true,
-                showsTaskDetailHistory: true,
-                showsTaskDetailPriority: true
+                showsTaskDetailHistory: true
             ),
             RoutineTask(
                 id: seedID(3),
@@ -323,8 +322,7 @@ private extension RoutinaScreenshotDataSeeder {
                 color: .orange,
                 createdAt: dates.at(dayOffset: -50, hour: 9),
                 estimatedDurationMinutes: 45,
-                showsTaskDetailHistory: true,
-                showsTaskDetailPriority: true
+                showsTaskDetailHistory: true
             ),
             RoutineTask(
                 id: seedID(6),
@@ -394,7 +392,6 @@ private extension RoutinaScreenshotDataSeeder {
                 estimatedDurationMinutes: 90,
                 storyPoints: 5,
                 focusModeEnabled: true,
-                showsTaskDetailPriority: true,
                 comments: [
                     RoutineTaskComment(
                         id: seedID(71),
@@ -457,8 +454,7 @@ private extension RoutinaScreenshotDataSeeder {
                 createdAt: dates.at(dayOffset: -7, hour: 9),
                 todoStateRawValue: TodoState.blocked.rawValue,
                 estimatedDurationMinutes: 20,
-                storyPoints: 1,
-                showsTaskDetailPriority: true
+                storyPoints: 1
             )
         ]
     }

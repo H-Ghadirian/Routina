@@ -287,8 +287,6 @@ struct TimelineEntry: Identifiable, Equatable {
             return "Routine"
         case .todo:
             return "Todo"
-        case .record:
-            return "Routine"
         case nil:
             return isOneOff ? "Todo" : "Routine"
         }
@@ -379,7 +377,7 @@ enum TimelineEntryKindPresentation {
             switch entry.taskType {
             case .todo:
                 return .purple
-            case .routine, .record:
+            case .routine:
                 return .accent
             case nil:
                 return entry.isOneOff ? .purple : .accent
@@ -468,7 +466,7 @@ enum TimelineLogic {
 
             switch filterType {
             case .all: break
-            case .routines: if taskType != .routine && taskType != .record { return nil }
+            case .routines: if taskType != .routine { return nil }
             case .todos: if taskType != .todo { return nil }
             case .events: return nil
             case .emotions: return nil

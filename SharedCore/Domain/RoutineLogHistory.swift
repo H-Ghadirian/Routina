@@ -163,7 +163,7 @@ enum RoutineLogHistory {
 
         let resolvedCompletedAt: Date
         if task.usesEffectiveRoutineCadence && task.recurrenceRule.usesAdvancedModel {
-            if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task),
+            if RoutineDateMath.usesExactTimedOccurrences(for: task),
                RoutineDateMath.scheduledOccurrences(
                    for: task,
                    on: completedAt,
@@ -306,7 +306,7 @@ enum RoutineLogHistory {
         guard let task = try context.fetch(descriptor).first else {
             return nil
         }
-        guard RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) else {
+        guard RoutineDateMath.usesExactTimedOccurrences(for: task) else {
             return task
         }
         let scheduledOccurrences = RoutineDateMath.scheduledOccurrences(
@@ -384,7 +384,7 @@ enum RoutineLogHistory {
         guard let task = try context.fetch(descriptor).first else {
             return nil
         }
-        guard RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) else {
+        guard RoutineDateMath.usesExactTimedOccurrences(for: task) else {
             return task
         }
         let scheduledOccurrences = RoutineDateMath.scheduledOccurrences(

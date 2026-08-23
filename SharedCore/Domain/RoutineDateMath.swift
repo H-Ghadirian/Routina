@@ -1,17 +1,17 @@
 import Foundation
 
 enum RoutineDateMath {
-    static func usesExactTimedOccurrenceTracking(for task: RoutineTask) -> Bool {
+    static func usesExactTimedOccurrences(for task: RoutineTask) -> Bool {
         let recurrenceRule = task.recurrenceRule
-        let supportsOccurrenceTracking: Bool
+        let supportsExactOccurrences: Bool
         if let advanced = recurrenceRule.advanced {
-            supportsOccurrenceTracking = recurrenceRule.timeRange != nil
+            supportsExactOccurrences = recurrenceRule.timeRange != nil
                 && advanced.frequency != .hourly
         } else {
-            supportsOccurrenceTracking = true
+            supportsExactOccurrences = true
         }
         return task.usesEffectiveRoutineCadence
-            && supportsOccurrenceTracking
+            && supportsExactOccurrences
             && recurrenceRule.usesTimeConstraint
             && !task.isChecklistDriven
     }
@@ -182,7 +182,7 @@ enum RoutineDateMath {
         guard task.usesEffectiveRoutineCadence else {
             return .distantFuture
         }
-        if usesExactTimedOccurrenceTracking(for: task) {
+        if usesExactTimedOccurrences(for: task) {
             var candidate = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
             for _ in 0..<10_000 {
                 guard isExactTimedOccurrenceMissed(
@@ -210,9 +210,6 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Int {
-        if task.isRecordTask {
-            return Int.max
-        }
         if task.isSoftIntervalRoutine {
             return Int.max
         }
@@ -265,7 +262,7 @@ enum RoutineDateMath {
         }
 
         if task.recurrenceRule.usesAdvancedModel {
-            if usesExactTimedOccurrenceTracking(for: task),
+            if usesExactTimedOccurrences(for: task),
                task.recurrenceRule.timeRange != nil {
                 return activeScheduledWindowOccurrence(
                     for: task,
@@ -313,7 +310,7 @@ enum RoutineDateMath {
             && !task.isChecklistCompletionRoutine
             && !task.isMultiDayRoutine
             && !task.recurrenceRule.occursMoreThanOncePerDay
-            && !usesExactTimedOccurrenceTracking(for: task)
+            && !usesExactTimedOccurrences(for: task)
     }
 
     static func canCompleteScheduledOccurrenceEarly(
@@ -360,7 +357,7 @@ enum RoutineDateMath {
         logs: [RoutineLog],
         calendar: Calendar = .current
     ) -> Bool {
-        guard usesExactTimedOccurrenceTracking(for: task) else { return false }
+        guard usesExactTimedOccurrences(for: task) else { return false }
         guard completionDate <= referenceDate else { return false }
         guard scheduledOccurrences(for: task, on: completionDate, calendar: calendar).contains(where: {
             RoutineOccurrenceIdentity.matches($0, completionDate, for: task, calendar: calendar)
@@ -422,7 +419,7 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Bool {
-        guard usesExactTimedOccurrenceTracking(for: task) else { return false }
+        guard usesExactTimedOccurrences(for: task) else { return false }
         guard scheduledOccurrences(for: task, on: occurrence, calendar: calendar).contains(where: {
             RoutineOccurrenceIdentity.matches(
                 $0,
@@ -446,7 +443,7 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> [Date] {
-        guard usesExactTimedOccurrenceTracking(for: task) else { return [] }
+        guard usesExactTimedOccurrences(for: task) else { return [] }
         var dates: [Date] = []
         var candidate = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
 
@@ -474,7 +471,7 @@ enum RoutineDateMath {
         logs: [RoutineLog],
         calendar: Calendar = .current
     ) -> Bool {
-        guard usesExactTimedOccurrenceTracking(for: task) else { return false }
+        guard usesExactTimedOccurrences(for: task) else { return false }
         return logs.contains { log in
             guard let timestamp = log.timestamp else { return false }
             guard log.kind == .missed || log.kind.resolvesDoneDate || log.kind == .canceled else { return false }
@@ -587,7 +584,7 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar
     ) -> [Date] {
-        guard usesExactTimedOccurrenceTracking(for: task) else { return [] }
+        guard usesExactTimedOccurrences(for: task) else { return [] }
         var dates: [Date] = []
         var candidate = firstHistoricalExactTimedOccurrence(
             for: task,
@@ -893,7 +890,7 @@ enum RoutineDateMath {
             return occurrences
         }
 
-        guard usesExactTimedOccurrenceTracking(for: task) else { return [] }
+        guard usesExactTimedOccurrences(for: task) else { return [] }
         guard let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) else { return [] }
 
         let startOfDay = calendar.startOfDay(for: day)
@@ -933,7 +930,7 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Date? {
-        if usesExactTimedOccurrenceTracking(for: task) {
+        if usesExactTimedOccurrences(for: task) {
             let normalizedSelectedDay = calendar.startOfDay(for: selectedDay)
             if calendar.isDate(normalizedSelectedDay, inSameDayAs: referenceDate) {
                 if let activeOccurrence = activeScheduledWindowOccurrence(
@@ -974,7 +971,7 @@ enum RoutineDateMath {
         calendar: Calendar = .current
     ) -> Date? {
         let completionDay = calendar.startOfDay(for: completionDate)
-        guard usesExactTimedOccurrenceTracking(for: task) else {
+        guard usesExactTimedOccurrences(for: task) else {
             return completionDay
         }
 

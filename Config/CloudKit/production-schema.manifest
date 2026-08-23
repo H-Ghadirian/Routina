@@ -299,7 +299,6 @@ RoutineTask.scheduleModeRawValue:String
 RoutineTask.sequenceStartedAt:Date?
 RoutineTask.showsTaskDetailHeatmap:Bool
 RoutineTask.showsTaskDetailHistory:Bool
-RoutineTask.showsTaskDetailPriority:Bool
 RoutineTask.snoozedUntil:Date?
 RoutineTask.stepsStorage:String
 RoutineTask.storyPoints:Int?
@@ -311,8 +310,8 @@ RoutineTask.taskRankingOrderStorage:String
 RoutineTask.temporalWeightRuleStorage:String
 RoutineTask.thinkingNeededRawValue:String
 RoutineTask.todoStateRawValue:String?
-RoutineTask.trackingCadenceEnabled:Bool
-RoutineTask.trackingNudgesEnabled:Bool
+RoutineTask.cadenceEnabled:Bool
+RoutineTask.nudgesEnabled:Bool
 RoutineTask.urgencyRawValue:String
 RoutineTask.voiceNoteCreatedAt:Date?
 RoutineTask.voiceNoteData:Data?

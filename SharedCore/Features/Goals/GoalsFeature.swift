@@ -308,9 +308,7 @@ struct GoalsFeature {
             self.isCanceledOneOff = task.isCanceledOneOff
             self.isPaused = task.isArchived(referenceDate: referenceDate, calendar: calendar)
             self.isOngoing = task.isOngoing
-            if task.isRecordTask {
-                self.dueDate = nil
-            } else if task.isOneOffTask {
+            if task.isOneOffTask {
                 self.dueDate = task.deadline
             } else if !task.usesEffectiveRoutineCadence {
                 self.dueDate = nil

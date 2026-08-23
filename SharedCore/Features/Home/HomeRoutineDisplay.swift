@@ -23,7 +23,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var interval: Int
     var recurrenceRule: RoutineRecurrenceRule
     var scheduleMode: RoutineScheduleMode
-    var trackingCadenceEnabled: Bool = true
+    var cadenceEnabled: Bool = true
     var estimatedDurationMinutes: Int?
     var createdAt: Date?
     var isSoftIntervalRoutine: Bool

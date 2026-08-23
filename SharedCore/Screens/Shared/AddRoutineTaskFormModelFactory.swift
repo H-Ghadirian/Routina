@@ -265,13 +265,13 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.basics.focusModeEnabled },
                 send: AddRoutineFeature.Action.focusModeEnabledChanged
             ),
-            trackingCadenceEnabled: binding(
-                get: { store.basics.trackingCadenceEnabled },
-                send: AddRoutineFeature.Action.trackingCadenceEnabledChanged
+            cadenceEnabled: binding(
+                get: { store.basics.cadenceEnabled },
+                send: AddRoutineFeature.Action.cadenceEnabledChanged
             ),
-            trackingNudgesEnabled: binding(
-                get: { store.basics.trackingNudgesEnabled },
-                send: AddRoutineFeature.Action.trackingNudgesEnabledChanged
+            nudgesEnabled: binding(
+                get: { store.basics.nudgesEnabled },
+                send: AddRoutineFeature.Action.nudgesEnabledChanged
             ),
             color: binding(get: { store.basics.routineColor }, send: AddRoutineFeature.Action.routineColorChanged),
             nameFocus: nameFocus,

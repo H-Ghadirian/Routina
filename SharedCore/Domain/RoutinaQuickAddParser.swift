@@ -84,12 +84,6 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
             return "Gentle routine · \(recurrenceRule.displayText())"
         case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist:
             return "Routine · \(recurrenceRule.displayText())"
-        case .record:
-            return "Gentle routine"
-        case .recordChecklist:
-            return "Gentle routine · Checklist"
-        case .recordDerivedFromChecklist:
-            return "Gentle routine · Item runout"
         }
     }
 

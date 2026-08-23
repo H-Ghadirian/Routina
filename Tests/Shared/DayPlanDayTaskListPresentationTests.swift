@@ -276,12 +276,12 @@ struct DayPlanDayTaskListPresentationTests {
             name: "Daily routine",
             scheduleMode: .fixedInterval
         )
-        let dailyRunoutTracking = plannedTask(
+        let dailyRunoutRoutine = plannedTask(
             id: try #require(UUID(uuidString: "60606060-6060-6060-6060-606060606060")),
-            name: "Daily runout tracking",
-            scheduleMode: .recordDerivedFromChecklist
+            name: "Daily runout routine",
+            scheduleMode: .softDerivedFromChecklist
         )
-        dailyRunoutTracking.replaceChecklistItems([
+        dailyRunoutRoutine.replaceChecklistItems([
             RoutineChecklistItem(title: "Milk", intervalDays: 1)
         ])
 
@@ -295,12 +295,12 @@ struct DayPlanDayTaskListPresentationTests {
                 pausedTask,
                 pinnedTask,
                 dailyRoutine,
-                dailyRunoutTracking
+                dailyRunoutRoutine
             ],
             calendar: calendar
         )
 
-        #expect(items.map(\.title) == ["Daily runout tracking"])
+        #expect(items.isEmpty)
     }
 
     @Test

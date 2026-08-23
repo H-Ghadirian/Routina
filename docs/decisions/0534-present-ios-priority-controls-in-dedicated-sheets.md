@@ -11,7 +11,7 @@ Accepted
 ## Refines
 
 - [0462: Use a Compact Progressive iOS Task Editor](0462-use-a-compact-progressive-ios-task-editor.md)
-- [0424: Make Task Detail Priority Optional](0424-make-task-detail-priority-optional.md)
+- [0424: Make Task Detail Priority Optional](superseded/0424-make-task-detail-priority-optional.md)
 
 ## Context
 

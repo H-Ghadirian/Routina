@@ -3398,7 +3398,7 @@ private struct DayPlanTimelinePanelContentView: View {
                 let isDailyRoutineForTaskList = plannedDateTaskVisibilityCache.isDailyRoutineForTaskList(task)
                 if !RoutineTaskPlanningSupport.supportsStoredPlanning(
                     scheduleMode: task.scheduleMode,
-                    trackingCadenceEnabled: task.trackingCadenceEnabled,
+                    cadenceEnabled: task.cadenceEnabled,
                     isDailyRoutine: isDailyRoutineForTaskList
                 ), isDailyRoutineForTaskList {
                     return true

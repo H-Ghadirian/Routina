@@ -8,7 +8,7 @@ struct TaskDetailIOSCompletionPresentationTests {
         let task = RoutineTask(
             name: "Cycle",
             lastDone: now,
-            trackingCadenceEnabled: false
+            cadenceEnabled: false
         )
         let state = TaskDetailFeature.State(
             task: task,
@@ -25,7 +25,7 @@ struct TaskDetailIOSCompletionPresentationTests {
         let now = Date()
         let task = RoutineTask(
             name: "Cycle",
-            trackingCadenceEnabled: false
+            cadenceEnabled: false
         )
         let state = TaskDetailFeature.State(
             task: task,

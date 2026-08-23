@@ -56,7 +56,6 @@ struct SettingsRoutineDataBackupMappingTests {
             showsTaskDetailHeatmap: true,
             showsTaskDetailHistory: true,
             isTaskDetailCalendarExpanded: true,
-            showsTaskDetailPriority: true,
             hasExplicitImportance: true,
             hasExplicitUrgency: true
         )
@@ -98,7 +97,6 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.showsTaskDetailHeatmap == true)
         #expect(inline.showsTaskDetailHistory == true)
         #expect(inline.isTaskDetailCalendarExpanded == true)
-        #expect(inline.showsTaskDetailPriority == true)
         #expect(inline.hasExplicitImportance == true)
         #expect(inline.hasExplicitUrgency == true)
         #expect(inline.pressure == .high)
@@ -112,7 +110,6 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(packaged.showsTaskDetailHeatmap == true)
         #expect(packaged.showsTaskDetailHistory == true)
         #expect(packaged.isTaskDetailCalendarExpanded == true)
-        #expect(packaged.showsTaskDetailPriority == true)
         #expect(packaged.hasExplicitImportance == true)
         #expect(packaged.hasExplicitUrgency == true)
         #expect(packaged.pressure == .high)

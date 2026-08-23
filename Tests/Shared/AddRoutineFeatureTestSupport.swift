@@ -79,8 +79,8 @@ func makeSaveRequest(
     actualDurationMinutes: Int? = nil,
     storyPoints: Int? = nil,
     focusModeEnabled: Bool = false,
-    trackingCadenceEnabled: Bool = true,
-    trackingNudgesEnabled: Bool = true,
+    cadenceEnabled: Bool = true,
+    nudgesEnabled: Bool = true,
     taskLadderGroupEnabled: Bool = false
 ) -> AddRoutineSaveRequest {
     AddRoutineSaveRequest(
@@ -120,8 +120,8 @@ func makeSaveRequest(
         actualDurationMinutes: actualDurationMinutes,
         storyPoints: storyPoints,
         focusModeEnabled: focusModeEnabled,
-        trackingCadenceEnabled: trackingCadenceEnabled,
-        trackingNudgesEnabled: trackingNudgesEnabled,
+        cadenceEnabled: cadenceEnabled,
+        nudgesEnabled: nudgesEnabled,
         taskLadderGroupEnabled: taskLadderGroupEnabled
     )
 }

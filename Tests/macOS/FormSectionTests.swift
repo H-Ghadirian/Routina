@@ -5,7 +5,7 @@ struct FormSectionTests {
     @Test
     func behaviorCardTitleMatchesSidebarSectionTitle() {
         #expect(TaskFormMacBehaviorCard.sectionTitle == FormSection.behavior.title)
-        #expect(TaskFormMacBehaviorCard.sectionTitle == "Behavior")
+        #expect(TaskFormMacBehaviorCard.sectionTitle == "Behavior & Schedule")
     }
 
     @Test
@@ -59,7 +59,7 @@ struct FormSectionTests {
         )
         #expect(
             TaskFormMacPlanningPlacement.resolve(
-                taskType: .record,
+                taskType: .routine,
                 supportsPlanning: true
             ) == .scheduleDetails
         )
@@ -98,15 +98,15 @@ struct FormSectionTests {
             includesIdentity: true,
             includesDangerZone: true
         )
-        let temporalWeightIndex = sections.firstIndex(of: .temporalWeight)
-        let thinkingNeededIndex = sections.firstIndex(of: .thinkingNeeded)
+        let valuesIndex = sections.firstIndex(of: .taskLadderValues)
+        let organizationIndex = sections.firstIndex(of: .organization)
         let estimationIndex = sections.firstIndex(of: .estimation)
 
         #expect(sections.first == .identity)
         #expect(sections.contains(.emoji))
-        #expect(sections.contains(.thinkingNeeded))
-        #expect(thinkingNeededIndex == temporalWeightIndex.map { sections.index(after: $0) })
-        #expect(estimationIndex == thinkingNeededIndex.map { sections.index(after: $0) })
+        #expect(sections.contains(.taskLadderValues))
+        #expect(organizationIndex == valuesIndex.map { sections.index(after: $0) })
+        #expect(estimationIndex != nil)
         #expect(sections.contains(.steps))
         #expect(sections.contains(.checklist))
         #expect(Array(sections.suffix(5)) == [.checklist, .image, .voiceNote, .attachment, .dangerZone])
@@ -139,16 +139,16 @@ struct FormSectionTests {
             from: sections,
             mode: .progressiveCreate,
             revealedSections: [],
-            populatedSections: [.notes, .tags]
+            populatedSections: [.notes, .organization]
         )
         let expanded = FormSection.visibleTaskFormSections(
             from: sections,
             mode: .progressiveCreate,
             revealedSections: Set(sections),
-            populatedSections: [.notes, .tags]
+            populatedSections: [.notes, .organization]
         )
 
-        #expect(collapsed == [.identity, .behavior, .tags, .notes, .dangerZone])
+        #expect(collapsed == [.identity, .behavior, .taskLadderValues, .organization, .notes, .dangerZone])
         #expect(!collapsed.contains(.emoji))
         #expect(!collapsed.contains(.image))
         #expect(expanded == sections)

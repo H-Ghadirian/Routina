@@ -83,7 +83,7 @@ struct TaskDetailCompletionButtonTitlePresentation {
         if task.hasSequentialSteps && !calendar.isDateInToday(selectedDate) {
             return "Step routines can only be progressed today"
         }
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             return exactTimedOccurrenceTitle
         }
         if isSelectedDateInFuture {

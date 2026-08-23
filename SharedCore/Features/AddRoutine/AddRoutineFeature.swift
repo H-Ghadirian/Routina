@@ -101,8 +101,8 @@ struct AddRoutineFeature: Reducer {
         case actualDurationChanged(Int?)
         case storyPointsChanged(Int?)
         case focusModeEnabledChanged(Bool)
-        case trackingCadenceEnabledChanged(Bool)
-        case trackingNudgesEnabledChanged(Bool)
+        case cadenceEnabledChanged(Bool)
+        case nudgesEnabledChanged(Bool)
         case applyQuickAddDraftFromName
         case saveTapped
         case saveFailed
@@ -135,9 +135,9 @@ struct AddRoutineFeature: Reducer {
             scheduleMode: state.schedule.scheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
             checklistItems: state.candidateChecklistItems,
-            trackingCadenceEnabled: state.schedule.scheduleMode.taskType == .todo
+            cadenceEnabled: state.schedule.scheduleMode.taskType == .todo
                 ? true
-                : state.basics.trackingCadenceEnabled
+                : state.basics.cadenceEnabled
         )
     }
 
@@ -173,7 +173,7 @@ struct AddRoutineFeature: Reducer {
             scheduleMode: state.schedule.scheduleMode,
             cadenceEnabled: state.schedule.scheduleMode.taskType == .todo
                 ? true
-                : state.basics.trackingCadenceEnabled
+                : state.basics.cadenceEnabled
         ) else {
             state.basics.temporalWeightRule = nil
             return
@@ -815,13 +815,13 @@ struct AddRoutineFeature: Reducer {
             )
             return .none
 
-        case let .trackingCadenceEnabledChanged(isEnabled):
-            state.basics.trackingCadenceEnabled = isEnabled
+        case let .cadenceEnabledChanged(isEnabled):
+            state.basics.cadenceEnabled = isEnabled
             if isEnabled {
                 state.basics.autoPauseAfterCompletion = false
             }
             if !isEnabled {
-                state.basics.trackingNudgesEnabled = false
+                state.basics.nudgesEnabled = false
             }
             state.synchronizeRecurrenceDraftFromLegacy()
             if !state.canAutoAssumeDailyDone {
@@ -831,8 +831,8 @@ struct AddRoutineFeature: Reducer {
             sanitizeTemporalWeightRule(state: &state)
             return .none
 
-        case let .trackingNudgesEnabledChanged(isEnabled):
-            state.basics.trackingNudgesEnabled = isEnabled
+        case let .nudgesEnabledChanged(isEnabled):
+            state.basics.nudgesEnabled = isEnabled
             return .none
 
         case .applyQuickAddDraftFromName:

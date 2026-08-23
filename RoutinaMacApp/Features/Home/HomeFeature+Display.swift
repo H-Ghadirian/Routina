@@ -115,7 +115,6 @@ extension HomeFeature {
                     return true
                 case .routines:
                     return display.scheduleMode.taskType == .routine
-                        || display.scheduleMode.taskType == .record
                 case .todos:
                     return display.isOneOffTask
                 }
@@ -156,7 +155,7 @@ private extension HomeFeature.RoutineDisplay {
             interval: core.interval,
             recurrenceRule: core.recurrenceRule,
             scheduleMode: core.scheduleMode,
-            trackingCadenceEnabled: core.trackingCadenceEnabled,
+            cadenceEnabled: core.cadenceEnabled,
             estimatedDurationMinutes: core.estimatedDurationMinutes,
             createdAt: core.createdAt,
             isSoftIntervalRoutine: core.isSoftIntervalRoutine,

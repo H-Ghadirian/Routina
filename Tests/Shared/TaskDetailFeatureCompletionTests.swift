@@ -1699,7 +1699,7 @@ struct TaskDetailFeatureCompletionTests {
         let task = RoutineTask(
             name: "Brush teeth",
             emoji: "🪥",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
             createdAt: makeDate("2026-02-24T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -1765,7 +1765,7 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
-    func markAsDone_confirmsAssumedChecklistCompletionTracking() async throws {
+    func markAsDone_confirmsAssumedChecklistRoutineCompletion() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let now = makeDate("2026-06-20T08:30:00Z")
@@ -1775,7 +1775,7 @@ struct TaskDetailFeatureCompletionTests {
                 RoutineChecklistItem(title: "Breakfast", intervalDays: 1, createdAt: now),
                 RoutineChecklistItem(title: "Lunch", intervalDays: 1, createdAt: now)
             ],
-            scheduleMode: .recordChecklist,
+            scheduleMode: .softIntervalChecklist,
             recurrenceRule: .interval(days: 1),
             scheduleAnchor: makeDate("2026-06-19T08:00:00Z"),
             createdAt: makeDate("2026-06-19T08:00:00Z"),

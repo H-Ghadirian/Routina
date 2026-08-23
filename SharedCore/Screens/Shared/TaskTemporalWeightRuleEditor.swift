@@ -8,7 +8,7 @@ struct TaskTemporalWeightRuleEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Toggle("Use time-based values", isOn: enabledBinding)
+            Toggle("Change values over time", isOn: enabledBinding)
 
             if rule != nil {
                 Picker("Change", selection: curveBinding) {
@@ -40,6 +40,9 @@ struct TaskTemporalWeightRuleEditor: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                Divider()
+                temporalPreview
             }
         }
     }
@@ -195,6 +198,108 @@ struct TaskTemporalWeightRuleEditor: View {
         RoutineTaskPressure.allCases.filter { $0.sortOrder > pressure.sortOrder }
     }
 
+    private var temporalPreview: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Preview")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            previewRow(
+                title: "After done",
+                detail: "Next occurrence resets to Base",
+                progress: 0
+            )
+
+            if rule?.curve == .gradual {
+                previewRow(
+                    title: "During lead window",
+                    detail: "Values rise gradually",
+                    progress: 0.5
+                )
+            } else {
+                previewRow(
+                    title: "Before due",
+                    detail: "Values stay at Base",
+                    progress: 0
+                )
+            }
+
+            previewRow(
+                title: "Due date",
+                detail: "Due targets apply",
+                progress: 1
+            )
+            previewRow(
+                title: "After due",
+                detail: "Targets remain until done",
+                progress: 1
+            )
+        }
+    }
+
+    private func previewRow(title: String, detail: String, progress: Double) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                Text(detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(minWidth: 118, alignment: .leading)
+
+            Spacer(minLength: 8)
+
+            Text(previewSummary(progress: progress))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func previewSummary(progress: Double) -> String {
+        let importanceValue = previewValue(
+            base: importance,
+            target: rule?.importanceAtDue,
+            progress: progress,
+            values: RoutineTaskImportance.allCases
+        )
+        let urgencyValue = previewValue(
+            base: urgency,
+            target: rule?.urgencyAtDue,
+            progress: progress,
+            values: RoutineTaskUrgency.allCases
+        )
+        let pressureValue = previewValue(
+            base: pressure,
+            target: rule?.pressureAtDue,
+            progress: progress,
+            values: RoutineTaskPressure.allCases
+        )
+        return "I \(importanceValue.title) • U \(urgencyValue.title) • P \(pressureValue.title)"
+    }
+
+    private func previewValue<Value: Equatable>(
+        base: Value,
+        target: Value?,
+        progress: Double,
+        values: [Value]
+    ) -> Value {
+        guard let target,
+              let baseIndex = values.firstIndex(of: base),
+              let targetIndex = values.firstIndex(of: target),
+              targetIndex > baseIndex,
+              progress > 0
+        else { return base }
+
+        let distance = targetIndex - baseIndex
+        let level = progress >= 1
+            ? distance
+            : min(Int(ceil(Double(distance) * progress)), max(distance - 1, 0))
+        return values[min(baseIndex + level, targetIndex)]
+    }
+
     private var importanceTargetRow: some View {
         targetRowShell(
             title: "Importance",
@@ -295,7 +400,7 @@ struct TaskTemporalWeightRuleSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("Time-based values")
+                Text("Changes over time")
                     .font(.title2.weight(.semibold))
                 Text("\(task.emoji ?? "✨") \(task.name ?? "Untitled task")")
                     .font(.subheadline)
@@ -361,7 +466,7 @@ struct TaskTemporalWeightSummaryCard: View {
            ) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .center, spacing: 8) {
-                    Label("Time-based values", systemImage: "flame.fill")
+                    Label("Changes over time", systemImage: "flame.fill")
                         .font(.caption.weight(.semibold))
                     Spacer(minLength: 8)
                     if let onEdit {
@@ -384,7 +489,7 @@ struct TaskTemporalWeightSummaryCard: View {
                     ) {
                         Text(nowSummary)
                     }
-                    Text("\(RoutineTaskTemporalWeightPresentation.changeSummary(rule: rule) ?? "Time-based change"): \(targetSummary)")
+                    Text("\(RoutineTaskTemporalWeightPresentation.changeSummary(rule: rule) ?? "Value change"): \(targetSummary)")
                     if let timing = RoutineTaskTemporalWeightResolver.timingLabel(
                         for: task,
                         referenceDate: referenceDate,

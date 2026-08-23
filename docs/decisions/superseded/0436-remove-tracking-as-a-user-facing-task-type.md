@@ -1,10 +1,10 @@
 # 0436 Remove Tracking as a User-Facing Task Type
 
-Status: Accepted
+Status: Superseded by [0642](../0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 
 Date: 2026-07-26
 
-Supersedes the compatibility-surface decision in [0428 Compose Tracking Behaviors on Gentle Routines](0428-compose-tracking-behaviors-on-gentle-routines.md) and the visible Tracking surfaces introduced by [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md), [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md), [0388 Show Tracking Summary Stats](0388-show-tracking-summary-stats.md), and the Tracking rule in [0411 Manage Custom Task Sections in Settings](0411-manage-custom-task-sections-in-settings.md).
+Supersedes the compatibility-surface decision in [0428 Compose Tracking Behaviors on Gentle Routines](../0428-compose-tracking-behaviors-on-gentle-routines.md) and the visible Tracking surfaces introduced by [0383 Use Tracking as Record Label](../0383-use-tracking-as-record-label.md), [0384 Show Tracking as Mac Sidebar Section](../0384-show-tracking-as-mac-sidebar-section.md), [0388 Show Tracking Summary Stats](../0388-show-tracking-summary-stats.md), and the Tracking rule in [0411 Manage Custom Task Sections in Settings](../0411-manage-custom-task-sections-in-settings.md).
 
 ## Context
 

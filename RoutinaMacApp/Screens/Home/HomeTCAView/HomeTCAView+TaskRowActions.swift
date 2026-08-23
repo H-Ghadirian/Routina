@@ -138,7 +138,7 @@ extension HomeTCAView {
 
         let supportsPlanning = RoutineTaskPlanningSupport.supportsStoredPlanning(
             scheduleMode: task.scheduleMode,
-            trackingCadenceEnabled: task.trackingCadenceEnabled,
+            cadenceEnabled: task.cadenceEnabled,
             isDailyRoutine: task.isDailyRoutine
         )
 

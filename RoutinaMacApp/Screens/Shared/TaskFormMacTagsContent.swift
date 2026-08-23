@@ -13,6 +13,9 @@ struct TaskFormMacTagsContent: View {
         let tagAutocompleteSuggestion = model.tagAutocompleteSuggestion
 
         VStack(alignment: .leading, spacing: 10) {
+            Text("Tags")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
             tagComposer(suggestion: tagAutocompleteSuggestion)
             tagChipsContent(presentation: tagPresentation)
             flagEditor(presentation: flagPresentation)

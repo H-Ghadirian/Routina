@@ -22,7 +22,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var interval: Int
     var recurrenceRule: RoutineRecurrenceRule
     var scheduleMode: RoutineScheduleMode
-    var trackingCadenceEnabled: Bool
+    var cadenceEnabled: Bool
     var estimatedDurationMinutes: Int?
     var createdAt: Date?
     var isSoftIntervalRoutine: Bool

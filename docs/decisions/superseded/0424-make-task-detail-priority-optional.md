@@ -1,12 +1,12 @@
 # 0424: Make Task Detail Priority Optional
 
-Status: Accepted
+Status: Superseded by [0642](../0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 
 Date: 2026-07-24
 
-Refines: [0100 Reveal Task Form Details by Section](0100-reveal-task-form-details-by-section.md), [0366 Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md)
+Refines: [0100 Reveal Task Form Details by Section](../0100-reveal-task-form-details-by-section.md), [0366 Keep Mac Task Detail Add More Inline](../0366-keep-mac-task-detail-add-more-inline.md)
 
-Refined by: [0625 Group Task Detail Add Detail With Edit](0625-group-task-detail-add-detail-with-edit.md), which moves the Priority entry point into the grouped header chooser.
+Refined by: [0625 Group Task Detail Add Detail With Edit](../0625-group-task-detail-add-detail-with-edit.md), which moved the Priority entry point into the grouped header chooser.
 
 ## Context
 

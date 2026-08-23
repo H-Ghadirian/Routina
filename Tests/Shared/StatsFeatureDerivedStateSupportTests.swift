@@ -14,12 +14,12 @@ struct StatsFeatureDerivedStateSupportTests {
         let calendar = makeTestCalendar()
         let autoAssumedTask = RoutineTask(
             name: "Auto assumed",
-            flags: ["Assumed done", "Tracking"],
+            flags: ["Assumed done", "Reference"],
             createdAt: makeDate("2026-05-01T08:00:00Z")
         )
         let focusTask = RoutineTask(
             name: "Focused work",
-            flags: ["Focus", "Tracking"],
+            flags: ["Focus", "Reference"],
             createdAt: makeDate("2026-05-01T08:00:00Z")
         )
         let ordinaryTask = RoutineTask(
@@ -64,7 +64,7 @@ struct StatsFeatureDerivedStateSupportTests {
             includeTagMatchMode: .all,
             excludedTags: [],
             excludeTagMatchMode: .any,
-            selectedFlags: ["Tracking", "Focus"],
+            selectedFlags: ["Reference", "Focus"],
             includeFlagMatchMode: .all,
             tagColors: [:],
             referenceDate: makeDate("2026-05-07T20:00:00Z"),
@@ -317,12 +317,12 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
-    func build_countsAssumedDoneDaysAndEstimatedTimeForFilteredDailyTracking() {
+    func build_countsAssumedDoneDaysAndEstimatedTimeForFilteredDailyRoutine() {
         let calendar = makeTestCalendar()
         let estimatedRoutine = RoutineTask(
             name: "Hydrate",
             tags: ["Health"],
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .interval(days: 1),
             createdAt: makeDate("2026-05-07T08:00:00Z"),
             autoAssumeDailyDone: true,
@@ -331,7 +331,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let noEstimateRoutine = RoutineTask(
             name: "Stretch",
             tags: ["Health"],
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .interval(days: 1),
             createdAt: makeDate("2026-05-09T08:00:00Z"),
             autoAssumeDailyDone: true
@@ -339,7 +339,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let hiddenRoutine = RoutineTask(
             name: "Read",
             tags: ["Hidden"],
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .interval(days: 1),
             createdAt: makeDate("2026-05-07T08:00:00Z"),
             autoAssumeDailyDone: true,
@@ -692,35 +692,35 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
-    func build_countsInternalRecordTasksAsRoutines() {
+    func build_countsGentleRoutinesAsRoutines() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-03-08T12:00:00Z")
-        let entryTimeTracking = RoutineTask(
+        let entryTimeRoutine = RoutineTask(
             name: "Research notes",
             tags: ["Focus"],
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             createdAt: makeDate("2026-03-03T09:00:00Z"),
             actualDurationMinutes: 25
         )
-        let loggedTracking = RoutineTask(
+        let loggedRoutine = RoutineTask(
             name: "Review session",
             tags: ["Focus"],
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             createdAt: makeDate("2026-03-03T09:00:00Z"),
             actualDurationMinutes: 90
         )
-        let archivedTracking = RoutineTask(
+        let archivedRoutine = RoutineTask(
             name: "Old audit",
             tags: ["Focus"],
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             pausedAt: makeDate("2026-03-01T08:00:00Z"),
             createdAt: makeDate("2026-03-03T09:00:00Z"),
             actualDurationMinutes: 15
         )
-        let hiddenTracking = RoutineTask(
+        let hiddenRoutine = RoutineTask(
             name: "Hidden analysis",
             tags: ["Hidden"],
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             createdAt: makeDate("2026-03-03T09:00:00Z"),
             actualDurationMinutes: 100
         )
@@ -728,32 +728,32 @@ struct StatsFeatureDerivedStateSupportTests {
         let logs = [
             RoutineLog(
                 timestamp: makeDate("2026-03-04T10:00:00Z"),
-                taskID: loggedTracking.id,
+                taskID: loggedRoutine.id,
                 kind: .completed,
                 actualDurationMinutes: 40
             ),
             RoutineLog(
                 timestamp: makeDate("2026-03-05T10:00:00Z"),
-                taskID: loggedTracking.id,
+                taskID: loggedRoutine.id,
                 kind: .missed,
                 actualDurationMinutes: 30
             ),
             RoutineLog(
                 timestamp: makeDate("2026-02-20T10:00:00Z"),
-                taskID: loggedTracking.id,
+                taskID: loggedRoutine.id,
                 kind: .completed,
                 actualDurationMinutes: 60
             ),
             RoutineLog(
                 timestamp: makeDate("2026-03-04T10:00:00Z"),
-                taskID: hiddenTracking.id,
+                taskID: hiddenRoutine.id,
                 kind: .completed,
                 actualDurationMinutes: 100
             )
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
-            tasks: [entryTimeTracking, loggedTracking, archivedTracking, hiddenTracking, routine],
+            tasks: [entryTimeRoutine, loggedRoutine, archivedRoutine, hiddenRoutine, routine],
             logs: logs,
             focusSessions: [],
             selectedRange: .week,

@@ -72,7 +72,7 @@ struct RoutineLogHistoryTests {
             interval: 1,
             lastDone: nil,
             emoji: "🧰",
-            trackingCadenceEnabled: false,
+            cadenceEnabled: false,
             autoPauseAfterCompletion: true
         )
 
@@ -195,7 +195,7 @@ struct RoutineLogHistoryTests {
             emoji: "📚",
             scheduleMode: .fixedInterval,
             recurrenceRule: .interval(days: 1),
-            trackingCadenceEnabled: false
+            cadenceEnabled: false
         )
 
         let firstResult = try #require(

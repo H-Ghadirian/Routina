@@ -986,7 +986,7 @@ enum DayPlanPlannedTaskCompletion {
             return nil
         }
 
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             guard let completionDate = RoutineDateMath.completionTargetDate(
                 for: task,
                 selectedDay: selectedDayStart,
@@ -1346,7 +1346,7 @@ enum DayPlanDayTaskListPresentation {
             ?? task.isDailyRoutineForTaskList
         return RoutineTaskPlanningSupport.supportsStoredPlanning(
                 scheduleMode: task.scheduleMode,
-                trackingCadenceEnabled: task.trackingCadenceEnabled,
+                cadenceEnabled: task.cadenceEnabled,
                 isDailyRoutine: isDailyRoutineForTaskList
             )
             && !task.isCompletedOneOff

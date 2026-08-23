@@ -99,9 +99,9 @@ extension TaskDetailFeature {
         state.editActualDurationMinutes = state.task.actualDurationMinutes
         state.editStoryPoints = state.task.storyPoints
         state.editFocusModeEnabled = state.task.focusModeEnabled
-        state.editTrackingCadenceEnabled = state.task.trackingCadenceEnabled
+        state.editCadenceEnabled = state.task.cadenceEnabled
         state.editAutoPauseAfterCompletion = state.task.autoPauseAfterCompletion
-        state.editTrackingNudgesEnabled = state.task.trackingNudgesEnabled
+        state.editNudgesEnabled = state.task.nudgesEnabled
         state.tagCounterDisplayMode = appSettingsClient.tagCounterDisplayMode()
 
         let interval = max(recurrenceRule.interval, 1)

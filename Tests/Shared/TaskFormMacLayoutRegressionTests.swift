@@ -3,21 +3,23 @@ import Testing
 
 struct TaskFormMacLayoutRegressionTests {
     @Test
-    func importanceAndUrgencyUseIndependentMacControls() throws {
+    func taskLadderValuesShareOneMacCardWithIndependentControlsAndTimeRules() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"
         )
-        let importanceCard = try Self.sourceSection(
-            startingAt: "private var importanceCard: some View",
-            endingAt: "// MARK: Tags",
+        let valuesCard = try Self.sourceSection(
+            startingAt: "private var taskLadderValuesCard: some View",
+            endingAt: "private func taskLadderControl",
             in: source
         )
 
-        #expect(importanceCard.contains("title: \"Importance\""))
-        #expect(importanceCard.contains("accessibilityLabel: \"Importance\""))
-        #expect(importanceCard.contains("title: \"Urgency\""))
-        #expect(importanceCard.contains("accessibilityLabel: \"Urgency\""))
-        #expect(!importanceCard.contains("ImportanceUrgencyMatrixPicker"))
+        for label in ["Importance", "Urgency", "Pressure", "Thinking needed"] {
+            #expect(valuesCard.contains("accessibilityLabel: \"\(label)\""))
+        }
+        #expect(valuesCard.contains("Label(\"Changes over time\""))
+        #expect(valuesCard.contains("TaskTemporalWeightRuleEditor("))
+        #expect(valuesCard.contains("model.temporalWeightAvailabilityMessage"))
+        #expect(!valuesCard.contains("ImportanceUrgencyMatrixPicker"))
     }
 
     @Test
@@ -46,19 +48,20 @@ struct TaskFormMacLayoutRegressionTests {
     }
 
     @Test
-    func repeatingTaskFormsExposeTaskLadderGroupActivationInBehavior() throws {
+    func repeatingTaskFormsExposePathTagsFlagsAndTaskLadderGroupInOrganization() throws {
         let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Shared/TaskFormMacCards.swift"
+            "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"
         )
-        let controls = try Self.sourceSection(
-            startingAt: "private var routineBehaviorControls: some View",
-            endingAt: "private var scheduleDetailsDisclosure: some View",
+        let organization = try Self.sourceSection(
+            startingAt: "private var organizationCard: some View",
+            endingAt: "private var estimationCard: some View",
             in: source
         )
 
-        #expect(controls.contains("taskLadderGroupControl"))
-        #expect(controls.contains("Toggle(\"Use as Task Ladder group\""))
-        #expect(controls.contains("model.taskLadderGroupEnabled"))
+        #expect(organization.contains("TaskFormMacPathControl(model: model)"))
+        #expect(organization.contains("TaskFormMacTagsContent(model: model)"))
+        #expect(organization.contains("TaskFormMacTaskLadderGroupControl(model: model)"))
+        #expect(organization.contains("model.taskType.wrappedValue == .routine"))
     }
 
     @Test

@@ -376,7 +376,7 @@ struct TaskDetailSharedViewSupportTests {
             name: "Go to library",
             scheduleMode: .fixedInterval,
             recurrenceRule: .interval(days: 1),
-            trackingCadenceEnabled: false
+            cadenceEnabled: false
         )
         let state = TaskDetailFeature.State(task: task)
 
@@ -471,51 +471,32 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
-    func priorityVisibilityRequiresSavedNonDefaultValues() {
-        let neutralTask = RoutineTask(name: "Neutral")
-        let legacyMediumTask = RoutineTask(name: "Legacy medium", priority: .medium)
-        let explicitlyRevealedMediumTask = RoutineTask(
-            name: "Explicit medium",
-            priority: .medium,
-            showsTaskDetailPriority: true
-        )
-        let prioritizedTask = RoutineTask(name: "Prioritized", priority: .high)
-        let importantTask = RoutineTask(name: "Important", importance: .level3)
-        let urgentTask = RoutineTask(name: "Urgent", urgency: .level3)
-
-        #expect(!TaskDetailOptionalControlVisibility.showsPriority(for: neutralTask))
-        #expect(!TaskDetailOptionalControlVisibility.showsPriority(for: legacyMediumTask))
-        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: explicitlyRevealedMediumTask))
-        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: prioritizedTask))
-        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: importantTask))
-        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: urgentTask))
-    }
-
-    @Test
     func taskDetailsPresentImportanceAndUrgencyAsIndependentControls() throws {
         let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
         let iosControls = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
         let macDetail = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
         let macControls = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift")
-        let priorityDisclosure = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailPriorityDisclosureBox.swift")
+        let valuesBox = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailTaskLadderValuesBox.swift")
 
-        #expect(iosDetail.contains("TaskDetailPriorityContextControls("))
-        #expect(iosDetail.contains(".revealImportanceInTaskDetail"))
-        #expect(iosDetail.contains(".revealUrgencyInTaskDetail"))
-        #expect(!iosDetail.contains("TaskDetailPriorityDisclosureBox"))
+        #expect(iosDetail.contains("TaskDetailTaskLadderValuesBox"))
+        #expect(iosDetail.contains("TaskDetailTaskLadderValuesControls(store: store)"))
+        #expect(!iosDetail.contains(".revealImportanceInTaskDetail"))
+        #expect(!iosDetail.contains(".revealUrgencyInTaskDetail"))
         #expect(iosControls.contains("struct TaskDetailImportancePickerPill"))
         #expect(iosControls.contains("struct TaskDetailUrgencyPickerPill"))
         #expect(iosControls.contains("TaskDetailImportancePickerPill(store: store)"))
         #expect(iosControls.contains("TaskDetailUrgencyPickerPill(store: store)"))
 
-        #expect(macDetail.contains("TaskDetailPriorityDisclosureBox("))
-        #expect(macDetail.contains("TaskDetailPriorityControlsGrid(store: store)"))
+        #expect(macDetail.contains("TaskDetailTaskLadderValuesBox"))
+        #expect(macDetail.contains("TaskDetailTaskLadderValuesControlsGrid(store: store)"))
         #expect(!macDetail.contains(".revealImportanceInTaskDetail"))
         #expect(!macDetail.contains(".revealUrgencyInTaskDetail"))
         #expect(macControls.contains("struct TaskDetailImportanceSegmentedPicker"))
         #expect(macControls.contains("struct TaskDetailUrgencySegmentedPicker"))
-        #expect(macControls.contains("struct TaskDetailPriorityControlsGrid"))
-        #expect(!priorityDisclosure.contains("ImportanceUrgencyMatrixPicker"))
+        #expect(macControls.contains("struct TaskDetailTaskLadderValuesControlsGrid"))
+        #expect(valuesBox.contains("TASK LADDER VALUES"))
+        #expect(!valuesBox.contains("isExpanded"))
+        #expect(!valuesBox.contains("RoutineTaskPriority"))
     }
 
     @Test
@@ -542,26 +523,26 @@ struct TaskDetailSharedViewSupportTests {
             endingAt: "struct TaskDetailPrimaryActionButton",
             in: actionControls
         )
-        let priorityContextControls = try Self.sourceSection(
-            startingAt: "struct TaskDetailPriorityContextControls",
+        let taskLadderControls = try Self.sourceSection(
+            startingAt: "struct TaskDetailTaskLadderValuesControls",
             endingAt: "struct TaskDetailPressurePickerPill",
             in: actionControls
         )
 
         for header in [todoHeader, routineHeader] {
-            #expect(header.contains("TaskDetailPriorityContextControls("))
+            #expect(header.contains("taskDetailTaskLadderValuesSection"))
             #expect(!header.contains("TaskDetailThinkingNeededPickerPill"))
         }
 
-        let importance = try #require(priorityContextControls.range(of: "TaskDetailImportancePickerPill(store: store)"))
-        let urgency = try #require(priorityContextControls.range(of: "TaskDetailUrgencyPickerPill(store: store)"))
-        let pressure = try #require(priorityContextControls.range(of: "TaskDetailPressurePickerPill(store: store)"))
-        let thinking = try #require(priorityContextControls.range(of: "TaskDetailThinkingNeededPickerPill(store: store)"))
+        let importance = try #require(taskLadderControls.range(of: "TaskDetailImportancePickerPill(store: store)"))
+        let urgency = try #require(taskLadderControls.range(of: "TaskDetailUrgencyPickerPill(store: store)"))
+        let pressure = try #require(taskLadderControls.range(of: "TaskDetailPressurePickerPill(store: store)"))
+        let thinking = try #require(taskLadderControls.range(of: "TaskDetailThinkingNeededPickerPill(store: store)"))
         #expect(importance.lowerBound < urgency.lowerBound)
         #expect(urgency.lowerBound < pressure.lowerBound)
         #expect(pressure.lowerBound < thinking.lowerBound)
-        #expect(priorityContextControls.contains("dynamicTypeSize.isAccessibilitySize"))
-        #expect(priorityContextControls.contains("HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8)"))
+        #expect(taskLadderControls.contains("dynamicTypeSize.isAccessibilitySize"))
+        #expect(taskLadderControls.contains("HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8)"))
         #expect(!todoPrimaryAction.contains("TaskDetailThinkingNeededPickerPill"))
         #expect(!routinePrimaryAction.contains("TaskDetailThinkingNeededPickerPill"))
         #expect(actionControls.contains(".frame(minHeight: 44)"))

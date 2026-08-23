@@ -528,7 +528,7 @@ enum StatsFeatureDerivedStateBuilder {
         let activeGoalCount = goals.filter { $0.status == .active }.count
         let archivedGoalCount = goals.filter { $0.status == .archived }.count
         let routineCount = filteredTasks.filter {
-            $0.scheduleMode.taskType == .routine || $0.scheduleMode.taskType == .record
+            $0.scheduleMode.taskType == .routine
         }.count
         let openTodoCount = filteredTasks.filter {
             $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff

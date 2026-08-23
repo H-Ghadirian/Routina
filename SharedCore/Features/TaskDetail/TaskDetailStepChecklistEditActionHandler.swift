@@ -141,8 +141,8 @@ struct TaskDetailStepChecklistEditActionHandler {
             scheduleMode: state.editScheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
             checklistItems: candidateChecklistItems(for: state),
-            trackingCadenceEnabled: state.editScheduleMode.taskType == .record
-                ? state.editTrackingCadenceEnabled
+            cadenceEnabled: state.editScheduleMode.taskType == .routine
+                ? state.editCadenceEnabled
                 : true
         ) {
             state.editPlannedDate = nil

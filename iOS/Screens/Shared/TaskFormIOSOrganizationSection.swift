@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct TaskFormIOSTagsSection: View {
+struct TaskFormIOSOrganizationSection: View {
     let model: TaskFormModel
     let tagColor: (String) -> Color?
     let onManageTags: () -> Void
@@ -10,6 +10,10 @@ struct TaskFormIOSTagsSection: View {
     @State private var tagSuggestionPresentation: TaskFormIOSTagSuggestionPresentation.Data
     @State private var tagAutocompleteSuggestion: String?
     @State private var tagSummariesByID: [String: RoutineTagSummary]
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
+        store: SharedDefaults.app
+    ) private var customTaskSectionsRawValue = ""
 
     init(
         model: TaskFormModel,
@@ -48,17 +52,44 @@ struct TaskFormIOSTagsSection: View {
     }
 
     var body: some View {
-        Group {
-            Section(header: Text("Tags")) {
+        Section(header: Text("Organization")) {
+            pathPicker
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Tags")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
                 tagComposer
                 tagChipsContent
                 browseTagsButton
             }
-            Section(header: Text("Flags")) {
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Flags")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
                 flagEditor
+            }
+
+            if model.taskType.wrappedValue == .routine {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Task Ladder group")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Toggle("Use as Task Ladder group", isOn: model.taskLadderGroupEnabled)
+                        .disabled(
+                            model.taskLadderGroupEnabled.wrappedValue
+                                && !model.canDisableTaskLadderGroup
+                        )
+                    Text(taskLadderGroupHelpText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 3)
             }
         }
         .onAppear {
+            clearMissingPath()
             refreshTagSuggestionPresentationAndSummaries()
             refreshTagAutocompleteSuggestion()
         }
@@ -79,6 +110,46 @@ struct TaskFormIOSTagsSection: View {
         .onChange(of: model.availableTagSummaries) { _, _ in
             refreshTagSummaries()
         }
+        .onChange(of: customTaskSectionsRawValue) { _, _ in
+            clearMissingPath()
+        }
+    }
+
+    private var pathPicker: some View {
+        Picker("Path", selection: model.customTaskSectionID) {
+            Text("Automatic").tag(Optional<UUID>.none)
+            ForEach(customTaskSections) { section in
+                Text(pathTitle(for: section))
+                    .tag(Optional(section.id))
+                    .disabled(section.isPaused)
+            }
+        }
+        .pickerStyle(.navigationLink)
+        .accessibilityHint("Choose where the task appears, or let Routina place it automatically")
+    }
+
+    private var customTaskSections: [HomeCustomTaskSection] {
+        HomeCustomTaskSectionStorage.decoded(from: customTaskSectionsRawValue)
+    }
+
+    private func pathTitle(for section: HomeCustomTaskSection) -> String {
+        HomeCustomTaskSectionStorage.pathTitles(for: section.id, in: customTaskSections)?
+            .joined(separator: " › ")
+            ?? section.title
+    }
+
+    private func clearMissingPath() {
+        guard let sectionID = model.customTaskSectionID.wrappedValue,
+              HomeCustomTaskSectionStorage.pathTitles(for: sectionID, in: customTaskSections) == nil
+        else { return }
+        model.customTaskSectionID.wrappedValue = nil
+    }
+
+    private var taskLadderGroupHelpText: String {
+        if model.taskLadderGroupEnabled.wrappedValue && !model.canDisableTaskLadderGroup {
+            return "Move its nested tasks elsewhere before turning this group off."
+        }
+        return "Give this repeating task its own nested ladder without changing its schedule."
     }
 
     private var tagComposer: some View {

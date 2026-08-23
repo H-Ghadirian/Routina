@@ -604,7 +604,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let nonDailyRoutineDisplays = unpinnedRoutineDisplays.filter {
             RoutineTaskPlanningSupport.supportsStoredPlanning(
                 scheduleMode: $0.scheduleMode,
-                trackingCadenceEnabled: $0.trackingCadenceEnabled,
+                cadenceEnabled: $0.cadenceEnabled,
                 isDailyRoutine: $0.isDailyRoutine
             ) && !claimedTaskIDs.contains($0.taskID)
         }
@@ -828,7 +828,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let nonDailyActiveDisplays = activeDisplaysAfterCustomClaim.filter {
             RoutineTaskPlanningSupport.supportsStoredPlanning(
                 scheduleMode: $0.scheduleMode,
-                trackingCadenceEnabled: $0.trackingCadenceEnabled,
+                cadenceEnabled: $0.cadenceEnabled,
                 isDailyRoutine: $0.isDailyRoutine
             ) && !claimedTaskIDs.contains($0.taskID)
         }
@@ -1364,7 +1364,6 @@ struct HomeIOSPresentationSnapshotRequest: @unchecked Sendable {
                     return true
                 case .routines:
                     return display.scheduleMode.taskType == .routine
-                        || display.scheduleMode.taskType == .record
                 case .todos:
                     return display.isOneOffTask
                 }

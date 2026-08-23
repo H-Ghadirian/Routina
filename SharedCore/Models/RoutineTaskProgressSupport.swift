@@ -38,13 +38,10 @@ enum RoutineTaskPlanningSupport {
         scheduleMode: RoutineScheduleMode,
         recurrenceRule: RoutineRecurrenceRule,
         checklistItems: [RoutineChecklistItem],
-        trackingCadenceEnabled: Bool = true
+        cadenceEnabled: Bool = true
     ) -> Bool {
-        if scheduleMode.taskType == .routine, !trackingCadenceEnabled {
+        if scheduleMode.taskType == .routine, !cadenceEnabled {
             return true
-        }
-        if scheduleMode.taskType == .record {
-            return trackingCadenceEnabled
         }
         return !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
                 scheduleMode: scheduleMode,
@@ -55,14 +52,11 @@ enum RoutineTaskPlanningSupport {
 
     static func supportsStoredPlanning(
         scheduleMode: RoutineScheduleMode,
-        trackingCadenceEnabled: Bool = true,
+        cadenceEnabled: Bool = true,
         isDailyRoutine: Bool
     ) -> Bool {
-        if scheduleMode.taskType == .routine, !trackingCadenceEnabled {
+        if scheduleMode.taskType == .routine, !cadenceEnabled {
             return true
-        }
-        if scheduleMode.taskType == .record {
-            return trackingCadenceEnabled
         }
         return !isDailyRoutine
     }
@@ -108,7 +102,7 @@ extension RoutineTask {
     var supportsStoredPlanning: Bool {
         RoutineTaskPlanningSupport.supportsStoredPlanning(
             scheduleMode: scheduleMode,
-            trackingCadenceEnabled: trackingCadenceEnabled,
+            cadenceEnabled: cadenceEnabled,
             isDailyRoutine: isDailyRoutineForTaskList
         )
     }
@@ -124,17 +118,15 @@ extension RoutineTask {
     }
 
     var isSoftIntervalRoutine: Bool {
-        trackingCadenceEnabled
-            && (scheduleMode.isSoftIntervalRoutine
-                || (scheduleMode.taskType == .record && scheduleMode.scheduleBehavior == .soft))
+        cadenceEnabled && scheduleMode.isSoftIntervalRoutine
     }
 
     var surfacesSoftIntervalNudges: Bool {
-        isSoftIntervalRoutine && trackingNudgesEnabled
+        isSoftIntervalRoutine && nudgesEnabled
     }
 
     var usesEffectiveRoutineCadence: Bool {
-        scheduleMode.usesRoutineCadence && trackingCadenceEnabled
+        scheduleMode.usesRoutineCadence && cadenceEnabled
     }
 
     var usesRollingScheduleAnchor: Bool {

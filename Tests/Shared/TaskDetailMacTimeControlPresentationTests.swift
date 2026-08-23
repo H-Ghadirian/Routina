@@ -9,57 +9,6 @@ import Testing
 
 struct TaskDetailMacTimeControlPresentationTests {
     @Test
-    func internalRecordTimeActionRevealsItsHeaderBox() {
-        #expect(
-            TaskDetailMacTimeControlPresentation.showsAddAction(
-                for: .record,
-                isTimeControlVisible: false,
-                hasEffortMetadata: false
-            )
-        )
-        #expect(
-            !TaskDetailMacTimeControlPresentation.showsHeaderBox(
-                for: .record,
-                isTimeControlVisible: false,
-                hasEffortMetadata: false
-            )
-        )
-
-        #expect(
-            !TaskDetailMacTimeControlPresentation.showsAddAction(
-                for: .record,
-                isTimeControlVisible: true,
-                hasEffortMetadata: false
-            )
-        )
-        #expect(
-            TaskDetailMacTimeControlPresentation.showsHeaderBox(
-                for: .record,
-                isTimeControlVisible: true,
-                hasEffortMetadata: false
-            )
-        )
-    }
-
-    @Test
-    func internalRecordEstimateDoesNotMakeTimeUnreachable() {
-        #expect(
-            TaskDetailMacTimeControlPresentation.showsAddAction(
-                for: .record,
-                isTimeControlVisible: false,
-                hasEffortMetadata: true
-            )
-        )
-        #expect(
-            !TaskDetailMacTimeControlPresentation.showsHeaderBox(
-                for: .record,
-                isTimeControlVisible: false,
-                hasEffortMetadata: true
-            )
-        )
-    }
-
-    @Test
     func todoEffortMetadataStillPresentsTheCombinedHeaderBox() {
         #expect(
             !TaskDetailMacTimeControlPresentation.showsAddAction(

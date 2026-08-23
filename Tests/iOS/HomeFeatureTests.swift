@@ -13,7 +13,7 @@ struct HomeFeatureTests {
         let now = makeDate("2026-08-07T12:00:00Z")
         let task = RoutineTask(
             name: "Log sleep",
-            flags: ["Tracking"],
+            flags: ["Reference"],
             scheduleMode: .oneOff,
             createdAt: now
         )
@@ -26,8 +26,8 @@ struct HomeFeatureTests {
             HomeFeature().refreshDisplays(&state)
         }
 
-        #expect(state.routineDisplays.map(\.flags) == [["Tracking"]])
-        #expect(state.flagFilterOptions.map(\.name) == ["Tracking"])
+        #expect(state.routineDisplays.map(\.flags) == [["Reference"]])
+        #expect(state.flagFilterOptions.map(\.name) == ["Reference"])
     }
 
     @Test

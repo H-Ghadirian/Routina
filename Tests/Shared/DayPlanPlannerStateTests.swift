@@ -1503,7 +1503,7 @@ struct DayPlanPlannerStateTests {
         let assumedTask = RoutineTask(
             id: assumedTaskID,
             name: "Brush teeth",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -1534,7 +1534,7 @@ struct DayPlanPlannerStateTests {
         let assumedTask = RoutineTask(
             id: assumedTaskID,
             name: "Brush teeth",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -1899,7 +1899,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func automaticPlannerSuggestionsIncludeAssumedDoneTracking() throws {
+    func automaticPlannerSuggestionsIncludeAssumedDoneRoutine() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))
         let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
@@ -1908,7 +1908,7 @@ struct DayPlanPlannerStateTests {
         let task = RoutineTask(
             id: taskID,
             name: "Morning reset",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -1943,7 +1943,7 @@ struct DayPlanPlannerStateTests {
         let task = RoutineTask(
             id: taskID,
             name: "Meal",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -1969,7 +1969,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func assumedDoneSummaryIncludesTrackingAlreadyShownAsPlannedBlock() throws {
+    func assumedDoneSummaryIncludesRoutineAlreadyShownAsPlannedBlock() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-06-21T12:00:00Z"))
         let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
@@ -1979,7 +1979,7 @@ struct DayPlanPlannerStateTests {
         let task = RoutineTask(
             id: taskID,
             name: "Brush Teeth",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(in: RoutineTimeRange(
                 start: RoutineTimeOfDay(hour: 21, minute: 0),
                 end: RoutineTimeOfDay(hour: 3, minute: 0)
@@ -2071,7 +2071,7 @@ struct DayPlanPlannerStateTests {
         let task = RoutineTask(
             id: taskID,
             name: "Meal",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -2121,7 +2121,7 @@ struct DayPlanPlannerStateTests {
         let dayKey = DayPlanStorage.dayKey(for: activityDate, calendar: calendar)
         let task = RoutineTask(
             name: "Meal",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -2156,7 +2156,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func automaticPlannerSuggestionsIncludeAssumedDoneChecklistIntervalTracking() throws {
+    func automaticPlannerSuggestionsIncludeAssumedDoneChecklistRoutine() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-06-22T12:00:00Z"))
         let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
@@ -2172,7 +2172,7 @@ struct DayPlanPlannerStateTests {
                     createdAt: createdAt
                 ),
             ],
-            scheduleMode: .recordChecklist,
+            scheduleMode: .softIntervalChecklist,
             recurrenceRule: .interval(days: 1),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -2198,7 +2198,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func automaticPlannerSuggestionsIncludeYesterdayAssumedDoneChecklistIntervalTracking() throws {
+    func automaticPlannerSuggestionsIncludeYesterdayAssumedDoneChecklistRoutine() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-06-21T12:00:00Z"))
         let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
@@ -2214,7 +2214,7 @@ struct DayPlanPlannerStateTests {
                     createdAt: createdAt
                 ),
             ],
-            scheduleMode: .recordChecklist,
+            scheduleMode: .softIntervalChecklist,
             recurrenceRule: .interval(days: 1),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -2240,7 +2240,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func assumedDoneChecklistTrackingSurvivesTodayPlannerLayoutConflicts() throws {
+    func assumedDoneChecklistRoutineSurvivesTodayPlannerLayoutConflicts() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-06-22T12:00:00Z"))
         let referenceDate = try #require(date("2026-06-22T19:51:00Z"))
@@ -2256,7 +2256,7 @@ struct DayPlanPlannerStateTests {
                     createdAt: createdAt
                 ),
             ],
-            scheduleMode: .recordChecklist,
+            scheduleMode: .softIntervalChecklist,
             recurrenceRule: .interval(days: 1),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -2300,7 +2300,7 @@ struct DayPlanPlannerStateTests {
         let createdAt = try #require(date("2026-05-01T08:00:00Z"))
         let task = RoutineTask(
             name: "Morning reset",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -2337,14 +2337,14 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func automaticPlannerSuggestionsDoNotAssumeFutureTrackingDays() throws {
+    func automaticPlannerSuggestionsDoNotAssumeFutureRoutineDays() throws {
         let calendar = gregorianCalendar
         let futureDate = try #require(date("2026-06-23T12:00:00Z"))
         let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
         let createdAt = try #require(date("2026-05-01T08:00:00Z"))
         let task = RoutineTask(
             name: "Morning reset",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
@@ -6186,7 +6186,7 @@ struct DayPlanPlannerStateTests {
         let createdAt = try #require(date("2026-05-01T08:00:00Z"))
         let task = RoutineTask(
             name: "Morning reset",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
             createdAt: createdAt,
             autoAssumeDailyDone: true,

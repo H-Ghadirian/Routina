@@ -1550,8 +1550,8 @@ struct TaskDetailEditSaveTests {
                 editFrequencyValue: 1,
                 editAutoAssumeDailyDone: true,
                 editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 15),
-                editTrackingCadenceEnabled: true,
-                editTrackingNudgesEnabled: false
+                editCadenceEnabled: true,
+                editNudgesEnabled: false
             )
         ) {
             TaskDetailFeature()
@@ -1583,12 +1583,12 @@ struct TaskDetailEditSaveTests {
         #expect(persistedTask.scheduleMode == .softInterval)
         #expect(persistedTask.autoAssumeDailyDone)
         #expect(persistedTask.autoAssumeDoneTimeOfDay == RoutineTimeOfDay(hour: 8, minute: 15))
-        #expect(!persistedTask.trackingNudgesEnabled)
+        #expect(!persistedTask.nudgesEnabled)
         #expect(!persistedTask.surfacesSoftIntervalNudges)
     }
 
     @Test
-    func editSaveTapped_preservesAutoAssumeForDailyTrackingChecklistCompletion() async throws {
+    func editSaveTapped_preservesAutoAssumeForDailyChecklistRoutine() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
@@ -1598,7 +1598,7 @@ struct TaskDetailEditSaveTests {
             interval: 1,
             lastDone: nil,
             emoji: "✨",
-            scheduleMode: .record
+            scheduleMode: .softInterval
         )
 
         let store = TestStore(
@@ -1607,13 +1607,13 @@ struct TaskDetailEditSaveTests {
                 isEditSheetPresented: true,
                 editRoutineName: "Meals",
                 editRoutineEmoji: "✨",
-                editScheduleMode: .record,
+                editScheduleMode: .softInterval,
                 editRoutineChecklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 1)],
                 editFrequency: .day,
                 editFrequencyValue: 1,
                 editAutoAssumeDailyDone: true,
                 editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 15),
-                editTrackingCadenceEnabled: true
+                editCadenceEnabled: true
             )
         ) {
             TaskDetailFeature()
@@ -1642,7 +1642,7 @@ struct TaskDetailEditSaveTests {
                 )
             ).first
         )
-        #expect(persistedTask.scheduleMode == .recordChecklist)
+        #expect(persistedTask.scheduleMode == .softIntervalChecklist)
         #expect(persistedTask.checklistItems.map(\.title) == ["Bread"])
         #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])
         #expect(persistedTask.autoAssumeDailyDone)
@@ -1763,7 +1763,7 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
-    func editSaveTapped_recordKeepsRoutineLikeFieldsWithGentleRepeat() async throws {
+    func editSaveTapped_gentleRoutineKeepsRoutineFields() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
@@ -1777,7 +1777,7 @@ struct TaskDetailEditSaveTests {
             interval: 1,
             lastDone: nil,
             emoji: "📊",
-            scheduleMode: .record
+            scheduleMode: .softInterval
         )
 
         let store = TestStore(
@@ -1791,7 +1791,7 @@ struct TaskDetailEditSaveTests {
                 editRoutineDurationMode: .multiDay,
                 editPlannedDate: staleDate,
                 editReminderAt: staleDate,
-                editScheduleMode: .record,
+                editScheduleMode: .softInterval,
                 editRoutineSteps: [step],
                 editRoutineChecklistItems: [checklistItem],
                 editFrequency: .week,
@@ -1801,8 +1801,8 @@ struct TaskDetailEditSaveTests {
                 editRecurrenceTimeOfDay: exactTime,
                 editRecurrenceWeekdays: [2, 6],
                 editActualDurationMinutes: 75,
-                editTrackingCadenceEnabled: true,
-                editTrackingNudgesEnabled: false
+                editCadenceEnabled: true,
+                editNudgesEnabled: false
             )
         ) {
             TaskDetailFeature()
@@ -1831,19 +1831,19 @@ struct TaskDetailEditSaveTests {
                 )
             ).first
         )
-        #expect(persistedTask.scheduleMode == .record)
+        #expect(persistedTask.scheduleMode == .softInterval)
         #expect(persistedTask.deadline == nil)
         #expect(persistedTask.plannedDate == makeDate("2026-03-14T00:00:00Z"))
         #expect(persistedTask.reminderAt == nil)
         #expect(persistedTask.routineDurationMode == .multiDay)
         #expect(persistedTask.recurrenceRule == .weekly(on: [2, 6], at: exactTime))
         #expect(persistedTask.interval == 7)
-        #expect(persistedTask.trackingCadenceEnabled)
+        #expect(persistedTask.cadenceEnabled)
         #expect(persistedTask.steps.map(\.title) == ["Collect sources"])
         #expect(persistedTask.checklistItems.map(\.title) == ["Summarize findings"])
         #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])
-        #expect(persistedTask.actualDurationMinutes == 75)
-        #expect(!persistedTask.trackingNudgesEnabled)
+        #expect(persistedTask.actualDurationMinutes == nil)
+        #expect(!persistedTask.nudgesEnabled)
     }
 
     @Test

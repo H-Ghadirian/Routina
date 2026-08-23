@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-08-08
 
-Refines: [0188 Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421 Support Cadence-Free Repeating Routines](0421-support-cadence-free-repeating-routines.md), and [0424 Make Task Detail Priority Optional](0424-make-task-detail-priority-optional.md)
+Refines: [0188 Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421 Support Cadence-Free Repeating Routines](0421-support-cadence-free-repeating-routines.md), and [0424 Make Task Detail Priority Optional](superseded/0424-make-task-detail-priority-optional.md)
 
 ## Context
 

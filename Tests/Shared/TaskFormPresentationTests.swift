@@ -57,28 +57,27 @@ struct TaskFormPresentationTests {
     }
 
     @Test
-    func userFacingTaskTypeSelectorsOmitInternalRecordCompatibility() {
-        #expect(RoutineTaskType.record.userFacingTitle == "Routine")
-        #expect(RoutineTaskType.allCases.map(\.userFacingTitle) == ["Routine", "Todo", "Routine"])
-        #expect(!RoutineTaskType.allCases.map(\.userFacingTitle).contains("Tracking"))
-        #expect(RoutineTaskType.record.pluralTitle == "Routines")
+    func userFacingTaskTypeSelectorsContainOnlyRoutineAndTodo() {
+        #expect(RoutineTaskType.routine.userFacingTitle == "Routine")
+        #expect(RoutineTaskType.allCases.map(\.userFacingTitle) == ["Routine", "Todo"])
+        #expect(RoutineTaskType.routine.pluralTitle == "Routines")
         #expect(HomeTaskListMode.allCases == [.all, .routines, .todos])
         #expect(!TimelineFilterType.allCases.map(\.rawValue).contains("Records"))
         #expect(StatsTaskTypeFilter.allCases == [.all, .routines, .todos])
     }
 
     @Test @MainActor
-    func creationKindCreatesRepeatingRoutinesWithoutASeparateTrackingPurpose() {
+    func creationKindCreatesRepeatingRoutinesWithoutAnExtraPurposeSelector() {
         var taskType = RoutineTaskType.todo
-        var trackingCadenceEnabled = false
+        var cadenceEnabled = false
         let model = taskFormModel(
             taskTypeBinding: Binding(
                 get: { taskType },
                 set: { taskType = $0 }
             ),
-            trackingCadenceEnabledBinding: Binding(
-                get: { trackingCadenceEnabled },
-                set: { trackingCadenceEnabled = $0 }
+            cadenceEnabledBinding: Binding(
+                get: { cadenceEnabled },
+                set: { cadenceEnabled = $0 }
             )
         )
 
@@ -86,7 +85,7 @@ struct TaskFormPresentationTests {
 
         model.creationKind.wrappedValue = .repeating
         #expect(taskType == .routine)
-        #expect(!trackingCadenceEnabled)
+        #expect(!cadenceEnabled)
         #expect(!model.supportsAdvancedRecurrence)
         #expect(!model.supportsRoutineScheduleBehavior)
         #expect(!model.supportsGentleNudges)
@@ -95,17 +94,17 @@ struct TaskFormPresentationTests {
     }
 
     @Test @MainActor
-    func progressiveEditMapsLegacyTrackingToRepeatingWithoutExposingPurposeState() {
-        var taskType = RoutineTaskType.record
-        var trackingCadenceEnabled = false
+    func progressiveEditMapsRoutineToRepeatingWithoutExtraPurposeState() {
+        var taskType = RoutineTaskType.routine
+        var cadenceEnabled = false
         let model = taskFormModel(
             taskTypeBinding: Binding(
                 get: { taskType },
                 set: { taskType = $0 }
             ),
-            trackingCadenceEnabledBinding: Binding(
-                get: { trackingCadenceEnabled },
-                set: { trackingCadenceEnabled = $0 }
+            cadenceEnabledBinding: Binding(
+                get: { cadenceEnabled },
+                set: { cadenceEnabled = $0 }
             ),
             visibilityMode: .progressiveEdit
         )
@@ -125,7 +124,6 @@ struct TaskFormPresentationTests {
         let gentle = presentation(scheduleMode: .softInterval)
         let runout = presentation(scheduleMode: .derivedFromChecklist)
         let oneOff = presentation(taskType: .todo, scheduleMode: .oneOff)
-        let record = presentation(taskType: .record, scheduleMode: .record)
 
         #expect(fixed.isStepBasedMode == false)
         #expect(fixed.showsRepeatControls)
@@ -142,12 +140,9 @@ struct TaskFormPresentationTests {
         #expect(oneOff.showsRepeatControls == false)
         #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
         #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the todo.")
-        #expect(record.isStepBasedMode)
-        #expect(record.showsRepeatControls)
-        #expect(RoutineScheduleMode.record.scheduleBehavior == .soft)
-        #expect(record.notesHelpText == "Capture what happened, context, and time-spent details for analysis.")
-        #expect(RoutineScheduleMode.record.replacingRoutineFinishMode(.checklist) == .recordChecklist)
-        #expect(RoutineScheduleMode.recordChecklist.replacingRoutineFinishMode(.standard) == .record)
+        #expect(RoutineScheduleMode.softInterval.scheduleBehavior == .soft)
+        #expect(RoutineScheduleMode.softInterval.replacingRoutineFinishMode(.checklist) == .softIntervalChecklist)
+        #expect(RoutineScheduleMode.softIntervalChecklist.replacingRoutineFinishMode(.standard) == .softInterval)
     }
 
     @Test
@@ -281,7 +276,7 @@ struct TaskFormPresentationTests {
     func availabilityModesMatchPersistedTaskTypeSupport() {
         #expect(TaskFormTimingMode.cases(for: .todo) == [.none, .allDay, .exact, .timeBlock, .availableWindow])
         #expect(TaskFormTimingMode.cases(for: .routine) == [.none, .allDay, .exact, .timeBlock, .availableWindow])
-        #expect(TaskFormTimingMode.cases(for: .record) == [.none, .allDay, .exact, .timeBlock, .availableWindow])
+        #expect(TaskFormTimingMode.cases(for: .routine) == [.none, .allDay, .exact, .timeBlock, .availableWindow])
         #expect(TaskFormTimingMode.timeBlock.usesTimeRange)
         #expect(TaskFormTimingMode.availableWindow.usesTimeRange)
         #expect(TaskFormTimingMode.timeBlock.timeRangeRole == .scheduledBlock)
@@ -333,19 +328,19 @@ struct TaskFormPresentationTests {
         let checklist = taskFormModel(scheduleMode: .fixedIntervalChecklist)
         let runout = taskFormModel(scheduleMode: .derivedFromChecklist)
         let recordWithoutCadence = taskFormModel(
-            taskType: .record,
-            scheduleMode: .record,
-            trackingCadenceEnabled: false
+            taskType: .routine,
+            scheduleMode: .softInterval,
+            cadenceEnabled: false
         )
         let checklistRecord = taskFormModel(
-            taskType: .record,
-            scheduleMode: .recordChecklist,
-            trackingCadenceEnabled: true
+            taskType: .routine,
+            scheduleMode: .softIntervalChecklist,
+            cadenceEnabled: true
         )
         let runoutRecord = taskFormModel(
-            taskType: .record,
-            scheduleMode: .recordDerivedFromChecklist,
-            trackingCadenceEnabled: true
+            taskType: .routine,
+            scheduleMode: .softDerivedFromChecklist,
+            cadenceEnabled: true
         )
         let todo = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
 
@@ -371,7 +366,7 @@ struct TaskFormPresentationTests {
     func gentleNudgesAndAutoAssumeFollowCadenceAndScheduleEligibility() {
         var scheduleMode = RoutineScheduleMode.oneOff
         let model = taskFormModel(
-            taskType: .record,
+            taskType: .routine,
             scheduleModeBinding: Binding(
                 get: { scheduleMode },
                 set: { scheduleMode = $0 }
@@ -380,33 +375,33 @@ struct TaskFormPresentationTests {
 
         #expect(!model.canAutoAssumeDailyDone)
 
-        scheduleMode = .record
+        scheduleMode = .softInterval
         #expect(model.canAutoAssumeDailyDone)
         #expect(model.supportsGentleNudges)
 
-        scheduleMode = .recordChecklist
+        scheduleMode = .softIntervalChecklist
         #expect(!model.canAutoAssumeDailyDone)
 
         let checklistModel = taskFormModel(
-            taskType: .record,
-            scheduleMode: .recordChecklist,
+            taskType: .routine,
+            scheduleMode: .softIntervalChecklist,
             checklistItems: [RoutineChecklistItem(title: "Breakfast", intervalDays: 1)]
         )
         let runoutModel = taskFormModel(
-            taskType: .record,
-            scheduleMode: .recordDerivedFromChecklist,
+            taskType: .routine,
+            scheduleMode: .softDerivedFromChecklist,
             checklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)]
         )
         let noCadenceModel = taskFormModel(
-            taskType: .record,
-            scheduleMode: .record,
-            trackingCadenceEnabled: false
+            taskType: .routine,
+            scheduleMode: .softInterval,
+            cadenceEnabled: false
         )
         let gentleRoutineModel = taskFormModel(scheduleMode: .softInterval)
         let dueRoutineModel = taskFormModel(scheduleMode: .fixedInterval)
         let noCadenceGentleRoutineModel = taskFormModel(
             scheduleMode: .softInterval,
-            trackingCadenceEnabled: false
+            cadenceEnabled: false
         )
         let gentleChecklistModel = taskFormModel(
             scheduleMode: .softIntervalChecklist,
@@ -430,7 +425,7 @@ struct TaskFormPresentationTests {
         var taskType = RoutineTaskType.routine
         var scheduleMode = RoutineScheduleMode.fixedIntervalChecklist
         var recurrenceKind = RoutineRecurrenceRule.Kind.weekly
-        var trackingCadenceEnabled = true
+        var cadenceEnabled = true
         let model = taskFormModel(
             taskTypeBinding: Binding(
                 get: { taskType },
@@ -444,21 +439,21 @@ struct TaskFormPresentationTests {
                 get: { recurrenceKind },
                 set: { recurrenceKind = $0 }
             ),
-            trackingCadenceEnabledBinding: Binding(
-                get: { trackingCadenceEnabled },
-                set: { trackingCadenceEnabled = $0 }
+            cadenceEnabledBinding: Binding(
+                get: { cadenceEnabled },
+                set: { cadenceEnabled = $0 }
             )
         )
 
         #expect(model.routineRepeatType.wrappedValue == .calendar)
 
         model.routineRepeatType.wrappedValue = .none
-        #expect(!trackingCadenceEnabled)
+        #expect(!cadenceEnabled)
         #expect(scheduleMode == .fixedIntervalChecklist)
         #expect(model.routineRepeatType.wrappedValue == .none)
 
         model.routineRepeatType.wrappedValue = .calendar
-        #expect(trackingCadenceEnabled)
+        #expect(cadenceEnabled)
 
         model.routineRepeatType.wrappedValue = .itemRunout
         #expect(scheduleMode == .derivedFromChecklist)
@@ -482,19 +477,19 @@ struct TaskFormPresentationTests {
         model.routineRepeatType.wrappedValue = .itemRunout
         #expect(scheduleMode == .softIntervalChecklist)
 
-        taskType = .record
-        scheduleMode = .recordChecklist
+        taskType = .routine
+        scheduleMode = .softIntervalChecklist
         model.routineRepeatType.wrappedValue = .itemRunout
-        #expect(scheduleMode == .recordDerivedFromChecklist)
+        #expect(scheduleMode == .softDerivedFromChecklist)
 
         model.routineRepeatType.wrappedValue = .none
-        #expect(!trackingCadenceEnabled)
-        #expect(scheduleMode == .recordChecklist)
+        #expect(!cadenceEnabled)
+        #expect(scheduleMode == .softIntervalChecklist)
         #expect(model.routineRepeatType.wrappedValue == .none)
 
         model.routineRepeatType.wrappedValue = .interval
-        #expect(trackingCadenceEnabled)
-        #expect(scheduleMode == .recordChecklist)
+        #expect(cadenceEnabled)
+        #expect(scheduleMode == .softIntervalChecklist)
     }
 
     @Test @MainActor
@@ -610,14 +605,14 @@ struct TaskFormPresentationTests {
     func compactSectionOrderKeepsVoiceNoteDiscoverableNearNotes() throws {
         let order = TaskFormCompactSection.defaultOrder
         let taskTypeIndex = try #require(order.firstIndex(of: .taskType))
+        let scheduleTypeIndex = try #require(order.firstIndex(of: .scheduleType))
+        let repeatIndex = try #require(order.firstIndex(of: .repeatPattern))
+        let taskLadderIndex = try #require(order.firstIndex(of: .taskLadderValues))
+        let organizationIndex = try #require(order.firstIndex(of: .organization))
         let descriptionIndex = try #require(order.firstIndex(of: .taskDescription))
-        let emojiIndex = try #require(order.firstIndex(of: .emoji))
         let notesIndex = try #require(order.firstIndex(of: .notes))
         let voiceNoteIndex = try #require(order.firstIndex(of: .voiceNote))
         let deadlineIndex = try #require(order.firstIndex(of: .deadline))
-        let pressureIndex = try #require(order.firstIndex(of: .pressure))
-        let temporalWeightIndex = try #require(order.firstIndex(of: .temporalWeight))
-        let thinkingNeededIndex = try #require(order.firstIndex(of: .thinkingNeeded))
         let imageIndex = try #require(order.firstIndex(of: .image))
         let goalsIndex = try #require(order.firstIndex(of: .goals))
         let eventsIndex = try #require(order.firstIndex(of: .events))
@@ -625,12 +620,12 @@ struct TaskFormPresentationTests {
         let stepsIndex = try #require(order.firstIndex(of: .steps))
         let checklistIndex = try #require(order.firstIndex(of: .checklist))
 
-        #expect(descriptionIndex == order.index(after: taskTypeIndex))
-        #expect(emojiIndex == order.index(after: descriptionIndex))
+        #expect(deadlineIndex == order.index(after: taskTypeIndex))
+        #expect(repeatIndex == order.index(after: scheduleTypeIndex))
+        #expect(taskLadderIndex == order.index(after: repeatIndex))
+        #expect(organizationIndex == order.index(after: taskLadderIndex))
+        #expect(descriptionIndex == order.index(after: organizationIndex))
         #expect(voiceNoteIndex == order.index(after: notesIndex))
-        #expect(voiceNoteIndex < deadlineIndex)
-        #expect(temporalWeightIndex == order.index(after: pressureIndex))
-        #expect(thinkingNeededIndex == order.index(after: temporalWeightIndex))
         #expect(voiceNoteIndex < imageIndex)
         #expect(eventsIndex == order.index(after: goalsIndex))
         #expect(relationshipsIndex == order.index(after: eventsIndex))
@@ -638,12 +633,12 @@ struct TaskFormPresentationTests {
     }
 
     @Test
-    func temporalWeightSectionOnlyAppearsForEligibleRepeatingDueDraftsOrExistingRules() {
+    func taskLadderValuesStayVisibleAndExplainTimeBasedEligibility() {
         let repeatingDue = taskFormModel(scheduleMode: .fixedInterval)
         let gentleRoutine = taskFormModel(scheduleMode: .softInterval)
         let cadenceFreeRoutine = taskFormModel(
             scheduleMode: .fixedInterval,
-            trackingCadenceEnabled: false
+            cadenceEnabled: false
         )
         let oneOffTask = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
         let alreadyConfigured = taskFormModel(
@@ -651,11 +646,14 @@ struct TaskFormPresentationTests {
             temporalWeightRule: RoutineTaskTemporalWeightRule(pressureAtDue: .high)
         )
 
-        #expect(repeatingDue.visibleCompactSections(isShowingMoreDetails: true).contains(.temporalWeight))
-        #expect(!gentleRoutine.visibleCompactSections(isShowingMoreDetails: true).contains(.temporalWeight))
-        #expect(!cadenceFreeRoutine.visibleCompactSections(isShowingMoreDetails: true).contains(.temporalWeight))
-        #expect(!oneOffTask.visibleCompactSections(isShowingMoreDetails: true).contains(.temporalWeight))
-        #expect(alreadyConfigured.visibleCompactSections(isShowingMoreDetails: false).contains(.temporalWeight))
+        for model in [repeatingDue, gentleRoutine, cadenceFreeRoutine, oneOffTask, alreadyConfigured] {
+            #expect(model.visibleCompactSections(isShowingMoreDetails: false).contains(.taskLadderValues))
+        }
+        #expect(repeatingDue.supportsTemporalWeightValues)
+        #expect(repeatingDue.temporalWeightAvailabilityMessage == nil)
+        #expect(gentleRoutine.temporalWeightAvailabilityMessage == "Choose Due in Behavior & Schedule.")
+        #expect(cadenceFreeRoutine.temporalWeightAvailabilityMessage == "Choose After done or On schedule in Behavior & Schedule.")
+        #expect(oneOffTask.temporalWeightAvailabilityMessage == "Available for repeating tasks.")
     }
 
     @Test
@@ -666,23 +664,23 @@ struct TaskFormPresentationTests {
     }
 
     @Test
-    func compactSectionsDoNotOfferEmptyStandardRoutineChecklistDetails() {
+    func compactSectionsKeepChecklistAccessibleAndAutoRevealConfiguredCompletion() {
         let routine = taskFormModel(scheduleMode: .fixedInterval)
         let checklistRoutine = taskFormModel(scheduleMode: .fixedIntervalChecklist)
         let runoutRoutine = taskFormModel(scheduleMode: .derivedFromChecklist)
-        let checklistRecord = taskFormModel(taskType: .record, scheduleMode: .recordChecklist)
+        let gentleChecklistRoutine = taskFormModel(taskType: .routine, scheduleMode: .softIntervalChecklist)
         let existingChecklistRoutine = taskFormModel(
             scheduleMode: .fixedInterval,
             checklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 3)]
         )
         let todo = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
 
-        #expect(!routine.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))
+        #expect(routine.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))
         #expect(checklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(runoutRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(runoutRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
-        #expect(checklistRecord.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
-        #expect(checklistRecord.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
+        #expect(gentleChecklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
+        #expect(gentleChecklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
         #expect(existingChecklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(!todo.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(todo.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))
@@ -745,7 +743,7 @@ struct TaskFormPresentationTests {
         recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays,
         frequencyUnit: TaskFormFrequencyUnit = .day,
         frequencyValue: Int = 1,
-        trackingCadenceEnabled: Bool = true,
+        cadenceEnabled: Bool = true,
         taskTypeBinding: Binding<RoutineTaskType>? = nil,
         scheduleModeBinding: Binding<RoutineScheduleMode>? = nil,
         recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind>? = nil,
@@ -753,7 +751,7 @@ struct TaskFormPresentationTests {
         recurrenceDayOfMonthBinding: Binding<Int>? = nil,
         recurrenceWeekdaysBinding: Binding<[Int]>? = nil,
         recurrenceDaysOfMonthBinding: Binding<[Int]>? = nil,
-        trackingCadenceEnabledBinding: Binding<Bool>? = nil,
+        cadenceEnabledBinding: Binding<Bool>? = nil,
         temporalWeightRule: RoutineTaskTemporalWeightRule? = nil,
         visibilityMode: TaskFormVisibilityMode = .progressiveCreate
     ) -> TaskFormModel {
@@ -824,7 +822,7 @@ struct TaskFormPresentationTests {
             recurrenceDaysOfMonth: recurrenceDaysOfMonthBinding ?? .constant([]),
             frequencyUnit: .constant(frequencyUnit),
             frequencyValue: .constant(frequencyValue),
-            trackingCadenceEnabled: trackingCadenceEnabledBinding ?? .constant(trackingCadenceEnabled),
+            cadenceEnabled: cadenceEnabledBinding ?? .constant(cadenceEnabled),
             color: .constant(.none),
             visibilityMode: visibilityMode
         )

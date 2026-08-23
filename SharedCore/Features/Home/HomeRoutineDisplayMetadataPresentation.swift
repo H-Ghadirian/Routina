@@ -52,10 +52,6 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             items.append(cadenceDescription(for: task))
         }
 
-        if rowVisibility.shows(.priority), let priorityText = task.priority.metadataLabel {
-            items.append(priorityText)
-        }
-
         if rowVisibility.shows(.progress) {
             if showsRoutineCompletionCount {
                 items.append(doneCountDescription(for: task.doneCount))
@@ -83,10 +79,6 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
 
         if rowVisibility.shows(.schedule), let deadlineText = conciseDeadlineText(for: task) {
             items.append(deadlineText)
-        }
-
-        if rowVisibility.shows(.priority), let priorityText = task.priority.metadataLabel {
-            items.append(priorityText)
         }
 
         if rowVisibility.shows(.pressure), let pressureText = task.pressure.metadataLabel {
@@ -137,7 +129,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
         if task.isOneOffTask {
             return "One-off todo"
         }
-        if !task.trackingCadenceEnabled {
+        if !task.cadenceEnabled {
             return "No cadence"
         }
         if task.scheduleMode.isChecklistDrivenMode {
@@ -349,7 +341,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
 
     func isYellowUrgency(_ task: Display) -> Bool {
         if hasMissedExactTimedOccurrence(for: task)
-            || !task.trackingCadenceEnabled
+            || !task.cadenceEnabled
             || task.isOneOffTask
             || task.isInProgress
             || task.scheduleMode.isChecklistDrivenMode

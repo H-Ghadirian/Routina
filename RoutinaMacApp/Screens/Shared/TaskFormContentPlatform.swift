@@ -211,9 +211,6 @@ struct TaskFormContent: View {
         if section == .notes || section == .voiceNote {
             return isNotesEnabled
         }
-        if section == .temporalWeight {
-            return model.supportsTemporalWeightValues || model.temporalWeightRule.wrappedValue != nil
-        }
         return section != .goals || isGoalsTabEnabled
     }
 
@@ -298,9 +295,8 @@ struct TaskFormContent: View {
         case .emoji:              emojiCard
         case .color:              colorCard
         case .behavior:           behaviorCard
-        case .pressure:           pressureCard
-        case .temporalWeight:     temporalWeightCard
-        case .thinkingNeeded:     thinkingNeededCard
+        case .taskLadderValues:   taskLadderValuesCard
+        case .organization:       organizationCard
         case .estimation:         estimationCard
         case .places:
             if isPlacesEnabled {
@@ -308,8 +304,6 @@ struct TaskFormContent: View {
             }
         case .destination:
             destinationCard
-        case .importanceUrgency:  importanceCard
-        case .tags:               tagsCard
         case .goals:              goalsCard
         case .events:             eventsCard
         case .linkedTasks:        linkedTasksCard
@@ -400,83 +394,111 @@ struct TaskFormContent: View {
         .id(FormSection.behavior)
     }
 
-    // MARK: Places
+    // MARK: Task Ladder values
 
-    private var pressureCard: some View {
+    private var taskLadderValuesCard: some View {
         macSectionCard(
-            title: "Pressure"
+            title: "Task Ladder values",
+            subtitle: "Set the four independent signals used to place this task."
         ) {
-            macControlBlock(
-                title: "Mental load",
-                caption: "Use this for tasks that keep occupying your mind, even when they are not the most urgent."
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 420), spacing: 18)],
+                alignment: .leading,
+                spacing: 16
             ) {
-                HStack(spacing: 0) {
+                taskLadderControl(title: "Importance", help: "How much this task matters to your goals.") {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Importance",
+                        options: RoutineTaskImportance.allCases,
+                        selection: model.importance
+                    ) { Text($0.title) }
+                }
+
+                taskLadderControl(title: "Urgency", help: "How soon this task needs attention.") {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Urgency",
+                        options: RoutineTaskUrgency.allCases,
+                        selection: model.urgency
+                    ) { Text($0.title) }
+                }
+
+                taskLadderControl(title: "Pressure", help: "How much this task keeps occupying your mind.") {
                     RoutinaGlassSegmentedControl(
                         accessibilityLabel: "Pressure",
                         options: RoutineTaskPressure.allCases,
                         selection: model.pressure
-                    ) { pressure in
-                        Text(pressure.title)
-                    }
-                    Spacer(minLength: 0)
+                    ) { Text($0.title) }
                 }
-            }
-        }
-        .id(FormSection.pressure)
-    }
 
-    private var temporalWeightCard: some View {
-        macSectionCard(
-            title: "Time-based values"
-        ) {
-            macControlBlock(
-                title: "Base now, heat up later",
-                caption: "For repeating Due tasks, keep the saved Base values low while the current occurrence can rise near its due date."
-            ) {
-                TaskTemporalWeightRuleEditor(
-                    rule: model.temporalWeightRule,
-                    importance: model.importance.wrappedValue,
-                    urgency: model.urgency.wrappedValue,
-                    pressure: model.pressure.wrappedValue
-                )
-            }
-
-            if let summary = RoutineTaskTemporalWeightPresentation.targetSummary(
-                rule: model.temporalWeightRule.wrappedValue,
-                importance: model.importance.wrappedValue,
-                urgency: model.urgency.wrappedValue,
-                pressure: model.pressure.wrappedValue
-            ) {
-                Text(summary)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .id(FormSection.temporalWeight)
-    }
-
-    private var thinkingNeededCard: some View {
-        macSectionCard(
-            title: "Thinking needed"
-        ) {
-            macControlBlock(
-                title: "Complexity level",
-                caption: "How much understanding, concentration, or decision-making the task requires."
-            ) {
-                HStack(spacing: 0) {
+                taskLadderControl(title: "Thinking", help: "How much concentration or decision-making it requires.") {
                     RoutinaGlassSegmentedControl(
                         accessibilityLabel: "Thinking needed",
                         options: RoutineTaskThinkingNeeded.allCases,
                         selection: model.thinkingNeeded
-                    ) { level in
-                        Text(level.title)
-                    }
-                    Spacer(minLength: 0)
+                    ) { Text($0.title) }
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Changes over time", systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.subheadline.weight(.semibold))
+
+                if model.supportsTemporalWeightValues {
+                    TaskTemporalWeightRuleEditor(
+                        rule: model.temporalWeightRule,
+                        importance: model.importance.wrappedValue,
+                        urgency: model.urgency.wrappedValue,
+                        pressure: model.pressure.wrappedValue
+                    )
+                } else if let message = model.temporalWeightAvailabilityMessage {
+                    Label(message, systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
-        .id(FormSection.thinkingNeeded)
+        .id(FormSection.taskLadderValues)
+    }
+
+    private func taskLadderControl<Content: View>(
+        title: String,
+        help: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            content()
+        }
+        .help(help)
+    }
+
+    // MARK: Organization
+
+    private var organizationCard: some View {
+        macSectionCard(title: "Organization") {
+            TaskFormMacPathControl(model: model)
+
+            Divider()
+
+            TaskFormMacTagsContent(model: model) {
+                isTagManagerPresented = true
+            }
+
+            if model.taskType.wrappedValue == .routine {
+                Divider()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Task Ladder group")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    TaskFormMacTaskLadderGroupControl(model: model)
+                }
+            }
+        }
+        .id(FormSection.organization)
     }
 
     private var estimationCard: some View {
@@ -496,60 +518,6 @@ struct TaskFormContent: View {
     private var destinationCard: some View {
         TaskFormMacDestinationCard(model: model)
             .id(FormSection.destination)
-    }
-
-    // MARK: Importance & Urgency
-
-    private var importanceCard: some View {
-        macSectionCard(
-            title: "Importance & Urgency"
-        ) {
-            macControlBlock(
-                title: "Importance",
-                caption: "How much this task matters to your goals and commitments."
-            ) {
-                HStack(spacing: 0) {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Importance",
-                        options: RoutineTaskImportance.allCases,
-                        selection: model.importance
-                    ) { importance in
-                        Text(importance.title)
-                    }
-                    Spacer(minLength: 0)
-                }
-            }
-
-            macControlBlock(
-                title: "Urgency",
-                caption: "How soon this task needs attention."
-            ) {
-                HStack(spacing: 0) {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Urgency",
-                        options: RoutineTaskUrgency.allCases,
-                        selection: model.urgency
-                    ) { urgency in
-                        Text(urgency.title)
-                    }
-                    Spacer(minLength: 0)
-                }
-            }
-        }
-        .id(FormSection.importanceUrgency)
-    }
-
-    // MARK: Tags
-
-    private var tagsCard: some View {
-        macSectionCard(
-            title: "Tags"
-        ) {
-            TaskFormMacTagsContent(model: model) {
-                isTagManagerPresented = true
-            }
-        }
-        .id(FormSection.tags)
     }
 
     // MARK: Goals
@@ -787,7 +755,7 @@ struct TaskFormContent: View {
             return model.deadlineEnabled.wrappedValue
                 ? "A one-off task with a deadline."
                 : "A one-off task you can finish once."
-        case .routine, .record:
+        case .routine:
             break
         }
         switch model.scheduleMode.wrappedValue {
@@ -798,9 +766,6 @@ struct TaskFormContent: View {
         case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
         case .softDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
-        case .record: return "A gentle routine for recording what happened and how time was spent."
-        case .recordChecklist: return "A gentle routine completed by finishing every checklist item."
-        case .recordDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         }
     }
 
@@ -810,7 +775,7 @@ struct TaskFormContent: View {
             return model.deadlineEnabled.wrappedValue
                 ? "Due \(deadlineSummaryText)"
                 : "One-off"
-        case .routine, .record:
+        case .routine:
             break
         }
         switch model.recurrenceKind.wrappedValue {

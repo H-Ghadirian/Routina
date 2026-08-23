@@ -14,7 +14,7 @@ Custom Mac sidebar sections are user-created organization buckets. Once a sectio
 
 Mac Home custom section headers expose a `Delete Section` context-menu action. Choosing it presents a destructive confirmation alert before any mutation.
 
-Confirming deletion removes the section from the durable section catalog, clears that section assignment from any tasks using it, and removes the deleted section's manual-order key from affected tasks. Those tasks then fall back into the built-in `Today`, `Tracking`, `Tomorrow`, or `Future` presentation according to their own task data.
+Confirming deletion removes the section from the durable section catalog, clears that section assignment from any tasks using it, and removes the deleted section's manual-order key from affected tasks. Those tasks then fall back into the built-in `Today`, `Tomorrow`, or `Future` presentation according to their own task data.
 
 ## Consequences
 

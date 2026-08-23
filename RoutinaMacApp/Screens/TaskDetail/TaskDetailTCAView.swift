@@ -50,7 +50,6 @@ struct TaskDetailTCAView: View {
     @State private var isCommentComposerVisible = false
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
-    @State private var isPrioritySectionExpanded = false
     @State private var isChecklistSectionRevealed = false
     @State private var inlineEditSections: [FormSection] = []
     @State private var isTimeSectionExpanded = false
@@ -379,8 +378,7 @@ struct TaskDetailTCAView: View {
             }
 
             taskDetailStatusControls
-            taskDetailPrioritySection
-            taskTemporalWeightSummary
+            taskDetailTaskLadderValuesSection
         }
     }
 
@@ -395,14 +393,18 @@ struct TaskDetailTCAView: View {
         }
     }
 
-    private var taskDetailPrioritySection: some View {
-        TaskDetailPriorityDisclosureBox(
-            priority: store.task.priority,
-            importance: store.task.importance,
-            urgency: store.task.urgency,
-            isExpanded: $isPrioritySectionExpanded
-        ) {
-            TaskDetailPriorityControlsGrid(store: store)
+    private var taskDetailTaskLadderValuesSection: some View {
+        TaskDetailTaskLadderValuesBox {
+            TaskDetailTaskLadderValuesControlsGrid(store: store)
+
+            if store.task.temporalWeightRule != nil {
+                Divider()
+                TaskTemporalWeightSummaryCard(
+                    task: store.task,
+                    referenceDate: referenceDate,
+                    onEdit: { isTemporalWeightEditorPresented = true }
+                )
+            }
         }
     }
 
@@ -496,19 +498,7 @@ struct TaskDetailTCAView: View {
                 todoTimeSpentHeaderBox
             }
             taskDetailStatusControls
-            taskDetailPrioritySection
-            taskTemporalWeightSummary
-        }
-    }
-
-    @ViewBuilder
-    private var taskTemporalWeightSummary: some View {
-        if store.task.temporalWeightRule != nil {
-            TaskTemporalWeightSummaryCard(
-                task: store.task,
-                referenceDate: referenceDate,
-                onEdit: { isTemporalWeightEditorPresented = true }
-            )
+            taskDetailTaskLadderValuesSection
         }
     }
 
@@ -681,12 +671,6 @@ struct TaskDetailTCAView: View {
             actions.append(inlineEditSectionAction(title: "Estimate", section: .estimation))
         }
 
-        if shouldShowTemporalWeightAddAction {
-            actions.append(TaskDetailOptionalAction(title: "Time-based", systemImage: "flame.fill") {
-                isTemporalWeightEditorPresented = true
-            })
-        }
-
         if !shouldShowChecklistSection {
             actions.append(TaskDetailOptionalAction(title: "Checklist", systemImage: "checklist") {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -695,8 +679,8 @@ struct TaskDetailTCAView: View {
             })
         }
 
-        if store.task.tags.isEmpty && !isInlineEditSectionRevealed(.tags) {
-            actions.append(inlineEditSectionAction(title: "Tags", section: .tags))
+        if store.task.tags.isEmpty && !isInlineEditSectionRevealed(.organization) {
+            actions.append(inlineEditSectionAction(title: "Tags", section: .organization))
         }
 
         if shouldShowGoalSectionInAddMore && store.taskGoalSummaries.isEmpty && !isInlineEditSectionRevealed(.goals) {
@@ -754,11 +738,6 @@ struct TaskDetailTCAView: View {
             && store.task.storyPoints == nil
             && !store.task.focusModeEnabled
             && !isInlineEditSectionRevealed(.estimation)
-    }
-
-    private var shouldShowTemporalWeightAddAction: Bool {
-        store.task.temporalWeightRule == nil
-            && RoutineTaskTemporalWeightResolver.supportsTemporalWeight(store.task)
     }
 
     private var shouldShowGoalSectionInAddMore: Bool {
@@ -891,7 +870,6 @@ struct TaskDetailTCAView: View {
     private func resetRevealedOptionalControls() {
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
-        isPrioritySectionExpanded = false
         isChecklistSectionRevealed = false
         inlineEditSections.removeAll()
     }

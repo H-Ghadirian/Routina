@@ -42,7 +42,7 @@ extension HomeRoutineDisplayMetadataPresenter {
                 ? badge("Ongoing", "airplane.circle.fill", .teal, Color.teal.opacity(0.16))
                 : badge("In Progress", "play.circle.fill", .orange, Color.orange.opacity(0.16))
         }
-        guard task.trackingCadenceEnabled else {
+        guard task.cadenceEnabled else {
             return nil
         }
         if task.isAssumedDoneToday {

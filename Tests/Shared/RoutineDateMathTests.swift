@@ -166,7 +166,7 @@ struct RoutineDateMathTests {
             recurrenceRule: .interval(days: 14),
             lastDone: makeDate("2026-01-01T10:00:00Z"),
             scheduleAnchor: makeDate("2026-01-01T10:00:00Z"),
-            trackingNudgesEnabled: false
+            nudgesEnabled: false
         )
 
         #expect(task.isSoftIntervalRoutine)
@@ -843,7 +843,7 @@ struct RoutineDateMathTests {
             createdAt: advanced.startDate
         )
 
-        #expect(RoutineDateMath.usesExactTimedOccurrenceTracking(for: task))
+        #expect(RoutineDateMath.usesExactTimedOccurrences(for: task))
         #expect(
             RoutineDateMath.dueDate(
                 for: task,
@@ -1275,7 +1275,7 @@ struct RoutineDateMathTests {
             scheduleMode: .softInterval,
             recurrenceRule: .interval(days: 1),
             lastDone: completion,
-            trackingCadenceEnabled: false
+            cadenceEnabled: false
         )
 
         #expect(!task.usesEffectiveRoutineCadence)

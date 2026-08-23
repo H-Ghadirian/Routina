@@ -803,10 +803,13 @@ struct TaskRankingPresentationTests {
         )
 
         #expect(viewSource.contains("ForEach(TaskRankingValueMode.allCases)"))
-        #expect(viewSource.contains("Button(\"Time-based Ladder Values…\")"))
+        #expect(viewSource.contains("Button(\"Changes over Time…\")"))
         #expect(viewSource.contains("TaskTemporalWeightRuleSheet("))
         #expect(sharedEditorSource.contains("Base values stay saved. Now values rise toward the targets"))
         #expect(sharedEditorSource.contains("TaskTemporalWeightSummaryCard"))
+        for previewState in ["After done", "During lead window", "Due date", "After due"] {
+            #expect(sharedEditorSource.contains("title: \"\(previewState)\""))
+        }
         #expect(featureSource.contains("case temporalBoundaryReached"))
         #expect(featureSource.contains("scheduleTemporalRefresh(for: state)"))
         #expect(featureSource.contains("persistTemporalWeightRule(taskID: taskID, rule: rule)"))
@@ -1120,7 +1123,7 @@ struct TaskRankingPresentationTests {
 
     @Test
     func temporalValuesRejectLegacyRecordRowsWithoutACompatibilitySetupPath() {
-        let task = RoutineTask(name: "Legacy", scheduleMode: .record)
+        let task = RoutineTask(name: "Legacy", scheduleMode: .softInterval)
 
         #expect(!RoutineTaskTemporalWeightResolver.supportsTemporalWeight(task))
         #expect(task.scheduleMode.taskType.userFacingTitle == "Routine")

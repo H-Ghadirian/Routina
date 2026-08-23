@@ -1,6 +1,6 @@
 # 0564 — Group macOS task priority controls
 
-**Status:** Accepted
+**Status:** Superseded by [0642](../0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 **Date:** 2026-08-13
 
 ## Context

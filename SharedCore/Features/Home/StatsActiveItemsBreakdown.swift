@@ -24,7 +24,7 @@ struct StatsActiveItemsBreakdown {
         }.count
 
         self.routineCount = tasks.filter {
-            $0.scheduleMode.taskType == .routine || $0.scheduleMode.taskType == .record
+            $0.scheduleMode.taskType == .routine
         }.count
         self.todoCount = todoTasks.count
         self.openTodoCount = todoTasks.filter { !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count

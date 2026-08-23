@@ -12,18 +12,18 @@ struct SettingsFlagRulePresentationTests {
     @Test
     func assignedAndAvailableRuleListsPartitionTheCatalog() {
         let state = SettingsFlagsState(
-            definedFlags: ["Tracking"],
+            definedFlags: ["Reference"],
             rules: [
-                RoutineFlagRule(flag: "tracking", kind: .autoAssumeDone),
-                RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
+                RoutineFlagRule(flag: "reference", kind: .autoAssumeDone),
+                RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)
             ]
         )
 
-        #expect(state.assignedRuleKinds(for: "Tracking") == [
+        #expect(state.assignedRuleKinds(for: "Reference") == [
             .hideFromTaskLists,
             .autoAssumeDone
         ])
-        #expect(state.availableRuleKinds(for: "TRACKING") == [
+        #expect(state.availableRuleKinds(for: "reference") == [
             .hideFromTimeline,
             .hideFromTaskLadder
         ])

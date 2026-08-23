@@ -3,15 +3,15 @@ import Testing
 
 struct TaskDetailMacHeaderControlLayoutTests {
     @Test
-    func priorityControlsShareOneExpandableSectionForEveryTaskType() throws {
+    func taskLadderValuesShareOneAlwaysVisibleSectionForEveryTaskType() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
         )
         let actionControls = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift"
         )
-        let prioritySection = try Self.sourceSection(
-            startingAt: "private var taskDetailPrioritySection: some View",
+        let valuesSection = try Self.sourceSection(
+            startingAt: "private var taskDetailTaskLadderValuesSection: some View",
             endingAt: "private var shouldShowTimeControl: Bool",
             in: source
         )
@@ -26,18 +26,19 @@ struct TaskDetailMacHeaderControlLayoutTests {
             in: source
         )
 
-        #expect(prioritySection.contains("TaskDetailPriorityDisclosureBox("))
-        #expect(prioritySection.contains("TaskDetailPriorityControlsGrid(store: store)"))
-        #expect(actionControls.contains("struct TaskDetailPriorityControlsGrid"))
+        #expect(valuesSection.contains("TaskDetailTaskLadderValuesBox"))
+        #expect(valuesSection.contains("TaskDetailTaskLadderValuesControlsGrid(store: store)"))
+        #expect(!valuesSection.contains("isExpanded"))
+        #expect(actionControls.contains("struct TaskDetailTaskLadderValuesControlsGrid"))
         #expect(actionControls.contains("ViewThatFits(in: .horizontal)"))
         #expect(actionControls.contains("TaskDetailPressureSegmentedPicker("))
         #expect(actionControls.contains("TaskDetailThinkingNeededSegmentedPicker("))
         #expect(actionControls.contains("TaskDetailImportanceSegmentedPicker("))
         #expect(actionControls.contains("TaskDetailUrgencySegmentedPicker("))
         #expect(todoControls.contains("taskDetailStatusControls"))
-        #expect(todoControls.contains("taskDetailPrioritySection"))
+        #expect(todoControls.contains("taskDetailTaskLadderValuesSection"))
         #expect(routineControls.contains("taskDetailStatusControls"))
-        #expect(routineControls.contains("taskDetailPrioritySection"))
+        #expect(routineControls.contains("taskDetailTaskLadderValuesSection"))
     }
 
     @Test

@@ -32,7 +32,7 @@ enum HomeTaskRowCompletionPresentation {
         if task.isOneOffTask {
             return task.isCompletedOneOff || task.isCanceledOneOff || task.isPaused
         }
-        if !task.trackingCadenceEnabled {
+        if !task.cadenceEnabled {
             return task.isPaused || task.blocksManualCompletionForIncompleteChecklist
         }
         if task.scheduleMode.isChecklistDrivenMode {

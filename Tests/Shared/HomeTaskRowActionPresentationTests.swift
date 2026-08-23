@@ -201,7 +201,7 @@ struct HomeTaskRowActionPresentationTests {
     func cadenceFreeCompletionRemainsImmediatelyAvailable() {
         let task = TestTaskRowDisplay(
             recurrenceRule: .interval(days: 1),
-            trackingCadenceEnabled: false,
+            cadenceEnabled: false,
             isDoneToday: true
         )
 
@@ -222,7 +222,7 @@ private struct TestTaskRowDisplay: HomeTaskRowDisplay, Equatable {
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)
     var scheduleMode: RoutineScheduleMode = .fixedInterval
-    var trackingCadenceEnabled: Bool = true
+    var cadenceEnabled: Bool = true
     var createdAt: Date?
     var lastDone: Date?
     var dueDate: Date?

@@ -122,7 +122,7 @@ enum RoutineTaskTemporalWeightResolver {
     static func supportsTemporalWeight(_ task: RoutineTask) -> Bool {
         supportsTemporalWeight(
             scheduleMode: task.scheduleMode,
-            cadenceEnabled: task.trackingCadenceEnabled
+            cadenceEnabled: task.cadenceEnabled
         )
     }
 
@@ -154,7 +154,7 @@ enum RoutineTaskTemporalWeightResolver {
         sanitizedRule(
             rule,
             scheduleMode: task.scheduleMode,
-            cadenceEnabled: task.trackingCadenceEnabled,
+            cadenceEnabled: task.cadenceEnabled,
             importance: task.importance,
             urgency: task.urgency,
             pressure: task.pressure

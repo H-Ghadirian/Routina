@@ -262,22 +262,16 @@ struct TaskFormContent: View {
             if model.supportsExactDateReminder {
                 reminderSection
             }
-        case .importanceUrgency:
-            importanceUrgencySection
-        case .pressure:
-            pressureSection
-        case .temporalWeight:
-            temporalWeightSection
-        case .thinkingNeeded:
-            thinkingNeededSection
+        case .taskLadderValues:
+            taskLadderValuesSection
         case .estimation:
             estimationSection
         case .image:
             imageSection
         case .attachment:
             attachmentSection
-        case .tags:
-            tagsSection
+        case .organization:
+            organizationSection
         case .goals:
             goalsSection
         case .events:
@@ -285,7 +279,7 @@ struct TaskFormContent: View {
         case .relationships:
             relationshipsSection
         case .scheduleType:
-            if model.scheduleMode.wrappedValue.taskType == .routine || model.scheduleMode.wrappedValue.taskType == .record {
+            if model.scheduleMode.wrappedValue.taskType == .routine {
                 scheduleTypeSection
             }
         case .steps:
@@ -378,20 +372,8 @@ struct TaskFormContent: View {
         TaskFormIOSReminderSection(model: model)
     }
 
-    private var importanceUrgencySection: some View {
-        TaskFormIOSImportanceUrgencySection(model: model)
-    }
-
-    private var pressureSection: some View {
-        TaskFormIOSPressureSection(model: model)
-    }
-
-    private var temporalWeightSection: some View {
-        TaskFormIOSTemporalWeightSection(model: model)
-    }
-
-    private var thinkingNeededSection: some View {
-        TaskFormIOSThinkingNeededSection(model: model)
+    private var taskLadderValuesSection: some View {
+        TaskFormIOSTaskLadderValuesSection(model: model)
     }
 
     private var estimationSection: some View {
@@ -421,8 +403,8 @@ struct TaskFormContent: View {
         }
     }
 
-    private var tagsSection: some View {
-        TaskFormIOSTagsSection(
+    private var organizationSection: some View {
+        TaskFormIOSOrganizationSection(
             model: model,
             tagColor: tagColor(for:),
             isTagPickerPresented: $isTagPickerPresented
@@ -508,14 +490,11 @@ private extension TaskFormCompactSection {
         case .planning: return "Planning"
         case .deadline: return "Deadline"
         case .reminder: return "Reminder"
-        case .importanceUrgency: return "Importance & urgency"
-        case .pressure: return "Pressure"
-        case .temporalWeight: return "Time-based values"
-        case .thinkingNeeded: return "Thinking needed"
+        case .taskLadderValues: return "Task Ladder values"
         case .estimation: return "Estimation"
         case .image: return "Image"
         case .attachment: return "File attachment"
-        case .tags: return "Tags"
+        case .organization: return "Organization"
         case .goals: return "Goals"
         case .events: return "Events"
         case .relationships: return "Relationships"
@@ -542,14 +521,11 @@ private extension TaskFormCompactSection {
         case .planning: return "calendar.badge.clock"
         case .deadline: return "calendar.badge.exclamationmark"
         case .reminder: return "bell"
-        case .importanceUrgency: return "square.grid.2x2"
-        case .pressure: return "brain.head.profile"
-        case .temporalWeight: return "flame"
-        case .thinkingNeeded: return "lightbulb"
+        case .taskLadderValues: return "square.grid.2x2"
         case .estimation: return "timer"
         case .image: return "photo"
         case .attachment: return "paperclip"
-        case .tags: return "tag"
+        case .organization: return "tray.full"
         case .goals: return "target"
         case .events: return "calendar"
         case .relationships: return "point.3.connected.trianglepath.dotted"

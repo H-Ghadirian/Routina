@@ -645,8 +645,8 @@ extension TaskDetailFeature {
             actualDurationMinutes: request.actualDurationMinutes,
             storyPoints: request.storyPoints,
             focusModeEnabled: request.focusModeEnabled,
-            trackingCadenceEnabled: request.trackingCadenceEnabled,
-            trackingNudgesEnabled: request.trackingNudgesEnabled,
+            cadenceEnabled: request.cadenceEnabled,
+            nudgesEnabled: request.nudgesEnabled,
             taskLadderGroupEnabled: request.taskLadderGroupEnabled
         )
     }
@@ -699,8 +699,8 @@ extension TaskDetailFeature {
         actualDurationMinutes: Int?,
         storyPoints: Int?,
         focusModeEnabled: Bool,
-        trackingCadenceEnabled: Bool,
-        trackingNudgesEnabled: Bool,
+        cadenceEnabled: Bool,
+        nudgesEnabled: Bool,
         taskLadderGroupEnabled: Bool
     ) -> Effect<Action> {
         .run { @MainActor send in
@@ -749,7 +749,7 @@ extension TaskDetailFeature {
                     scheduleMode: scheduleMode,
                     cadenceEnabled: scheduleMode.taskType == .todo
                         ? true
-                        : trackingCadenceEnabled,
+                        : cadenceEnabled,
                     importance: importance,
                     urgency: urgency,
                     pressure: pressure
@@ -814,7 +814,7 @@ extension TaskDetailFeature {
                         availabilityStartDate: task.availabilityStartDate,
                         availabilityEndDate: task.availabilityEndDate,
                         isAllDay: task.isAllDay,
-                        trackingCadenceEnabled: trackingCadenceEnabled,
+                        cadenceEnabled: cadenceEnabled,
                         hasSequentialSteps: !steps.isEmpty,
                         hasChecklistItems: !checklistItems.isEmpty
                     )
@@ -824,7 +824,7 @@ extension TaskDetailFeature {
                     ? (autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
                     : nil
                 task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
-                task.actualDurationMinutes = scheduleMode.taskType == .todo || scheduleMode.taskType == .record
+                task.actualDurationMinutes = scheduleMode.taskType == .todo
                     ? RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
                     : nil
                 task.createdAt = previousCreatedAt
@@ -843,14 +843,14 @@ extension TaskDetailFeature {
                 }
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 task.focusModeEnabled = focusModeEnabled
-                task.trackingCadenceEnabled = scheduleMode.taskType == .todo ? true : trackingCadenceEnabled
-                task.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
-                    ? trackingCadenceEnabled && trackingNudgesEnabled
+                task.cadenceEnabled = scheduleMode.taskType == .todo ? true : cadenceEnabled
+                task.nudgesEnabled = scheduleMode.usesRoutineCadence
+                    ? cadenceEnabled && nudgesEnabled
                     : true
                 if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {
                     task.lastSatisfiedScheduledOccurrenceAt = nil
                 }
-                if !scheduleMode.usesRoutineCadence || !task.trackingCadenceEnabled {
+                if !scheduleMode.usesRoutineCadence || !task.cadenceEnabled {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1
                 } else if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {
@@ -1546,13 +1546,13 @@ extension TaskDetailFeature {
                     entity: .task,
                     entityID: taskID,
                     entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: "Updated time-based values",
+                    details: "Updated changes over time",
                     in: context
                 )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Error updating time-based values: \(error)")
+                print("Error updating changes over time: \(error)")
             }
         }
     }

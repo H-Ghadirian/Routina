@@ -64,7 +64,7 @@ struct TaskDetailMacHeatmapTests {
         let calendar = gregorianUTC
         let task = RoutineTask(
             name: "Deep work log",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             lastDone: date(year: 2026, month: 7, day: 12, calendar: calendar)
         )
         let logs = [

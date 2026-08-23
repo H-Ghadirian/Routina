@@ -3,12 +3,10 @@ import Foundation
 enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     case routine = "Routine"
     case todo = "Todo"
-    /// Persisted compatibility value only. Product surfaces present this as a routine.
-    case record = "Tracking"
 
     var userFacingTitle: String {
         switch self {
-        case .routine, .record:
+        case .routine:
             return "Routine"
         case .todo:
             return "Todo"
@@ -21,8 +19,6 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
             return "\u{1F501}"
         case .todo:
             return "\u{2705}"
-        case .record:
-            return "\u{1F501}"
         }
     }
 
@@ -32,8 +28,6 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
             return "Routines"
         case .todo:
             return "Todos"
-        case .record:
-            return "Routines"
         }
     }
 }

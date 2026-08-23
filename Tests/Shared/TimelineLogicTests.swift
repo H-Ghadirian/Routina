@@ -289,32 +289,6 @@ struct TimelineLogicTests {
     }
 
     @Test
-    func filteredEntries_internalRecordTasksAppearAsRoutines() {
-        let calendar = makeTestCalendar()
-        let now = makeDate("2026-03-20T10:00:00Z")
-        let tracking = makeRoutineTask(name: "Tracking", scheduleMode: .record)
-        let routine = makeRoutineTask(name: "Routine")
-        let trackingLog = makeLog(taskID: tracking.id, timestamp: makeDate("2026-03-20T09:00:00Z"))
-        let routineLog = makeLog(taskID: routine.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
-
-        let entries = TimelineLogic.filteredEntries(
-            logs: [trackingLog, routineLog],
-            tasks: [tracking, routine],
-            range: .all,
-            filterType: .routines,
-            now: now,
-            calendar: calendar
-        )
-
-        #expect(entries.count == 2)
-        #expect(entries[0].taskName == "Tracking")
-        #expect(entries[0].taskType == .record)
-        #expect(entries[0].taskKindLabel == "Routine")
-        #expect(TimelineEntryKindPresentation.label(for: entries[0]) == "Routine")
-        #expect(TimelineEntryKindPresentation.tint(for: entries[0]) == .accent)
-    }
-
-    @Test
     func filteredEntries_outcomeFiltersMatchLogKind() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")
@@ -1255,7 +1229,7 @@ struct TimelineLogicTests {
         let task = makeRoutineTask(
             name: "Tagged Task",
             tags: ["Focus", "Morning"],
-            flags: ["Tracking"]
+            flags: ["Reference"]
         )
         let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
 
@@ -1270,7 +1244,7 @@ struct TimelineLogicTests {
 
         #expect(entries.count == 1)
         #expect(entries[0].tags == ["Focus", "Morning"])
-        #expect(entries[0].flags == ["Tracking"])
+        #expect(entries[0].flags == ["Reference"])
     }
 
     @Test
@@ -1286,14 +1260,14 @@ struct TimelineLogicTests {
             isOneOff: false,
             kind: .completed
         )
-        let trackingEntry = TimelineEntry(
+        let referenceEntry = TimelineEntry(
             id: UUID(),
             taskID: UUID(),
             timestamp: makeDate("2026-03-20T09:00:00Z"),
-            taskName: "Tracking",
+            taskName: "Reference",
             taskEmoji: "📍",
             tags: [],
-            flags: ["Tracking"],
+            flags: ["Reference"],
             isOneOff: false,
             kind: .completed
         )
@@ -1304,7 +1278,7 @@ struct TimelineLogicTests {
             taskName: "Combined",
             taskEmoji: "🧩",
             tags: [],
-            flags: ["Private", "Tracking"],
+            flags: ["Private", "Reference"],
             isOneOff: false,
             kind: .completed
         )
@@ -1318,7 +1292,7 @@ struct TimelineLogicTests {
             isOneOff: false,
             kind: .completed
         )
-        let entries = [privateEntry, trackingEntry, combinedEntry, plainEntry]
+        let entries = [privateEntry, referenceEntry, combinedEntry, plainEntry]
         let rules = [RoutineFlagRule(flag: "private", kind: .hideFromTimeline)]
 
         let defaultEntries = TimelineLogic.entriesVisibleForFlags(
@@ -1335,22 +1309,22 @@ struct TimelineLogicTests {
         )
         let allSelectedEntries = TimelineLogic.entriesVisibleForFlags(
             entries,
-            selectedFlags: ["Private", "Tracking"],
+            selectedFlags: ["Private", "Reference"],
             includeFlagMatchMode: .all,
             rules: rules
         )
         let anySelectedEntries = TimelineLogic.entriesVisibleForFlags(
             entries,
-            selectedFlags: ["Private", "Tracking"],
+            selectedFlags: ["Private", "Reference"],
             includeFlagMatchMode: .any,
             rules: rules
         )
 
-        #expect(defaultEntries.map(\.id) == [trackingEntry.id, plainEntry.id])
+        #expect(defaultEntries.map(\.id) == [referenceEntry.id, plainEntry.id])
         #expect(privateEntries.map(\.id) == [privateEntry.id, combinedEntry.id])
         #expect(allSelectedEntries.map(\.id) == [combinedEntry.id])
-        #expect(anySelectedEntries.map(\.id) == [privateEntry.id, trackingEntry.id, combinedEntry.id])
-        #expect(TimelineLogic.availableFlags(from: entries) == ["Private", "Tracking"])
+        #expect(anySelectedEntries.map(\.id) == [privateEntry.id, referenceEntry.id, combinedEntry.id])
+        #expect(TimelineLogic.availableFlags(from: entries) == ["Private", "Reference"])
     }
 
     @Test

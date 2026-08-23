@@ -172,8 +172,8 @@ struct TaskFormModel {
         RoutineAssumedCompletion.defaultDoneTimeOfDay.date(on: Date())
     )
     var focusModeEnabled: Binding<Bool> = .constant(false)
-    var trackingCadenceEnabled: Binding<Bool> = .constant(true)
-    var trackingNudgesEnabled: Binding<Bool> = .constant(true)
+    var cadenceEnabled: Binding<Bool> = .constant(true)
+    var nudgesEnabled: Binding<Bool> = .constant(true)
 
     // MARK: Color
     var color: Binding<RoutineTaskColor>
@@ -287,7 +287,7 @@ extension TaskFormModel {
     }
 
     var supportsItemRunoutRepeatType: Bool {
-        (taskType.wrappedValue == .routine || taskType.wrappedValue == .record)
+        (taskType.wrappedValue == .routine)
             && scheduleMode.wrappedValue.usesRoutineCadence
             && scheduleMode.wrappedValue.routineFinishMode == .checklist
     }
@@ -298,9 +298,9 @@ extension TaskFormModel {
     }
 
     var usesEffectiveRoutineCadence: Bool {
-        (taskType.wrappedValue == .routine || taskType.wrappedValue == .record)
+        (taskType.wrappedValue == .routine)
             && scheduleMode.wrappedValue.usesRoutineCadence
-            && trackingCadenceEnabled.wrappedValue
+            && cadenceEnabled.wrappedValue
     }
 
     var supportsRoutineScheduleBehavior: Bool {
@@ -318,7 +318,7 @@ extension TaskFormModel {
 
     var routineRepeatTypeCases: [RoutineRepeatType] {
         RoutineRepeatType.cases(
-            supportsNoRepeat: taskType.wrappedValue == .routine || taskType.wrappedValue == .record,
+            supportsNoRepeat: taskType.wrappedValue == .routine,
             supportsItemRunout: supportsItemRunoutRepeatType
         )
     }
@@ -327,12 +327,12 @@ extension TaskFormModel {
         let taskType = taskType
         let scheduleMode = scheduleMode
         let recurrenceKind = recurrenceKind
-        let trackingCadenceEnabled = trackingCadenceEnabled
+        let cadenceEnabled = cadenceEnabled
 
         return Binding(
             get: {
-                if (taskType.wrappedValue == .routine || taskType.wrappedValue == .record),
-                   !trackingCadenceEnabled.wrappedValue {
+                if (taskType.wrappedValue == .routine),
+                   !cadenceEnabled.wrappedValue {
                     return .none
                 }
 
@@ -347,41 +347,37 @@ extension TaskFormModel {
             set: { repeatType in
                 switch repeatType {
                 case .none:
-                    guard taskType.wrappedValue == .routine || taskType.wrappedValue == .record else { return }
-                    trackingCadenceEnabled.wrappedValue = false
+                    guard taskType.wrappedValue == .routine else { return }
+                    cadenceEnabled.wrappedValue = false
                     if scheduleMode.wrappedValue.isChecklistDrivenMode {
                         scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)
                     }
 
                 case .interval:
-                    trackingCadenceEnabled.wrappedValue = true
+                    cadenceEnabled.wrappedValue = true
                     if scheduleMode.wrappedValue.isChecklistDrivenMode {
                         scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)
                     }
                     recurrenceKind.wrappedValue = recurrenceKind.wrappedValue.replacingRepeatBasis(.interval)
 
                 case .calendar:
-                    trackingCadenceEnabled.wrappedValue = true
+                    cadenceEnabled.wrappedValue = true
                     if scheduleMode.wrappedValue.isChecklistDrivenMode {
                         scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)
                     }
                     recurrenceKind.wrappedValue = recurrenceKind.wrappedValue.replacingRepeatBasis(.calendar)
 
                 case .itemRunout:
-                    guard (taskType.wrappedValue == .routine || taskType.wrappedValue == .record),
+                    guard (taskType.wrappedValue == .routine),
                           scheduleMode.wrappedValue.usesRoutineCadence,
                           scheduleMode.wrappedValue.routineFinishMode == .checklist
                     else { return }
 
-                    trackingCadenceEnabled.wrappedValue = true
-                    if scheduleMode.wrappedValue.taskType == .record {
-                        scheduleMode.wrappedValue = .recordDerivedFromChecklist
-                    } else {
-                        scheduleMode.wrappedValue = RoutineScheduleMode.routineMode(
-                            behavior: scheduleMode.wrappedValue.scheduleBehavior,
-                            format: .runout
-                        )
-                    }
+                    cadenceEnabled.wrappedValue = true
+                    scheduleMode.wrappedValue = RoutineScheduleMode.routineMode(
+                        behavior: scheduleMode.wrappedValue.scheduleBehavior,
+                        format: .runout
+                    )
                 }
             }
         )
@@ -419,7 +415,7 @@ extension TaskFormModel {
             availabilityStartDate: availabilityStartDate.wrappedValue,
             availabilityEndDate: availabilityEndDate.wrappedValue,
             isAllDay: isAllDay.wrappedValue,
-            trackingCadenceEnabled: trackingCadenceEnabled.wrappedValue,
+            cadenceEnabled: cadenceEnabled.wrappedValue,
             hasSequentialSteps: !routineSteps.isEmpty,
             hasChecklistItems: !routineChecklistItems.isEmpty
             )
@@ -445,7 +441,7 @@ extension TaskFormModel {
         switch currentScheduleMode.taskType {
         case .todo:
             return .interval(days: 1, at: timeOfDay, timeRange: timeRange)
-        case .routine, .record:
+        case .routine:
             break
         }
 
@@ -520,7 +516,7 @@ extension TaskFormModel {
     }
 
     var allowsOptionalChecklistReveal: Bool {
-        taskType.wrappedValue == .todo || taskType.wrappedValue == .record
+        true
     }
 
     var shouldShowChecklistSection: Bool {
@@ -536,8 +532,23 @@ extension TaskFormModel {
     var supportsTemporalWeightValues: Bool {
         RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
             scheduleMode: scheduleMode.wrappedValue,
-            cadenceEnabled: trackingCadenceEnabled.wrappedValue
+            cadenceEnabled: cadenceEnabled.wrappedValue
         )
+    }
+
+    var temporalWeightAvailabilityMessage: String? {
+        guard !supportsTemporalWeightValues else { return nil }
+        let currentMode = scheduleMode.wrappedValue
+        if currentMode.taskType == .todo {
+            return "Available for repeating tasks."
+        }
+        if !currentMode.usesRoutineCadence || !cadenceEnabled.wrappedValue {
+            return "Choose After done or On schedule in Behavior & Schedule."
+        }
+        if currentMode.scheduleBehavior != .fixed {
+            return "Choose Due in Behavior & Schedule."
+        }
+        return "Choose a repeating Due schedule first."
     }
 
     var supportsPlanning: Bool {
@@ -546,8 +557,6 @@ extension TaskFormModel {
             return true
         case .routine:
             return !isDailyRoutineDraft
-        case .record:
-            return trackingCadenceEnabled.wrappedValue
         }
     }
 
@@ -557,7 +566,6 @@ extension TaskFormModel {
             case .steps:
                 return scheduleMode.wrappedValue.isStandardRoutineMode
                     || scheduleMode.wrappedValue == .oneOff
-                    || scheduleMode.wrappedValue == .record
             case .checklist:
                 return shouldShowChecklistSection
             case .deadline:
@@ -566,8 +574,6 @@ extension TaskFormModel {
                 return supportsExactDateReminder
             case .planning:
                 return supportsPlanning
-            case .temporalWeight:
-                return supportsTemporalWeightValues || temporalWeightRule.wrappedValue != nil
             default:
                 return true
             }
@@ -618,7 +624,9 @@ extension TaskFormModel {
         var sections: Set<TaskFormCompactSection> = [
             .name,
             .taskType,
-            .deadline
+            .deadline,
+            .taskLadderValues,
+            .organization
         ]
 
         if visibilityMode == .progressiveCreate {
@@ -629,7 +637,7 @@ extension TaskFormModel {
             sections.insert(.reminder)
         }
 
-        if scheduleMode.wrappedValue.taskType == .routine || scheduleMode.wrappedValue.taskType == .record {
+        if scheduleMode.wrappedValue.taskType == .routine {
             sections.insert(.scheduleType)
         }
 
@@ -663,17 +671,12 @@ extension TaskFormModel {
         if supportsPlanning, plannedDate.wrappedValue != nil {
             sections.insert(.planning)
         }
-        if importance.wrappedValue != .level2 || urgency.wrappedValue != .level2 {
-            sections.insert(.importanceUrgency)
-        }
-        if pressure.wrappedValue != .none {
-            sections.insert(.pressure)
-        }
-        if temporalWeightRule.wrappedValue != nil {
-            sections.insert(.temporalWeight)
-        }
-        if thinkingNeeded.wrappedValue != .none {
-            sections.insert(.thinkingNeeded)
+        if importance.wrappedValue != .level2
+            || urgency.wrappedValue != .level2
+            || pressure.wrappedValue != .none
+            || thinkingNeeded.wrappedValue != .none
+            || temporalWeightRule.wrappedValue != nil {
+            sections.insert(.taskLadderValues)
         }
         if estimatedDurationMinutes.wrappedValue != nil
             || actualDurationMinutes?.wrappedValue != nil
@@ -694,7 +697,10 @@ extension TaskFormModel {
             availableFlags: availableFlags,
             flagDraft: flagDraft.wrappedValue
         ) {
-            sections.insert(.tags)
+            sections.insert(.organization)
+        }
+        if customTaskSectionID.wrappedValue != nil || taskLadderGroupEnabled.wrappedValue {
+            sections.insert(.organization)
         }
         if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
             sections.insert(.goals)
@@ -729,9 +735,6 @@ extension TaskFormModel {
 
     private static func nonRunoutScheduleMode(from scheduleMode: RoutineScheduleMode) -> RoutineScheduleMode {
         let fallbackFormat: RoutineFormat = scheduleMode.routineFinishMode == .checklist ? .checklist : .standard
-        if scheduleMode.taskType == .record {
-            return fallbackFormat == .checklist ? .recordChecklist : .record
-        }
         return RoutineScheduleMode.routineMode(
             behavior: scheduleMode.scheduleBehavior,
             format: fallbackFormat

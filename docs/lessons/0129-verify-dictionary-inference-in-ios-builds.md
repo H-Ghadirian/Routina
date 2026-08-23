@@ -20,4 +20,4 @@ When a generic collection initializer is used in platform-specific SwiftUI code,
 
 ## Regression Safeguard
 
-`swift test -q` covers the tag-suggestion presentation, and the iOS development target is built and launched on an iOS simulator after changes to `TaskFormIOSTagsSection.swift`.
+`swift test -q` covers the tag-suggestion presentation, and the iOS development target is built and launched on an iOS simulator after changes to `TaskFormIOSOrganizationSection.swift`.

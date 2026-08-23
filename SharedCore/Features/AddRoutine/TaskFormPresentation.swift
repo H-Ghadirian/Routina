@@ -288,14 +288,11 @@ enum TaskFormCompactSection: Hashable, Sendable {
     case planning
     case deadline
     case reminder
-    case importanceUrgency
-    case pressure
-    case temporalWeight
-    case thinkingNeeded
+    case taskLadderValues
     case estimation
     case image
     case attachment
-    case tags
+    case organization
     case goals
     case events
     case relationships
@@ -310,32 +307,29 @@ enum TaskFormCompactSection: Hashable, Sendable {
     static let defaultOrder: [TaskFormCompactSection] = [
         .name,
         .taskType,
+        .deadline,
+        .reminder,
+        .scheduleType,
+        .repeatPattern,
+        .taskLadderValues,
+        .organization,
         .taskDescription,
         .emoji,
         .color,
-        .notes,
-        .voiceNote,
-        .link,
         .planning,
-        .deadline,
-        .reminder,
-        .importanceUrgency,
-        .pressure,
-        .temporalWeight,
-        .thinkingNeeded,
         .estimation,
-        .image,
-        .attachment,
-        .tags,
+        .place,
+        .destination,
         .goals,
         .events,
         .relationships,
-        .scheduleType,
         .steps,
         .checklist,
-        .place,
-        .destination,
-        .repeatPattern,
+        .notes,
+        .voiceNote,
+        .link,
+        .image,
+        .attachment,
         .delete
     ]
 }
@@ -359,11 +353,11 @@ struct TaskFormPresentation {
     let canAutoAssumeDailyDone: Bool
 
     var isStepBasedMode: Bool {
-        scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff || scheduleMode == .record
+        scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff
     }
 
     var showsRepeatControls: Bool {
-        (taskType == .routine || taskType == .record)
+        taskType == .routine
             && scheduleMode.usesRoutineCadence
     }
 
@@ -383,8 +377,6 @@ struct TaskFormPresentation {
             return "Capture extra context, links, or reminders for this todo."
         case .routine:
             return "Add any details you want to keep with this routine."
-        case .record:
-            return "Capture what happened, context, and time-spent details for analysis."
         }
     }
 
@@ -418,9 +410,6 @@ struct TaskFormPresentation {
         case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the routine."
         case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the routine overdue."
         case .oneOff: return "This task does not repeat."
-        case .record: return "Track what happened and the time spent."
-        case .recordChecklist: return "Track what happened and complete every checklist item."
-        case .recordDerivedFromChecklist: return "Track item timing without overdue pressure."
         }
     }
 
@@ -436,8 +425,6 @@ struct TaskFormPresentation {
         switch scheduleMode {
         case .oneOff:
             return "Steps run in order. Leave this empty for a single-step todo."
-        case .record:
-            return "Steps run in order. Leave this empty for a one-step routine."
         default:
             return "Steps run in order. Leave this empty for a one-step routine."
         }
@@ -455,12 +442,6 @@ struct TaskFormPresentation {
             return "Use checklist items for parts you want to tick off before finishing the routine."
         case .oneOff:
             return "Use checklist items for parts you want to tick off before finishing the todo."
-        case .recordChecklist:
-            return "The routine is complete when every checklist item is completed."
-        case .recordDerivedFromChecklist:
-            return "Routine items have their own timing without making the routine overdue."
-        case .record:
-            return "Use this gentle routine to record what happened and the time spent."
         }
     }
 

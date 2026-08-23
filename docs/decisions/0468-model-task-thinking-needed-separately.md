@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-08-02
 
-Refines: [0058 Use Progressive Task Forms](0058-use-progressive-task-forms.md), [0366 Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md), [0391 Filter Task List by Duration Estimates](0391-filter-task-list-by-duration-estimates.md), [0424 Make Task Detail Priority Optional](0424-make-task-detail-priority-optional.md), and [0462 Use a Compact Progressive iOS Task Editor](0462-use-a-compact-progressive-ios-task-editor.md)
+Refines: [0058 Use Progressive Task Forms](0058-use-progressive-task-forms.md), [0366 Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md), [0391 Filter Task List by Duration Estimates](0391-filter-task-list-by-duration-estimates.md), [0424 Make Task Detail Priority Optional](superseded/0424-make-task-detail-priority-optional.md), and [0462 Use a Compact Progressive iOS Task Editor](0462-use-a-compact-progressive-ios-task-editor.md)
 
 ## Context
 

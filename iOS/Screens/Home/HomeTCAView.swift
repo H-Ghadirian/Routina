@@ -769,7 +769,7 @@ struct IOSSmartAddDetectedChips: View {
 
         if draft.importance != .level2 || draft.urgency != .level2 {
             chips.append(DetectedChip(
-                title: "Priority",
+                title: "Importance / Urgency",
                 value: "\(draft.importance.title) / \(draft.urgency.title)",
                 systemImage: "exclamationmark.triangle"
             ))

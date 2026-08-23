@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0230 — Retire pre-release concepts through the whole stack](0230-retire-pre-release-concepts-through-the-whole-stack.md)
 - [0229 — Keep retired task types out of active guidance](0229-keep-retired-task-types-out-of-active-guidance.md)
 - [0228 — Create Backlog sections at the point of use](0228-create-backlog-sections-at-the-point-of-use.md)
 - [0227 — Route Backlog tag rules through the presentation model](0227-route-backlog-tag-rules-through-the-presentation-model.md)

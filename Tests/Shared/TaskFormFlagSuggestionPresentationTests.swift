@@ -10,7 +10,7 @@ import Testing
 struct TaskFormFlagSuggestionPresentationTests {
     @Test
     func collapsedSuggestionsAreBoundedAndExpandedSuggestionsPreserveEveryFlag() {
-        let flags = ["Tracking", "Private", "Focus", "Work", "Personal", "Deferred", "Quiet"]
+        let flags = ["Reference", "Private", "Focus", "Work", "Personal", "Deferred", "Quiet"]
 
         #expect(
             TaskFormFlagSuggestionPresentation.visibleAvailableFlags(flags, showsAll: false)
@@ -25,7 +25,7 @@ struct TaskFormFlagSuggestionPresentationTests {
             TaskFormTagFlagSectionPresentation.hasContent(
                 routineTags: [],
                 tagDraft: "",
-                routineFlags: ["Tracking"],
+                routineFlags: ["Reference"],
                 availableFlags: [],
                 flagDraft: ""
             )
@@ -35,7 +35,7 @@ struct TaskFormFlagSuggestionPresentationTests {
                 routineTags: [],
                 tagDraft: "",
                 routineFlags: [],
-                availableFlags: ["Tracking"],
+                availableFlags: ["Reference"],
                 flagDraft: ""
             )
         )

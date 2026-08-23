@@ -77,7 +77,7 @@ And the full image remains in scrolling content instead of displacing the compac
 ### Task Details Show A Saved One-Off Reminder
 
 Area: Tasks / iOS and macOS Task Details
-Decision links: [0185](../decisions/0185-limit-exact-reminders-to-todos.md), [0424](../decisions/0424-make-task-detail-priority-optional.md)
+Decision links: [0185](../decisions/0185-limit-exact-reminders-to-todos.md), [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
@@ -366,9 +366,9 @@ Then effective value sections are read-only
 And an adjusted task row explains its due timing
 And an inherited container group uses its actionable direct children's Now values
 
-Given a task is Gentle, cadence-free, one-off, or a legacy internal record-shaped row
+Given a task is Gentle, cadence-free, or one-off
 When Task Ladder resolves its values
-Then no time-based rule changes its Base value
+Then no Changes over time rule changes its Base value
 
 ### Mac Task Ladder Separates Placement From Completion
 
@@ -651,7 +651,7 @@ When the person selects another day in Calendar
 Then the header adds `Viewing` with that date
 And the selected date continues to control eligible completion, undo, checklist, and cancellation behavior
 
-Given saved Importance, Urgency, Pressure, or Thinking needed values are visible
+Given Task Details shows Importance, Urgency, Pressure, and Thinking needed for any task
 Then the controls retain that order and adaptively wrap at ordinary text sizes
 And accessibility text sizes stack the controls with explicit labels, values, strokes, and 44-point-high visible targets
 
@@ -1188,7 +1188,7 @@ And Task Detail shows no frequency and no cadence-derived notification is schedu
 ### Repeating Behavior Is Composable On Routines
 
 Area: Tasks
-Decision links: [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+Decision links: [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskFormPresentationTests.swift`
@@ -1205,10 +1205,10 @@ And an eligible daily Due routine can also opt into Auto-assume done
 And Due makes Gentle-only Nudges unavailable, while `No schedule` makes both behaviors unavailable
 And creating the behavior does not require or create a separate task purpose
 
-### Retired Task Types Do Not Leak Into Product Surfaces
+### Task-Kind Surfaces Match the Domain
 
 Area: Tasks / Stats / Settings
-Decision links: [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+Decision links: [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [Stats](../current-behavior/stats.md)
 Coverage:
 - `Tests/Shared/TaskFormPresentationTests.swift`
@@ -1219,15 +1219,11 @@ Coverage:
 - `Tests/Shared/TimelineLogicTests.swift`
 - `Tests/iOS/StatsDashboardItemAvailabilityTests.swift`
 
-Given the user opens task creation, Home or Timeline filters, Stats, or custom-section Settings
+Given the user opens task creation, Home or Timeline filters, Stats, or Settings
 When task-type choices and reports are presented
 Then only Routines and Todos are exposed as task types
-And no filter, section, rule, badge, query alias, count, time card, or dashboard item exposes the retired type
-And no Flag or task-form control is named `Tracking` or `Track this routine`
-
-Given an internal record-shaped development row is encountered
-When Home, Timeline, Planner, or Stats presents or filters it
-Then the row is handled as a routine instead of recreating a separate product category
+And the persisted task-kind and schedule-mode enums contain no third compatibility case
+And schema, import, backup, sharing, filters, sections, badges, counts, and dashboard items use the same two-kind contract
 
 ### Compact And Structured Recurrence Stay Compatible
 
@@ -1334,6 +1330,18 @@ And every date or time availability option remains readable at phone width
 Given an empty optional detail is hidden in the compact form
 When the user selects that detail from `Add details`
 Then only the chosen section appears and the form scrolls it into view
+
+Given Add Task or Edit Task shows its primary configuration
+Then Behavior & Schedule owns timing and completion behavior
+And Task Ladder values owns Importance, Urgency, Pressure, Thinking, and Changes over time
+And Organization owns Path, Tags, Flags, and repeating-task Task Ladder grouping
+
+Given Changes over time is not eligible
+Then the Task Ladder values section remains visible
+And it names the concrete Behavior & Schedule choice required to enable the rule
+
+Given an eligible rule is configured
+Then its preview shows Base after completion, the lead-window or pre-due state, due-date targets, and after-due values until completion
 
 ### Wide Mac Task Forms Keep Scheduling Controls Grouped
 
@@ -1451,21 +1459,6 @@ Given that recorded Done task also retains a Planner block at a different time
 When Calendar `List` presents the row and Task Detail presents `Done this day`
 Then both surfaces derive the completed work's start and duration from the exact completion occurrence
 And the separate Planner block keeps its original Schedule placement
-
-### Mac Internal Record Time Action Reveals Its Editor
-
-Area: Tasks
-Decision links: [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
-Current behavior: [Tasks](../current-behavior/tasks.md)
-Coverage:
-- `Tests/Shared/TaskDetailMacTimeControlPresentationTests.swift`
-
-Given an internal record-shaped row is presented as a routine in full Mac Task Details
-And its task-level time control is not already visible
-When the user chooses `Time` from the header's `Add a detail` popover
-Then the Time action disappears and the expanded Effort editor appears in the routine header
-And stored estimate or story-point metadata cannot make Time unreachable
-And normal routines do not acquire the record-only task-level time editor
 
 ### Task Detail Actual Time Can Be Corrected
 
@@ -1912,7 +1905,7 @@ Then it schedules neither a due alert nor a direct reminder for the task
 ### Planner Can Show Assumed Done Routines
 
 Area: Planner
-Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md), [0372](../decisions/0372-hide-completed-tasks-from-calendar-schedule.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md)
+Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md), [0372](../decisions/0372-hide-completed-tasks-from-calendar-schedule.md), [0489](../decisions/0489-expand-auto-assume-done-to-scheduled-repeats.md), [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanCalendarFilterStateTests.swift`
@@ -2060,6 +2053,7 @@ When the task is a one-off task or a routine
 Then the controls use the same adaptive layout
 And Pressure and Thinking needed sit side by side when the available detail width permits
 And the controls stack only when the available detail width is too narrow
+And Task Details does not hide the four Task Ladder values behind a disclosure or show a fifth aggregate Priority value
 
 ### New Routine Checklists Use Checklist Completion
 
@@ -2173,7 +2167,7 @@ Then neither platform shows a separate `Start ongoing` action
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md), [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md), [0453](../decisions/0453-use-context-menu-actions-to-reorder-mac-home-sections.md), [0456](../decisions/0456-show-resolved-automatic-paths-in-edit-task.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0411](../decisions/0411-manage-custom-task-sections-in-settings.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md), [0449](../decisions/0449-keep-custom-section-rules-tag-based.md), [0452](../decisions/0452-label-date-planned-tasks-in-their-ordinary-section.md), [0453](../decisions/0453-use-context-menu-actions-to-reorder-mac-home-sections.md), [0456](../decisions/0456-show-resolved-automatic-paths-in-edit-task.md), [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
@@ -3505,7 +3499,7 @@ And each next card is loaded through a focused task query
 ### iOS Importance And Urgency Reviews Stay Independent
 
 Area: Tasks / UI
-Decision links: [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0475](../decisions/0475-separate-guided-importance-and-urgency-reviews.md), [0424](../decisions/0424-make-task-detail-priority-optional.md)
+Decision links: [0476](../decisions/0476-keep-guided-review-card-and-detail-work-bounded.md), [0475](../decisions/0475-separate-guided-importance-and-urgency-reviews.md), [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/MissingTaskMetadataFeatureTests.swift`
@@ -3527,7 +3521,7 @@ And the card title begins at the top of its card while its actions remain reacha
 Given the current review card is shown
 When the user chooses one of the four always-visible values
 Then that field, its explicitness marker, and the derived Priority persist
-And Task Details treats Priority as visible
+And Task Details immediately reflects the selected independent value
 And the procedure advances without showing that task again
 
 ### iOS Filter Sheets Name Each Choice Once

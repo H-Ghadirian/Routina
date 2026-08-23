@@ -24,7 +24,7 @@ struct MissingTaskMetadataFeatureTests {
         let explicitImportanceTask = makeTask(in: context, name: "Importance set", interval: 1, lastDone: nil, emoji: nil)
         explicitImportanceTask.hasExplicitImportance = true
         let legacyPriorityTask = makeTask(in: context, name: "Legacy priority", interval: 1, lastDone: nil, emoji: nil)
-        legacyPriorityTask.showsTaskDetailPriority = true
+        legacyPriorityTask.priority = .high
         let completedRepeatingTask = makeTask(
             in: context,
             name: "Finished repeating",
@@ -140,7 +140,6 @@ struct MissingTaskMetadataFeatureTests {
         #expect(!persistedTask.hasExplicitUrgency)
         #expect(TaskDetailOptionalControlVisibility.showsImportance(for: persistedTask))
         #expect(!TaskDetailOptionalControlVisibility.showsUrgency(for: persistedTask))
-        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: persistedTask))
         let activityLogs = try context.fetch(FetchDescriptor<RoutinaDeviceActionLog>())
         #expect(
             activityLogs.contains {

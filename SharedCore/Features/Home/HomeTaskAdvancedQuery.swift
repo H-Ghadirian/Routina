@@ -94,7 +94,6 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
         }
         if ["routine", "routines", "recurring"].contains(value) {
             return task.scheduleMode.taskType == .routine
-                || task.scheduleMode.taskType == .record
         }
         return false
     }

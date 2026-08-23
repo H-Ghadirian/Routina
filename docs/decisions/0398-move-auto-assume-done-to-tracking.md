@@ -1,6 +1,6 @@
 # 0398 Move Auto-Assume Done to Tracking
 
-Status: Accepted
+Status: Superseded by [0489](0489-expand-auto-assume-done-to-scheduled-repeats.md), [0436](superseded/0436-remove-tracking-as-a-user-facing-task-type.md), and [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 
 Date: 2026-07-16
 

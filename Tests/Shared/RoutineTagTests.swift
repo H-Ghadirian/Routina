@@ -10,9 +10,9 @@ import Testing
 struct RoutineTagTests {
     @Test
     func autoAssumeDoneRuleMatchesAssignedFlagIgnoringCase() {
-        let rules = [RoutineFlagRule(flag: "Tracking", kind: .autoAssumeDone)]
+        let rules = [RoutineFlagRule(flag: "Reference", kind: .autoAssumeDone)]
 
-        #expect(RoutineFlagRules.enablesAutoAssumeDone(flags: ["tracking"], rules: rules))
+        #expect(RoutineFlagRules.enablesAutoAssumeDone(flags: ["reference"], rules: rules))
         #expect(!RoutineFlagRules.enablesAutoAssumeDone(flags: ["Private"], rules: rules))
     }
 
@@ -215,18 +215,18 @@ struct RoutineTagTests {
     @Test
     func flagRules_deduplicateByFlagAndRuleKind() {
         let rules = RoutineFlagRules.sanitized([
-            RoutineFlagRule(flag: " Tracking ", kind: .hideFromTaskLists),
-            RoutineFlagRule(flag: "tracking", kind: .hideFromTaskLists)
+            RoutineFlagRule(flag: " Reference ", kind: .hideFromTaskLists),
+            RoutineFlagRule(flag: "reference", kind: .hideFromTaskLists)
         ])
 
-        #expect(rules == [RoutineFlagRule(flag: "tracking", kind: .hideFromTaskLists)])
-        #expect(RoutineFlagRules.hidesFromTaskLists(flags: ["TRACKING"], rules: rules))
+        #expect(rules == [RoutineFlagRule(flag: "reference", kind: .hideFromTaskLists)])
+        #expect(RoutineFlagRules.hidesFromTaskLists(flags: ["REFERENCE"], rules: rules))
         #expect(!RoutineFlagRules.hidesFromTaskLists(flags: ["Planning"], rules: rules))
         #expect(
             RoutineFlagRules.flagsHidingFromTaskLists(
-                ["Planning", " TRACKING ", "tracking"],
+                ["Planning", " REFERENCE ", "reference"],
                 rules: rules
-            ) == ["TRACKING"]
+            ) == ["REFERENCE"]
         )
 
         let taskLadderRules = RoutineFlagRules.adding(
@@ -239,7 +239,7 @@ struct RoutineTagTests {
             rules: taskLadderRules
         ))
         #expect(!RoutineFlagRules.hidesFromTaskLadder(
-            flags: ["Tracking"],
+            flags: ["Reference"],
             rules: taskLadderRules
         ))
 
@@ -253,11 +253,11 @@ struct RoutineTagTests {
             rules: timelineRules
         ))
         #expect(!RoutineFlagRules.hidesFromTimeline(
-            flags: ["Tracking"],
+            flags: ["Reference"],
             rules: timelineRules
         ))
 
-        let removed = RoutineFlagRules.removing("tracking", from: rules)
+        let removed = RoutineFlagRules.removing("reference", from: rules)
         #expect(removed.isEmpty)
     }
 }

@@ -1998,7 +1998,7 @@ struct SettingsFeatureTests {
         let persistedRules = LockIsolated<[RoutineFlagRule]>([])
         let store = TestStore(
             initialState: SettingsFeature.State(
-                flags: .init(definedFlags: ["Tracking"])
+                flags: .init(definedFlags: ["Reference"])
             )
         ) {
             SettingsFeature()
@@ -2008,24 +2008,24 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.addFlagRuleTapped(
-            flagName: "Tracking",
+            flagName: "Reference",
             kind: .hideFromTaskLists
         )) {
             $0.flags.rules = [
-                RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
+                RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)
             ]
-            $0.flags.statusMessage = "Added hide tasks from normal task lists for Tracking."
+            $0.flags.statusMessage = "Added hide tasks from normal task lists for Reference."
         }
         #expect(persistedRules.value == [
-            RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
+            RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)
         ])
 
         await store.send(.removeFlagRuleTapped(
-            flagName: "Tracking",
+            flagName: "Reference",
             kind: .hideFromTaskLists
         )) {
             $0.flags.rules = []
-            $0.flags.statusMessage = "Removed hide tasks from normal task lists for Tracking."
+            $0.flags.statusMessage = "Removed hide tasks from normal task lists for Reference."
         }
         #expect(persistedRules.value.isEmpty)
     }

@@ -1,5 +1,7 @@
 # 0229 — Keep retired task types out of active guidance
 
+Follow-up: [0230](0230-retire-pre-release-concepts-through-the-whole-stack.md) removes the compatibility layer that this first cleanup retained.
+
 Date: 2026-08-23
 
 ## Symptom

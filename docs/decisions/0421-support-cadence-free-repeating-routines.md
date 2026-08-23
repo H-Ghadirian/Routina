@@ -14,16 +14,16 @@ Decisions 0413 and 0414 removed `Repeat type: None` from creation to make `One-t
 
 ## Decision
 
-Repeating routines and Tracking entries can select `Repeat type: None` during both creation and editing.
+Repeating routines can select `Repeat type: None` during both creation and editing.
 
 A cadence-free repeating task:
 
 - remains active and available immediately after each completion;
 - preserves every completion in its history;
 - has no interval, calendar occurrence, overdue pressure, automatic nudge, or cadence-derived daily classification;
-- when it is a routine, may be explicitly planned like another non-daily routine; cadence-free Tracking retains its record-only planning behavior.
+- may be explicitly planned like another non-daily routine.
 
-The existing persisted cadence-enabled field is retained for storage compatibility and now controls cadence for both routines and Tracking entries. Existing routines continue to read as cadence-enabled because their stored/default value is true.
+The persisted `cadenceEnabled` field controls whether a repeating routine has an active recurrence cadence.
 
 ## Consequences
 

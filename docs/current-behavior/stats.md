@@ -29,7 +29,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0390](../decisions/0390-hide-mac-toolbar-search-on-stats-and-add-task.md)
 - [0415](../decisions/0415-support-custom-stats-date-ranges.md)
 - [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
-- [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+- [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
 - [0470](../decisions/0470-keep-beta-experiments-out-of-production.md)
 - [0503](../decisions/0503-remove-ios-secondary-stats-comparison-reports.md)
 - [0504](../decisions/0504-simplify-ios-focus-2048-stats-details.md)
@@ -62,7 +62,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - The macOS Stats sidebar presents Importance and Urgency as separate minimum-threshold sections. Changing one preserves the other, while `All` clears only that axis and the existing combined matching and persistence remain unchanged.
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
 - Stats summary cards show assumed-done daily Gentle-routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
-- Stats task-type filtering offers only `All`, `Routines`, and `Todos`. Stats has no Tracking count, Tracking time, or Tracking dashboard item; internal record-shaped data is counted and filtered with routines.
+- Stats task-type filtering offers only `All`, `Routines`, and `Todos`, matching the two persisted task kinds. No additional task-kind count, time card, filter, or dashboard item exists.
 - On iOS, users can choose Connect Health to grant read-only access to steps, active calories, walking/running distance, and exercise time for Stats. Routina neither writes Apple Health samples nor persists or syncs those values.
 - Before connecting, users can hide the Apple Health prompt in Stats Edit mode and restore it through Add to Stats while it remains relevant.
 - Adventure derives progression from existing activity history and shares the Mac Stats sidebar tab behind a `Stats / Adventure` segment when enabled.

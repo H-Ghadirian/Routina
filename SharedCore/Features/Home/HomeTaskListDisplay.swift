@@ -19,7 +19,7 @@ protocol HomeTaskListDisplay {
     var interval: Int { get }
     var recurrenceRule: RoutineRecurrenceRule { get }
     var scheduleMode: RoutineScheduleMode { get }
-    var trackingCadenceEnabled: Bool { get }
+    var cadenceEnabled: Bool { get }
     var estimatedDurationMinutes: Int? { get }
     var createdAt: Date? { get }
     var lastDone: Date? { get }
@@ -84,7 +84,7 @@ extension HomeTaskListDisplay {
         false
     }
 
-    var trackingCadenceEnabled: Bool {
+    var cadenceEnabled: Bool {
         true
     }
 
@@ -133,7 +133,7 @@ extension HomeTaskListDisplay {
     }
 
     var isDailyRoutine: Bool {
-        guard trackingCadenceEnabled else { return false }
+        guard cadenceEnabled else { return false }
         return RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             isOneOffTask: isOneOffTask,
             scheduleMode: scheduleMode,

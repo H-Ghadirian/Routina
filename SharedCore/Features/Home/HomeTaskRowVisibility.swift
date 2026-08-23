@@ -8,7 +8,6 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
     case taskTypeBadge
     case statusBadge
     case schedule
-    case priority
     case pressure
     case progress
     case steps
@@ -34,8 +33,6 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
             return "Status Badge"
         case .schedule:
             return "Schedule and Due Dates"
-        case .priority:
-            return "Priority"
         case .pressure:
             return "Pressure"
         case .progress:
@@ -67,8 +64,6 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
             return "Due, overdue, done, paused, and todo state."
         case .schedule:
             return "Recurrence cadence and todo deadlines."
-        case .priority:
-            return "Low, medium, high, and urgent labels."
         case .pressure:
             return "Low, medium, and high pressure labels."
         case .progress:

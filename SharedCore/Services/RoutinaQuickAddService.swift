@@ -122,7 +122,6 @@ enum RoutinaQuickAddService {
             goalIDs: goalIDs,
             scheduleAnchor: referenceDate
         )
-        task.showsTaskDetailPriority = draft.hasExplicitPriority
         task.hasExplicitImportance = draft.hasExplicitPriority
         task.hasExplicitUrgency = draft.hasExplicitPriority
 

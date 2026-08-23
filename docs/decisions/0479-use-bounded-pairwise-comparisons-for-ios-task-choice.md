@@ -10,7 +10,7 @@ Accepted
 
 ## Refines
 
-[0424 Make Task Detail Priority Optional](0424-make-task-detail-priority-optional.md),
+[0424 Make Task Detail Priority Optional](superseded/0424-make-task-detail-priority-optional.md),
 [0468 Model Task Thinking Needed Separately](0468-model-task-thinking-needed-separately.md),
 and [0476 Keep Guided Review Card and Detail Work Bounded](0476-keep-guided-review-card-and-detail-work-bounded.md)
 

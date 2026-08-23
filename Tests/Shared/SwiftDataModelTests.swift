@@ -33,7 +33,6 @@ struct SwiftDataModelTests {
         #expect(task.priority == .none)
         #expect(!task.showsTaskDetailHistory)
         #expect(!task.isTaskDetailCalendarExpanded)
-        #expect(!task.showsTaskDetailPriority)
         #expect(!task.hasExplicitImportance)
         #expect(!task.hasExplicitUrgency)
         #expect(task.importance == .level2)
@@ -177,11 +176,11 @@ struct SwiftDataModelTests {
     }
 
     @Test
-    func routineTask_recordPreservesRoutineLikeMetadataWithGentleRepeat() {
+    func gentleRoutinePreservesRoutineMetadata() {
         let date = Date(timeIntervalSince1970: 1_780_000_000)
         let exactTime = RoutineTimeOfDay(hour: 16, minute: 45)
         let checklistItem = RoutineChecklistItem(title: "Summarize findings", intervalDays: 5)
-        let record = RoutineTask(
+        let task = RoutineTask(
             name: "Research session",
             plannedDate: date,
             isAllDay: false,
@@ -189,44 +188,44 @@ struct SwiftDataModelTests {
             reminderAt: date,
             steps: [RoutineStep(title: "Collect sources")],
             checklistItems: [checklistItem],
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             interval: 14,
             recurrenceRule: .interval(days: 14, at: exactTime),
-            trackingNudgesEnabled: false
+            nudgesEnabled: false
         )
 
-        #expect(record.plannedDate == RoutineTask.normalizedPlannedDate(date))
-        #expect(record.reminderAt == nil)
-        #expect(record.routineDurationMode == .multiDay)
-        #expect(record.isMultiDayRoutine)
-        #expect(record.scheduleMode.scheduleBehavior == .soft)
-        #expect(record.isSoftIntervalRoutine)
-        #expect(!record.surfacesSoftIntervalNudges)
-        #expect(record.recurrenceRule == .interval(days: 14, at: exactTime))
-        #expect(record.interval == 14)
-        #expect(record.steps.map(\.title) == ["Collect sources"])
-        #expect(record.checklistItems.map(\.title) == ["Summarize findings"])
-        #expect(record.checklistItems.map(\.intervalDays) == [1])
-        #expect(record.detachedCopy().routineDurationMode == .multiDay)
-        #expect(!record.detachedCopy().trackingNudgesEnabled)
+        #expect(task.plannedDate == RoutineTask.normalizedPlannedDate(date))
+        #expect(task.reminderAt == date)
+        #expect(task.routineDurationMode == .multiDay)
+        #expect(task.isMultiDayRoutine)
+        #expect(task.scheduleMode.scheduleBehavior == .soft)
+        #expect(task.isSoftIntervalRoutine)
+        #expect(!task.surfacesSoftIntervalNudges)
+        #expect(task.recurrenceRule == .interval(days: 14, at: exactTime))
+        #expect(task.interval == 14)
+        #expect(task.steps.map(\.title) == ["Collect sources"])
+        #expect(task.checklistItems.map(\.title) == ["Summarize findings"])
+        #expect(task.checklistItems.map(\.intervalDays) == [1])
+        #expect(task.detachedCopy().routineDurationMode == .multiDay)
+        #expect(!task.detachedCopy().nudgesEnabled)
     }
 
     @Test
-    func trackingCanDisableCadenceEntirely() {
+    func routineCanDisableCadenceEntirely() {
         let task = RoutineTask(
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .weekly(on: [2, 6]),
-            trackingCadenceEnabled: false,
-            trackingNudgesEnabled: true
+            cadenceEnabled: false,
+            nudgesEnabled: true
         )
 
-        #expect(!task.trackingCadenceEnabled)
-        #expect(!task.trackingNudgesEnabled)
+        #expect(!task.cadenceEnabled)
+        #expect(!task.nudgesEnabled)
         #expect(!task.isSoftIntervalRoutine)
         #expect(!task.surfacesSoftIntervalNudges)
         #expect(task.recurrenceRule == .interval(days: 1))
         #expect(task.interval == 1)
-        #expect(!task.detachedCopy().trackingCadenceEnabled)
+        #expect(!task.detachedCopy().cadenceEnabled)
     }
 
     @Test
@@ -235,7 +234,7 @@ struct SwiftDataModelTests {
         let task = RoutineTask(
             name: "Replace filter",
             scheduleMode: .fixedInterval,
-            trackingCadenceEnabled: false,
+            cadenceEnabled: false,
             autoPauseAfterCompletion: true
         )
 
@@ -261,14 +260,14 @@ struct SwiftDataModelTests {
         let task = RoutineTask(
             scheduleMode: .softInterval,
             recurrenceRule: .interval(days: 14),
-            trackingNudgesEnabled: false
+            nudgesEnabled: false
         )
 
-        #expect(task.trackingCadenceEnabled)
-        #expect(!task.trackingNudgesEnabled)
+        #expect(task.cadenceEnabled)
+        #expect(!task.nudgesEnabled)
         #expect(task.isSoftIntervalRoutine)
         #expect(!task.surfacesSoftIntervalNudges)
-        #expect(!task.detachedCopy().trackingNudgesEnabled)
+        #expect(!task.detachedCopy().nudgesEnabled)
     }
 
     @Test
@@ -339,19 +338,19 @@ struct SwiftDataModelTests {
         #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFormat == .runout)
         #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFinishMode == .checklist)
         #expect(RoutineScheduleMode.softDerivedFromChecklist.checklistTimingMode == .runout)
-        #expect(RoutineScheduleMode.recordDerivedFromChecklist.taskType == .record)
-        #expect(RoutineScheduleMode.recordDerivedFromChecklist.scheduleBehavior == .soft)
-        #expect(RoutineScheduleMode.recordDerivedFromChecklist.routineFormat == .runout)
-        #expect(RoutineScheduleMode.recordDerivedFromChecklist.routineFinishMode == .checklist)
-        #expect(RoutineScheduleMode.recordDerivedFromChecklist.checklistTimingMode == .runout)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.taskType == .routine)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.scheduleBehavior == .soft)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFormat == .runout)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFinishMode == .checklist)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.checklistTimingMode == .runout)
         #expect(RoutineScheduleMode.fixedInterval.routineFinishMode == .standard)
         #expect(RoutineScheduleMode.derivedFromChecklist.replacingRoutineFinishMode(.standard) == .fixedInterval)
         #expect(RoutineScheduleMode.derivedFromChecklist.replacingRoutineFinishMode(.checklist) == .derivedFromChecklist)
         #expect(RoutineScheduleMode.fixedInterval.replacingRoutineFinishMode(.checklist) == .fixedIntervalChecklist)
         #expect(RoutineScheduleMode.derivedFromChecklist.replacingChecklistTimingMode(.together) == .fixedIntervalChecklist)
         #expect(RoutineScheduleMode.softIntervalChecklist.replacingChecklistTimingMode(.runout) == .softDerivedFromChecklist)
-        #expect(RoutineScheduleMode.recordChecklist.replacingChecklistTimingMode(.runout) == .recordDerivedFromChecklist)
-        #expect(RoutineScheduleMode.recordDerivedFromChecklist.replacingChecklistTimingMode(.together) == .recordChecklist)
+        #expect(RoutineScheduleMode.softIntervalChecklist.replacingChecklistTimingMode(.runout) == .softDerivedFromChecklist)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.replacingChecklistTimingMode(.together) == .softIntervalChecklist)
 
         #expect(RoutineScheduleBehavior.fixed.rawValue == "Due")
         #expect(RoutineScheduleBehavior.soft.rawValue == "Gentle")

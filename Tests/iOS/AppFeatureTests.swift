@@ -151,7 +151,7 @@ struct AppFeatureTests {
         let persistedRules = LockIsolated<[RoutineFlagRule]>([])
         let store = TestStore(
             initialState: AppFeature.State(
-                settings: SettingsFeature.State(flags: .init(definedFlags: ["Tracking"]))
+                settings: SettingsFeature.State(flags: .init(definedFlags: ["Reference"]))
             )
         ) {
             AppFeature()
@@ -161,25 +161,25 @@ struct AppFeatureTests {
         }
 
         await store.send(.settings(.addFlagRuleTapped(
-            flagName: "Tracking",
+            flagName: "Reference",
             kind: .hideFromTaskLists
         ))) {
             $0.home.flagRules = [
-                RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
+                RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)
             ]
             $0.settings.flags.rules = [
-                RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)
+                RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)
             ]
-            $0.settings.flags.statusMessage = "Added hide tasks from normal task lists for Tracking."
+            $0.settings.flags.statusMessage = "Added hide tasks from normal task lists for Reference."
         }
 
         await store.send(.settings(.removeFlagRuleTapped(
-            flagName: "Tracking",
+            flagName: "Reference",
             kind: .hideFromTaskLists
         ))) {
             $0.home.flagRules = []
             $0.settings.flags.rules = []
-            $0.settings.flags.statusMessage = "Removed hide tasks from normal task lists for Tracking."
+            $0.settings.flags.statusMessage = "Removed hide tasks from normal task lists for Reference."
         }
     }
 

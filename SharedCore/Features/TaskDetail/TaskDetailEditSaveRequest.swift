@@ -48,9 +48,9 @@ struct TaskDetailEditSaveRequest: Equatable {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool
-    var trackingCadenceEnabled: Bool
+    var cadenceEnabled: Bool
     var autoPauseAfterCompletion: Bool
-    var trackingNudgesEnabled: Bool
+    var nudgesEnabled: Bool
     var taskLadderGroupEnabled: Bool
 }
 
@@ -118,13 +118,13 @@ struct TaskDetailEditSaveRequestBuilder {
             return nil
         }
 
-        let trackingCadenceEnabled = scheduleMode.taskType == .todo
+        let cadenceEnabled = scheduleMode.taskType == .todo
             ? true
-            : state.editTrackingCadenceEnabled
+            : state.editCadenceEnabled
         let recurrenceDraft = contextualRecurrenceDraft(
             state.recurrenceDraftForPersistence(calendar: calendar),
             scheduleMode: scheduleMode,
-            trackingCadenceEnabled: trackingCadenceEnabled,
+            cadenceEnabled: cadenceEnabled,
             autoPauseAfterCompletion: state.editAutoPauseAfterCompletion,
             recurrenceKind: state.editRecurrenceKind
         )
@@ -160,7 +160,7 @@ struct TaskDetailEditSaveRequestBuilder {
                     scheduleMode: scheduleMode,
                     recurrenceRule: recurrenceRule,
                     checklistItems: sanitizedChecklistItems,
-                    trackingCadenceEnabled: trackingCadenceEnabled
+                    cadenceEnabled: cadenceEnabled
                 )
                 ? RoutineTask.effectivePlannedDate(
                     plannedDate: state.editPlannedDate,
@@ -178,7 +178,7 @@ struct TaskDetailEditSaveRequestBuilder {
             temporalWeightRule: RoutineTaskTemporalWeightResolver.sanitizedRule(
                 state.editTemporalWeightRule,
                 scheduleMode: scheduleMode,
-                cadenceEnabled: trackingCadenceEnabled,
+                cadenceEnabled: cadenceEnabled,
                 importance: state.editImportance,
                 urgency: state.editUrgency,
                 pressure: state.editPressure
@@ -196,7 +196,7 @@ struct TaskDetailEditSaveRequestBuilder {
             goals: state.editRoutineGoals,
             eventIDs: RoutineEventIDStorage.sanitized(state.editEventIDs),
             relationships: state.editRelationships,
-            steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff || scheduleMode == .record)
+            steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
                 ? state.editRoutineSteps
                 : [],
             checklistItems: sanitizedChecklistItems,
@@ -219,12 +219,12 @@ struct TaskDetailEditSaveRequestBuilder {
             actualDurationMinutes: state.editActualDurationMinutes,
             storyPoints: state.editStoryPoints,
             focusModeEnabled: state.editFocusModeEnabled,
-            trackingCadenceEnabled: trackingCadenceEnabled,
+            cadenceEnabled: cadenceEnabled,
             autoPauseAfterCompletion: scheduleMode.taskType == .todo
                 ? false
-                : (!trackingCadenceEnabled && recurrenceDraft.cadence == .manual),
-            trackingNudgesEnabled: scheduleMode.usesRoutineCadence
-                ? trackingCadenceEnabled && state.editTrackingNudgesEnabled
+                : (!cadenceEnabled && recurrenceDraft.cadence == .manual),
+            nudgesEnabled: scheduleMode.usesRoutineCadence
+                ? cadenceEnabled && state.editNudgesEnabled
                 : true,
             taskLadderGroupEnabled: state.editTaskLadderGroupEnabled
         )
@@ -233,12 +233,12 @@ struct TaskDetailEditSaveRequestBuilder {
     private func contextualRecurrenceDraft(
         _ recurrenceDraft: RoutineRecurrenceDraft,
         scheduleMode: RoutineScheduleMode,
-        trackingCadenceEnabled: Bool,
+        cadenceEnabled: Bool,
         autoPauseAfterCompletion: Bool,
         recurrenceKind: RoutineRecurrenceRule.Kind
     ) -> RoutineRecurrenceDraft {
         let cadence: RoutineRecurrenceDraft.Cadence
-        if !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
+        if !scheduleMode.usesRoutineCadence || !cadenceEnabled {
             cadence = autoPauseAfterCompletion ? .manual : .none
         } else if scheduleMode.isChecklistDrivenMode {
             cadence = .itemRunout
@@ -377,7 +377,7 @@ extension TaskDetailFeature {
                 availabilityStartDate: updatedTask.availabilityStartDate,
                 availabilityEndDate: updatedTask.availabilityEndDate,
                 isAllDay: updatedTask.isAllDay,
-                trackingCadenceEnabled: request.trackingCadenceEnabled,
+                cadenceEnabled: request.cadenceEnabled,
                 hasSequentialSteps: !request.steps.isEmpty,
                 hasChecklistItems: !request.checklistItems.isEmpty
             )
@@ -390,26 +390,25 @@ extension TaskDetailFeature {
             request.estimatedDurationMinutes
         )
         updatedTask.actualDurationMinutes = request.scheduleMode.taskType == .todo
-            || request.scheduleMode.taskType == .record
             ? RoutineTask.sanitizedActualDurationMinutes(request.actualDurationMinutes)
             : nil
         updatedTask.storyPoints = RoutineTask.sanitizedStoryPoints(request.storyPoints)
         updatedTask.focusModeEnabled = request.focusModeEnabled
-        updatedTask.trackingCadenceEnabled = request.scheduleMode.taskType == .todo
+        updatedTask.cadenceEnabled = request.scheduleMode.taskType == .todo
             ? true
-            : request.trackingCadenceEnabled
+            : request.cadenceEnabled
         updatedTask.autoPauseAfterCompletion = request.scheduleMode.taskType != .todo
-            && !updatedTask.trackingCadenceEnabled
+            && !updatedTask.cadenceEnabled
             && request.autoPauseAfterCompletion
-        updatedTask.trackingNudgesEnabled = request.scheduleMode.usesRoutineCadence
-            ? request.trackingCadenceEnabled && request.trackingNudgesEnabled
+        updatedTask.nudgesEnabled = request.scheduleMode.usesRoutineCadence
+            ? request.cadenceEnabled && request.nudgesEnabled
             : true
 
         if previousScheduleMode != request.scheduleMode || previousRecurrenceRule != request.recurrenceRule {
             updatedTask.lastSatisfiedScheduledOccurrenceAt = nil
         }
 
-        if !request.scheduleMode.usesRoutineCadence || !updatedTask.trackingCadenceEnabled {
+        if !request.scheduleMode.usesRoutineCadence || !updatedTask.cadenceEnabled {
             updatedTask.scheduleAnchor = updatedTask.lastDone
             updatedTask.interval = 1
         } else if previousScheduleMode != request.scheduleMode || previousRecurrenceRule != request.recurrenceRule {
@@ -449,9 +448,6 @@ enum TaskDetailRoutineChecklistModeNormalizer {
            existingChecklistItems.isEmpty,
            !candidateChecklistItems.isEmpty,
            candidateSteps.isEmpty {
-            if currentMode.taskType == .record {
-                return .recordChecklist
-            }
             return RoutineScheduleMode.routineMode(
                 behavior: currentMode.scheduleBehavior,
                 format: .checklist
@@ -461,9 +457,6 @@ enum TaskDetailRoutineChecklistModeNormalizer {
         if currentMode.isRoutineModeRequiringChecklistItems,
            candidateChecklistItems.isEmpty,
            !existingChecklistItems.isEmpty {
-            if currentMode.taskType == .record {
-                return .record
-            }
             return RoutineScheduleMode.routineMode(
                 behavior: currentMode.scheduleBehavior,
                 format: .standard

@@ -75,7 +75,7 @@ struct HomeTaskTypeBadgeView: View {
 
     private var tint: Color {
         switch taskType {
-        case .routine, .record:
+        case .routine:
             return .green
         case .todo:
             return .blue

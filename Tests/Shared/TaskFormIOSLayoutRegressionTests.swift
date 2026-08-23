@@ -54,7 +54,7 @@ struct TaskFormIOSLayoutRegressionTests {
     @Test
     func tagsKeepSuggestionsBoundedAndBrowseTheFullCatalogInASearchablePicker() throws {
         let source = try Self.sourceFile(
-            "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"
+            "iOS/Screens/Shared/TaskFormIOSOrganizationSection.swift"
         )
         let tagChips = try Self.sourceSection(
             startingAt: "private var tagChipsContent",
@@ -115,7 +115,7 @@ struct TaskFormIOSLayoutRegressionTests {
     @Test
     func flagsUseIntrinsicWidthBeforeWrappingInTaskForms() throws {
         let source = try Self.sourceFile(
-            "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"
+            "iOS/Screens/Shared/TaskFormIOSOrganizationSection.swift"
         )
         let flagEditor = try Self.sourceSection(
             startingAt: "private var flagEditor",
@@ -134,7 +134,7 @@ struct TaskFormIOSLayoutRegressionTests {
             "iOS/Screens/Shared/TaskFormContentPlatform.swift"
         )
         let tagsSource = try Self.sourceFile(
-            "iOS/Screens/Shared/TaskFormIOSTagsSection.swift"
+            "iOS/Screens/Shared/TaskFormIOSOrganizationSection.swift"
         )
 
         #expect(formSource.contains("@State private var isTagPickerPresented = false"))
@@ -145,13 +145,13 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
-    func importanceAndUrgencyUseIndependentIOSControls() throws {
+    func taskLadderValuesShareOneIOSSectionWithIndependentControlsAndTimeRules() throws {
         let formSections = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormIOSSections.swift"
         )
-        let formPrioritySection = try Self.sourceSection(
-            startingAt: "struct TaskFormIOSImportanceUrgencySection",
-            endingAt: "struct TaskFormIOSPressureSection",
+        let formValuesSection = try Self.sourceSection(
+            startingAt: "struct TaskFormIOSTaskLadderValuesSection",
+            endingAt: "struct TaskFormIOSScheduleTypeSection",
             in: formSections
         )
         let homeFilters = try Self.sourceFile(
@@ -166,12 +166,15 @@ struct TaskFormIOSLayoutRegressionTests {
             "iOS/Screens/Home/HomeFiltersSheetView.swift"
         )
 
-        #expect(formPrioritySection.contains("Section(header: Text(\"Importance\"))"))
-        #expect(formPrioritySection.contains("accessibilityLabel: \"Importance\""))
-        #expect(formPrioritySection.contains("Section(header: Text(\"Urgency\"))"))
-        #expect(formPrioritySection.contains("accessibilityLabel: \"Urgency\""))
-        #expect(!formPrioritySection.contains("ImportanceUrgencyMatrixPicker"))
-        #expect(!formPrioritySection.contains(".sheet("))
+        #expect(formValuesSection.contains("Section(header: Text(\"Task Ladder values\"))"))
+        for label in ["Importance", "Urgency", "Pressure", "Thinking needed"] {
+            #expect(formValuesSection.contains("accessibilityLabel: \"\(label)\""))
+        }
+        #expect(formValuesSection.contains("Label(\"Changes over time\""))
+        #expect(formValuesSection.contains("TaskTemporalWeightRuleEditor("))
+        #expect(formValuesSection.contains("model.temporalWeightAvailabilityMessage"))
+        #expect(!formValuesSection.contains("ImportanceUrgencyMatrixPicker"))
+        #expect(!formValuesSection.contains(".sheet("))
         #expect(!formSections.contains("TaskFormIOSPriorityPickerSheet"))
 
         #expect(homePriorityEntries.contains("title: \"Importance\""))
@@ -186,6 +189,20 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(homeFilterSheet.contains("HomeFiltersImportancePickerSheet("))
         #expect(homeFilterSheet.contains("case .urgency:"))
         #expect(homeFilterSheet.contains("HomeFiltersUrgencyPickerSheet("))
+    }
+
+    @Test
+    func organizationKeepsPathTagsFlagsAndTaskLadderGroupTogether() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSOrganizationSection.swift"
+        )
+
+        #expect(source.contains("struct TaskFormIOSOrganizationSection"))
+        #expect(source.contains("Section(header: Text(\"Organization\"))"))
+        #expect(source.contains("Picker(\"Path\""))
+        #expect(source.contains("Text(\"Tags\")"))
+        #expect(source.contains("Text(\"Flags\")"))
+        #expect(source.contains("Toggle(\"Use as Task Ladder group\""))
     }
 
     @Test

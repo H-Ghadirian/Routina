@@ -129,9 +129,4 @@ struct StatsDashboardItemAvailabilityTests {
         ))
     }
 
-    @Test
-    func userFacingDashboardOmitsTrackingItems() {
-        #expect(!StatsDashboardItem.allCases.map(\.rawValue).contains("trackingCount"))
-        #expect(!StatsDashboardItem.allCases.map(\.rawValue).contains("trackingTime"))
-    }
 }

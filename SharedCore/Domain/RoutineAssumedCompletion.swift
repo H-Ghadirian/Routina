@@ -18,7 +18,7 @@ enum RoutineAssumedCompletion {
                 availabilityStartDate: task.availabilityStartDate,
                 availabilityEndDate: task.availabilityEndDate,
                 isAllDay: task.isAllDay,
-                trackingCadenceEnabled: task.trackingCadenceEnabled,
+                cadenceEnabled: task.cadenceEnabled,
                 hasSequentialSteps: task.hasSequentialSteps,
                 hasChecklistItems: task.hasChecklistItems
             )
@@ -31,7 +31,7 @@ enum RoutineAssumedCompletion {
         availabilityStartDate: Date? = nil,
         availabilityEndDate: Date? = nil,
         isAllDay: Bool = false,
-        trackingCadenceEnabled: Bool = true,
+        cadenceEnabled: Bool = true,
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> Bool {
@@ -46,7 +46,7 @@ enum RoutineAssumedCompletion {
         }
 
         guard scheduleMode.usesRoutineCadence,
-              trackingCadenceEnabled,
+              cadenceEnabled,
               !hasSequentialSteps,
               supportsAssumedCompletion(
                 recurrenceRule,
@@ -70,7 +70,7 @@ enum RoutineAssumedCompletion {
         availabilityStartDate: Date? = nil,
         availabilityEndDate: Date? = nil,
         isAllDay: Bool = false,
-        trackingCadenceEnabled: Bool = true,
+        cadenceEnabled: Bool = true,
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> Bool {
@@ -81,7 +81,7 @@ enum RoutineAssumedCompletion {
             availabilityStartDate: availabilityStartDate,
             availabilityEndDate: availabilityEndDate,
             isAllDay: isAllDay,
-            trackingCadenceEnabled: trackingCadenceEnabled,
+            cadenceEnabled: cadenceEnabled,
             hasSequentialSteps: hasSequentialSteps,
             hasChecklistItems: hasChecklistItems
         ) else {
@@ -102,7 +102,7 @@ enum RoutineAssumedCompletion {
         availabilityStartDate: Date? = nil,
         availabilityEndDate: Date? = nil,
         isAllDay: Bool = false,
-        trackingCadenceEnabled: Bool = true,
+        cadenceEnabled: Bool = true,
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> String? {
@@ -113,7 +113,7 @@ enum RoutineAssumedCompletion {
             availabilityStartDate: availabilityStartDate,
             availabilityEndDate: availabilityEndDate,
             isAllDay: isAllDay,
-            trackingCadenceEnabled: trackingCadenceEnabled,
+            cadenceEnabled: cadenceEnabled,
             hasSequentialSteps: hasSequentialSteps,
             hasChecklistItems: hasChecklistItems
         ) else {
@@ -132,14 +132,13 @@ enum RoutineAssumedCompletion {
         if scheduleMode == .oneOff {
             return "Use exactly one availability date and a Time block."
         }
-        if !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
+        if !scheduleMode.usesRoutineCadence || !cadenceEnabled {
             return "Add a supported repeating schedule."
         }
         if recurrenceRule.advanced?.occursMoreThanOncePerDay == true {
             return "Use a schedule with at most one occurrence per day."
         }
         if scheduleMode.scheduleBehavior != .soft,
-           scheduleMode.taskType != .record,
            !supportsRollingAfterCompletionAssumption(
                 recurrenceRule,
                 scheduleMode: scheduleMode

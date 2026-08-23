@@ -129,7 +129,7 @@ struct HomeRoutineDisplayFactory {
             interval: max(Int(task.interval), 1),
             recurrenceRule: task.recurrenceRule,
             scheduleMode: task.scheduleMode,
-            trackingCadenceEnabled: task.trackingCadenceEnabled,
+            cadenceEnabled: task.cadenceEnabled,
             estimatedDurationMinutes: task.estimatedDurationMinutes,
             createdAt: task.createdAt,
             isSoftIntervalRoutine: task.isSoftIntervalRoutine,

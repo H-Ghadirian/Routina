@@ -162,13 +162,13 @@ enum HomeTaskLifecycleSupport {
             calendar: calendar
         ) {
             completionDate = exactTimedTarget
-        } else if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        } else if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             return nil
         } else {
             completionDate = referenceDate
         }
 
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             let missedDates = RoutineDateMath.missedExactTimedOccurrenceDates(
                 for: task,
                 referenceDate: referenceDate,

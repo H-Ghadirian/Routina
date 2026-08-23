@@ -280,24 +280,16 @@ enum CloudKitDirectPullTaskRecordParser {
                 "cd_storypoints"
             ]
         )
-        let trackingCadenceEnabledValue = boolValue(
+        let cadenceEnabledValue = boolValue(
             in: record,
             keys: [
-                "trackingCadenceEnabled",
-                "TRACKINGCADENCEENABLED",
-                "ztrackingcadenceenabled",
-                "ZTRACKINGCADENCEENABLED",
-                "cd_trackingcadenceenabled"
+                "cadenceEnabled"
             ]
         )
-        let trackingNudgesEnabledValue = boolValue(
+        let nudgesEnabledValue = boolValue(
             in: record,
             keys: [
-                "trackingNudgesEnabled",
-                "TRACKINGNUDGESENABLED",
-                "ztrackingnudgesenabled",
-                "ZTRACKINGNUDGESENABLED",
-                "cd_trackingnudgesenabled"
+                "nudgesEnabled"
             ]
         )
         let pressureValue = stringValue(
@@ -383,8 +375,8 @@ enum CloudKitDirectPullTaskRecordParser {
                 || estimatedDurationMinutesValue != nil
                 || actualDurationMinutesValue != nil
                 || storyPointsValue != nil
-                || trackingCadenceEnabledValue != nil
-                || trackingNudgesEnabledValue != nil
+                || cadenceEnabledValue != nil
+                || nudgesEnabledValue != nil
                 || autoAssumeDailyDoneValue != nil
                 || hidesAssumedDoneCalendarBlockValue != nil
                 || autoAssumeDoneTimeOfDayHourValue != nil
@@ -472,8 +464,8 @@ enum CloudKitDirectPullTaskRecordParser {
             estimatedDurationMinutes: estimatedDurationMinutesValue,
             actualDurationMinutes: RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutesValue),
             storyPoints: storyPointsValue,
-            trackingCadenceEnabled: trackingCadenceEnabledValue,
-            trackingNudgesEnabled: trackingNudgesEnabledValue,
+            cadenceEnabled: cadenceEnabledValue,
+            nudgesEnabled: nudgesEnabledValue,
             pressure: pressureValue,
             pressureUpdatedAt: pressureUpdatedAtValue,
             thinkingNeeded: thinkingNeededValue,

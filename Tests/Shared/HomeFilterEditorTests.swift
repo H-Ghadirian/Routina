@@ -155,7 +155,7 @@ struct HomeFilterEditorTests {
         var hideUnavailableRoutines = false
 
         HomeFilterEditor.apply(
-            .selectedFlags(["Tracking", "Focus"]),
+            .selectedFlags(["Reference", "Focus"]),
             taskFilters: &taskFilters,
             hideUnavailableRoutines: &hideUnavailableRoutines
         )
@@ -165,7 +165,7 @@ struct HomeFilterEditorTests {
             hideUnavailableRoutines: &hideUnavailableRoutines
         )
 
-        #expect(taskFilters.selectedFlags == ["Tracking", "Focus"])
+        #expect(taskFilters.selectedFlags == ["Reference", "Focus"])
         #expect(taskFilters.includeFlagMatchMode == .any)
     }
 
@@ -177,7 +177,7 @@ struct HomeFilterEditorTests {
             selectedTag: "Focus",
             selectedTags: ["Focus", "Health"],
             includeTagMatchMode: .any,
-            selectedFlags: ["Tracking", "Focus"],
+            selectedFlags: ["Reference", "Focus"],
             includeFlagMatchMode: .any,
             excludedTags: ["Admin"],
             excludeTagMatchMode: .all,

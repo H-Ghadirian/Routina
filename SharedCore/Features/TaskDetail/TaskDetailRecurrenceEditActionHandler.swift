@@ -177,7 +177,7 @@ struct TaskDetailRecurrenceEditActionHandler {
     ) -> Effect<Action> {
         state.editRecurrenceEditorMode = mode
         if mode == .advanced {
-            state.editTrackingCadenceEnabled = true
+            state.editCadenceEnabled = true
         }
         synchronizeRecurrenceDraft(state: &state)
         disableAutoAssumeIfNeeded(state: &state)
@@ -409,8 +409,8 @@ struct TaskDetailRecurrenceEditActionHandler {
             scheduleMode: state.editScheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
             checklistItems: candidateChecklistItems(for: state),
-            trackingCadenceEnabled: state.editScheduleMode.taskType == .record
-                ? state.editTrackingCadenceEnabled
+            cadenceEnabled: state.editScheduleMode.taskType == .routine
+                ? state.editCadenceEnabled
                 : true
         )
     }
@@ -472,24 +472,24 @@ struct TaskDetailRecurrenceEditActionHandler {
 
         switch cadence {
         case .none:
-            state.editTrackingCadenceEnabled = false
+            state.editCadenceEnabled = false
             state.editAutoPauseAfterCompletion = false
-            state.editTrackingNudgesEnabled = false
+            state.editNudgesEnabled = false
             state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
 
         case .manual:
-            state.editTrackingCadenceEnabled = false
+            state.editCadenceEnabled = false
             state.editAutoPauseAfterCompletion = true
-            state.editTrackingNudgesEnabled = false
+            state.editNudgesEnabled = false
             state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
 
         case .itemRunout:
-            state.editTrackingCadenceEnabled = true
+            state.editCadenceEnabled = true
             state.editAutoPauseAfterCompletion = false
             state.editScheduleMode = state.editScheduleMode.replacingChecklistTimingMode(.runout)
 
         case .afterCompletion, .scheduled:
-            state.editTrackingCadenceEnabled = true
+            state.editCadenceEnabled = true
             state.editAutoPauseAfterCompletion = false
             state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
         }
@@ -555,9 +555,6 @@ struct TaskDetailRecurrenceEditActionHandler {
         from scheduleMode: RoutineScheduleMode
     ) -> RoutineScheduleMode {
         guard scheduleMode.isChecklistDrivenMode else { return scheduleMode }
-        if scheduleMode.taskType == .record {
-            return .recordChecklist
-        }
         return RoutineScheduleMode.routineMode(
             behavior: scheduleMode.scheduleBehavior,
             format: .checklist

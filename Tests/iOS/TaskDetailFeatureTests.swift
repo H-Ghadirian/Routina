@@ -1931,7 +1931,7 @@ struct TaskDetailFeatureTests {
         let task = RoutineTask(
             name: "Brush teeth",
             emoji: "🪥",
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
             createdAt: makeDate("2026-02-23T00:00:00Z"),
             autoAssumeDailyDone: true

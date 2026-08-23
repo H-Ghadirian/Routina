@@ -63,7 +63,7 @@ struct StatsFilterPresentationTests {
     func flagMutationsKeepShowAndHideFiltersExclusive() {
         let movedToHidden = StatsFlagFilterMutationSupport.toggledExcluded(
             "Assumed done",
-            selectedFlags: ["Assumed Done", "Tracking"],
+            selectedFlags: ["Assumed Done", "Reference"],
             excludedFlags: ["Private"]
         )
         let removedHidden = StatsFlagFilterMutationSupport.toggledExcluded(
@@ -72,7 +72,7 @@ struct StatsFilterPresentationTests {
             excludedFlags: movedToHidden.excludedFlags
         )
 
-        #expect(movedToHidden.selectedFlags == ["Tracking"])
+        #expect(movedToHidden.selectedFlags == ["Reference"])
         #expect(movedToHidden.excludedFlags == ["Assumed done", "Private"])
         #expect(removedHidden.excludedFlags == ["Assumed done"])
     }
@@ -80,7 +80,7 @@ struct StatsFilterPresentationTests {
     @Test
     func activeSheetFilterCountIncludesFlagRules() {
         let presentation = makePresentation(
-            selectedFlags: ["Tracking"],
+            selectedFlags: ["Reference"],
             excludedFlags: ["Assumed done", "Private"]
         )
 
@@ -155,13 +155,13 @@ struct StatsFilterPresentationTests {
             name: "Research log",
             importance: .level3,
             urgency: .level4,
-            scheduleMode: .record
+            scheduleMode: .softInterval
         )
         let lowRecord = RoutineTask(
             name: "Low log",
             importance: .level2,
             urgency: .level4,
-            scheduleMode: .record
+            scheduleMode: .softInterval
         )
 
         let filtered = StatsTaskTypeMatrixFilterSupport.filteredTasks(

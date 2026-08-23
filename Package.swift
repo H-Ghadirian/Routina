@@ -107,7 +107,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphSheet.swift",
                 // Not yet audited:
                 "SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift",
-                "SharedCore/Screens/TaskDetail/TaskDetailPriorityDisclosureBox.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailTaskLadderValuesBox.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogRowContent.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogRowPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailStatusActionSectionView.swift",
@@ -371,7 +371,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailFocusSessionSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailLogPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailOverviewHeightsPreferenceKey.swift",
-                "SharedCore/Screens/TaskDetail/TaskDetailPriorityPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailValuePresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailRelationshipPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailRelationshipsSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogsSectionView.swift",

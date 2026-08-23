@@ -81,7 +81,7 @@ struct TabFilterStateManagerTests {
             selectedTag: "Work",
             selectedTags: ["Work"],
             includeTagMatchMode: .all,
-            selectedFlags: ["Tracking", "Focus"],
+            selectedFlags: ["Reference", "Focus"],
             includeFlagMatchMode: .any,
             excludedTags: [],
             selectedFilter: .all,
@@ -93,14 +93,14 @@ struct TabFilterStateManagerTests {
             from: JSONEncoder().encode(snapshot)
         )
 
-        #expect(decoded.selectedFlags == ["Tracking", "Focus"])
+        #expect(decoded.selectedFlags == ["Reference", "Focus"])
         #expect(decoded.includeFlagMatchMode == .any)
     }
 
     @Test
     func temporaryViewStateRoundTripPreservesStatsFlagFilters() throws {
         var state = TemporaryViewState.default
-        state.statsSelectedFlags = ["Focus", "Tracking"]
+        state.statsSelectedFlags = ["Focus", "Reference"]
         state.statsIncludeFlagMatchMode = .all
         state.statsExcludedFlags = ["Assumed done"]
         state.statsExcludeFlagMatchMode = .any
@@ -110,7 +110,7 @@ struct TabFilterStateManagerTests {
             from: JSONEncoder().encode(state)
         )
 
-        #expect(decoded.statsSelectedFlags == ["Focus", "Tracking"])
+        #expect(decoded.statsSelectedFlags == ["Focus", "Reference"])
         #expect(decoded.statsIncludeFlagMatchMode == .all)
         #expect(decoded.statsExcludedFlags == ["Assumed done"])
         #expect(decoded.statsExcludeFlagMatchMode == .any)
@@ -121,7 +121,7 @@ struct TabFilterStateManagerTests {
         var state = TemporaryViewState.default
         state.homeSelectedTimelineFlags = ["Private"]
         state.homeTimelineIncludeFlagMatchMode = .any
-        state.timelineSelectedFlags = ["Tracking", "Private"]
+        state.timelineSelectedFlags = ["Reference", "Private"]
         state.timelineIncludeFlagMatchMode = .all
 
         let decoded = try JSONDecoder().decode(
@@ -131,7 +131,7 @@ struct TabFilterStateManagerTests {
 
         #expect(decoded.homeSelectedTimelineFlags == ["Private"])
         #expect(decoded.homeTimelineIncludeFlagMatchMode == .any)
-        #expect(decoded.timelineSelectedFlags == ["Tracking", "Private"])
+        #expect(decoded.timelineSelectedFlags == ["Reference", "Private"])
         #expect(decoded.timelineIncludeFlagMatchMode == .all)
     }
 

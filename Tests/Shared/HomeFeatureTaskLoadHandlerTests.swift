@@ -57,7 +57,7 @@ struct HomeFeatureTaskLoadHandlerTests {
         #expect(state.isLoading == false)
         #expect(state.hasLoadedTaskSnapshot)
         #expect(state.relatedTagRules == [RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Planning"])])
-        #expect(state.flagRules == [RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)])
+        #expect(state.flagRules == [RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)])
         #expect(state.tagColors == ["Focus": "#112233", "validated": "true"])
         #expect(recorder.events == ["refresh", "sync", "validate", "persist", "detail"])
         #expect(recorder.persistedStates.map(\.routineTasks.count) == [1])
@@ -67,7 +67,7 @@ struct HomeFeatureTaskLoadHandlerTests {
     private func makeHandler(_ recorder: TestTaskLoadRecorder) -> HomeFeatureTaskLoadHandler<TestTaskLoadState, TestTaskLoadAction> {
         HomeFeatureTaskLoadHandler(
             relatedTagRules: { [RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Planning"])] },
-            flagRules: { [RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)] },
+            flagRules: { [RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)] },
             tagColors: { ["Focus": "#112233"] },
             refreshDisplays: { state in
                 recorder.events.append("refresh")

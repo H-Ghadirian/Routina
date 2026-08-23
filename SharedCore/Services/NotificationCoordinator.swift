@@ -133,7 +133,7 @@ enum NotificationCoordinator {
             ) != .distantFuture
         }
 
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             return RoutineDateMath.upcomingDueDate(
                 for: task,
                 referenceDate: referenceDate,
@@ -318,7 +318,7 @@ enum NotificationCoordinator {
                 calendar: .current
             ) {
                 completionDate = exactTimedTarget
-            } else if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            } else if RoutineDateMath.usesExactTimedOccurrences(for: task) {
                 if shouldScheduleNotification(for: task, referenceDate: now) {
                     await scheduleNotification(notificationPayload(for: task, referenceDate: now))
                 } else {

@@ -36,12 +36,6 @@ struct AddRoutineScheduleMutationHandler {
             state.basics.routineDurationMode = .oneDay
             state.basics.autoPauseAfterCompletion = false
         }
-        if mode.taskType == .record {
-            state.basics.deadline = nil
-            state.basics.availabilityStartDate = nil
-            state.basics.availabilityEndDate = nil
-            state.basics.reminderAt = nil
-        }
         normalizeChecklistItemIntervals(state: &state)
         enforceRecurrenceConstraints(state: &state)
         synchronizeRecurrenceDraft(state: &state)
@@ -118,7 +112,7 @@ struct AddRoutineScheduleMutationHandler {
     ) {
         AddRoutineScheduleEditor.setRecurrenceEditorMode(mode, schedule: &state.schedule)
         if mode == .advanced {
-            state.basics.trackingCadenceEnabled = true
+            state.basics.cadenceEnabled = true
             state.basics.autoPauseAfterCompletion = false
         }
         synchronizeRecurrenceDraft(state: &state)
@@ -329,24 +323,24 @@ struct AddRoutineScheduleMutationHandler {
 
         switch cadence {
         case .none:
-            state.basics.trackingCadenceEnabled = false
+            state.basics.cadenceEnabled = false
             state.basics.autoPauseAfterCompletion = false
-            state.basics.trackingNudgesEnabled = false
+            state.basics.nudgesEnabled = false
             state.schedule.scheduleMode = nonRunoutScheduleMode(from: state.schedule.scheduleMode)
 
         case .manual:
-            state.basics.trackingCadenceEnabled = false
+            state.basics.cadenceEnabled = false
             state.basics.autoPauseAfterCompletion = true
-            state.basics.trackingNudgesEnabled = false
+            state.basics.nudgesEnabled = false
             state.schedule.scheduleMode = nonRunoutScheduleMode(from: state.schedule.scheduleMode)
 
         case .itemRunout:
-            state.basics.trackingCadenceEnabled = true
+            state.basics.cadenceEnabled = true
             state.basics.autoPauseAfterCompletion = false
             state.schedule.scheduleMode = state.schedule.scheduleMode.replacingChecklistTimingMode(.runout)
 
         case .afterCompletion, .scheduled:
-            state.basics.trackingCadenceEnabled = true
+            state.basics.cadenceEnabled = true
             state.basics.autoPauseAfterCompletion = false
             state.schedule.scheduleMode = nonRunoutScheduleMode(from: state.schedule.scheduleMode)
         }
@@ -412,9 +406,6 @@ struct AddRoutineScheduleMutationHandler {
         from scheduleMode: RoutineScheduleMode
     ) -> RoutineScheduleMode {
         guard scheduleMode.isChecklistDrivenMode else { return scheduleMode }
-        if scheduleMode.taskType == .record {
-            return .recordChecklist
-        }
         return RoutineScheduleMode.routineMode(
             behavior: scheduleMode.scheduleBehavior,
             format: .checklist

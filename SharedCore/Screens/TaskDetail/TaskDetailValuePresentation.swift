@@ -1,20 +1,6 @@
 import SwiftUI
 
-enum TaskDetailPriorityPresentation {
-    static func priorityTint(for priority: RoutineTaskPriority) -> Color {
-        switch priority {
-        case .none:
-            return .secondary
-        case .low:
-            return .green
-        case .medium:
-            return .yellow
-        case .high:
-            return .orange
-        case .urgent:
-            return .red
-        }
-    }
+enum TaskDetailValuePresentation {
 
     static func importanceTint(for importance: RoutineTaskImportance) -> Color {
         switch importance {
@@ -129,10 +115,6 @@ enum TaskDetailPriorityPresentation {
 }
 
 enum TaskDetailOptionalControlVisibility {
-    static func showsPriority(for task: RoutineTask) -> Bool {
-        showsImportance(for: task) || showsUrgency(for: task)
-    }
-
     static func showsImportance(for task: RoutineTask) -> Bool {
         task.hasExplicitImportance
             || task.importance != .level2
@@ -147,21 +129,12 @@ enum TaskDetailOptionalControlVisibility {
 
     private static func hasLegacyExplicitPriority(for task: RoutineTask) -> Bool {
         guard !task.hasExplicitImportance, !task.hasExplicitUrgency else { return false }
-        return task.showsTaskDetailPriority
-            || (task.priority != .none && task.priority != .medium)
+        return task.priority != .none && task.priority != .medium
     }
 
     static func showsTodoState(for task: RoutineTask) -> Bool {
         guard task.isOneOffTask else { return false }
         return task.todoStateRawValue != nil || task.isPaused
-    }
-
-    static func showsPressure(for task: RoutineTask) -> Bool {
-        task.pressure != .none
-    }
-
-    static func showsThinkingNeeded(for task: RoutineTask) -> Bool {
-        task.thinkingNeeded != .none
     }
 
     static func showsTimeSpent(

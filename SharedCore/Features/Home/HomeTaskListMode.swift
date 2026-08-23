@@ -43,8 +43,6 @@ extension RoutineTask {
             return .routines
         case .todo:
             return .todos
-        case .record:
-            return .routines
         }
     }
 }

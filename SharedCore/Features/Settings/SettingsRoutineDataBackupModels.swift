@@ -117,12 +117,11 @@ extension SettingsRoutineDataPersistence {
             var showsTaskDetailHeatmap: Bool?
             var showsTaskDetailHistory: Bool?
             var isTaskDetailCalendarExpanded: Bool?
-            var showsTaskDetailPriority: Bool?
             var hasExplicitImportance: Bool?
             var hasExplicitUrgency: Bool?
-            var trackingCadenceEnabled: Bool?
+            var cadenceEnabled: Bool?
             var autoPauseAfterCompletion: Bool?
-            var trackingNudgesEnabled: Bool?
+            var nudgesEnabled: Bool?
             var pressure: RoutineTaskPressure?
             var pressureUpdatedAt: Date?
             var thinkingNeeded: RoutineTaskThinkingNeeded?

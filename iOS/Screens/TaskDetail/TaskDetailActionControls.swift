@@ -266,12 +266,8 @@ enum TaskDetailIOSCompletionPresentation {
     }
 }
 
-struct TaskDetailPriorityContextControls: View {
+struct TaskDetailTaskLadderValuesControls: View {
     let store: StoreOf<TaskDetailFeature>
-    let showsImportance: Bool
-    let showsUrgency: Bool
-    let showsPressure: Bool
-    let showsThinkingNeeded: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -290,18 +286,10 @@ struct TaskDetailPriorityContextControls: View {
 
     @ViewBuilder
     private var controls: some View {
-        if showsImportance {
-            TaskDetailImportancePickerPill(store: store)
-        }
-        if showsUrgency {
-            TaskDetailUrgencyPickerPill(store: store)
-        }
-        if showsPressure {
-            TaskDetailPressurePickerPill(store: store)
-        }
-        if showsThinkingNeeded {
-            TaskDetailThinkingNeededPickerPill(store: store)
-        }
+        TaskDetailImportancePickerPill(store: store)
+        TaskDetailUrgencyPickerPill(store: store)
+        TaskDetailPressurePickerPill(store: store)
+        TaskDetailThinkingNeededPickerPill(store: store)
     }
 }
 
@@ -315,9 +303,9 @@ struct TaskDetailPressurePickerPill: View {
         Button {
             isPresented = true
         } label: {
-            Label("Pressure: \(pressure.title)", systemImage: TaskDetailPriorityPresentation.pressureSystemImage(for: pressure))
-                .taskDetailPriorityPillStyle(
-                    tint: TaskDetailPriorityPresentation.pressureTint(for: pressure, style: .compactPill)
+            Label("Pressure: \(pressure.title)", systemImage: TaskDetailValuePresentation.pressureSystemImage(for: pressure))
+                .taskDetailTaskLadderValuePillStyle(
+                    tint: TaskDetailValuePresentation.pressureTint(for: pressure, style: .compactPill)
                 )
         }
         .buttonStyle(.plain)
@@ -345,13 +333,13 @@ struct TaskDetailImportancePickerPill: View {
 
     var body: some View {
         let importance = store.task.importance
-        let tint = TaskDetailPriorityPresentation.importanceTint(for: importance)
+        let tint = TaskDetailValuePresentation.importanceTint(for: importance)
 
         Button {
             isPresented = true
         } label: {
             Label("Importance: \(importance.title)", systemImage: "arrow.up.circle.fill")
-                .taskDetailPriorityPillStyle(tint: tint)
+                .taskDetailTaskLadderValuePillStyle(tint: tint)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Importance")
@@ -378,13 +366,13 @@ struct TaskDetailUrgencyPickerPill: View {
 
     var body: some View {
         let urgency = store.task.urgency
-        let tint = TaskDetailPriorityPresentation.urgencyTint(for: urgency)
+        let tint = TaskDetailValuePresentation.urgencyTint(for: urgency)
 
         Button {
             isPresented = true
         } label: {
             Label("Urgency: \(urgency.title)", systemImage: "clock.fill")
-                .taskDetailPriorityPillStyle(tint: tint)
+                .taskDetailTaskLadderValuePillStyle(tint: tint)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Urgency")
@@ -416,7 +404,7 @@ struct TaskDetailThinkingNeededPickerPill: View {
             isPresented = true
         } label: {
             Label("Thinking: \(level.title)", systemImage: "lightbulb.fill")
-                .taskDetailPriorityPillStyle(tint: .indigo)
+                .taskDetailTaskLadderValuePillStyle(tint: .indigo)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Thinking needed")
@@ -437,7 +425,7 @@ struct TaskDetailThinkingNeededPickerPill: View {
     }
 }
 
-private struct TaskDetailPriorityPillStyle: ViewModifier {
+private struct TaskDetailTaskLadderValuePillStyle: ViewModifier {
     let tint: Color
 
     func body(content: Content) -> some View {
@@ -456,8 +444,8 @@ private struct TaskDetailPriorityPillStyle: ViewModifier {
 }
 
 private extension View {
-    func taskDetailPriorityPillStyle(tint: Color) -> some View {
-        modifier(TaskDetailPriorityPillStyle(tint: tint))
+    func taskDetailTaskLadderValuePillStyle(tint: Color) -> some View {
+        modifier(TaskDetailTaskLadderValuePillStyle(tint: tint))
     }
 }
 
@@ -473,10 +461,10 @@ private struct TaskDetailTodoStatePickerPill: View {
         } label: {
             Label(currentState.displayTitle, systemImage: currentState.systemImage)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .compactPill))
+                .foregroundStyle(TaskDetailValuePresentation.todoStateTint(for: currentState, style: .compactPill))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .compactPill).opacity(0.12), in: Capsule())
+                .background(TaskDetailValuePresentation.todoStateTint(for: currentState, style: .compactPill).opacity(0.12), in: Capsule())
         }
         .buttonStyle(.plain)
         .confirmationDialog("Set State", isPresented: $isPresented) {

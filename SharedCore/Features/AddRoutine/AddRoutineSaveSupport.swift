@@ -126,9 +126,9 @@ struct AddRoutineSaveRequest: Equatable {
     let actualDurationMinutes: Int?
     let storyPoints: Int?
     let focusModeEnabled: Bool
-    let trackingCadenceEnabled: Bool
+    let cadenceEnabled: Bool
     let autoPauseAfterCompletion: Bool
-    let trackingNudgesEnabled: Bool
+    let nudgesEnabled: Bool
     let taskLadderGroupEnabled: Bool
 
     init(
@@ -181,9 +181,9 @@ struct AddRoutineSaveRequest: Equatable {
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false,
-        trackingCadenceEnabled: Bool = true,
+        cadenceEnabled: Bool = true,
         autoPauseAfterCompletion: Bool = false,
-        trackingNudgesEnabled: Bool = true,
+        nudgesEnabled: Bool = true,
         taskLadderGroupEnabled: Bool = false
     ) {
         self.name = name
@@ -206,9 +206,9 @@ struct AddRoutineSaveRequest: Equatable {
             endDate: availabilityEndDate,
             calendar: calendar
         )
-        let resolvedTrackingCadenceEnabled = scheduleMode.taskType == .todo
+        let resolvedCadenceEnabled = scheduleMode.taskType == .todo
             ? true
-            : trackingCadenceEnabled
+            : cadenceEnabled
 
         self.deadline = scheduleMode.taskType == .todo ? deadline : nil
         self.isAllDay = isAllDay
@@ -219,7 +219,7 @@ struct AddRoutineSaveRequest: Equatable {
                 scheduleMode: scheduleMode,
                 recurrenceRule: recurrenceRule,
                 checklistItems: sanitizedChecklistItems,
-                trackingCadenceEnabled: resolvedTrackingCadenceEnabled
+                cadenceEnabled: resolvedCadenceEnabled
             )
             ? RoutineTask.effectivePlannedDate(
                 plannedDate: plannedDate,
@@ -237,7 +237,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
             temporalWeightRule,
             scheduleMode: scheduleMode,
-            cadenceEnabled: resolvedTrackingCadenceEnabled,
+            cadenceEnabled: resolvedCadenceEnabled,
             importance: importance,
             urgency: urgency,
             pressure: pressure
@@ -262,7 +262,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.goals = RoutineGoalSummary.sanitized(goals)
         self.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
         self.relationships = relationships
-        self.steps = (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff || scheduleMode == .record)
+        self.steps = (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
             ? RoutineStep.sanitized(steps)
             : []
         self.scheduleMode = scheduleMode
@@ -272,7 +272,7 @@ struct AddRoutineSaveRequest: Equatable {
             : recurrenceTimeRangeRole
         self.attachments = attachments
         self.color = color
-        self.trackingCadenceEnabled = resolvedTrackingCadenceEnabled
+        self.cadenceEnabled = resolvedCadenceEnabled
         self.autoAssumeDailyDone = autoAssumeDailyDone
             && RoutineAssumedCompletion.canEnable(
                 scheduleMode: scheduleMode,
@@ -281,7 +281,7 @@ struct AddRoutineSaveRequest: Equatable {
                 availabilityStartDate: self.availabilityStartDate,
                 availabilityEndDate: self.availabilityEndDate,
                 isAllDay: self.isAllDay,
-                trackingCadenceEnabled: self.trackingCadenceEnabled,
+                cadenceEnabled: self.cadenceEnabled,
                 hasSequentialSteps: !self.steps.isEmpty,
                 hasChecklistItems: !self.checklistItems.isEmpty
             )
@@ -289,16 +289,16 @@ struct AddRoutineSaveRequest: Equatable {
             && hidesAssumedDoneCalendarBlock
         self.autoAssumeDoneTimeOfDay = self.autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         self.estimatedDurationMinutes = estimatedDurationMinutes
-        self.actualDurationMinutes = scheduleMode.taskType == .record
+        self.actualDurationMinutes = scheduleMode.taskType == .todo
             ? RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
             : nil
         self.storyPoints = storyPoints
         self.focusModeEnabled = focusModeEnabled
         self.autoPauseAfterCompletion = scheduleMode.taskType == .todo
             ? false
-            : (!resolvedTrackingCadenceEnabled && autoPauseAfterCompletion)
-        self.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
-            ? self.trackingCadenceEnabled && trackingNudgesEnabled
+            : (!resolvedCadenceEnabled && autoPauseAfterCompletion)
+        self.nudgesEnabled = scheduleMode.usesRoutineCadence
+            ? self.cadenceEnabled && nudgesEnabled
             : true
         self.taskLadderGroupEnabled = scheduleMode.taskType == .todo
             ? false
@@ -313,9 +313,9 @@ struct AddRoutineSaveRequest: Equatable {
         let schedule = state.schedule
         let checklist = state.checklist
 
-        let trackingCadenceEnabled = schedule.scheduleMode.taskType == .todo
+        let cadenceEnabled = schedule.scheduleMode.taskType == .todo
             ? true
-            : basics.trackingCadenceEnabled
+            : basics.cadenceEnabled
         let recurrenceDraft = state.recurrenceDraftForPersistence(calendar: calendar)
         guard let recurrenceRule = recurrenceDraft.resolvedRecurrenceRule(calendar: calendar) else {
             return nil
@@ -325,7 +325,7 @@ struct AddRoutineSaveRequest: Equatable {
             frequencyInDays = recurrenceDraft.cadence == .none
                 ? 1
                 : recurrenceRule.approximateIntervalDays
-        } else if !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
+        } else if !schedule.scheduleMode.usesRoutineCadence || !cadenceEnabled {
             frequencyInDays = 1
         } else if schedule.recurrenceEditorMode == .advanced {
             frequencyInDays = schedule.advancedRecurrenceRule.approximateIntervalDays
@@ -371,7 +371,7 @@ struct AddRoutineSaveRequest: Equatable {
                 scheduleMode: schedule.scheduleMode,
                 recurrenceRule: self.recurrenceRule,
                 checklistItems: sanitizedChecklistItems,
-                trackingCadenceEnabled: trackingCadenceEnabled
+                cadenceEnabled: cadenceEnabled
             )
             ? RoutineTask.effectivePlannedDate(
                 plannedDate: basics.plannedDate,
@@ -392,7 +392,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
             basics.temporalWeightRule,
             scheduleMode: schedule.scheduleMode,
-            cadenceEnabled: trackingCadenceEnabled,
+            cadenceEnabled: cadenceEnabled,
             importance: basics.importance,
             urgency: basics.urgency,
             pressure: basics.pressure
@@ -416,7 +416,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.goals = organization.routineGoals
         self.eventIDs = RoutineEventIDStorage.sanitized(organization.eventIDs)
         self.relationships = organization.relationships
-        self.steps = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff || schedule.scheduleMode == .record)
+        self.steps = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff)
             ? RoutineStep.sanitized(checklist.routineSteps)
             : []
         self.scheduleMode = schedule.scheduleMode
@@ -427,17 +427,17 @@ struct AddRoutineSaveRequest: Equatable {
         self.attachments = basics.attachments
         self.color = basics.routineColor
         self.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(basics.estimatedDurationMinutes)
-        self.actualDurationMinutes = schedule.scheduleMode.taskType == .record
+        self.actualDurationMinutes = schedule.scheduleMode.taskType == .todo
             ? RoutineTask.sanitizedActualDurationMinutes(basics.actualDurationMinutes)
             : nil
         self.storyPoints = RoutineTask.sanitizedStoryPoints(basics.storyPoints)
         self.focusModeEnabled = basics.focusModeEnabled
-        self.trackingCadenceEnabled = trackingCadenceEnabled
+        self.cadenceEnabled = cadenceEnabled
         self.autoPauseAfterCompletion = schedule.scheduleMode.taskType == .todo
             ? false
-            : (!trackingCadenceEnabled && recurrenceDraft.cadence == .manual)
-        self.trackingNudgesEnabled = schedule.scheduleMode.usesRoutineCadence
-            ? trackingCadenceEnabled && basics.trackingNudgesEnabled
+            : (!cadenceEnabled && recurrenceDraft.cadence == .manual)
+        self.nudgesEnabled = schedule.scheduleMode.usesRoutineCadence
+            ? cadenceEnabled && basics.nudgesEnabled
             : true
         self.taskLadderGroupEnabled = schedule.scheduleMode.taskType == .todo
             ? false
@@ -455,7 +455,7 @@ struct AddRoutineSaveRequest: Equatable {
                 availabilityStartDate: self.availabilityStartDate,
                 availabilityEndDate: self.availabilityEndDate,
                 isAllDay: self.isAllDay,
-                trackingCadenceEnabled: trackingCadenceEnabled,
+                cadenceEnabled: cadenceEnabled,
                 hasSequentialSteps: !self.steps.isEmpty,
                 hasChecklistItems: !self.checklistItems.isEmpty
             )

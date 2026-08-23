@@ -276,7 +276,7 @@ struct RoutineRecurrenceDraftTests {
         let state = AddRoutineFeature.State(
             basics: AddRoutineBasicsState(
                 routineName: "Training",
-                trackingCadenceEnabled: true
+                cadenceEnabled: true
             ),
             schedule: AddRoutineScheduleState(
                 scheduleMode: .fixedInterval,
@@ -349,7 +349,7 @@ struct RoutineRecurrenceDraftTests {
 
         handler.setRecurrenceDraft(draft, state: &state)
 
-        #expect(!state.basics.trackingCadenceEnabled)
+        #expect(!state.basics.cadenceEnabled)
         #expect(state.basics.autoPauseAfterCompletion)
         #expect(state.candidateRecurrenceDraft.cadence == .manual)
         #expect(try #require(AddRoutineSaveRequest(state: state, calendar: calendar)).autoPauseAfterCompletion)
@@ -455,7 +455,7 @@ struct RoutineRecurrenceDraftTests {
         let state = AddRoutineFeature.State(
             basics: AddRoutineBasicsState(
                 routineName: "Advanced training",
-                trackingCadenceEnabled: true
+                cadenceEnabled: true
             ),
             schedule: AddRoutineScheduleState(
                 scheduleMode: .fixedInterval,

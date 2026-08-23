@@ -91,13 +91,12 @@ final class RoutineTask {
     /// The number of persisted task-choice comparisons this task has participated in.
     var taskChoiceComparisonCount: Int16 = 0
     var focusModeEnabled: Bool = false
-    var trackingCadenceEnabled: Bool = true
+    var cadenceEnabled: Bool = true
     var autoPauseAfterCompletion: Bool = false
-    var trackingNudgesEnabled: Bool = true
+    var nudgesEnabled: Bool = true
     var showsTaskDetailHeatmap: Bool = false
     var showsTaskDetailHistory: Bool = false
     var isTaskDetailCalendarExpanded: Bool = false
-    var showsTaskDetailPriority: Bool = false
     var hasExplicitImportance: Bool = false
     var hasExplicitUrgency: Bool = false
     var commentsStorage: String = ""
@@ -199,7 +198,7 @@ final class RoutineTask {
 
     var supportsTaskDetailHeatmap: Bool {
         switch scheduleMode.taskType {
-        case .routine, .record:
+        case .routine:
             return true
         case .todo:
             return false
@@ -462,7 +461,7 @@ final class RoutineTask {
         set {
             let normalizedRule: RoutineRecurrenceRule
             switch scheduleMode.taskType {
-            case .routine, .record:
+            case .routine:
                 normalizedRule = newValue
             case .todo:
                 normalizedRule = RoutineRecurrenceRule.interval(
@@ -550,26 +549,25 @@ final class RoutineTask {
         taskChoiceTieBreakScore: Double = 0,
         taskChoiceComparisonCount: Int16 = 0,
         focusModeEnabled: Bool = false,
-        trackingCadenceEnabled: Bool = true,
+        cadenceEnabled: Bool = true,
         autoPauseAfterCompletion: Bool = false,
-        trackingNudgesEnabled: Bool = true,
+        nudgesEnabled: Bool = true,
         showsTaskDetailHeatmap: Bool = false,
         showsTaskDetailHistory: Bool = false,
         isTaskDetailCalendarExpanded: Bool = false,
-        showsTaskDetailPriority: Bool = false,
         hasExplicitImportance: Bool = false,
         hasExplicitUrgency: Bool = false,
         comments: [RoutineTaskComment] = []
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
-        let resolvedTrackingCadenceEnabled = resolvedScheduleMode.taskType == .todo ? true : trackingCadenceEnabled
+        let resolvedCadenceEnabled = resolvedScheduleMode.taskType == .todo ? true : cadenceEnabled
         let resolvedChecklistItems = checklistItems
-        let inputRecurrenceRule = resolvedTrackingCadenceEnabled
+        let inputRecurrenceRule = resolvedCadenceEnabled
             ? (recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1)))
             : .interval(days: 1)
         let resolvedRecurrenceRule: RoutineRecurrenceRule
         switch resolvedScheduleMode.taskType {
-        case .routine, .record:
+        case .routine:
             resolvedRecurrenceRule = inputRecurrenceRule
         case .todo:
             resolvedRecurrenceRule = RoutineRecurrenceRule.interval(
@@ -603,7 +601,7 @@ final class RoutineTask {
             : routineDurationMode.rawValue
         self.availabilityStartDate = resolvedScheduleMode == .oneOff ? availabilityStartDate : nil
         self.availabilityEndDate = resolvedScheduleMode == .oneOff ? availabilityEndDate : nil
-        self.reminderAt = resolvedScheduleMode.taskType == .record ? nil : reminderAt
+        self.reminderAt = reminderAt
         self.priorityRawValue = priority.rawValue
         self.importanceRawValue = importance.rawValue
         self.urgencyRawValue = urgency.rawValue
@@ -647,11 +645,11 @@ final class RoutineTask {
         self.recurrenceTimeRangeRole = resolvedRecurrenceRule.timeRange == nil
             ? .availability
             : recurrenceTimeRangeRole
-        self.interval = Int16(clamping: resolvedScheduleMode.usesRoutineCadence && resolvedTrackingCadenceEnabled ? resolvedRecurrenceRule.approximateIntervalDays : 1)
+        self.interval = Int16(clamping: resolvedScheduleMode.usesRoutineCadence && resolvedCadenceEnabled ? resolvedRecurrenceRule.approximateIntervalDays : 1)
         self.lastDone = lastDone
         self.lastSatisfiedScheduledOccurrenceAt = lastSatisfiedScheduledOccurrenceAt
         self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil
-        self.scheduleAnchor = resolvedScheduleMode == .oneOff || !resolvedTrackingCadenceEnabled ? lastDone : (scheduleAnchor ?? lastDone)
+        self.scheduleAnchor = resolvedScheduleMode == .oneOff || !resolvedCadenceEnabled ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
         self.pauseUntil = pauseUntil
         self.snoozedUntil = snoozedUntil
@@ -662,7 +660,7 @@ final class RoutineTask {
             RoutineTaskTemporalWeightResolver.sanitizedRule(
                 temporalWeightRule,
                 scheduleMode: resolvedScheduleMode,
-                cadenceEnabled: resolvedTrackingCadenceEnabled,
+                cadenceEnabled: resolvedCadenceEnabled,
                 importance: importance,
                 urgency: urgency,
                 pressure: pressure
@@ -686,17 +684,16 @@ final class RoutineTask {
             : 0
         self.taskChoiceComparisonCount = max(taskChoiceComparisonCount, 0)
         self.focusModeEnabled = focusModeEnabled
-        self.trackingCadenceEnabled = resolvedTrackingCadenceEnabled
+        self.cadenceEnabled = resolvedCadenceEnabled
         self.autoPauseAfterCompletion = resolvedScheduleMode.taskType != .todo
-            && !resolvedTrackingCadenceEnabled
+            && !resolvedCadenceEnabled
             && autoPauseAfterCompletion
-        self.trackingNudgesEnabled = resolvedScheduleMode.usesRoutineCadence
-            ? resolvedTrackingCadenceEnabled && trackingNudgesEnabled
+        self.nudgesEnabled = resolvedScheduleMode.usesRoutineCadence
+            ? resolvedCadenceEnabled && nudgesEnabled
             : true
         self.showsTaskDetailHeatmap = showsTaskDetailHeatmap
         self.showsTaskDetailHistory = showsTaskDetailHistory
         self.isTaskDetailCalendarExpanded = isTaskDetailCalendarExpanded
-        self.showsTaskDetailPriority = showsTaskDetailPriority
         self.hasExplicitImportance = hasExplicitImportance
         self.hasExplicitUrgency = hasExplicitUrgency
         self.commentsStorage = RoutineTaskCommentStorage.serialize(comments)
@@ -1053,13 +1050,12 @@ final class RoutineTask {
             taskChoiceTieBreakScore: taskChoiceTieBreakScore,
             taskChoiceComparisonCount: taskChoiceComparisonCount,
             focusModeEnabled: focusModeEnabled,
-            trackingCadenceEnabled: trackingCadenceEnabled,
+            cadenceEnabled: cadenceEnabled,
             autoPauseAfterCompletion: autoPauseAfterCompletion,
-            trackingNudgesEnabled: trackingNudgesEnabled,
+            nudgesEnabled: nudgesEnabled,
             showsTaskDetailHeatmap: showsTaskDetailHeatmap,
             showsTaskDetailHistory: showsTaskDetailHistory,
             isTaskDetailCalendarExpanded: isTaskDetailCalendarExpanded,
-            showsTaskDetailPriority: showsTaskDetailPriority,
             hasExplicitImportance: hasExplicitImportance,
             hasExplicitUrgency: hasExplicitUrgency,
             comments: comments

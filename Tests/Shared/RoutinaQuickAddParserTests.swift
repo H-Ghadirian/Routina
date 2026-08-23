@@ -579,11 +579,10 @@ struct RoutinaQuickAddParserTests {
         #expect(task.importance == .level2)
         #expect(task.urgency == .level2)
         #expect(task.priority == .none)
-        #expect(!TaskDetailOptionalControlVisibility.showsPriority(for: task))
     }
 
     @Test
-    func createTaskWithExplicitMediumPriorityKeepsPriorityVisible() async throws {
+    func createTaskWithExplicitMediumPriorityMarksBothValuesExplicit() async throws {
         let context = makeInMemoryContext()
 
         let result = try await RoutinaQuickAddService.createTask(
@@ -598,7 +597,7 @@ struct RoutinaQuickAddParserTests {
 
         #expect(result.draft.hasExplicitPriority)
         #expect(task.priority == .medium)
-        #expect(task.showsTaskDetailPriority)
-        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: task))
+        #expect(task.hasExplicitImportance)
+        #expect(task.hasExplicitUrgency)
     }
 }

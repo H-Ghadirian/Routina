@@ -46,7 +46,6 @@ extension HomeTCAView {
                     return true
                 case .routines:
                     return task.scheduleMode.taskType == .routine
-                        || task.scheduleMode.taskType == .record
                 case .todos:
                     return task.isOneOffTask
                 }

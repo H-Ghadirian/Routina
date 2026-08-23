@@ -11,7 +11,7 @@ Some responsibilities repeat, but the person cannot predict the next occurrence.
 
 ## Decision
 
-Add a distinct `When needed` cadence to the repeating-task editor on Add Task, Edit Task, and Task Details. It uses the same cadence-free recurrence storage as `No schedule`, but persists an `autoPauseAfterCompletion` behavior flag for routines and Tracking entries.
+Add a distinct `When needed` cadence to the repeating-task editor on Add Task, Edit Task, and Task Details. It uses the same cadence-free recurrence storage as `No schedule`, but persists an `autoPauseAfterCompletion` behavior flag for routines.
 
 When a `When needed` task completes an occurrence, the completion flow sets its existing indefinite pause state at the completion time and clears any pause expiry or snooze value. The task therefore leaves active projections while preserving its completion history and recurrence configuration. The existing `Resume` action clears the lifecycle pause without changing the `When needed` configuration, so the next completion pauses it again. Undoing the latest completion clears the automatic pause when its timestamp matches that completion; a manually paused task is not changed by undoing an unrelated completion.
 

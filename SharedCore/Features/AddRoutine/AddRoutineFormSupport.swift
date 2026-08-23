@@ -58,12 +58,6 @@ enum AddRoutineFormEditor {
         case .todo:
             schedule.scheduleMode = .oneOff
             basics.routineDurationMode = .oneDay
-        case .record:
-            schedule.scheduleMode = .record
-            basics.deadline = nil
-            basics.availabilityStartDate = nil
-            basics.availabilityEndDate = nil
-            basics.reminderAt = nil
         }
     }
 

@@ -8,13 +8,13 @@ Refines: [0259 Allow Daily Checklist Auto-Assumed Completion](0259-allow-daily-c
 
 ## Context
 
-Auto-assume done had been limited to daily Tracking. That made a scheduled repeating task such as a weekday time block impossible to treat as expected-complete, even when the user explicitly wanted the same review workflow.
+Auto-assume done had been limited to one narrow daily behavior. That made a scheduled repeating task such as a weekday time block impossible to treat as expected-complete, even when the user explicitly wanted the same review workflow.
 
 The old Calendar rule also hid every task-backed block for an assumed occurrence. That is wrong for a repeating time block: it remains useful calendar context even while its completion is provisional.
 
 ## Decision
 
-Auto-assume done is available, opt-in, to eligible repeating Tasks and Tracking entries. A recurrence must either be daily or be a scheduled, single-occurrence-per-day calendar pattern; an assumption is derived only on days where that pattern has an occurrence. The existing exclusions remain: todos, cadence-free entries, non-daily after-completion repeats, item runout, routines with sequential steps, Standard routines with optional checklist items, and schedules with multiple occurrences in one day cannot enable it. Checklist-completion entries remain eligible only when they contain checklist items.
+Auto-assume done is available, opt-in, to eligible repeating routines. A recurrence must either be daily or be a scheduled, single-occurrence-per-day calendar pattern; an assumption is derived only on days where that pattern has an occurrence. The existing exclusions remain: todos, cadence-free routines, non-daily after-completion repeats, item runout, routines with sequential steps, Standard routines with optional checklist items, and schedules with multiple occurrences in one day cannot enable it. Checklist-completion routines remain eligible only when they contain checklist items.
 
 An assumed occurrence remains synthetic until confirmed. It does not create a completion log or a new editable Calendar placement.
 

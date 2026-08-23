@@ -87,95 +87,81 @@ struct TaskFormIOSPlanningSection: View {
     }
 }
 
-struct TaskFormIOSImportanceUrgencySection: View {
+struct TaskFormIOSTaskLadderValuesSection: View {
     let model: TaskFormModel
 
     var body: some View {
-        Section(header: Text("Importance")) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Importance",
-                options: RoutineTaskImportance.allCases,
-                selection: model.importance,
-                fillsAvailableWidth: true
-            ) { importance in
-                Text(importance.title)
+        Section(header: Text("Task Ladder values")) {
+            valueControl(title: "Importance", hint: "How much this task matters to your goals.") {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Importance",
+                    options: RoutineTaskImportance.allCases,
+                    selection: model.importance,
+                    fillsAvailableWidth: true
+                ) { Text($0.title) }
             }
-            Text("How much this task matters to your goals and commitments.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
 
-        Section(header: Text("Urgency")) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Urgency",
-                options: RoutineTaskUrgency.allCases,
-                selection: model.urgency,
-                fillsAvailableWidth: true
-            ) { urgency in
-                Text(urgency.title)
+            valueControl(title: "Urgency", hint: "How soon this task needs attention.") {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Urgency",
+                    options: RoutineTaskUrgency.allCases,
+                    selection: model.urgency,
+                    fillsAvailableWidth: true
+                ) { Text($0.title) }
             }
-            Text("How soon this task needs attention.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+
+            valueControl(title: "Pressure", hint: "How much this task keeps occupying your mind.") {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Pressure",
+                    options: RoutineTaskPressure.allCases,
+                    selection: model.pressure,
+                    fillsAvailableWidth: true
+                ) { Text($0.title) }
+            }
+
+            valueControl(title: "Thinking", hint: "How much concentration or decision-making it requires.") {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Thinking needed",
+                    options: RoutineTaskThinkingNeeded.allCases,
+                    selection: model.thinkingNeeded,
+                    fillsAvailableWidth: true
+                ) { Text($0.title) }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Changes over time", systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.subheadline.weight(.semibold))
+
+                if model.supportsTemporalWeightValues {
+                    TaskTemporalWeightRuleEditor(
+                        rule: model.temporalWeightRule,
+                        importance: model.importance.wrappedValue,
+                        urgency: model.urgency.wrappedValue,
+                        pressure: model.pressure.wrappedValue
+                    )
+                } else if let message = model.temporalWeightAvailabilityMessage {
+                    Label(message, systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
-}
 
-struct TaskFormIOSPressureSection: View {
-    let model: TaskFormModel
-
-    var body: some View {
-        Section(header: Text("Pressure")) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Pressure",
-                options: RoutineTaskPressure.allCases,
-                selection: model.pressure,
-                fillsAvailableWidth: true
-            ) { pressure in
-                Text(pressure.title)
-            }
-            Text("Use this for tasks that keep occupying your mind, even when they are not the most urgent.")
-                .font(.caption)
+    private func valueControl<Content: View>(
+        title: String,
+        hint: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
+            content()
         }
-    }
-}
-
-struct TaskFormIOSTemporalWeightSection: View {
-    let model: TaskFormModel
-
-    var body: some View {
-        Section(header: Text("Time-based values")) {
-            TaskTemporalWeightRuleEditor(
-                rule: model.temporalWeightRule,
-                importance: model.importance.wrappedValue,
-                urgency: model.urgency.wrappedValue,
-                pressure: model.pressure.wrappedValue
-            )
-            Text("Keep the saved Base values low while this repeating Due task can heat up near its due date.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
-struct TaskFormIOSThinkingNeededSection: View {
-    let model: TaskFormModel
-
-    var body: some View {
-        Section(header: Text("Thinking needed")) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Thinking needed",
-                options: RoutineTaskThinkingNeeded.allCases,
-                selection: model.thinkingNeeded,
-                fillsAvailableWidth: true
-            ) { level in
-                Text(level.title)
-            }
-            Text("How much understanding, concentration, or decision-making the task requires.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
+        .padding(.vertical, 3)
+        .accessibilityHint(hint)
     }
 }
 
@@ -406,7 +392,7 @@ struct TaskFormIOSRepeatPatternSections: View {
                 )
 
                 if model.supportsGentleNudges {
-                    Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+                    Toggle("Nudges", isOn: model.nudgesEnabled)
                 }
             }
 

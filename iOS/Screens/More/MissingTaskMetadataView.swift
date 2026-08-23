@@ -177,9 +177,9 @@ struct MissingTaskMetadataView: View {
     private func tint(for value: GuidedTaskMetadataValue) -> Color {
         switch value {
         case let .importance(importance):
-            return TaskDetailPriorityPresentation.importanceTint(for: importance)
+            return TaskDetailValuePresentation.importanceTint(for: importance)
         case let .urgency(urgency):
-            return TaskDetailPriorityPresentation.urgencyTint(for: urgency)
+            return TaskDetailValuePresentation.urgencyTint(for: urgency)
         }
     }
 

@@ -28,7 +28,7 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
         #expect(state.presentation.isAddRoutineSheetPresented)
         #expect(!state.presentation.isMacFilterDetailPresented)
         #expect(state.presentation.addRoutineState?.organization.availableTags == ["Deep"])
-        #expect(state.presentation.addRoutineState?.organization.availableFlags == ["Tracking", "Private"])
+        #expect(state.presentation.addRoutineState?.organization.availableFlags == ["Reference", "Private"])
         #expect(state.presentation.addRoutineState?.organization.existingRoutineNames == ["Focus"])
         #expect(state.presentation.addRoutineState?.organization.availablePlaces.map(\.name) == ["Office"])
         #expect(state.presentation.addRoutineState?.organization.availableGoals.map(\.title) == ["Launch"])
@@ -102,7 +102,7 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
         draftState.basics.routineName = "Draft task"
         draftState.basics.selectedPlaceIDs = [place.id]
         draftState.organization.routineTags = ["Deep"]
-        draftState.organization.routineFlags = ["Tracking"]
+        draftState.organization.routineFlags = ["Reference"]
         draftState.schedule.scheduleMode = .fixedInterval
         let draft = AddRoutineDraftSnapshot(state: draftState)
         var state = TestAddRoutinePresentationState(
@@ -116,8 +116,8 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
         #expect(state.presentation.addRoutineState?.basics.routineName == "Draft task")
         #expect(state.presentation.addRoutineState?.basics.selectedPlaceIDs == [place.id])
         #expect(state.presentation.addRoutineState?.organization.routineTags == ["Deep"])
-        #expect(state.presentation.addRoutineState?.organization.routineFlags == ["Tracking"])
-        #expect(state.presentation.addRoutineState?.organization.availableFlags == ["Tracking", "Private"])
+        #expect(state.presentation.addRoutineState?.organization.routineFlags == ["Reference"])
+        #expect(state.presentation.addRoutineState?.organization.availableFlags == ["Reference", "Private"])
         #expect(state.presentation.addRoutineState?.organization.availableTags == ["Deep"])
         #expect(state.presentation.addRoutineState?.schedule.scheduleMode == .fixedInterval)
     }
@@ -189,7 +189,7 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
         HomeFeatureAddRoutinePresentationRouter(
             tagCounterDisplayMode: { .combinedTotal },
             relatedTagRules: { [RoutineRelatedTagRule(tag: "Deep", relatedTags: ["Work"])] },
-            definedFlags: { ["Tracking", "Private"] },
+            definedFlags: { ["Reference", "Private"] },
             addRoutineDraft: addRoutineDraft
         )
     }

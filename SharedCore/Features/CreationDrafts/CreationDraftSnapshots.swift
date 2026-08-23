@@ -410,12 +410,12 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     ) -> RoutineTaskTemporalWeightRule? {
         guard let temporalWeightRule else { return nil }
 
-        let trackingCadenceEnabled = state.schedule.scheduleMode.taskType == .todo
+        let cadenceEnabled = state.schedule.scheduleMode.taskType == .todo
             ? true
-            : state.basics.trackingCadenceEnabled
+            : state.basics.cadenceEnabled
         guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
             scheduleMode: state.schedule.scheduleMode,
-            cadenceEnabled: trackingCadenceEnabled
+            cadenceEnabled: cadenceEnabled
         ) else {
             return nil
         }

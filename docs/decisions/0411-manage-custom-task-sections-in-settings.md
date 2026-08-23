@@ -12,7 +12,7 @@ Refined by: [0440 Treat Day Planning Sections as Additive](0440-treat-day-planni
 
 Custom Mac sidebar task sections began as row-context organization buckets. Users now need a central settings surface to create, rename, delete, and configure sections, plus a first step toward user-defined section placement rules. A common rule is tag-based routing, where rows carrying configured tags should appear in a named custom section.
 
-The existing built-in `Today`, optional `Tomorrow`, `Tracking`, and `Future` sections remain useful while this capability is introduced. Removing those defaults is a separate product change.
+The existing built-in `Today`, optional `Tomorrow`, and `Future` sections remain useful while this capability is introduced. Removing those defaults is a separate product change.
 
 ## Decision
 
@@ -22,7 +22,6 @@ Each custom section keeps its stable section ID, title, creation date, optional 
 
 - `Planned today`, which claims active unpinned tasks with an explicit stored planned date on the current day.
 - `Planned tomorrow`, which claims active unpinned tasks with an explicit stored planned date on tomorrow.
-- `Tracking entries`, which claims active unpinned Tracking rows.
 - `Tags`, which claims active unpinned rows carrying any of the section's configured tag names using Routina's case- and accent-insensitive tag identity.
 
 Manual section assignment remains stronger than rules. If a task is explicitly assigned to one custom section, another custom section's rule must not claim it. Within unassigned rows, custom sections still claim rows in catalog order before the built-in planning, tracking, and future fallback sections. Pinned and archived rows keep their existing priority.

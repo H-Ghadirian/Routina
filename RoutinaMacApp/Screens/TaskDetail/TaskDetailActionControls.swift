@@ -82,8 +82,8 @@ struct TaskDetailPressureSegmentedPicker: View {
                 options: RoutineTaskPressure.allCases,
                 selection: store.task.pressure,
                 title: { $0.title },
-                tint: { TaskDetailPriorityPresentation.pressureTint(for: $0, style: .segmentedControl) },
-                selectedForeground: { TaskDetailPriorityPresentation.pressureSelectedForeground(for: $0) },
+                tint: { TaskDetailValuePresentation.pressureTint(for: $0, style: .segmentedControl) },
+                selectedForeground: { TaskDetailValuePresentation.pressureSelectedForeground(for: $0) },
                 action: { store.send(.pressureChanged($0)) }
             )
         }
@@ -148,8 +148,8 @@ struct TaskDetailImportanceSegmentedPicker: View {
                 options: RoutineTaskImportance.allCases,
                 selection: store.task.importance,
                 title: { $0.title },
-                tint: { TaskDetailPriorityPresentation.importanceTint(for: $0) },
-                selectedForeground: { TaskDetailPriorityPresentation.importanceSelectedForeground(for: $0) },
+                tint: { TaskDetailValuePresentation.importanceTint(for: $0) },
+                selectedForeground: { TaskDetailValuePresentation.importanceSelectedForeground(for: $0) },
                 action: { store.send(.importanceChanged($0)) }
             )
         }
@@ -181,8 +181,8 @@ struct TaskDetailUrgencySegmentedPicker: View {
                 options: RoutineTaskUrgency.allCases,
                 selection: store.task.urgency,
                 title: { $0.title },
-                tint: { TaskDetailPriorityPresentation.urgencyTint(for: $0) },
-                selectedForeground: { TaskDetailPriorityPresentation.urgencySelectedForeground(for: $0) },
+                tint: { TaskDetailValuePresentation.urgencyTint(for: $0) },
+                selectedForeground: { TaskDetailValuePresentation.urgencySelectedForeground(for: $0) },
                 action: { store.send(.urgencyChanged($0)) }
             )
         }
@@ -190,7 +190,7 @@ struct TaskDetailUrgencySegmentedPicker: View {
     }
 }
 
-struct TaskDetailPriorityControlsGrid: View {
+struct TaskDetailTaskLadderValuesControlsGrid: View {
     let store: StoreOf<TaskDetailFeature>
 
     var body: some View {
@@ -268,8 +268,8 @@ struct TaskDetailTodoStateSegmentedPicker: View {
                     options: store.selectableTodoStates,
                     selection: currentState,
                     title: { $0.displayTitle },
-                    tint: { TaskDetailPriorityPresentation.todoStateTint(for: $0, style: .segmentedControl) },
-                    selectedForeground: { TaskDetailPriorityPresentation.todoStateSelectedForeground(for: $0) },
+                    tint: { TaskDetailValuePresentation.todoStateTint(for: $0, style: .segmentedControl) },
+                    selectedForeground: { TaskDetailValuePresentation.todoStateSelectedForeground(for: $0) },
                     action: { newState in
                         if newState == .done && store.hasActiveRelationshipBlocker {
                             store.send(.setBlockedStateConfirmation(true))
@@ -286,11 +286,11 @@ struct TaskDetailTodoStateSegmentedPicker: View {
         .frame(maxWidth: .infinity, minHeight: isExpanded ? 54 : nil, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .segmentedControl).opacity(0.12))
+                .fill(TaskDetailValuePresentation.todoStateTint(for: currentState, style: .segmentedControl).opacity(0.12))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .segmentedControl).opacity(0.24), lineWidth: 1)
+                .stroke(TaskDetailValuePresentation.todoStateTint(for: currentState, style: .segmentedControl).opacity(0.24), lineWidth: 1)
         )
         .alert(
             "Blocked Task",
@@ -312,7 +312,7 @@ struct TaskDetailTodoStateSegmentedPicker: View {
     }
 
     private func stateHeaderLabel(for state: TodoState) -> some View {
-        let tint = TaskDetailPriorityPresentation.todoStateTint(for: state, style: .compactPill)
+        let tint = TaskDetailValuePresentation.todoStateTint(for: state, style: .compactPill)
         let detailText = stateTimingDetailText(for: state)
 
         return HStack(spacing: 7) {

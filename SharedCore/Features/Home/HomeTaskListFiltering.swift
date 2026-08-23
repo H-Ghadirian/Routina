@@ -171,7 +171,7 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
                 task.isDailyRoutine
                     && !(RoutineTaskPlanningSupport.supportsStoredPlanning(
                         scheduleMode: task.scheduleMode,
-                        trackingCadenceEnabled: task.trackingCadenceEnabled,
+                        cadenceEnabled: task.cadenceEnabled,
                         isDailyRoutine: task.isDailyRoutine
                     ) && task.plannedDate != nil)
                     && predicate.matchesVisibleTask(task)
@@ -252,7 +252,7 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
             .filter { task in
                 guard RoutineTaskPlanningSupport.supportsStoredPlanning(
                         scheduleMode: task.scheduleMode,
-                        trackingCadenceEnabled: task.trackingCadenceEnabled,
+                        cadenceEnabled: task.cadenceEnabled,
                         isDailyRoutine: task.isDailyRoutine
                     ),
                       matchesUncompletedTodayClaim(task, on: day),

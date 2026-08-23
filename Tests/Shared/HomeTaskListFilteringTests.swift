@@ -274,28 +274,28 @@ struct HomeTaskListFilteringTests {
 
     @Test
     func flagVisibilityRuleHidesOrdinaryPlacementAndSearchRevealsIt() {
-        let trackingTask = TestTaskDisplay(name: "Log sleep", flags: ["Tracking"])
+        let referenceTask = TestTaskDisplay(name: "Log sleep", flags: ["Reference"])
         let ordinaryTask = TestTaskDisplay(name: "Write plan", tags: ["Planning"])
-        let rules = [RoutineFlagRule(flag: "tracking", kind: .hideFromTaskLists)]
+        let rules = [RoutineFlagRule(flag: "reference", kind: .hideFromTaskLists)]
 
         let ordinaryResult = makeFiltering(flagRules: rules)
-            .filteredTasks([trackingTask, ordinaryTask])
+            .filteredTasks([referenceTask, ordinaryTask])
         #expect(ordinaryResult.map(\.name) == ["Write plan"])
 
         let searchedResult = makeFiltering(
             searchText: "sleep",
             flagRules: rules
-        ).flagRuleRevealTasks(from: [trackingTask, ordinaryTask])
+        ).flagRuleRevealTasks(from: [referenceTask, ordinaryTask])
         #expect(searchedResult.map(\.name) == ["Log sleep"])
     }
 
     @Test
     func flagVisibilityRuleAddsASeparateHiddenResultsSectionBesideNormalSearchResults() {
-        let trackingTask = TestTaskDisplay(name: "Log sleep", flags: ["Tracking"])
+        let referenceTask = TestTaskDisplay(name: "Log sleep", flags: ["Reference"])
         let ordinaryTask = TestTaskDisplay(name: "Sleep early")
         let filtering = makeFiltering(
             searchText: "sleep",
-            flagRules: [RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)]
+            flagRules: [RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)]
         )
         let normalSection = HomeTaskListPresentationSection(
             kind: .regular,
@@ -311,7 +311,7 @@ struct HomeTaskListFilteringTests {
             hiddenUnavailableTaskCount: 0,
             emptyState: nil
         ).appendingFlagRuleRevealResults(
-            from: [trackingTask, ordinaryTask],
+            from: [referenceTask, ordinaryTask],
             filtering: filtering
         )
 
@@ -322,81 +322,40 @@ struct HomeTaskListFilteringTests {
 
     @Test
     func flagFiltersMatchAllOrAnyAndExplicitlyRevealMatchingHiddenTasks() {
-        let trackingTask = TestTaskDisplay(name: "Log sleep", flags: ["Tracking", "Health"])
+        let referenceTask = TestTaskDisplay(name: "Log sleep", flags: ["Reference", "Health"])
         let focusTask = TestTaskDisplay(name: "Plan week", flags: ["Focus"])
         let unrelatedTask = TestTaskDisplay(name: "Buy groceries", flags: ["Errands"])
 
         let allMatching = makeFiltering(
-            selectedFlags: ["tracking", "health"],
+            selectedFlags: ["reference", "health"],
             includeFlagMatchMode: .all
-        ).filteredTasks([trackingTask, focusTask, unrelatedTask])
+        ).filteredTasks([referenceTask, focusTask, unrelatedTask])
         #expect(allMatching.map(\.name) == ["Log sleep"])
 
         let anyMatching = makeFiltering(
-            selectedFlags: ["Tracking", "Focus"],
+            selectedFlags: ["Reference", "Focus"],
             includeFlagMatchMode: .any
-        ).filteredTasks([trackingTask, focusTask, unrelatedTask])
+        ).filteredTasks([referenceTask, focusTask, unrelatedTask])
         #expect(Set(anyMatching.map(\.name)) == ["Log sleep", "Plan week"])
 
-        let hiddenTrackingRule = [RoutineFlagRule(flag: "Tracking", kind: .hideFromTaskLists)]
+        let hiddenReferenceRule = [RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)]
         let hiddenFiltering = makeFiltering(
-            selectedFlags: ["Tracking"],
-            flagRules: hiddenTrackingRule
+            selectedFlags: ["Reference"],
+            flagRules: hiddenReferenceRule
         )
-        #expect(hiddenFiltering.filteredTasks([trackingTask, focusTask, unrelatedTask]).isEmpty)
+        #expect(hiddenFiltering.filteredTasks([referenceTask, focusTask, unrelatedTask]).isEmpty)
 
         let presentation = HomeTaskListPresentation(
             sections: [],
             hiddenUnavailableTaskCount: 0,
             emptyState: nil
         ).appendingFlagRuleRevealResults(
-            from: [trackingTask, focusTask, unrelatedTask],
+            from: [referenceTask, focusTask, unrelatedTask],
             filtering: hiddenFiltering
         )
         #expect(presentation.sections.map(\.title) == ["Hidden by flag"])
         #expect(presentation.sections[0].tasks.map(\.name) == ["Log sleep"])
         #expect(presentation.sections[0].includeMarkDone == false)
-    }
-
-    @Test
-    func sidebarPresentationShowsInternalRecordRowsAsRoutines() {
-        let assumedID = UUID()
-        let visibleID = UUID()
-        let tasks = [
-            TestTaskDisplay(
-                taskID: assumedID,
-                name: "Brush teeth",
-                recurrenceRule: .interval(days: 1),
-                scheduleMode: .record,
-                isDoneToday: true,
-                isAssumedDoneToday: true
-            ),
-            TestTaskDisplay(
-                taskID: visibleID,
-                name: "Meals",
-                recurrenceRule: .interval(days: 1)
-            )
-        ]
-
-        let presentation = HomeTaskListPresentation.sidebar(
-            filtering: makeFiltering(),
-            routineDisplays: tasks,
-            awayRoutineDisplays: [],
-            archivedRoutineDisplays: [],
-            emptyState: HomeTaskListEmptyState(
-                title: "No matching tasks",
-                message: "",
-                systemImage: "magnifyingglass"
-            )
-        )
-
-        let sectionTitles = presentation.sections.map { $0.title }
-        let todayTaskIDs = presentation.sections.first?.tasks.map { $0.taskID }
-        let futureTaskIDs = presentation.sections.last?.tasks.map { $0.taskID }
-
-        #expect(sectionTitles == ["Today", "Future"])
-        #expect(todayTaskIDs == [visibleID])
-        #expect(futureTaskIDs == [assumedID])
     }
 
     @Test
@@ -1820,91 +1779,6 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationPlansInternalRecordRowsBeforeFuture() {
-        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
-        let tomorrow = makeDate("2026-06-23T10:00:00Z")
-        let plannedTodayID = UUID()
-        let trackingTodayID = UUID()
-        let trackingTomorrowID = UUID()
-        let dailyRunoutTrackingTomorrowID = UUID()
-        let trackingFutureID = UUID()
-        let regularID = UUID()
-        let presentation = HomeTaskListPresentation.sidebar(
-            filtering: makeFiltering(referenceDate: referenceDate),
-            routineDisplays: [
-                TestTaskDisplay(
-                    taskID: plannedTodayID,
-                    name: "Plan today",
-                    plannedDate: referenceDate,
-                    manualSectionOrders: ["plannedToday": 0]
-                ),
-                TestTaskDisplay(
-                    taskID: trackingTodayID,
-                    name: "Plan tracking today",
-                    scheduleMode: .record,
-                    plannedDate: referenceDate,
-                    manualSectionOrders: ["plannedToday": 1]
-                ),
-                TestTaskDisplay(
-                    taskID: trackingTomorrowID,
-                    name: "Plan tracking tomorrow",
-                    scheduleMode: .recordChecklist,
-                    plannedDate: tomorrow,
-                    manualSectionOrders: ["plannedTomorrow": 0]
-                ),
-                TestTaskDisplay(
-                    taskID: dailyRunoutTrackingTomorrowID,
-                    name: "Plan daily runout tracking tomorrow",
-                    recurrenceRule: .interval(days: 1),
-                    scheduleMode: .recordDerivedFromChecklist,
-                    plannedDate: tomorrow,
-                    hasDailyRunoutChecklistItem: true,
-                    manualSectionOrders: ["plannedTomorrow": 1]
-                ),
-                TestTaskDisplay(
-                    taskID: trackingFutureID,
-                    name: "Unplanned tracking",
-                    scheduleMode: .record
-                ),
-                TestTaskDisplay(taskID: regularID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4)
-            ],
-            awayRoutineDisplays: [],
-            archivedRoutineDisplays: [],
-            showTomorrowSection: true,
-            emptyState: HomeTaskListEmptyState(
-                title: "No matching tasks",
-                message: "Try a different place or clear a few filters.",
-                systemImage: "magnifyingglass"
-            )
-        )
-
-        let todaySection = presentation.sections.first { $0.kind == .plannedToday }
-        let tomorrowSection = presentation.sections.first { $0.kind == .plannedTomorrow }
-        let futureSection = presentation.sections.last
-        #expect(presentation.sections.map(\.kind) == [.plannedToday, .plannedTomorrow, .future])
-        #expect(presentation.sections.map(\.title) == ["Today", "Tomorrow", "Future"])
-        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2, 4])
-        #expect(todaySection?.tasks.map(\.taskID) == [plannedTodayID, trackingTodayID])
-        #expect(tomorrowSection?.tasks.map(\.taskID) == [trackingTomorrowID, dailyRunoutTrackingTomorrowID])
-        #expect(todaySection?.taskGroups.first?.moveContext?.sectionKey == "plannedToday")
-        #expect(todaySection?.taskGroups.first?.moveContext?.orderedTaskIDs == [plannedTodayID, trackingTodayID])
-        #expect(tomorrowSection?.moveContext?.sectionKey == "plannedTomorrow")
-        #expect(tomorrowSection?.moveContext?.orderedTaskIDs == [
-            trackingTomorrowID,
-            dailyRunoutTrackingTomorrowID
-        ])
-        #expect(futureSection?.kind == .future)
-        #expect(Set(futureSection?.tasks.map(\.taskID) ?? []) == [
-            plannedTodayID,
-            trackingTodayID,
-            trackingTomorrowID,
-            dailyRunoutTrackingTomorrowID,
-            trackingFutureID,
-            regularID
-        ])
-    }
-
-    @Test
     func sidebarPresentationShowsCustomTaskSectionsForAssignedRows() {
         let referenceDate = makeDate("2026-06-22T10:00:00Z")
         let customSectionID = UUID()
@@ -1912,7 +1786,7 @@ struct HomeTaskListFilteringTests {
         let plannedTodayID = UUID()
         let customLaterID = UUID()
         let customEarlierID = UUID()
-        let trackingID = UUID()
+        let gentleID = UUID()
         let futureID = UUID()
 
         let presentation = HomeTaskListPresentation.sidebar(
@@ -1928,13 +1802,13 @@ struct HomeTaskListFilteringTests {
                 ),
                 TestTaskDisplay(
                     taskID: customEarlierID,
-                    name: "Custom tracking",
-                    scheduleMode: .record,
+                    name: "Custom gentle routine",
+                    scheduleMode: .softInterval,
                     plannedDate: referenceDate,
                     customTaskSectionID: customSectionID,
                     manualSectionOrders: [customSectionKey: 0]
                 ),
-                TestTaskDisplay(taskID: trackingID, name: "Default tracking", scheduleMode: .record),
+                TestTaskDisplay(taskID: gentleID, name: "Default gentle routine", scheduleMode: .softInterval),
                 TestTaskDisplay(taskID: futureID, name: "Future", recurrenceRule: .interval(days: 7), daysUntilDue: 4)
             ],
             awayRoutineDisplays: [],
@@ -2055,7 +1929,7 @@ struct HomeTaskListFilteringTests {
         let customTodaySectionID = UUID()
         let dailyID = UUID()
         let plannedTodayID = UUID()
-        let trackingID = UUID()
+        let gentleID = UUID()
         let futureID = UUID()
 
         let presentation = HomeTaskListPresentation.sidebar(
@@ -2073,9 +1947,9 @@ struct HomeTaskListFilteringTests {
                     plannedDate: referenceDate
                 ),
                 TestTaskDisplay(
-                    taskID: trackingID,
-                    name: "Tracking",
-                    scheduleMode: .record
+                    taskID: gentleID,
+                    name: "Gentle routine",
+                    scheduleMode: .softInterval
                 ),
                 TestTaskDisplay(
                     taskID: futureID,
@@ -2105,7 +1979,7 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections[0].tasks.map(\.taskID) == [plannedTodayID, dailyID])
         #expect(
             Set(presentation.sections[1].tasks.map(\.taskID))
-                == [plannedTodayID, trackingID, futureID]
+                == [plannedTodayID, gentleID, futureID]
         )
     }
 
@@ -2199,17 +2073,17 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationKeepsManualCustomAssignmentForInternalRecordRows() {
+    func sidebarPresentationKeepsManualCustomAssignmentForGentleRoutines() {
         let manualSectionID = UUID()
-        let trackingID = UUID()
+        let gentleID = UUID()
 
         let presentation = HomeTaskListPresentation.sidebar(
             filtering: makeFiltering(),
             routineDisplays: [
                 TestTaskDisplay(
-                    taskID: trackingID,
-                    name: "Manually placed tracking",
-                    scheduleMode: .record,
+                    taskID: gentleID,
+                    name: "Manually placed gentle routine",
+                    scheduleMode: .softInterval,
                     customTaskSectionID: manualSectionID
                 )
             ],
@@ -2226,28 +2100,28 @@ struct HomeTaskListFilteringTests {
         )
 
         #expect(presentation.sections.map(\.title) == ["Manual"])
-        #expect(presentation.sections.first?.tasks.map(\.taskID) == [trackingID])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [gentleID])
     }
 
     @Test
-    func sidebarPresentationGroupsInternalRecordRowsWithFutureRoutines() {
-        let adminTrackingID = UUID()
-        let focusTrackingID = UUID()
+    func sidebarPresentationGroupsGentleRoutinesWithFutureRoutines() {
+        let adminRoutineID = UUID()
+        let focusRoutineID = UUID()
         let futureID = UUID()
         let presentation = HomeTaskListPresentation.sidebar(
             filtering: makeFiltering(routineListSectioningMode: .tags),
             routineDisplays: [
                 TestTaskDisplay(
-                    taskID: focusTrackingID,
+                    taskID: focusRoutineID,
                     name: "Review workouts",
                     tags: ["Focus"],
-                    scheduleMode: .record
+                    scheduleMode: .softInterval
                 ),
                 TestTaskDisplay(
-                    taskID: adminTrackingID,
+                    taskID: adminRoutineID,
                     name: "Log errands",
                     tags: ["Admin"],
-                    scheduleMode: .recordChecklist
+                    scheduleMode: .softIntervalChecklist
                 ),
                 TestTaskDisplay(
                     taskID: futureID,
@@ -2272,8 +2146,8 @@ struct HomeTaskListFilteringTests {
         #expect((futureSection?.taskGroups.map(\.title) ?? []) == [String?("#Admin"), String?("#Focus")])
         #expect((futureSection?.taskGroups.map(\.kind) ?? []) == [.tag, .tag])
         #expect((futureSection?.taskGroups.map(\.isCollapsible) ?? []) == [true, true])
-        #expect((futureSection?.taskGroups.first?.tasks.map(\.taskID) ?? []) == [adminTrackingID])
-        #expect(Set(futureSection?.taskGroups.last?.tasks.map(\.taskID) ?? []) == [focusTrackingID, futureID])
+        #expect((futureSection?.taskGroups.first?.tasks.map(\.taskID) ?? []) == [adminRoutineID])
+        #expect(Set(futureSection?.taskGroups.last?.tasks.map(\.taskID) ?? []) == [focusRoutineID, futureID])
     }
 
     @Test
@@ -2748,7 +2622,7 @@ struct HomeTaskListFilteringTests {
             showPersianDates: false,
             badgeMode: .complete,
             rowVisibility: HomeTaskRowVisibility(
-                hiddenFields: [.priority, .pressure, .progress, .steps]
+                hiddenFields: [.pressure, .progress, .steps]
             )
         )
 
@@ -2797,12 +2671,12 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func trackingRowsUseRoutineStyleGentleBadges() {
+    func gentleRoutinesUseRoutineStyleBadges() {
         let task = TestTaskDisplay(
             name: "Clean coffee machine",
             interval: 14,
             recurrenceRule: .interval(days: 14),
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             isSoftIntervalRoutine: true
         )
         let presenter = HomeRoutineDisplayMetadataPresenter(
@@ -2818,12 +2692,12 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func assumedTrackingRowsUseAssumedBadgeInsteadOfDoneBadge() {
+    func assumedGentleRoutinesUseAssumedBadgeInsteadOfDoneBadge() {
         let task = TestTaskDisplay(
             name: "Eat fruit",
             interval: 1,
             recurrenceRule: .interval(days: 1),
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             isDoneToday: true,
             isAssumedDoneToday: true,
             isSoftIntervalRoutine: true
@@ -2936,12 +2810,12 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func trackingRowsCanKeepCadenceWithoutGentleNudgeBadges() {
+    func gentleRoutinesCanKeepCadenceWithoutNudgeBadges() {
         let task = TestTaskDisplay(
             name: "Clean coffee machine",
             interval: 14,
             recurrenceRule: .interval(days: 14),
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             isSoftIntervalRoutine: true,
             surfacesSoftIntervalNudges: false
         )
@@ -2962,7 +2836,7 @@ struct HomeTaskListFilteringTests {
             interval: 1,
             recurrenceRule: .interval(days: 1),
             scheduleMode: .fixedInterval,
-            trackingCadenceEnabled: false,
+            cadenceEnabled: false,
             isDoneToday: true
         )
         let presenter = HomeRoutineDisplayMetadataPresenter(
@@ -3102,7 +2976,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)
     var scheduleMode: RoutineScheduleMode = .fixedInterval
-    var trackingCadenceEnabled: Bool = true
+    var cadenceEnabled: Bool = true
     var estimatedDurationMinutes: Int?
     var createdAt: Date?
     var lastDone: Date?

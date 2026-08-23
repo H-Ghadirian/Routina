@@ -49,7 +49,7 @@ struct HomeFeaturePostMutationRefresherTests {
         #expect(recorder.events == ["refresh", "sync"])
         #expect(recorder.addRoutineActions.count == 6)
         #expect(recorder.addRoutineActions.contains(.existingRoutineNamesChanged(["Focus"])))
-        #expect(recorder.addRoutineActions.contains(.availableFlagsChanged(["Tracking"])))
+        #expect(recorder.addRoutineActions.contains(.availableFlagsChanged(["Reference"])))
         #expect(recorder.addRoutineActions.contains { action in
             guard case let .availablePlacesChanged(places) = action else { return false }
             return places.map(\.name) == ["Office"]
@@ -86,7 +86,7 @@ struct HomeFeaturePostMutationRefresherTests {
                 recorder.events.append("sync")
                 state.didSyncSelection = true
             },
-            definedFlags: { ["Tracking"] },
+            definedFlags: { ["Reference"] },
             addRoutineAction: {
                 recorder.addRoutineActions.append($0)
                 return .addRoutine($0)

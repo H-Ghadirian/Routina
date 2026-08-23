@@ -8,16 +8,11 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     case derivedFromChecklist
     case softDerivedFromChecklist
     case oneOff
-    case record
-    case recordChecklist
-    case recordDerivedFromChecklist
 
     var taskType: RoutineTaskType {
         switch self {
         case .oneOff:
             return .todo
-        case .record, .recordChecklist, .recordDerivedFromChecklist:
-            return .record
         case .fixedInterval, .softInterval, .fixedIntervalChecklist, .softIntervalChecklist, .derivedFromChecklist, .softDerivedFromChecklist:
             return .routine
         }
@@ -25,7 +20,7 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
 
     var scheduleBehavior: RoutineScheduleBehavior {
         switch self {
-        case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist, .record, .recordChecklist, .recordDerivedFromChecklist:
+        case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist:
             return .soft
         case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist, .oneOff:
             return .fixed
@@ -34,13 +29,11 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
 
     var routineFormat: RoutineFormat {
         switch self {
-        case .fixedInterval, .softInterval, .oneOff, .record:
+        case .fixedInterval, .softInterval, .oneOff:
             return .standard
-        case .recordChecklist:
-            return .checklist
         case .fixedIntervalChecklist, .softIntervalChecklist:
             return .checklist
-        case .derivedFromChecklist, .softDerivedFromChecklist, .recordDerivedFromChecklist:
+        case .derivedFromChecklist, .softDerivedFromChecklist:
             return .runout
         }
     }
@@ -54,15 +47,6 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     func replacingRoutineFinishMode(_ finishMode: RoutineFinishMode) -> RoutineScheduleMode {
-        if taskType == .record {
-            switch finishMode {
-            case .standard:
-                return .record
-            case .checklist:
-                return routineFormat == .runout ? .recordDerivedFromChecklist : .recordChecklist
-            }
-        }
-
         let format: RoutineFormat
         switch finishMode {
         case .standard:
@@ -74,10 +58,6 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     func replacingChecklistTimingMode(_ timingMode: ChecklistTimingMode) -> RoutineScheduleMode {
-        if taskType == .record {
-            return timingMode == .runout ? .recordDerivedFromChecklist : .recordChecklist
-        }
-
         return Self.routineMode(
             behavior: scheduleBehavior,
             format: timingMode == .runout ? .runout : .checklist
@@ -101,7 +81,7 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     var usesRoutineCadence: Bool {
-        taskType == .routine || taskType == .record
+        taskType == .routine
     }
 
     var isRoutineModeRequiringChecklistItems: Bool {
