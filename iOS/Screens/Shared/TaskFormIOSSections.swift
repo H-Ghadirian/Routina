@@ -128,24 +128,26 @@ struct TaskFormIOSTaskLadderValuesSection: View {
                 ) { Text($0.title) }
             }
 
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Changes over time", systemImage: "chart.line.uptrend.xyaxis")
-                    .font(.subheadline.weight(.semibold))
+            if model.taskType.wrappedValue == .routine {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Changes over time", systemImage: "chart.line.uptrend.xyaxis")
+                        .font(.subheadline.weight(.semibold))
 
-                if model.supportsTemporalWeightValues {
-                    TaskTemporalWeightRuleEditor(
-                        rule: model.temporalWeightRule,
-                        importance: model.importance.wrappedValue,
-                        urgency: model.urgency.wrappedValue,
-                        pressure: model.pressure.wrappedValue
-                    )
-                } else if let message = model.temporalWeightAvailabilityMessage {
-                    Label(message, systemImage: "info.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if model.supportsTemporalWeightValues {
+                        TaskTemporalWeightRuleEditor(
+                            rule: model.temporalWeightRule,
+                            importance: model.importance.wrappedValue,
+                            urgency: model.urgency.wrappedValue,
+                            pressure: model.pressure.wrappedValue
+                        )
+                    } else if let message = model.temporalWeightAvailabilityMessage {
+                        Label(message, systemImage: "info.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
         }
     }
 

@@ -60,148 +60,110 @@ struct TaskDetailPrimaryActionButton: View {
 
 struct TaskDetailPressureSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
-    var isEmbeddedInPrioritySection = false
+    let isExpanded: Bool
+    let onExpansionToggle: () -> Void
+    let onSelection: (RoutineTaskPressure) -> Void
 
     var body: some View {
-        Group {
-            if isEmbeddedInPrioritySection {
-                control
-            } else {
-                control.detailHeaderBoxStyle()
-            }
-        }
-    }
-
-    private var control: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("PRESSURE")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 2)
-            TaskDetailColoredSegmentedControl(
-                options: RoutineTaskPressure.allCases,
-                selection: store.task.pressure,
-                title: { $0.title },
-                tint: { TaskDetailValuePresentation.pressureTint(for: $0, style: .segmentedControl) },
-                selectedForeground: { TaskDetailValuePresentation.pressureSelectedForeground(for: $0) },
-                action: { store.send(.pressureChanged($0)) }
-            )
-        }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        TaskDetailExpandableSegmentedPicker(
+            title: "PRESSURE",
+            accessibilityLabel: "Pressure",
+            options: RoutineTaskPressure.allCases,
+            selection: store.task.pressure,
+            optionTitle: { $0.title },
+            tint: { TaskDetailValuePresentation.pressureTint(for: $0, style: .segmentedControl) },
+            selectedForeground: { TaskDetailValuePresentation.pressureSelectedForeground(for: $0) },
+            isExpanded: isExpanded,
+            onExpansionToggle: onExpansionToggle,
+            onSelection: onSelection
+        )
     }
 }
 
 struct TaskDetailThinkingNeededSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
-    var isEmbeddedInPrioritySection = false
+    let isExpanded: Bool
+    let onExpansionToggle: () -> Void
+    let onSelection: (RoutineTaskThinkingNeeded) -> Void
 
     var body: some View {
-        Group {
-            if isEmbeddedInPrioritySection {
-                control
-            } else {
-                control.detailHeaderBoxStyle()
-            }
-        }
-    }
-
-    private var control: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("THINKING NEEDED")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 2)
-            TaskDetailColoredSegmentedControl(
-                options: RoutineTaskThinkingNeeded.allCases,
-                selection: store.task.thinkingNeeded,
-                title: { $0.title },
-                tint: { $0 == .none ? Color.secondary : Color.indigo },
-                selectedForeground: { _ in Color.white },
-                action: { store.send(.thinkingNeededChanged($0)) }
-            )
-        }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        TaskDetailExpandableSegmentedPicker(
+            title: "THINKING NEEDED",
+            accessibilityLabel: "Thinking needed",
+            options: RoutineTaskThinkingNeeded.allCases,
+            selection: store.task.thinkingNeeded,
+            optionTitle: { $0.title },
+            tint: { $0 == .none ? Color.secondary : Color.indigo },
+            selectedForeground: { _ in Color.white },
+            isExpanded: isExpanded,
+            onExpansionToggle: onExpansionToggle,
+            onSelection: onSelection
+        )
     }
 }
 
 struct TaskDetailImportanceSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
-    var isEmbeddedInPrioritySection = false
+    let isExpanded: Bool
+    let onExpansionToggle: () -> Void
+    let onSelection: (RoutineTaskImportance) -> Void
 
     var body: some View {
-        Group {
-            if isEmbeddedInPrioritySection {
-                control
-            } else {
-                control.detailHeaderBoxStyle()
-            }
-        }
-    }
-
-    private var control: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("IMPORTANCE")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 2)
-            TaskDetailColoredSegmentedControl(
-                options: RoutineTaskImportance.allCases,
-                selection: store.task.importance,
-                title: { $0.title },
-                tint: { TaskDetailValuePresentation.importanceTint(for: $0) },
-                selectedForeground: { TaskDetailValuePresentation.importanceSelectedForeground(for: $0) },
-                action: { store.send(.importanceChanged($0)) }
-            )
-        }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        TaskDetailExpandableSegmentedPicker(
+            title: "IMPORTANCE",
+            accessibilityLabel: "Importance",
+            options: RoutineTaskImportance.allCases,
+            selection: store.task.importance,
+            optionTitle: { $0.title },
+            tint: { TaskDetailValuePresentation.importanceTint(for: $0) },
+            selectedForeground: { TaskDetailValuePresentation.importanceSelectedForeground(for: $0) },
+            isExpanded: isExpanded,
+            onExpansionToggle: onExpansionToggle,
+            onSelection: onSelection
+        )
     }
 }
 
 struct TaskDetailUrgencySegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
-    var isEmbeddedInPrioritySection = false
+    let isExpanded: Bool
+    let onExpansionToggle: () -> Void
+    let onSelection: (RoutineTaskUrgency) -> Void
 
     var body: some View {
-        Group {
-            if isEmbeddedInPrioritySection {
-                control
-            } else {
-                control.detailHeaderBoxStyle()
-            }
-        }
-    }
-
-    private var control: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("URGENCY")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 2)
-            TaskDetailColoredSegmentedControl(
-                options: RoutineTaskUrgency.allCases,
-                selection: store.task.urgency,
-                title: { $0.title },
-                tint: { TaskDetailValuePresentation.urgencyTint(for: $0) },
-                selectedForeground: { TaskDetailValuePresentation.urgencySelectedForeground(for: $0) },
-                action: { store.send(.urgencyChanged($0)) }
-            )
-        }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        TaskDetailExpandableSegmentedPicker(
+            title: "URGENCY",
+            accessibilityLabel: "Urgency",
+            options: RoutineTaskUrgency.allCases,
+            selection: store.task.urgency,
+            optionTitle: { $0.title },
+            tint: { TaskDetailValuePresentation.urgencyTint(for: $0) },
+            selectedForeground: { TaskDetailValuePresentation.urgencySelectedForeground(for: $0) },
+            isExpanded: isExpanded,
+            onExpansionToggle: onExpansionToggle,
+            onSelection: onSelection
+        )
     }
 }
 
 struct TaskDetailTaskLadderValuesControlsGrid: View {
     let store: StoreOf<TaskDetailFeature>
+    @State private var expandedValue: TaskDetailExpandedTaskLadderValue?
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: 12) {
                 priorityControls
             }
+            .fixedSize(horizontal: true, vertical: false)
 
             VStack(alignment: .leading, spacing: 12) {
                 priorityControls
             }
+        }
+        .onChange(of: store.task.id) { _, _ in
+            expandedValue = nil
         }
     }
 
@@ -209,27 +171,160 @@ struct TaskDetailTaskLadderValuesControlsGrid: View {
     private var priorityControls: some View {
         TaskDetailImportanceSegmentedPicker(
             store: store,
-            isEmbeddedInPrioritySection: true
+            isExpanded: expandedValue == .importance,
+            onExpansionToggle: { toggle(.importance) },
+            onSelection: { option in
+                store.send(.importanceChanged(option))
+                collapseExpandedValue()
+            }
         )
-        .frame(minWidth: 220)
 
         TaskDetailUrgencySegmentedPicker(
             store: store,
-            isEmbeddedInPrioritySection: true
+            isExpanded: expandedValue == .urgency,
+            onExpansionToggle: { toggle(.urgency) },
+            onSelection: { option in
+                store.send(.urgencyChanged(option))
+                collapseExpandedValue()
+            }
         )
-        .frame(minWidth: 220)
 
         TaskDetailPressureSegmentedPicker(
             store: store,
-            isEmbeddedInPrioritySection: true
+            isExpanded: expandedValue == .pressure,
+            onExpansionToggle: { toggle(.pressure) },
+            onSelection: { option in
+                store.send(.pressureChanged(option))
+                collapseExpandedValue()
+            }
         )
-        .frame(minWidth: 220)
 
         TaskDetailThinkingNeededSegmentedPicker(
             store: store,
-            isEmbeddedInPrioritySection: true
+            isExpanded: expandedValue == .thinkingNeeded,
+            onExpansionToggle: { toggle(.thinkingNeeded) },
+            onSelection: { option in
+                store.send(.thinkingNeededChanged(option))
+                collapseExpandedValue()
+            }
         )
-        .frame(minWidth: 220)
+    }
+
+    private func toggle(_ value: TaskDetailExpandedTaskLadderValue) {
+        animateExpansion {
+            expandedValue = expandedValue == value ? nil : value
+        }
+    }
+
+    private func collapseExpandedValue() {
+        animateExpansion {
+            expandedValue = nil
+        }
+    }
+
+    private func animateExpansion(_ changes: () -> Void) {
+        if accessibilityReduceMotion {
+            changes()
+        } else {
+            withAnimation(.easeInOut(duration: 0.18), changes)
+        }
+    }
+}
+
+private enum TaskDetailExpandedTaskLadderValue: Hashable {
+    case importance
+    case urgency
+    case pressure
+    case thinkingNeeded
+}
+
+private struct TaskDetailExpandableSegmentedPicker<Option: Hashable>: View {
+    let title: String
+    let accessibilityLabel: String
+    let options: [Option]
+    let selection: Option
+    let optionTitle: (Option) -> String
+    let tint: (Option) -> Color
+    let selectedForeground: (Option) -> Color
+    let isExpanded: Bool
+    let onExpansionToggle: () -> Void
+    let onSelection: (Option) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            ZStack(alignment: .leading) {
+                if isExpanded {
+                    TaskDetailColoredSegmentedControl(
+                        accessibilityLabel: accessibilityLabel,
+                        options: options,
+                        selection: selection,
+                        title: optionTitle,
+                        tint: tint,
+                        selectedForeground: selectedForeground,
+                        action: onSelection
+                    )
+                    .transition(.taskDetailHorizontalReveal)
+                } else {
+                    Button(action: onExpansionToggle) {
+                        HStack(spacing: 7) {
+                            Circle()
+                                .fill(tint(selection))
+                                .frame(width: 7, height: 7)
+
+                            Text(optionTitle(selection))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+
+                            Image(systemName: "chevron.forward")
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 11)
+                        .frame(minHeight: 38)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(tint(selection).opacity(0.16))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(tint(selection).opacity(0.34), lineWidth: 1)
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(accessibilityLabel): \(optionTitle(selection))")
+                    .accessibilityHint("Show all options")
+                    .transition(.taskDetailHorizontalReveal)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+}
+
+private struct TaskDetailHorizontalRevealModifier: ViewModifier {
+    let horizontalScale: CGFloat
+    let opacity: Double
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(x: horizontalScale, y: 1, anchor: .leading)
+            .opacity(opacity)
+    }
+}
+
+private extension AnyTransition {
+    static var taskDetailHorizontalReveal: AnyTransition {
+        .modifier(
+            active: TaskDetailHorizontalRevealModifier(horizontalScale: 0.72, opacity: 0),
+            identity: TaskDetailHorizontalRevealModifier(horizontalScale: 1, opacity: 1)
+        )
     }
 }
 

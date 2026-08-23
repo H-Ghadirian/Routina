@@ -5,8 +5,212 @@ struct TaskTemporalWeightRuleEditor: View {
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
     let pressure: RoutineTaskPressure
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+#if os(macOS)
+        macEditor
+#else
+        iosEditor
+#endif
+    }
+
+#if os(macOS)
+    private var macEditor: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
+                macTargetRow(
+                    title: "Importance",
+                    baseTitle: importance.title,
+                    selection: macImportanceTargetBinding,
+                    targets: importanceTargets,
+                    optionTitle: { $0.title }
+                )
+                macTargetRow(
+                    title: "Urgency",
+                    baseTitle: urgency.title,
+                    selection: macUrgencyTargetBinding,
+                    targets: urgencyTargets,
+                    optionTitle: { $0.title }
+                )
+                macTargetRow(
+                    title: "Pressure",
+                    baseTitle: pressure.title,
+                    selection: macPressureTargetBinding,
+                    targets: pressureTargets,
+                    optionTitle: { $0.title }
+                )
+            }
+
+            if let validRule = macValidRule {
+                macTimingAndSummary(rule: validRule)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(
+            accessibilityReduceMotion ? nil : .easeInOut(duration: 0.18),
+            value: macValidRule != nil
+        )
+        .animation(
+            accessibilityReduceMotion ? nil : .easeInOut(duration: 0.18),
+            value: macValidRule?.curve
+        )
+    }
+
+    private func macTargetRow<Option: Hashable>(
+        title: String,
+        baseTitle: String,
+        selection: Binding<Option?>,
+        targets: [Option],
+        optionTitle: @escaping (Option) -> String
+    ) -> some View {
+        GridRow {
+            Text(title)
+                .font(.subheadline.weight(.medium))
+
+            Text(baseTitle)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Image(systemName: "arrow.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+
+            Picker("\(title) target", selection: selection) {
+                Text("No change")
+                    .tag(Optional<Option>.none)
+                ForEach(targets, id: \.self) { target in
+                    Text(optionTitle(target))
+                        .tag(Optional(target))
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .fixedSize()
+            .disabled(targets.isEmpty)
+        }
+    }
+
+    private func macTimingAndSummary(rule validRule: RoutineTaskTemporalWeightRule) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                Text("Values change")
+                    .font(.subheadline.weight(.medium))
+
+                Picker("Change timing", selection: curveBinding) {
+                    ForEach(RoutineTaskTemporalWeightCurve.allCases) { curve in
+                        Text(curve.title).tag(curve)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+
+                if validRule.curve == .gradual {
+                    Stepper(
+                        "over \(leadDaysBinding.wrappedValue) \(leadDaysBinding.wrappedValue == 1 ? "day" : "days") before due",
+                        value: leadDaysBinding,
+                        in: 1...RoutineTaskTemporalWeightRule.maximumLeadDays
+                    )
+                    .fixedSize()
+                    .transition(.opacity.combined(with: .move(edge: .leading)))
+                }
+            }
+
+            if let summary = macChangeSummary(rule: validRule) {
+                Text(summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Text("Changed values remain until completion, then reset to the original values.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 2)
+    }
+
+    private var macValidRule: RoutineTaskTemporalWeightRule? {
+        rule?.sanitized(
+            baseImportance: importance,
+            baseUrgency: urgency,
+            basePressure: pressure
+        )
+    }
+
+    private func macChangeSummary(rule: RoutineTaskTemporalWeightRule) -> String? {
+        var changes: [String] = []
+        if let target = rule.importanceAtDue {
+            changes.append("Importance \(importance.title) → \(target.title)")
+        }
+        if let target = rule.urgencyAtDue {
+            changes.append("Urgency \(urgency.title) → \(target.title)")
+        }
+        if let target = rule.pressureAtDue {
+            changes.append("Pressure \(pressure.title) → \(target.title)")
+        }
+        guard !changes.isEmpty else { return nil }
+
+        let timing: String
+        switch rule.curve {
+        case .onDueDate:
+            timing = "On the due date"
+        case .gradual:
+            timing = "Gradually over the \(rule.leadDays) \(rule.leadDays == 1 ? "day" : "days") before due"
+        }
+        return "\(timing): \(changes.joined(separator: " • "))"
+    }
+
+    private var macImportanceTargetBinding: Binding<RoutineTaskImportance?> {
+        Binding(
+            get: {
+                guard let target = rule?.importanceAtDue,
+                      importanceTargets.contains(target) else { return nil }
+                return target
+            },
+            set: { updateMacTarget(\.importanceAtDue, to: $0) }
+        )
+    }
+
+    private var macUrgencyTargetBinding: Binding<RoutineTaskUrgency?> {
+        Binding(
+            get: {
+                guard let target = rule?.urgencyAtDue,
+                      urgencyTargets.contains(target) else { return nil }
+                return target
+            },
+            set: { updateMacTarget(\.urgencyAtDue, to: $0) }
+        )
+    }
+
+    private var macPressureTargetBinding: Binding<RoutineTaskPressure?> {
+        Binding(
+            get: {
+                guard let target = rule?.pressureAtDue,
+                      pressureTargets.contains(target) else { return nil }
+                return target
+            },
+            set: { updateMacTarget(\.pressureAtDue, to: $0) }
+        )
+    }
+
+    private func updateMacTarget<Value>(
+        _ keyPath: WritableKeyPath<RoutineTaskTemporalWeightRule, Value?>,
+        to target: Value?
+    ) {
+        var updated = rule ?? RoutineTaskTemporalWeightRule()
+        updated[keyPath: keyPath] = target
+        rule = updated.sanitized(
+            baseImportance: importance,
+            baseUrgency: urgency,
+            basePressure: pressure
+        )
+    }
+#endif
+
+    private var iosEditor: some View {
         VStack(alignment: .leading, spacing: 12) {
             Toggle("Change values over time", isOn: enabledBinding)
 
@@ -405,10 +609,12 @@ struct TaskTemporalWeightRuleSheet: View {
                 Text("\(task.emoji ?? "✨") \(task.name ?? "Untitled task")")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+#if !os(macOS)
                 Text("Base values stay saved. Now values rise toward the targets for each occurrence, then reset after completion advances the due date.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+#endif
             }
 
             TaskTemporalWeightRuleEditor(

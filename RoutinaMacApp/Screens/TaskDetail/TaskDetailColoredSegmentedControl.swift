@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TaskDetailColoredSegmentedControl<Option: Hashable>: View {
+    var accessibilityLabel = "Task detail options"
     let options: [Option]
     let selection: Option
     let title: (Option) -> String
@@ -10,7 +11,7 @@ struct TaskDetailColoredSegmentedControl<Option: Hashable>: View {
 
     var body: some View {
         RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Task detail options",
+            accessibilityLabel: accessibilityLabel,
             options: options,
             selection: selection,
             onSelect: action,

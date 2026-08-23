@@ -173,6 +173,7 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(formValuesSection.contains("Label(\"Changes over time\""))
         #expect(formValuesSection.contains("TaskTemporalWeightRuleEditor("))
         #expect(formValuesSection.contains("model.temporalWeightAvailabilityMessage"))
+        #expect(formValuesSection.contains("if model.taskType.wrappedValue == .routine"))
         #expect(!formValuesSection.contains("ImportanceUrgencyMatrixPicker"))
         #expect(!formValuesSection.contains(".sheet("))
         #expect(!formSections.contains("TaskFormIOSPriorityPickerSheet"))

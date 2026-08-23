@@ -4,6 +4,10 @@ Date: 2026-08-23
 
 Status: Accepted
 
+The macOS Changes over time editor and preview presentation is revised by
+[0646](0646-compact-mac-changes-over-time-editing.md). iOS retains the detailed
+preview described here.
+
 ## Context
 
 Task configuration had grown as separate cards for Importance and Urgency, Pressure, Thinking needed, Tags, Path, Flags, and Task Ladder grouping. Task Details then hid some of the four Task Ladder values behind a Priority disclosure and showed a derived overall Priority whose calculation and purpose were unclear. The time-based rule was discoverable only through optional-detail menus, so a person could not easily understand its eligibility or preview what would happen after completion, during a gradual lead window, on the due date, and after the due date.

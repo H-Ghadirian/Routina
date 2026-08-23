@@ -76,6 +76,7 @@ struct TaskDetailTCAView: View {
     @State var fileToSave: AttachmentItem?
     @State private var isCloudSharingPresented = false
     @State private var isRelationshipGraphPresented = false
+    @State private var isExistingTaskLinkerPresented = false
     @State private var isTemporalWeightEditorPresented = false
     @State private var selectedLinkedEventPresentation: TaskDetailLinkedEventPresentation?
     @State private var referenceDate = Date()
@@ -188,6 +189,9 @@ detailBody
         }
     )
 }
+.sheet(isPresented: $isExistingTaskLinkerPresented) {
+    existingTaskLinkerSheet
+}
 .sheet(isPresented: $isTemporalWeightEditorPresented) {
     TaskTemporalWeightRuleSheet(task: store.task) { rule in
         store.send(.temporalWeightRuleChanged(rule))
@@ -256,6 +260,7 @@ detailBody
     activeBlockingTask = nil
     showsCollapsedTaskTitle = false
     isCommentComposerVisible = false
+    isExistingTaskLinkerPresented = false
     isTemporalWeightEditorPresented = false
     store.send(.setAddDetailChooserPresented(false))
     pendingOptionalDetailAction = nil
@@ -506,7 +511,7 @@ detailBody
 
         if !shouldShowRelationshipsSection {
             actions.append(TaskDetailOptionalAction(title: "Linked Task", systemImage: "link.badge.plus") {
-                store.send(.openAddLinkedTask)
+                openExistingTaskLinker()
             })
         }
 
@@ -560,6 +565,34 @@ detailBody
         guard let action = pendingOptionalDetailAction else { return }
         pendingOptionalDetailAction = nil
         action.perform()
+    }
+
+    private func openCreateLinkedTask() {
+        store.send(.openAddLinkedTask)
+    }
+
+    private func openExistingTaskLinker() {
+        isExistingTaskLinkerPresented = true
+    }
+
+    private var existingTaskLinkerSheet: some View {
+        TaskRelationshipPickerSheet(
+            candidates: store.linkableRelationshipTasks,
+            linkedTaskIDs: Set(store.resolvedRelationships.map(\.taskID)),
+            initialKind: store.addLinkedTaskRelationshipKind,
+            onSelect: { taskID, kind in
+                store.send(.detailLinkExistingTask(taskID, kind))
+            },
+            sourceTaskTitle: store.task.name,
+            createLinkedTask: { kind in
+                store.send(.addLinkedTaskRelationshipKindChanged(kind))
+                isExistingTaskLinkerPresented = false
+                store.send(.openAddLinkedTask)
+            }
+        ) { searchText in
+            TextField("Search tasks", text: searchText)
+                .routinaTaskRelationshipSearchFieldPlatform()
+        }
     }
 
     private var shouldShowCommentsSection: Bool {
@@ -1087,8 +1120,9 @@ detailBody
             isShowingAllLogs: $isShowingAllLogs,
             createdAtBadgeValue: store.state.createdAtBadgeValue,
             showPersianDates: showPersianDates,
-            background: routineLogsBackground,
+            background: TaskDetailPlatformStyle.historyBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            presentationStyle: .compactMobile,
             relatedTaskName: relatedTaskName(for:)
         ) { _, log, _ in
             RoutineLogSwipeRow(
@@ -1134,7 +1168,8 @@ detailBody
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onVisualize: { isRelationshipGraphPresented = true },
             onOpenTask: { store.send(.openLinkedTask($0)) },
-            onOpenAddLinkedTask: { store.send(.openAddLinkedTask) }
+            onOpenAddLinkedTask: openCreateLinkedTask,
+            onLinkExistingTask: openExistingTaskLinker
         )
     }
 

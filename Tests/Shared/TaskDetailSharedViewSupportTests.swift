@@ -102,6 +102,31 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func iosTaskDetailLinkActionOffersExistingAndNewTasksInOnePicker() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let actionStart = try #require(source.range(of: "private func openExistingTaskLinker()"))
+        let actionEnd = try #require(
+            source.range(
+                of: "private var shouldShowCommentsSection",
+                range: actionStart.upperBound..<source.endIndex
+            )
+        )
+        let actionSource = String(source[actionStart.lowerBound..<actionEnd.lowerBound])
+
+        #expect(source.contains("@State private var isExistingTaskLinkerPresented = false"))
+        #expect(source.contains(".sheet(isPresented: $isExistingTaskLinkerPresented)"))
+        #expect(actionSource.contains("TaskRelationshipPickerSheet("))
+        #expect(actionSource.contains("candidates: store.linkableRelationshipTasks"))
+        #expect(actionSource.contains("store.send(.detailLinkExistingTask(taskID, kind))"))
+        #expect(actionSource.contains("sourceTaskTitle: store.task.name"))
+        #expect(actionSource.contains("createLinkedTask: { kind in"))
+        #expect(actionSource.contains("store.send(.openAddLinkedTask)"))
+        #expect(source.contains("onLinkExistingTask: openExistingTaskLinker"))
+    }
+
+    @Test
     func macTaskDetailTimeEditorCanReplaceAnExistingTaskTotal() throws {
         let detailSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"

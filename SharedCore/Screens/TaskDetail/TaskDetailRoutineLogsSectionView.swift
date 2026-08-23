@@ -1,5 +1,10 @@
 import SwiftUI
 
+enum TaskDetailHistorySectionPresentationStyle {
+    case standard
+    case compactMobile
+}
+
 struct TaskDetailHistorySectionView<RowContent: View>: View {
     let logs: [RoutineLog]
     let changes: [RoutineTaskChangeLogEntry]
@@ -9,6 +14,7 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
     let showPersianDates: Bool
     let background: Color
     let stroke: Color
+    let presentationStyle: TaskDetailHistorySectionPresentationStyle
     let relatedTaskName: (RoutineTaskChangeLogEntry) -> String
     let rowContent: (Int, RoutineLog, [RoutineLog]) -> RowContent
 
@@ -23,6 +29,7 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
         showPersianDates: Bool,
         background: Color,
         stroke: Color,
+        presentationStyle: TaskDetailHistorySectionPresentationStyle = .standard,
         relatedTaskName: @escaping (RoutineTaskChangeLogEntry) -> String,
         @ViewBuilder rowContent: @escaping (Int, RoutineLog, [RoutineLog]) -> RowContent
     ) {
@@ -34,6 +41,7 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
         self.showPersianDates = showPersianDates
         self.background = background
         self.stroke = stroke
+        self.presentationStyle = presentationStyle
         self.relatedTaskName = relatedTaskName
         self.rowContent = rowContent
     }
@@ -70,27 +78,21 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
     }
 
     var body: some View {
-        TaskDetailSectionCardView(background: background, stroke: stroke) {
-            VStack(alignment: .leading, spacing: 10) {
-                TaskDetailCollapsibleSectionHeaderView(
-                    title: "History",
-                    count: historyCount,
-                    isExpanded: isExpanded,
-                    onToggle: { isExpanded.toggle() }
-                )
-
-                if let createdAtBadgeValue {
-                    createdBadge(createdAtBadgeValue)
-                }
-
-                if isExpanded {
-                    if logs.isEmpty && changes.isEmpty {
-                        Text("No history yet")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    } else {
-                        historyContent
-                    }
+        Group {
+            if presentationStyle == .compactMobile {
+                historyCardContent
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(background)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(stroke, lineWidth: 1)
+                    )
+            } else {
+                TaskDetailSectionCardView(background: background, stroke: stroke) {
+                    historyCardContent
                 }
             }
         }
@@ -99,6 +101,31 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
         }
         .onChange(of: changes.map(\.id)) { _, _ in
             isShowingAllChanges = false
+        }
+    }
+
+    private var historyCardContent: some View {
+        VStack(alignment: .leading, spacing: presentationStyle == .compactMobile ? 8 : 10) {
+            TaskDetailCollapsibleSectionHeaderView(
+                title: "History",
+                count: historyCount,
+                isExpanded: isExpanded,
+                onToggle: { isExpanded.toggle() }
+            )
+
+            if let createdAtBadgeValue {
+                createdBadge(createdAtBadgeValue)
+            }
+
+            if isExpanded {
+                if logs.isEmpty && changes.isEmpty {
+                    Text("No history yet")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } else {
+                    historyContent
+                }
+            }
         }
     }
 
@@ -142,47 +169,72 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
         }
     }
 
+    @ViewBuilder
     private func createdBadge(_ value: String) -> some View {
-        Label("Created \(value)", systemImage: "calendar.badge.plus")
-            .font(.caption.weight(.medium))
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 6)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.secondary.opacity(0.08))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
-            )
-    }
-
-    private func historyGroupTitle(_ title: String, count: Int, systemImage: String) -> some View {
-        HStack(spacing: 8) {
-            Label(title, systemImage: systemImage)
-                .font(.caption.weight(.semibold))
+        if presentationStyle == .compactMobile {
+            Label("Created \(value)", systemImage: "calendar.badge.plus")
+                .font(.caption)
                 .foregroundStyle(.secondary)
-
-            Text(count.formatted())
-                .font(.caption2.weight(.semibold))
+                .lineLimit(2)
+                .padding(.vertical, 2)
+        } else {
+            Label("Created \(value)", systemImage: "calendar.badge.plus")
+                .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
+                .lineLimit(1)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(Color.secondary.opacity(0.14))
+                        .fill(Color.secondary.opacity(0.08))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
                 )
         }
-        .padding(.top, 4)
-        .padding(.bottom, 2)
     }
 
+    @ViewBuilder
+    private func historyGroupTitle(_ title: String, count: Int, systemImage: String) -> some View {
+        if presentationStyle == .compactMobile {
+            HStack(spacing: 8) {
+                Label(title, systemImage: systemImage)
+                Spacer(minLength: 8)
+                Text(count.formatted())
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.top, 5)
+            .padding(.bottom, 1)
+        } else {
+            HStack(spacing: 8) {
+                Label(title, systemImage: systemImage)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(count.formatted())
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.secondary.opacity(0.14))
+                    )
+            }
+            .padding(.top, 4)
+            .padding(.bottom, 2)
+        }
+    }
+
+    @ViewBuilder
     private var historyDivider: some View {
-        Divider()
-            .padding(.leading, 40)
-            .opacity(0.65)
+        if presentationStyle != .compactMobile {
+            Divider()
+                .padding(.leading, 40)
+                .opacity(0.65)
+        }
     }
 
     private var historyGroupDivider: some View {
@@ -191,60 +243,83 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
             .opacity(0.7)
     }
 
+    @ViewBuilder
     private var showAllLogsControl: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.16)) {
                 isShowingAllLogs.toggle()
             }
         } label: {
-            Label(
-                isShowingAllLogs ? "Show fewer activity entries" : "Show all activity",
-                systemImage: isShowingAllLogs ? "chevron.up.circle" : "chevron.down.circle"
-            )
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.secondary.opacity(0.10))
-            )
+            if presentationStyle == .compactMobile {
+                HStack(spacing: 8) {
+                    Text(isShowingAllLogs ? "Show recent activity" : "Show \(hiddenLogCount) older entries")
+                    Image(systemName: isShowingAllLogs ? "chevron.up" : "chevron.down")
+                }
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+            } else {
+                Label(
+                    isShowingAllLogs ? "Show fewer activity entries" : "Show all activity",
+                    systemImage: isShowingAllLogs ? "chevron.up.circle" : "chevron.down.circle"
+                )
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.secondary.opacity(0.10))
+                )
+            }
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
-        .contentShape(Capsule(style: .continuous))
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.top, 2)
         .accessibilityHint(isShowingAllLogs ? "Shows only recent activity" : "Shows \(hiddenLogCount) older activity entries")
     }
 
+    @ViewBuilder
     private var showAllChangesControl: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.16)) {
                 isShowingAllChanges.toggle()
             }
         } label: {
-            Label(
-                isShowingAllChanges ? "Show fewer changes" : "Show all changes",
-                systemImage: isShowingAllChanges ? "chevron.up.circle" : "chevron.down.circle"
-            )
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.secondary.opacity(0.10))
-            )
+            if presentationStyle == .compactMobile {
+                HStack(spacing: 8) {
+                    Text(isShowingAllChanges ? "Show recent changes" : "Show \(hiddenChangeCount) older changes")
+                    Image(systemName: isShowingAllChanges ? "chevron.up" : "chevron.down")
+                }
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+            } else {
+                Label(
+                    isShowingAllChanges ? "Show fewer changes" : "Show all changes",
+                    systemImage: isShowingAllChanges ? "chevron.up.circle" : "chevron.down.circle"
+                )
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.secondary.opacity(0.10))
+                )
+            }
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
-        .contentShape(Capsule(style: .continuous))
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.top, 2)
         .accessibilityHint(isShowingAllChanges ? "Shows only recent changes" : "Shows \(hiddenChangeCount) older changes")
     }
 
+    @ViewBuilder
     private func taskChangeRow(_ change: RoutineTaskChangeLogEntry) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        let row = HStack(alignment: .top, spacing: 10) {
             TaskDetailHistoryMarker(
                 systemImage: TaskDetailLogPresentation.taskChangeSystemImage(for: change),
                 tint: .secondary
@@ -253,13 +328,37 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(TaskDetailLogPresentation.taskChangeTitle(for: change, relatedTaskName: relatedTaskName(change)))
                     .font(.subheadline.weight(.semibold))
-                Text(TaskDetailLogPresentation.timestampText(change.timestamp, showPersianDates: showPersianDates))
+
+                Text(change.timestamp.formatted(date: .abbreviated, time: .shortened))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if let supplementaryDateText = PersianDateDisplay.supplementaryText(
+                    for: change.timestamp,
+                    enabled: showPersianDates
+                ) {
+                    Text(supplementaryDateText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.vertical, 7)
+
+        if presentationStyle == .compactMobile {
+            row
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.secondary.opacity(0.055))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.secondary.opacity(0.10), lineWidth: 1)
+                )
+        } else {
+            row.padding(.vertical, 7)
+        }
     }
 }
 

@@ -19,7 +19,49 @@ struct TaskFormMacLayoutRegressionTests {
         #expect(valuesCard.contains("Label(\"Changes over time\""))
         #expect(valuesCard.contains("TaskTemporalWeightRuleEditor("))
         #expect(valuesCard.contains("model.temporalWeightAvailabilityMessage"))
+        #expect(valuesCard.contains("if model.taskType.wrappedValue == .routine"))
         #expect(!valuesCard.contains("ImportanceUrgencyMatrixPicker"))
+    }
+
+    @Test
+    func changesOverTimeUsesCompactTargetMenusAndOneLiveSummaryOnMac() throws {
+        let source = try Self.sourceFile(
+            "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
+        )
+        let macEditor = try Self.sourceSection(
+            startingAt: "private var macEditor: some View",
+            endingAt: "private var iosEditor: some View",
+            in: source
+        )
+
+        #expect(macEditor.contains("Grid(alignment: .leading"))
+        #expect(macEditor.contains("Text(\"No change\")"))
+        #expect(macEditor.contains(".pickerStyle(.menu)"))
+        #expect(macEditor.contains("Picker(\"Change timing\""))
+        #expect(macEditor.contains("if validRule.curve == .gradual"))
+        #expect(macEditor.contains("Stepper("))
+        #expect(macEditor.contains("macChangeSummary(rule: validRule)"))
+        #expect(macEditor.contains("reset to the original values"))
+        #expect(macEditor.contains("rule = updated.sanitized("))
+        #expect(!macEditor.contains("Toggle("))
+        #expect(!macEditor.contains("temporalPreview"))
+        #expect(!macEditor.contains("previewRow("))
+    }
+
+    @Test
+    func changesOverTimeKeepsTheExistingDetailedEditorOnIOS() throws {
+        let source = try Self.sourceFile(
+            "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
+        )
+        let iosEditor = try Self.sourceSection(
+            startingAt: "private var iosEditor: some View",
+            endingAt: "static func hasValidTarget",
+            in: source
+        )
+
+        #expect(iosEditor.contains("Toggle(\"Change values over time\""))
+        #expect(iosEditor.contains(".pickerStyle(.segmented)"))
+        #expect(iosEditor.contains("temporalPreview"))
     }
 
     @Test

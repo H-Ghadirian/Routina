@@ -3,7 +3,7 @@ import Testing
 
 struct TaskDetailMacHeaderControlLayoutTests {
     @Test
-    func taskLadderValuesShareOneAlwaysVisibleSectionForEveryTaskType() throws {
+    func taskLadderValuesKeepCurrentValuesVisibleAndExpandOnePickerAtATime() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
         )
@@ -31,6 +31,16 @@ struct TaskDetailMacHeaderControlLayoutTests {
         #expect(!valuesSection.contains("isExpanded"))
         #expect(actionControls.contains("struct TaskDetailTaskLadderValuesControlsGrid"))
         #expect(actionControls.contains("ViewThatFits(in: .horizontal)"))
+        #expect(actionControls.contains(".fixedSize(horizontal: true, vertical: false)"))
+        #expect(!actionControls.contains(".frame(minWidth: 220)"))
+        #expect(actionControls.contains("@State private var expandedValue: TaskDetailExpandedTaskLadderValue?"))
+        #expect(actionControls.contains("struct TaskDetailExpandableSegmentedPicker"))
+        #expect(actionControls.contains("if isExpanded"))
+        #expect(actionControls.contains("Text(optionTitle(selection))"))
+        #expect(actionControls.contains(".transition(.taskDetailHorizontalReveal)"))
+        #expect(actionControls.contains("expandedValue = expandedValue == value ? nil : value"))
+        #expect(actionControls.contains("expandedValue = nil"))
+        #expect(actionControls.contains("accessibilityReduceMotion"))
         #expect(actionControls.contains("TaskDetailPressureSegmentedPicker("))
         #expect(actionControls.contains("TaskDetailThinkingNeededSegmentedPicker("))
         #expect(actionControls.contains("TaskDetailImportanceSegmentedPicker("))

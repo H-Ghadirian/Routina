@@ -49,6 +49,35 @@ struct TaskDetailPlatformActionParityTests {
     }
 
     @Test
+    func iosTaskHistoryUsesCompactRowsAndDiscoverableActions() throws {
+        let detailSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let rowSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/RoutineLogSwipeRow.swift"
+        )
+        let sectionSource = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogsSectionView.swift"
+        )
+        let presentationSource = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogRowPresentation.swift"
+        )
+
+        #expect(detailSource.contains("presentationStyle: .compactMobile"))
+        #expect(rowSource.contains("historyActionsMenu"))
+        #expect(rowSource.contains(".frame(width: 44, height: 44)"))
+        #expect(rowSource.contains("Text(presentation.dateTimeText)"))
+        #expect(rowSource.contains("if let supplementaryDateText"))
+        #expect(rowSource.contains("if presentation.hasTimeSpent"))
+        #expect(!rowSource.contains("TaskDetailHistoryStatusBadge"))
+        #expect(!rowSource.contains(".routinaGlassCard"))
+        #expect(!rowSource.contains("fullSwipeThreshold"))
+        #expect(sectionSource.contains("case compactMobile"))
+        #expect(sectionSource.contains("Show \\(hiddenLogCount) older entries"))
+        #expect(presentationSource.contains("resolvesDoneDate ? .orange : .red"))
+    }
+
+    @Test
     func iosTaskDetailsGroupMaintenanceActionsInNavigationOverflow() throws {
         let toolbarSource = try Self.sourceFile(
             "iOS/Screens/TaskDetail/TaskDetailToolbarContent.swift"
@@ -320,7 +349,7 @@ struct TaskDetailPlatformActionParityTests {
         #expect(!relationshipVisibility.contains("true"))
         #expect(optionalActions.contains("if !shouldShowRelationshipsSection"))
         #expect(optionalActions.contains("title: \"Linked Task\""))
-        #expect(optionalActions.contains("store.send(.openAddLinkedTask)"))
+        #expect(optionalActions.contains("openExistingTaskLinker()"))
     }
 
     @Test
