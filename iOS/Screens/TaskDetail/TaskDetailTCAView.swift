@@ -792,20 +792,21 @@ detailBody
             statusContextMessage: statusContextMessage,
             badgeRows: todoHeaderBadgeRows,
             tags: store.task.tags,
-            flags: store.task.flags
-        ) { tag in
-            statusTagChip(tag)
-        } additionalContent: {
-            VStack(alignment: .leading, spacing: 8) {
-                taskDetailTaskLadderValuesSection
-                if shouldShowTimeControl {
-                    todoTimeSpentHeaderBox
+            flags: store.task.flags,
+            headerAccessory: { EmptyView() },
+            titleSupplementaryContent: { assumedDoneStatusPill },
+            tagChip: { tag in statusTagChip(tag) },
+            additionalContent: {
+                VStack(alignment: .leading, spacing: 8) {
+                    taskDetailTaskLadderValuesSection
+                    if shouldShowTimeControl {
+                        todoTimeSpentHeaderBox
+                    }
+                    headerGoalsBox
                 }
-                headerGoalsBox
-            }
-        } flagChip: { flag in
-            AnyView(TaskDetailFlagChip(flag: flag))
-        }
+            },
+            flagChip: { flag in AnyView(TaskDetailFlagChip(flag: flag)) }
+        )
     }
 
     private var todoStateTimingSummary: TodoStateTimingSummary? {
@@ -822,17 +823,18 @@ detailBody
             statusContextMessage: statusContextMessage,
             badgeRows: routineHeaderBadgeRows,
             tags: store.task.tags,
-            flags: store.task.flags
-        ) { tag in
-            statusTagChip(tag)
-        } additionalContent: {
-            VStack(alignment: .leading, spacing: 8) {
-                taskDetailTaskLadderValuesSection
-                headerGoalsBox
-            }
-        } flagChip: { flag in
-            AnyView(TaskDetailFlagChip(flag: flag))
-        }
+            flags: store.task.flags,
+            headerAccessory: { EmptyView() },
+            titleSupplementaryContent: { assumedDoneStatusPill },
+            tagChip: { tag in statusTagChip(tag) },
+            additionalContent: {
+                VStack(alignment: .leading, spacing: 8) {
+                    taskDetailTaskLadderValuesSection
+                    headerGoalsBox
+                }
+            },
+            flagChip: { flag in AnyView(TaskDetailFlagChip(flag: flag)) }
+        )
     }
 
     @ViewBuilder
@@ -1046,11 +1048,19 @@ detailBody
     }
 
     private var statusContextMessage: String? {
-        TaskDetailStatusMetadataPresentation.statusContextMessage(
+        guard !store.isSelectedDateAssumedDone else { return nil }
+        return TaskDetailStatusMetadataPresentation.statusContextMessage(
             for: store.state,
             showPersianDates: showPersianDates,
             style: .mobile
         )
+    }
+
+    @ViewBuilder
+    private var assumedDoneStatusPill: some View {
+        if store.isSelectedDateAssumedDone {
+            TaskDetailAssumedDoneStatusPill()
+        }
     }
 
     private var dueDateMetadataDisplayText: String? {

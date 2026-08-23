@@ -16,9 +16,36 @@ struct TaskDetailPlatformActionParityTests {
         #expect(!routineActions.contains("Start ongoing"))
         #expect(!routineActions.contains("startOngoingButton"))
         #expect(!routineActions.contains(".startOngoingTapped"))
+        #expect(routineActions.contains("routineLifecycleControl"))
+        #expect(routineActions.contains("HStack(spacing: 0)"))
         #expect(routineActions.contains("routineActionsMenu"))
-        #expect(routineActions.contains("More routine actions"))
+        #expect(routineActions.contains("Image(systemName: \"chevron.down\")"))
+        #expect(routineActions.contains(".frame(width: 54)"))
+        #expect(routineActions.contains(".frame(minHeight: 50, maxHeight: .infinity)"))
+        #expect(routineActions.contains(".contentShape(Rectangle())"))
+        #expect(routineActions.contains(".accessibilityLabel(\"More routine actions\")"))
         #expect(routineActions.contains("Not today — hide until tomorrow"))
+        #expect(routineActions.contains("Divider()"))
+
+        let notToday = try #require(routineActions.range(of: "store.send(.notTodayTapped)"))
+        let pause = try #require(routineActions.range(of: "store.send(.pauseTapped)"))
+        #expect(notToday.lowerBound < pause.lowerBound)
+    }
+
+    @Test
+    func iosAssumedDoneUsesACompactStatusPillInsteadOfInstructionalCopy() throws {
+        let detailSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let actionControlsSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+
+        #expect(detailSource.contains("titleSupplementaryContent: { assumedDoneStatusPill }"))
+        #expect(detailSource.contains("guard !store.isSelectedDateAssumedDone else { return nil }"))
+        #expect(detailSource.contains("if store.isSelectedDateAssumedDone"))
+        #expect(actionControlsSource.contains("Label(\"Assumed done\", systemImage: \"checkmark.circle.dashed\")"))
+        #expect(actionControlsSource.contains(".accessibilityHint(\"This day is provisional until you confirm it\")"))
     }
 
     @Test

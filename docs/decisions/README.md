@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0643](0643-join-ios-task-detail-completion-and-routine-actions.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0507](0507-clarify-ios-task-detail-action-hierarchy.md), and [0626](0626-join-mac-task-detail-completion-and-overflow.md):** iOS Task Details replaces assumed-done instructional copy with a compact status pill and joins the prominent completion action to a neutral chevron menu that keeps Not today first while leaving task maintenance in the navigation overflow.
 - **[0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md) revises task-form and Task Detail presentation and supersedes pre-release compatibility storage:** Add/Edit organize primary configuration as Behavior & Schedule, Task Ladder values, and Organization; Task Details always shows four directly editable values without aggregate Priority or disclosure; Changes over time is embedded with eligibility guidance and a four-state preview; and persistence contains only Routine and Todo task kinds.
 - **[0641](0641-create-backlog-sections-from-context.md) refines [0633](0633-make-mac-backlog-hierarchical-and-searchable.md), [0634](0634-unify-mac-workspace-search-and-creation.md), and [0635](0635-separate-mac-settings-section-surfaces.md):** Backlog removes its persistent section composer; task move menus keep Backlog destinations behind one nested menu and can create-and-assign a new Backlog super section at the point of use, while Settings remains the empty-catalog creation path.
 - **[0640](0640-route-unassigned-backlog-candidates-by-tags.md) refines [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md), [0633](0633-make-mac-backlog-hierarchical-and-searchable.md), and [0460](0460-match-custom-section-tags-by-any-or-all.md):** Backlog tag rules claim matching active hidden-by-Flag tasks that have no explicit section, while explicit assignments remain stronger and ordinary Radar tasks stay out of Backlog.
@@ -264,7 +265,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 - **[0508](superseded/0508-keep-ios-add-more-details-last.md), superseded by [0625](0625-group-task-detail-add-detail-with-edit.md):** iOS Task Details formerly placed `Add more details` after all currently visible task content for both todos and routines.
 
-- **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](superseded/0424-make-task-detail-priority-optional.md), with priority presentation revised by [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md):** iOS Task Details keeps Done as the sole prominent action and labels a second cadence-free completion explicitly.
+- **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](superseded/0424-make-task-detail-priority-optional.md), with priority presentation revised by [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md) and action presentation refined by [0643](0643-join-ios-task-detail-completion-and-routine-actions.md):** iOS Task Details keeps Done as the sole prominent action and labels a second cadence-free completion explicitly.
 
 - **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
 
@@ -341,7 +342,7 @@ These are ordered from newest resolver to oldest resolver.
 - **[0509](0509-collapse-calendar-list-assumed-done-sections.md) refines [0368](0368-hide-assumed-done-calendar-layer-by-default.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), [0455](0455-customize-calendar-list-task-rows.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Calendar `List` uses a per-day, initially collapsed Assumed done disclosure whose stored default affects newly shown columns only, preserving current local review choices and cached presentation snapshots.
 
 
-- **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](superseded/0424-make-task-detail-priority-optional.md), with priority presentation revised by [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md):** iOS Task Details keeps Done as the sole prominent action and labels a second cadence-free completion explicitly.
+- **[0507](0507-clarify-ios-task-detail-action-hierarchy.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0421](0421-support-cadence-free-repeating-routines.md), and [0424](superseded/0424-make-task-detail-priority-optional.md), with priority presentation revised by [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md) and action presentation refined by [0643](0643-join-ios-task-detail-completion-and-routine-actions.md):** iOS Task Details keeps Done as the sole prominent action and labels a second cadence-free completion explicitly.
 
 - **[0505](0505-use-dense-ios-stats-metric-tiles.md) refines [0115](0115-support-compact-stats-summary-cards.md):** iOS Cards mode uses dense two-column metric tiles instead of spacious cards, while iOS Compact rows and macOS cards retain their existing presentations.
 
@@ -773,6 +774,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0643](0643-join-ios-task-detail-completion-and-routine-actions.md) | Join iOS Task Detail Completion and Routine Actions | Accepted | 2026-08-23 |
 | [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md) | Unify Task Configuration and Retire Legacy Task-Kind Storage | Accepted | 2026-08-23 |
 | [0641](0641-create-backlog-sections-from-context.md) | Create Backlog Sections From Task Context | Accepted | 2026-08-23 |
 | [0640](0640-route-unassigned-backlog-candidates-by-tags.md) | Route Unassigned Backlog Candidates by Tags | Accepted | 2026-08-23 |
