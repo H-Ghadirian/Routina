@@ -663,7 +663,10 @@ final class RoutineTask {
                 cadenceEnabled: resolvedCadenceEnabled,
                 importance: importance,
                 urgency: urgency,
-                pressure: pressure
+                pressure: pressure,
+                maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                    for: resolvedRecurrenceRule
+                )
             )
         )
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))

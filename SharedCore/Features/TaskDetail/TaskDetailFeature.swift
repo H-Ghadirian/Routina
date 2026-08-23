@@ -508,7 +508,6 @@ struct TaskDetailFeature: Reducer {
         case thinkingNeededChanged(RoutineTaskThinkingNeeded)
         case importanceChanged(RoutineTaskImportance)
         case urgencyChanged(RoutineTaskUrgency)
-        case temporalWeightRuleChanged(RoutineTaskTemporalWeightRule?)
         case setBlockedStateConfirmation(Bool)
         case confirmBlockedStateCompletion
         case notificationDisabledWarningTapped
@@ -614,10 +613,8 @@ struct TaskDetailFeature: Reducer {
         state.editTemporalWeightRule = rule.sanitized(
             baseImportance: state.editImportance,
             baseUrgency: state.editUrgency,
-            basePressure: state.editPressure
-        ) ?? RoutineTaskTemporalWeightRule(
-            curve: rule.curve,
-            leadDays: rule.leadDays
+            basePressure: state.editPressure,
+            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
     }
 
@@ -1937,16 +1934,6 @@ struct TaskDetailFeature: Reducer {
 
         case let .urgencyChanged(urgency):
             return statusActionHandler().urgencyChanged(urgency, state: &state)
-
-        case let .temporalWeightRuleChanged(rule):
-            let sanitizedRule = RoutineTaskTemporalWeightResolver.sanitizedRule(rule, for: state.task)
-            guard state.task.temporalWeightRule != sanitizedRule else { return .none }
-            state.task.temporalWeightRule = sanitizedRule
-            state.editTemporalWeightRule = sanitizedRule
-            return handleTemporalWeightRuleChanged(
-                taskID: state.task.id,
-                rule: sanitizedRule
-            )
 
         case let .setBlockedStateConfirmation(isPresented):
             return statusActionHandler().setBlockedStateConfirmation(isPresented, state: &state)

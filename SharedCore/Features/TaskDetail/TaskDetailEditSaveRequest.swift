@@ -181,7 +181,8 @@ struct TaskDetailEditSaveRequestBuilder {
                 cadenceEnabled: cadenceEnabled,
                 importance: state.editImportance,
                 urgency: state.editUrgency,
-                pressure: state.editPressure
+                pressure: state.editPressure,
+                maximumBeforeDueDays: recurrenceDraft.maximumTemporalWeightBeforeDueDays
             ),
             thinkingNeeded: state.editThinkingNeeded,
             imageData: state.editImageData,

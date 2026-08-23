@@ -347,6 +347,10 @@ struct TaskDetailTaskLadderValuesControls: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    private var isReadOnly: Bool {
+        store.task.temporalWeightRule != nil
+    }
+
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 8) {
@@ -362,141 +366,179 @@ struct TaskDetailTaskLadderValuesControls: View {
 
     @ViewBuilder
     private var controls: some View {
-        TaskDetailImportancePickerPill(store: store)
-        TaskDetailUrgencyPickerPill(store: store)
-        TaskDetailPressurePickerPill(store: store)
-        TaskDetailThinkingNeededPickerPill(store: store)
+        TaskDetailImportancePickerPill(store: store, isReadOnly: isReadOnly)
+        TaskDetailUrgencyPickerPill(store: store, isReadOnly: isReadOnly)
+        TaskDetailPressurePickerPill(store: store, isReadOnly: isReadOnly)
+        TaskDetailThinkingNeededPickerPill(store: store, isReadOnly: isReadOnly)
     }
 }
 
 struct TaskDetailPressurePickerPill: View {
     let store: StoreOf<TaskDetailFeature>
+    let isReadOnly: Bool
     @State private var isPresented = false
 
+    @ViewBuilder
     var body: some View {
         let pressure = store.task.pressure
 
-        Button {
-            isPresented = true
-        } label: {
-            Label("Pressure: \(pressure.title)", systemImage: TaskDetailValuePresentation.pressureSystemImage(for: pressure))
+        if isReadOnly {
+            Label("After done pressure: \(pressure.title)", systemImage: TaskDetailValuePresentation.pressureSystemImage(for: pressure))
                 .taskDetailTaskLadderValuePillStyle(
                     tint: TaskDetailValuePresentation.pressureTint(for: pressure, style: .compactPill)
                 )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Pressure")
-        .accessibilityValue(pressure.title)
-        .accessibilityHint("Changes the task pressure")
-        .confirmationDialog("Set Pressure", isPresented: $isPresented) {
-            ForEach(RoutineTaskPressure.allCases, id: \.self) { option in
-                if option != pressure {
-                    Button(option.title) {
-                        store.send(.pressureChanged(option))
+                .accessibilityLabel("After done pressure")
+                .accessibilityValue(pressure.title)
+        } else {
+            Button {
+                isPresented = true
+            } label: {
+                Label("Pressure: \(pressure.title)", systemImage: TaskDetailValuePresentation.pressureSystemImage(for: pressure))
+                    .taskDetailTaskLadderValuePillStyle(
+                        tint: TaskDetailValuePresentation.pressureTint(for: pressure, style: .compactPill)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Pressure")
+            .accessibilityValue(pressure.title)
+            .accessibilityHint("Changes the task pressure")
+            .confirmationDialog("Set Pressure", isPresented: $isPresented) {
+                ForEach(RoutineTaskPressure.allCases, id: \.self) { option in
+                    if option != pressure {
+                        Button(option.title) {
+                            store.send(.pressureChanged(option))
+                        }
                     }
                 }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Current: \(pressure.title)")
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Current: \(pressure.title)")
         }
     }
 }
 
 struct TaskDetailImportancePickerPill: View {
     let store: StoreOf<TaskDetailFeature>
+    let isReadOnly: Bool
     @State private var isPresented = false
 
+    @ViewBuilder
     var body: some View {
         let importance = store.task.importance
         let tint = TaskDetailValuePresentation.importanceTint(for: importance)
 
-        Button {
-            isPresented = true
-        } label: {
-            Label("Importance: \(importance.title)", systemImage: "arrow.up.circle.fill")
+        if isReadOnly {
+            Label("After done importance: \(importance.title)", systemImage: "arrow.up.circle.fill")
                 .taskDetailTaskLadderValuePillStyle(tint: tint)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Importance")
-        .accessibilityValue(importance.title)
-        .accessibilityHint("Changes the task importance")
-        .confirmationDialog("Set Importance", isPresented: $isPresented) {
-            ForEach(RoutineTaskImportance.allCases, id: \.self) { option in
-                if option != importance {
-                    Button(option.title) {
-                        store.send(.importanceChanged(option))
+                .accessibilityLabel("After done importance")
+                .accessibilityValue(importance.title)
+        } else {
+            Button {
+                isPresented = true
+            } label: {
+                Label("Importance: \(importance.title)", systemImage: "arrow.up.circle.fill")
+                    .taskDetailTaskLadderValuePillStyle(tint: tint)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Importance")
+            .accessibilityValue(importance.title)
+            .accessibilityHint("Changes the task importance")
+            .confirmationDialog("Set Importance", isPresented: $isPresented) {
+                ForEach(RoutineTaskImportance.allCases, id: \.self) { option in
+                    if option != importance {
+                        Button(option.title) {
+                            store.send(.importanceChanged(option))
+                        }
                     }
                 }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Current: \(importance.title)")
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Current: \(importance.title)")
         }
     }
 }
 
 struct TaskDetailUrgencyPickerPill: View {
     let store: StoreOf<TaskDetailFeature>
+    let isReadOnly: Bool
     @State private var isPresented = false
 
+    @ViewBuilder
     var body: some View {
         let urgency = store.task.urgency
         let tint = TaskDetailValuePresentation.urgencyTint(for: urgency)
 
-        Button {
-            isPresented = true
-        } label: {
-            Label("Urgency: \(urgency.title)", systemImage: "clock.fill")
+        if isReadOnly {
+            Label("After done urgency: \(urgency.title)", systemImage: "clock.fill")
                 .taskDetailTaskLadderValuePillStyle(tint: tint)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Urgency")
-        .accessibilityValue(urgency.title)
-        .accessibilityHint("Changes the task urgency")
-        .confirmationDialog("Set Urgency", isPresented: $isPresented) {
-            ForEach(RoutineTaskUrgency.allCases, id: \.self) { option in
-                if option != urgency {
-                    Button(option.title) {
-                        store.send(.urgencyChanged(option))
+                .accessibilityLabel("After done urgency")
+                .accessibilityValue(urgency.title)
+        } else {
+            Button {
+                isPresented = true
+            } label: {
+                Label("Urgency: \(urgency.title)", systemImage: "clock.fill")
+                    .taskDetailTaskLadderValuePillStyle(tint: tint)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Urgency")
+            .accessibilityValue(urgency.title)
+            .accessibilityHint("Changes the task urgency")
+            .confirmationDialog("Set Urgency", isPresented: $isPresented) {
+                ForEach(RoutineTaskUrgency.allCases, id: \.self) { option in
+                    if option != urgency {
+                        Button(option.title) {
+                            store.send(.urgencyChanged(option))
+                        }
                     }
                 }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Current: \(urgency.title)")
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Current: \(urgency.title)")
         }
     }
 }
 
 struct TaskDetailThinkingNeededPickerPill: View {
     let store: StoreOf<TaskDetailFeature>
+    let isReadOnly: Bool
     @State private var isPresented = false
 
+    @ViewBuilder
     var body: some View {
         let level = store.task.thinkingNeeded
 
-        Button {
-            isPresented = true
-        } label: {
+        if isReadOnly {
             Label("Thinking: \(level.title)", systemImage: "lightbulb.fill")
                 .taskDetailTaskLadderValuePillStyle(tint: .indigo)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Thinking needed")
-        .accessibilityValue(level.title)
-        .accessibilityHint("Changes how much thinking the task needs")
-        .confirmationDialog("Set Thinking Needed", isPresented: $isPresented) {
-            ForEach(RoutineTaskThinkingNeeded.allCases, id: \.self) { option in
-                if option != level {
-                    Button(option.title) {
-                        store.send(.thinkingNeededChanged(option))
+                .accessibilityLabel("Thinking needed")
+                .accessibilityValue(level.title)
+        } else {
+            Button {
+                isPresented = true
+            } label: {
+                Label("Thinking: \(level.title)", systemImage: "lightbulb.fill")
+                    .taskDetailTaskLadderValuePillStyle(tint: .indigo)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Thinking needed")
+            .accessibilityValue(level.title)
+            .accessibilityHint("Changes how much thinking the task needs")
+            .confirmationDialog("Set Thinking Needed", isPresented: $isPresented) {
+                ForEach(RoutineTaskThinkingNeeded.allCases, id: \.self) { option in
+                    if option != level {
+                        Button(option.title) {
+                            store.send(.thinkingNeededChanged(option))
+                        }
                     }
                 }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Current: \(level.title)")
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Current: \(level.title)")
         }
     }
 }

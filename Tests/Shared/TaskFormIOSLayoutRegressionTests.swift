@@ -167,13 +167,14 @@ struct TaskFormIOSLayoutRegressionTests {
         )
 
         #expect(formValuesSection.contains("Section(header: Text(\"Task Ladder values\"))"))
-        for label in ["Importance", "Urgency", "Pressure", "Thinking needed"] {
-            #expect(formValuesSection.contains("accessibilityLabel: \"\(label)\""))
-        }
-        #expect(formValuesSection.contains("Label(\"Changes over time\""))
         #expect(formValuesSection.contains("TaskTemporalWeightRuleEditor("))
+        #expect(formValuesSection.contains("importance: model.importance"))
+        #expect(formValuesSection.contains("urgency: model.urgency"))
+        #expect(formValuesSection.contains("pressure: model.pressure"))
+        #expect(formValuesSection.contains("TaskTemporalThinkingSentenceEditor("))
+        #expect(formValuesSection.contains("maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays"))
         #expect(formValuesSection.contains("model.temporalWeightAvailabilityMessage"))
-        #expect(formValuesSection.contains("if model.taskType.wrappedValue == .routine"))
+        #expect(!formValuesSection.contains("RoutinaGlassSegmentedControl"))
         #expect(!formValuesSection.contains("ImportanceUrgencyMatrixPicker"))
         #expect(!formValuesSection.contains(".sheet("))
         #expect(!formSections.contains("TaskFormIOSPriorityPickerSheet"))

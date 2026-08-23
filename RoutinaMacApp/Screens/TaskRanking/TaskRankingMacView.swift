@@ -123,8 +123,16 @@ struct TaskRankingMacView: View {
                let task = store.tasks.first(where: { $0.id == taskID }) {
                 TaskTemporalWeightRuleSheet(
                     task: task,
-                    onSave: { rule in
-                        store.send(.temporalWeightRuleSaved(taskID, rule))
+                    onSave: { importance, urgency, pressure, rule in
+                        store.send(
+                            .temporalWeightRuleSaved(
+                                taskID,
+                                importance,
+                                urgency,
+                                pressure,
+                                rule
+                            )
+                        )
                     }
                 )
             }

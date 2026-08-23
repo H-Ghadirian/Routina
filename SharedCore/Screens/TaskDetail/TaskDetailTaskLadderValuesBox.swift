@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// A compact, always-visible Task Ladder summary. Values remain directly
-/// editable; the container intentionally has no aggregate priority or
-/// disclosure state.
+/// A compact, always-visible Task Ladder summary. Values are directly editable
+/// unless a Changes over time rule makes Task Details a read-only review
+/// surface; the container intentionally has no aggregate priority or disclosure
+/// state.
 struct TaskDetailTaskLadderValuesBox<Content: View>: View {
     @ViewBuilder let content: Content
 

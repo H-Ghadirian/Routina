@@ -60,6 +60,7 @@ struct TaskDetailPrimaryActionButton: View {
 
 struct TaskDetailPressureSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    let isReadOnly: Bool
     let isExpanded: Bool
     let onExpansionToggle: () -> Void
     let onSelection: (RoutineTaskPressure) -> Void
@@ -73,6 +74,7 @@ struct TaskDetailPressureSegmentedPicker: View {
             optionTitle: { $0.title },
             tint: { TaskDetailValuePresentation.pressureTint(for: $0, style: .segmentedControl) },
             selectedForeground: { TaskDetailValuePresentation.pressureSelectedForeground(for: $0) },
+            isReadOnly: isReadOnly,
             isExpanded: isExpanded,
             onExpansionToggle: onExpansionToggle,
             onSelection: onSelection
@@ -82,6 +84,7 @@ struct TaskDetailPressureSegmentedPicker: View {
 
 struct TaskDetailThinkingNeededSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    let isReadOnly: Bool
     let isExpanded: Bool
     let onExpansionToggle: () -> Void
     let onSelection: (RoutineTaskThinkingNeeded) -> Void
@@ -95,6 +98,7 @@ struct TaskDetailThinkingNeededSegmentedPicker: View {
             optionTitle: { $0.title },
             tint: { $0 == .none ? Color.secondary : Color.indigo },
             selectedForeground: { _ in Color.white },
+            isReadOnly: isReadOnly,
             isExpanded: isExpanded,
             onExpansionToggle: onExpansionToggle,
             onSelection: onSelection
@@ -104,6 +108,7 @@ struct TaskDetailThinkingNeededSegmentedPicker: View {
 
 struct TaskDetailImportanceSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    let isReadOnly: Bool
     let isExpanded: Bool
     let onExpansionToggle: () -> Void
     let onSelection: (RoutineTaskImportance) -> Void
@@ -117,6 +122,7 @@ struct TaskDetailImportanceSegmentedPicker: View {
             optionTitle: { $0.title },
             tint: { TaskDetailValuePresentation.importanceTint(for: $0) },
             selectedForeground: { TaskDetailValuePresentation.importanceSelectedForeground(for: $0) },
+            isReadOnly: isReadOnly,
             isExpanded: isExpanded,
             onExpansionToggle: onExpansionToggle,
             onSelection: onSelection
@@ -126,6 +132,7 @@ struct TaskDetailImportanceSegmentedPicker: View {
 
 struct TaskDetailUrgencySegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    let isReadOnly: Bool
     let isExpanded: Bool
     let onExpansionToggle: () -> Void
     let onSelection: (RoutineTaskUrgency) -> Void
@@ -139,6 +146,7 @@ struct TaskDetailUrgencySegmentedPicker: View {
             optionTitle: { $0.title },
             tint: { TaskDetailValuePresentation.urgencyTint(for: $0) },
             selectedForeground: { TaskDetailValuePresentation.urgencySelectedForeground(for: $0) },
+            isReadOnly: isReadOnly,
             isExpanded: isExpanded,
             onExpansionToggle: onExpansionToggle,
             onSelection: onSelection
@@ -150,6 +158,10 @@ struct TaskDetailTaskLadderValuesControlsGrid: View {
     let store: StoreOf<TaskDetailFeature>
     @State private var expandedValue: TaskDetailExpandedTaskLadderValue?
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    private var isReadOnly: Bool {
+        store.task.temporalWeightRule != nil
+    }
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -171,6 +183,7 @@ struct TaskDetailTaskLadderValuesControlsGrid: View {
     private var priorityControls: some View {
         TaskDetailImportanceSegmentedPicker(
             store: store,
+            isReadOnly: isReadOnly,
             isExpanded: expandedValue == .importance,
             onExpansionToggle: { toggle(.importance) },
             onSelection: { option in
@@ -181,6 +194,7 @@ struct TaskDetailTaskLadderValuesControlsGrid: View {
 
         TaskDetailUrgencySegmentedPicker(
             store: store,
+            isReadOnly: isReadOnly,
             isExpanded: expandedValue == .urgency,
             onExpansionToggle: { toggle(.urgency) },
             onSelection: { option in
@@ -191,6 +205,7 @@ struct TaskDetailTaskLadderValuesControlsGrid: View {
 
         TaskDetailPressureSegmentedPicker(
             store: store,
+            isReadOnly: isReadOnly,
             isExpanded: expandedValue == .pressure,
             onExpansionToggle: { toggle(.pressure) },
             onSelection: { option in
@@ -201,6 +216,7 @@ struct TaskDetailTaskLadderValuesControlsGrid: View {
 
         TaskDetailThinkingNeededSegmentedPicker(
             store: store,
+            isReadOnly: isReadOnly,
             isExpanded: expandedValue == .thinkingNeeded,
             onExpansionToggle: { toggle(.thinkingNeeded) },
             onSelection: { option in
@@ -246,18 +262,24 @@ private struct TaskDetailExpandableSegmentedPicker<Option: Hashable>: View {
     let optionTitle: (Option) -> String
     let tint: (Option) -> Color
     let selectedForeground: (Option) -> Color
+    let isReadOnly: Bool
     let isExpanded: Bool
     let onExpansionToggle: () -> Void
     let onSelection: (Option) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
+            Text(isReadOnly && title != "THINKING NEEDED" ? "AFTER DONE \(title)" : title)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             ZStack(alignment: .leading) {
-                if isExpanded {
+                if isReadOnly {
+                    selectedValueLabel(showsDisclosure: false)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(isReadOnly && title != "THINKING NEEDED" ? "After done \(accessibilityLabel)" : accessibilityLabel)
+                        .accessibilityValue(optionTitle(selection))
+                } else if isExpanded {
                     TaskDetailColoredSegmentedControl(
                         accessibilityLabel: accessibilityLabel,
                         options: options,
@@ -270,31 +292,7 @@ private struct TaskDetailExpandableSegmentedPicker<Option: Hashable>: View {
                     .transition(.taskDetailHorizontalReveal)
                 } else {
                     Button(action: onExpansionToggle) {
-                        HStack(spacing: 7) {
-                            Circle()
-                                .fill(tint(selection))
-                                .frame(width: 7, height: 7)
-
-                            Text(optionTitle(selection))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-
-                            Image(systemName: "chevron.forward")
-                                .font(.caption2.weight(.bold))
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 11)
-                        .frame(minHeight: 38)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(tint(selection).opacity(0.16))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .stroke(tint(selection).opacity(0.34), lineWidth: 1)
-                        )
-                        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        selectedValueLabel(showsDisclosure: true)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("\(accessibilityLabel): \(optionTitle(selection))")
@@ -305,6 +303,36 @@ private struct TaskDetailExpandableSegmentedPicker<Option: Hashable>: View {
             .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private func selectedValueLabel(showsDisclosure: Bool) -> some View {
+        HStack(spacing: 7) {
+            Circle()
+                .fill(tint(selection))
+                .frame(width: 7, height: 7)
+
+            Text(optionTitle(selection))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+
+            if showsDisclosure {
+                Image(systemName: "chevron.forward")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 11)
+        .frame(minHeight: 38)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(tint(selection).opacity(0.16))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(tint(selection).opacity(0.34), lineWidth: 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

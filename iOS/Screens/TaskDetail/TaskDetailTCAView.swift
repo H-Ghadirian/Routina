@@ -77,7 +77,6 @@ struct TaskDetailTCAView: View {
     @State private var isCloudSharingPresented = false
     @State private var isRelationshipGraphPresented = false
     @State private var isExistingTaskLinkerPresented = false
-    @State private var isTemporalWeightEditorPresented = false
     @State private var selectedLinkedEventPresentation: TaskDetailLinkedEventPresentation?
     @State private var referenceDate = Date()
     @State private var activeBlockingTask: RoutineTask?
@@ -192,11 +191,6 @@ detailBody
 .sheet(isPresented: $isExistingTaskLinkerPresented) {
     existingTaskLinkerSheet
 }
-.sheet(isPresented: $isTemporalWeightEditorPresented) {
-    TaskTemporalWeightRuleSheet(task: store.task) { rule in
-        store.send(.temporalWeightRuleChanged(rule))
-    }
-}
 .sheet(item: $selectedLinkedEventPresentation) { presentation in
     linkedEventDetailSheet(eventID: presentation.id)
 }
@@ -261,7 +255,6 @@ detailBody
     showsCollapsedTaskTitle = false
     isCommentComposerVisible = false
     isExistingTaskLinkerPresented = false
-    isTemporalWeightEditorPresented = false
     store.send(.setAddDetailChooserPresented(false))
     pendingOptionalDetailAction = nil
     resetRevealedOptionalControls()
@@ -882,11 +875,15 @@ detailBody
             TaskDetailTaskLadderValuesControls(store: store)
 
             if store.task.temporalWeightRule != nil {
+                Text("Importance, Urgency, and Pressure show their After done values. Now follows each due-date rule, while Thinking stays fixed. Use Edit Task to change these values or their Changes over time rule.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 Divider()
                 TaskTemporalWeightSummaryCard(
                     task: store.task,
-                    referenceDate: referenceDate,
-                    onEdit: { isTemporalWeightEditorPresented = true }
+                    referenceDate: referenceDate
                 )
             }
         }

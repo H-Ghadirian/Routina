@@ -423,10 +423,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         return temporalWeightRule.sanitized(
             baseImportance: state.basics.importance,
             baseUrgency: state.basics.urgency,
-            basePressure: state.basics.pressure
-        ) ?? RoutineTaskTemporalWeightRule(
-            curve: temporalWeightRule.curve,
-            leadDays: temporalWeightRule.leadDays
+            basePressure: state.basics.pressure,
+            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
     }
 

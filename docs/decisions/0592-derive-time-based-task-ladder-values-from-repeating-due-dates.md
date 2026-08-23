@@ -4,6 +4,10 @@
 
 Accepted
 
+The shared curve and shared lead-window portion is revised by
+[0649](0649-give-each-task-ladder-metric-an-independent-time-rule.md). Base/Now
+derivation, read-only Now values, and calendar-boundary caching remain active.
+
 ## Date
 
 2026-08-16

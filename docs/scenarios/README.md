@@ -401,20 +401,30 @@ And a one-off task without tags does not reserve an empty metadata line
 ### Repeating Due Tasks Gain Temporary Task Ladder Weight
 
 Area: Tasks / Mac Task Ladder / Recurrence
-Decision links: [0592](../decisions/0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md), [0575](../decisions/0575-inherit-task-ladder-group-values-from-actionable-tasks.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0592](../decisions/0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md), [0575](../decisions/0575-inherit-task-ladder-group-values-from-actionable-tasks.md), [0561](../decisions/0561-add-separate-mac-task-ranking-ladder.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskRankingPresentationTests.swift`
 
-Given a repeating Due routine has stable Base values and higher due-date targets
-When its rule is `On due date`
-Then Task Ladder Now keeps Base before the due date and uses each target on the due date
-And Base remains unchanged
+Given a repeating Due routine has stable After done values and independent higher targets
+When one metric is `Only on due date`
+Then Task Ladder Now keeps its After done value before due and uses its target on the due date and while overdue
+And the stored After done value remains unchanged
 
-Given a repeating Due routine has a gradual lead window
+Given one metric has its own gradual before-due window
 When calendar days advance through that window
-Then Now advances through categorical values toward each due-date target
+Then Now advances through categorical values toward that metric's target
 And it reaches the target on the due date
+
+Given one metric changes gradually while overdue
+When the task reaches its due date
+Then that metric still has its After done value
+And it advances one categorical level after every configured number of full overdue days
+
+Given a task repeats two days after completion
+When a before-due policy requests seven days
+Then the effective window is capped to two days
+And the next occurrence starts at its After done value
 
 Given the current occurrence has an adjusted Now value
 When the occurrence is completed and the next due date advances beyond its lead window
@@ -1434,19 +1444,17 @@ Given the task is repeating but Changes over time is not yet eligible
 Then the Task Ladder values section remains visible
 And it names the concrete Behavior & Schedule choice required to enable the rule
 
-Given an eligible repeating task is edited on Mac
-Then Importance, Urgency, and Pressure each show their Base value and a target menu containing `No change`
-And no global enable toggle or per-metric checkbox is shown
-When the person chooses the first higher target
-Then the shared timing menu appears
-And choosing Gradually reveals the lead-day stepper
-And one live summary names the timing and each changed Base-to-target pair
-And a quiet note says changed values remain until completion and then reset
-When every target returns to `No change`
+Given an eligible repeating task is edited on iOS or macOS
+Then Importance, Urgency, and Pressure each appear as one sentence
+And each sentence selects its After done value, whether it changes, its own timing, its target, and its own days when applicable
+And every choice uses a menu picker
+And no shared timing control, segmented control, toggle, checkbox, or stepper is shown
+When every metric returns to `does not change`
 Then the rule is removed
 
-Given an eligible rule is configured on iOS
-Then its preview shows Base after completion, the lead-window or pre-due state, due-date targets, and after-due values until completion
+Given the person chooses gradual overdue behavior
+Then the sentence says the value rises one level per selected overdue interval
+And supporting text says the due-date value is still the After done value
 
 ### Wide Mac Task Forms Keep Scheduling Controls Grouped
 

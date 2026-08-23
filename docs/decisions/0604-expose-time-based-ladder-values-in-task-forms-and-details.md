@@ -4,6 +4,11 @@
 
 Accepted
 
+The Task Detail edit action is removed by
+[0648](0648-keep-time-varying-task-ladder-values-read-only-in-details.md), which
+keeps configured time-varying values read-only there and routes changes through
+Edit Task.
+
 ## Date
 
 2026-08-18

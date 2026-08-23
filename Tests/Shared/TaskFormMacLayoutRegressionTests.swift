@@ -9,59 +9,40 @@ struct TaskFormMacLayoutRegressionTests {
         )
         let valuesCard = try Self.sourceSection(
             startingAt: "private var taskLadderValuesCard: some View",
-            endingAt: "private func taskLadderControl",
+            endingAt: "// MARK: Organization",
             in: source
         )
 
-        for label in ["Importance", "Urgency", "Pressure", "Thinking needed"] {
-            #expect(valuesCard.contains("accessibilityLabel: \"\(label)\""))
-        }
-        #expect(valuesCard.contains("Label(\"Changes over time\""))
         #expect(valuesCard.contains("TaskTemporalWeightRuleEditor("))
+        #expect(valuesCard.contains("importance: model.importance"))
+        #expect(valuesCard.contains("urgency: model.urgency"))
+        #expect(valuesCard.contains("pressure: model.pressure"))
+        #expect(valuesCard.contains("TaskTemporalThinkingSentenceEditor("))
+        #expect(valuesCard.contains("maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays"))
         #expect(valuesCard.contains("model.temporalWeightAvailabilityMessage"))
-        #expect(valuesCard.contains("if model.taskType.wrappedValue == .routine"))
+        #expect(!valuesCard.contains("RoutinaGlassSegmentedControl"))
         #expect(!valuesCard.contains("ImportanceUrgencyMatrixPicker"))
     }
 
     @Test
-    func changesOverTimeUsesCompactTargetMenusAndOneLiveSummaryOnMac() throws {
+    func changesOverTimeUsesIndependentSentencePickersOnBothPlatforms() throws {
         let source = try Self.sourceFile(
             "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
         )
-        let macEditor = try Self.sourceSection(
-            startingAt: "private var macEditor: some View",
-            endingAt: "private var iosEditor: some View",
-            in: source
-        )
 
-        #expect(macEditor.contains("Grid(alignment: .leading"))
-        #expect(macEditor.contains("Text(\"No change\")"))
-        #expect(macEditor.contains(".pickerStyle(.menu)"))
-        #expect(macEditor.contains("Picker(\"Change timing\""))
-        #expect(macEditor.contains("if validRule.curve == .gradual"))
-        #expect(macEditor.contains("Stepper("))
-        #expect(macEditor.contains("macChangeSummary(rule: validRule)"))
-        #expect(macEditor.contains("reset to the original values"))
-        #expect(macEditor.contains("rule = updated.sanitized("))
-        #expect(!macEditor.contains("Toggle("))
-        #expect(!macEditor.contains("temporalPreview"))
-        #expect(!macEditor.contains("previewRow("))
-    }
-
-    @Test
-    func changesOverTimeKeepsTheExistingDetailedEditorOnIOS() throws {
-        let source = try Self.sourceFile(
-            "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
-        )
-        let iosEditor = try Self.sourceSection(
-            startingAt: "private var iosEditor: some View",
-            endingAt: "static func hasValidTarget",
-            in: source
-        )
-
-        #expect(iosEditor.contains("Toggle(\"Change values over time\""))
-        #expect(iosEditor.contains(".pickerStyle(.segmented)"))
-        #expect(iosEditor.contains("temporalPreview"))
+        #expect(source.contains("Text(\"After done,\")"))
+        #expect(source.contains("Text(\"does not change\").tag(false)"))
+        #expect(source.contains("Text(\"changes\").tag(true)"))
+        #expect(source.contains("ForEach(RoutineTaskTemporalWeightTiming.allCases)"))
+        #expect(source.contains("case .gradualBeforeDue:"))
+        #expect(source.contains("case .gradualWhileOverdue:"))
+        #expect(source.contains("daysPicker("))
+        #expect(source.contains(".pickerStyle(.menu)"))
+        #expect(source.contains("resets each changing metric to its After done value"))
+        #expect(source.contains("maximumBeforeDueDays"))
+        #expect(!source.contains(".pickerStyle(.segmented)"))
+        #expect(!source.contains("Stepper("))
+        #expect(!source.contains("Toggle("))
     }
 
     @Test

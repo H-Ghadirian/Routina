@@ -181,10 +181,8 @@ struct AddRoutineFeature: Reducer {
         state.basics.temporalWeightRule = rule.sanitized(
             baseImportance: state.basics.importance,
             baseUrgency: state.basics.urgency,
-            basePressure: state.basics.pressure
-        ) ?? RoutineTaskTemporalWeightRule(
-            curve: rule.curve,
-            leadDays: rule.leadDays
+            basePressure: state.basics.pressure,
+            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
     }
 

@@ -240,7 +240,10 @@ struct AddRoutineSaveRequest: Equatable {
             cadenceEnabled: resolvedCadenceEnabled,
             importance: importance,
             urgency: urgency,
-            pressure: pressure
+            pressure: pressure,
+            maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                for: recurrenceRule
+            )
         )
         self.thinkingNeeded = thinkingNeeded
         self.imageData = imageData
@@ -395,7 +398,8 @@ struct AddRoutineSaveRequest: Equatable {
             cadenceEnabled: cadenceEnabled,
             importance: basics.importance,
             urgency: basics.urgency,
-            pressure: basics.pressure
+            pressure: basics.pressure,
+            maximumBeforeDueDays: recurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
         self.thinkingNeeded = basics.thinkingNeeded
         self.imageData = basics.imageData

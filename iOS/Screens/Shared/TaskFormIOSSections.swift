@@ -92,78 +92,29 @@ struct TaskFormIOSTaskLadderValuesSection: View {
 
     var body: some View {
         Section(header: Text("Task Ladder values")) {
-            valueControl(title: "Importance", hint: "How much this task matters to your goals.") {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Importance",
-                    options: RoutineTaskImportance.allCases,
-                    selection: model.importance,
-                    fillsAvailableWidth: true
-                ) { Text($0.title) }
-            }
+            TaskTemporalWeightRuleEditor(
+                rule: model.temporalWeightRule,
+                importance: model.importance,
+                urgency: model.urgency,
+                pressure: model.pressure,
+                allowsTemporalChanges: model.supportsTemporalWeightValues,
+                maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays,
+                usesAfterDoneLanguage: model.taskType.wrappedValue == .routine
+            )
 
-            valueControl(title: "Urgency", hint: "How soon this task needs attention.") {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Urgency",
-                    options: RoutineTaskUrgency.allCases,
-                    selection: model.urgency,
-                    fillsAvailableWidth: true
-                ) { Text($0.title) }
-            }
+            TaskTemporalThinkingSentenceEditor(
+                thinking: model.thinkingNeeded,
+                usesAfterDoneLanguage: model.taskType.wrappedValue == .routine
+            )
 
-            valueControl(title: "Pressure", hint: "How much this task keeps occupying your mind.") {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Pressure",
-                    options: RoutineTaskPressure.allCases,
-                    selection: model.pressure,
-                    fillsAvailableWidth: true
-                ) { Text($0.title) }
-            }
-
-            valueControl(title: "Thinking", hint: "How much concentration or decision-making it requires.") {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Thinking needed",
-                    options: RoutineTaskThinkingNeeded.allCases,
-                    selection: model.thinkingNeeded,
-                    fillsAvailableWidth: true
-                ) { Text($0.title) }
-            }
-
-            if model.taskType.wrappedValue == .routine {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("Changes over time", systemImage: "chart.line.uptrend.xyaxis")
-                        .font(.subheadline.weight(.semibold))
-
-                    if model.supportsTemporalWeightValues {
-                        TaskTemporalWeightRuleEditor(
-                            rule: model.temporalWeightRule,
-                            importance: model.importance.wrappedValue,
-                            urgency: model.urgency.wrappedValue,
-                            pressure: model.pressure.wrappedValue
-                        )
-                    } else if let message = model.temporalWeightAvailabilityMessage {
-                        Label(message, systemImage: "info.circle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.vertical, 4)
+            if model.taskType.wrappedValue == .routine,
+               !model.supportsTemporalWeightValues,
+               let message = model.temporalWeightAvailabilityMessage {
+                Label(message, systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
-    }
-
-    private func valueControl<Content: View>(
-        title: String,
-        hint: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            content()
-        }
-        .padding(.vertical, 3)
-        .accessibilityHint(hint)
     }
 }
 

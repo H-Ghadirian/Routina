@@ -496,7 +496,7 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
-    func taskDetailsPresentImportanceAndUrgencyAsIndependentControls() throws {
+    func taskDetailsKeepTaskLadderValuesTogetherAndLockConfiguredTimeRules() throws {
         let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
         let iosControls = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
         let macDetail = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
@@ -505,20 +505,31 @@ struct TaskDetailSharedViewSupportTests {
 
         #expect(iosDetail.contains("TaskDetailTaskLadderValuesBox"))
         #expect(iosDetail.contains("TaskDetailTaskLadderValuesControls(store: store)"))
+        #expect(iosDetail.contains("Use Edit Task to change these values or their Changes over time rule."))
+        #expect(!iosDetail.contains("isTemporalWeightEditorPresented"))
         #expect(!iosDetail.contains(".revealImportanceInTaskDetail"))
         #expect(!iosDetail.contains(".revealUrgencyInTaskDetail"))
         #expect(iosControls.contains("struct TaskDetailImportancePickerPill"))
         #expect(iosControls.contains("struct TaskDetailUrgencyPickerPill"))
-        #expect(iosControls.contains("TaskDetailImportancePickerPill(store: store)"))
-        #expect(iosControls.contains("TaskDetailUrgencyPickerPill(store: store)"))
+        #expect(iosControls.contains("TaskDetailImportancePickerPill(store: store, isReadOnly: isReadOnly)"))
+        #expect(iosControls.contains("TaskDetailUrgencyPickerPill(store: store, isReadOnly: isReadOnly)"))
+        #expect(iosControls.contains("store.task.temporalWeightRule != nil"))
+        #expect(iosControls.contains("After done importance:"))
+        #expect(iosControls.contains("After done urgency:"))
+        #expect(iosControls.contains("After done pressure:"))
 
         #expect(macDetail.contains("TaskDetailTaskLadderValuesBox"))
         #expect(macDetail.contains("TaskDetailTaskLadderValuesControlsGrid(store: store)"))
+        #expect(macDetail.contains("Use Edit Task to change these values or their Changes over time rule."))
+        #expect(!macDetail.contains("isTemporalWeightEditorPresented"))
         #expect(!macDetail.contains(".revealImportanceInTaskDetail"))
         #expect(!macDetail.contains(".revealUrgencyInTaskDetail"))
         #expect(macControls.contains("struct TaskDetailImportanceSegmentedPicker"))
         #expect(macControls.contains("struct TaskDetailUrgencySegmentedPicker"))
         #expect(macControls.contains("struct TaskDetailTaskLadderValuesControlsGrid"))
+        #expect(macControls.contains("store.task.temporalWeightRule != nil"))
+        #expect(macControls.contains("selectedValueLabel(showsDisclosure: false)"))
+        #expect(macControls.contains("\"AFTER DONE \\(title)\""))
         #expect(valuesBox.contains("TASK LADDER VALUES"))
         #expect(!valuesBox.contains("isExpanded"))
         #expect(!valuesBox.contains("RoutineTaskPriority"))
@@ -559,10 +570,10 @@ struct TaskDetailSharedViewSupportTests {
             #expect(!header.contains("TaskDetailThinkingNeededPickerPill"))
         }
 
-        let importance = try #require(taskLadderControls.range(of: "TaskDetailImportancePickerPill(store: store)"))
-        let urgency = try #require(taskLadderControls.range(of: "TaskDetailUrgencyPickerPill(store: store)"))
-        let pressure = try #require(taskLadderControls.range(of: "TaskDetailPressurePickerPill(store: store)"))
-        let thinking = try #require(taskLadderControls.range(of: "TaskDetailThinkingNeededPickerPill(store: store)"))
+        let importance = try #require(taskLadderControls.range(of: "TaskDetailImportancePickerPill(store: store, isReadOnly: isReadOnly)"))
+        let urgency = try #require(taskLadderControls.range(of: "TaskDetailUrgencyPickerPill(store: store, isReadOnly: isReadOnly)"))
+        let pressure = try #require(taskLadderControls.range(of: "TaskDetailPressurePickerPill(store: store, isReadOnly: isReadOnly)"))
+        let thinking = try #require(taskLadderControls.range(of: "TaskDetailThinkingNeededPickerPill(store: store, isReadOnly: isReadOnly)"))
         #expect(importance.lowerBound < urgency.lowerBound)
         #expect(urgency.lowerBound < pressure.lowerBound)
         #expect(pressure.lowerBound < thinking.lowerBound)

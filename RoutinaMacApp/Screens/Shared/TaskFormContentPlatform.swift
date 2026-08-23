@@ -401,81 +401,30 @@ struct TaskFormContent: View {
             title: "Task Ladder values",
             subtitle: "Set the four independent signals used to place this task."
         ) {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 420), spacing: 18)],
-                alignment: .leading,
-                spacing: 16
-            ) {
-                taskLadderControl(title: "Importance", help: "How much this task matters to your goals.") {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Importance",
-                        options: RoutineTaskImportance.allCases,
-                        selection: model.importance
-                    ) { Text($0.title) }
-                }
+            TaskTemporalWeightRuleEditor(
+                rule: model.temporalWeightRule,
+                importance: model.importance,
+                urgency: model.urgency,
+                pressure: model.pressure,
+                allowsTemporalChanges: model.supportsTemporalWeightValues,
+                maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays,
+                usesAfterDoneLanguage: model.taskType.wrappedValue == .routine
+            )
 
-                taskLadderControl(title: "Urgency", help: "How soon this task needs attention.") {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Urgency",
-                        options: RoutineTaskUrgency.allCases,
-                        selection: model.urgency
-                    ) { Text($0.title) }
-                }
+            TaskTemporalThinkingSentenceEditor(
+                thinking: model.thinkingNeeded,
+                usesAfterDoneLanguage: model.taskType.wrappedValue == .routine
+            )
 
-                taskLadderControl(title: "Pressure", help: "How much this task keeps occupying your mind.") {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Pressure",
-                        options: RoutineTaskPressure.allCases,
-                        selection: model.pressure
-                    ) { Text($0.title) }
-                }
-
-                taskLadderControl(title: "Thinking", help: "How much concentration or decision-making it requires.") {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Thinking needed",
-                        options: RoutineTaskThinkingNeeded.allCases,
-                        selection: model.thinkingNeeded
-                    ) { Text($0.title) }
-                }
-            }
-
-            if model.taskType.wrappedValue == .routine {
-                Divider()
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("Changes over time", systemImage: "chart.line.uptrend.xyaxis")
-                        .font(.subheadline.weight(.semibold))
-
-                    if model.supportsTemporalWeightValues {
-                        TaskTemporalWeightRuleEditor(
-                            rule: model.temporalWeightRule,
-                            importance: model.importance.wrappedValue,
-                            urgency: model.urgency.wrappedValue,
-                            pressure: model.pressure.wrappedValue
-                        )
-                    } else if let message = model.temporalWeightAvailabilityMessage {
-                        Label(message, systemImage: "info.circle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+            if model.taskType.wrappedValue == .routine,
+               !model.supportsTemporalWeightValues,
+               let message = model.temporalWeightAvailabilityMessage {
+                Label(message, systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .id(FormSection.taskLadderValues)
-    }
-
-    private func taskLadderControl<Content: View>(
-        title: String,
-        help: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            content()
-        }
-        .help(help)
     }
 
     // MARK: Organization

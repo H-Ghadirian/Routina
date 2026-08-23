@@ -94,7 +94,13 @@ struct TaskRankingFeature {
         case taskPlacementSaved(UUID, TaskLadderNodeID?, TaskLadderCompletionBehavior)
         case linkedTaskChildSuggestionAccepted(parentTaskID: UUID, childTaskID: UUID)
         case linkedTaskChildSuggestionRejected(parentTaskID: UUID, childTaskID: UUID)
-        case temporalWeightRuleSaved(UUID, RoutineTaskTemporalWeightRule?)
+        case temporalWeightRuleSaved(
+            UUID,
+            RoutineTaskImportance,
+            RoutineTaskUrgency,
+            RoutineTaskPressure,
+            RoutineTaskTemporalWeightRule?
+        )
         case taskDetail(TaskDetailFeature.Action)
     }
 
@@ -366,26 +372,38 @@ struct TaskRankingFeature {
                 appSettingsClient.setTaskLadderOrganization(state.organization)
                 return .none
 
-            case let .temporalWeightRuleSaved(taskID, rule):
+            case let .temporalWeightRuleSaved(taskID, importance, urgency, pressure, rule):
                 guard let taskIndex = state.tasks.firstIndex(where: { $0.id == taskID }),
                       RoutineTaskTemporalWeightResolver.supportsTemporalWeight(state.tasks[taskIndex]) else {
                     return .none
                 }
                 let task = state.tasks[taskIndex].detachedCopy()
-                task.temporalWeightRule = rule
-                if rule?.importanceAtDue != nil {
-                    task.hasExplicitImportance = true
-                }
-                if rule?.urgencyAtDue != nil {
-                    task.hasExplicitUrgency = true
-                }
+                task.importance = importance
+                task.urgency = urgency
+                task.pressure = pressure
+                task.priority = AddRoutinePriorityMatrix.priority(
+                    importance: importance,
+                    urgency: urgency
+                )
+                task.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
+                    rule,
+                    for: task
+                )
+                task.hasExplicitImportance = true
+                task.hasExplicitUrgency = true
                 state.tasks[taskIndex] = task
                 if state.selectedTaskID == taskID {
                     state.taskDetailState?.task = task.detachedCopy()
                 }
                 rebuildPresentation(&state)
                 return .merge(
-                    persistTemporalWeightRule(taskID: taskID, rule: rule),
+                    persistTemporalWeightRule(
+                        taskID: taskID,
+                        importance: importance,
+                        urgency: urgency,
+                        pressure: pressure,
+                        rule: rule
+                    ),
                     scheduleTemporalRefresh(for: state)
                 )
 
@@ -543,6 +561,9 @@ struct TaskRankingFeature {
 
     private func persistTemporalWeightRule(
         taskID: UUID,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
+        pressure: RoutineTaskPressure,
         rule: RoutineTaskTemporalWeightRule?
     ) -> Effect<Action> {
         .run { @MainActor send in
@@ -553,13 +574,19 @@ struct TaskRankingFeature {
                     await send(.loadFailed("Couldn’t find that task to update its changes over time."))
                     return
                 }
-                task.temporalWeightRule = rule
-                if rule?.importanceAtDue != nil {
-                    task.hasExplicitImportance = true
-                }
-                if rule?.urgencyAtDue != nil {
-                    task.hasExplicitUrgency = true
-                }
+                task.importance = importance
+                task.urgency = urgency
+                task.pressure = pressure
+                task.priority = AddRoutinePriorityMatrix.priority(
+                    importance: importance,
+                    urgency: urgency
+                )
+                task.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
+                    rule,
+                    for: task
+                )
+                task.hasExplicitImportance = true
+                task.hasExplicitUrgency = true
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {

@@ -464,6 +464,16 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         }
     }
 
+    /// A before-due transition for an after-completion routine cannot begin
+    /// before that routine's next cycle exists.
+    var maximumTemporalWeightBeforeDueDays: Int? {
+        guard cadence == .afterCompletion else { return nil }
+        return min(
+            rollingIntervalDays,
+            RoutineTaskTemporalWeightRule.maximumTransitionDays
+        )
+    }
+
     func normalized() -> Self {
         Self(
             cadence: cadence,

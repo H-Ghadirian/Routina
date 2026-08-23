@@ -4,6 +4,10 @@
 
 Accepted
 
+The progressive picker behavior is revised by
+[0648](0648-keep-time-varying-task-ladder-values-read-only-in-details.md) for a
+task with configured Changes over time values.
+
 ## Date
 
 2026-08-23

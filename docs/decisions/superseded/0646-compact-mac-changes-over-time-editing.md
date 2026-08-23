@@ -2,7 +2,7 @@
 
 Date: 2026-08-23
 
-Status: Accepted
+Status: Superseded by [0649](../0649-give-each-task-ladder-metric-an-independent-time-rule.md)
 
 ## Context
 
@@ -49,8 +49,8 @@ change, and a rule with no targets is not persisted.
 ## Revises
 
 - Revises the macOS preview and editor presentation required by
-  [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md).
+  [0642](../0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md).
 - Refines the configuration surface introduced by
-  [0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md).
+  [0604](../0604-expose-time-based-ladder-values-in-task-forms-and-details.md).
 - Preserves the shared curve and independent target model from
-  [0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md).
+  [0592](../0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md).

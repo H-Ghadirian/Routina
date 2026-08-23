@@ -805,14 +805,16 @@ struct TaskRankingPresentationTests {
         #expect(viewSource.contains("ForEach(TaskRankingValueMode.allCases)"))
         #expect(viewSource.contains("Button(\"Changes over Time…\")"))
         #expect(viewSource.contains("TaskTemporalWeightRuleSheet("))
-        #expect(sharedEditorSource.contains("Base values stay saved. Now values rise toward the targets"))
+        #expect(sharedEditorSource.contains("Define the value after completion and the independent due-date behavior"))
         #expect(sharedEditorSource.contains("TaskTemporalWeightSummaryCard"))
-        for previewState in ["After done", "During lead window", "Due date", "After due"] {
-            #expect(sharedEditorSource.contains("title: \"\(previewState)\""))
-        }
+        #expect(sharedEditorSource.contains("RoutineTaskTemporalWeightTiming.allCases"))
+        #expect(sharedEditorSource.contains("case .gradualBeforeDue:"))
+        #expect(sharedEditorSource.contains("case .gradualWhileOverdue:"))
+        #expect(!sharedEditorSource.contains(".pickerStyle(.segmented)"))
         #expect(featureSource.contains("case temporalBoundaryReached"))
         #expect(featureSource.contains("scheduleTemporalRefresh(for: state)"))
-        #expect(featureSource.contains("persistTemporalWeightRule(taskID: taskID, rule: rule)"))
+        #expect(featureSource.contains("persistTemporalWeightRule("))
+        #expect(featureSource.contains("importance: importance"))
     }
 
     @Test
@@ -990,6 +992,123 @@ struct TaskRankingPresentationTests {
         #expect(weights.urgency == .level3)
         #expect(weights.pressure == .medium)
         #expect(weights.progress > 0 && weights.progress < 1)
+    }
+
+    @Test
+    func eachTemporalMetricUsesItsOwnDueDatePolicy() throws {
+        let interval = 10
+        let task = RoutineTask(
+            name: "Independent changes",
+            importance: .level1,
+            urgency: .level1,
+            pressure: .none,
+            scheduleMode: .fixedInterval,
+            interval: Int16(interval),
+            recurrenceRule: .interval(days: interval),
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
+        )
+        task.temporalWeightRule = RoutineTaskTemporalWeightRule(
+            importance: RoutineTaskTemporalWeightPolicy(
+                target: .level4,
+                timing: .onDueDate
+            ),
+            urgency: RoutineTaskTemporalWeightPolicy(
+                target: .level4,
+                timing: .gradualBeforeDue,
+                days: 5
+            ),
+            pressure: RoutineTaskTemporalWeightPolicy(
+                target: .high,
+                timing: .gradualWhileOverdue,
+                days: 1
+            )
+        )
+
+        let twoDaysBeforeDueAnchor = try #require(
+            calendar.date(byAdding: .day, value: -(interval - 2), to: referenceDate)
+        )
+        task.lastDone = twoDaysBeforeDueAnchor
+        task.scheduleAnchor = twoDaysBeforeDueAnchor
+        let beforeDue = RoutineTaskTemporalWeightResolver.effectiveWeights(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        #expect(beforeDue.importance == .level1)
+        #expect(beforeDue.urgency == .level3)
+        #expect(beforeDue.pressure == .none)
+
+        let dueTodayAnchor = try #require(
+            calendar.date(byAdding: .day, value: -interval, to: referenceDate)
+        )
+        task.lastDone = dueTodayAnchor
+        task.scheduleAnchor = dueTodayAnchor
+        let dueToday = RoutineTaskTemporalWeightResolver.effectiveWeights(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        #expect(dueToday.importance == .level4)
+        #expect(dueToday.urgency == .level4)
+        #expect(dueToday.pressure == .none)
+
+        let twoDaysOverdueAnchor = try #require(
+            calendar.date(byAdding: .day, value: -(interval + 2), to: referenceDate)
+        )
+        task.lastDone = twoDaysOverdueAnchor
+        task.scheduleAnchor = twoDaysOverdueAnchor
+        let overdue = RoutineTaskTemporalWeightResolver.effectiveWeights(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        #expect(overdue.importance == .level4)
+        #expect(overdue.urgency == .level4)
+        #expect(overdue.pressure == .medium)
+    }
+
+    @Test
+    func afterDoneCadenceCapsBeforeDueWindowToItsRepeatInterval() {
+        let task = RoutineTask(
+            name: "Every two days",
+            importance: .level1,
+            scheduleMode: .fixedInterval,
+            interval: 2,
+            recurrenceRule: .interval(days: 2)
+        )
+        task.temporalWeightRule = RoutineTaskTemporalWeightRule(
+            importance: RoutineTaskTemporalWeightPolicy(
+                target: .level4,
+                timing: .gradualBeforeDue,
+                days: 7
+            )
+        )
+
+        let sanitized = RoutineTaskTemporalWeightResolver.sanitizedRule(
+            task.temporalWeightRule,
+            for: task
+        )
+
+        #expect(sanitized?.importance?.days == 2)
+    }
+
+    @Test
+    func legacySharedCurveStorageMigratesToIndependentMetricPolicies() throws {
+        let legacyStorage =
+            #"{"curve":"gradual","leadDays":7,"importanceAtDue":"Critical","pressureAtDue":"High"}"#
+        let migrated = try #require(
+            RoutineTaskTemporalWeightStorage.deserialize(legacyStorage)
+        )
+
+        #expect(migrated.importance?.target == .level4)
+        #expect(migrated.importance?.timing == .gradualBeforeDue)
+        #expect(migrated.importance?.days == 7)
+        #expect(migrated.urgency == nil)
+        #expect(migrated.pressure?.target == .high)
+        #expect(migrated.pressure?.timing == .gradualBeforeDue)
+        #expect(migrated.pressure?.days == 7)
+        #expect(!RoutineTaskTemporalWeightStorage.serialize(migrated).contains("leadDays"))
     }
 
     @Test

@@ -752,7 +752,10 @@ extension TaskDetailFeature {
                         : cadenceEnabled,
                     importance: importance,
                     urgency: urgency,
-                    pressure: pressure
+                    pressure: pressure,
+                    maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                        for: recurrenceRule
+                    )
                 )
                 task.thinkingNeeded = thinkingNeeded
                 task.color = color
@@ -1528,31 +1531,6 @@ extension TaskDetailFeature {
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error updating thinking needed: \(error)")
-            }
-        }
-    }
-
-    func handleTemporalWeightRuleChanged(
-        taskID: UUID,
-        rule: RoutineTaskTemporalWeightRule?
-    ) -> Effect<Action> {
-        .run { @MainActor _ in
-            do {
-                let context = modelContext()
-                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
-                task.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(rule, for: task)
-                DeviceActivityRecorder.recordAction(
-                    .updated,
-                    entity: .task,
-                    entityID: taskID,
-                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: "Updated changes over time",
-                    in: context
-                )
-                try context.save()
-                NotificationCenter.default.postRoutineDidUpdate()
-            } catch {
-                print("Error updating changes over time: \(error)")
             }
         }
     }

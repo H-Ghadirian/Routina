@@ -5,8 +5,13 @@ Date: 2026-08-23
 Status: Accepted
 
 The macOS Changes over time editor and preview presentation is revised by
-[0646](0646-compact-mac-changes-over-time-editing.md). iOS retains the detailed
-preview described here.
+[0649](0649-give-each-task-ladder-metric-an-independent-time-rule.md), which
+supersedes [0646](superseded/0646-compact-mac-changes-over-time-editing.md) and
+replaces the separate platform editors described here.
+
+The always-directly-editable Task Detail behavior is revised by
+[0648](0648-keep-time-varying-task-ladder-values-read-only-in-details.md) when a
+Changes over time rule is configured.
 
 ## Context
 

@@ -425,6 +425,10 @@ extension TaskFormModel {
         recurrenceDraft.wrappedValue.validationIssue?.message
     }
 
+    var maximumTemporalWeightBeforeDueDays: Int? {
+        recurrenceDraft.wrappedValue.maximumTemporalWeightBeforeDueDays
+    }
+
     private var candidateRecurrenceRule: RoutineRecurrenceRule {
         let currentScheduleMode = scheduleMode.wrappedValue
         let usesAvailabilityTiming = !isAllDay.wrappedValue

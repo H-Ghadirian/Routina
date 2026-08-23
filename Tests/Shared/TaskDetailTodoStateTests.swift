@@ -208,6 +208,50 @@ struct TodoStateFeatureTests {
     }
 
     @Test
+    func taskLadderValueChanges_areIgnoredWhenChangesOverTimeIsConfigured() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(
+            name: "Prepare monthly report",
+            importance: .level1,
+            urgency: .level1,
+            pressure: .low,
+            temporalWeightRule: RoutineTaskTemporalWeightRule(
+                importanceAtDue: .level4,
+                urgencyAtDue: .level4,
+                pressureAtDue: .high
+            ),
+            thinkingNeeded: .low,
+            scheduleMode: .fixedInterval
+        )
+        context.insert(task)
+        try context.save()
+        #expect(task.temporalWeightRule != nil)
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.importanceChanged(.level3))
+        await store.send(.urgencyChanged(.level3))
+        await store.send(.pressureChanged(.medium))
+        await store.send(.thinkingNeededChanged(.high))
+
+        #expect(store.state.task.importance == .level1)
+        #expect(store.state.task.urgency == .level1)
+        #expect(store.state.task.pressure == .low)
+        #expect(store.state.task.thinkingNeeded == .low)
+
+        let saved = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(saved.importance == .level1)
+        #expect(saved.urgency == .level1)
+        #expect(saved.pressure == .low)
+        #expect(saved.thinkingNeeded == .low)
+    }
+
+    @Test
     func thinkingNeededChanged_updatesComplexityAndPersists() async throws {
         let context = makeInMemoryContext()
         let task = RoutineTask(

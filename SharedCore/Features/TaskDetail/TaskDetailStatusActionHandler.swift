@@ -26,6 +26,7 @@ struct TaskDetailStatusActionHandler {
     }
 
     func pressureChanged(_ pressure: RoutineTaskPressure, state: inout State) -> Effect<Action> {
+        guard state.task.temporalWeightRule == nil else { return .none }
         guard let mutation = mutationHandler.applyPressureChange(pressure, state: &state) else {
             return .none
         }
@@ -36,6 +37,7 @@ struct TaskDetailStatusActionHandler {
         _ thinkingNeeded: RoutineTaskThinkingNeeded,
         state: inout State
     ) -> Effect<Action> {
+        guard state.task.temporalWeightRule == nil else { return .none }
         guard let mutation = mutationHandler.applyThinkingNeededChange(thinkingNeeded, state: &state) else {
             return .none
         }
@@ -46,6 +48,7 @@ struct TaskDetailStatusActionHandler {
         _ importance: RoutineTaskImportance,
         state: inout State
     ) -> Effect<Action> {
+        guard state.task.temporalWeightRule == nil else { return .none }
         guard let mutation = mutationHandler.applyImportanceChange(importance, state: &state) else {
             return .none
         }
@@ -53,6 +56,7 @@ struct TaskDetailStatusActionHandler {
     }
 
     func urgencyChanged(_ urgency: RoutineTaskUrgency, state: inout State) -> Effect<Action> {
+        guard state.task.temporalWeightRule == nil else { return .none }
         guard let mutation = mutationHandler.applyUrgencyChange(urgency, state: &state) else {
             return .none
         }
