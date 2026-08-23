@@ -112,19 +112,6 @@ struct TaskFormMacTagsContent: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 10) {
-                TextField("tracking, private", text: model.flagDraft)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { model.onAddFlag() }
-
-                Button { model.onAddFlag() } label: {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.bordered)
-                .disabled(RoutineFlag.parseDraft(model.flagDraft.wrappedValue).isEmpty)
-                .accessibilityLabel("Add flag")
-            }
-
             if !model.routineFlags.isEmpty {
                 HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(model.routineFlags, id: \.self) { flag in

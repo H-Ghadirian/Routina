@@ -27,6 +27,7 @@ struct SettingsPlatformRootView: View {
 
 struct SettingsIOSRootView: View {
     let store: StoreOf<SettingsFeature>
+    @State private var settingsSearchQuery = ""
     @AppStorage(
         UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
         store: SharedDefaults.app
@@ -38,34 +39,53 @@ struct SettingsIOSRootView: View {
 
     var body: some View {
 List {
-    ForEach(
-        SettingsIOSSection.compactSectionGroups(
-            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
-            isDevicesSectionEnabled: isDevicesSectionEnabled,
-            isPlacesEnabled: isPlacesEnabled
-        ),
-        id: \.self
-    ) { sections in
-        Section {
-            ForEach(sections) { section in
-                NavigationLink {
-                    SettingsIOSDetailView(section: section, store: store)
-                } label: {
-                    SettingsIOSSectionRow(section: section, store: store)
+    if filteredSectionGroups.isEmpty {
+        ContentUnavailableView("No Matching Settings", systemImage: "magnifyingglass")
+    } else {
+        ForEach(filteredSectionGroups, id: \.self) { sections in
+            Section {
+                ForEach(sections) { section in
+                    NavigationLink {
+                        SettingsIOSDetailView(section: section, store: store)
+                    } label: {
+                        SettingsIOSSectionRow(
+                            section: section,
+                            store: store,
+                            searchQuery: settingsSearchQuery
+                        )
+                    }
                 }
             }
         }
     }
 }
 .listStyle(.insetGrouped)
+.contentMargins(.top, 0, for: .scrollContent)
+.searchable(
+    text: $settingsSearchQuery,
+    placement: .navigationBarDrawer(displayMode: .always),
+    prompt: "Search Settings"
+)
 .navigationTitle("Settings")
 .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var filteredSectionGroups: [[SettingsIOSSection]] {
+        SettingsIOSSection.filteredSectionGroups(
+            SettingsIOSSection.compactSectionGroups(
+                isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
+                isDevicesSectionEnabled: isDevicesSectionEnabled,
+                isPlacesEnabled: isPlacesEnabled
+            ),
+            matching: settingsSearchQuery
+        )
     }
 }
 
 private struct SettingsIPadSplitView: View {
     let store: StoreOf<SettingsFeature>
     @State private var selectedSection: SettingsIOSSection? = .notifications
+    @State private var settingsSearchQuery = ""
     @AppStorage(
         UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
         store: SharedDefaults.app
@@ -78,15 +98,25 @@ private struct SettingsIPadSplitView: View {
     var body: some View {
 NavigationSplitView {
     List(selection: $selectedSection) {
-        ForEach(visibleSections) { section in
-            SettingsIOSSectionRow(
-                section: section,
-                store: store
-            )
-            .tag(section)
+        if filteredVisibleSections.isEmpty {
+            ContentUnavailableView("No Matching Settings", systemImage: "magnifyingglass")
+        } else {
+            ForEach(filteredVisibleSections) { section in
+                SettingsIOSSectionRow(
+                    section: section,
+                    store: store,
+                    searchQuery: settingsSearchQuery
+                )
+                .tag(section)
+            }
         }
     }
     .listStyle(.sidebar)
+    .searchable(
+        text: $settingsSearchQuery,
+        placement: .sidebar,
+        prompt: "Search Settings"
+    )
     .navigationTitle("Settings")
     .navigationSplitViewColumnWidth(min: 300, ideal: 340, max: 400)
 } detail: {
@@ -108,6 +138,10 @@ NavigationSplitView {
             isDevicesSectionEnabled: isDevicesSectionEnabled,
             isPlacesEnabled: isPlacesEnabled
         )
+    }
+
+    private var filteredVisibleSections: [SettingsIOSSection] {
+        SettingsIOSSection.filteredSections(visibleSections, matching: settingsSearchQuery)
     }
 }
 
@@ -249,6 +283,7 @@ private struct SettingsIOSShortcutsDetailView: View {
 private struct SettingsQuickAddDetailView: View {
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
+    @State private var settingsSearchQuery = ""
 
     var body: some View {
         List {
@@ -281,13 +316,14 @@ private struct SettingsQuickAddDetailView: View {
 private struct SettingsIOSSectionRow: View {
     let section: SettingsIOSSection
     let store: StoreOf<SettingsFeature>
+    let searchQuery: String
 
     var body: some View {
 SettingsNavigationRow(
     icon: section.icon,
     tint: section.tint,
     title: section.title,
-    subtitle: presentation.subtitle,
+    subtitle: section.searchResultSubtitle(for: searchQuery) ?? presentation.subtitle,
     value: presentation.value
 )
     }

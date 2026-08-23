@@ -92,8 +92,6 @@ struct SettingsFeature {
         case removeFlagTapped(String)
         case addFlagRuleTapped(flagName: String, kind: RoutineFlagRuleKind)
         case removeFlagRuleTapped(flagName: String, kind: RoutineFlagRuleKind)
-        case migrateAutoAssumeDoneTasksTapped(String)
-        case autoAssumeDoneMigrationFinished(flag: String, migratedCount: Int)
         case saveRelatedTagsTapped(String)
         case addRelatedTagDraftSubmitted(tagName: String, draft: String)
         case appendRelatedTagSuggestionTapped(tagName: String, suggestion: String)
@@ -778,16 +776,6 @@ struct SettingsFeature {
                 return kind == .autoAssumeDone
                     ? synchronizeAutoAssumeDoneFlagRules(affectedFlag: flagName)
                     : .none
-
-            case let .migrateAutoAssumeDoneTasksTapped(flag):
-                guard state.flags.hasRule(.autoAssumeDone, for: flag) else { return .none }
-                return migrateAutoAssumeDoneTasks(to: flag)
-
-            case let .autoAssumeDoneMigrationFinished(flag, migratedCount):
-                state.flags.statusMessage = migratedCount == 0
-                    ? "No existing auto-assume tasks needed migration."
-                    : "Migrated \(migratedCount) task\(migratedCount == 1 ? "" : "s") to \(flag)."
-                return .none
 
             case let .saveRelatedTagsTapped(tagName):
                 return SettingsTagMetadataActionHandler.saveRelatedTagsTapped(

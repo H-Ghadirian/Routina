@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsMacSidebarRow: View {
     let section: SettingsMacSection
     let store: StoreOf<SettingsFeature>
+    var searchQuery = ""
     @AppStorage(
         UserDefaultBoolValueKey.appSettingMacLocalAIAccessEnabled.rawValue,
         store: SharedDefaults.app
@@ -38,13 +39,20 @@ HStack(spacing: 12) {
     }
 
     private var presentation: SettingsSectionRowPresentation {
+        let basePresentation: SettingsSectionRowPresentation
         if section == .aiConnections {
-            return SettingsSectionRowPresentation(
+            basePresentation = SettingsSectionRowPresentation(
                 subtitle: "Read-only access for local AI clients",
                 value: isLocalAIAccessEnabled ? "On" : "Off"
             )
+        } else {
+            basePresentation = section.rowPresentation(in: store.state)
         }
-        return section.rowPresentation(in: store.state)
+
+        return SettingsSectionRowPresentation(
+            subtitle: section.searchResultSubtitle(for: searchQuery) ?? basePresentation.subtitle,
+            value: basePresentation.value
+        )
     }
 }
 

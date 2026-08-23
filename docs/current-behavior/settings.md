@@ -41,6 +41,10 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0569](../decisions/0569-suppress-no-op-preference-sync-refresh-loops.md)
 - [0583](../decisions/0583-keep-task-creation-unlimited.md)
 - [0588](../decisions/0588-configure-flag-rules-by-assignment.md)
+- [0636](../decisions/0636-replace-configurable-flags-with-built-in-behaviors.md)
+- [0637](../decisions/0637-search-settings-by-destination.md)
+- [0638](../decisions/0638-stabilize-mac-settings-section-disclosure-animation.md)
+- [0639](../decisions/0639-scope-custom-section-names-by-surface.md)
 - [0610](../decisions/0610-expose-product-help-through-local-ai-connections.md)
 - [0611](../decisions/0611-list-actual-pending-notifications-in-settings.md)
 - [0615](../decisions/0615-group-and-control-pending-notification-occurrences.md)
@@ -53,6 +57,9 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - macOS development and production targets both display as `Routinam` but use different bundle identifiers (`ir.hamedgh.Routinam.mac.dev` and `ir.hamedgh.Routinam`). Notification authorization is per bundle identifier, so enabling the production app in System Settings does not authorize the development app.
 - The standalone Mac Settings surface uses a launch-suppressed, single-instance standard window. It retains the system Settings command and Command-comma routing while supporting minimize, free resizing and zoom above its 640 by 560 minimum, and native full screen.
 - Mac Settings -> Sections uses a segmented `Main task list` / `Backlog` picker. It shows and edits only the selected surface's custom super sections, scopes new-section creation to that surface, keeps subsections under their parent surface, and reorders top-level sections without crossing between surfaces. Existing section IDs and surface assignments are preserved.
+- Top-level section names are unique within their surface, not across the whole catalog. The same name can therefore be created once in `Main task list` and once in `Backlog`; duplicate names remain rejected within the same surface, and subsection names remain unique under their parent.
+- Mac Settings -> Sections expands one custom-section editor at a time. The card's height and disclosure affordance animate, while editor controls remain clipped to the rounded card and do not fade or slide independently.
+- iOS and macOS Settings provide a native `Search Settings` field. It searches visible destination titles, stable aliases such as `backlog`, `sync`, `flags`, and `reminders`, and curated user-facing concepts inside each destination. When a query matches an inner concept, the result row shows the matching control names—for example, `hide` returns Flags with `Hide from Task Lists`, `Hide from Timeline`, and `Hide from Task Ladder`—before selecting the existing destination without changing its controls. Feature-gated destinations are excluded, and an explicit empty state appears when no destination matches.
 - Task creation has no purchase entitlement or Settings override. Support & About continues to expose the general Privacy Policy and Terms of Use links. The legacy synchronized unlimited-task preference remains inert only for data-model and backup compatibility.
 - Calendar task import always supports Apple Calendar. Outlook appears only when the app bundle has a nonempty Microsoft Graph client ID, so unconfigured release builds do not advertise a nonfunctional sign-in path.
 - The iOS and macOS production bundles declare `ITSAppUsesNonExemptEncryption` as false so App Store Connect can reuse Routina's current exempt-encryption answer. The declaration must be reassessed before shipping custom cryptography, encrypted communications or VPN functionality, or a cryptography-providing dependency.
@@ -72,7 +79,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - When `Show Goals tab` is off, iOS hides Goals navigation, New Goal, Goals Stats reports, the Goals iCloud category, and the Home Filters Goal option; existing task and goal data remains stored.
 - iOS Settings -> Appearance hides the Task Row `Goals` and `Places` controls, their preview content, and their shown-fields count from the respective disabled Goal and Places feature gates. Their stored row-visibility choices remain intact and return when the feature is enabled again.
 - iOS Settings -> Tags does not expose saved-tag quick-filter configuration until the app provides a discoverable shortcut surface. The deferred implementation is tracked in [Product Debt 0002](../debt/0002-implement-saved-tag-quick-filters.md).
-- iOS and macOS Settings -> Flags show only the rules assigned to each Flag. `Add Rule` lists the remaining rule kinds, assigned rules can be removed in place, and a Flag with no rules stays compact instead of repeating the full rule catalog. The auto-assume migration action appears only when that rule is assigned.
+- iOS and macOS Settings -> Flags show the four built-in behavior Flags: Hide from Task Lists, Hide from Timeline, Hide from Task Ladder, and Auto Assume Done. People assign any combination while editing a task; ordinary personal labels belong in Tags. Launch initializes or repairs the persisted catalog to these four canonical values for fresh installs and restored settings; it does not scan or rewrite task assignments.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.
 - Legacy `.json` backup remains compatibility-only for older task, place, goal, and log payloads.
 - Data-wide reset actions show backup/export first when possible.

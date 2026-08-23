@@ -42,4 +42,4 @@ migration.
 - The section editor remains one compact catalog instead of duplicating the
   entire Settings screen.
 - Existing sections keep their IDs, names, ordering data, rules, and surface.
-- Section titles remain subject to the existing catalog naming rules.
+- Section titles remain subject to normalized sibling uniqueness within the selected surface; [0639](0639-scope-custom-section-names-by-surface.md) defines that scope.

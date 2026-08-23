@@ -148,6 +148,139 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    /// Stable words people commonly use when looking for a Settings area.
+    /// These aliases complement the concrete controls listed in
+    /// `searchDetailTerms` below.
+    private var searchAliases: [String] {
+        switch self {
+        case .general:
+            return ["preferences", "app lock", "battery", "defaults"]
+        case .devices:
+            return ["sessions", "mac", "iphone", "ipad"]
+        case .notifications:
+            return ["reminders", "alerts", "scheduled"]
+        case .blocking:
+            return ["focus", "screen time", "apps", "websites"]
+        case .calendar:
+            return ["apple calendar", "outlook", "events"]
+        case .places:
+            return ["location", "maps", "check in"]
+        case .tags:
+            return ["labels", "colors", "related tags"]
+        case .flags:
+            return ["task behavior", "hide", "timeline", "task ladder", "auto assume done"]
+        case .sections:
+            return ["task list", "backlog", "super section", "subsection"]
+        case .appearance:
+            return ["theme", "dark mode", "light mode", "rows"]
+        case .iCloud:
+            return ["backup", "sync", "cloud", "icloud", "restore"]
+        case .git:
+            return ["github", "gitlab", "repository", "commit"]
+        case .backup:
+            return ["export", "import", "data"]
+        case .quickAdd:
+            return ["smart add", "parser", "dates"]
+        case .shortcuts:
+            return ["keyboard", "hotkeys", "commands"]
+        case .aiConnections:
+            return ["mcp", "local ai", "automation", "read only"]
+        case .support:
+            return ["help", "contact"]
+        case .about:
+            return ["privacy", "terms", "version", "diagnostics"]
+        }
+    }
+
+    /// User-facing controls and concepts inside each Settings destination.
+    /// These make a result explain why its category matched the query.
+    var searchDetailTerms: [String] {
+        switch self {
+        case .general:
+            return ["App Lock", "Battery routines"]
+        case .devices:
+            return ["Device sessions", "Sync devices"]
+        case .notifications:
+            return ["Daily reminder", "Pending notifications", "Notification permissions"]
+        case .blocking:
+            return ["Focus mode", "App blocking", "Website blocking"]
+        case .calendar:
+            return ["Calendar import", "Planner calendar", "Calendar list", "Automatic timeline activity", "Persian dates"]
+        case .places:
+            return ["Places", "Maps", "Check in"]
+        case .tags:
+            return ["Saved tags", "Tag colors", "Related tags"]
+        case .flags:
+            return [
+                "Hide from Task Lists",
+                "Hide from Timeline",
+                "Hide from Task Ladder",
+                "Auto Assume Done"
+            ]
+        case .sections:
+            return ["Main task list", "Backlog", "Super sections", "Subsections"]
+        case .appearance:
+            return ["Theme", "App icon", "Task row", "Timeline row", "Persian dates"]
+        case .iCloud:
+            return ["Sync", "Export", "Import", "Cloud reset", "Backup"]
+        case .git:
+            return ["GitHub", "GitLab", "Repository", "Commit"]
+        case .backup:
+            return ["Backup", "Export", "Import"]
+        case .quickAdd:
+            return ["Smart Add", "Dates", "Times", "Links", "Recurrence"]
+        case .shortcuts:
+            return ["Keyboard", "Siri", "Apple Shortcuts"]
+        case .aiConnections:
+            return ["MCP", "Local AI", "Read-only task access"]
+        case .support:
+            return ["Help", "Contact"]
+        case .about:
+            return ["Privacy Policy", "Terms of Use", "Version", "Diagnostics"]
+        }
+    }
+
+    var searchTerms: [String] {
+        searchAliases + searchDetailTerms
+    }
+
+    func matchesSearch(_ query: String) -> Bool {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return true }
+        let searchableText = ([title] + searchTerms).joined(separator: " ")
+        return searchableText.localizedCaseInsensitiveContains(trimmedQuery)
+    }
+
+    /// Returns the concrete Settings concepts matched by a non-empty query.
+    /// Aliases and category titles still filter destinations, but only these
+    /// detail terms are shown as the explanatory result subtitle.
+    func searchResultSubtitle(for query: String) -> String? {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return nil }
+
+        let matchedDetails = searchDetailTerms.filter {
+            $0.localizedCaseInsensitiveContains(trimmedQuery)
+        }
+        guard !matchedDetails.isEmpty else { return nil }
+        return "Matches: " + matchedDetails.joined(separator: " • ")
+    }
+
+    static func filteredSections(
+        _ sections: [SettingsSectionID],
+        matching query: String
+    ) -> [SettingsSectionID] {
+        sections.filter { $0.matchesSearch(query) }
+    }
+
+    static func filteredSectionGroups(
+        _ groups: [[SettingsSectionID]],
+        matching query: String
+    ) -> [[SettingsSectionID]] {
+        groups
+            .map { filteredSections($0, matching: query) }
+            .filter { !$0.isEmpty }
+    }
+
     var icon: String {
         switch self {
         case .general:       return "gearshape.fill"
@@ -210,9 +343,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
         case .flags:
             return SettingsSectionRowPresentation(
-                subtitle: state.flags.definedFlags.isEmpty
-                    ? "Task behavior markers"
-                    : "\(state.flags.definedFlags.count) defined"
+                subtitle: "Built-in task behavior markers"
             )
 
         case .sections:

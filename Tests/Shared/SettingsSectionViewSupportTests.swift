@@ -140,6 +140,34 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func settingsSearchMatchesTitlesAndStableAliases() {
+        let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: true)
+
+        #expect(SettingsSectionID.filteredSections(sections, matching: "backlog") == [.sections])
+        #expect(SettingsSectionID.filteredSections(sections, matching: "sync") == [.iCloud])
+        #expect(SettingsSectionID.filteredSections(sections, matching: "flags") == [.flags])
+        #expect(SettingsSectionID.filteredSections(sections, matching: "no such setting").isEmpty)
+        #expect(SettingsSectionID.filteredSections(sections, matching: "   ") == sections)
+        #expect(SettingsSectionID.flags.searchResultSubtitle(for: "hide") ==
+            "Matches: Hide from Task Lists • Hide from Timeline • Hide from Task Ladder")
+        #expect(SettingsSectionID.flags.searchResultSubtitle(for: "flags") == nil)
+    }
+
+    @Test
+    func compactSettingsKeepsSearchCloseToTheDestinationList() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: projectRoot.appendingPathComponent("iOS/Screens/Settings/SettingsIOSViews.swift"),
+            encoding: .utf8
+        )
+
+        #expect(source.contains(".contentMargins(.top, 0, for: .scrollContent)"))
+    }
+
+    @Test
     func visibleSectionsHideDevicesWhenFeatureIsDisabled() {
         #expect(!SettingsSectionID.visibleSections(
             isGitFeaturesEnabled: false

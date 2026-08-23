@@ -20,6 +20,10 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0639](0639-scope-custom-section-names-by-surface.md) refines [0635](0635-separate-mac-settings-section-surfaces.md):** custom top-level section names are unique within each selected surface, allowing the same name to organize Main task list and Backlog independently while preserving sibling-subsection uniqueness.
+- **[0638](0638-stabilize-mac-settings-section-disclosure-animation.md) refines [0450](0450-use-progressive-custom-section-management.md) and [0635](0635-separate-mac-settings-section-surfaces.md):** Mac Settings section cards use an identity editor transition and clipped rounded bounds so expanding or collapsing animates layout height without fading or moving controls outside the card.
+- **[0637](0637-search-settings-by-destination.md):** iOS and macOS Settings expose a native destination search that matches section titles and stable aliases, preserves existing navigation, and excludes unavailable feature-gated destinations.
+- **[0636](0636-replace-configurable-flags-with-built-in-behaviors.md) refines [0497](0497-use-flags-for-task-behavior-rules.md) and [0588](0588-configure-flag-rules-by-assignment.md):** four fixed built-in behavior Flags replace the pre-release configurable rule catalog; the pre-release personal store was converted before the migration code was retired, and runtime now only maintains the canonical catalog.
 - **[0635](0635-separate-mac-settings-section-surfaces.md) refines [0285](0285-clarify-mac-sidebar-section-surfaces.md), [0419](0419-nest-custom-subsections-under-super-sections.md), and [0634](0634-unify-mac-workspace-search-and-creation.md):** Mac Settings -> Sections uses a `Main task list` / `Backlog` segmented picker so visible cards, creation, and top-level ordering are scoped to the selected workspace surface while existing section storage remains unchanged.
 
 - **[0634](0634-unify-mac-workspace-search-and-creation.md) revises [0633](0633-make-mac-backlog-hierarchical-and-searchable.md) and refines [0315](0315-merge-mac-quick-add-into-toolbar-search.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), and [0632](0632-integrate-mac-workspaces-in-the-main-window.md):** Planner, Backlog, and Task Ladder share the persistent top search/create control while keeping independent queries and full workspace layouts; out-of-scope matches remain explicit, completed matches reveal Timeline history, duplicate creation stays blocked, and embedded task details do not add competing window chrome.
@@ -773,6 +777,10 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0639](0639-scope-custom-section-names-by-surface.md) | Scope Custom Section Names by Surface | Accepted | 2026-08-23 |
+| [0638](0638-stabilize-mac-settings-section-disclosure-animation.md) | Stabilize Mac Settings Section Disclosure Animation | Accepted | 2026-08-23 |
+| [0637](0637-search-settings-by-destination.md) | Search Settings by Destination | Accepted | 2026-08-22 |
+| [0636](0636-replace-configurable-flags-with-built-in-behaviors.md) | Replace Configurable Flags With Built-In Behaviors | Accepted | 2026-08-22 |
 | [0633](0633-make-mac-backlog-hierarchical-and-searchable.md) | Make Mac Backlog Hierarchical and Searchable | Accepted | 2026-08-22 |
 | [0632](0632-integrate-mac-workspaces-in-the-main-window.md) | Integrate Mac Workspaces in the Main Window | Accepted | 2026-08-22 |
 | [0631](0631-remove-apple-intelligence-task-relationship-suggestions.md) | Remove Apple Intelligence Task Relationship Suggestions | Accepted | 2026-08-21 |

@@ -30,7 +30,7 @@ struct SettingsFlagRulePresentationTests {
     }
 
     @Test
-    func flagSettingsRenderAssignedRulesAndOfferRemainingRules() throws {
+    func flagSettingsRenderBuiltInRulesWithoutCustomRuleEditors() throws {
         let sourcePaths = [
             "RoutinaMacApp/Screens/Settings/SettingsMacTagsDetailView.swift",
             "iOS/Screens/Settings/SettingsTagsDetailView.swift"
@@ -39,12 +39,11 @@ struct SettingsFlagRulePresentationTests {
         for sourcePath in sourcePaths {
             let source = try Self.sourceFile(sourcePath)
 
-            #expect(source.contains("ForEach(assignedRuleKinds)"))
-            #expect(source.contains("ForEach(availableRuleKinds)"))
-            #expect(source.contains("Label(\"Add Rule\", systemImage: \"plus\")"))
-            #expect(source.contains("No rules added"))
-            #expect(!source.contains("ForEach(RoutineFlagRuleKind.allCases)"))
-            #expect(!source.contains("Toggle(isOn: flagRuleBinding"))
+            #expect(source.contains("ForEach(RoutineFlagRuleKind.allCases)"))
+            #expect(source.contains("builtInFlagName"))
+            #expect(source.contains("ordinary labels belong in Tags"))
+            #expect(!source.contains("Create a Flag"))
+            #expect(!source.contains("Add Rule"))
         }
     }
 

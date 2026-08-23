@@ -249,7 +249,10 @@ enum HomeCustomTaskSectionStorage {
 
     static func sanitized(_ sections: [HomeCustomTaskSection]) -> [HomeCustomTaskSection] {
         var seenIDs: Set<UUID> = []
-        var seenTitleKeysByParent: [UUID?: Set<String>] = [:]
+        // Top-level sections are separate catalogs for Radar and Backlog.
+        // Subsections remain scoped to their parent, whose surface is
+        // inherited below.
+        var seenTitleKeysByScope: [String: Set<String>] = [:]
         var sanitizedSections: [HomeCustomTaskSection] = []
         let candidateTopLevelSections = sections.reduce(into: [UUID: HomeTaskSectionSurface]()) {
             partialResult,
@@ -271,9 +274,13 @@ enum HomeCustomTaskSectionStorage {
             }
             let surface = parentSectionID.flatMap { candidateTopLevelSections[$0] } ?? section.surface
             let titleKey = normalizedTitleKey(title)
-            var siblingTitleKeys = seenTitleKeysByParent[parentSectionID] ?? []
+            let scopeKey = sectionTitleScopeKey(
+                parentSectionID: parentSectionID,
+                surface: surface
+            )
+            var siblingTitleKeys = seenTitleKeysByScope[scopeKey] ?? []
             guard siblingTitleKeys.insert(titleKey).inserted else { continue }
-            seenTitleKeysByParent[parentSectionID] = siblingTitleKeys
+            seenTitleKeysByScope[scopeKey] = siblingTitleKeys
             sanitizedSections.append(
                 HomeCustomTaskSection(
                     id: section.id,
@@ -315,7 +322,9 @@ enum HomeCustomTaskSectionStorage {
         let titleKey = normalizedTitleKey(title)
 
         if let existing = sanitizedSections.first(where: {
-            $0.parentSectionID == parentSectionID && normalizedTitleKey($0.title) == titleKey
+            $0.parentSectionID == parentSectionID
+                && (parentSectionID != nil || $0.surface == resolvedSurface)
+                && normalizedTitleKey($0.title) == titleKey
         }) {
             return (existing, sanitizedSections)
         }
@@ -352,9 +361,11 @@ enum HomeCustomTaskSectionStorage {
 
         let titleKey = normalizedTitleKey(title)
         let parentSectionID = sanitizedSections[sectionIndex].parentSectionID
+        let surface = sanitizedSections[sectionIndex].surface
         let titleBelongsToOtherSection = sanitizedSections.enumerated().contains { index, section in
             index != sectionIndex
                 && section.parentSectionID == parentSectionID
+                && (parentSectionID != nil || section.surface == surface)
                 && normalizedTitleKey(section.title) == titleKey
         }
         guard !titleBelongsToOtherSection else { return nil }
@@ -520,5 +531,12 @@ enum HomeCustomTaskSectionStorage {
     private static func normalizedTitleKey(_ title: String) -> String {
         title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .lowercased()
+    }
+
+    private static func sectionTitleScopeKey(
+        parentSectionID: UUID?,
+        surface: HomeTaskSectionSurface
+    ) -> String {
+        "\(parentSectionID?.uuidString.lowercased() ?? "root"):\(surface.rawValue)"
     }
 }

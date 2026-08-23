@@ -41,6 +41,9 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0226 — Scope section-name uniqueness to the workspace surface](0226-allow-identical-section-names-across-surfaces.md)
+- [0225 — Keep Mac Settings disclosure content inside its card](0225-keep-mac-settings-disclosure-content-inside-its-card.md)
+
 - [0224 — Release embedded detail chrome before changing workspace layout](0224-release-embedded-detail-chrome-before-workspace-layout.md)
 - [0223 — Keep empty organization containers reachable](0223-keep-empty-organization-containers-reachable.md)
 - [0222 — Hide empty linked-task sections](0222-hide-empty-linked-task-sections.md)

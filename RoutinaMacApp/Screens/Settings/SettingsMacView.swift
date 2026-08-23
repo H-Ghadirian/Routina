@@ -11,6 +11,7 @@ private enum SettingsMacLayout {
 struct SettingsMacView: View {
     let store: StoreOf<SettingsFeature>
     @State private var selectedSection: SettingsMacSection? = .notifications
+    @State private var settingsSearchQuery = ""
     @AppStorage(
         UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
         store: SharedDefaults.app
@@ -23,15 +24,25 @@ struct SettingsMacView: View {
     var body: some View {
 NavigationSplitView {
     List(selection: $selectedSection) {
-        ForEach(visibleSections) { section in
+        if filteredVisibleSections.isEmpty {
+            ContentUnavailableView("No Matching Settings", systemImage: "magnifyingglass")
+        } else {
+            ForEach(filteredVisibleSections) { section in
             SettingsMacSidebarRow(
                 section: section,
-                store: store
+                store: store,
+                searchQuery: settingsSearchQuery
             )
             .tag(section)
+            }
         }
     }
     .listStyle(.sidebar)
+    .searchable(
+        text: $settingsSearchQuery,
+        placement: .sidebar,
+        prompt: "Search Settings"
+    )
     .navigationTitle("Settings")
     .toolbar(removing: .sidebarToggle)
     .navigationSplitViewColumnWidth(
@@ -72,6 +83,10 @@ NavigationSplitView {
             isDevicesSectionEnabled: isDevicesSectionEnabled,
             isPlacesEnabled: isPlacesEnabled
         )
+    }
+
+    private var filteredVisibleSections: [SettingsMacSection] {
+        SettingsMacSection.filteredSections(visibleSections, matching: settingsSearchQuery)
     }
 }
 

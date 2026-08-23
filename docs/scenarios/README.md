@@ -259,23 +259,43 @@ Then the task does not appear or contribute to the ladder count
 And the task remains unchanged in Home, Backlog, Planner, Timeline, and Stats
 And a Flag that only hides tasks from normal task lists does not hide them from Task Ladder
 
-### Flag Settings Show Only Assigned Rules
+### Built-In Flags Replace Configurable Rules
 
 Area: Settings / Flags
-Decision links: [0588](../decisions/0588-configure-flag-rules-by-assignment.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md)
+Decision links: [0636](../decisions/0636-replace-configurable-flags-with-built-in-behaviors.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md)
 Current behavior: [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/Shared/SettingsFlagRulePresentationTests.swift`
 
-Given a Flag has some but not all available behavior rules
-When the person opens Flags settings on iOS or macOS
-Then only the assigned rules are shown beneath that Flag
-And `Add Rule` lists only the remaining rule kinds
-And each assigned rule can be removed directly
+Given Settings is opened on iOS or macOS
+When the Flags destination loads
+Then it shows exactly the four canonical built-in behavior Flags
+And it does not offer custom Flag creation or custom rule editing
 
-Given a Flag has no assigned rules
-When the person views it in Settings
-Then the Flag says that no rules are added without repeating the rule catalog
+Given the persisted settings catalog is empty or contains non-canonical entries
+When the app launches
+Then the catalog is repaired to the four canonical built-in values
+And task assignments are not scanned or rewritten
+
+### Settings Search Opens a Matching Destination
+
+Area: Settings / Navigation
+Decision links: [0637](../decisions/0637-search-settings-by-destination.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/SettingsSectionViewSupportTests.swift`
+
+Given Settings is open on iOS or macOS
+When the person searches for `backlog` or `sync`
+Then Sections or iCloud & Backup remains in the visible destination list
+And selecting the result opens the existing Settings detail form
+And task content is not searched
+
+Given Settings is open on iOS or macOS
+When the person searches for `hide`
+Then Flags remains in the visible destination list
+And its result explains the matching inner behaviors: Hide from Task Lists, Hide from Timeline, and Hide from Task Ladder
+And selecting the result opens Flags without changing its controls
 
 ### Mac Task Ladder Rows Show Task Identity Metadata
 
@@ -2180,11 +2200,12 @@ Then pressing Tab completes the tag, committing it renders an individually remov
 Given several custom super sections exist in Mac Settings -> Sections
 When the user scans and edits the catalog
 Then compact color-and-summary headers keep one editor expanded at a time, the full header surface toggles disclosure, move and delete actions stay in More menus, and Save or revert controls appear only for unfinished fields
+And expanding or collapsing an editor keeps its controls inside the card without a fade or directional slide transition
 
 ### Mac Settings Separates Task Section Surfaces
 
 Area: Tasks / Settings / Mac Sections
-Decision links: [0635](../decisions/0635-separate-mac-settings-section-surfaces.md), [0285](../decisions/0285-clarify-mac-sidebar-section-surfaces.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md)
+Decision links: [0639](../decisions/0639-scope-custom-section-names-by-surface.md), [0635](../decisions/0635-separate-mac-settings-section-surfaces.md), [0285](../decisions/0285-clarify-mac-sidebar-section-surfaces.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/Shared/MacWorkspaceNavigationSourceTests.swift`
@@ -2203,6 +2224,11 @@ And its existing ID, subsection hierarchy, and surface assignment remain unchang
 When the user switches surfaces
 Then an expanded section from the previous surface is no longer shown as expanded
 And subsections remain available inside their parent section when that surface is selected
+
+Given `Health` already exists as a top-level section in the Main task list
+When the user creates `Health` from the Backlog segment
+Then the Backlog section is created because top-level names are scoped to their surface
+And attempting to create another `Health` in either surface reuses or rejects the existing same-surface section instead of creating a duplicate
 
 Given a section name or automatic-tag draft is unfinished
 When a color, order, neighboring section, or external catalog value is persisted

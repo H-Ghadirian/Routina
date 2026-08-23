@@ -106,179 +106,38 @@ struct SettingsMacFlagsDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        SettingsMacDetailShell(title: "Flags") {
-            SettingsMacDetailCard(title: "Create a Flag") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Flags add behavior to tasks without changing your tag organization.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+        SettingsMacDetailShell(
+            title: "Flags",
+            subtitle: "Built-in behavior flags keep task behavior predictable. Assign any combination while editing a task; ordinary labels belong in Tags."
+        ) {
+            SettingsMacDetailCard(title: "Built-in Flags") {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(RoutineFlagRuleKind.allCases) { kind in
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: kind.systemImage)
+                                .foregroundStyle(.tint)
+                                .frame(width: 20, height: 22)
 
-                    HStack(spacing: 8) {
-                        TextField("New flag", text: draftBinding)
-                            .textFieldStyle(.roundedBorder)
-                            .onSubmit { store.send(.addFlagTapped) }
-
-                        Button("Add") {
-                            store.send(.addFlagTapped)
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(RoutineFlag.parseDraft(store.flags.draft).isEmpty)
-                    }
-                }
-            }
-
-            SettingsMacDetailCard(title: "Your Flags") {
-                if store.flags.definedFlags.isEmpty {
-                    Text("No flags yet. Add one here, then assign it while editing a task.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(store.flags.definedFlags.enumerated()), id: \.element) { index, flag in
-                            flagRow(flag)
-                            if index < store.flags.definedFlags.count - 1 {
-                                Divider()
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(kind.builtInFlagName)
+                                    .font(.callout.weight(.medium))
+                                Text(kind.title)
+                                    .font(.footnote)
+                                Text(kind.detail)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
                 }
             }
 
-            if !store.flags.statusMessage.isEmpty {
-                SettingsMacDetailCard(title: "Status") {
-                    Text(store.flags.statusMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    private func flagRow(_ flag: String) -> some View {
-        let assignedRuleKinds = store.flags.assignedRuleKinds(for: flag)
-
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 12) {
-                Label(flag, systemImage: "flag.fill")
-                    .font(.callout.weight(.medium))
-
-                Spacer()
-
-                Menu {
-                    Button("Remove Flag", role: .destructive) {
-                        store.send(.removeFlagTapped(flag))
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .frame(width: 28, height: 28)
-                        .contentShape(Circle())
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .help("Flag actions")
-                .accessibilityLabel("More actions for \(flag)")
-            }
-
-            HStack(spacing: 12) {
-                Text(assignedRuleKinds.isEmpty ? "No rules added" : "Rules")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                addRuleMenu(for: flag)
-            }
-
-            ForEach(assignedRuleKinds) { kind in
-                assignedRuleRow(flag, kind: kind)
-            }
-        }
-        .padding(.vertical, 12)
-    }
-
-    private func assignedRuleRow(
-        _ flag: String,
-        kind: RoutineFlagRuleKind
-    ) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: kind.systemImage)
-                .foregroundStyle(.secondary)
-                .frame(width: 18, height: 20)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(kind.title)
-                    .font(.callout)
-                Text(kind.detail)
+            SettingsMacDetailCard(title: "About Flags") {
+                Text("Your existing configurable Flags are migrated once: rules become the matching built-in flags, overlapping rules are combined, and flags without rules become Tags.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-
-                if kind == .autoAssumeDone {
-                    Button {
-                        store.send(.migrateAutoAssumeDoneTasksTapped(flag))
-                    } label: {
-                        Label("Migrate Existing Tasks…", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .buttonStyle(.borderless)
-                    .font(.footnote)
-                    .help("Add this Flag to tasks that already use auto-assume done")
-                }
             }
-
-            Spacer(minLength: 8)
-
-            Button {
-                store.send(.removeFlagRuleTapped(flagName: flag, kind: kind))
-            } label: {
-                Image(systemName: "minus.circle")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .help("Remove \(kind.title)")
-            .accessibilityLabel("Remove \(kind.title) from \(flag)")
         }
-        .padding(.vertical, 2)
-    }
-
-    private func addRuleMenu(for flag: String) -> some View {
-        let availableRuleKinds = store.flags.availableRuleKinds(for: flag)
-
-        return Menu {
-            ForEach(availableRuleKinds) { kind in
-                Button {
-                    store.send(.addFlagRuleTapped(flagName: flag, kind: kind))
-                } label: {
-                    Label(kind.title, systemImage: kind.systemImage)
-                }
-            }
-        } label: {
-            Label("Add Rule", systemImage: "plus")
-                .frame(minHeight: 20)
-                .contentShape(Rectangle())
-        }
-        .menuStyle(.button)
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .disabled(availableRuleKinds.isEmpty)
-        .help(
-            availableRuleKinds.isEmpty
-                ? "All available rules are already added"
-                : "Choose a rule to add to \(flag)"
-        )
-        .accessibilityLabel(
-            availableRuleKinds.isEmpty
-                ? "All rules added to \(flag)"
-                : "Add rule to \(flag)"
-        )
-    }
-
-    private var draftBinding: Binding<String> {
-        Binding(
-            get: { store.flags.draft },
-            set: { store.send(.flagDraftChanged($0)) }
-        )
     }
 }
 

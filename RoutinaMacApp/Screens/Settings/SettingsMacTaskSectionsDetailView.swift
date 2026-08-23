@@ -210,7 +210,10 @@ struct SettingsMacTaskSectionsDetailView: View {
 
                 sectionDetails(for: section)
                     .padding(14)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    // Keep the editor's contents stationary while the card's
+                    // layout height animates. A move+opacity transition lets
+                    // controls escape the card and produces ghosted frames.
+                    .transition(.identity)
             }
         }
         .background(
@@ -224,6 +227,7 @@ struct SettingsMacTaskSectionsDetailView: View {
                     lineWidth: 1
                 )
         )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .animation(.easeInOut(duration: 0.16), value: isExpanded)
     }
 

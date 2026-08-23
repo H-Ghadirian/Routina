@@ -159,6 +159,22 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
 
     var id: String { rawValue }
 
+    /// The reserved, stable flag name used by the built-in behavior model.
+    /// These names are persisted so assignments remain portable across devices
+    /// and do not depend on the person's display language.
+    var builtInFlagName: String {
+        switch self {
+        case .hideFromTaskLists:
+            return "Hide from Task Lists"
+        case .hideFromTimeline:
+            return "Hide from Timeline"
+        case .hideFromTaskLadder:
+            return "Hide from Task Ladder"
+        case .autoAssumeDone:
+            return "Auto Assume Done"
+        }
+    }
+
     var title: String {
         switch self {
         case .hideFromTaskLists:
@@ -195,6 +211,28 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
             return "list.number"
         case .autoAssumeDone:
             return "checkmark.circle"
+        }
+    }
+
+    static var builtInFlags: [String] {
+        allCases.map(\.builtInFlagName)
+    }
+
+    static var builtInRules: [RoutineFlagRule] {
+        RoutineFlagRules.sanitized(
+            allCases.map { RoutineFlagRule(flag: $0.builtInFlagName, kind: $0) }
+        )
+    }
+
+    /// Keeps the settings catalog canonical for fresh installs and settings
+    /// restores. This does not inspect or rewrite task assignments.
+    @MainActor
+    static func ensureBuiltInCatalog(using appSettingsClient: AppSettingsClient) {
+        if appSettingsClient.definedFlags() != builtInFlags {
+            appSettingsClient.setDefinedFlags(builtInFlags)
+        }
+        if RoutineFlagRules.sanitized(appSettingsClient.flagRules()) != builtInRules {
+            appSettingsClient.setFlagRules(builtInRules)
         }
     }
 }

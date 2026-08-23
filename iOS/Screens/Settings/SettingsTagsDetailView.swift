@@ -117,158 +117,37 @@ struct SettingsFlagsDetailView: View {
     var body: some View {
         List {
             Section {
-                Text("Flags add behavior to tasks without changing your tag organization.")
+                Text("Built-in behavior flags keep task behavior predictable. Assign any combination while editing a task; ordinary labels belong in Tags.")
                     .foregroundStyle(.secondary)
             }
 
-            Section("Add Flag") {
-                HStack(spacing: 10) {
-                    TextField("New flag", text: draftBinding)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .onSubmit { store.send(.addFlagTapped) }
+            Section("Built-in Flags") {
+                ForEach(RoutineFlagRuleKind.allCases) { kind in
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: kind.systemImage)
+                            .foregroundStyle(.tint)
+                            .frame(width: 20, height: 22)
 
-                    Button("Add") {
-                        store.send(.addFlagTapped)
-                    }
-                    .disabled(RoutineFlag.parseDraft(store.flags.draft).isEmpty)
-                }
-            }
-
-            Section("Defined Flags") {
-                if store.flags.definedFlags.isEmpty {
-                    Text("No flags yet. Add one here, then assign it while editing a task.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(store.flags.definedFlags, id: \.self) { flag in
-                        flagRow(flag)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(kind.builtInFlagName)
+                                .font(.body.weight(.medium))
+                            Text(kind.title)
+                            Text(kind.detail)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
 
-            if !store.flags.statusMessage.isEmpty {
-                Section("Status") {
-                    Text(store.flags.statusMessage)
-                        .foregroundStyle(.secondary)
-                }
+            Section("About Flags") {
+                Text("Your existing configurable Flags are migrated once: rules become the matching built-in flags, overlapping rules are combined, and flags without rules become Tags.")
+                    .foregroundStyle(.secondary)
             }
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Flags")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private func flagRow(_ flag: String) -> some View {
-        let assignedRuleKinds = store.flags.assignedRuleKinds(for: flag)
-
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label(flag, systemImage: "flag.fill")
-                    .font(.body.weight(.medium))
-                Spacer()
-                Menu {
-                    Button("Remove Flag", role: .destructive) {
-                        store.send(.removeFlagTapped(flag))
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .frame(width: 44, height: 44)
-                        .contentShape(Circle())
-                }
-                .accessibilityLabel("More actions for \(flag)")
-            }
-
-            HStack(spacing: 12) {
-                Text(assignedRuleKinds.isEmpty ? "No rules added" : "Rules")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                addRuleMenu(for: flag)
-            }
-
-            ForEach(assignedRuleKinds) { kind in
-                assignedRuleRow(flag, kind: kind)
-            }
-        }
-    }
-
-    private func assignedRuleRow(
-        _ flag: String,
-        kind: RoutineFlagRuleKind
-    ) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: kind.systemImage)
-                .foregroundStyle(.secondary)
-                .frame(width: 18, height: 22)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(kind.title)
-                Text(kind.detail)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                if kind == .autoAssumeDone {
-                    Button {
-                        store.send(.migrateAutoAssumeDoneTasksTapped(flag))
-                    } label: {
-                        Label("Migrate Existing Tasks…", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .buttonStyle(.borderless)
-
-                    Text("Adds this Flag to tasks that already use auto-assume done.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer(minLength: 8)
-
-            Button {
-                store.send(.removeFlagRuleTapped(flagName: flag, kind: kind))
-            } label: {
-                Image(systemName: "minus.circle")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Remove \(kind.title) from \(flag)")
-        }
-    }
-
-    private func addRuleMenu(for flag: String) -> some View {
-        let availableRuleKinds = store.flags.availableRuleKinds(for: flag)
-
-        return Menu {
-            ForEach(availableRuleKinds) { kind in
-                Button {
-                    store.send(.addFlagRuleTapped(flagName: flag, kind: kind))
-                } label: {
-                    Label(kind.title, systemImage: kind.systemImage)
-                }
-            }
-        } label: {
-            Label("Add Rule", systemImage: "plus")
-                .frame(minHeight: 28)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .disabled(availableRuleKinds.isEmpty)
-        .accessibilityLabel(
-            availableRuleKinds.isEmpty
-                ? "All rules added to \(flag)"
-                : "Add rule to \(flag)"
-        )
-    }
-
-    private var draftBinding: Binding<String> {
-        Binding(
-            get: { store.flags.draft },
-            set: { store.send(.flagDraftChanged($0)) }
-        )
     }
 }
 

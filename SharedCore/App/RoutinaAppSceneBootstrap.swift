@@ -6,6 +6,7 @@ enum RoutinaAppSceneBootstrap {
         RoutinaAppBootstrap.configure()
         let persistence = PersistenceController.shared
         RoutinaUserPreferencesStore.migrateDefaultsIfNeeded(in: persistence.container.mainContext)
+        RoutineFlagRuleKind.ensureBuiltInCatalog(using: .live)
         RoutinaUserPreferencesStore.startDefaultsMirror()
         RoutinaUITestSeeder.seedIfRequested(in: persistence.container.mainContext)
         RoutinaScreenshotDataSeeder.seedIfRequested(in: persistence.container.mainContext)

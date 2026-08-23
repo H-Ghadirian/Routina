@@ -45,49 +45,4 @@ extension SettingsFeature {
         }
     }
 
-    func migrateAutoAssumeDoneTasks(to flag: String) -> Effect<Action> {
-        let rules = appSettingsClient.flagRules()
-        let appSettingsClient = self.appSettingsClient
-        let notificationClient = self.notificationClient
-        return .run { @MainActor send in
-            let context = modelContext()
-            let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-            var migratedCount = 0
-            for task in tasks where task.autoAssumeDailyDone {
-                let updatedFlags = RoutineFlag.appending(flag, to: task.flags)
-                guard updatedFlags != task.flags else { continue }
-                task.flags = updatedFlags
-                let shouldEnable = RoutineFlagRules.enablesAutoAssumeDone(
-                    flags: task.flags,
-                    rules: rules
-                ) && RoutineAssumedCompletion.canEnable(
-                    scheduleMode: task.scheduleMode,
-                    recurrenceRule: task.recurrenceRule,
-                    recurrenceTimeRangeRole: task.recurrenceTimeRangeRole,
-                    availabilityStartDate: task.availabilityStartDate,
-                    availabilityEndDate: task.availabilityEndDate,
-                    isAllDay: task.isAllDay,
-                    trackingCadenceEnabled: task.trackingCadenceEnabled,
-                    hasSequentialSteps: task.hasSequentialSteps,
-                    hasChecklistItems: task.hasChecklistItems
-                )
-                task.autoAssumeDailyDone = shouldEnable
-                task.hidesAssumedDoneCalendarBlock = shouldEnable && task.hidesAssumedDoneCalendarBlock
-                task.autoAssumeDoneTimeOfDay = shouldEnable
-                    ? (task.autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
-                    : nil
-                migratedCount += 1
-            }
-            if migratedCount > 0 {
-                try context.save()
-                try await SettingsExecutionSupport.rescheduleNotificationsIfNeeded(
-                    in: context,
-                    appSettingsClient: appSettingsClient,
-                    notificationClient: notificationClient
-                )
-                NotificationCenter.default.postRoutineDidUpdate()
-            }
-            send(.autoAssumeDoneMigrationFinished(flag: flag, migratedCount: migratedCount))
-        }
-    }
 }

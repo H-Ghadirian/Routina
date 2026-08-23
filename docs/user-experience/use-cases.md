@@ -103,6 +103,20 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Availability:** Production on iOS and macOS.
 
+### UC-05a — Understand why a Settings search result matches
+
+**Situation:** The person remembers a setting or behavior, but not which Settings category owns it.
+
+**Need:** Search by the setting's meaning and understand the result before opening it.
+
+**Desired experience:** Settings search matches both destination names and the user-facing controls inside them. A result names the matching control or behavior, so `hide` does not merely return `Flags`; it explains that Flags contains Hide from Task Lists, Hide from Timeline, and Hide from Task Ladder. Selecting the result opens the same destination and leaves its controls unchanged.
+
+**Successful outcome:** The person knows why a category matched and can reach the relevant control without guessing.
+
+**Example:** Searching `hide` returns `Flags` with the three hide behaviors shown beneath it. Searching `backup` can return `iCloud & Backup` with its sync, export, import, or backup concepts.
+
+**Availability:** Production on iOS and macOS.
+
 ### UC-06 — Choose work that fits the current moment
 
 **Situation:** Several tasks matter, but the person has limited time or energy.
@@ -157,7 +171,7 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Search requirement:** Backlog keeps its resizable full-workspace split view while using the same persistent top search/create control as Planner. A matching task elsewhere is identified with its real location and can be opened directly, shown in Planner when it is still organizational work, shown in Timeline when it is a completed one-off, or deliberately moved into Backlog; it is never counted as backlogged or recreated as a duplicate. A genuinely new task requires an explicit Backlog section or a deliberate Radar choice.
 
-**Desired experience:** Pausing, archiving, backlog organization, and visibility rules have distinct meanings. Backlog is a labeled, full-size workspace in the main Mac window rather than a detached window or hidden app-menu command. It supports the same understandable super-section plus one-level subsection organization as the Mac task-list sidebar, keeps newly created empty sections visible so they can be organized immediately, and lets each level collapse without hiding search matches. In Mac Settings -> Sections, a `Main task list` / `Backlog` segmented picker makes the destination of each section obvious and keeps section creation and top-level ordering in the selected surface. The item is not lost, completed, or silently rescheduled. Configuring Flag behavior stays progressive: each Flag shows only the rules already attached to it, `Add Rule` lists the remaining behaviors, and every attached rule can be removed in place.
+**Desired experience:** Pausing, archiving, backlog organization, and visibility rules have distinct meanings. Backlog is a labeled, full-size workspace in the main Mac window rather than a detached window or hidden app-menu command. It supports the same understandable super-section plus one-level subsection organization as the Mac task-list sidebar, keeps newly created empty sections visible so they can be organized immediately, and lets each level collapse without hiding search matches. In Mac Settings -> Sections, a `Main task list` / `Backlog` segmented picker makes the destination of each section obvious and keeps section creation and top-level ordering in the selected surface. Section names are independent per destination, so a concept such as `Health` can be used once in each surface without a misleading duplicate-name error. The item is not lost, completed, or silently rescheduled. Configuring Flag behavior stays progressive: each Flag shows only the rules already attached to it, `Add Rule` lists the remaining behaviors, and every attached rule can be removed in place.
 
 **Successful outcome:** Everyday views remain manageable and deferred work can be recovered deliberately.
 
@@ -262,6 +276,8 @@ The last duration selected in that sheet is shown as Last choice and selected by
 **Availability:** Production for core reports; optional reports vary by platform, data, permission, and feature gate.
 
 ### UC-14 — Change the system as life changes
+
+Settings search should take the person directly to Flags, Tags, Sections, or iCloud & Backup without searching personal task content. Behavior-bearing built-in Flags remain visible and editable on tasks, while ordinary personal labels use Tags.
 
 **Situation:** A routine, priority, schedule, or organizational structure no longer fits.
 

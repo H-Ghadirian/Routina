@@ -116,6 +116,70 @@ struct HomeCustomTaskSectionStorageTests {
     }
 
     @Test
+    func topLevelTitlesMayRepeatAcrossSurfacesButNotWithinOneSurface() throws {
+        let radarResult = try #require(
+            HomeCustomTaskSectionStorage.upsertingSection(
+                title: "Health",
+                surface: .radar,
+                in: [],
+                now: Date(timeIntervalSince1970: 100)
+            )
+        )
+        let backlogResult = try #require(
+            HomeCustomTaskSectionStorage.upsertingSection(
+                title: " health ",
+                surface: .backlog,
+                in: radarResult.sections,
+                now: Date(timeIntervalSince1970: 200)
+            )
+        )
+
+        #expect(backlogResult.section.surface == .backlog)
+        #expect(backlogResult.sections.count == 2)
+        #expect(
+            HomeCustomTaskSectionStorage.topLevelSections(
+                in: backlogResult.sections,
+                surface: .radar
+            ).map(\.title) == ["Health"]
+        )
+        #expect(
+            HomeCustomTaskSectionStorage.topLevelSections(
+                in: backlogResult.sections,
+                surface: .backlog
+            ).map(\.title) == ["health"]
+        )
+
+        let sameSurfaceResult = try #require(
+            HomeCustomTaskSectionStorage.upsertingSection(
+                title: " HEALTH ",
+                surface: .backlog,
+                in: backlogResult.sections,
+                now: Date(timeIntervalSince1970: 300)
+            )
+        )
+        #expect(sameSurfaceResult.section.id == backlogResult.section.id)
+        #expect(sameSurfaceResult.sections.count == 2)
+    }
+
+    @Test
+    func topLevelRenameMayUseTitleFromTheOtherSurface() throws {
+        let radarID = UUID()
+        let backlogID = UUID()
+        let sections = [
+            HomeCustomTaskSection(id: radarID, surface: .radar, title: "Work", createdAt: nil),
+            HomeCustomTaskSection(id: backlogID, surface: .backlog, title: "Someday", createdAt: nil)
+        ]
+
+        let renamed = HomeCustomTaskSectionStorage.renamingSection(
+            backlogID,
+            title: "Work",
+            in: sections
+        )
+
+        #expect(renamed?.first(where: { $0.id == backlogID })?.title == "Work")
+    }
+
+    @Test
     func pausingSuperSectionTracksOnlyTasksPausedByTheSection() throws {
         let workID = UUID()
         let projectsID = UUID()

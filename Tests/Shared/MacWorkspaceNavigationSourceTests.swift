@@ -120,6 +120,9 @@ struct MacWorkspaceNavigationSourceTests {
         #expect(sectionsSource.contains("surface: selectedSurface"))
         #expect(sectionsSource.contains("topLevelSections(\n            in: customTaskSections,\n            surface: selectedSurface"))
         #expect(sectionsSource.contains("movingSection(\n            section.id,\n            by: offset,\n            surface:"))
+        #expect(sectionsSource.contains(".transition(.identity)"))
+        #expect(sectionsSource.contains(".clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))"))
+        #expect(!sectionsSource.contains(".transition(.opacity.combined(with: .move(edge: .top)))"))
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
