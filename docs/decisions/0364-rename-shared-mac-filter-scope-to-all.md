@@ -4,6 +4,8 @@ Date: 2026-07-10
 
 Status: Accepted
 
+Revised by: [0656 Make Mac All Filters Task-Ladder Complete and Searchable](0656-make-mac-all-filters-task-ladder-complete-and-searchable.md), which expands the shared values and replaces the catalog-cloud presentation.
+
 Refines: [0319 Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
 
 ## Context

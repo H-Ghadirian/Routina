@@ -878,14 +878,18 @@ final class PerformanceRegressionTests: XCTestCase {
             dayPlanSource.contains("macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)\n            .background(macHeaderAvailableWidthReader)"),
             "Header available width should be measured from the bounded container, not the potentially overflowing controls row."
         )
-        XCTAssertTrue(dayPlanSource.contains("usesCompactMacHeaderControls"))
+        XCTAssertTrue(dayPlanSource.contains("@State private var expandedMacHeaderControl: DayPlanExpandedHeaderControl?"))
         XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDatePickerButton"))
-        XCTAssertTrue(dayPlanSource.contains("macHeaderRegularControlsWidthProbe"))
-        XCTAssertTrue(dayPlanSource.contains("plannerDisplayModeControl(usesCompactControls:"))
-        XCTAssertTrue(dayPlanSource.contains("calendarTaskViewModeControl(usesCompactControls:"))
-        XCTAssertTrue(dayPlanSource.contains("visibleRangeModeControl(usesCompactControls:"))
+        XCTAssertTrue(dayPlanSource.contains("macHeaderExpandedControlsWidthProbe"))
+        XCTAssertTrue(dayPlanSource.contains("plannerDisplayModeControl(isExpanded:"))
+        XCTAssertTrue(dayPlanSource.contains("calendarTaskViewModeControl(isExpanded:"))
+        XCTAssertTrue(dayPlanSource.contains("visibleRangeModeControl(isExpanded:"))
+        XCTAssertTrue(dayPlanSource.contains("private struct DayPlanExpandableHeaderSegmentedControl"))
+        XCTAssertTrue(dayPlanSource.contains("expandedMacHeaderControl == control ? nil : control"))
+        XCTAssertTrue(dayPlanSource.contains("expandedMacHeaderControl = nil"))
+        XCTAssertTrue(dayPlanSource.contains("if accessibilityReduceMotion"))
+        XCTAssertTrue(dayPlanSource.contains("withAnimation(.easeInOut(duration: 0.18), changes)"))
         XCTAssertTrue(dayPlanSource.contains("options: planner.availableVisibleRangeModes"))
-        XCTAssertTrue(dayPlanSource.contains("ForEach(planner.availableVisibleRangeModes)"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMinimumWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
         XCTAssertTrue(dayPlanSource.contains("if displayMode.wrappedValue == .list, let listContent {\n                plannerListContent(listContent)"))
@@ -905,8 +909,8 @@ final class PerformanceRegressionTests: XCTestCase {
         )
         XCTAssertTrue(dayPlanSource.contains("shouldUseIconOnlyDatePickerButton("))
         XCTAssertTrue(
-            dayPlanSource.contains("usesCompactControls || (showsCalendarControlSet && showsExtraUtilityControl)"),
-            "A loaded Calendar Focus control should collapse Go to date without waiting for the entire header to enter compact mode."
+            dayPlanSource.contains("needsCompactDateButtonForFit || (showsCalendarControlSet && showsExtraUtilityControl)"),
+            "A loaded Calendar Focus control should collapse Go to date independently of the progressive choice controls."
         )
         XCTAssertFalse(
             dayPlanSource.contains("usesIconOnlyMacDatePickerButton ? nil : 210"),
@@ -917,8 +921,8 @@ final class PerformanceRegressionTests: XCTestCase {
             "Go to date should switch to its icon before the regular label is ellipsized."
         )
         XCTAssertTrue(dayPlanSource.contains(".layoutPriority(3)"))
-        XCTAssertTrue(dayPlanSource.contains("shouldUseCompactControls"))
-        XCTAssertTrue(dayPlanSource.contains("static let compactTransitionReserveWidth: Double = 120"))
+        XCTAssertTrue(dayPlanSource.contains("shouldUseCompactDateButtonForFit"))
+        XCTAssertTrue(dayPlanSource.contains("static let dateButtonTransitionReserveWidth: Double = 120"))
         XCTAssertTrue(dayPlanSource.contains("static let minimumRegularCalendarHeaderAvailableWidth: Double = 1520"))
         XCTAssertTrue(dayPlanSource.contains("static let minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth: Double = 1720"))
         XCTAssertTrue(dayPlanSource.contains("effectiveAvailableWidth("))

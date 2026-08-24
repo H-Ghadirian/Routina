@@ -2,6 +2,11 @@
 
 Status: Accepted
 
+The choice-control presentation is revised by
+[0654: Progressively reveal Mac Planner header choices](0654-progressively-reveal-mac-planner-header-choices.md).
+The comfortable-width threshold now governs the labeled `Go to date` fallback
+rather than switching the three Planner choices to menus.
+
 Date: 2026-08-18
 
 Refines [0609: Keep Planner range choices actionable in compact headers](0609-keep-planner-range-choices-actionable-in-compact-headers.md). Refined by [0613: Measure loaded Planner header against visible width](0613-measure-loaded-planner-header-against-visible-width.md).

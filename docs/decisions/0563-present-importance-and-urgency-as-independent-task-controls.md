@@ -8,6 +8,10 @@ Accepted
 
 2026-08-13
 
+## Revised by
+
+[0656 Make Mac All Filters Task-Ladder Complete and Searchable](0656-make-mac-all-filters-task-ladder-complete-and-searchable.md) replaces the Mac `All` filter matrix with independent Task Ladder value controls. Other filter surfaces retain their own established presentations.
+
 ## Refines
 
 [0424 Make Task Detail Priority Optional](superseded/0424-make-task-detail-priority-optional.md)

@@ -611,6 +611,7 @@ struct DayPlanDetailView: View {
 private struct DayPlanHeaderView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @ObservedObject var planner: DayPlanPlannerState
     var calendarFilters = DayPlanCalendarFilterState()
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
@@ -635,8 +636,9 @@ private struct DayPlanHeaderView: View {
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
+    @State private var expandedMacHeaderControl: DayPlanExpandedHeaderControl?
     @State private var macHeaderAvailableWidth: CGFloat = 0
-    @State private var macHeaderRegularControlsWidth: CGFloat = 0
+    @State private var macHeaderExpandedControlsWidth: CGFloat = 0
 
     var body: some View {
 #if os(macOS)
@@ -648,8 +650,8 @@ private struct DayPlanHeaderView: View {
 
     private var macHeader: some View {
         ZStack(alignment: .leading) {
-            macHeaderRow(usesCompactControls: usesCompactMacHeaderControls)
-                .background(macHeaderRegularControlsWidthProbe)
+            macHeaderRow
+                .background(macHeaderExpandedControlsWidthProbe)
         }
             .frame(maxWidth: .infinity, alignment: .leading)
             .clipped()
@@ -659,18 +661,16 @@ private struct DayPlanHeaderView: View {
                 macHeaderAvailableWidth = width
             }
             .onPreferenceChange(DayPlanHeaderFullRegularDateControlsWidthPreferenceKey.self) { width in
-                guard abs(macHeaderRegularControlsWidth - width) > 0.5 else { return }
-                macHeaderRegularControlsWidth = width
+                guard abs(macHeaderExpandedControlsWidth - width) > 0.5 else { return }
+                macHeaderExpandedControlsWidth = width
             }
     }
 
-    private var usesCompactMacHeaderControls: Bool {
+    private var needsCompactMacDateButtonForFit: Bool {
 #if os(macOS)
-        DayPlanHeaderRangePickerVisibility.shouldUseCompactControls(
+        DayPlanHeaderRangePickerVisibility.shouldUseCompactDateButtonForFit(
             availableWidth: Double(effectiveMacHeaderAvailableWidth),
-            regularControlsWidth: Double(macHeaderRegularControlsWidth),
-            availableRangeModeCount: planner.availableVisibleRangeModes.count,
-            totalRangeModeCount: DayPlanVisibleRangeMode.allCases.count,
+            expandedControlsWidth: Double(macHeaderExpandedControlsWidth),
             showsCalendarControlSet: effectiveDisplayMode == .calendar,
             showsExtraUtilityControl: macFocusControlIsVisible
         )
@@ -679,9 +679,9 @@ private struct DayPlanHeaderView: View {
 #endif
     }
 
-    private func macHeaderRow(usesCompactControls: Bool) -> some View {
+    private var macHeaderRow: some View {
         HStack(alignment: .center, spacing: 12) {
-            plannerViewControlsCluster(usesCompactControls: usesCompactControls)
+            plannerViewControlsCluster(expandedControl: expandedMacHeaderControl)
 
             Spacer(minLength: 16)
 
@@ -699,7 +699,7 @@ private struct DayPlanHeaderView: View {
         }
     }
 
-    private var macHeaderRegularControlsWidthProbe: some View {
+    private var macHeaderExpandedControlsWidthProbe: some View {
         macHeaderFittingControls
         .fixedSize(horizontal: true, vertical: false)
         .hidden()
@@ -716,10 +716,17 @@ private struct DayPlanHeaderView: View {
 
     private var macHeaderFittingControls: some View {
         HStack(alignment: .center, spacing: 12) {
-            plannerViewControlsCluster(usesCompactControls: false)
+            plannerViewControlsCluster(expandedControl: widestMacHeaderControlForMeasurement)
             Color.clear.frame(width: 16, height: 1)
             plannerUtilityCluster(forceIconOnlyDatePickerButton: false)
         }
+    }
+
+    private var widestMacHeaderControlForMeasurement: DayPlanExpandedHeaderControl? {
+        if effectiveDisplayMode == .calendar {
+            return .visibleRangeMode
+        }
+        return showsDisplayModePicker ? .displayMode : nil
     }
 
     private var compactHeader: some View {
@@ -747,15 +754,15 @@ private struct DayPlanHeaderView: View {
     }
 
     private func plannerViewControlsCluster(
-        usesCompactControls: Bool = false
+        expandedControl: DayPlanExpandedHeaderControl?
     ) -> some View {
         HStack(alignment: .center, spacing: DayPlanHeaderRangePickerVisibility.segmentedControlSpacing) {
             if showsDisplayModePicker {
-                plannerDisplayModeControl(usesCompactControls: usesCompactControls)
+                plannerDisplayModeControl(isExpanded: expandedControl == .displayMode)
             }
             if effectiveDisplayMode == .calendar {
-                calendarTaskViewModeControl(usesCompactControls: usesCompactControls)
-                visibleRangeModeControl(usesCompactControls: usesCompactControls)
+                calendarTaskViewModeControl(isExpanded: expandedControl == .calendarTaskViewMode)
+                visibleRangeModeControl(isExpanded: expandedControl == .visibleRangeMode)
             }
         }
     }
@@ -1057,54 +1064,86 @@ private struct DayPlanHeaderView: View {
         .accessibilityLabel("Calendar task view")
     }
 
-    @ViewBuilder
-    private func plannerDisplayModeControl(usesCompactControls: Bool) -> some View {
-        if usesCompactControls {
-            Picker("Planner view", selection: displayMode) {
-                ForEach(DayPlanDisplayMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
+    private func plannerDisplayModeControl(isExpanded: Bool) -> some View {
+        DayPlanExpandableHeaderSegmentedControl(
+            accessibilityLabel: "Planner view",
+            options: DayPlanDisplayMode.allCases,
+            selection: displayMode.wrappedValue,
+            optionTitle: { $0.title },
+            expandedWidth: DayPlanHeaderRangePickerVisibility.displayModePickerWidth,
+            collapsedWidth: DayPlanHeaderRangePickerVisibility.compactDisplayModePickerWidth,
+            minimumSegmentWidth: 84,
+            horizontalPadding: 11,
+            isExpanded: isExpanded,
+            onExpansionToggle: { toggleMacHeaderControl(.displayMode) },
+            onSelection: { mode in
+                animateMacHeaderExpansion {
+                    displayMode.wrappedValue = mode
+                    expandedMacHeaderControl = nil
                 }
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .frame(width: DayPlanHeaderRangePickerVisibility.compactDisplayModePickerWidth)
-            .accessibilityLabel("Planner view")
-        } else {
-            displayModePicker
+        ) { mode in
+            Label(mode.title, systemImage: mode.systemImage)
+                .labelStyle(.titleAndIcon)
         }
     }
 
-    @ViewBuilder
-    private func calendarTaskViewModeControl(usesCompactControls: Bool) -> some View {
-        if usesCompactControls {
-            Picker("Calendar task view", selection: calendarTaskViewMode) {
-                ForEach(DayPlanCalendarTaskViewMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
+    private func calendarTaskViewModeControl(isExpanded: Bool) -> some View {
+        DayPlanExpandableHeaderSegmentedControl(
+            accessibilityLabel: "Calendar task view",
+            options: DayPlanCalendarTaskViewMode.allCases,
+            selection: calendarTaskViewMode.wrappedValue,
+            optionTitle: { $0.title },
+            expandedWidth: DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth,
+            collapsedWidth: DayPlanHeaderRangePickerVisibility.compactCalendarTaskViewModePickerWidth,
+            minimumSegmentWidth: 74,
+            horizontalPadding: 11,
+            isExpanded: isExpanded,
+            onExpansionToggle: { toggleMacHeaderControl(.calendarTaskViewMode) },
+            onSelection: { mode in
+                animateMacHeaderExpansion {
+                    calendarTaskViewMode.wrappedValue = mode
+                    expandedMacHeaderControl = nil
                 }
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .frame(width: DayPlanHeaderRangePickerVisibility.compactCalendarTaskViewModePickerWidth)
-            .accessibilityLabel("Calendar task view")
-        } else {
-            calendarTaskViewModePicker
+        ) { mode in
+            Label(mode.title, systemImage: mode.systemImage)
+                .labelStyle(.titleAndIcon)
         }
     }
 
-    @ViewBuilder
-    private func visibleRangeModeControl(usesCompactControls: Bool) -> some View {
-        if usesCompactControls {
-            Picker("Planner range", selection: visibleRangeModeBinding) {
-                ForEach(planner.availableVisibleRangeModes) { mode in
-                    Text(mode.title).tag(mode)
+    private func visibleRangeModeControl(isExpanded: Bool) -> some View {
+        DayPlanExpandableHeaderSegmentedControl(
+            accessibilityLabel: "Planner range",
+            options: planner.availableVisibleRangeModes,
+            selection: planner.visibleRangeMode,
+            optionTitle: { $0.title },
+            expandedWidth: DayPlanHeaderRangePickerVisibility.visibleRangeModePickerWidth,
+            collapsedWidth: DayPlanHeaderRangePickerVisibility.compactVisibleRangeModePickerWidth,
+            isExpanded: isExpanded,
+            onExpansionToggle: { toggleMacHeaderControl(.visibleRangeMode) },
+            onSelection: { mode in
+                animateMacHeaderExpansion {
+                    planner.setVisibleRangeMode(mode, calendar: calendar, context: modelContext)
+                    expandedMacHeaderControl = nil
                 }
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .frame(width: DayPlanHeaderRangePickerVisibility.compactVisibleRangeModePickerWidth)
-            .accessibilityLabel("Planner range")
+        ) { mode in
+            Text(mode.title)
+        }
+    }
+
+    private func toggleMacHeaderControl(_ control: DayPlanExpandedHeaderControl) {
+        animateMacHeaderExpansion {
+            expandedMacHeaderControl = expandedMacHeaderControl == control ? nil : control
+        }
+    }
+
+    private func animateMacHeaderExpansion(_ changes: () -> Void) {
+        if accessibilityReduceMotion {
+            changes()
         } else {
-            visibleRangeModePicker
+            withAnimation(.easeInOut(duration: 0.18), changes)
         }
     }
 
@@ -1126,7 +1165,7 @@ private struct DayPlanHeaderView: View {
     private var usesIconOnlyMacDatePickerButton: Bool {
 #if os(macOS)
         DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-            usesCompactControls: usesCompactMacHeaderControls,
+            needsCompactDateButtonForFit: needsCompactMacDateButtonForFit,
             showsCalendarControlSet: effectiveDisplayMode == .calendar,
             showsExtraUtilityControl: macFocusControlIsVisible
         )
@@ -1146,6 +1185,90 @@ private struct DayPlanHeaderView: View {
 
 }
 
+private enum DayPlanExpandedHeaderControl: Hashable {
+    case displayMode
+    case calendarTaskViewMode
+    case visibleRangeMode
+}
+
+private struct DayPlanExpandableHeaderSegmentedControl<Option: Hashable, Label: View>: View {
+    let accessibilityLabel: String
+    let options: [Option]
+    let selection: Option
+    let optionTitle: (Option) -> String
+    let expandedWidth: CGFloat
+    let collapsedWidth: CGFloat
+    var minimumSegmentWidth: CGFloat = 68
+    var horizontalPadding: CGFloat = 14
+    let isExpanded: Bool
+    let onExpansionToggle: () -> Void
+    let onSelection: (Option) -> Void
+    @ViewBuilder let label: (Option) -> Label
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            if isExpanded {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: accessibilityLabel,
+                    options: options,
+                    selection: selection,
+                    onSelect: onSelection,
+                    minimumSegmentWidth: minimumSegmentWidth,
+                    horizontalPadding: horizontalPadding,
+                    label: label
+                )
+                .frame(width: expandedWidth)
+                .transition(.dayPlanHeaderHorizontalReveal)
+            } else {
+                Button(action: onExpansionToggle) {
+                    HStack(spacing: 7) {
+                        Text(optionTitle(selection))
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 0)
+
+                        Image(systemName: "chevron.forward")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(width: collapsedWidth)
+                    .frame(minHeight: 34)
+                    .routinaGlassCard(cornerRadius: 8, interactive: true)
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(accessibilityLabel): \(optionTitle(selection))")
+                .accessibilityHint("Show all options")
+                .transition(.dayPlanHeaderHorizontalReveal)
+            }
+        }
+        .frame(minHeight: 36, alignment: .leading)
+    }
+}
+
+private struct DayPlanHeaderHorizontalRevealModifier: ViewModifier {
+    let horizontalScale: CGFloat
+    let opacity: Double
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(x: horizontalScale, y: 1, anchor: .leading)
+            .opacity(opacity)
+    }
+}
+
+private extension AnyTransition {
+    static var dayPlanHeaderHorizontalReveal: AnyTransition {
+        .modifier(
+            active: DayPlanHeaderHorizontalRevealModifier(horizontalScale: 0.72, opacity: 0),
+            identity: DayPlanHeaderHorizontalRevealModifier(horizontalScale: 1, opacity: 1)
+        )
+    }
+}
+
 enum DayPlanHeaderRangePickerVisibility {
     static let segmentedControlSpacing: CGFloat = 16
     static let displayModePickerWidth: CGFloat = 220
@@ -1154,7 +1277,7 @@ enum DayPlanHeaderRangePickerVisibility {
     static let compactCalendarTaskViewModePickerWidth: CGFloat = 112
     static let visibleRangeModePickerWidth: CGFloat = 234
     static let compactVisibleRangeModePickerWidth: CGFloat = 96
-    static let compactTransitionReserveWidth: Double = 120
+    static let dateButtonTransitionReserveWidth: Double = 120
     static let minimumRegularCalendarHeaderAvailableWidth: Double = 1520
     static let minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth: Double = 1720
 
@@ -1177,15 +1300,12 @@ enum DayPlanHeaderRangePickerVisibility {
         }
     }
 
-    static func shouldUseCompactControls(
+    static func shouldUseCompactDateButtonForFit(
         availableWidth: Double,
-        regularControlsWidth: Double,
-        availableRangeModeCount: Int,
-        totalRangeModeCount: Int,
+        expandedControlsWidth: Double,
         showsCalendarControlSet: Bool = true,
         showsExtraUtilityControl: Bool = false
     ) -> Bool {
-        guard availableRangeModeCount >= totalRangeModeCount else { return true }
         guard availableWidth > 0 else { return false }
         if showsCalendarControlSet {
             let minimumRegularWidth = showsExtraUtilityControl
@@ -1195,16 +1315,16 @@ enum DayPlanHeaderRangePickerVisibility {
                 return true
             }
         }
-        guard regularControlsWidth > 0 else { return false }
-        return regularControlsWidth + compactTransitionReserveWidth > availableWidth + 0.5
+        guard expandedControlsWidth > 0 else { return false }
+        return expandedControlsWidth + dateButtonTransitionReserveWidth > availableWidth + 0.5
     }
 
     static func shouldUseIconOnlyDatePickerButton(
-        usesCompactControls: Bool,
+        needsCompactDateButtonForFit: Bool,
         showsCalendarControlSet: Bool,
         showsExtraUtilityControl: Bool
     ) -> Bool {
-        usesCompactControls || (showsCalendarControlSet && showsExtraUtilityControl)
+        needsCompactDateButtonForFit || (showsCalendarControlSet && showsExtraUtilityControl)
     }
 }
 
