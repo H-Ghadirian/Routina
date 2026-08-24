@@ -108,12 +108,16 @@ Then Actual time and Focus each appear as one compact value-and-action row
 And their duration and mode inputs are not permanently mounted
 
 When the person chooses Log time or Add time
-Then a focused popover starts from the remembered Actual-time value
+Then a focused popover starts from Actual time's remembered independent value
 And adding time previews and saves the new total without changing Focus
 
 When the person chooses Start focus
 Then a focused popover offers Countdown or Count up
 And Countdown starts from its remembered independent duration
+And neither the Actual-time nor Focus popover shows a redundant Cancel action
+
+When the person clicks outside either popover before confirming
+Then the popover closes without logging time or starting Focus
 
 When the person chooses Count up
 Then no countdown duration control is shown
@@ -955,6 +959,51 @@ And each active tag appears once at the top with its Included or Hidden effect
 And Show/Hide plus All/Any remain available without duplicating selected rows
 And searching keeps active rules visible while narrowing unselected tags
 And returning to Filters shows every selected Hidden and Included tag in a wrapping tag-only summary
+
+### Mac All Filters Use Current Task Ladder Values And Searchable Tags
+
+Area: Tasks / Timeline / Planner / macOS UI
+Decision links: [0364](../decisions/0364-rename-shared-mac-filter-scope-to-all.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/Shared/HomeFilterEditorTests.swift`
+- `Tests/Shared/TimelineLogicTests.swift`
+- `Tests/Shared/HomeMacAllFiltersSourceTests.swift`
+
+Given a repeating task has lower stored After-done values and higher current
+Now values because of Changes over time
+When the person selects Task Ladder value filters in Mac `All`
+Then Task List, task-backed Timeline activity, and task-backed Calendar items
+use the current values with independent minimum Importance, Urgency, and
+Pressure thresholds, exact Thinking needed, and estimate-presence matching
+And standalone Timeline activity is excluded only while a Task Ladder value
+filter is active
+
+Given the saved tag catalog is large
+When the ordinary `All` Tags card opens
+Then it shows no catalog cloud, only `No tag filter` or active rule chips
+And All/Any appears only for multi-tag rules
+When Add tags opens
+Then search, selected tags, bounded suggestions, counts, and a lazy Browse list
+make the catalog deliberately available
+
+### Mac Stats Defers The Tag Catalog To Searchable Pickers
+
+Area: Stats / macOS UI
+Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0579](../decisions/0579-align-ios-filter-tag-picker-with-task-tag-picker.md), [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md), [0658](../decisions/0658-defer-mac-stats-tag-catalog-to-searchable-pickers.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/HomeMacAllFiltersSourceTests.swift`
+
+Given the saved tag catalog is large
+When the person expands Tags in the Mac Stats sidebar
+Then one card shows only active include and exclude chips or empty states
+And matching mode appears only for a rule containing multiple tags
+And the full include, suggestion, and exclude catalogs do not appear as chip clouds
+When the person chooses Add tags or Add tags to exclude
+Then the shared searchable picker presents selected, bounded Suggested, and lazy Browse rows as applicable
+And existing Stats filter matching and persistence remain unchanged
 
 ### iOS Priority Filters Keep Importance And Urgency Independent
 
@@ -3003,21 +3052,23 @@ Then the heatmap stays hidden until the user adds it for that task
 ### Planner Inspector Day Header Keeps Compact Range Choice
 
 Area: Planner
-Decision links: [0609](../decisions/0609-keep-planner-range-choices-actionable-in-compact-headers.md), [0306](../decisions/0306-use-day-planner-width-for-task-detail-inspector-fit.md)
+Decision links: [0609](../decisions/0609-keep-planner-range-choices-actionable-in-compact-headers.md), [0306](../decisions/0306-use-day-planner-width-for-task-detail-inspector-fit.md), [0654](../decisions/0654-progressively-reveal-mac-planner-header-choices.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given the Mac Planner task-detail companion pane is open
 When the effective Planner range has adapted down to Day
-Then the range control remains available as a current-value menu containing Day only
-And the Planner-view and Calendar task-view segmented controls also become current-value menus
+Then the range control remains available as a compact current-value trigger whose expanded segment contains Day only
+And Planner view and Calendar task view remain compact current-value triggers that reveal one segmented control at a time
 And previous/next, filter, and an icon-only Go to date control remain in the header
 And the calendar grid can use its compact inspector minimum width so the time column and single day column fit inside the Planner surface
 
 Given the Mac Planner task-detail companion pane is open with enough room for a multi-day effective range
-When the Calendar header is at least 1520 points wide without the loaded Planner Focus control, or 1720 points wide with it, and the full controls fit on one row with the 120-point usability reserve
-Then the header can use segmented controls and the textual date/range button
+When the person opens Planner view, Calendar task view, or range
+Then only that control expands into segments and later controls move right
+And the textual date/range button remains available when the widest one-expanded row retains the 120-point usability reserve and comfortable labeled-date width
 
 ### Planner Day Headers Open Planned Task Lists
 

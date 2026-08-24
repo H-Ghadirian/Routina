@@ -41,6 +41,23 @@ struct HomeMacAllFiltersSourceTests {
         #expect(source.contains("pickerSection(\"Browse\""))
     }
 
+    @Test
+    func statsUsesTheCompactSearchableTagFilterInsteadOfCatalogClouds() throws {
+        let tagSection = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacStatsTagSections.swift"
+        )
+        let sidebar = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacStatsSidebarView.swift"
+        )
+
+        #expect(tagSection.contains("HomeMacTimelineTagFiltersView("))
+        #expect(tagSection.contains("return \"No tag filter\""))
+        #expect(!tagSection.contains("ForEach(tagSummaries"))
+        #expect(!tagSection.contains("availableExcludedTagsView"))
+        #expect(sidebar.contains("HomeMacStatsTagFilterSection("))
+        #expect(!sidebar.contains("HomeMacStatsSuggestedRelatedTagSection("))
+    }
+
     private static func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

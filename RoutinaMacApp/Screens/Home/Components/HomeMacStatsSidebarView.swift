@@ -17,21 +17,18 @@ struct HomeMacStatsSidebarView: View {
     let queryOptions: HomeAdvancedQueryOptions
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let allTags: [String]
-    let tagSummaries: [RoutineTagSummary]
     let suggestedRelatedTags: [String]
-    let taskCountForSelectedTypeFilter: Int
+    let availableExcludeTags: [String]
     let selectedTags: Set<String>
     let includeTagMatchMode: RoutineTagMatchMode
+    let selectedExcludedTags: Set<String>
+    let excludeTagMatchMode: RoutineTagMatchMode
+    let tagCount: (String) -> Int
+    let tagColor: (String) -> Color?
     let onSelectTags: (Set<String>) -> Void
     let onIncludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
     let onSelectSuggestedTag: (String) -> Void
-    let selectedExcludedTags: Set<String>
-    let excludeTagMatchMode: RoutineTagMatchMode
     let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
-    let availableExcludeTags: [String]
-    let excludedTagSummary: String
-    let tagSelectionSummary: String
-    let tagCount: (String) -> Int
     let onToggleExcludedTag: (String) -> Void
     let availableFlags: [String]
     let selectedFlags: Set<String>
@@ -80,33 +77,21 @@ struct HomeMacStatsSidebarView: View {
                 )
 
                 if !allTags.isEmpty {
-                    HomeMacStatsIncludedTagSection(
-                        tagSummaries: tagSummaries,
-                        taskCountForSelectedTypeFilter: taskCountForSelectedTypeFilter,
+                    HomeMacStatsTagFilterSection(
+                        availableTags: allTags,
+                        suggestedRelatedTags: suggestedRelatedTags,
+                        availableExcludeTags: availableExcludeTags,
                         selectedTags: selectedTags,
                         includeTagMatchMode: includeTagMatchMode,
-                        tagSelectionSummary: tagSelectionSummary,
-                        tagCount: tagCount,
-                        onSelectTags: onSelectTags,
-                        onIncludeTagMatchModeChange: onIncludeTagMatchModeChange
-                    )
-
-                    HomeMacStatsSuggestedRelatedTagSection(
-                        suggestedRelatedTags: suggestedRelatedTags,
-                        tagSummaries: tagSummaries,
-                        tagCount: tagCount,
-                        onSelectSuggestedTag: onSelectSuggestedTag
-                    )
-
-                    HomeMacStatsExcludedTagSection(
-                        tagSummaries: tagSummaries,
                         selectedExcludedTags: selectedExcludedTags,
                         excludeTagMatchMode: excludeTagMatchMode,
-                        availableExcludeTags: availableExcludeTags,
-                        excludedTagSummary: excludedTagSummary,
                         tagCount: tagCount,
-                        onToggleExcludedTag: onToggleExcludedTag,
-                        onExcludeTagMatchModeChange: onExcludeTagMatchModeChange
+                        tagColor: tagColor,
+                        onSelectTags: onSelectTags,
+                        onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
+                        onSelectSuggestedTag: onSelectSuggestedTag,
+                        onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
+                        onToggleExcludedTag: onToggleExcludedTag
                     )
                 }
 

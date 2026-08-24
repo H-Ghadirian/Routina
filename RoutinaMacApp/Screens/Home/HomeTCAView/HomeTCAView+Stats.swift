@@ -34,13 +34,22 @@ extension HomeTCAView {
         let statsTasks = statsStore?.tasks ?? store.routineTasks
         let allTags = statsAllTags
         let tagSummaries = statsStore?.tagSummaries ?? filterPresentation.tagSummaries(from: statsTasks)
-        let taskCountForSelectedTypeFilter = statsStore?.taskCountForSelectedTypeFilter
-            ?? filterPresentation.taskCountForSelectedTypeFilter(in: statsTasks)
         let availableExcludeTags = statsStore?.availableExcludeTags
             ?? filterPresentation.availableExcludeTags(from: statsTasks)
         let tagCountsByNormalizedName = Dictionary(
             uniqueKeysWithValues: tagSummaries.compactMap { summary in
                 RoutineTag.normalized(summary.name).map { ($0, summary.linkedRoutineCount) }
+            }
+        )
+        let tagColorsByNormalizedName: [String: Color] = Dictionary(
+            uniqueKeysWithValues: tagSummaries.compactMap { summary in
+                guard
+                    let normalizedName = RoutineTag.normalized(summary.name),
+                    let displayColor = summary.displayColor
+                else {
+                    return nil
+                }
+                return (normalizedName, displayColor)
             }
         )
 
@@ -71,13 +80,22 @@ extension HomeTCAView {
                 set: { statsStore?.send(.selectedImportanceUrgencyFilterChanged($0)) }
             ),
             allTags: allTags,
-            tagSummaries: tagSummaries,
             suggestedRelatedTags: filterPresentation.suggestedRelatedTags(
                 suggestionAnchor: relatedStatsTagSuggestionAnchor
             ),
-            taskCountForSelectedTypeFilter: taskCountForSelectedTypeFilter,
+            availableExcludeTags: availableExcludeTags,
             selectedTags: selectedStatsTags,
             includeTagMatchMode: statsStore?.includeTagMatchMode ?? .all,
+            selectedExcludedTags: selectedStatsExcludedTags,
+            excludeTagMatchMode: statsStore?.excludeTagMatchMode ?? .any,
+            tagCount: { tag in
+                guard let normalizedTag = RoutineTag.normalized(tag) else { return 0 }
+                return tagCountsByNormalizedName[normalizedTag] ?? 0
+            },
+            tagColor: { tag in
+                guard let normalizedTag = RoutineTag.normalized(tag) else { return nil }
+                return tagColorsByNormalizedName[normalizedTag]
+            },
             onSelectTags: { tags in
                 relatedStatsTagSuggestionAnchor = tags.sorted().last
                 statsStore?.send(.selectedTagsChanged(tags))
@@ -89,17 +107,8 @@ extension HomeTCAView {
                 guard let mutation = filterPresentation.addedIncludedTag(tag) else { return }
                 statsStore?.send(.selectedTagsChanged(mutation.selectedTags))
             },
-            selectedExcludedTags: selectedStatsExcludedTags,
-            excludeTagMatchMode: statsStore?.excludeTagMatchMode ?? .any,
             onExcludeTagMatchModeChange: { mode in
                 statsStore?.send(.excludeTagMatchModeChanged(mode))
-            },
-            availableExcludeTags: availableExcludeTags,
-            excludedTagSummary: statsExcludedTagSummary,
-            tagSelectionSummary: filterPresentation.tagSelectionSummary(tagCount: tagSummaries.count),
-            tagCount: { tag in
-                guard let normalizedTag = RoutineTag.normalized(tag) else { return 0 }
-                return tagCountsByNormalizedName[normalizedTag] ?? 0
             },
             onToggleExcludedTag: { tag in
                 let mutation = filterPresentation.toggledExcludedTag(tag)
@@ -185,10 +194,6 @@ extension HomeTCAView {
 
     private var selectedStatsExcludedTags: Set<String> {
         statsStore?.excludedTags ?? []
-    }
-
-    private var statsExcludedTagSummary: String {
-        statsFilterPresentation.excludedTagSummary
     }
 
     private var availableStatsDashboardScopes: [StatsDashboardScope] {
