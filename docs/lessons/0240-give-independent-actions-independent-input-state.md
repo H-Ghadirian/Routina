@@ -34,5 +34,6 @@ beside an action that ignores it, even when the actions share a broader group.
 clamping. `TaskDetailSharedViewSupportTests` protects separate preference keys,
 presets, labels, modes, and action ownership.
 
-See [Decision 0655](../decisions/0655-separate-mac-task-detail-actual-time-and-focus-controls.md)
-and [Regression Scenarios](../scenarios/README.md#mac-task-detail-separates-actual-time-and-focus-inputs).
+See [Decision 0655](../decisions/superseded/0655-separate-mac-task-detail-actual-time-and-focus-controls.md),
+as revised by [Decision 0657](../decisions/0657-make-mac-task-detail-effort-a-compact-summary-and-action-surface.md),
+and [Regression Scenarios](../scenarios/README.md#mac-task-detail-effort-stays-compact-and-reports-focus-history).

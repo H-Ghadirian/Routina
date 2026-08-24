@@ -85,13 +85,28 @@ struct TaskFormMacEstimationCard: View {
 
                 Divider()
 
-                Toggle(isOn: model.focusModeEnabled) {
-                    TaskFormEffortFieldLabel(
-                        title: TaskFormEffortPresentation.focusTimerTitle,
-                        detail: TaskFormEffortPresentation.focusTimerDetail
-                    )
-                }
+                if model.hasFocusSessions {
+                    HStack(alignment: .center, spacing: 12) {
+                        TaskFormEffortFieldLabel(
+                            title: TaskFormEffortPresentation.focusTimerTitle,
+                            detail: "Available after first use"
+                        )
+
+                        Spacer(minLength: 12)
+
+                        Label(model.focusSessionCountText, systemImage: "checkmark.circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.teal)
+                    }
+                } else {
+                    Toggle(isOn: model.focusModeEnabled) {
+                        TaskFormEffortFieldLabel(
+                            title: TaskFormEffortPresentation.focusTimerTitle,
+                            detail: TaskFormEffortPresentation.focusTimerDetail
+                        )
+                    }
                     .toggleStyle(.switch)
+                }
             }
         }
     }

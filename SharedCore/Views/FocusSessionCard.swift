@@ -99,15 +99,23 @@ struct FocusSessionCard: View {
 
                 if !snapshot.completedSessionsForTask.isEmpty {
                     Divider()
-                    FocusSessionHistorySummaryView(
-                        snapshot: snapshot,
-                        showsAccumulatedBlocks: snapshot.activeSessionForTask == nil
-                    )
-                    FocusSessionHistoryListView(
-                        sessions: snapshot.completedSessionsForTask,
-                        isShowingAllHistory: $isShowingAllHistory,
-                        onEdit: { beginEditing($0) }
-                    )
+                    if isEmbedded {
+                        FocusSessionCompactHistoryView(
+                            snapshot: snapshot,
+                            isShowingAllHistory: $isShowingAllHistory,
+                            onEdit: { beginEditing($0) }
+                        )
+                    } else {
+                        FocusSessionHistorySummaryView(
+                            snapshot: snapshot,
+                            showsAccumulatedBlocks: snapshot.activeSessionForTask == nil
+                        )
+                        FocusSessionHistoryListView(
+                            sessions: snapshot.completedSessionsForTask,
+                            isShowingAllHistory: $isShowingAllHistory,
+                            onEdit: { beginEditing($0) }
+                        )
+                    }
                 }
             }
         }

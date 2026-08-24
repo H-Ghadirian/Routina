@@ -89,22 +89,31 @@ And it does not change the todo's task-level Actual time
 And it does not change any routine completion log's Actual time
 And iOS and macOS follow the same rule
 
-### Mac Task Detail Separates Actual Time And Focus Inputs
+### Mac Task Detail Effort Stays Compact And Reports Focus History
 
 Area: Tasks / Focus / macOS Task Details
-Decision links: [0651](../decisions/0651-keep-task-focus-separate-from-actual-time.md), [0653](../decisions/0653-present-effort-values-as-values-not-feature-switches.md), [0655](../decisions/0655-separate-mac-task-detail-actual-time-and-focus-controls.md)
+Decision links: [0651](../decisions/0651-keep-task-focus-separate-from-actual-time.md), [0653](../decisions/0653-present-effort-values-as-values-not-feature-switches.md), [0657](../decisions/0657-make-mac-task-detail-effort-a-compact-summary-and-action-surface.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailTimeSpentPresentationTests.swift`
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
 
-Given a one-off task's Effort card is expanded on Mac
-Then Actual time has its own input and Log/Add/Edit-total actions
-And Focus has its own Countdown/Count up choice and remembered countdown input
+Given a one-off task has completed Focus history but no recorded Actual time
+When its Mac Effort card is collapsed
+Then the summary reports the Focus total and session count
+And it does not make missing Actual time the primary value
 
-Given the task has an Estimate but no saved Actual-time entry choice
-Then Actual time starts at 30 minutes instead of copying Estimate
-And Focus countdown starts independently at 25 minutes
+Given the Effort card is expanded
+Then Actual time and Focus each appear as one compact value-and-action row
+And their duration and mode inputs are not permanently mounted
+
+When the person chooses Log time or Add time
+Then a focused popover starts from the remembered Actual-time value
+And adding time previews and saves the new total without changing Focus
+
+When the person chooses Start focus
+Then a focused popover offers Countdown or Count up
+And Countdown starts from its remembered independent duration
 
 When the person chooses Count up
 Then no countdown duration control is shown
@@ -112,6 +121,18 @@ Then no countdown duration control is shown
 Given Focus is running or another session blocks it
 Then running or blocking status replaces Focus start controls
 And Actual-time logging remains available
+
+Given completed Focus sessions exist
+Then embedded history uses the Focus row for total and session count
+And a bounded recent list keeps each duration and edit action together
+And it does not repeat Total, Sessions, Latest, accumulated blocks, and Recent count
+
+Given a task has an active or completed Focus session
+When the person opens Add/Edit Effort
+Then Focus shows its retained session count instead of an off switch
+And Task Details keeps Focus visible and available even if legacy enablement is off
+When every retained Focus session is deleted
+Then the optional Focus switch becomes available again
 
 Given the person uses Planner Plan Focus allocation instead
 When they explicitly save a split across selected planned tasks

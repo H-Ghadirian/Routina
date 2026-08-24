@@ -20,7 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
-- **[0655](0655-separate-mac-task-detail-actual-time-and-focus-controls.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0651](0651-keep-task-focus-separate-from-actual-time.md), [0652](0652-keep-effort-fields-independent-and-disclosures-honest.md), and [0653](0653-present-effort-values-as-values-not-feature-switches.md):** Mac one-off Task Details gives Actual time and Focus independent inputs, defaults, remembered durations, and action states; Count up no longer displays a duration it ignores.
+- **[0657](0657-make-mac-task-detail-effort-a-compact-summary-and-action-surface.md) revises [0652](0652-keep-effort-fields-independent-and-disclosures-honest.md), [0653](0653-present-effort-values-as-values-not-feature-switches.md), and supersedes [0655](superseded/0655-separate-mac-task-detail-actual-time-and-focus-controls.md):** Mac one-off Effort summarizes populated evidence, defers Actual-time and Focus inputs to focused popovers, compacts embedded Focus history, and keeps Focus available after a retained session exists.
 - **[0653](0653-present-effort-values-as-values-not-feature-switches.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md), and [0652](0652-keep-effort-fields-independent-and-disclosures-honest.md):** Add/Edit calls the related group Effort, presents Estimate, Actual time, and Story points as independent values with explicit actions, and reserves the switch treatment for Focus.
 - **[0652](0652-keep-effort-fields-independent-and-disclosures-honest.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), [0625](0625-group-task-detail-add-detail-with-edit.md), and [0651](0651-keep-task-focus-separate-from-actual-time.md):** iOS and Mac offer Estimate whenever the estimate itself is missing, independently of Actual time, Story points, or Focus, and forced-open active Focus headers omit inactive disclosure chrome.
 - **[0651](0651-keep-task-focus-separate-from-actual-time.md) refines [0112](0112-show-estimated-actual-time-stats.md) and preserves the explicit allocation exception in [0209](0209-allocate-plan-focus-while-running.md):** finishing, editing, or deleting task Focus never mutates task or completion Actual time; any future conversion must be explicit, occurrence-aware, and reconcilable.
@@ -784,7 +784,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
-| [0655](0655-separate-mac-task-detail-actual-time-and-focus-controls.md) | Separate Mac Task Detail Actual Time and Focus Controls | Accepted | 2026-08-24 |
+| [0657](0657-make-mac-task-detail-effort-a-compact-summary-and-action-surface.md) | Make Mac Task Detail Effort a Compact Summary and Action Surface | Accepted | 2026-08-24 |
+| [0655](superseded/0655-separate-mac-task-detail-actual-time-and-focus-controls.md) | Separate Mac Task Detail Actual Time and Focus Controls | Superseded | 2026-08-24 |
 | [0652](0652-keep-effort-fields-independent-and-disclosures-honest.md) | Keep Effort Fields Independent and Disclosures Honest | Accepted | 2026-08-24 |
 | [0651](0651-keep-task-focus-separate-from-actual-time.md) | Keep Task Focus Separate From Actual Time | Accepted | 2026-08-24 |
 | [0650](0650-use-done-label-and-collapse-recorded-completion-calendar-list-sections.md) | Use Done Label and Collapse Recorded-Completion Calendar List Sections | Accepted | 2026-08-24 |

@@ -6,7 +6,8 @@ enum TaskDetailFocusSessionSectionVisibility {
         sessions: [FocusSession]
     ) -> Bool {
         task.focusModeEnabled || sessions.contains { session in
-            session.taskID == task.id && session.state == .active
+            session.taskID == task.id
+                && (session.state == .active || session.state == .completed)
         }
     }
 }

@@ -300,7 +300,8 @@ detailBody
             TaskDetailEditRoutineContent(
                 store: store,
                 isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
-                emojiOptions: emojiOptions
+                emojiOptions: emojiOptions,
+                focusSessionCount: focusSessionCountForTask
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else if store.task.isOneOffTask {
@@ -364,7 +365,7 @@ detailBody
                 if store.task.hasDestination {
                     destinationSection
                 }
-                if store.task.focusModeEnabled {
+                if shouldShowFocusSessionSection {
                     focusSessionSection
                 }
                 if shouldShowCommentsSection {
@@ -411,7 +412,7 @@ detailBody
                 if store.task.hasDestination {
                     destinationSection
                 }
-                if store.task.focusModeEnabled {
+                if shouldShowFocusSessionSection {
                     focusSessionSection
                 }
                 if shouldShowCommentsSection {
@@ -445,6 +446,20 @@ detailBody
             allTasks: focusSessionTaskCandidates,
             blockingFocusTitle: blockingFocusTitle
         )
+    }
+
+    private var shouldShowFocusSessionSection: Bool {
+        TaskDetailFocusSessionSectionVisibility.shouldShow(
+            for: store.task,
+            sessions: focusSessions
+        )
+    }
+
+    private var focusSessionCountForTask: Int {
+        focusSessions.count { session in
+            session.taskID == store.task.id
+                && (session.state == .active || session.state == .completed)
+        }
     }
 
     private var destinationSection: some View {

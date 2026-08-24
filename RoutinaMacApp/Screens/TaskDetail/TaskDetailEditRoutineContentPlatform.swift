@@ -7,6 +7,7 @@ struct TaskDetailEditRoutineContent: View {
     let emojiOptions: [String]
     let canSaveCurrentEdit: Bool
     let automaticPathTitles: [String]?
+    var focusSessionCount = 0
     var layout: TaskFormContentLayout = .fullForm
     var onCancel: (() -> Void)?
     var onSave: (() -> Void)?
@@ -248,9 +249,13 @@ struct TaskDetailEditRoutineContent: View {
                 set: { store.send(.editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay.from($0))) }
             ),
             focusModeEnabled: Binding(
-                get: { store.editFocusModeEnabled },
-                set: { store.send(.editFocusModeEnabledChanged($0)) }
+                get: { focusSessionCount > 0 || store.editFocusModeEnabled },
+                set: { isEnabled in
+                    guard focusSessionCount == 0 else { return }
+                    store.send(.editFocusModeEnabledChanged(isEnabled))
+                }
             ),
+            focusSessionCount: focusSessionCount,
             cadenceEnabled: Binding(
                 get: { store.editCadenceEnabled },
                 set: { store.send(.editCadenceEnabledChanged($0)) }

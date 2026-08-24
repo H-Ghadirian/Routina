@@ -203,6 +203,69 @@ struct FocusSessionHistoryListView: View {
     }
 }
 
+struct FocusSessionCompactHistoryView: View {
+    let snapshot: FocusSessionCardSnapshot
+    @Binding var isShowingAllHistory: Bool
+    let onEdit: (FocusSession) -> Void
+
+    var body: some View {
+        let sessions = snapshot.completedSessionsForTask
+        let visibleSessions = isShowingAllHistory
+            ? sessions
+            : Array(sessions.prefix(3))
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Recent sessions")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            ForEach(visibleSessions) { session in
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(session.completedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+
+                    Spacer(minLength: 12)
+
+                    Text(FocusSessionFormatting.compactDurationText(seconds: session.actualDurationSeconds))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+
+                    Button {
+                        onEdit(session)
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .accessibilityLabel("Edit focus session")
+                }
+                .padding(.vertical, 3)
+            }
+
+            if sessions.count > 3 {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.16)) {
+                        isShowingAllHistory.toggle()
+                    }
+                } label: {
+                    Label(
+                        isShowingAllHistory ? "Show less" : "Show all \(sessions.count) sessions",
+                        systemImage: isShowingAllHistory ? "chevron.up.circle" : "chevron.down.circle"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(isShowingAllHistory ? "Show fewer focus sessions" : "Show all focus sessions")
+            }
+        }
+        .frame(maxWidth: 620, alignment: .leading)
+    }
+
+}
+
 private struct FocusSessionBlockHeader: View {
     let title: String
     let value: String

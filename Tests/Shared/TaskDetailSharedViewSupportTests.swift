@@ -178,36 +178,65 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
-    func macTaskDetailKeepsActualTimeAndFocusControlsIndependent() throws {
+    func macTaskDetailKeepsActualTimeAndFocusCompactAndIndependent() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
         )
-        let actualActionsStart = try #require(source.range(of: "private var actualTimeActions"))
-        let focusActionsStart = try #require(
+        let focusCardSource = try Self.sourceFile("SharedCore/Views/FocusSessionCard.swift")
+        let focusContentSource = try Self.sourceFile("SharedCore/Views/FocusSessionCardContent.swift")
+        let actualEditorStart = try #require(source.range(of: "private var actualTimeEditor"))
+        let focusEditorStart = try #require(
             source.range(
-                of: "private var startCountdownButton",
-                range: actualActionsStart.upperBound..<source.endIndex
+                of: "private var focusStartEditor",
+                range: actualEditorStart.upperBound..<source.endIndex
             )
         )
-        let actualActions = String(
-            source[actualActionsStart.lowerBound..<focusActionsStart.lowerBound]
+        let actualEditor = String(
+            source[actualEditorStart.lowerBound..<focusEditorStart.lowerBound]
         )
 
-        #expect(source.contains("title: \"ACTUAL TIME\""))
-        #expect(source.contains("title: \"FOCUS TIMER\""))
-        #expect(source.contains("Picker(\"Focus mode\", selection: $focusStartMode)"))
-        #expect(source.contains("case .countdown:"))
-        #expect(source.contains("case .countUp:"))
+        #expect(source.contains("title: \"Actual time\""))
+        #expect(source.contains("title: \"Focus\""))
+        #expect(source.contains("Label(\"Start focus\", systemImage: \"timer\")"))
+        #expect(source.contains(".popover(isPresented: $isActualTimeEditorPresented"))
+        #expect(source.contains(".popover(isPresented: $isFocusStartEditorPresented"))
+        #expect(source.contains("Picker(\"Timer\", selection: $focusStartMode)"))
+        #expect(source.contains("if focusStartMode == .countdown"))
+        #expect(source.contains("title: \"FOCUS\""))
+        #expect(source.contains("value: focusSummaryText"))
         #expect(source.contains("macTaskDetailLastActualTimeEntryMinutes"))
         #expect(source.contains("macTaskDetailLastFocusCountdownMinutes"))
-        #expect(source.contains("actualTimeQuickEntryMinutes = [15, 30, 60]"))
-        #expect(source.contains("focusCountdownQuickEntryMinutes = [25, 45, 60]"))
-        #expect(source.contains("Label(\"Start countdown\", systemImage: \"timer\")"))
-        #expect(source.contains("Label(\"Start count up\", systemImage: \"stopwatch\")"))
-        #expect(!actualActions.contains("startFocus"))
-        #expect(!actualActions.contains("Count down"))
-        #expect(!actualActions.contains("Count up"))
+        #expect(!source.contains("actualTimeQuickEntryMinutes"))
+        #expect(!source.contains("focusCountdownQuickEntryMinutes"))
+        #expect(!actualEditor.contains("startFocus"))
         #expect(!source.contains("macTaskDetailLastTimeEntryMinutes"))
+        #expect(focusCardSource.contains("if isEmbedded"))
+        #expect(focusCardSource.contains("FocusSessionCompactHistoryView("))
+        #expect(focusContentSource.contains("struct FocusSessionCompactHistoryView"))
+        #expect(focusContentSource.contains("Text(\"Recent sessions\")"))
+        #expect(focusContentSource.contains(".frame(maxWidth: 620, alignment: .leading)"))
+    }
+
+    @Test
+    func usedFocusRemainsVisibleAndCannotBeToggledOffInTaskEditors() throws {
+        let modelSource = try Self.sourceFile("SharedCore/Screens/Shared/TaskFormModel.swift")
+        let macFormSource = try Self.sourceFile("RoutinaMacApp/Screens/Shared/TaskFormMacEstimationCard.swift")
+        let iosFormSource = try Self.sourceFile("iOS/Screens/Shared/TaskFormIOSEstimationSection.swift")
+        let macEditSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailEditRoutineContentPlatform.swift"
+        )
+        let iosEditSource = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailEditRoutineContentPlatform.swift"
+        )
+
+        #expect(modelSource.contains("var focusSessionCount = 0"))
+        #expect(modelSource.contains("var hasFocusSessions: Bool"))
+        #expect(macFormSource.contains("if model.hasFocusSessions"))
+        #expect(iosFormSource.contains("if model.hasFocusSessions"))
+        #expect(macFormSource.contains("detail: \"Available after first use\""))
+        #expect(iosFormSource.contains("detail: \"Available after first use\""))
+        #expect(macEditSource.contains("guard focusSessionCount == 0 else { return }"))
+        #expect(iosEditSource.contains("guard focusSessionCount == 0 else { return }"))
     }
 
     @Test
@@ -746,7 +775,7 @@ struct TaskDetailSharedViewSupportTests {
         #expect(!TaskDetailFocusSessionSectionVisibility.shouldShow(for: task, sessions: [otherActiveFocus]))
 
         activeFocus.completedAt = makeDate("2026-06-15T08:25:00Z")
-        #expect(!TaskDetailFocusSessionSectionVisibility.shouldShow(for: task, sessions: [activeFocus]))
+        #expect(TaskDetailFocusSessionSectionVisibility.shouldShow(for: task, sessions: [activeFocus]))
     }
 
     @Test

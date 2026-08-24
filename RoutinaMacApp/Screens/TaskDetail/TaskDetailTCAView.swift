@@ -286,7 +286,8 @@ struct TaskDetailTCAView: View {
                 isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
                 emojiOptions: emojiOptions,
                 canSaveCurrentEdit: canSaveCurrentEdit,
-                automaticPathTitles: editAutomaticPathTitles
+                automaticPathTitles: editAutomaticPathTitles,
+                focusSessionCount: focusSessionCountForTask
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else if store.task.isOneOffTask {
@@ -412,7 +413,7 @@ struct TaskDetailTCAView: View {
                     || TaskDetailOptionalControlVisibility.showsTimeSpent(
                         for: store.task,
                         hasActiveFocus: hasActiveFocusForTask,
-                        showsFocusTimer: store.task.focusModeEnabled
+                        showsFocusTimer: store.task.focusModeEnabled || hasCompletedFocusHistory
                     )
             )
     }
@@ -469,6 +470,19 @@ struct TaskDetailTCAView: View {
     private var hasActiveFocusForTask: Bool {
         focusSessions.contains { session in
             session.taskID == store.task.id && session.state == .active
+        }
+    }
+
+    private var hasCompletedFocusHistory: Bool {
+        focusSessions.contains { session in
+            session.taskID == store.task.id && session.state == .completed
+        }
+    }
+
+    private var focusSessionCountForTask: Int {
+        focusSessions.count { session in
+            session.taskID == store.task.id
+                && (session.state == .active || session.state == .completed)
         }
     }
 
@@ -763,6 +777,7 @@ struct TaskDetailTCAView: View {
                 emojiOptions: emojiOptions,
                 canSaveCurrentEdit: canSaveCurrentEdit,
                 automaticPathTitles: editAutomaticPathTitles,
+                focusSessionCount: focusSessionCountForTask,
                 layout: .embeddedSections(inlineEditSections),
                 onCancel: cancelInlineEditSections,
                 onSave: saveInlineEditSections

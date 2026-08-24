@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0657: Make Mac Task Detail Effort a Compact Summary and Action Surface](../0657-make-mac-task-detail-effort-a-compact-summary-and-action-surface.md)
 
 ## Date
 
@@ -54,3 +54,10 @@ entry or Focus countdown choice.
   choices.
 - Active and externally blocked sessions retain clear status and controls
   without competing start actions.
+
+## Supersession Note
+
+Decision 0657 preserves the independent Actual-time and Focus state established
+here, but moves their inputs out of the permanently expanded card and into
+focused popovers. It also replaces the embedded history dashboard with compact
+rows and keeps Focus available after the first retained session.

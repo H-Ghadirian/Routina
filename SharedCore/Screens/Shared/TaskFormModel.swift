@@ -172,6 +172,7 @@ struct TaskFormModel {
         RoutineAssumedCompletion.defaultDoneTimeOfDay.date(on: Date())
     )
     var focusModeEnabled: Binding<Bool> = .constant(false)
+    var focusSessionCount = 0
     var cadenceEnabled: Binding<Bool> = .constant(true)
     var nudgesEnabled: Binding<Bool> = .constant(true)
 
@@ -199,6 +200,14 @@ struct TaskFormModel {
 }
 
 extension TaskFormModel {
+    var hasFocusSessions: Bool {
+        focusSessionCount > 0
+    }
+
+    var focusSessionCountText: String {
+        focusSessionCount == 1 ? "1 session" : "\(focusSessionCount) sessions"
+    }
+
     var hasEstimatedDuration: Bool {
         estimatedDurationMinutes.wrappedValue != nil
     }

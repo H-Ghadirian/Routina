@@ -5,6 +5,7 @@ struct TaskDetailEditRoutineContent: View {
     let store: StoreOf<TaskDetailFeature>
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
+    var focusSessionCount = 0
     var initiallyRevealedSection: TaskFormCompactSection? = nil
     @Environment(\.calendar) private var calendar
 
@@ -222,9 +223,13 @@ struct TaskDetailEditRoutineContent: View {
                 set: { store.send(.editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay.from($0))) }
             ),
             focusModeEnabled: Binding(
-                get: { store.editFocusModeEnabled },
-                set: { store.send(.editFocusModeEnabledChanged($0)) }
+                get: { focusSessionCount > 0 || store.editFocusModeEnabled },
+                set: { isEnabled in
+                    guard focusSessionCount == 0 else { return }
+                    store.send(.editFocusModeEnabledChanged(isEnabled))
+                }
             ),
+            focusSessionCount: focusSessionCount,
             cadenceEnabled: Binding(
                 get: { store.editCadenceEnabled },
                 set: { store.send(.editCadenceEnabledChanged($0)) }
