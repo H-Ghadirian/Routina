@@ -60,54 +60,26 @@ struct FocusSessionCard: View {
 
         VStack(alignment: .leading, spacing: isEmbedded ? 12 : 14) {
             if !isEmbedded || showsEmbeddedHeader {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.16)) {
-                        if isForcedExpanded {
-                            isExpanded = true
-                        } else {
+                if isForcedExpanded {
+                    focusHeader(
+                        snapshot: snapshot,
+                        isContentExpanded: isContentExpanded,
+                        showsDisclosureIndicator: false
+                    )
+                } else {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.16)) {
                             isExpanded.toggle()
                         }
+                    } label: {
+                        focusHeader(
+                            snapshot: snapshot,
+                            isContentExpanded: isContentExpanded,
+                            showsDisclosureIndicator: true
+                        )
                     }
-                } label: {
-                    HStack(alignment: isEmbedded ? .center : .top, spacing: isEmbedded ? 8 : 12) {
-                        if !isEmbedded {
-                            Image(systemName: "timer")
-                                .font(.title3.weight(.semibold))
-                                .foregroundStyle(.teal)
-                                .frame(width: 30, height: 30)
-                                .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Focus")
-                                .font(isEmbedded ? .subheadline.weight(.semibold) : .headline)
-                                .foregroundStyle(.primary)
-
-                            if !isEmbedded {
-                                Text(focusSubtitle(snapshot: snapshot))
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            } else if let statusText = embeddedFocusStatusText(snapshot: snapshot) {
-                                Text(statusText)
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                        }
-
-                        Spacer(minLength: 8)
-
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
-                            .padding(.top, isEmbedded ? 0 : 6)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
 
             if isContentExpanded {
@@ -217,6 +189,52 @@ struct FocusSessionCard: View {
         .task {
             syncFocusShieldForCurrentContext()
         }
+    }
+
+    private func focusHeader(
+        snapshot: FocusSessionCardSnapshot,
+        isContentExpanded: Bool,
+        showsDisclosureIndicator: Bool
+    ) -> some View {
+        HStack(alignment: isEmbedded ? .center : .top, spacing: isEmbedded ? 8 : 12) {
+            if !isEmbedded {
+                Image(systemName: "timer")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.teal)
+                    .frame(width: 30, height: 30)
+                    .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Focus")
+                    .font(isEmbedded ? .subheadline.weight(.semibold) : .headline)
+                    .foregroundStyle(.primary)
+
+                if !isEmbedded {
+                    Text(focusSubtitle(snapshot: snapshot))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let statusText = embeddedFocusStatusText(snapshot: snapshot) {
+                    Text(statusText)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            if showsDisclosureIndicator {
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
+                    .padding(.top, isEmbedded ? 0 : 6)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     #if os(macOS)

@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0652](0652-keep-effort-fields-independent-and-disclosures-honest.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), [0625](0625-group-task-detail-add-detail-with-edit.md), and [0651](0651-keep-task-focus-separate-from-actual-time.md):** iOS and Mac offer Estimate whenever the estimate itself is missing, independently of Actual time, Story points, or Focus, and forced-open active Focus headers omit inactive disclosure chrome.
 - **[0651](0651-keep-task-focus-separate-from-actual-time.md) refines [0112](0112-show-estimated-actual-time-stats.md) and preserves the explicit allocation exception in [0209](0209-allocate-plan-focus-while-running.md):** finishing, editing, or deleting task Focus never mutates task or completion Actual time; any future conversion must be explicit, occurrence-aware, and reconcilable.
 - **[0650](0650-use-done-label-and-collapse-recorded-completion-calendar-list-sections.md) refines [0367](0367-show-day-agenda-done-sections.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), [0529](0529-collapse-calendar-list-planned-task-sections.md), [0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Planner uses `Done` for recorded-completion sections, and Mac Calendar `List` gives that section the same independent per-day disclosure and shared default as its other task sections without changing the focused sidebar or cached presentation work.
 - **[0649](0649-give-each-task-ladder-metric-an-independent-time-rule.md) revises [0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md) and supersedes [0646](superseded/0646-compact-mac-changes-over-time-editing.md):** each time-varying Task Ladder metric independently chooses its After done value, target, due/before-due/overdue timing, and day count in a shared picker-sentence editor; After done lead windows cannot exceed their recurrence interval, and old shared rules decode compatibly.
@@ -781,6 +782,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0652](0652-keep-effort-fields-independent-and-disclosures-honest.md) | Keep Effort Fields Independent and Disclosures Honest | Accepted | 2026-08-24 |
 | [0651](0651-keep-task-focus-separate-from-actual-time.md) | Keep Task Focus Separate From Actual Time | Accepted | 2026-08-24 |
 | [0650](0650-use-done-label-and-collapse-recorded-completion-calendar-list-sections.md) | Use Done Label and Collapse Recorded-Completion Calendar List Sections | Accepted | 2026-08-24 |
 | [0649](0649-give-each-task-ladder-metric-an-independent-time-rule.md) | Give Each Task Ladder Metric an Independent Time Rule | Accepted | 2026-08-24 |

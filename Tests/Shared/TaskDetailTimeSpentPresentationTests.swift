@@ -38,7 +38,7 @@ struct TaskDetailTimeSpentPresentationTests {
     }
 
     @Test
-    func timeSectionOnlyForcesOpenForActiveFocus() {
+    func activeFocusForcesTimeSectionOpenAndSuppressesDisclosure() {
         #expect(!TaskDetailTimeSpentPresentation.shouldForceExpandSection(
             hasActiveFocus: false,
             showsFocusTimer: true
@@ -47,6 +47,8 @@ struct TaskDetailTimeSpentPresentationTests {
             hasActiveFocus: true,
             showsFocusTimer: false
         ))
+        #expect(TaskDetailTimeSpentPresentation.showsDisclosureControl(hasActiveFocus: false))
+        #expect(!TaskDetailTimeSpentPresentation.showsDisclosureControl(hasActiveFocus: true))
     }
 
     @Test

@@ -729,9 +729,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowEstimationAddAction: Bool {
-        store.task.estimatedDurationMinutes == nil
-            && store.task.storyPoints == nil
-            && !store.task.focusModeEnabled
+        TaskDetailOptionalControlVisibility.showsEstimateAddAction(for: store.task)
             && !isInlineEditSectionRevealed(.estimation)
     }
 

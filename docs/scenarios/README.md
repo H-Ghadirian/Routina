@@ -29,6 +29,27 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Task Effort Fields Stay Independent And Disclosures Stay Honest
+
+Area: Tasks / Focus / iOS and macOS Task Details
+Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0625](../decisions/0625-group-task-detail-add-detail-with-edit.md), [0652](../decisions/0652-keep-effort-fields-independent-and-disclosures-honest.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+- `Tests/Shared/TaskDetailTimeSpentPresentationTests.swift`
+
+Given a task has no duration estimate
+When Actual time, Story points, Focus, or any combination of them is configured
+Then iOS and full Mac Task Details still offer `Estimate` in `Add a detail`
+
+Given a task already has a duration estimate
+Then the field-specific `Estimate` add action is absent
+
+Given active task Focus forces Effort or Focus content open
+Then its header has no disclosure chevron or clickable collapse action
+When the active session ends
+Then the ordinary disclosure control is available again
+
 ### Task Focus Remains Separate From Actual Time
 
 Area: Tasks / Focus / iOS and macOS Task Details

@@ -86,4 +86,8 @@ enum TaskDetailTimeSpentPresentation {
         hasActiveFocus
     }
 
+    static func showsDisclosureControl(hasActiveFocus: Bool) -> Bool {
+        !hasActiveFocus
+    }
+
 }

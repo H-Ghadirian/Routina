@@ -115,6 +115,10 @@ enum TaskDetailValuePresentation {
 }
 
 enum TaskDetailOptionalControlVisibility {
+    static func showsEstimateAddAction(for task: RoutineTask) -> Bool {
+        task.estimatedDurationMinutes == nil
+    }
+
     static func showsImportance(for task: RoutineTask) -> Bool {
         task.hasExplicitImportance
             || task.importance != .level2

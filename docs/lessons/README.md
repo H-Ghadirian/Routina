@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0238 — Derive field actions and affordances from their own state](0238-derive-field-actions-and-affordances-from-their-own-state.md)
 - [0237 — Do not copy Focus into actual time](0237-do-not-copy-focus-into-actual-time.md)
 - [0236 — Bound derived windows to their recurrence cycle](0236-bound-derived-windows-to-their-recurrence-cycle.md)
 - [0235 — Edit derived values at their source](0235-edit-derived-values-at-their-source.md)

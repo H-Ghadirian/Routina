@@ -523,6 +523,56 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func missingEstimateActionIgnoresOtherEffortAndFocusState() {
+        for focusModeEnabled in [false, true] {
+            for storyPoints in [Int?.none, 3] {
+                for actualDurationMinutes in [Int?.none, 20] {
+                    let task = RoutineTask(name: "Estimate me")
+                    task.focusModeEnabled = focusModeEnabled
+                    task.storyPoints = storyPoints
+                    task.actualDurationMinutes = actualDurationMinutes
+
+                    #expect(TaskDetailOptionalControlVisibility.showsEstimateAddAction(for: task))
+
+                    task.estimatedDurationMinutes = 25
+                    #expect(!TaskDetailOptionalControlVisibility.showsEstimateAddAction(for: task))
+                }
+            }
+        }
+    }
+
+    @Test
+    func taskDetailsOfferMissingEstimateOnBothPlatforms() throws {
+        let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let macDetail = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+
+        for source in [iosDetail, macDetail] {
+            #expect(source.contains("if shouldShowEstimationAddAction"))
+            #expect(source.contains("title: \"Estimate\""))
+            #expect(source.contains("TaskDetailOptionalControlVisibility.showsEstimateAddAction(for: store.task)"))
+        }
+        #expect(iosDetail.contains("requestedEditSection = .estimation"))
+        #expect(macDetail.contains("inlineEditSectionAction(title: \"Estimate\", section: .estimation)"))
+    }
+
+    @Test
+    func forcedOpenFocusHeadersDoNotAdvertiseDisclosure() throws {
+        let effortHeader = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
+        )
+        let focusCard = try Self.sourceFile("SharedCore/Views/FocusSessionCard.swift")
+
+        #expect(effortHeader.contains("showsDisclosureControl("))
+        #expect(effortHeader.contains("showsDisclosureIndicator: false"))
+        #expect(focusCard.contains("if isForcedExpanded"))
+        #expect(focusCard.contains("showsDisclosureIndicator: false"))
+        for source in [effortHeader, focusCard] {
+            #expect(source.contains("if showsDisclosureIndicator"))
+            #expect(source.contains("Image(systemName: \"chevron.down\")"))
+        }
+    }
+
+    @Test
     func taskDetailsKeepTaskLadderValuesTogetherAndLockConfiguredTimeRules() throws {
         let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
         let iosControls = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")

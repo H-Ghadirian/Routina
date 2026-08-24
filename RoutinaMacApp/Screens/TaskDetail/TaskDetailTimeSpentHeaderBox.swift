@@ -46,35 +46,26 @@ struct TaskDetailTimeSpentHeaderBox: View {
         let isContentExpanded = isExpanded || isForcedExpanded
 
         VStack(alignment: .leading, spacing: 12) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.16)) {
-                    if isForcedExpanded {
-                        isExpanded = true
-                    } else {
+            if TaskDetailTimeSpentPresentation.showsDisclosureControl(
+                hasActiveFocus: hasActiveFocusForTask
+            ) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.16)) {
                         isExpanded.toggle()
                     }
+                } label: {
+                    effortHeader(
+                        isContentExpanded: isContentExpanded,
+                        showsDisclosureIndicator: true
+                    )
                 }
-            } label: {
-                HStack(alignment: .center, spacing: 12) {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.cyan)
-                        .frame(width: 32, height: 32)
-                        .routinaGlassPill(tint: .cyan, tintOpacity: 0.16)
-
-                    effortSummary
-
-                    Spacer(minLength: 8)
-
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+            } else {
+                effortHeader(
+                    isContentExpanded: isContentExpanded,
+                    showsDisclosureIndicator: false
+                )
             }
-            .buttonStyle(.plain)
 
             if isContentExpanded {
                 expandedContent
@@ -86,6 +77,32 @@ struct TaskDetailTimeSpentHeaderBox: View {
         .onChange(of: task.id) { _, _ in resetEntry() }
         .onChange(of: task.actualDurationMinutes) { _, _ in resetEntry() }
         .onChange(of: resetToken) { _, _ in resetEntry() }
+    }
+
+    private func effortHeader(
+        isContentExpanded: Bool,
+        showsDisclosureIndicator: Bool
+    ) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: "chart.bar.xaxis")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.cyan)
+                .frame(width: 32, height: 32)
+                .routinaGlassPill(tint: .cyan, tintOpacity: 0.16)
+
+            effortSummary
+
+            Spacer(minLength: 8)
+
+            if showsDisclosureIndicator {
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private var effortSummary: some View {

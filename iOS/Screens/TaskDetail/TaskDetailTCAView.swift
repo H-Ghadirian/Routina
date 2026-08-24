@@ -531,6 +531,13 @@ detailBody
             })
         }
 
+        if shouldShowEstimationAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Estimate", systemImage: "clock.fill") {
+                requestedEditSection = .estimation
+                store.send(.setEditSheet(true))
+            })
+        }
+
         if !shouldShowChecklistSection {
             actions.append(TaskDetailOptionalAction(title: "Checklist", systemImage: "checklist") {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -630,6 +637,10 @@ detailBody
 
     private var shouldShowTimeAddAction: Bool {
         canShowTimeControl && !shouldShowTimeControl
+    }
+
+    private var shouldShowEstimationAddAction: Bool {
+        TaskDetailOptionalControlVisibility.showsEstimateAddAction(for: store.task)
     }
 
     private var canShowTimeControl: Bool {
