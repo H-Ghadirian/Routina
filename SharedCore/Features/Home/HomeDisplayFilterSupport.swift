@@ -128,6 +128,14 @@ enum HomeDisplayFilterSupport {
         return pressure == filter
     }
 
+    static func matchesMinimumPressureFilter(
+        _ filter: RoutineTaskPressure?,
+        pressure: RoutineTaskPressure
+    ) -> Bool {
+        guard let filter else { return true }
+        return pressure.sortOrder >= filter.sortOrder
+    }
+
     static func matchesThinkingNeededFilter(
         _ filter: RoutineTaskThinkingNeeded?,
         thinkingNeeded: RoutineTaskThinkingNeeded

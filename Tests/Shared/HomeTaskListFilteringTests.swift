@@ -164,6 +164,42 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func nowTaskLadderFiltersUseCurrentValuesAndMinimumPressure() {
+        let tasks = [
+            TestTaskDisplay(
+                name: "Escalated task",
+                importance: .level1,
+                urgency: .level1,
+                pressure: .none,
+                currentTaskLadderImportance: .level4,
+                currentTaskLadderUrgency: .level3,
+                currentTaskLadderPressure: .high
+            ),
+            TestTaskDisplay(
+                name: "Base-only match",
+                importance: .level4,
+                urgency: .level4,
+                pressure: .high,
+                currentTaskLadderImportance: .level2,
+                currentTaskLadderUrgency: .level2,
+                currentTaskLadderPressure: .low
+            )
+        ]
+
+        let result = makeFiltering(
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(
+                importance: .level3,
+                urgency: .level3
+            ),
+            selectedPressureFilter: .medium,
+            taskLadderFilterValueMode: .now
+        )
+        .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Escalated task"])
+    }
+
+    @Test
     func thinkingNeededFilterMatchesExactComplexityLevel() {
         let tasks = [
             TestTaskDisplay(name: "Easy cleaning", thinkingNeeded: .low),
@@ -2918,6 +2954,7 @@ private func makeFiltering(
     routineListSectioningMode: RoutineListSectioningMode = .status,
     separateDeadlineStatusInTagSections: Bool = false,
     flagRules: [RoutineFlagRule] = [],
+    taskLadderFilterValueMode: TaskRankingValueMode = .base,
     referenceDate: Date = Date(timeIntervalSince1970: 1_714_608_000)
 ) -> HomeTaskListFiltering<TestTaskDisplay> {
     var calendar = Calendar(identifier: .gregorian)
@@ -2951,7 +2988,8 @@ private func makeFiltering(
             flagRules: flagRules,
             routineTasks: [],
             referenceDate: referenceDate,
-            calendar: calendar
+            calendar: calendar,
+            taskLadderFilterValueMode: taskLadderFilterValueMode
         ),
         matchesCurrentTaskListMode: { _ in true }
     )
@@ -2989,6 +3027,9 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var importance: RoutineTaskImportance = .level2
     var urgency: RoutineTaskUrgency = .level2
     var pressure: RoutineTaskPressure = .none
+    var currentTaskLadderImportance: RoutineTaskImportance = .level2
+    var currentTaskLadderUrgency: RoutineTaskUrgency = .level2
+    var currentTaskLadderPressure: RoutineTaskPressure = .none
     var thinkingNeeded: RoutineTaskThinkingNeeded = .none
     var scheduleAnchor: Date?
     var pausedAt: Date?

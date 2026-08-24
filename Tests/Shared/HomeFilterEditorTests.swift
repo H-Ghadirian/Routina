@@ -268,6 +268,41 @@ struct HomeFilterEditorTests {
     }
 
     @Test
+    func temporaryViewStatePersistsSharedTimelineTaskLadderFilters() {
+        let values = HomeTemporaryViewStateValues(
+            hideUnavailableRoutines: false,
+            taskListModeRawValue: "Routines",
+            taskFilters: HomeTaskFiltersState(),
+            timelineFilters: HomeTimelineFiltersState(
+                selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(
+                    importance: .level3,
+                    urgency: .level2
+                ),
+                selectedPressureFilter: .medium,
+                selectedThinkingNeededFilter: .high,
+                selectedEstimationFilter: .withEstimate
+            ),
+            statsFilters: HomeStatsFiltersState(),
+            macSidebarModeRawValue: nil,
+            macSelectedSettingsSectionRawValue: nil
+        )
+
+        let persistedState = HomeTemporaryViewStateMapper.makeTemporaryViewState(
+            existing: .default,
+            values: values
+        )
+        let restored = HomeTemporaryViewStateMapper.restore(
+            from: persistedState,
+            defaultHideUnavailableRoutines: false
+        )
+
+        #expect(restored.timelineFilters.selectedImportanceUrgencyFilter == values.timelineFilters.selectedImportanceUrgencyFilter)
+        #expect(restored.timelineFilters.selectedPressureFilter == .medium)
+        #expect(restored.timelineFilters.selectedThinkingNeededFilter == .high)
+        #expect(restored.timelineFilters.selectedEstimationFilter == .withEstimate)
+    }
+
+    @Test
     func clearTaskListAndSharedFiltersClearsSharedTimelineFiltersOnly() {
         var taskFilters = HomeTaskFiltersState(
             selectedFilter: .doneToday,
@@ -277,7 +312,10 @@ struct HomeFilterEditorTests {
             includeTagMatchMode: .any,
             excludedTags: ["admin"],
             excludeTagMatchMode: .all,
-            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            selectedPressureFilter: .medium,
+            selectedThinkingNeededFilter: .high,
+            selectedEstimationFilter: .withEstimate
         )
         var timelineFilters = HomeTimelineFiltersState(
             selectedRange: .week,
@@ -288,6 +326,9 @@ struct HomeFilterEditorTests {
             selectedExcludedTags: ["admin"],
             excludeTagMatchMode: .all,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            selectedPressureFilter: .medium,
+            selectedThinkingNeededFilter: .high,
+            selectedEstimationFilter: .withEstimate,
             selectedMediaFilter: .withImage
         )
         var hideUnavailableRoutines = true
@@ -305,6 +346,9 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.excludedTags.isEmpty)
         #expect(taskFilters.excludeTagMatchMode == .any)
         #expect(taskFilters.selectedImportanceUrgencyFilter == nil)
+        #expect(taskFilters.selectedPressureFilter == nil)
+        #expect(taskFilters.selectedThinkingNeededFilter == nil)
+        #expect(taskFilters.selectedEstimationFilter == .all)
         #expect(timelineFilters.selectedRange == .week)
         #expect(timelineFilters.selectedFilterType == .done)
         #expect(timelineFilters.effectiveSelectedTags.isEmpty)
@@ -312,6 +356,9 @@ struct HomeFilterEditorTests {
         #expect(timelineFilters.selectedExcludedTags.isEmpty)
         #expect(timelineFilters.excludeTagMatchMode == .any)
         #expect(timelineFilters.selectedImportanceUrgencyFilter == nil)
+        #expect(timelineFilters.selectedPressureFilter == nil)
+        #expect(timelineFilters.selectedThinkingNeededFilter == nil)
+        #expect(timelineFilters.selectedEstimationFilter == .all)
         #expect(timelineFilters.selectedMediaFilter == .withImage)
         #expect(!hideUnavailableRoutines)
         #expect(result.didResetHideUnavailableRoutines)
@@ -475,6 +522,12 @@ struct HomeFilterEditorTests {
             timelineExcludeTagMatchMode: .all,
             taskImportanceUrgencyFilter: nil,
             timelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            taskPressureFilter: nil,
+            timelinePressureFilter: .medium,
+            taskThinkingNeededFilter: .high,
+            timelineThinkingNeededFilter: nil,
+            taskEstimationFilter: .all,
+            timelineEstimationFilter: .withEstimate,
             preferredTags: ["Amazon", "Admin"]
         )
 
@@ -483,6 +536,9 @@ struct HomeFilterEditorTests {
         #expect(state.includeTagMatchMode == .any)
         #expect(state.excludeTagMatchMode == .all)
         #expect(state.selectedImportanceUrgencyFilter == ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2))
+        #expect(state.selectedPressureFilter == .medium)
+        #expect(state.selectedThinkingNeededFilter == .high)
+        #expect(state.selectedEstimationFilter == .withEstimate)
     }
 
     @Test
@@ -506,5 +562,26 @@ struct HomeFilterEditorTests {
         #expect(state.includeTagMatchMode == .all)
         #expect(state.excludeTagMatchMode == .any)
         #expect(state.selectedImportanceUrgencyFilter == ImportanceUrgencyFilterCell(importance: .level4, urgency: .level1))
+    }
+
+    @Test
+    func sharedFilterStateResolverNormalizesLegacyNonePressureThreshold() {
+        let state = HomeSharedFilterStateResolver.resolvedState(
+            taskSelectedTags: [],
+            timelineSelectedTags: [],
+            taskExcludedTags: [],
+            timelineExcludedTags: [],
+            taskIncludeTagMatchMode: .all,
+            timelineIncludeTagMatchMode: .all,
+            taskExcludeTagMatchMode: .any,
+            timelineExcludeTagMatchMode: .any,
+            taskImportanceUrgencyFilter: nil,
+            timelineImportanceUrgencyFilter: nil,
+            taskPressureFilter: RoutineTaskPressure.none,
+            timelinePressureFilter: nil,
+            preferredTags: []
+        )
+
+        #expect(state.selectedPressureFilter == nil)
     }
 }

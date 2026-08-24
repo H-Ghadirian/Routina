@@ -145,9 +145,18 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
     }
 
     func matchesPressureFilter(_ task: Display) -> Bool {
-        HomeDisplayFilterSupport.matchesPressureFilter(
+        let pressure = configuration.taskLadderFilterValueMode == .now
+            ? task.currentTaskLadderPressure
+            : task.pressure
+        if configuration.taskLadderFilterValueMode == .now {
+            return HomeDisplayFilterSupport.matchesMinimumPressureFilter(
+                configuration.selectedPressureFilter,
+                pressure: pressure
+            )
+        }
+        return HomeDisplayFilterSupport.matchesPressureFilter(
             configuration.selectedPressureFilter,
-            pressure: task.pressure
+            pressure: pressure
         )
     }
 
@@ -223,10 +232,16 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
     }
 
     private func matchesImportanceUrgencyFilter(_ task: Display) -> Bool {
-        HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
+        let importance = configuration.taskLadderFilterValueMode == .now
+            ? task.currentTaskLadderImportance
+            : task.importance
+        let urgency = configuration.taskLadderFilterValueMode == .now
+            ? task.currentTaskLadderUrgency
+            : task.urgency
+        return HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
             configuration.selectedImportanceUrgencyFilter,
-            importance: task.importance,
-            urgency: task.urgency
+            importance: importance,
+            urgency: urgency
         )
     }
 

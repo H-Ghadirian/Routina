@@ -358,6 +358,9 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedTimelineExcludedTags: Set<String> = []
     var homeTimelineExcludeTagMatchMode: RoutineTagMatchMode
     var homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+    var homeSelectedTimelinePressureFilter: RoutineTaskPressure? = nil
+    var homeSelectedTimelineThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
+    var homeSelectedTimelineEstimationFilter: TaskEstimationFilter = .all
     var homeSelectedTimelineMediaFilter: TaskMediaFilter = .all
     var macHomeSidebarModeRawValue: String?
     var macSelectedSettingsSectionRawValue: String?
@@ -423,6 +426,9 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTimelineExcludedTags: Set<String> = [],
         homeTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
         homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
+        homeSelectedTimelinePressureFilter: RoutineTaskPressure? = nil,
+        homeSelectedTimelineThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
+        homeSelectedTimelineEstimationFilter: TaskEstimationFilter = .all,
         homeSelectedTimelineMediaFilter: TaskMediaFilter = .all,
         macHomeSidebarModeRawValue: String?,
         macSelectedSettingsSectionRawValue: String?,
@@ -487,6 +493,9 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedTimelineExcludedTags = homeSelectedTimelineExcludedTags
         self.homeTimelineExcludeTagMatchMode = homeTimelineExcludeTagMatchMode
         self.homeSelectedTimelineImportanceUrgencyFilter = homeSelectedTimelineImportanceUrgencyFilter
+        self.homeSelectedTimelinePressureFilter = homeSelectedTimelinePressureFilter
+        self.homeSelectedTimelineThinkingNeededFilter = homeSelectedTimelineThinkingNeededFilter
+        self.homeSelectedTimelineEstimationFilter = homeSelectedTimelineEstimationFilter
         self.homeSelectedTimelineMediaFilter = homeSelectedTimelineMediaFilter
         self.macHomeSidebarModeRawValue = macHomeSidebarModeRawValue
         self.macSelectedSettingsSectionRawValue = macSelectedSettingsSectionRawValue
@@ -553,6 +562,9 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedTimelineExcludedTags
         case homeTimelineExcludeTagMatchMode
         case homeSelectedTimelineImportanceUrgencyFilter
+        case homeSelectedTimelinePressureFilter
+        case homeSelectedTimelineThinkingNeededFilter
+        case homeSelectedTimelineEstimationFilter
         case homeSelectedTimelineMediaFilter
         case macHomeSidebarModeRawValue
         case macSelectedSettingsSectionRawValue
@@ -624,6 +636,9 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedTimelineExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineExcludedTags) ?? [],
             homeTimelineExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineExcludeTagMatchMode) ?? .any,
             homeSelectedTimelineImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .homeSelectedTimelineImportanceUrgencyFilter),
+            homeSelectedTimelinePressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedTimelinePressureFilter),
+            homeSelectedTimelineThinkingNeededFilter: try container.decodeIfPresent(RoutineTaskThinkingNeeded.self, forKey: .homeSelectedTimelineThinkingNeededFilter),
+            homeSelectedTimelineEstimationFilter: try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .homeSelectedTimelineEstimationFilter) ?? .all,
             homeSelectedTimelineMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedTimelineMediaFilter) ?? .all,
             macHomeSidebarModeRawValue: try container.decodeIfPresent(String.self, forKey: .macHomeSidebarModeRawValue),
             macSelectedSettingsSectionRawValue: try container.decodeIfPresent(String.self, forKey: .macSelectedSettingsSectionRawValue),
@@ -691,6 +706,9 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTimelineExcludedTags: [],
         homeTimelineExcludeTagMatchMode: .any,
         homeSelectedTimelineImportanceUrgencyFilter: nil,
+        homeSelectedTimelinePressureFilter: nil,
+        homeSelectedTimelineThinkingNeededFilter: nil,
+        homeSelectedTimelineEstimationFilter: .all,
         homeSelectedTimelineMediaFilter: .all,
         macHomeSidebarModeRawValue: nil,
         macSelectedSettingsSectionRawValue: nil,

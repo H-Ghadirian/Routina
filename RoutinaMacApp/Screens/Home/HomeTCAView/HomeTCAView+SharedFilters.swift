@@ -7,9 +7,12 @@ extension HomeTCAView {
 
         return HomeMacSharedFiltersDetailView(
             selectedImportanceUrgencyFilter: macSharedImportanceUrgencyFilterBinding,
-            importanceUrgencySummary: presentation.importanceUrgencySummary,
-            showsTagSection: !presentation.availableTags.isEmpty,
-            allTagsCount: presentation.allTagsCount,
+            selectedPressureFilter: macSharedPressureFilterBinding,
+            selectedThinkingNeededFilter: macSharedThinkingNeededFilterBinding,
+            selectedEstimationFilter: macSharedEstimationFilterBinding,
+            showsTagSection: !presentation.availableTags.isEmpty
+                || !presentation.selectedTags.isEmpty
+                || !presentation.selectedExcludedTags.isEmpty,
             availableTags: presentation.availableTags,
             suggestedRelatedTags: presentation.suggestedRelatedTags,
             availableExcludeTags: presentation.availableExcludeTags,
@@ -17,8 +20,6 @@ extension HomeTCAView {
             includeTagMatchMode: presentation.includeTagMatchMode,
             excludeTagMatchMode: presentation.excludeTagMatchMode,
             selectedExcludedTags: presentation.selectedExcludedTags,
-            tagSelectionSummary: presentation.tagSelectionSummary,
-            excludedTagSummary: presentation.excludedTagSummary,
             tagCount: { tag in
                 presentation.tagCount(for: tag)
             },
@@ -87,6 +88,36 @@ extension HomeTCAView {
         )
     }
 
+    private var macSharedPressureFilterBinding: Binding<RoutineTaskPressure?> {
+        Binding(
+            get: { macSharedFilterState(preferredTags: []).selectedPressureFilter },
+            set: { filter in
+                store.send(.selectedPressureFilterChanged(filter))
+                store.send(.selectedTimelinePressureFilterChanged(filter))
+            }
+        )
+    }
+
+    private var macSharedThinkingNeededFilterBinding: Binding<RoutineTaskThinkingNeeded?> {
+        Binding(
+            get: { macSharedFilterState(preferredTags: []).selectedThinkingNeededFilter },
+            set: { filter in
+                store.send(.selectedThinkingNeededFilterChanged(filter))
+                store.send(.selectedTimelineThinkingNeededFilterChanged(filter))
+            }
+        )
+    }
+
+    private var macSharedEstimationFilterBinding: Binding<TaskEstimationFilter> {
+        Binding(
+            get: { macSharedFilterState(preferredTags: []).selectedEstimationFilter },
+            set: { filter in
+                store.send(.selectedEstimationFilterChanged(filter))
+                store.send(.selectedTimelineEstimationFilterChanged(filter))
+            }
+        )
+    }
+
     private func cachedMacSharedFiltersPresentation(
         for signature: HomeMacSharedFiltersPresentationSignature
     ) -> HomeMacSharedFiltersPresentation {
@@ -130,8 +161,6 @@ extension HomeTCAView {
         )
 
         return HomeMacSharedFiltersPresentation(
-            importanceUrgencySummary: macSharedImportanceUrgencySummary,
-            allTagsCount: homeData.allTagTaskCount + timelineEntries.count,
             availableTags: availableTags,
             availableExcludeTags: HomeTagFilterMutationSupport.availableExcludeTags(
                 from: availableTags,
@@ -171,6 +200,12 @@ extension HomeTCAView {
             "timelineExcludeMode:\(store.selectedTimelineExcludeTagMatchMode.rawValue)",
             "taskPriority:\(macSignatureString(store.selectedImportanceUrgencyFilter))",
             "timelinePriority:\(macSignatureString(store.selectedTimelineImportanceUrgencyFilter))",
+            "taskPressure:\(store.selectedPressureFilter?.rawValue ?? "")",
+            "timelinePressure:\(store.selectedTimelinePressureFilter?.rawValue ?? "")",
+            "taskThinking:\(store.selectedThinkingNeededFilter?.rawValue ?? "")",
+            "timelineThinking:\(store.selectedTimelineThinkingNeededFilter?.rawValue ?? "")",
+            "taskEstimate:\(store.selectedEstimationFilter.rawValue)",
+            "timelineEstimate:\(store.selectedTimelineEstimationFilter.rawValue)",
             "timelineType:\(store.selectedTimelineFilterType.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled, includingPlaces: isPlacesEnabled, includingNotes: isNotesEnabled, includingAway: isAwayEnabled, includingSleep: includesMacSleepTimelineFilters).rawValue)",
             "timelineMedia:\(store.selectedTimelineMediaFilter.rawValue)",
             "eventsEmotions:\(areMacEventEmotionActionsEnabled)",
@@ -197,6 +232,11 @@ extension HomeTCAView {
                     macSignatureString(display.tags),
                     display.importance.rawValue,
                     display.urgency.rawValue,
+                    display.currentTaskLadderImportance.rawValue,
+                    display.currentTaskLadderUrgency.rawValue,
+                    display.currentTaskLadderPressure.rawValue,
+                    display.thinkingNeeded.rawValue,
+                    display.estimatedDurationMinutes?.description ?? "",
                 ].joined(separator: "|")
             }
             .sorted()
@@ -212,6 +252,16 @@ extension HomeTCAView {
                 task.tagsStorage,
                 task.importanceRawValue,
                 task.urgencyRawValue,
+                task.pressureRawValue,
+                task.thinkingNeededRawValue,
+                task.estimatedDurationMinutes?.description ?? "",
+                task.temporalWeightRuleStorage,
+                task.scheduleAnchor?.timeIntervalSinceReferenceDate.description ?? "",
+                task.deadline?.timeIntervalSinceReferenceDate.description ?? "",
+                task.plannedDate?.timeIntervalSinceReferenceDate.description ?? "",
+                task.recurrenceKindRawValue,
+                task.recurrenceRuleStorage,
+                task.interval.description,
                 task.scheduleModeRawValue,
                 task.lastDone?.timeIntervalSinceReferenceDate.description ?? "",
                 task.canceledAt?.timeIntervalSinceReferenceDate.description ?? "",
@@ -339,13 +389,6 @@ extension HomeTCAView {
         macSharedFilterState(preferredTags: []).selectedImportanceUrgencyFilter
     }
 
-    private var macSharedImportanceUrgencySummary: String {
-        guard let filter = macSharedImportanceUrgencyFilter else {
-            return "Showing tasks and done items across all importance and urgency levels."
-        }
-        return "Showing tasks and done items with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
-    }
-
     private func macSharedFilterState(preferredTags: [String]) -> HomeSharedFilterState {
         HomeSharedFilterStateResolver.resolvedState(
             taskSelectedTags: store.selectedTags,
@@ -358,6 +401,12 @@ extension HomeTCAView {
             timelineExcludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
             taskImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             timelineImportanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
+            taskPressureFilter: store.selectedPressureFilter,
+            timelinePressureFilter: store.selectedTimelinePressureFilter,
+            taskThinkingNeededFilter: store.selectedThinkingNeededFilter,
+            timelineThinkingNeededFilter: store.selectedTimelineThinkingNeededFilter,
+            taskEstimationFilter: store.selectedEstimationFilter,
+            timelineEstimationFilter: store.selectedTimelineEstimationFilter,
             preferredTags: preferredTags
         )
     }
@@ -397,6 +446,24 @@ extension HomeTCAView {
         }
         if timelineFilter != sharedState.selectedImportanceUrgencyFilter {
             store.send(.selectedTimelineImportanceUrgencyFilterChanged(sharedState.selectedImportanceUrgencyFilter))
+        }
+        if store.selectedPressureFilter != sharedState.selectedPressureFilter {
+            store.send(.selectedPressureFilterChanged(sharedState.selectedPressureFilter))
+        }
+        if store.selectedTimelinePressureFilter != sharedState.selectedPressureFilter {
+            store.send(.selectedTimelinePressureFilterChanged(sharedState.selectedPressureFilter))
+        }
+        if store.selectedThinkingNeededFilter != sharedState.selectedThinkingNeededFilter {
+            store.send(.selectedThinkingNeededFilterChanged(sharedState.selectedThinkingNeededFilter))
+        }
+        if store.selectedTimelineThinkingNeededFilter != sharedState.selectedThinkingNeededFilter {
+            store.send(.selectedTimelineThinkingNeededFilterChanged(sharedState.selectedThinkingNeededFilter))
+        }
+        if store.selectedEstimationFilter != sharedState.selectedEstimationFilter {
+            store.send(.selectedEstimationFilterChanged(sharedState.selectedEstimationFilter))
+        }
+        if store.selectedTimelineEstimationFilter != sharedState.selectedEstimationFilter {
+            store.send(.selectedTimelineEstimationFilterChanged(sharedState.selectedEstimationFilter))
         }
     }
 
@@ -514,8 +581,6 @@ struct HomeMacSharedFiltersPresentationSignature: Hashable {
 }
 
 struct HomeMacSharedFiltersPresentation {
-    let importanceUrgencySummary: String
-    let allTagsCount: Int
     let availableTags: [String]
     let availableExcludeTags: [String]
     let suggestedRelatedTags: [String]
@@ -525,23 +590,6 @@ struct HomeMacSharedFiltersPresentation {
     let excludeTagMatchMode: RoutineTagMatchMode
     let tagCountsByNormalizedName: [String: Int]
     let tagColorsByNormalizedName: [String: Color]
-
-    var tagSelectionSummary: String {
-        guard !selectedTags.isEmpty else {
-            let count = availableTags.count
-            return "\(count) \(count == 1 ? "tag" : "tags") available"
-        }
-
-        return "\(includeTagMatchMode.rawValue) of \(selectedTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
-    }
-
-    var excludedTagSummary: String {
-        guard !selectedExcludedTags.isEmpty else {
-            return "Select tags to hide tasks and done items that have them."
-        }
-
-        return "Hiding items tagged: \(selectedExcludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
-    }
 
     func tagCount(for tag: String) -> Int {
         guard let key = RoutineTag.normalized(tag) else { return 0 }
@@ -556,9 +604,10 @@ struct HomeMacSharedFiltersPresentation {
 
 private struct HomeMacSharedFiltersDetailView: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
-    let importanceUrgencySummary: String
+    @Binding var selectedPressureFilter: RoutineTaskPressure?
+    @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
+    @Binding var selectedEstimationFilter: TaskEstimationFilter
     let showsTagSection: Bool
-    let allTagsCount: Int
     let availableTags: [String]
     let suggestedRelatedTags: [String]
     let availableExcludeTags: [String]
@@ -566,8 +615,6 @@ private struct HomeMacSharedFiltersDetailView: View {
     let includeTagMatchMode: RoutineTagMatchMode
     let excludeTagMatchMode: RoutineTagMatchMode
     let selectedExcludedTags: Set<String>
-    let tagSelectionSummary: String
-    let excludedTagSummary: String
     let tagCount: (String) -> Int
     let tagColor: (String) -> Color?
     let onSelectTags: (Set<String>) -> Void
@@ -578,9 +625,11 @@ private struct HomeMacSharedFiltersDetailView: View {
 
     var body: some View {
         Group {
-            HomeMacImportanceUrgencyDisclosureSection(
-                selectedFilter: $selectedImportanceUrgencyFilter,
-                summaryText: importanceUrgencySummary
+            HomeMacTaskLadderFiltersSection(
+                selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
+                selectedPressureFilter: $selectedPressureFilter,
+                selectedThinkingNeededFilter: $selectedThinkingNeededFilter,
+                selectedEstimationFilter: $selectedEstimationFilter
             )
 
             if showsTagSection {
@@ -591,7 +640,6 @@ private struct HomeMacSharedFiltersDetailView: View {
                     tint: .teal
                 ) {
                     HomeMacTimelineTagFiltersView(
-                        allTagsCount: allTagsCount,
                         availableTags: availableTags,
                         suggestedRelatedTags: suggestedRelatedTags,
                         availableExcludeTags: availableExcludeTags,
@@ -599,8 +647,6 @@ private struct HomeMacSharedFiltersDetailView: View {
                         includeTagMatchMode: includeTagMatchMode,
                         excludeTagMatchMode: excludeTagMatchMode,
                         selectedExcludedTags: selectedExcludedTags,
-                        tagSelectionSummary: tagSelectionSummary,
-                        excludedTagSummary: excludedTagSummary,
                         tagCount: tagCount,
                         tagColor: tagColor,
                         onSelectTags: onSelectTags,
@@ -615,14 +661,15 @@ private struct HomeMacSharedFiltersDetailView: View {
     }
 
     private var tagsSummary: String {
+        var rules: [String] = []
         if !selectedTags.isEmpty {
-            return tagSelectionSummary
+            let mode = selectedTags.count > 1 ? "\(includeTagMatchMode.rawValue) of " : ""
+            rules.append("Includes \(mode)\(selectedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
         }
-
         if !selectedExcludedTags.isEmpty {
-            return excludedTagSummary
+            let mode = selectedExcludedTags.count > 1 ? "\(excludeTagMatchMode.rawValue) of " : ""
+            rules.append("Excludes \(mode)\(selectedExcludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
         }
-
-        return "\(availableTags.count) available tags"
+        return rules.isEmpty ? "No tag filter" : rules.joined(separator: " · ")
     }
 }

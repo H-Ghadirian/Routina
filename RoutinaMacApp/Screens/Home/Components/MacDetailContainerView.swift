@@ -39,6 +39,8 @@ enum MacHomeDetailAnimation {
 /// observation tracking after several view swaps, causing state changes
 /// (like toggling the filter panel) to stop updating the detail column.
 struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView: View, BoardInspectorView: View>: View {
+    @Environment(\.calendar) private var calendar
+
     let store: StoreOf<HomeFeature>
     let isBoardPresented: Bool
     let isTimelinePresented: Bool
@@ -383,24 +385,49 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
 
     private var plannerCalendarSharedFilter: (RoutineTask) -> Bool {
         let selectedImportanceUrgencyFilter = store.selectedImportanceUrgencyFilter
+        let selectedPressureFilter = store.selectedPressureFilter
+        let selectedThinkingNeededFilter = store.selectedThinkingNeededFilter
+        let selectedEstimationFilter = store.selectedEstimationFilter
         let selectedTags = store.selectedTags
         let includeTagMatchMode = store.includeTagMatchMode
         let excludedTags = store.excludedTags
         let excludeTagMatchMode = store.excludeTagMatchMode
         let hasSelectedTags = !selectedTags.isEmpty
         let hasExcludedTags = !excludedTags.isEmpty
+        let hasTaskLadderFilter = selectedImportanceUrgencyFilter != nil
+            || selectedPressureFilter != nil
+            || selectedThinkingNeededFilter != nil
+            || selectedEstimationFilter != .all
+        let referenceDate = Date()
+        let filterCalendar = calendar
 
-        guard selectedImportanceUrgencyFilter != nil || hasSelectedTags || hasExcludedTags else {
+        guard hasTaskLadderFilter || hasSelectedTags || hasExcludedTags else {
             return { _ in true }
         }
 
         return { task in
-            if !HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
-                selectedImportanceUrgencyFilter,
-                importance: task.importance,
-                urgency: task.urgency
-            ) {
-                return false
+            if hasTaskLadderFilter {
+                let currentValues = RoutineTaskTemporalWeightResolver.effectiveWeights(
+                    for: task,
+                    referenceDate: referenceDate,
+                    calendar: filterCalendar
+                )
+                if !HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
+                    selectedImportanceUrgencyFilter,
+                    importance: currentValues.importance,
+                    urgency: currentValues.urgency
+                ) || !HomeDisplayFilterSupport.matchesMinimumPressureFilter(
+                    selectedPressureFilter,
+                    pressure: currentValues.pressure
+                ) || !HomeDisplayFilterSupport.matchesThinkingNeededFilter(
+                    selectedThinkingNeededFilter,
+                    thinkingNeeded: task.thinkingNeeded
+                ) || !HomeDisplayFilterSupport.matchesEstimationFilter(
+                    selectedEstimationFilter,
+                    estimatedDurationMinutes: task.estimatedDurationMinutes
+                ) {
+                    return false
+                }
             }
 
             guard hasSelectedTags || hasExcludedTags else { return true }
@@ -424,17 +451,29 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
 
     private var plannerCalendarSharedFilterCacheSeed: Int {
         let selectedImportanceUrgencyFilter = store.selectedImportanceUrgencyFilter
+        let selectedPressureFilter = store.selectedPressureFilter
+        let selectedThinkingNeededFilter = store.selectedThinkingNeededFilter
+        let selectedEstimationFilter = store.selectedEstimationFilter
         let selectedTags = store.selectedTags
         let includeTagMatchMode = store.includeTagMatchMode
         let excludedTags = store.excludedTags
         let excludeTagMatchMode = store.excludeTagMatchMode
 
-        guard selectedImportanceUrgencyFilter != nil || !selectedTags.isEmpty || !excludedTags.isEmpty else {
+        guard selectedImportanceUrgencyFilter != nil
+                || selectedPressureFilter != nil
+                || selectedThinkingNeededFilter != nil
+                || selectedEstimationFilter != .all
+                || !selectedTags.isEmpty
+                || !excludedTags.isEmpty else {
             return 0
         }
 
         var hasher = Hasher()
         hasher.combine(selectedImportanceUrgencyFilter)
+        hasher.combine(selectedPressureFilter)
+        hasher.combine(selectedThinkingNeededFilter)
+        hasher.combine(selectedEstimationFilter)
+        hasher.combine(calendar.startOfDay(for: Date()))
         hasher.combine(selectedTags.sorted())
         hasher.combine(includeTagMatchMode.rawValue)
         hasher.combine(excludedTags.sorted())

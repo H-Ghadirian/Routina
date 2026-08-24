@@ -11,6 +11,9 @@ struct HomeSharedFilterState: Equatable {
     var includeTagMatchMode: RoutineTagMatchMode
     var excludeTagMatchMode: RoutineTagMatchMode
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    var selectedPressureFilter: RoutineTaskPressure?
+    var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
+    var selectedEstimationFilter: TaskEstimationFilter
 }
 
 enum HomeSharedFilterStateResolver {
@@ -25,6 +28,12 @@ enum HomeSharedFilterStateResolver {
         timelineExcludeTagMatchMode: RoutineTagMatchMode,
         taskImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
         timelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
+        taskPressureFilter: RoutineTaskPressure? = nil,
+        timelinePressureFilter: RoutineTaskPressure? = nil,
+        taskThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
+        timelineThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
+        taskEstimationFilter: TaskEstimationFilter = .all,
+        timelineEstimationFilter: TaskEstimationFilter = .all,
         preferredTags: [String]
     ) -> HomeSharedFilterState {
         let selectedTags = mergedTagSet(
@@ -61,6 +70,18 @@ enum HomeSharedFilterStateResolver {
             selectedImportanceUrgencyFilter: resolvedImportanceUrgencyFilter(
                 taskImportanceUrgencyFilter,
                 timelineImportanceUrgencyFilter
+            ),
+            selectedPressureFilter: resolvedPressureFilter(
+                taskPressureFilter,
+                timelinePressureFilter
+            ),
+            selectedThinkingNeededFilter: resolvedOptionalFilter(
+                taskThinkingNeededFilter,
+                timelineThinkingNeededFilter
+            ),
+            selectedEstimationFilter: resolvedEstimationFilter(
+                taskEstimationFilter,
+                timelineEstimationFilter
             )
         )
     }
@@ -93,6 +114,32 @@ enum HomeSharedFilterStateResolver {
         let normalizedTimelineFilter = ImportanceUrgencyFilterCell.normalized(timelineFilter)
         guard normalizedTaskFilter != normalizedTimelineFilter else { return normalizedTaskFilter }
         return normalizedTaskFilter ?? normalizedTimelineFilter
+    }
+
+    private static func resolvedOptionalFilter<Value: Equatable>(
+        _ taskFilter: Value?,
+        _ timelineFilter: Value?
+    ) -> Value? {
+        guard taskFilter != timelineFilter else { return taskFilter }
+        return taskFilter ?? timelineFilter
+    }
+
+    private static func resolvedPressureFilter(
+        _ taskFilter: RoutineTaskPressure?,
+        _ timelineFilter: RoutineTaskPressure?
+    ) -> RoutineTaskPressure? {
+        resolvedOptionalFilter(
+            taskFilter == RoutineTaskPressure.none ? nil : taskFilter,
+            timelineFilter == RoutineTaskPressure.none ? nil : timelineFilter
+        )
+    }
+
+    private static func resolvedEstimationFilter(
+        _ taskFilter: TaskEstimationFilter,
+        _ timelineFilter: TaskEstimationFilter
+    ) -> TaskEstimationFilter {
+        guard taskFilter != timelineFilter else { return taskFilter }
+        return taskFilter == .all ? timelineFilter : taskFilter
     }
 }
 
@@ -134,6 +181,9 @@ enum HomeTimelineFilterMutation: Equatable {
     case selectedExcludedTags(Set<String>)
     case excludeTagMatchMode(RoutineTagMatchMode)
     case selectedImportanceUrgencyFilter(ImportanceUrgencyFilterCell?)
+    case selectedPressureFilter(RoutineTaskPressure?)
+    case selectedThinkingNeededFilter(RoutineTaskThinkingNeeded?)
+    case selectedEstimationFilter(TaskEstimationFilter)
     case selectedMediaFilter(TaskMediaFilter)
 }
 
@@ -228,6 +278,9 @@ enum HomeFilterEditor {
         timelineFilters.selectedExcludedTags = []
         timelineFilters.excludeTagMatchMode = .any
         timelineFilters.selectedImportanceUrgencyFilter = nil
+        timelineFilters.selectedPressureFilter = nil
+        timelineFilters.selectedThinkingNeededFilter = nil
+        timelineFilters.selectedEstimationFilter = .all
 
         return HomeFilterMutationResult(didResetHideUnavailableRoutines: didResetHideUnavailableRoutines)
     }
@@ -355,6 +408,15 @@ enum HomeFilterEditor {
 
         case let .selectedImportanceUrgencyFilter(filter):
             timelineFilters.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(filter)
+
+        case let .selectedPressureFilter(filter):
+            timelineFilters.selectedPressureFilter = filter
+
+        case let .selectedThinkingNeededFilter(filter):
+            timelineFilters.selectedThinkingNeededFilter = filter
+
+        case let .selectedEstimationFilter(filter):
+            timelineFilters.selectedEstimationFilter = filter
 
         case let .selectedMediaFilter(filter):
             timelineFilters.selectedMediaFilter = filter

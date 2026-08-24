@@ -172,3 +172,157 @@ struct HomeMacImportanceUrgencyMatrixView: View {
         }
     }
 }
+
+struct HomeMacTaskLadderFiltersSection: View {
+    @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    @Binding var selectedPressureFilter: RoutineTaskPressure?
+    @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
+    @Binding var selectedEstimationFilter: TaskEstimationFilter
+
+    var body: some View {
+        HomeMacCollapsibleFilterSection(
+            title: "Task Ladder values",
+            summaryText: summaryText,
+            systemImage: "list.number",
+            tint: .orange
+        ) {
+            VStack(alignment: .leading, spacing: 16) {
+                filterControl("Importance") {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Minimum current importance",
+                        options: importanceOptions,
+                        selection: minimumImportanceBinding,
+                        fillsAvailableWidth: true,
+                        maximumSegmentsPerRow: 2
+                    ) { value in
+                        Text(value.map { "\($0.title)+" } ?? "All")
+                    }
+                }
+
+                filterControl("Urgency") {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Minimum current urgency",
+                        options: urgencyOptions,
+                        selection: minimumUrgencyBinding,
+                        fillsAvailableWidth: true,
+                        maximumSegmentsPerRow: 2
+                    ) { value in
+                        Text(value.map { "\($0.title)+" } ?? "All")
+                    }
+                }
+
+                filterControl("Pressure") {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Minimum current pressure",
+                        options: pressureOptions,
+                        selection: $selectedPressureFilter,
+                        fillsAvailableWidth: true,
+                        maximumSegmentsPerRow: 2
+                    ) { value in
+                        Text(value.map { "\($0.title)+" } ?? "All")
+                    }
+                }
+
+                filterControl("Thinking needed") {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Thinking needed",
+                        options: thinkingOptions,
+                        selection: $selectedThinkingNeededFilter,
+                        fillsAvailableWidth: true,
+                        maximumSegmentsPerRow: 2
+                    ) { value in
+                        Text(value?.title ?? "All")
+                    }
+                }
+
+                filterControl("Estimated time") {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Estimated time",
+                        options: TaskEstimationFilter.allCases,
+                        selection: $selectedEstimationFilter,
+                        fillsAvailableWidth: true,
+                        maximumSegmentsPerRow: 2
+                    ) { value in
+                        Label(value.title, systemImage: value.systemImage)
+                    }
+                }
+
+                Text("Importance, Urgency, and Pressure use each task's current Now value.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func filterControl<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            content()
+        }
+    }
+
+    private var importanceOptions: [RoutineTaskImportance?] {
+        [nil] + RoutineTaskImportance.allCases.dropFirst().map(Optional.some)
+    }
+
+    private var urgencyOptions: [RoutineTaskUrgency?] {
+        [nil] + RoutineTaskUrgency.allCases.dropFirst().map(Optional.some)
+    }
+
+    private var pressureOptions: [RoutineTaskPressure?] {
+        [nil] + RoutineTaskPressure.allCases.dropFirst().map(Optional.some)
+    }
+
+    private var thinkingOptions: [RoutineTaskThinkingNeeded?] {
+        [nil] + RoutineTaskThinkingNeeded.allCases.map(Optional.some)
+    }
+
+    private var minimumImportanceBinding: Binding<RoutineTaskImportance?> {
+        Binding(
+            get: { selectedImportanceUrgencyFilter?.minimumImportance },
+            set: {
+                selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.updatingMinimumImportance(
+                    $0,
+                    in: selectedImportanceUrgencyFilter
+                )
+            }
+        )
+    }
+
+    private var minimumUrgencyBinding: Binding<RoutineTaskUrgency?> {
+        Binding(
+            get: { selectedImportanceUrgencyFilter?.minimumUrgency },
+            set: {
+                selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.updatingMinimumUrgency(
+                    $0,
+                    in: selectedImportanceUrgencyFilter
+                )
+            }
+        )
+    }
+
+    private var summaryText: String {
+        var values: [String] = []
+        if let importance = selectedImportanceUrgencyFilter?.minimumImportance {
+            values.append("Importance \(importance.title)+")
+        }
+        if let urgency = selectedImportanceUrgencyFilter?.minimumUrgency {
+            values.append("Urgency \(urgency.title)+")
+        }
+        if let pressure = selectedPressureFilter {
+            values.append("Pressure \(pressure.title)+")
+        }
+        if let thinking = selectedThinkingNeededFilter {
+            values.append("Thinking \(thinking.title)")
+        }
+        if selectedEstimationFilter != .all {
+            values.append("Estimated time: \(selectedEstimationFilter.title)")
+        }
+        return values.isEmpty ? "No Task Ladder value filters" : values.joined(separator: " · ")
+    }
+}

@@ -32,6 +32,9 @@ protocol HomeTaskListDisplay {
     var urgency: RoutineTaskUrgency { get }
     var pressure: RoutineTaskPressure { get }
     var thinkingNeeded: RoutineTaskThinkingNeeded { get }
+    var currentTaskLadderImportance: RoutineTaskImportance { get }
+    var currentTaskLadderUrgency: RoutineTaskUrgency { get }
+    var currentTaskLadderPressure: RoutineTaskPressure { get }
     var scheduleAnchor: Date? { get }
     var pausedAt: Date? { get }
     var pinnedAt: Date? { get }
@@ -98,6 +101,18 @@ extension HomeTaskListDisplay {
 
     var thinkingNeeded: RoutineTaskThinkingNeeded {
         .none
+    }
+
+    var currentTaskLadderImportance: RoutineTaskImportance {
+        importance
+    }
+
+    var currentTaskLadderUrgency: RoutineTaskUrgency {
+        urgency
+    }
+
+    var currentTaskLadderPressure: RoutineTaskPressure {
+        pressure
     }
 
     var lastSatisfiedScheduledOccurrenceAt: Date? {
@@ -318,4 +333,5 @@ struct HomeTaskListFilteringConfiguration {
     var routineTasks: [RoutineTask]
     var referenceDate: Date
     var calendar: Calendar
+    var taskLadderFilterValueMode: TaskRankingValueMode = .base
 }

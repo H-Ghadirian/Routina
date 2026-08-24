@@ -133,6 +133,9 @@ struct HomeFeatureMacNavigationRouter {
         state.selectedTimelineExcludedTags = []
         state.selectedTimelineExcludeTagMatchMode = .any
         state.selectedTimelineImportanceUrgencyFilter = nil
+        state.selectedTimelinePressureFilter = nil
+        state.selectedTimelineThinkingNeededFilter = nil
+        state.selectedTimelineEstimationFilter = .all
         state.selectedTimelineMediaFilter = .all
         HomeSelectionEditor.clearTaskSelection(&state.selection)
         persistTemporaryViewState(state)
@@ -155,6 +158,9 @@ struct HomeFeatureMacNavigationRouter {
         state.selectedTimelineExcludedTags = []
         state.selectedTimelineExcludeTagMatchMode = .any
         state.selectedTimelineImportanceUrgencyFilter = nil
+        state.selectedTimelinePressureFilter = nil
+        state.selectedTimelineThinkingNeededFilter = nil
+        state.selectedTimelineEstimationFilter = .all
         state.selectedTimelineMediaFilter = .all
         HomeSelectionEditor.clearTaskSelection(&state.selection)
         persistTemporaryViewState(state)

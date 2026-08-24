@@ -97,6 +97,11 @@ struct HomeRoutineDisplayFactory {
         let taskDescription = task.taskDescription
         let taskNotes = CalendarTaskImportSupport.displayNotes(from: task.notes)
         let goalTitles = task.goalIDs.compactMap { goalsByID[$0]?.displayTitle }
+        let currentTaskLadderValues = RoutineTaskTemporalWeightResolver.effectiveWeights(
+            for: task,
+            referenceDate: now,
+            calendar: calendar
+        )
 
         return HomeRoutineDisplayCore(
             taskID: task.id,
@@ -151,6 +156,9 @@ struct HomeRoutineDisplayFactory {
             urgency: task.urgency,
             pressure: task.pressure,
             thinkingNeeded: task.thinkingNeeded,
+            currentTaskLadderImportance: currentTaskLadderValues.importance,
+            currentTaskLadderUrgency: currentTaskLadderValues.urgency,
+            currentTaskLadderPressure: currentTaskLadderValues.pressure,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
             snoozedUntil: task.snoozedUntil,

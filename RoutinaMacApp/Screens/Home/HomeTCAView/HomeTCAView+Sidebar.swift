@@ -146,6 +146,9 @@ extension HomeTCAView {
             || !store.selectedTimelineTags.isEmpty
             || !store.selectedTimelineFlags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
+            || store.selectedTimelinePressureFilter != nil
+            || store.selectedTimelineThinkingNeededFilter != nil
+            || store.selectedTimelineEstimationFilter != .all
             || store.selectedTimelineMediaFilter != .all
             || !store.selectedTimelineExcludedTags.isEmpty
     }
@@ -239,6 +242,9 @@ extension HomeTCAView {
         store.send(.selectedTimelineFlagsChanged([]))
         store.send(.selectedTimelineIncludeFlagMatchModeChanged(.all))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
+        store.send(.selectedTimelinePressureFilterChanged(nil))
+        store.send(.selectedTimelineThinkingNeededFilterChanged(nil))
+        store.send(.selectedTimelineEstimationFilterChanged(.all))
         store.send(.selectedTimelineMediaFilterChanged(.all))
         store.send(.selectedTimelineExcludedTagsChanged([]))
         store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
@@ -1049,6 +1055,9 @@ extension HomeTCAView {
         store.send(.selectedTimelineExcludedTagsChanged([]))
         store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
+        store.send(.selectedTimelinePressureFilterChanged(nil))
+        store.send(.selectedTimelineThinkingNeededFilterChanged(nil))
+        store.send(.selectedTimelineEstimationFilterChanged(.all))
         store.send(.selectedTimelineMediaFilterChanged(.all))
         store.send(.macSidebarSelectionChanged(.timelineEntry(eventID)))
         macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: eventID)
@@ -1075,6 +1084,9 @@ extension HomeTCAView {
         store.send(.selectedTimelineExcludedTagsChanged([]))
         store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
+        store.send(.selectedTimelinePressureFilterChanged(nil))
+        store.send(.selectedTimelineThinkingNeededFilterChanged(nil))
+        store.send(.selectedTimelineEstimationFilterChanged(.all))
         store.send(.selectedTimelineMediaFilterChanged(.all))
         store.send(.macSidebarSelectionChanged(.timelineEntry(emotionID)))
         macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: emotionID)

@@ -1248,6 +1248,54 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntriesCarriesCurrentTaskLadderValuesForTaskActivity() throws {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let interval = 10
+        let dueTodayAnchor = try #require(
+            calendar.date(byAdding: .day, value: -interval, to: now)
+        )
+        let task = RoutineTask(
+            name: "Due-weighted task",
+            importance: .level1,
+            urgency: .level1,
+            pressure: .low,
+            thinkingNeeded: .high,
+            scheduleMode: .fixedInterval,
+            interval: Int16(interval),
+            recurrenceRule: .interval(days: interval),
+            lastDone: dueTodayAnchor,
+            scheduleAnchor: dueTodayAnchor,
+            estimatedDurationMinutes: 45,
+            hasExplicitImportance: true,
+            hasExplicitUrgency: true
+        )
+        task.temporalWeightRule = RoutineTaskTemporalWeightRule(
+            importanceAtDue: .level4,
+            urgencyAtDue: .level3,
+            pressureAtDue: .high
+        )
+        let log = makeLog(taskID: task.id, timestamp: now)
+
+        let entry = try #require(TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        ).first)
+
+        #expect(entry.hasTaskLadderValues)
+        #expect(entry.importance == .level1)
+        #expect(entry.currentImportance == .level4)
+        #expect(entry.currentUrgency == .level3)
+        #expect(entry.currentPressure == .high)
+        #expect(entry.thinkingNeeded == .high)
+        #expect(entry.estimatedDurationMinutes == 45)
+    }
+
+    @Test
     func timelineFlagRuleHidesByDefaultAndSelectedFlagsDeliberatelyRevealMatches() {
         let privateEntry = TimelineEntry(
             id: UUID(),

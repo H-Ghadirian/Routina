@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct HomeMacTimelineTagFiltersView: View {
-    let allTagsCount: Int
     let availableTags: [String]
     let suggestedRelatedTags: [String]
     let availableExcludeTags: [String]
@@ -9,8 +8,6 @@ struct HomeMacTimelineTagFiltersView: View {
     let includeTagMatchMode: RoutineTagMatchMode
     let excludeTagMatchMode: RoutineTagMatchMode
     let selectedExcludedTags: Set<String>
-    let tagSelectionSummary: String
-    let excludedTagSummary: String
     let tagCount: (String) -> Int
     let tagColor: (String) -> Color?
     let onSelectTags: (Set<String>) -> Void
@@ -19,196 +16,272 @@ struct HomeMacTimelineTagFiltersView: View {
     let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
     let onToggleExcludedTag: (String) -> Void
 
+    @State private var isIncludePickerPresented = false
+    @State private var isExcludePickerPresented = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             includeTagSection
-
-            if !suggestedRelatedTags.isEmpty {
-                suggestedRelatedTagSection
-            }
-
-            if !availableExcludeTags.isEmpty {
-                excludeTagSection
-            }
+            excludeTagSection
         }
     }
 
     private var includeTagSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Show tasks with")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Include tags")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
 
-            Text(tagSelectionSummary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Show tasks with",
-                options: RoutineTagMatchMode.allCases,
-                selection: Binding(
-                    get: { includeTagMatchMode },
-                    set: { newValue in onIncludeTagMatchModeChange(newValue) }
-                ),
-                fillsAvailableWidth: true
-            ) { mode in
-                Text(mode.rawValue)
+            if selectedTags.isEmpty {
+                Text("No tag filter")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                selectedTagChips(tags: selectedTags, isExcluded: false)
             }
 
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                if selectedTags.isEmpty {
-                    HomeMacTagChipView(
-                        title: "All Tags",
-                        count: allTagsCount,
-                        systemImage: "tag.slash.fill",
-                        isSelected: true
-                    ) {
-                        onSelectTags([])
-                    }
-                } else {
-                    ForEach(selectedTags.sorted(), id: \.self) { tag in
-                        let color = tagColor(tag)
-                        HomeMacTagChipView(
-                            title: "#\(tag)",
-                            count: tagCount(tag),
-                            systemImage: "tag.fill",
-                            isSelected: true,
-                            selectedColor: color ?? .accentColor,
-                            unselectedColor: color
-                        ) {
-                            var newSelection = selectedTags
-                            newSelection = newSelection.filter { !RoutineTag.contains($0, in: [tag]) }
-                            onSelectTags(newSelection)
-                        }
-                    }
-                }
+            if selectedTags.count > 1 {
+                matchModeControl(
+                    title: "Include when a task has",
+                    selection: includeTagMatchMode,
+                    onSelect: onIncludeTagMatchModeChange
+                )
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Add more")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(availableTags.filter { tag in
-                    !selectedTags.contains { RoutineTag.contains($0, in: [tag]) }
-                }, id: \.self) { tag in
-                    let color = tagColor(tag)
-                    HomeMacTagChipView(
-                        title: "#\(tag)",
-                        count: tagCount(tag),
-                        systemImage: "tag.fill",
-                        isSelected: false,
-                        selectedColor: color ?? .accentColor,
-                        unselectedColor: color
-                    ) {
-                        var newSelection = selectedTags
-                        newSelection.insert(tag)
-                        onSelectTags(newSelection)
-                    }
-                }
+            Button {
+                isIncludePickerPresented = true
+            } label: {
+                Label("Add tags…", systemImage: "plus")
+                    .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+                    .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private var suggestedRelatedTagSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Suggested Related Tags")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(suggestedRelatedTags, id: \.self) { tag in
-                    let color = tagColor(tag)
-                    HomeMacTagChipView(
-                        title: "#\(tag)",
-                        count: tagCount(tag),
-                        systemImage: "tag.fill",
-                        isSelected: false,
-                        selectedColor: color ?? .accentColor,
-                        unselectedColor: color
-                    ) {
-                        onSelectSuggestedTag(tag)
-                    }
-                }
+            .buttonStyle(.bordered)
+            .popover(isPresented: $isIncludePickerPresented, arrowEdge: .trailing) {
+                HomeMacTagFilterPicker(
+                    title: "Include tags",
+                    availableTags: availableTags,
+                    suggestedTags: suggestedRelatedTags,
+                    selectedTags: selectedTags,
+                    tagCount: tagCount,
+                    tagColor: tagColor,
+                    selectedTint: .accentColor,
+                    onToggle: toggleIncludedTag
+                )
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private var excludeTagSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Hide tasks with")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Exclude tags")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
 
-            Text(excludedTagSummary)
+            if selectedExcludedTags.isEmpty {
+                Text("No excluded tags")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                selectedTagChips(tags: selectedExcludedTags, isExcluded: true)
+            }
+
+            if selectedExcludedTags.count > 1 {
+                matchModeControl(
+                    title: "Exclude when a task has",
+                    selection: excludeTagMatchMode,
+                    onSelect: onExcludeTagMatchModeChange
+                )
+            }
+
+            Button {
+                isExcludePickerPresented = true
+            } label: {
+                Label("Add tags to exclude…", systemImage: "plus")
+                    .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.bordered)
+            .popover(isPresented: $isExcludePickerPresented, arrowEdge: .trailing) {
+                HomeMacTagFilterPicker(
+                    title: "Exclude tags",
+                    availableTags: availableExcludeTags,
+                    suggestedTags: [],
+                    selectedTags: selectedExcludedTags,
+                    tagCount: tagCount,
+                    tagColor: tagColor,
+                    selectedTint: .red,
+                    onToggle: onToggleExcludedTag
+                )
+            }
+        }
+    }
+
+    private func selectedTagChips(tags: Set<String>, isExcluded: Bool) -> some View {
+        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+            ForEach(tags.sorted(), id: \.self) { tag in
+                HomeMacTagChipView(
+                    title: "#\(tag)",
+                    count: tagCount(tag),
+                    systemImage: isExcluded ? "tag.slash.fill" : "tag.fill",
+                    isSelected: true,
+                    selectedColor: isExcluded ? .red : (tagColor(tag) ?? .accentColor),
+                    unselectedColor: tagColor(tag)
+                ) {
+                    if isExcluded {
+                        onToggleExcludedTag(tag)
+                    } else {
+                        toggleIncludedTag(tag)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func matchModeControl(
+        title: String,
+        selection: RoutineTagMatchMode,
+        onSelect: @escaping (RoutineTagMatchMode) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
 
             RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Hide tasks with",
+                accessibilityLabel: title,
                 options: RoutineTagMatchMode.allCases,
-                selection: Binding(
-                    get: { excludeTagMatchMode },
-                    set: { newValue in onExcludeTagMatchModeChange(newValue) }
-                ),
+                selection: selection,
+                onSelect: onSelect,
                 fillsAvailableWidth: true
             ) { mode in
                 Text(mode.rawValue)
             }
+        }
+    }
 
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                if selectedExcludedTags.isEmpty {
-                    Text("No hidden tags")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(selectedExcludedTags.sorted(), id: \.self) { tag in
-                        HomeMacTagChipView(
-                            title: "#\(tag)",
-                            count: tagCount(tag),
-                            systemImage: "tag.slash.fill",
-                            isSelected: true,
-                            selectedColor: .red
-                        ) {
-                            onToggleExcludedTag(tag)
-                        }
+    private func toggleIncludedTag(_ tag: String) {
+        if selectedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+            onSelectTags(selectedTags.filter { !RoutineTag.contains($0, in: [tag]) })
+        } else if suggestedRelatedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+            onSelectSuggestedTag(tag)
+        } else {
+            var updated = selectedTags
+            updated.insert(tag)
+            onSelectTags(updated)
+        }
+    }
+}
+
+private struct HomeMacTagFilterPicker: View {
+    let title: String
+    let availableTags: [String]
+    let suggestedTags: [String]
+    let selectedTags: Set<String>
+    let tagCount: (String) -> Int
+    let tagColor: (String) -> Color?
+    let selectedTint: Color
+    let onToggle: (String) -> Void
+
+    @State private var searchText = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+
+            TextField("Search tags", text: $searchText)
+                .textFieldStyle(.roundedBorder)
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    if !selectedTagList.isEmpty {
+                        pickerSection("Selected", tags: selectedTagList, isSelected: true)
+                    }
+
+                    if !suggestedTagList.isEmpty {
+                        pickerSection("Suggested", tags: suggestedTagList, isSelected: false)
+                    }
+
+                    if !browseTagList.isEmpty {
+                        pickerSection("Browse", tags: browseTagList, isSelected: false)
+                    } else if selectedTagList.isEmpty && suggestedTagList.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 36)
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
+        .frame(width: 360, height: 480)
+    }
 
-            Text("Add tags to hide")
+    private func pickerSection(_ sectionTitle: String, tags: [String], isSelected: Bool) -> some View {
+        Section {
+            ForEach(tags, id: \.self) { tag in
+                Button {
+                    onToggle(tag)
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "tag.fill")
+                            .foregroundStyle(isSelected ? selectedTint : (tagColor(tag) ?? .secondary))
+                            .frame(width: 18)
+
+                        Text("#\(tag)")
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 8)
+
+                        Text(tagCount(tag).formatted())
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
+                            .foregroundStyle(isSelected ? selectedTint : .secondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        } header: {
+            Text(sectionTitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(availableExcludeTags.filter { tag in
-                    !selectedExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
-                }, id: \.self) { tag in
-                    let color = tagColor(tag)
-                    HomeMacTagChipView(
-                        title: "#\(tag)",
-                        count: tagCount(tag),
-                        systemImage: "tag.slash.fill",
-                        isSelected: false,
-                        selectedColor: .red,
-                        unselectedColor: color
-                    ) {
-                        onToggleExcludedTag(tag)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 8)
+                .padding(.top, 6)
         }
+    }
+
+    private var selectedTagList: [String] {
+        selectedTags.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    private var suggestedTagList: [String] {
+        guard searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
+        return RoutineTag.deduplicated(suggestedTags)
+            .filter { !contains($0, in: selectedTags) }
+            .prefix(6)
+            .map { $0 }
+    }
+
+    private var browseTagList: [String] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return RoutineTag.deduplicated(availableTags + Array(selectedTags))
+            .filter { !contains($0, in: selectedTags) }
+            .filter { query.isEmpty || $0.localizedCaseInsensitiveContains(query) }
+            .sorted { lhs, rhs in
+                let lhsCount = tagCount(lhs)
+                let rhsCount = tagCount(rhs)
+                if query.isEmpty, lhsCount != rhsCount { return lhsCount > rhsCount }
+                return lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
+            }
+    }
+
+    private func contains(_ tag: String, in tags: Set<String>) -> Bool {
+        tags.contains { RoutineTag.contains($0, in: [tag]) }
     }
 }

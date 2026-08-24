@@ -184,14 +184,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
 
                 filterPicker
 
-                filterControlSection("Pressure") {
-                    pressurePicker
-                }
-
-                filterControlSection("Thinking needed") {
-                    thinkingNeededPicker
-                }
-
                 if showsGoalFilter {
                     filterControlSection("Goal") {
                         goalPicker
@@ -200,10 +192,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
 
                 filterControlSection("Media") {
                     mediaPicker
-                }
-
-                filterControlSection("Estimation") {
-                    estimationPicker
                 }
 
                 if taskListMode == .todos || taskListMode == .all {
@@ -300,32 +288,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
         }
     }
 
-    private var pressurePicker: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Pressure",
-            options: pressureOptions,
-            selection: $selectedPressureFilter,
-            minimumSegmentWidth: 92,
-            fillsAvailableWidth: true,
-            maximumSegmentsPerRow: 2
-        ) { pressure in
-            Text(pressure?.title ?? "All")
-        }
-    }
-
-    private var thinkingNeededPicker: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Thinking needed",
-            options: thinkingNeededOptions,
-            selection: $selectedThinkingNeededFilter,
-            minimumSegmentWidth: 92,
-            fillsAvailableWidth: true,
-            maximumSegmentsPerRow: 2
-        ) { level in
-            Text(level?.title ?? "All")
-        }
-    }
-
     private var goalPicker: some View {
         RoutinaGlassSegmentedControl(
             accessibilityLabel: "Goal",
@@ -343,19 +305,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
             options: TaskMediaFilter.allCases,
             selection: $selectedMediaFilter,
             minimumSegmentWidth: 104,
-            fillsAvailableWidth: true,
-            maximumSegmentsPerRow: 2
-        ) { filter in
-            Label(filter.title, systemImage: filter.systemImage)
-        }
-    }
-
-    private var estimationPicker: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Estimation",
-            options: TaskEstimationFilter.allCases,
-            selection: $selectedEstimationFilter,
-            minimumSegmentWidth: 108,
             fillsAvailableWidth: true,
             maximumSegmentsPerRow: 2
         ) { filter in
@@ -397,14 +346,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
         ) { state in
             Text(state?.displayTitle ?? "Any State")
         }
-    }
-
-    private var pressureOptions: [RoutineTaskPressure?] {
-        [nil] + RoutineTaskPressure.allCases.map(Optional.some)
-    }
-
-    private var thinkingNeededOptions: [RoutineTaskThinkingNeeded?] {
-        [nil] + RoutineTaskThinkingNeeded.allCases.map(Optional.some)
     }
 
     private var todoStateOptions: [TodoState?] {

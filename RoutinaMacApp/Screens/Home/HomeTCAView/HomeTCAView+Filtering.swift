@@ -38,7 +38,8 @@ extension HomeTCAView {
                 flagRules: store.flagRules,
                 routineTasks: store.routineTasks,
                 referenceDate: referenceDate,
-                calendar: calendar
+                calendar: calendar,
+                taskLadderFilterValueMode: .now
             ),
             matchesCurrentTaskListMode: { (task: HomeFeature.RoutineDisplay) in
                 switch taskListMode {

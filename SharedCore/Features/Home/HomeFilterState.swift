@@ -105,6 +105,9 @@ struct HomeTimelineFiltersState: Equatable {
     var selectedExcludedTags: Set<String> = []
     var excludeTagMatchMode: RoutineTagMatchMode = .any
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+    var selectedPressureFilter: RoutineTaskPressure? = nil
+    var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
+    var selectedEstimationFilter: TaskEstimationFilter = .all
     var selectedMediaFilter: TaskMediaFilter = .all
 
     var effectiveSelectedTags: Set<String> {
@@ -216,6 +219,9 @@ enum HomeTemporaryViewStateMapper {
                 selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell.normalized(
                     persistedState.homeSelectedTimelineImportanceUrgencyFilter
                 ),
+                selectedPressureFilter: persistedState.homeSelectedTimelinePressureFilter,
+                selectedThinkingNeededFilter: persistedState.homeSelectedTimelineThinkingNeededFilter,
+                selectedEstimationFilter: persistedState.homeSelectedTimelineEstimationFilter,
                 selectedMediaFilter: persistedState.homeSelectedTimelineMediaFilter
             ),
             statsFilters: HomeStatsFiltersState(
@@ -277,6 +283,9 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedTimelineExcludedTags: values.timelineFilters.selectedExcludedTags,
             homeTimelineExcludeTagMatchMode: values.timelineFilters.excludeTagMatchMode,
             homeSelectedTimelineImportanceUrgencyFilter: values.timelineFilters.selectedImportanceUrgencyFilter,
+            homeSelectedTimelinePressureFilter: values.timelineFilters.selectedPressureFilter,
+            homeSelectedTimelineThinkingNeededFilter: values.timelineFilters.selectedThinkingNeededFilter,
+            homeSelectedTimelineEstimationFilter: values.timelineFilters.selectedEstimationFilter,
             homeSelectedTimelineMediaFilter: values.timelineFilters.selectedMediaFilter,
             macHomeSidebarModeRawValue: values.macSidebarModeRawValue ?? existing.macHomeSidebarModeRawValue,
             macSelectedSettingsSectionRawValue: values.macSelectedSettingsSectionRawValue ?? existing.macSelectedSettingsSectionRawValue,

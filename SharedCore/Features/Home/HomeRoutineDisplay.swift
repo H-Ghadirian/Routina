@@ -39,6 +39,9 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var urgency: RoutineTaskUrgency
     var pressure: RoutineTaskPressure = .none
     var thinkingNeeded: RoutineTaskThinkingNeeded = .none
+    var currentTaskLadderImportanceOverride: RoutineTaskImportance? = nil
+    var currentTaskLadderUrgencyOverride: RoutineTaskUrgency? = nil
+    var currentTaskLadderPressureOverride: RoutineTaskPressure? = nil
     var scheduleAnchor: Date?
     var pausedAt: Date?
     var snoozedUntil: Date?
@@ -76,6 +79,18 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var assignedSprintTitle: String? = nil
     var assignedBacklogID: UUID? = nil
     var assignedBacklogTitle: String? = nil
+
+    var currentTaskLadderImportance: RoutineTaskImportance {
+        currentTaskLadderImportanceOverride ?? importance
+    }
+
+    var currentTaskLadderUrgency: RoutineTaskUrgency {
+        currentTaskLadderUrgencyOverride ?? urgency
+    }
+
+    var currentTaskLadderPressure: RoutineTaskPressure {
+        currentTaskLadderPressureOverride ?? pressure
+    }
 }
 
 enum HomeRoutineRowTone: Equatable {

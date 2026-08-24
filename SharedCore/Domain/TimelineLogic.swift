@@ -180,6 +180,12 @@ struct TimelineEntry: Identifiable, Equatable {
     let hasVoiceNote: Bool
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
+    let currentImportance: RoutineTaskImportance
+    let currentUrgency: RoutineTaskUrgency
+    let currentPressure: RoutineTaskPressure
+    let thinkingNeeded: RoutineTaskThinkingNeeded
+    let estimatedDurationMinutes: Int?
+    let hasTaskLadderValues: Bool
     let taskType: RoutineTaskType?
     let isOneOff: Bool
     let kind: RoutineLogKind
@@ -203,6 +209,12 @@ struct TimelineEntry: Identifiable, Equatable {
         hasVoiceNote: Bool = false,
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
+        currentImportance: RoutineTaskImportance? = nil,
+        currentUrgency: RoutineTaskUrgency? = nil,
+        currentPressure: RoutineTaskPressure = .none,
+        thinkingNeeded: RoutineTaskThinkingNeeded = .none,
+        estimatedDurationMinutes: Int? = nil,
+        hasTaskLadderValues: Bool = false,
         taskType: RoutineTaskType? = nil,
         isOneOff: Bool,
         kind: RoutineLogKind,
@@ -225,6 +237,12 @@ struct TimelineEntry: Identifiable, Equatable {
         self.hasVoiceNote = hasVoiceNote
         self.importance = importance
         self.urgency = urgency
+        self.currentImportance = currentImportance ?? importance
+        self.currentUrgency = currentUrgency ?? urgency
+        self.currentPressure = currentPressure
+        self.thinkingNeeded = thinkingNeeded
+        self.estimatedDurationMinutes = estimatedDurationMinutes
+        self.hasTaskLadderValues = hasTaskLadderValues
         self.taskType = taskType
         self.isOneOff = isOneOff
         self.kind = kind
@@ -430,6 +448,19 @@ enum TimelineLogic {
         calendar: Calendar
         ) -> [TimelineEntry] {
         let lookup = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let currentTaskLadderValuesByTaskID = Dictionary(
+            tasks.map { task in
+                (
+                    task.id,
+                    RoutineTaskTemporalWeightResolver.effectiveWeights(
+                        for: task,
+                        referenceDate: now,
+                        calendar: calendar
+                    )
+                )
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
         let resolvedLogs = logsIncludingLastDoneFallbacks(
             logs: logs,
             tasks: tasks,
@@ -454,6 +485,7 @@ enum TimelineLogic {
             let hasImage = task?.hasImage ?? false
             let hasFileAttachment = fileAttachmentTaskIDs.contains(log.taskID)
             let hasVoiceNote = task?.hasVoiceNote ?? false
+            let currentTaskLadderValues = currentTaskLadderValuesByTaskID[log.taskID]
 
             guard HomeDisplayFilterSupport.matchesMediaFilter(
                 mediaFilter,
@@ -493,6 +525,12 @@ enum TimelineLogic {
                 hasVoiceNote: hasVoiceNote,
                 importance: task?.importance ?? .level2,
                 urgency: task?.urgency ?? .level2,
+                currentImportance: currentTaskLadderValues?.importance,
+                currentUrgency: currentTaskLadderValues?.urgency,
+                currentPressure: currentTaskLadderValues?.pressure ?? .none,
+                thinkingNeeded: task?.thinkingNeeded ?? .none,
+                estimatedDurationMinutes: task?.estimatedDurationMinutes,
+                hasTaskLadderValues: task != nil,
                 taskType: taskType,
                 isOneOff: taskType == .todo,
                 kind: log.kind
@@ -631,6 +669,8 @@ enum TimelineLogic {
                 entryTaskID = session.taskID
             }
 
+            let currentTaskLadderValues = task.flatMap { currentTaskLadderValuesByTaskID[$0.id] }
+
             return TimelineEntry(
                 id: session.id,
                 taskID: entryTaskID,
@@ -643,6 +683,12 @@ enum TimelineLogic {
                 flags: task?.flags ?? [],
                 importance: importance,
                 urgency: urgency,
+                currentImportance: currentTaskLadderValues?.importance,
+                currentUrgency: currentTaskLadderValues?.urgency,
+                currentPressure: currentTaskLadderValues?.pressure ?? .none,
+                thinkingNeeded: task?.thinkingNeeded ?? .none,
+                estimatedDurationMinutes: task?.estimatedDurationMinutes,
+                hasTaskLadderValues: task != nil,
                 isOneOff: isOneOff,
                 kind: .completed,
                 entryType: .focus,

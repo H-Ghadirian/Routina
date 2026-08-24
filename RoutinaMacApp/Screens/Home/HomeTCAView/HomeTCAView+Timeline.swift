@@ -40,6 +40,10 @@ struct HomeMacTimelinePresentationSignature: Equatable {
     let excludedTags: Set<String>
     let excludeTagMatchMode: RoutineTagMatchMode
     let importanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    let pressureFilter: RoutineTaskPressure?
+    let thinkingNeededFilter: RoutineTaskThinkingNeeded?
+    let estimationFilter: TaskEstimationFilter
+    let taskLadderReferenceDay: Date
     let searchText: String
     let showsEventsAndEmotions: Bool
     let showsPlaces: Bool
@@ -123,6 +127,10 @@ extension HomeTCAView {
             excludedTags: store.selectedTimelineExcludedTags,
             excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
             importanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
+            pressureFilter: store.selectedTimelinePressureFilter,
+            thinkingNeededFilter: store.selectedTimelineThinkingNeededFilter,
+            estimationFilter: store.selectedTimelineEstimationFilter,
+            taskLadderReferenceDay: calendar.startOfDay(for: Date()),
             searchText: macSearchPresentationText.trimmingCharacters(in: .whitespacesAndNewlines),
             showsEventsAndEmotions: areMacEventEmotionActionsEnabled,
             showsPlaces: isPlacesEnabled,
@@ -184,11 +192,7 @@ extension HomeTCAView {
         )
         let filteredEntries = baseEntries
             .filter { entry in
-                HomeFeature.matchesImportanceUrgencyFilter(
-                    store.selectedTimelineImportanceUrgencyFilter,
-                    importance: entry.importance,
-                    urgency: entry.urgency
-                )
+                matchesMacSharedTaskLadderFilters(entry)
                     && HomeFeature.matchesSelectedTags(
                         store.selectedTimelineTags,
                         mode: store.selectedTimelineIncludeTagMatchMode,
@@ -271,13 +275,7 @@ extension HomeTCAView {
     }
 
     var filteredTimelineEntriesForTagging: [TimelineEntry] {
-        baseTimelineEntries.filter { entry in
-            HomeFeature.matchesImportanceUrgencyFilter(
-                store.selectedTimelineImportanceUrgencyFilter,
-                importance: entry.importance,
-                urgency: entry.urgency
-            )
-        }
+        baseTimelineEntries.filter(matchesMacSharedTaskLadderFilters)
     }
 
     var availableTimelineExcludeTags: [String] {
@@ -318,6 +316,9 @@ extension HomeTCAView {
             || !store.selectedTimelineTags.isEmpty
             || !store.selectedTimelineFlags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
+            || store.selectedTimelinePressureFilter != nil
+            || store.selectedTimelineThinkingNeededFilter != nil
+            || store.selectedTimelineEstimationFilter != .all
             || store.selectedTimelineMediaFilter != .all
             || !store.selectedTimelineExcludedTags.isEmpty
     }
@@ -639,7 +640,24 @@ extension HomeTCAView {
         }
 
         if let filter = store.selectedTimelineImportanceUrgencyFilter {
-            labels.append("\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+")
+            if let importance = filter.minimumImportance {
+                labels.append("Importance \(importance.title)+")
+            }
+            if let urgency = filter.minimumUrgency {
+                labels.append("Urgency \(urgency.title)+")
+            }
+        }
+
+        if let pressure = store.selectedTimelinePressureFilter {
+            labels.append("Pressure \(pressure.title)+")
+        }
+
+        if let thinking = store.selectedTimelineThinkingNeededFilter {
+            labels.append("Thinking \(thinking.title)")
+        }
+
+        if store.selectedTimelineEstimationFilter != .all {
+            labels.append("Estimated time: \(store.selectedTimelineEstimationFilter.title)")
         }
 
         if store.selectedTimelineMediaFilter != .all {
@@ -676,6 +694,33 @@ extension HomeTCAView {
 
         let visibleTags = tags.prefix(4).map { "#\($0)" }.joined(separator: ", ")
         return "not \(visibleTags) +\(tags.count - 4) tags"
+    }
+
+    private func matchesMacSharedTaskLadderFilters(_ entry: TimelineEntry) -> Bool {
+        let hasActiveFilter = store.selectedTimelineImportanceUrgencyFilter != nil
+            || store.selectedTimelinePressureFilter != nil
+            || store.selectedTimelineThinkingNeededFilter != nil
+            || store.selectedTimelineEstimationFilter != .all
+        guard hasActiveFilter else { return true }
+        guard entry.hasTaskLadderValues else { return false }
+
+        return HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
+            store.selectedTimelineImportanceUrgencyFilter,
+            importance: entry.currentImportance,
+            urgency: entry.currentUrgency
+        )
+            && HomeDisplayFilterSupport.matchesMinimumPressureFilter(
+                store.selectedTimelinePressureFilter,
+                pressure: entry.currentPressure
+            )
+            && HomeDisplayFilterSupport.matchesThinkingNeededFilter(
+                store.selectedTimelineThinkingNeededFilter,
+                thinkingNeeded: entry.thinkingNeeded
+            )
+            && HomeDisplayFilterSupport.matchesEstimationFilter(
+                store.selectedTimelineEstimationFilter,
+                estimatedDurationMinutes: entry.estimatedDurationMinutes
+            )
     }
 
     var macTimelineFiltersDetailView: some View {

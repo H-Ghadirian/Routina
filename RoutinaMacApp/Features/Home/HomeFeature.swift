@@ -158,6 +158,9 @@ struct HomeFeature {
             selectedTimelineExcludedTags: Set<String> = [],
             selectedTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
+            selectedTimelinePressureFilter: RoutineTaskPressure? = nil,
+            selectedTimelineThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
+            selectedTimelineEstimationFilter: TaskEstimationFilter = .all,
             selectedTimelineMediaFilter: TaskMediaFilter = .all,
             statsSelectedRange: DoneChartRange = .week,
             statsSelectedTag: String? = nil,
@@ -246,6 +249,9 @@ struct HomeFeature {
                 selectedExcludedTags: selectedTimelineExcludedTags,
                 excludeTagMatchMode: selectedTimelineExcludeTagMatchMode,
                 selectedImportanceUrgencyFilter: selectedTimelineImportanceUrgencyFilter,
+                selectedPressureFilter: selectedTimelinePressureFilter,
+                selectedThinkingNeededFilter: selectedTimelineThinkingNeededFilter,
+                selectedEstimationFilter: selectedTimelineEstimationFilter,
                 selectedMediaFilter: selectedTimelineMediaFilter
             )
             self.statsFilters = HomeStatsFiltersState(
@@ -495,6 +501,21 @@ struct HomeFeature {
             set { timelineFilters.selectedImportanceUrgencyFilter = newValue }
         }
 
+        var selectedTimelinePressureFilter: RoutineTaskPressure? {
+            get { timelineFilters.selectedPressureFilter }
+            set { timelineFilters.selectedPressureFilter = newValue }
+        }
+
+        var selectedTimelineThinkingNeededFilter: RoutineTaskThinkingNeeded? {
+            get { timelineFilters.selectedThinkingNeededFilter }
+            set { timelineFilters.selectedThinkingNeededFilter = newValue }
+        }
+
+        var selectedTimelineEstimationFilter: TaskEstimationFilter {
+            get { timelineFilters.selectedEstimationFilter }
+            set { timelineFilters.selectedEstimationFilter = newValue }
+        }
+
         var selectedTimelineMediaFilter: TaskMediaFilter {
             get { timelineFilters.selectedMediaFilter }
             set { timelineFilters.selectedMediaFilter = newValue }
@@ -699,6 +720,9 @@ struct HomeFeature {
         case selectedTimelineExcludedTagsChanged(Set<String>)
         case selectedTimelineExcludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedTimelineImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
+        case selectedTimelinePressureFilterChanged(RoutineTaskPressure?)
+        case selectedTimelineThinkingNeededFilterChanged(RoutineTaskThinkingNeeded?)
+        case selectedTimelineEstimationFilterChanged(TaskEstimationFilter)
         case selectedTimelineMediaFilterChanged(TaskMediaFilter)
         case fileAttachmentTaskIDsChanged(Set<UUID>)
 
@@ -1377,6 +1401,15 @@ struct HomeFeature {
 
             case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
                 return filterMutationHandler().applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
+
+            case let .selectedTimelinePressureFilterChanged(filter):
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedPressureFilter(filter), state: &state)
+
+            case let .selectedTimelineThinkingNeededFilterChanged(filter):
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedThinkingNeededFilter(filter), state: &state)
+
+            case let .selectedTimelineEstimationFilterChanged(filter):
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedEstimationFilter(filter), state: &state)
 
             case let .selectedTimelineMediaFilterChanged(filter):
                 return filterMutationHandler().applyTimelineFilterMutation(.selectedMediaFilter(filter), state: &state)
