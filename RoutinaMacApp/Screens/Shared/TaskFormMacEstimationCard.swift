@@ -4,111 +4,95 @@ struct TaskFormMacEstimationCard: View {
     let model: TaskFormModel
 
     var body: some View {
-        TaskFormMacSectionCard(title: "Estimation") {
+        TaskFormMacSectionCard(title: TaskFormEffortPresentation.sectionTitle) {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Toggle("Set duration estimate", isOn: estimatedDurationEnabledBinding)
-                        .toggleStyle(.switch)
-                    if estimatedDurationEnabledBinding.wrappedValue {
+                    TaskFormEffortValueHeader(
+                        title: TaskFormEffortPresentation.timeEstimateTitle,
+                        detail: TaskFormEffortPresentation.timeEstimateDetail,
+                        actionTitle: TaskFormEffortPresentation.timeEstimateActionTitle(
+                            minutes: model.estimatedDurationMinutes.wrappedValue
+                        ),
+                        isRemovalAction: model.hasEstimatedDuration
+                    ) {
+                        model.hasEstimatedDuration
+                            ? model.clearEstimatedDuration()
+                            : model.addEstimatedDuration()
+                    }
+
+                    if model.hasEstimatedDuration {
                         TaskFormDurationEntry(
-                            title: "Estimate",
-                            minutes: estimatedDurationBinding,
+                            title: "Planned duration",
+                            minutes: model.estimatedDurationValue,
                             bounds: TaskFormDurationEntryPresentation.estimatedDurationBounds,
                             presets: TaskFormDurationEntryPresentation.durationPresets
                         )
                     }
                 }
 
-                if showsActualDurationControl {
+                Divider()
+
+                if model.showsActualDurationControl {
                     VStack(alignment: .leading, spacing: 10) {
-                        Toggle("Set actual time spent", isOn: actualDurationEnabledBinding)
-                            .toggleStyle(.switch)
-                        if actualDurationEnabledBinding.wrappedValue {
+                        TaskFormEffortValueHeader(
+                            title: TaskFormEffortPresentation.actualTimeTitle,
+                            detail: TaskFormEffortPresentation.actualTimeDetail,
+                            actionTitle: TaskFormEffortPresentation.actualTimeActionTitle(
+                                minutes: model.actualDurationMinutes?.wrappedValue
+                            ),
+                            isRemovalAction: model.hasActualDuration
+                        ) {
+                            model.hasActualDuration
+                                ? model.clearActualDuration()
+                                : model.addActualDuration()
+                        }
+
+                        if model.hasActualDuration {
                             TaskFormDurationEntry(
-                                title: "Actual",
-                                minutes: actualDurationBinding,
+                                title: "Recorded duration",
+                                minutes: model.actualDurationValue,
                                 bounds: TaskFormDurationEntryPresentation.actualDurationBounds,
                                 presets: TaskFormDurationEntryPresentation.durationPresets
                             )
                         }
                     }
+
+                    Divider()
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Toggle("Set story points", isOn: storyPointsEnabledBinding)
-                        .toggleStyle(.switch)
-                    if storyPointsEnabledBinding.wrappedValue {
-                        Stepper(value: storyPointsStepperBinding, in: 1...100) {
-                            Text(TaskFormPresentation.storyPointsLabel(for: storyPointsStepperBinding.wrappedValue))
+                    TaskFormEffortValueHeader(
+                        title: TaskFormEffortPresentation.storyPointsTitle,
+                        detail: TaskFormEffortPresentation.storyPointsDetail,
+                        actionTitle: TaskFormEffortPresentation.storyPointsActionTitle(
+                            points: model.storyPoints.wrappedValue
+                        ),
+                        isRemovalAction: model.hasStoryPoints
+                    ) {
+                        model.hasStoryPoints
+                            ? model.clearStoryPoints()
+                            : model.addStoryPoints()
+                    }
+
+                    if model.hasStoryPoints {
+                        Stepper(value: model.storyPointsValue, in: 1...100) {
+                            Text(TaskFormPresentation.storyPointsLabel(for: model.storyPointsValue.wrappedValue))
                                 .frame(minWidth: 160, alignment: .leading)
                         }
                         .fixedSize()
                     }
                 }
 
-                Toggle("Show focus timer", isOn: model.focusModeEnabled)
+                Divider()
+
+                Toggle(isOn: model.focusModeEnabled) {
+                    TaskFormEffortFieldLabel(
+                        title: TaskFormEffortPresentation.focusTimerTitle,
+                        detail: TaskFormEffortPresentation.focusTimerDetail
+                    )
+                }
                     .toggleStyle(.switch)
             }
         }
-    }
-
-    private var estimatedDurationEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { model.estimatedDurationMinutes.wrappedValue != nil },
-            set: { isEnabled in
-                model.estimatedDurationMinutes.wrappedValue = isEnabled
-                    ? (model.estimatedDurationMinutes.wrappedValue ?? 30)
-                    : nil
-            }
-        )
-    }
-
-    private var estimatedDurationBinding: Binding<Int> {
-        Binding(
-            get: { max(model.estimatedDurationMinutes.wrappedValue ?? 30, 5) },
-            set: { model.estimatedDurationMinutes.wrappedValue = RoutineTask.sanitizedEstimatedDurationMinutes(max($0, 5)) }
-        )
-    }
-
-    private var actualDurationEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { model.actualDurationMinutes?.wrappedValue != nil },
-            set: { isEnabled in
-                guard let actualDurationMinutes = model.actualDurationMinutes else { return }
-                actualDurationMinutes.wrappedValue = isEnabled
-                    ? (actualDurationMinutes.wrappedValue ?? model.estimatedDurationMinutes.wrappedValue ?? 30)
-                    : nil
-            }
-        )
-    }
-
-    private var actualDurationBinding: Binding<Int> {
-        Binding(
-            get: { max(model.actualDurationMinutes?.wrappedValue ?? model.estimatedDurationMinutes.wrappedValue ?? 30, 1) },
-            set: { model.actualDurationMinutes?.wrappedValue = RoutineTask.sanitizedActualDurationMinutes(max($0, 1)) }
-        )
-    }
-
-    private var showsActualDurationControl: Bool {
-        model.actualDurationMinutes != nil
-            && model.taskType.wrappedValue == .todo
-    }
-
-    private var storyPointsEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { model.storyPoints.wrappedValue != nil },
-            set: { isEnabled in
-                model.storyPoints.wrappedValue = isEnabled
-                    ? (model.storyPoints.wrappedValue ?? 1)
-                    : nil
-            }
-        )
-    }
-
-    private var storyPointsStepperBinding: Binding<Int> {
-        Binding(
-            get: { max(model.storyPoints.wrappedValue ?? 1, 1) },
-            set: { model.storyPoints.wrappedValue = RoutineTask.sanitizedStoryPoints(max($0, 1)) }
-        )
     }
 }

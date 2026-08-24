@@ -33,6 +33,8 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
 
     var title: String {
         switch self {
+        case .estimation:
+            return TaskFormEffortPresentation.sectionTitle
         case .linkURL:
             return "Links"
         default:

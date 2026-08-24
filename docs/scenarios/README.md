@@ -50,6 +50,30 @@ Then its header has no disclosure chevron or clickable collapse action
 When the active session ends
 Then the ordinary disclosure control is available again
 
+### Task Effort Editing Distinguishes Values From Capabilities
+
+Area: Tasks / Add and Edit / iOS and macOS
+Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0652](../decisions/0652-keep-effort-fields-independent-and-disclosures-honest.md), [0653](../decisions/0653-present-effort-values-as-values-not-feature-switches.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormPresentationTests.swift`
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+- `Tests/Shared/TaskFormMacLayoutRegressionTests.swift`
+
+Given a person opens Add Task or Edit Task
+When the Effort group is visible
+Then Time estimate, Actual time, and Story points use field-specific value actions rather than switches
+And each field explains whether it represents planned duration, recorded duration, or relative size
+And Focus timer is the only switch because it enables attention-session tracking
+
+Given the task has a 90-minute Estimate and no Actual time
+When the person chooses Log for Actual time
+Then Actual time starts from its independent 30-minute default
+And Estimate remains 90 minutes
+
+Given any one Effort value is added or cleared
+Then the other Effort values remain unchanged
+
 ### Task Focus Remains Separate From Actual Time
 
 Area: Tasks / Focus / iOS and macOS Task Details

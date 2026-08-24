@@ -3,6 +3,24 @@ import Testing
 
 struct TaskFormIOSLayoutRegressionTests {
     @Test
+    func effortUsesIndependentValueActionsAndOnlyFocusIsAToggle() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSEstimationSection.swift"
+        )
+
+        #expect(source.contains("Section(header: Text(TaskFormEffortPresentation.sectionTitle))"))
+        #expect(source.components(separatedBy: "TaskFormEffortValueHeader(").count - 1 == 3)
+        #expect(source.contains("model.addEstimatedDuration()"))
+        #expect(source.contains("model.addActualDuration()"))
+        #expect(source.contains("model.addStoryPoints()"))
+        #expect(source.contains("Toggle(isOn: model.focusModeEnabled)"))
+        #expect(!source.contains("Toggle(\"Set duration estimate\""))
+        #expect(!source.contains("Toggle(\"Set actual time spent\""))
+        #expect(!source.contains("Toggle(\"Set story points\""))
+        #expect(!source.contains("Toggle(\"Show focus timer\""))
+    }
+
+    @Test
     func taskTypeUsesSeparateSectionsWithoutSpacerRows() throws {
         let source = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormIOSIdentitySections.swift"

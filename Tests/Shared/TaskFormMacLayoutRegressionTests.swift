@@ -3,6 +3,24 @@ import Testing
 
 struct TaskFormMacLayoutRegressionTests {
     @Test
+    func effortUsesIndependentValueActionsAndOnlyFocusIsAToggle() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Shared/TaskFormMacEstimationCard.swift"
+        )
+
+        #expect(source.contains("TaskFormMacSectionCard(title: TaskFormEffortPresentation.sectionTitle)"))
+        #expect(source.components(separatedBy: "TaskFormEffortValueHeader(").count - 1 == 3)
+        #expect(source.contains("model.addEstimatedDuration()"))
+        #expect(source.contains("model.addActualDuration()"))
+        #expect(source.contains("model.addStoryPoints()"))
+        #expect(source.contains("Toggle(isOn: model.focusModeEnabled)"))
+        #expect(!source.contains("Toggle(\"Set duration estimate\""))
+        #expect(!source.contains("Toggle(\"Set actual time spent\""))
+        #expect(!source.contains("Toggle(\"Set story points\""))
+        #expect(!source.contains("Toggle(\"Show focus timer\""))
+    }
+
+    @Test
     func taskLadderValuesShareOneMacCardWithIndependentControlsAndTimeRules() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"

@@ -57,7 +57,7 @@ struct TaskFormModel {
     var temporalWeightRule: Binding<RoutineTaskTemporalWeightRule?> = .constant(nil)
     var thinkingNeeded: Binding<RoutineTaskThinkingNeeded> = .constant(.none)
 
-    // MARK: Estimation
+    // MARK: Effort
     var estimatedDurationMinutes: Binding<Int?>
     var actualDurationMinutes: Binding<Int?>? = nil
     var storyPoints: Binding<Int?>
@@ -199,6 +199,83 @@ struct TaskFormModel {
 }
 
 extension TaskFormModel {
+    var hasEstimatedDuration: Bool {
+        estimatedDurationMinutes.wrappedValue != nil
+    }
+
+    var estimatedDurationValue: Binding<Int> {
+        let estimatedDurationMinutes = estimatedDurationMinutes
+        return Binding(
+            get: { max(estimatedDurationMinutes.wrappedValue ?? 30, 5) },
+            set: {
+                estimatedDurationMinutes.wrappedValue =
+                    RoutineTask.sanitizedEstimatedDurationMinutes(max($0, 5))
+            }
+        )
+    }
+
+    func addEstimatedDuration() {
+        estimatedDurationMinutes.wrappedValue = estimatedDurationMinutes.wrappedValue ?? 30
+    }
+
+    func clearEstimatedDuration() {
+        estimatedDurationMinutes.wrappedValue = nil
+    }
+
+    var showsActualDurationControl: Bool {
+        actualDurationMinutes != nil && taskType.wrappedValue == .todo
+    }
+
+    var hasActualDuration: Bool {
+        actualDurationMinutes?.wrappedValue != nil
+    }
+
+    var actualDurationValue: Binding<Int> {
+        let actualDurationMinutes = actualDurationMinutes
+        return Binding(
+            get: {
+                max(
+                    actualDurationMinutes?.wrappedValue ?? 30,
+                    1
+                )
+            },
+            set: {
+                actualDurationMinutes?.wrappedValue =
+                    RoutineTask.sanitizedActualDurationMinutes(max($0, 1))
+            }
+        )
+    }
+
+    func addActualDuration() {
+        guard let actualDurationMinutes else { return }
+        actualDurationMinutes.wrappedValue =
+            actualDurationMinutes.wrappedValue ?? 30
+    }
+
+    func clearActualDuration() {
+        actualDurationMinutes?.wrappedValue = nil
+    }
+
+    var hasStoryPoints: Bool {
+        storyPoints.wrappedValue != nil
+    }
+
+    var storyPointsValue: Binding<Int> {
+        let storyPoints = storyPoints
+        return Binding(
+            get: { max(storyPoints.wrappedValue ?? 1, 1) },
+            set: { storyPoints.wrappedValue = RoutineTask.sanitizedStoryPoints(max($0, 1)) }
+        )
+    }
+
+    func addStoryPoints() {
+        storyPoints.wrappedValue = storyPoints.wrappedValue ?? 1
+    }
+
+    func clearStoryPoints() {
+        storyPoints.wrappedValue = nil
+    }
+
     var creationKind: Binding<TaskFormCreationKind> {
         let taskType = taskType
         return Binding(

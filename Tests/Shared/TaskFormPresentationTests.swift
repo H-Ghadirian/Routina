@@ -211,6 +211,65 @@ struct TaskFormPresentationTests {
     }
 
     @Test
+    func effortPresentationNamesIndependentValuesAndActions() {
+        #expect(TaskFormEffortPresentation.sectionTitle == "Effort")
+        #expect(TaskFormEffortPresentation.timeEstimateDetail == "Planned duration")
+        #expect(TaskFormEffortPresentation.actualTimeDetail == "Recorded duration")
+        #expect(TaskFormEffortPresentation.storyPointsDetail == "Relative size")
+        #expect(TaskFormEffortPresentation.focusTimerDetail == "Attention-session tracking")
+
+        #expect(TaskFormEffortPresentation.timeEstimateActionTitle(minutes: nil) == "Set")
+        #expect(TaskFormEffortPresentation.timeEstimateActionTitle(minutes: 30) == "Remove")
+        #expect(TaskFormEffortPresentation.actualTimeActionTitle(minutes: nil) == "Log")
+        #expect(TaskFormEffortPresentation.actualTimeActionTitle(minutes: 30) == "Clear")
+        #expect(TaskFormEffortPresentation.storyPointsActionTitle(points: nil) == "Set")
+        #expect(TaskFormEffortPresentation.storyPointsActionTitle(points: 3) == "Remove")
+    }
+
+    @Test @MainActor
+    func effortValueActionsMutateOnlyTheirOwnField() {
+        var estimate: Int? = nil
+        var actual: Int? = nil
+        var storyPoints: Int? = nil
+        let model = taskFormModel(
+            taskType: .todo,
+            estimatedDurationBinding: Binding(
+                get: { estimate },
+                set: { estimate = $0 }
+            ),
+            actualDurationBinding: Binding(
+                get: { actual },
+                set: { actual = $0 }
+            ),
+            storyPointsBinding: Binding(
+                get: { storyPoints },
+                set: { storyPoints = $0 }
+            )
+        )
+
+        model.addEstimatedDuration()
+        #expect(estimate == 30)
+        #expect(actual == nil)
+        #expect(storyPoints == nil)
+
+        model.estimatedDurationValue.wrappedValue = 90
+        model.addActualDuration()
+        #expect(estimate == 90)
+        #expect(actual == 30)
+        #expect(storyPoints == nil)
+
+        model.addStoryPoints()
+        #expect(estimate == 90)
+        #expect(actual == 30)
+        #expect(storyPoints == 1)
+
+        model.clearActualDuration()
+        #expect(estimate == 90)
+        #expect(actual == nil)
+        #expect(storyPoints == 1)
+    }
+
+    @Test
     func moreScheduleOptionsUseOneResponsiveFixedSchedulePresentation() {
         #expect(
             TaskFormFixedSchedulePresentation.startIncludesTime(
@@ -752,6 +811,9 @@ struct TaskFormPresentationTests {
         recurrenceWeekdaysBinding: Binding<[Int]>? = nil,
         recurrenceDaysOfMonthBinding: Binding<[Int]>? = nil,
         cadenceEnabledBinding: Binding<Bool>? = nil,
+        estimatedDurationBinding: Binding<Int?>? = nil,
+        actualDurationBinding: Binding<Int?>? = nil,
+        storyPointsBinding: Binding<Int?>? = nil,
         temporalWeightRule: RoutineTaskTemporalWeightRule? = nil,
         visibilityMode: TaskFormVisibilityMode = .progressiveCreate
     ) -> TaskFormModel {
@@ -773,8 +835,9 @@ struct TaskFormPresentationTests {
             urgency: .constant(.level2),
             pressure: .constant(.none),
             temporalWeightRule: .constant(temporalWeightRule),
-            estimatedDurationMinutes: .constant(nil),
-            storyPoints: .constant(nil),
+            estimatedDurationMinutes: estimatedDurationBinding ?? .constant(nil),
+            actualDurationMinutes: actualDurationBinding,
+            storyPoints: storyPointsBinding ?? .constant(nil),
             imageData: nil,
             onImagePicked: { _ in },
             onRemoveImage: {},

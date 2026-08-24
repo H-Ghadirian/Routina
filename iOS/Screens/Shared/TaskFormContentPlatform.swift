@@ -491,7 +491,7 @@ private extension TaskFormCompactSection {
         case .deadline: return "Deadline"
         case .reminder: return "Reminder"
         case .taskLadderValues: return "Task Ladder values"
-        case .estimation: return "Estimation"
+        case .estimation: return TaskFormEffortPresentation.sectionTitle
         case .image: return "Image"
         case .attachment: return "File attachment"
         case .organization: return "Organization"

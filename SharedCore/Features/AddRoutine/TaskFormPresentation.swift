@@ -334,6 +334,31 @@ enum TaskFormCompactSection: Hashable, Sendable {
     ]
 }
 
+enum TaskFormEffortPresentation {
+    static let sectionTitle = "Effort"
+
+    static let timeEstimateTitle = "Time estimate"
+    static let timeEstimateDetail = "Planned duration"
+    static let actualTimeTitle = "Actual time"
+    static let actualTimeDetail = "Recorded duration"
+    static let storyPointsTitle = "Story points"
+    static let storyPointsDetail = "Relative size"
+    static let focusTimerTitle = "Focus timer"
+    static let focusTimerDetail = "Attention-session tracking"
+
+    static func timeEstimateActionTitle(minutes: Int?) -> String {
+        minutes == nil ? "Set" : "Remove"
+    }
+
+    static func actualTimeActionTitle(minutes: Int?) -> String {
+        minutes == nil ? "Log" : "Clear"
+    }
+
+    static func storyPointsActionTitle(points: Int?) -> String {
+        points == nil ? "Set" : "Remove"
+    }
+}
+
 struct TaskFormPresentation {
     let taskType: RoutineTaskType
     let scheduleMode: RoutineScheduleMode

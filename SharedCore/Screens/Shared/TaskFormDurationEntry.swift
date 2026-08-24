@@ -1,5 +1,42 @@
 import SwiftUI
 
+struct TaskFormEffortFieldLabel: View {
+    let title: String
+    let detail: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .foregroundStyle(.primary)
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct TaskFormEffortValueHeader: View {
+    let title: String
+    let detail: String
+    let actionTitle: String
+    let isRemovalAction: Bool
+    let action: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            TaskFormEffortFieldLabel(title: title, detail: detail)
+
+            Button(role: isRemovalAction ? .destructive : nil, action: action) {
+                Text(actionTitle)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .accessibilityLabel("\(actionTitle) \(title)")
+        }
+    }
+}
+
 struct TaskFormDurationEntry: View {
     let title: String
     @Binding var minutes: Int
