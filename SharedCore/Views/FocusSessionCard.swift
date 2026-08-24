@@ -18,7 +18,6 @@ struct FocusSessionCard: View {
     let showsEmbeddedHeader: Bool
     let showsEmbeddedStartControls: Bool
     let blockingFocusTitle: String?
-    let onCompletedDuration: ((TimeInterval) -> Void)?
 
     init(
         task: RoutineTask,
@@ -27,8 +26,7 @@ struct FocusSessionCard: View {
         isEmbedded: Bool = false,
         showsEmbeddedHeader: Bool = true,
         showsEmbeddedStartControls: Bool = true,
-        blockingFocusTitle: String? = nil,
-        onCompletedDuration: ((TimeInterval) -> Void)? = nil
+        blockingFocusTitle: String? = nil
     ) {
         _activeSleepSessions = Query(
             filter: #Predicate<SleepSession> { session in
@@ -45,7 +43,6 @@ struct FocusSessionCard: View {
         self.showsEmbeddedHeader = showsEmbeddedHeader
         self.showsEmbeddedStartControls = showsEmbeddedStartControls
         self.blockingFocusTitle = blockingFocusTitle
-        self.onCompletedDuration = onCompletedDuration
     }
 
     private let durationOptions: [TimeInterval] = [
@@ -374,9 +371,6 @@ struct FocusSessionCard: View {
     }
 
     private var focusTrackingDescription: String {
-        if onCompletedDuration != nil {
-            return "Finished focus sessions are added to time spent."
-        }
         return "Focus time is tracked separately from completions."
     }
 
@@ -524,7 +518,6 @@ struct FocusSessionCard: View {
         if pausedAt == nil {
             syncEndedCountUpPlannerBlock(for: session, endedAt: endedAt)
         }
-        onCompletedDuration?(session.actualDurationSeconds)
         DeviceActivityRecorder.recordAction(
             .completed,
             entity: .focusSession,

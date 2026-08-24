@@ -137,7 +137,7 @@ struct TaskDetailSharedViewSupportTests {
         let editActionStart = try #require(detailSource.range(of: "private func beginEditingTaskTime()"))
         let editActionEnd = try #require(
             detailSource.range(
-                of: "private func addCompletedFocusToTimeSpent",
+                of: "private func relatedTaskName",
                 range: editActionStart.upperBound..<detailSource.endIndex
             )
         )
@@ -148,6 +148,33 @@ struct TaskDetailSharedViewSupportTests {
         #expect(editActionSource.contains("timeEditing.beginEditingTask(store.task)"))
         #expect(headerSource.contains("let onEditTotal: () -> Void"))
         #expect(headerSource.contains("Label(\"Edit total\", systemImage: \"pencil\")"))
+    }
+
+    @Test
+    func taskFocusRemainsSeparateFromActualTimeAcrossPlatforms() throws {
+        let focusCardSource = try Self.sourceFile("SharedCore/Views/FocusSessionCard.swift")
+        let focusSectionSource = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailFocusSessionSectionView.swift"
+        )
+        let timePresentationSource = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift"
+        )
+        let macDetailSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let macTimeHeaderSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
+        )
+        let iosDetailSource = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
+
+        #expect(focusCardSource.contains("Focus time is tracked separately from completions."))
+        #expect(!focusCardSource.contains("onCompletedDuration"))
+        #expect(!focusSectionSource.contains("onCompletedDuration"))
+        #expect(!timePresentationSource.contains("focusSessionUpdate"))
+        #expect(!macDetailSource.contains("addCompletedFocusToTimeSpent"))
+        #expect(!macTimeHeaderSource.contains("onCompletedFocusDuration"))
+        #expect(macDetailSource.contains("TaskDetailFocusSessionSectionView("))
+        #expect(iosDetailSource.contains("TaskDetailFocusSessionSectionView("))
     }
 
     @Test

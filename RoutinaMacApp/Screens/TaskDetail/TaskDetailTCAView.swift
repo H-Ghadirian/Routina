@@ -483,8 +483,7 @@ struct TaskDetailTCAView: View {
             entryHours: $taskTimeEntryHours,
             entryMinutes: $taskTimeEntryMinutes,
             onApplyMinutes: { store.send(.updateTaskDuration($0)) },
-            onEditTotal: beginEditingTaskTime,
-            onCompletedFocusDuration: addCompletedFocusToTimeSpent
+            onEditTotal: beginEditingTaskTime
         )
     }
 
@@ -571,8 +570,7 @@ struct TaskDetailTCAView: View {
             task: store.task,
             sessions: focusSessions,
             allTasks: focusSessionTaskCandidates,
-            blockingFocusTitle: blockingFocusTitle,
-            onCompletedDuration: addCompletedFocusToTimeSpent
+            blockingFocusTitle: blockingFocusTitle
         )
     }
 
@@ -1435,24 +1433,6 @@ struct TaskDetailTCAView: View {
 
     private func beginEditingTaskTime() {
         timeEditing.beginEditingTask(store.task)
-    }
-
-    private func addCompletedFocusToTimeSpent(_ seconds: TimeInterval) {
-        guard let update = TaskDetailTimeSpentPresentation.focusSessionUpdate(
-            task: store.task,
-            logs: store.logs,
-            seconds: seconds
-        ) else {
-            return
-        }
-
-        switch update.target {
-        case .task:
-            store.send(.updateTaskDuration(update.minutes))
-
-        case let .log(id):
-            store.send(.updateLogDuration(id, update.minutes))
-        }
     }
 
     private func relatedTaskName(for change: RoutineTaskChangeLogEntry) -> String {

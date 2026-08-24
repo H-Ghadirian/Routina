@@ -29,6 +29,25 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Task Focus Remains Separate From Actual Time
+
+Area: Tasks / Focus / iOS and macOS Task Details
+Decision links: [0112](../decisions/0112-show-estimated-actual-time-stats.md), [0651](../decisions/0651-keep-task-focus-separate-from-actual-time.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+
+Given a todo or routine has task Focus enabled
+When the person finishes, edits, or deletes a task Focus session
+Then Routina changes only the Focus session evidence
+And it does not change the todo's task-level Actual time
+And it does not change any routine completion log's Actual time
+And iOS and macOS follow the same rule
+
+Given the person uses Planner Plan Focus allocation instead
+When they explicitly save a split across selected planned tasks
+Then that deliberate attribution may add task time under the separate Planner allocation contract
+
 ### Task Creation Remains Unlimited
 
 Area: Tasks / Capture

@@ -1,16 +1,6 @@
 import Foundation
 
 enum TaskDetailTimeSpentPresentation {
-    enum UpdateTarget: Equatable {
-        case task
-        case log(UUID)
-    }
-
-    struct FocusSessionUpdate: Equatable {
-        let target: UpdateTarget
-        let minutes: Int
-    }
-
     static let fallbackEntryMinutes = 25
     static let minimumMinutes = 1
     static let maximumMinutes = 1_440
@@ -96,31 +86,4 @@ enum TaskDetailTimeSpentPresentation {
         hasActiveFocus
     }
 
-    static func focusSessionMinutes(from seconds: TimeInterval) -> Int {
-        clampedMinutes(Int((seconds / 60).rounded()))
-    }
-
-    static func focusSessionUpdate(
-        task: RoutineTask,
-        logs: [RoutineLog],
-        seconds: TimeInterval
-    ) -> FocusSessionUpdate? {
-        let minutes = focusSessionMinutes(from: seconds)
-
-        if task.isOneOffTask {
-            return FocusSessionUpdate(
-                target: .task,
-                minutes: clampedMinutes((task.actualDurationMinutes ?? 0) + minutes)
-            )
-        }
-
-        guard let latestCompletedLog = TaskDetailHeaderBadgePresentation.latestCompletedLog(in: logs) else {
-            return nil
-        }
-
-        return FocusSessionUpdate(
-            target: .log(latestCompletedLog.id),
-            minutes: clampedMinutes((latestCompletedLog.actualDurationMinutes ?? 0) + minutes)
-        )
-    }
 }

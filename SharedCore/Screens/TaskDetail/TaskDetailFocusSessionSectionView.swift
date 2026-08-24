@@ -16,20 +16,17 @@ struct TaskDetailFocusSessionSectionView: View {
     let sessions: [FocusSession]
     let allTasks: [RoutineTask]
     let blockingFocusTitle: String?
-    let onCompletedDuration: ((TimeInterval) -> Void)?
 
     init(
         task: RoutineTask,
         sessions: [FocusSession],
         allTasks: [RoutineTask],
-        blockingFocusTitle: String? = nil,
-        onCompletedDuration: ((TimeInterval) -> Void)? = nil
+        blockingFocusTitle: String? = nil
     ) {
         self.task = task
         self.sessions = sessions
         self.allTasks = allTasks
         self.blockingFocusTitle = blockingFocusTitle
-        self.onCompletedDuration = onCompletedDuration
     }
 
     var body: some View {
@@ -37,8 +34,7 @@ struct TaskDetailFocusSessionSectionView: View {
             task: task,
             sessions: sessions,
             allTasks: allTasks,
-            blockingFocusTitle: blockingFocusTitle,
-            onCompletedDuration: onCompletedDuration
+            blockingFocusTitle: blockingFocusTitle
         )
     }
 }

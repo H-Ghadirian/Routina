@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0237 — Do not copy Focus into actual time](0237-do-not-copy-focus-into-actual-time.md)
 - [0236 — Bound derived windows to their recurrence cycle](0236-bound-derived-windows-to-their-recurrence-cycle.md)
 - [0235 — Edit derived values at their source](0235-edit-derived-values-at-their-source.md)
 - [0234 — Scope automatic organization to its surface](0234-scope-automatic-organization-to-its-surface.md)

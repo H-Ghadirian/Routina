@@ -34,7 +34,6 @@ struct TaskDetailTimeSpentHeaderBox: View {
     @Binding var entryMinutes: Int
     let onApplyMinutes: (Int) -> Void
     let onEditTotal: () -> Void
-    let onCompletedFocusDuration: (TimeInterval) -> Void
 
     private let quickEntryMinutes = [25, 45, 60]
     private let stepMinutes = 5
@@ -182,8 +181,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
             isEmbedded: true,
             showsEmbeddedHeader: false,
             showsEmbeddedStartControls: false,
-            blockingFocusTitle: blockingFocusTitle,
-            onCompletedDuration: onCompletedFocusDuration
+            blockingFocusTitle: blockingFocusTitle
         )
     }
 

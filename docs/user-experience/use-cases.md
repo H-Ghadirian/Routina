@@ -207,13 +207,15 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Start a focus session with enough context and optional distraction protection.
 
-**Desired experience:** The person can choose the task and duration, see active progress, pause or finish appropriately, and understand how the session will appear in history. On Mac, pressing Focus opens one sheet where duration and work attribution can be reviewed together; the latest attributed duration and an available latest tag are restored so a common choice can be repeated without rebuilding it. Blocking is offered only where the current platform can support it.
+**Desired experience:** The person can choose the task and duration, see active progress, pause or finish appropriately, and understand how the session will appear in history. Finishing, editing, or deleting task Focus preserves it as separate Focus evidence and never silently changes Actual time; recording actual time is an explicit action. Any future conversion must let the person choose the intended occurrence and remain correct if the Focus record changes. On Mac, pressing Focus opens one sheet where duration and work attribution can be reviewed together; the latest attributed duration and an available latest tag are restored so a common choice can be repeated without rebuilding it. Blocking is offered only where the current platform can support it.
 
 The last duration selected in that sheet is shown as Last choice and selected by default the next time it opens. Attributed Focus history remains the fallback for an existing installation that has no saved picker choice.
 
 **Successful outcome:** The session supports attention without making later history ambiguous.
 
 **Example:** Start 25 minutes on “Draft proposal,” block selected Mac apps, pause for an interruption, then resume and finish. Later, open Mac Focus after a count-up `#HSE` session and find `Count up · #HSE` ready to repeat or change in the same sheet.
+
+**Evidence:** User-reported Focus, time, and estimate confusion and explicit correction request on 2026-08-24.
 
 **Availability:** Mixed by platform and protection capability.
 
