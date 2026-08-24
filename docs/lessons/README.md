@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0242 — Do not duplicate native transient dismissal](0242-do-not-duplicate-native-transient-dismissal.md)
 - [0241 — Do not turn action details into permanent dashboard chrome](0241-do-not-turn-action-details-into-permanent-dashboard-chrome.md)
 - [0240 — Give independent actions independent input state](0240-give-independent-actions-independent-input-state.md)
 - [0239 — Present optional values as values](0239-present-optional-values-as-values.md)

@@ -194,6 +194,15 @@ struct TaskDetailSharedViewSupportTests {
         let actualEditor = String(
             source[actualEditorStart.lowerBound..<focusEditorStart.lowerBound]
         )
+        let blockingContentStart = try #require(
+            source.range(
+                of: "private var awaySessionBlockingContent",
+                range: focusEditorStart.upperBound..<source.endIndex
+            )
+        )
+        let focusEditor = String(
+            source[focusEditorStart.lowerBound..<blockingContentStart.lowerBound]
+        )
 
         #expect(source.contains("title: \"Actual time\""))
         #expect(source.contains("title: \"Focus\""))
@@ -209,6 +218,10 @@ struct TaskDetailSharedViewSupportTests {
         #expect(!source.contains("actualTimeQuickEntryMinutes"))
         #expect(!source.contains("focusCountdownQuickEntryMinutes"))
         #expect(!actualEditor.contains("startFocus"))
+        #expect(!actualEditor.contains("Button(\"Cancel\")"))
+        #expect(!focusEditor.contains("Button(\"Cancel\")"))
+        #expect(!actualEditor.contains(".keyboardShortcut(.cancelAction)"))
+        #expect(!focusEditor.contains(".keyboardShortcut(.cancelAction)"))
         #expect(!source.contains("macTaskDetailLastTimeEntryMinutes"))
         #expect(focusCardSource.contains("if isEmbedded"))
         #expect(focusCardSource.contains("FocusSessionCompactHistoryView("))

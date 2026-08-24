@@ -354,11 +354,6 @@ struct TaskDetailTimeSpentHeaderBox: View {
             }
 
             HStack {
-                Button("Cancel") {
-                    isActualTimeEditorPresented = false
-                }
-                .keyboardShortcut(.cancelAction)
-
                 Spacer()
 
                 Button(task.actualDurationMinutes == nil ? "Log time" : "Add time") {
@@ -410,11 +405,6 @@ struct TaskDetailTimeSpentHeaderBox: View {
             }
 
             HStack {
-                Button("Cancel") {
-                    isFocusStartEditorPresented = false
-                }
-                .keyboardShortcut(.cancelAction)
-
                 Spacer()
 
                 Button("Start focus") {
