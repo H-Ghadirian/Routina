@@ -38,6 +38,23 @@ struct TaskDetailTimeSpentPresentationTests {
     }
 
     @Test
+    func actualTimeAndFocusDefaultsStayIndependentFromEstimateAndEachOther() {
+        #expect(TaskDetailTimeSpentPresentation.defaultAdditionalEntryMinutes(
+            currentMinutes: nil,
+            estimatedMinutes: 90
+        ) == 30)
+        #expect(TaskDetailTimeSpentPresentation.defaultAdditionalEntryMinutes(
+            currentMinutes: 45,
+            estimatedMinutes: 90
+        ) == 30)
+        #expect(TaskDetailTimeSpentPresentation.resolvedFocusCountdownMinutes(savedMinutes: 0) == 25)
+        #expect(TaskDetailTimeSpentPresentation.resolvedFocusCountdownMinutes(savedMinutes: 45) == 45)
+        #expect(TaskDetailTimeSpentPresentation.resolvedFocusCountdownMinutes(savedMinutes: 2_000) == 1_440)
+        #expect(TaskDetailFocusStartMode.countdown.title == "Countdown")
+        #expect(TaskDetailFocusStartMode.countUp.title == "Count up")
+    }
+
+    @Test
     func activeFocusForcesTimeSectionOpenAndSuppressesDisclosure() {
         #expect(!TaskDetailTimeSpentPresentation.shouldForceExpandSection(
             hasActiveFocus: false,

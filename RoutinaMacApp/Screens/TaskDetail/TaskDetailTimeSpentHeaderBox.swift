@@ -18,7 +18,14 @@ struct TaskDetailTimeSpentHeaderBox: View {
         sort: \.startedAt,
         order: .reverse
     ) private var activeAwaySessions: [AwaySession]
-    @AppStorage("macTaskDetailLastTimeEntryMinutes", store: SharedDefaults.app) private var savedEntryMinutes = 0
+    @AppStorage(
+        "macTaskDetailLastActualTimeEntryMinutes",
+        store: SharedDefaults.app
+    ) private var savedActualTimeEntryMinutes = 0
+    @AppStorage(
+        "macTaskDetailLastFocusCountdownMinutes",
+        store: SharedDefaults.app
+    ) private var savedFocusCountdownMinutes = TaskDetailTimeSpentPresentation.defaultFocusCountdownMinutes
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
@@ -34,8 +41,10 @@ struct TaskDetailTimeSpentHeaderBox: View {
     @Binding var entryMinutes: Int
     let onApplyMinutes: (Int) -> Void
     let onEditTotal: () -> Void
+    @State private var focusStartMode = TaskDetailFocusStartMode.countdown
 
-    private let quickEntryMinutes = [25, 45, 60]
+    private let actualTimeQuickEntryMinutes = [15, 30, 60]
+    private let focusCountdownQuickEntryMinutes = [25, 45, 60]
     private let stepMinutes = 5
 
     var body: some View {
@@ -155,38 +164,116 @@ struct TaskDetailTimeSpentHeaderBox: View {
             Divider()
                 .opacity(0.35)
 
-            manualEntryContent
+            actualTimeContent
 
-            if shouldShowFocusDetails {
-                focusContent
+            if shouldShowFocusTimerSection {
+                Divider()
+                    .opacity(0.35)
+
+                focusTimerContent
             }
         }
     }
 
-    private var manualEntryContent: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 14) {
-                durationStepper
-                quickDurationControls
-                entryActions
+    private var actualTimeContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            effortControlHeader(
+                title: "ACTUAL TIME",
+                detail: "Recorded duration"
+            )
+
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: 14) {
+                    actualTimeDurationStepper
+                    actualTimeQuickDurations
+                    actualTimeActions
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    actualTimeDurationStepper
+                    actualTimeQuickDurations
+                    actualTimeActions
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Log actual time")
+        }
+    }
+
+    private var focusTimerContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            effortControlHeader(
+                title: "FOCUS TIMER",
+                detail: "Attention-session tracking"
+            )
+
+            if canStartFocus {
+                focusStartControls
+            } else if !visibleActiveAwaySessions.isEmpty {
+                awaySessionBlockingContent
             }
 
-            VStack(alignment: .leading, spacing: 10) {
-                durationStepper
-                quickDurationControls
-                entryActions
+            if shouldShowFocusDetails && visibleActiveAwaySessions.isEmpty {
+                focusSessionContent
+            }
+        }
+    }
+
+    private func effortControlHeader(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var focusStartControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("Focus mode", selection: $focusStartMode) {
+                ForEach(TaskDetailFocusStartMode.allCases) { mode in
+                    Text(mode.title)
+                        .tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 260)
+
+            switch focusStartMode {
+            case .countdown:
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .center, spacing: 14) {
+                        focusCountdownDurationStepper
+                        focusCountdownQuickDurations
+                        startCountdownButton
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        focusCountdownDurationStepper
+                        focusCountdownQuickDurations
+                        startCountdownButton
+                    }
+                }
+            case .countUp:
+                startCountUpButton
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Add time")
+        .accessibilityLabel("Start focus timer")
     }
 
-    private var focusContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Divider()
-                .opacity(0.35)
+    private var awaySessionBlockingContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Away time is active", systemImage: "figure.walk")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
 
-            focusSessionContent
+            Text("End away time before starting a focus timer.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -202,29 +289,49 @@ struct TaskDetailTimeSpentHeaderBox: View {
         )
     }
 
-    private var durationStepper: some View {
+    private var actualTimeDurationStepper: some View {
+        durationStepper(
+            minutes: entryTotalMinutes,
+            accessibilityContext: "actual time",
+            onAdjust: { adjustEntry(by: $0) }
+        )
+    }
+
+    private var focusCountdownDurationStepper: some View {
+        durationStepper(
+            minutes: focusCountdownMinutes,
+            accessibilityContext: "focus countdown",
+            onAdjust: { adjustFocusCountdown(by: $0) }
+        )
+    }
+
+    private func durationStepper(
+        minutes: Int,
+        accessibilityContext: String,
+        onAdjust: @escaping (Int) -> Void
+    ) -> some View {
         HStack(spacing: 8) {
             stepperButton(
                 systemImage: "minus",
-                accessibilityLabel: "Decrease time by \(stepMinutes) minutes",
-                isDisabled: entryTotalMinutes <= TaskDetailTimeSpentPresentation.minimumMinutes
+                accessibilityLabel: "Decrease \(accessibilityContext) by \(stepMinutes) minutes",
+                isDisabled: minutes <= TaskDetailTimeSpentPresentation.minimumMinutes
             ) {
-                adjustEntry(by: -stepMinutes)
+                onAdjust(-stepMinutes)
             }
 
-            Text(compactEntryText)
+            Text(RoutineTimeSpentFormatting.compactMinutesText(minutes))
                 .font(.headline.weight(.semibold))
                 .monospacedDigit()
                 .foregroundStyle(.primary)
                 .frame(minWidth: 58)
-                .accessibilityLabel(TaskDetailHeaderBadgePresentation.durationText(for: entryTotalMinutes))
+                .accessibilityLabel(TaskDetailHeaderBadgePresentation.durationText(for: minutes))
 
             stepperButton(
                 systemImage: "plus",
-                accessibilityLabel: "Increase time by \(stepMinutes) minutes",
-                isDisabled: entryTotalMinutes >= TaskDetailTimeSpentPresentation.maximumMinutes
+                accessibilityLabel: "Increase \(accessibilityContext) by \(stepMinutes) minutes",
+                isDisabled: minutes >= TaskDetailTimeSpentPresentation.maximumMinutes
             ) {
-                adjustEntry(by: stepMinutes)
+                onAdjust(stepMinutes)
             }
         }
     }
@@ -255,20 +362,55 @@ struct TaskDetailTimeSpentHeaderBox: View {
         .accessibilityLabel(accessibilityLabel)
     }
 
-    private var quickDurationControls: some View {
+    private var actualTimeQuickDurations: some View {
+        quickDurationControls(
+            options: actualTimeQuickEntryMinutes,
+            selectedMinutes: entryTotalMinutes,
+            tint: .cyan,
+            accessibilityContext: "actual time",
+            onSelect: { setEntryTotal($0) }
+        )
+    }
+
+    private var focusCountdownQuickDurations: some View {
+        quickDurationControls(
+            options: focusCountdownQuickEntryMinutes,
+            selectedMinutes: focusCountdownMinutes,
+            tint: .teal,
+            accessibilityContext: "focus countdown",
+            onSelect: { setFocusCountdownMinutes($0) }
+        )
+    }
+
+    private func quickDurationControls(
+        options: [Int],
+        selectedMinutes: Int,
+        tint: Color,
+        accessibilityContext: String,
+        onSelect: @escaping (Int) -> Void
+    ) -> some View {
         HStack(spacing: 6) {
-            ForEach(quickEntryMinutes, id: \.self) { minutes in
-                quickDurationButton(minutes)
+            ForEach(options, id: \.self) { minutes in
+                quickDurationButton(
+                    minutes,
+                    isSelected: selectedMinutes == minutes,
+                    tint: tint,
+                    accessibilityContext: accessibilityContext,
+                    onSelect: onSelect
+                )
             }
         }
     }
 
-    private var entryActions: some View {
+    private var actualTimeActions: some View {
         HStack(alignment: .center, spacing: 8) {
             Button {
                 applyEntry()
             } label: {
-                Label(task.actualDurationMinutes == nil ? "Log" : "Add", systemImage: "plus.circle.fill")
+                Label(
+                    task.actualDurationMinutes == nil ? "Log time" : "Add time",
+                    systemImage: "plus.circle.fill"
+                )
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
@@ -289,45 +431,48 @@ struct TaskDetailTimeSpentHeaderBox: View {
                 .tint(.cyan)
                 .accessibilityLabel("Edit total time spent")
             }
-
-            if task.focusModeEnabled {
-                Button {
-                    startTimedFocus()
-                } label: {
-                    Label("Count down", systemImage: "timer")
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .tint(.teal)
-                .disabled(!canStartTimedFocus)
-                .accessibilityLabel("Start \(TaskDetailHeaderBadgePresentation.durationText(for: entryTotalMinutes)) countdown focus")
-            }
-
-            if task.focusModeEnabled {
-                Button {
-                    startCountUpFocus()
-                } label: {
-                    Label("Count up", systemImage: "stopwatch")
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .tint(.teal)
-                .disabled(!canStartFocus)
-                .accessibilityLabel("Start count up focus")
-            }
         }
     }
 
-    private func quickDurationButton(_ minutes: Int) -> some View {
-        let isSelected = entryTotalMinutes == minutes
-        let tint = Color.cyan
+    private var startCountdownButton: some View {
+        Button {
+            startFocus(durationSeconds: TimeInterval(focusCountdownMinutes * 60))
+        } label: {
+            Label("Start countdown", systemImage: "timer")
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+        .tint(.teal)
+        .accessibilityLabel(
+            "Start \(TaskDetailHeaderBadgePresentation.durationText(for: focusCountdownMinutes)) focus countdown"
+        )
+    }
 
-        return Button {
-            setEntryTotal(minutes)
+    private var startCountUpButton: some View {
+        Button {
+            startFocus(durationSeconds: 0)
+        } label: {
+            Label("Start count up", systemImage: "stopwatch")
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+        .tint(.teal)
+        .accessibilityLabel("Start count up focus")
+    }
+
+    private func quickDurationButton(
+        _ minutes: Int,
+        isSelected: Bool,
+        tint: Color,
+        accessibilityContext: String,
+        onSelect: @escaping (Int) -> Void
+    ) -> some View {
+        Button {
+            onSelect(minutes)
         } label: {
             Text(RoutineTimeSpentFormatting.compactMinutesText(minutes))
                 .font(.caption.weight(.semibold))
@@ -345,7 +490,9 @@ struct TaskDetailTimeSpentHeaderBox: View {
                 )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Set time entry to \(TaskDetailHeaderBadgePresentation.durationText(for: minutes))")
+        .accessibilityLabel(
+            "Set \(accessibilityContext) to \(TaskDetailHeaderBadgePresentation.durationText(for: minutes))"
+        )
     }
 
     private var displayText: String {
@@ -368,7 +515,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
 
         metrics.append(
             TaskDetailEffortMetric(
-                title: "TIME",
+                title: "ACTUAL TIME",
                 value: displayText,
                 systemImage: task.actualDurationMinutes == nil ? "clock.badge" : "clock.fill",
                 tint: .cyan,
@@ -397,6 +544,12 @@ struct TaskDetailTimeSpentHeaderBox: View {
         )
     }
 
+    private var focusCountdownMinutes: Int {
+        TaskDetailTimeSpentPresentation.resolvedFocusCountdownMinutes(
+            savedMinutes: savedFocusCountdownMinutes
+        )
+    }
+
     private var previewMinutes: Int {
         TaskDetailTimeSpentPresentation.previewTotalMinutes(
             currentMinutes: task.actualDurationMinutes,
@@ -404,27 +557,23 @@ struct TaskDetailTimeSpentHeaderBox: View {
         )
     }
 
-    private var compactEntryText: String {
-        RoutineTimeSpentFormatting.compactMinutesText(entryTotalMinutes)
-    }
-
     private var compactApplyTitle: String {
         let verb = task.actualDurationMinutes == nil ? "Log" : "Add"
         return "\(verb) \(RoutineTimeSpentFormatting.compactMinutesText(entryTotalMinutes))"
     }
 
+    private var shouldShowFocusTimerSection: Bool {
+        task.focusModeEnabled || hasActiveFocusForTask
+    }
+
     private var shouldShowFocusDetails: Bool {
-        task.focusModeEnabled
+        shouldShowFocusTimerSection
             && (
                 !activeSleepSessions.isEmpty
                     || !focusSessions.filter { $0.taskID == task.id && $0.state != .abandoned }.isEmpty
                     || focusSessions.contains { $0.state == .active }
                     || blockingFocusTitle != nil
             )
-    }
-
-    private var canStartTimedFocus: Bool {
-        canApplyEntry && canStartFocus
     }
 
     private var canStartFocus: Bool {
@@ -457,7 +606,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
         entryHours = clampedMinutes / 60
         entryMinutes = clampedMinutes % 60
         if persist {
-            savedEntryMinutes = clampedMinutes
+            savedActualTimeEntryMinutes = clampedMinutes
         }
     }
 
@@ -465,9 +614,17 @@ struct TaskDetailTimeSpentHeaderBox: View {
         setEntryTotal(entryTotalMinutes + minutes)
     }
 
+    private func setFocusCountdownMinutes(_ minutes: Int) {
+        savedFocusCountdownMinutes = TaskDetailTimeSpentPresentation.clampedMinutes(minutes)
+    }
+
+    private func adjustFocusCountdown(by minutes: Int) {
+        setFocusCountdownMinutes(focusCountdownMinutes + minutes)
+    }
+
     private func resetEntry() {
-        let storedMinutes = TaskDetailTimeSpentPresentation.clampedMinutes(savedEntryMinutes)
-        let defaultMinutes = savedEntryMinutes > 0
+        let storedMinutes = TaskDetailTimeSpentPresentation.clampedMinutes(savedActualTimeEntryMinutes)
+        let defaultMinutes = savedActualTimeEntryMinutes > 0
             ? storedMinutes
             : TaskDetailTimeSpentPresentation.defaultAdditionalEntryMinutes(
                 currentMinutes: task.actualDurationMinutes,
@@ -478,22 +635,12 @@ struct TaskDetailTimeSpentHeaderBox: View {
 
     private func applyEntry() {
         guard canApplyEntry else { return }
-        savedEntryMinutes = entryTotalMinutes
+        savedActualTimeEntryMinutes = entryTotalMinutes
         onApplyMinutes(previewMinutes)
     }
 
-    private func startTimedFocus() {
-        guard canStartTimedFocus else { return }
-        savedEntryMinutes = entryTotalMinutes
-        startFocus(durationSeconds: TimeInterval(entryTotalMinutes * 60))
-    }
-
-    private func startCountUpFocus() {
-        guard canStartFocus else { return }
-        startFocus(durationSeconds: 0)
-    }
-
     private func startFocus(durationSeconds: TimeInterval) {
+        guard canStartFocus else { return }
         do {
             _ = try FocusSessionSupport.startTaskFocus(
                 task: task,
@@ -502,7 +649,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
                 calendar: calendar
             )
         } catch {
-            NSLog("Failed to start task focus from time section: \(error.localizedDescription)")
+            NSLog("Failed to start task focus from Effort: \(error.localizedDescription)")
         }
     }
 }

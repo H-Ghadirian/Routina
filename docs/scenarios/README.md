@@ -89,6 +89,30 @@ And it does not change the todo's task-level Actual time
 And it does not change any routine completion log's Actual time
 And iOS and macOS follow the same rule
 
+### Mac Task Detail Separates Actual Time And Focus Inputs
+
+Area: Tasks / Focus / macOS Task Details
+Decision links: [0651](../decisions/0651-keep-task-focus-separate-from-actual-time.md), [0653](../decisions/0653-present-effort-values-as-values-not-feature-switches.md), [0655](../decisions/0655-separate-mac-task-detail-actual-time-and-focus-controls.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailTimeSpentPresentationTests.swift`
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+
+Given a one-off task's Effort card is expanded on Mac
+Then Actual time has its own input and Log/Add/Edit-total actions
+And Focus has its own Countdown/Count up choice and remembered countdown input
+
+Given the task has an Estimate but no saved Actual-time entry choice
+Then Actual time starts at 30 minutes instead of copying Estimate
+And Focus countdown starts independently at 25 minutes
+
+When the person chooses Count up
+Then no countdown duration control is shown
+
+Given Focus is running or another session blocks it
+Then running or blocking status replaces Focus start controls
+And Actual-time logging remains available
+
 Given the person uses Planner Plan Focus allocation instead
 When they explicitly save a split across selected planned tasks
 Then that deliberate attribution may add task time under the separate Planner allocation contract

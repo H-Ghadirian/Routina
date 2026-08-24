@@ -178,6 +178,39 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func macTaskDetailKeepsActualTimeAndFocusControlsIndependent() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
+        )
+        let actualActionsStart = try #require(source.range(of: "private var actualTimeActions"))
+        let focusActionsStart = try #require(
+            source.range(
+                of: "private var startCountdownButton",
+                range: actualActionsStart.upperBound..<source.endIndex
+            )
+        )
+        let actualActions = String(
+            source[actualActionsStart.lowerBound..<focusActionsStart.lowerBound]
+        )
+
+        #expect(source.contains("title: \"ACTUAL TIME\""))
+        #expect(source.contains("title: \"FOCUS TIMER\""))
+        #expect(source.contains("Picker(\"Focus mode\", selection: $focusStartMode)"))
+        #expect(source.contains("case .countdown:"))
+        #expect(source.contains("case .countUp:"))
+        #expect(source.contains("macTaskDetailLastActualTimeEntryMinutes"))
+        #expect(source.contains("macTaskDetailLastFocusCountdownMinutes"))
+        #expect(source.contains("actualTimeQuickEntryMinutes = [15, 30, 60]"))
+        #expect(source.contains("focusCountdownQuickEntryMinutes = [25, 45, 60]"))
+        #expect(source.contains("Label(\"Start countdown\", systemImage: \"timer\")"))
+        #expect(source.contains("Label(\"Start count up\", systemImage: \"stopwatch\")"))
+        #expect(!actualActions.contains("startFocus"))
+        #expect(!actualActions.contains("Count down"))
+        #expect(!actualActions.contains("Count up"))
+        #expect(!source.contains("macTaskDetailLastTimeEntryMinutes"))
+    }
+
+    @Test
     func macTaskDetailsKeepTaskLadderGroupActivationInTheEditor() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"

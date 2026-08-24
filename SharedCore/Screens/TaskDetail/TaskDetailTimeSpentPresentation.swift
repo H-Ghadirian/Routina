@@ -2,6 +2,8 @@ import Foundation
 
 enum TaskDetailTimeSpentPresentation {
     static let fallbackEntryMinutes = 25
+    static let defaultActualEntryMinutes = 30
+    static let defaultFocusCountdownMinutes = 25
     static let minimumMinutes = 1
     static let maximumMinutes = 1_440
 
@@ -27,12 +29,16 @@ enum TaskDetailTimeSpentPresentation {
     }
 
     static func defaultAdditionalEntryMinutes(
-        currentMinutes: Int?,
-        estimatedMinutes: Int?
+        currentMinutes _: Int?,
+        estimatedMinutes _: Int?
     ) -> Int {
-        currentMinutes == nil
-            ? defaultEditMinutes(currentMinutes: nil, estimatedMinutes: estimatedMinutes)
-            : fallbackEntryMinutes
+        defaultActualEntryMinutes
+    }
+
+    static func resolvedFocusCountdownMinutes(savedMinutes: Int) -> Int {
+        savedMinutes > 0
+            ? clampedMinutes(savedMinutes)
+            : defaultFocusCountdownMinutes
     }
 
     static func clampedMinutes(_ minutes: Int) -> Int {
@@ -90,4 +96,20 @@ enum TaskDetailTimeSpentPresentation {
         !hasActiveFocus
     }
 
+}
+
+enum TaskDetailFocusStartMode: String, CaseIterable, Identifiable {
+    case countdown
+    case countUp
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .countdown:
+            "Countdown"
+        case .countUp:
+            "Count up"
+        }
+    }
 }
