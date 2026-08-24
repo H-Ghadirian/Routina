@@ -28,16 +28,25 @@ struct HomeMacStatsQuerySection: View {
 struct HomeMacStatsTaskTypeSection: View {
     let selectedTaskTypeFilter: StatsTaskTypeFilter
     let onSelectTaskTypeFilter: (StatsTaskTypeFilter) -> Void
+    @Binding var isExpanded: Bool
+    let onSelectionComplete: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HomeMacStatsSectionTitle("Show")
-
+        HomeMacCollapsibleFilterSection(
+            title: "Show",
+            summaryText: selectedTaskTypeFilter.title,
+            systemImage: selectedTaskTypeFilter.macSidebarIconName,
+            tint: .blue,
+            isExpanded: $isExpanded
+        ) {
             RoutinaGlassSegmentedControl(
                 accessibilityLabel: "Stats task type",
                 options: StatsTaskTypeFilter.allCases,
                 selection: selectedTaskTypeFilter,
-                onSelect: onSelectTaskTypeFilter,
+                onSelect: { filter in
+                    onSelectTaskTypeFilter(filter)
+                    onSelectionComplete()
+                },
                 minimumSegmentWidth: 92,
                 horizontalPadding: 10,
                 fillsAvailableWidth: true,
@@ -54,16 +63,25 @@ struct HomeMacStatsDashboardScopeSection: View {
     let selectedDashboardScope: StatsDashboardScope
     let availableDashboardScopes: [StatsDashboardScope]
     let onSelectDashboardScope: (StatsDashboardScope) -> Void
+    @Binding var isExpanded: Bool
+    let onSelectionComplete: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HomeMacStatsSectionTitle("Scope")
-
+        HomeMacCollapsibleFilterSection(
+            title: "Scope",
+            summaryText: selectedDashboardScope.title,
+            systemImage: selectedDashboardScope.macSidebarIconName,
+            tint: .blue,
+            isExpanded: $isExpanded
+        ) {
             RoutinaGlassSegmentedControl(
                 accessibilityLabel: "Stats scope",
                 options: availableDashboardScopes,
                 selection: selectedDashboardScope,
-                onSelect: onSelectDashboardScope,
+                onSelect: { scope in
+                    onSelectDashboardScope(scope)
+                    onSelectionComplete()
+                },
                 minimumSegmentWidth: 92
             ) { scope in
                 Label(scope.title, systemImage: scope.macSidebarIconName)
@@ -76,48 +94,63 @@ struct HomeMacStatsDashboardScopeSection: View {
 struct HomeMacStatsRangeSection: View {
     let selectedRange: DoneChartRange
     let onSelectRange: (DoneChartRange) -> Void
+    @Binding var isExpanded: Bool
+    let onPresetSelectionComplete: () -> Void
     @State private var customStart = Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date()
     @State private var customEnd = Date()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HomeMacStatsSectionTitle("Time Range")
-
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Stats time range",
-                options: DoneChartRange.allCases,
-                selection: selectedRange,
-                onSelect: onSelectRange,
-                minimumSegmentWidth: 112,
-                horizontalPadding: 10,
-                fillsAvailableWidth: true,
-                maximumSegmentsPerRow: 2
-            ) { range in
-                Label(range.rawValue, systemImage: range.macSidebarIconName)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Button {
-                onSelectRange(.custom(from: customStart, through: customEnd))
-            } label: {
-                Label(
-                    selectedRange.kind == .custom ? selectedRange.periodDescription : "Custom range",
-                    systemImage: "calendar.badge.plus"
-                )
+        HomeMacCollapsibleFilterSection(
+            title: "Time Range",
+            summaryText: selectedRangeSummary,
+            systemImage: selectedRange.macSidebarIconName,
+            tint: .blue,
+            isExpanded: $isExpanded
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Stats time range",
+                    options: DoneChartRange.allCases,
+                    selection: selectedRange,
+                    onSelect: { range in
+                        onSelectRange(range)
+                        onPresetSelectionComplete()
+                    },
+                    minimumSegmentWidth: 112,
+                    horizontalPadding: 10,
+                    fillsAvailableWidth: true,
+                    maximumSegmentsPerRow: 2
+                ) { range in
+                    Label(range.rawValue, systemImage: range.macSidebarIconName)
+                }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
 
-            if selectedRange.kind == .custom {
-                DatePicker("From", selection: $customStart, in: ...customEnd, displayedComponents: .date)
-                    .onChange(of: customStart) { _, _ in applyCustomDates() }
-                DatePicker("Through", selection: $customEnd, in: customStart..., displayedComponents: .date)
-                    .onChange(of: customEnd) { _, _ in applyCustomDates() }
+                Button {
+                    onSelectRange(.custom(from: customStart, through: customEnd))
+                } label: {
+                    Label(
+                        selectedRange.kind == .custom ? selectedRange.periodDescription : "Custom range",
+                        systemImage: "calendar.badge.plus"
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if selectedRange.kind == .custom {
+                    DatePicker("From", selection: $customStart, in: ...customEnd, displayedComponents: .date)
+                        .onChange(of: customStart) { _, _ in applyCustomDates() }
+                    DatePicker("Through", selection: $customEnd, in: customStart..., displayedComponents: .date)
+                        .onChange(of: customEnd) { _, _ in applyCustomDates() }
+                }
             }
         }
         .onAppear(perform: syncCustomDates)
         .onChange(of: selectedRange) { _, _ in syncCustomDates() }
+    }
+
+    private var selectedRangeSummary: String {
+        selectedRange.kind == .custom ? selectedRange.periodDescription : selectedRange.rawValue
     }
 
     private func applyCustomDates() {
@@ -133,19 +166,26 @@ struct HomeMacStatsRangeSection: View {
 
 struct HomeMacStatsImportanceFilterSection: View {
     @Binding var selectedFilter: ImportanceUrgencyFilterCell?
+    @Binding var isExpanded: Bool
+    let onSelectionComplete: () -> Void
 
     var body: some View {
         HomeMacCollapsibleFilterSection(
             title: "Importance",
             summaryText: minimumImportance.map { "\($0.title)+" } ?? "All",
             systemImage: "star.fill",
-            tint: .orange
+            tint: .orange,
+            isExpanded: $isExpanded
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 RoutinaGlassSegmentedControl(
                     accessibilityLabel: "Minimum importance",
                     options: importanceOptions,
-                    selection: minimumImportanceBinding,
+                    selection: minimumImportance,
+                    onSelect: { importance in
+                        minimumImportanceBinding.wrappedValue = importance
+                        onSelectionComplete()
+                    },
                     horizontalPadding: 10,
                     verticalPadding: 8,
                     fillsAvailableWidth: true,
@@ -184,19 +224,26 @@ struct HomeMacStatsImportanceFilterSection: View {
 
 struct HomeMacStatsUrgencyFilterSection: View {
     @Binding var selectedFilter: ImportanceUrgencyFilterCell?
+    @Binding var isExpanded: Bool
+    let onSelectionComplete: () -> Void
 
     var body: some View {
         HomeMacCollapsibleFilterSection(
             title: "Urgency",
             summaryText: minimumUrgency.map { "\($0.title)+" } ?? "All",
             systemImage: "clock.badge.exclamationmark",
-            tint: .red
+            tint: .red,
+            isExpanded: $isExpanded
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 RoutinaGlassSegmentedControl(
                     accessibilityLabel: "Minimum urgency",
                     options: urgencyOptions,
-                    selection: minimumUrgencyBinding,
+                    selection: minimumUrgency,
+                    onSelect: { urgency in
+                        minimumUrgencyBinding.wrappedValue = urgency
+                        onSelectionComplete()
+                    },
                     horizontalPadding: 10,
                     verticalPadding: 8,
                     fillsAvailableWidth: true,

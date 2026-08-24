@@ -1005,6 +1005,31 @@ When the person chooses Add tags or Add tags to exclude
 Then the shared searchable picker presents selected, bounded Suggested, and lazy Browse rows as applicable
 And existing Stats filter matching and persistence remain unchanged
 
+### Mac Stats Progressively Reveals Single-Choice Filters
+
+Area: Stats / macOS UI
+Decision links: [0415](../decisions/0415-support-custom-stats-date-ranges.md), [0599](../decisions/0599-separate-mac-stats-priority-filters.md), [0654](../decisions/0654-progressively-reveal-mac-planner-header-choices.md), [0659](../decisions/0659-progressively-reveal-mac-stats-single-choice-filters.md)
+Current behavior: [Stats](../current-behavior/stats.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/MacStatsPriorityFilterPresentationTests.swift`
+
+Given the Mac Stats sidebar is visible
+When the person scans Scope, Show, Time Range, Importance, and Urgency
+Then each card stays collapsed with its current value visible
+When the person opens one of those cards
+Then its segmented choices expand inline and any other open single-choice card collapses
+And choosing an ordinary option applies the filter and collapses that card
+
+Given Time Range is expanded
+When the person selects Custom Range and edits either inclusive date
+Then the date controls stay expanded for the remaining edit
+And the collapsed card later shows the exact selected period
+
+Given Reduce Motion is enabled
+When a single-choice card opens or closes
+Then the state changes without an expansion animation
+And the full card header remains clickable and exposes its current value and expansion state to accessibility
+
 ### iOS Priority Filters Keep Importance And Urgency Independent
 
 Area: Tasks / UI

@@ -55,6 +55,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - [0632](../decisions/0632-integrate-mac-workspaces-in-the-main-window.md)
 - [0652](../decisions/0652-keep-effort-fields-independent-and-disclosures-honest.md)
 - [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md)
+- [0659](../decisions/0659-progressively-reveal-mac-stats-single-choice-filters.md)
 
 ## Current Contract
 
@@ -68,6 +69,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - Custom or plain buttons must make the intended button surface fill the target and define a matching `contentShape`.
 - Routina glass-backed cards, pills, and panels provide rounded hit shapes through their shared visual modifiers so new glass-backed buttons inherit the rule by default.
 - Shared glass segmented controls keep selected labels dark against their bright selected glass surface in both light and dark appearance.
+- Mac Stats keeps each single-choice filter's current value visible in a compact card and reveals only one segmented choice set at a time. Preset selections collapse their card, while Custom Range stays open for its two-date edit; Reduce Motion applies expansion changes without animation.
 - The iOS Home Filters Task Type control uses text-only `All`, `Routines`, and `Todos` segments with compact padding and enough minimum width to keep every label complete inside the filter sheet.
 - iOS Home, Stats, and Timeline Filters show their available choices together as compact current-value rows without a separate heading repeating a row's name. A Priority heading groups the independently named Importance and Urgency rows on all three surfaces plus Pressure and Thinking needed on Home. Each row opens a persistent detail sheet whose navigation title names the choice once; inline pickers suppress the same visible label while retaining their accessibility label. The Tags entry opens the searchable catalog only when selected, so the primary filter sheet never expands every saved tag. Timeline adds a searchable Flags entry when task-backed activity exposes Flags; selecting one or more deliberately reveals matching activity, including entries hidden from the default Timeline by a Flag rule. Clear Filters remains a separate direct primary-sheet action.
 - iOS collapsible Home section headers show their compact task count with secondary contrast so the number remains readable in light and dark appearance.

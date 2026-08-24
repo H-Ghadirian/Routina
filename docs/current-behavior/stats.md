@@ -37,6 +37,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0549](../decisions/0549-filter-stats-by-task-flags.md)
 - [0550](../decisions/0550-make-apple-health-stats-prompt-dismissible.md)
 - [0658](../decisions/0658-defer-mac-stats-tag-catalog-to-searchable-pickers.md)
+- [0659](../decisions/0659-progressively-reveal-mac-stats-single-choice-filters.md)
 - [0096](../decisions/0096-show-healthkit-movement-stats.md)
 
 ## Current Contract
@@ -61,7 +62,8 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Stats filter Query sections are unavailable in production. Development builds can enable them through Support & About -> Beta Experiments -> `Show filter query sections`; existing advanced query state remains compatible.
 - Stats filters can independently include or exclude task Flags with `All` / `Any` matching. Those choices recalculate task-bound activity totals, charts, task counts, assumed totals, tag usage, and associated focus sessions from the cached Stats snapshot; independent integrations and logs retain their own scope.
 - The macOS Stats sidebar keeps tag filtering in one collapsible Tags card. Its ordinary state shows only active included and excluded chips, reveals `All` / `Any` only for multi-tag rules, and opens searchable Add-tag popovers for the full catalog, pinned selections, bounded related suggestions, counts, and lazy Browse rows. Include/exclude matching and persistence are unchanged.
-- The macOS Stats sidebar presents Importance and Urgency as separate minimum-threshold sections. Changing one preserves the other, while `All` clears only that axis and the existing combined matching and persistence remain unchanged.
+- The macOS Stats sidebar presents Scope, Show, Time Range, Importance, and Urgency as compact current-value cards with one shared temporary expansion. Opening one reveals its complete segmented choices and collapses any other open single-choice card; choosing an ordinary option applies it and collapses the card. Custom Range stays expanded while its inclusive dates are edited and summarizes the exact period when collapsed. Reduce Motion skips the transition, and Query, Tags, and Flags retain their multi-value disclosure behavior.
+- Importance and Urgency remain separate minimum-threshold filters. Changing one preserves the other, while `All` clears only that axis and the existing combined matching and persistence remain unchanged.
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
 - Stats summary cards show assumed-done daily Gentle-routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
 - Stats task-type filtering offers only `All`, `Routines`, and `Todos`, matching the two persisted task kinds. No additional task-kind count, time card, filter, or dashboard item exists.

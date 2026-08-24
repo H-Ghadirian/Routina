@@ -1,12 +1,15 @@
 import SwiftUI
 
 struct HomeMacCollapsibleFilterSection<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let title: String
     let summaryText: String
     let systemImage: String
     let tint: Color
+    let externallyManagedExpansion: Binding<Bool>?
     @ViewBuilder let content: () -> Content
-    @State private var isExpanded = false
+    @State private var locallyManagedExpansion = false
     @State private var contentHeight: CGFloat = 0
 
     init(
@@ -14,12 +17,14 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
         summaryText: String = "",
         systemImage: String = "slider.horizontal.3",
         tint: Color = .accentColor,
+        isExpanded: Binding<Bool>? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
         self.summaryText = summaryText
         self.systemImage = systemImage
         self.tint = tint
+        self.externallyManagedExpansion = isExpanded
         self.content = content
     }
 
@@ -32,7 +37,8 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(title)
-            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+            .accessibilityValue(accessibilityValue)
+            .accessibilityHint(isExpanded ? "Hide options" : "Show all options")
 
             collapsibleContent
         }
@@ -48,6 +54,10 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(tint.opacity(isExpanded ? 0.28 : 0.18), lineWidth: 1)
         )
+        .animation(
+            accessibilityReduceMotion ? nil : .snappy(duration: 0.22),
+            value: isExpanded
+        )
     }
 
     private var collapsibleContent: some View {
@@ -60,7 +70,6 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
             .opacity(isExpanded ? 1 : 0)
             .clipped()
             .accessibilityHidden(!isExpanded)
-            .animation(.snappy(duration: 0.22), value: isExpanded)
     }
 
     private var contentHeightReader: some View {
@@ -117,9 +126,22 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
     }
 
     private func toggleExpanded() {
-        withAnimation(.snappy(duration: 0.22)) {
-            isExpanded.toggle()
+        let newValue = !isExpanded
+        if let externallyManagedExpansion {
+            externallyManagedExpansion.wrappedValue = newValue
+        } else {
+            locallyManagedExpansion = newValue
         }
+    }
+
+    private var isExpanded: Bool {
+        externallyManagedExpansion?.wrappedValue ?? locallyManagedExpansion
+    }
+
+    private var accessibilityValue: String {
+        let expansionValue = isExpanded ? "Expanded" : "Collapsed"
+        guard !summaryText.isEmpty else { return expansionValue }
+        return "\(summaryText), \(expansionValue)"
     }
 }
 

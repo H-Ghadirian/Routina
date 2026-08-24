@@ -5,6 +5,7 @@ struct HomeMacStatsSidebarView: View {
         UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var showsFilterQuerySections = false
+    @State private var expandedSingleChoiceSection: HomeMacStatsSingleChoiceSection?
 
     let selectedTaskTypeFilter: StatsTaskTypeFilter
     let onSelectTaskTypeFilter: (StatsTaskTypeFilter) -> Void
@@ -54,26 +55,36 @@ struct HomeMacStatsSidebarView: View {
                     HomeMacStatsDashboardScopeSection(
                         selectedDashboardScope: selectedDashboardScope,
                         availableDashboardScopes: availableDashboardScopes,
-                        onSelectDashboardScope: onSelectDashboardScope
+                        onSelectDashboardScope: onSelectDashboardScope,
+                        isExpanded: expansionBinding(for: .scope),
+                        onSelectionComplete: { collapse(.scope) }
                     )
                 }
 
                 HomeMacStatsTaskTypeSection(
                     selectedTaskTypeFilter: selectedTaskTypeFilter,
-                    onSelectTaskTypeFilter: onSelectTaskTypeFilter
+                    onSelectTaskTypeFilter: onSelectTaskTypeFilter,
+                    isExpanded: expansionBinding(for: .taskType),
+                    onSelectionComplete: { collapse(.taskType) }
                 )
 
                 HomeMacStatsRangeSection(
                     selectedRange: selectedRange,
-                    onSelectRange: onSelectRange
+                    onSelectRange: onSelectRange,
+                    isExpanded: expansionBinding(for: .timeRange),
+                    onPresetSelectionComplete: { collapse(.timeRange) }
                 )
 
                 HomeMacStatsImportanceFilterSection(
-                    selectedFilter: $selectedImportanceUrgencyFilter
+                    selectedFilter: $selectedImportanceUrgencyFilter,
+                    isExpanded: expansionBinding(for: .importance),
+                    onSelectionComplete: { collapse(.importance) }
                 )
 
                 HomeMacStatsUrgencyFilterSection(
-                    selectedFilter: $selectedImportanceUrgencyFilter
+                    selectedFilter: $selectedImportanceUrgencyFilter,
+                    isExpanded: expansionBinding(for: .urgency),
+                    onSelectionComplete: { collapse(.urgency) }
                 )
 
                 if !allTags.isEmpty {
@@ -114,4 +125,28 @@ struct HomeMacStatsSidebarView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
+
+    private func expansionBinding(
+        for section: HomeMacStatsSingleChoiceSection
+    ) -> Binding<Bool> {
+        Binding(
+            get: { expandedSingleChoiceSection == section },
+            set: { isExpanded in
+                expandedSingleChoiceSection = isExpanded ? section : nil
+            }
+        )
+    }
+
+    private func collapse(_ section: HomeMacStatsSingleChoiceSection) {
+        guard expandedSingleChoiceSection == section else { return }
+        expandedSingleChoiceSection = nil
+    }
+}
+
+private enum HomeMacStatsSingleChoiceSection: Hashable {
+    case scope
+    case taskType
+    case timeRange
+    case importance
+    case urgency
 }

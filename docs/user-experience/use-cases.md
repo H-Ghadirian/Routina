@@ -275,11 +275,11 @@ The last duration selected in that sheet is shown as Last choice and selected by
 
 **Need:** See meaningful summaries for a chosen period and understand their scope.
 
-**Desired experience:** Stats uses the same selected date boundaries across reports, hides empty or unavailable reports, distinguishes recorded from assumed activity, counts synchronized copies of one focus session only once, and lets the person customize what matters. Time charts use the available width on each device and keep date axes sparse, complete, and readable instead of truncating labels or compressing the plot into unused space.
+**Desired experience:** Stats uses the same selected date boundaries across reports, hides empty or unavailable reports, distinguishes recorded from assumed activity, counts synchronized copies of one focus session only once, and lets the person customize what matters. Time charts use the available width on each device and keep date axes sparse, complete, and readable instead of truncating labels or compressing the plot into unused space. On Mac, the sidebar keeps the current Scope, Show, Time Range, Importance, and Urgency values visible in compact cards; selecting one reveals its direct choices and closes any other open single-choice card. Preset choices collapse after selection, while Custom Range remains open until the person finishes choosing its dates and later summarizes the exact period.
 
 **Successful outcome:** The person can scan the period and identify a useful pattern without decoding overlapping labels, overlooking a compressed chart, or mistaking an estimate or incomplete dataset for certainty.
 
-**Example:** Compare focus time and completed work this month, while assumed routine completions remain visibly separate from recorded completions.
+**Example:** Expand Time Range, choose Month, and immediately scan the newly scoped reports while the range card returns to its compact `Month` summary. For a project review, choose Custom Range, edit both inclusive dates without the control closing after the first change, and collapse it to an exact period summary.
 
 **Availability:** Production for core reports; optional reports vary by platform, data, permission, and feature gate.
 
