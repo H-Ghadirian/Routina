@@ -132,6 +132,11 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func dayTaskRecordedCompletionSectionUsesDoneTitle() {
+        #expect(DayPlanDayTaskListItem.Section.done.title == "Done")
+    }
+
+    @Test
     func calendarListRowVisibilityRoundTripsHiddenFields() {
         let visibility = DayPlanCalendarListRowVisibility(
             hiddenFields: [.icon, .rowColor]
@@ -199,11 +204,18 @@ struct DayPlanPlannerStateTests {
                 "var confirmedAssumedDoneSectionCollapsed: Binding<Bool>? = nil"
             )
         )
+        #expect(
+            calendarSource.contains(
+                "var doneSectionCollapsed: Binding<Bool>? = nil"
+            )
+        )
         #expect(calendarSource.contains("case .planned:"))
         #expect(calendarSource.contains("plannedTasksSectionCollapsed"))
         #expect(calendarSource.contains("case .assumedDone:"))
         #expect(calendarSource.contains("case .confirmedAssumedDone:"))
         #expect(calendarSource.contains("confirmedAssumedDoneSectionCollapsed"))
+        #expect(calendarSource.contains("case .done:"))
+        #expect(calendarSource.contains("doneSectionCollapsed"))
         #expect(calendarSource.contains("isCollapsed?.wrappedValue != true"))
         #expect(calendarSource.contains("accessibilityValue(isCollapsed.wrappedValue ? \"Collapsed\" : \"Expanded\")"))
         #expect(
@@ -213,7 +225,7 @@ struct DayPlanPlannerStateTests {
         )
         #expect(settingsSource.contains("Text(\"Collapsed\").tag(true)"))
         #expect(settingsSource.contains("Text(\"Expanded\").tag(false)"))
-        #expect(settingsSource.contains("Confirmed assumed done sections use this state."))
+        #expect(settingsSource.contains("and Done sections use this state."))
         #expect(
             defaultsSource.contains(
                 ".appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault: true"

@@ -769,7 +769,7 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
             case .confirmedAssumedDone:
                 return "Confirmed assumed done"
             case .done:
-                return "Dones"
+                return "Done"
             }
         }
 

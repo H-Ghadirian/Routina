@@ -2954,6 +2954,12 @@ Given the Calendar List default is set to `Expanded`
 When a newly shown Calendar List day has assumed-done rows
 Then its `Assumed done` rows start expanded without changing the Planner snapshot, filters, completion history, or the focused day-task sidebar
 
+Given a Mac Calendar `List` day has recorded completion rows
+When its day-task column first appears with the Calendar List default set to `Collapsed`
+Then the `Done` header and count are visible while its rows are hidden
+And selecting the full header expands or collapses only that day’s recorded completion rows
+And the focused right-side day-task sidebar remains expanded
+
 Given the user opens Calendar filters and selects `Appearance`
 When they hide Icon, Time and Duration, or Row Color
 Then Calendar `List` columns and the focused day-task sidebar update their shared task rows
@@ -2962,7 +2968,7 @@ And row titles and eligible inline resolution actions remain available
 
 Given Task A is done for a day via linked source Task B
 When Task B is already visible in that day's Planner task list
-Then Task A is not also shown as a separate `Dones` row for the same fulfilled action
+Then Task A is not also shown as a separate `Done` row for the same fulfilled action
 
 Given Mac Home is fullscreen and Planner Calendar is in `List` task-view mode
 When the user exits fullscreen
@@ -2976,7 +2982,7 @@ And the immediate transition only overlays the visible day-task presentation ins
 Given an eligible standard planned row is visible for today or a past day in Mac Planner Calendar `List`
 When the user hovers the row and clicks its green check
 Then the represented occurrence is persisted through the normal task-completion history path
-And the row moves from `Planned tasks` to `Dones` immediately
+And the row moves from `Planned tasks` to `Done` immediately
 And no Planner block is created, moved, resized, or deleted
 
 Given a planned row represents a future day, sequential-step task, or checklist-completion task

@@ -35,7 +35,7 @@ struct RoutinaHelpCatalogTests {
         #expect(results.first?.id == "planner-day-counts")
         #expect(results.first?.details.contains(where: { $0.contains("Planned tasks") }) == true)
         #expect(results.first?.details.contains(where: { $0.contains("Assumed done") }) == true)
-        #expect(results.first?.details.contains(where: { $0.contains("Dones") }) == true)
+        #expect(results.first?.details.contains(where: { $0.contains("Done activity") }) == true)
     }
 
     @Test

@@ -191,11 +191,13 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Turn intention into a visual day without changing every task into a deadline.
 
-**Desired experience:** The Planner distinguishes fixed schedule, all-day intent, date-only planning, and flexible work. Items can be placed, moved, reviewed, or removed from the plan while retaining their original task meaning. Editing a task's fixed scheduled time immediately moves its automatically generated block, while a block the person deliberately moved or resized remains where they placed it. Each timed placement appears once; synchronization must not multiply one block into several overlapping copies. On macOS, day columns become narrower while they remain readable: a constrained block card preserves its original emoji/title/time positions; when width is tight it protects the title first, then adds the time or range, and then the emoji or status icon whenever each additional field fits. The range control never offers Week or 3 Days when the current width cannot render that choice. A tight or visually crowded header keeps its current view choices available through compact menus and shows `Go to date` as a calendar icon instead of ellipsized date text. When loaded data adds the Planner Focus control in Calendar, the date control collapses to that icon independently so the remaining choices can stay expanded if they fit.
+**Desired experience:** The Planner distinguishes fixed schedule, all-day intent, date-only planning, and flexible work. Items can be placed, moved, reviewed, or removed from the plan while retaining their original task meaning. Editing a task's fixed scheduled time immediately moves its automatically generated block, while a block the person deliberately moved or resized remains where they placed it. Each timed placement appears once; synchronization must not multiply one block into several overlapping copies. On macOS, day columns become narrower while they remain readable: a constrained block card preserves its original emoji/title/time positions; when width is tight it protects the title first, then adds the time or range, and then the emoji or status icon whenever each additional field fits. Calendar List calls recorded completion activity `Done` and lets the person independently expand or collapse every non-empty task section for each visible day while its count stays visible. The range control never offers Week or 3 Days when the current width cannot render that choice. A tight or visually crowded header keeps its current view choices available through compact menus and shows `Go to date` as a calendar icon instead of ellipsized date text. When loaded data adds the Planner Focus control in Calendar, the date control collapses to that icon independently so the remaining choices can stay expanded if they fit.
 
 **Successful outcome:** The person can see whether the day fits and adjust before committing attention.
 
-**Example:** A 10:00 appointment stays fixed, “write outline” is placed in a 45-minute block, and “buy groceries” remains an all-day intention. Narrowing the Mac window changes the range selector into a menu; if only Day and 3 Days fit, Week is absent until the window widens again.
+**Example:** A 10:00 appointment stays fixed, “write outline” is placed in a 45-minute block, and “buy groceries” remains an all-day intention. In Mac Calendar List, the person can keep a busy day’s `Done` rows collapsed while retaining the completion count, then expand only that section to review it. Narrowing the Mac window changes the range selector into a menu; if only Day and 3 Days fit, Week is absent until the window widens again.
+
+**Evidence:** User-requested Calendar List wording and disclosure consistency on 2026-08-24.
 
 **Availability:** Production on macOS. Compact-platform planning routes may differ.
 
@@ -337,7 +339,7 @@ Settings search should take the person directly to Flags, Tags, Sections, or iCl
 
 **Successful outcome:** The person can interpret Routina and decide what to do next without guessing, exposing personal tasks just to obtain product help, or receiving an answer based on a generic productivity app.
 
-**Example:** In macOS Planner Calendar, the person asks what the number above Tuesday means and learns that it combines visible Planned tasks, Assumed done, and Dones for that day; selecting it opens the breakdown, and current Calendar filters can change the number.
+**Example:** In macOS Planner Calendar, the person asks what the number above Tuesday means and learns that it combines visible Planned tasks, Assumed done, and Done activity for that day; selecting it opens the breakdown, and current Calendar filters can change the number.
 
 **Evidence:** User-described need and examples on 2026-08-18.
 

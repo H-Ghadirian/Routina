@@ -89,8 +89,8 @@ public enum RoutinaHelpCatalog {
             title: "Numbers above Planner day columns",
             summary: "In Calendar Schedule, the number above a day is the total visible task-work count for that date.",
             details: [
-                "The total combines the day\u{2019}s Planned tasks, Assumed done items, and Dones. Selecting the number opens the right-side day list with that breakdown.",
-                "Planned tasks can include date-only Plan to do tasks, task-backed all-day items, and timed task blocks. Dones are recorded completion activity and can include visible unassigned or tag Focus activity.",
+                "The total combines the day\u{2019}s Planned tasks, Assumed done items, and Done activity. Selecting the number opens the right-side day list with that breakdown.",
+                "Planned tasks can include date-only Plan to do tasks, task-backed all-day items, and timed task blocks. Done is recorded completion activity and can include visible unassigned or tag Focus activity.",
                 "Calendar search, task filters, hidden activity, and layer visibility can change the count. It does not count standalone Events, Away, Sleep, or other protected-session blocks.",
                 "Calendar List replaces the compact day-header number with separate per-day section counts."
             ],

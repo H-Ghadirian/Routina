@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0650](0650-use-done-label-and-collapse-recorded-completion-calendar-list-sections.md) refines [0367](0367-show-day-agenda-done-sections.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), [0529](0529-collapse-calendar-list-planned-task-sections.md), [0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Planner uses `Done` for recorded-completion sections, and Mac Calendar `List` gives that section the same independent per-day disclosure and shared default as its other task sections without changing the focused sidebar or cached presentation work.
 - **[0649](0649-give-each-task-ladder-metric-an-independent-time-rule.md) revises [0592](0592-derive-time-based-task-ladder-values-from-repeating-due-dates.md) and supersedes [0646](superseded/0646-compact-mac-changes-over-time-editing.md):** each time-varying Task Ladder metric independently chooses its After done value, target, due/before-due/overdue timing, and day count in a shared picker-sentence editor; After done lead windows cannot exceed their recurrence interval, and old shared rules decode compatibly.
 - **[0648](0648-keep-time-varying-task-ladder-values-read-only-in-details.md) revises [0642](0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md), [0644](0644-progressively-reveal-mac-task-detail-value-options.md), and [0604](0604-expose-time-based-ladder-values-in-task-forms-and-details.md):** when Changes over time is configured, Task Details identifies stored After done versus derived Now values, keeps all four Task Ladder values read-only, and routes coherent value-and-rule changes through Edit Task.
 - **[0647](0647-scope-automatic-section-rules-to-their-surface.md) revises [0640](0640-route-unassigned-backlog-candidates-by-tags.md) and refines [0635](0635-separate-mac-settings-section-surfaces.md) and [0460](0460-match-custom-section-tags-by-any-or-all.md):** Main task list and Backlog automatic rules are surface-scoped; a retained Main task list path no longer blocks matching hidden work from Backlog classification, while explicit Backlog paths remain authoritative and removing the hiding Flag restores the retained Main path.
@@ -779,6 +780,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0650](0650-use-done-label-and-collapse-recorded-completion-calendar-list-sections.md) | Use Done Label and Collapse Recorded-Completion Calendar List Sections | Accepted | 2026-08-24 |
 | [0649](0649-give-each-task-ladder-metric-an-independent-time-rule.md) | Give Each Task Ladder Metric an Independent Time Rule | Accepted | 2026-08-24 |
 | [0648](0648-keep-time-varying-task-ladder-values-read-only-in-details.md) | Keep Time-Varying Task Ladder Values Read-Only in Details | Accepted | 2026-08-23 |
 | [0647](0647-scope-automatic-section-rules-to-their-surface.md) | Scope Automatic Section Rules to Their Surface | Accepted | 2026-08-23 |
