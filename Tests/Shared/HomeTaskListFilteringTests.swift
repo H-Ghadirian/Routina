@@ -2912,20 +2912,24 @@ struct HomeTaskListFilteringTests {
         let defaultFields = HomeTaskRowField.availableAppearanceFields(
             showsTaskTypeBadge: false,
             showsGoals: false,
-            showsPlaces: false
+            showsPlaces: false,
+            showsFlags: true
         )
         #expect(!defaultFields.contains(.taskTypeBadge))
         #expect(!defaultFields.contains(.goals))
         #expect(!defaultFields.contains(.place))
+        #expect(defaultFields.contains(.flags))
 
         let betaFields = HomeTaskRowField.availableAppearanceFields(
             showsTaskTypeBadge: false,
             showsGoals: true,
-            showsPlaces: true
+            showsPlaces: true,
+            showsFlags: false
         )
         #expect(!betaFields.contains(.taskTypeBadge))
         #expect(betaFields.contains(.goals))
         #expect(betaFields.contains(.place))
+        #expect(!betaFields.contains(.flags))
     }
 }
 

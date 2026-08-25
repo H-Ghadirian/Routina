@@ -152,7 +152,8 @@ List {
         HomeTaskRowField.availableAppearanceFields(
             showsTaskTypeBadge: true,
             showsGoals: isGoalsTabEnabled,
-            showsPlaces: isPlacesEnabled
+            showsPlaces: isPlacesEnabled,
+            showsFlags: false
         )
     }
 

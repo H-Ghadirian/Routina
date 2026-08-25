@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md) refines [0038](0038-configure-home-task-row-fields.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0452](0452-label-date-planned-tasks-in-their-ordinary-section.md), and [0636](0636-replace-configurable-flags-with-built-in-behaviors.md):** Mac main task-list rows reserve the first content line for the title and consolidate planning labels, Tags, Flags, Goals, and lifecycle status on the next line, with Flags independently configurable in Task Row appearance.
 - **[0661](0661-make-ios-active-focus-banner-actionable.md) refines [0123](0123-pause-focus-timers.md), [0127](0127-pause-board-focus-timers.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), and [0545](0545-bound-ios-foreground-focus-reconciliation.md):** The full iOS Home active-Focus banner always opens controls for task, tag, unassigned, and sprint timers, with Open Task available for task-backed Focus.
 - **[0660](0660-make-mac-planner-filters-explicit-composable-and-bounded.md) supersedes [0364](superseded/0364-rename-shared-mac-filter-scope-to-all.md), revises [0316](0316-present-mac-home-filters-as-companion-pane.md), [0319](0319-open-planner-filters-in-home-filter-pane.md), and [0656](0656-make-mac-all-filters-task-ladder-complete-and-searchable.md), and refines [0256](0256-move-mac-timeline-row-appearance-to-timeline-filter-detail.md) and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Planner filters explicitly name the cross-surface scope `Shared`, indicate active scopes, compose Timeline Type with task-outcome Status, keep fullscreen content within 840 points, and cache Calendar shared-task membership outside repeated render work.
 - **[0659](0659-progressively-reveal-mac-stats-single-choice-filters.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), [0415](0415-support-custom-stats-date-ranges.md), [0599](0599-separate-mac-stats-priority-filters.md), and [0654](0654-progressively-reveal-mac-planner-header-choices.md):** Mac Stats keeps Scope, Show, Time Range, Importance, and Urgency compact, reveals one segmented choice card at a time, and keeps Custom Range open while its dates are edited.
@@ -790,6 +791,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md) | Reserve the First Mac Task-Row Line for the Title | Accepted | 2026-08-25 |
 | [0661](0661-make-ios-active-focus-banner-actionable.md) | Make the iOS Active Focus Banner Actionable | Accepted | 2026-08-25 |
 | [0660](0660-make-mac-planner-filters-explicit-composable-and-bounded.md) | Make Mac Planner Filters Explicit, Composable, and Bounded | Accepted | 2026-08-24 |
 | [0659](0659-progressively-reveal-mac-stats-single-choice-filters.md) | Progressively Reveal Mac Stats Single-Choice Filters | Accepted | 2026-08-24 |

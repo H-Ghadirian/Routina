@@ -363,7 +363,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
         HomeTaskRowField.availableAppearanceFields(
             showsTaskTypeBadge: false,
             showsGoals: showsGoalFilter,
-            showsPlaces: showsPlaceTaskRowField
+            showsPlaces: showsPlaceTaskRowField,
+            showsFlags: true
         )
     }
 

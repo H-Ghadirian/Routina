@@ -24,11 +24,17 @@ struct HomeBlockedStatusBadgeSourceTests {
         )
         let functionEnd = try #require(
             source.range(
-                of: "func emptyStateView(",
+                of: "func taskListStatusBadgeStyle(",
                 range: functionStart.upperBound..<source.endIndex
             )
         )
-        let functionSource = String(source[functionStart.lowerBound..<functionEnd.lowerBound])
+        let styleFunctionEnd = try #require(
+            source.range(
+                of: "func emptyStateView(",
+                range: functionEnd.upperBound..<source.endIndex
+            )
+        )
+        let functionSource = String(source[functionStart.lowerBound..<styleFunctionEnd.lowerBound])
 
         #expect(functionSource.contains("!task.hasActiveRelationshipBlocker"))
         #expect(functionSource.contains("task.todoState != .blocked"))

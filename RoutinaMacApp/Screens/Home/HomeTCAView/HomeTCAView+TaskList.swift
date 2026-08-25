@@ -215,6 +215,14 @@ extension HomeTCAView {
     ) -> some View {
         let metadataText = metadataPresenter.rowMetadataText(for: task)
         let rowVisibility = suppliedRowVisibility ?? taskRowVisibility
+        let statusBadgeStyle = rowVisibility.shows(.statusBadge)
+            ? taskListStatusBadgeStyle(for: task, metadataPresenter: metadataPresenter)
+            : nil
+        let showsSecondaryLabels = statusBadgeStyle != nil
+            || showsPlannedTodayLabel
+            || rowVisibility.shows(.tags) && !task.tags.isEmpty
+            || rowVisibility.shows(.flags) && !task.flags.isEmpty
+            || rowVisibility.shows(.goals) && !task.goalTitles.isEmpty
 
         return HStack(alignment: .top, spacing: 10) {
             if rowVisibility.shows(.icon) || rowVisibility.shows(.rowNumber) {
@@ -235,16 +243,27 @@ extension HomeTCAView {
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(task.name)
-                        .font(.headline)
-                        .lineLimit(1)
-                        .layoutPriority(1)
+                Text(task.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .layoutPriority(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Spacer(minLength: 8)
+                if showsSecondaryLabels {
+                    HStack(alignment: .center, spacing: 6) {
+                        taskListRowLabels(
+                            for: task,
+                            showsTags: rowVisibility.shows(.tags),
+                            showsFlags: rowVisibility.shows(.flags),
+                            showsGoals: rowVisibility.shows(.goals),
+                            showsPlannedTodayLabel: showsPlannedTodayLabel
+                        )
 
-                    if rowVisibility.shows(.statusBadge) {
-                        statusBadge(for: task, metadataPresenter: metadataPresenter)
+                        Spacer(minLength: 6)
+
+                        if let statusBadgeStyle {
+                            HomeStatusBadgeView(style: statusBadgeStyle)
+                        }
                     }
                 }
 
@@ -255,25 +274,6 @@ extension HomeTCAView {
                         .lineLimit(1)
                 }
 
-                if rowVisibility.shows(.tags) || showsPlannedTodayLabel {
-                    taskListRowLabels(
-                        for: task,
-                        showsTags: rowVisibility.shows(.tags),
-                        showsPlannedTodayLabel: showsPlannedTodayLabel
-                    )
-                }
-
-                if rowVisibility.shows(.goals), !task.goalTitles.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(task.goalTitles, id: \.self) { goal in
-                            Label(goal, systemImage: "target")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .lineLimit(1)
-                }
             }
 
             Spacer(minLength: 0)
@@ -384,9 +384,25 @@ extension HomeTCAView {
             )
     }
 
+    private func sidebarFlagChip(_ flag: String) -> some View {
+        Label(flag, systemImage: "flag.fill")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.orange)
+            .lineLimit(1)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .routinaGlassPill(tint: .orange, tintOpacity: 0.14)
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(Color.orange.opacity(0.28), lineWidth: 0.5)
+            )
+    }
+
     private func taskListRowLabels(
         for task: HomeFeature.RoutineDisplay,
         showsTags: Bool,
+        showsFlags: Bool,
+        showsGoals: Bool,
         showsPlannedTodayLabel: Bool
     ) -> some View {
         HStack(spacing: 6) {
@@ -409,6 +425,21 @@ extension HomeTCAView {
             if showsTags {
                 ForEach(task.tags, id: \.self) { tag in
                     sidebarTagChip(tag)
+                }
+            }
+
+            if showsFlags {
+                ForEach(task.flags, id: \.self) { flag in
+                    sidebarFlagChip(flag)
+                }
+            }
+
+            if showsGoals {
+                ForEach(task.goalTitles, id: \.self) { goal in
+                    Label(goal, systemImage: "target")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
         }

@@ -860,6 +860,15 @@ homeContent
         for task: HomeFeature.RoutineDisplay,
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>
     ) -> some View {
+        HomeStatusBadgeView(
+            style: taskListStatusBadgeStyle(for: task, metadataPresenter: metadataPresenter)
+        )
+    }
+
+    func taskListStatusBadgeStyle(
+        for task: HomeFeature.RoutineDisplay,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>
+    ) -> HomeStatusBadgeStyle? {
         if store.taskListMode == .todos,
            task.isOneOffTask,
            !task.isCompletedOneOff,
@@ -867,12 +876,10 @@ homeContent
            !task.isInProgress,
            !task.hasActiveRelationshipBlocker,
            task.todoState != .blocked {
-            EmptyView()
-        } else {
-            HomeStatusBadgeView(
-                style: metadataPresenter.badgeStyle(for: task).map { HomeStatusBadgeStyle($0.tuple) }
-            )
+            return nil
         }
+
+        return metadataPresenter.badgeStyle(for: task).map { HomeStatusBadgeStyle($0.tuple) }
     }
 
     @ViewBuilder

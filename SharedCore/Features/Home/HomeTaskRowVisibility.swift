@@ -13,6 +13,7 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
     case steps
     case place
     case tags
+    case flags
     case goals
 
     var id: Self { self }
@@ -43,6 +44,8 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
             return "Places"
         case .tags:
             return "Tags"
+        case .flags:
+            return "Flags"
         case .goals:
             return "Goals"
         }
@@ -74,6 +77,8 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
             return "Linked place availability."
         case .tags:
             return nil
+        case .flags:
+            return "Behavior markers assigned to the task."
         case .goals:
             return "Linked goals."
         }
@@ -98,12 +103,14 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
     static func availableAppearanceFields(
         showsTaskTypeBadge: Bool,
         showsGoals: Bool,
-        showsPlaces: Bool
+        showsPlaces: Bool,
+        showsFlags: Bool
     ) -> [Self] {
         allCases.filter { field in
             (showsTaskTypeBadge || field != .taskTypeBadge)
                 && (showsGoals || field != .goals)
                 && (showsPlaces || field != .place)
+                && (showsFlags || field != .flags)
         }
     }
 }
