@@ -329,6 +329,41 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_combinesContentTypeAndStatusFilters() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let routine = makeRoutineTask(name: "Routine")
+        let todo = makeTodoTask(name: "Todo")
+        let routineDone = makeLog(
+            taskID: routine.id,
+            timestamp: makeDate("2026-03-20T07:00:00Z"),
+            kind: .completed
+        )
+        let todoDone = makeLog(
+            taskID: todo.id,
+            timestamp: makeDate("2026-03-20T08:00:00Z"),
+            kind: .completed
+        )
+        let todoMissed = makeLog(
+            taskID: todo.id,
+            timestamp: makeDate("2026-03-20T09:00:00Z"),
+            kind: .missed
+        )
+
+        let entries = TimelineLogic.filteredEntries(
+            logs: [routineDone, todoDone, todoMissed],
+            tasks: [routine, todo],
+            range: .all,
+            filterType: .todos,
+            statusFilter: .done,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(entries.map(\.id) == [todoDone.id])
+    }
+
+    @Test
     func filteredEntries_skipsLogsWithNilTimestamp() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

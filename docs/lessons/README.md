@@ -41,6 +41,11 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0247 — Give synchronized session status an action destination](0247-give-synchronized-session-status-an-action-destination.md)
+- [0246 — Name filter scope by ownership](0246-name-filter-scope-by-ownership.md)
+- [0245 — Bound pane-derived fullscreen content](0245-bound-pane-derived-fullscreen-content.md)
+- [0244 — Store independent filter dimensions independently](0244-store-independent-filter-dimensions-independently.md)
+- [0243 — Cache cross-surface filter membership](0243-cache-cross-surface-filter-membership.md)
 - [0242 — Do not duplicate native transient dismissal](0242-do-not-duplicate-native-transient-dismissal.md)
 - [0241 — Do not turn action details into permanent dashboard chrome](0241-do-not-turn-action-details-into-permanent-dashboard-chrome.md)
 - [0240 — Give independent actions independent input state](0240-give-independent-actions-independent-input-state.md)

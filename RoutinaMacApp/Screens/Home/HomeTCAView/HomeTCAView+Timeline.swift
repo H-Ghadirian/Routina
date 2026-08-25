@@ -32,6 +32,7 @@ final class HomeMacTimelinePresentationCache: ObservableObject {
 struct HomeMacTimelinePresentationSignature: Equatable {
     let dataRevision: Int
     let filterType: TimelineFilterType
+    let statusFilter: TimelineStatusFilter
     let mediaFilter: TaskMediaFilter
     let selectedTags: Set<String>
     let includeTagMatchMode: RoutineTagMatchMode
@@ -119,6 +120,7 @@ extension HomeTCAView {
         let signature = HomeMacTimelinePresentationSignature(
             dataRevision: store.routineDisplaysRevision,
             filterType: effectiveMacTimelineFilterType,
+            statusFilter: store.selectedTimelineStatusFilter,
             mediaFilter: store.selectedTimelineMediaFilter,
             selectedTags: store.selectedTimelineTags,
             includeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
@@ -176,6 +178,7 @@ extension HomeTCAView {
             noteAttachmentNoteIDs: visibleNoteAttachmentIDs,
             range: .all,
             filterType: effectiveMacTimelineFilterType,
+            statusFilter: store.selectedTimelineStatusFilter,
             mediaFilter: store.selectedTimelineMediaFilter,
             now: now,
             calendar: calendar
@@ -250,7 +253,7 @@ extension HomeTCAView {
         )
     }
 
-    private var effectiveMacTimelineFilterType: TimelineFilterType {
+    var effectiveMacTimelineFilterType: TimelineFilterType {
         store.selectedTimelineFilterType.normalized(
             includingEventEmotion: areMacEventEmotionActionsEnabled,
             includingPlaces: isPlacesEnabled,
@@ -313,6 +316,7 @@ extension HomeTCAView {
 
     var macHasActiveTimelineFilters: Bool {
         effectiveMacTimelineFilterType != .all
+            || store.selectedTimelineStatusFilter != .all
             || !store.selectedTimelineTags.isEmpty
             || !store.selectedTimelineFlags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
@@ -639,6 +643,10 @@ extension HomeTCAView {
             labels.append(effectiveMacTimelineFilterType.title)
         }
 
+        if store.selectedTimelineStatusFilter != .all {
+            labels.append(store.selectedTimelineStatusFilter.title)
+        }
+
         if let filter = store.selectedTimelineImportanceUrgencyFilter {
             if let importance = filter.minimumImportance {
                 labels.append("Importance \(importance.title)+")
@@ -747,6 +755,10 @@ extension HomeTCAView {
                         )
                     ))
                 }
+            ),
+            selectedStatus: Binding(
+                get: { store.selectedTimelineStatusFilter },
+                set: { store.send(.selectedTimelineStatusFilterChanged($0)) }
             ),
             selectedMediaFilter: Binding(
                 get: { store.selectedTimelineMediaFilter },

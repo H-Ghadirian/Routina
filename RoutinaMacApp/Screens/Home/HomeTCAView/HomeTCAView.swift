@@ -69,13 +69,26 @@ enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .both:
-            return "All"
+            return "Shared"
         case .taskList:
             return "Task List"
         case .timeline:
             return "Timeline"
         case .calendar:
             return "Calendar"
+        }
+    }
+
+    var scopeDescription: String {
+        switch self {
+        case .both:
+            return "Applies to task-backed rows in Task List, Timeline, and Calendar."
+        case .taskList:
+            return "Filters and organizes Task List rows only."
+        case .timeline:
+            return "Filters Timeline activity only."
+        case .calendar:
+            return "Controls Calendar layers and Calendar task rows only."
         }
     }
 

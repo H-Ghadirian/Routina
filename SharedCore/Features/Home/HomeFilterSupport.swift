@@ -173,6 +173,7 @@ enum HomeTaskFilterMutation: Equatable {
 enum HomeTimelineFilterMutation: Equatable {
     case selectedRange(TimelineRange)
     case selectedFilterType(TimelineFilterType)
+    case selectedStatusFilter(TimelineStatusFilter)
     case selectedTag(String?)
     case selectedTags(Set<String>)
     case includeTagMatchMode(RoutineTagMatchMode)
@@ -384,6 +385,9 @@ enum HomeFilterEditor {
 
         case let .selectedFilterType(filterType):
             timelineFilters.selectedFilterType = filterType
+
+        case let .selectedStatusFilter(statusFilter):
+            timelineFilters.selectedStatusFilter = statusFilter
 
         case let .selectedTag(tag):
             timelineFilters.setSelectedTag(tag)

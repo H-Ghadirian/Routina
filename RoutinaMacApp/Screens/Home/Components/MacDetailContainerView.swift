@@ -10,6 +10,7 @@ enum MacDetailContainerSizing {
     )
     static let taskDetailPaneWidth: CGFloat = 420
     static let filterDetailPaneWidth: CGFloat = 420
+    static let fullscreenFilterContentMaxWidth: CGFloat = 840
     static let plannerTaskDetailMinWidth: CGFloat = plannerInspectorContentMinWidth + taskDetailPaneWidth
     static let boardInspectorWidth: CGFloat = 400
 }
@@ -261,6 +262,12 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             Divider()
 
             filterView()
+                .frame(
+                    maxWidth: MacDetailContainerSizing.fullscreenFilterContentMaxWidth,
+                    maxHeight: .infinity,
+                    alignment: .top
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .transition(.taskDetailFullscreen(edge: .trailing))
@@ -474,6 +481,10 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         hasher.combine(selectedThinkingNeededFilter)
         hasher.combine(selectedEstimationFilter)
         hasher.combine(calendar.startOfDay(for: Date()))
+        hasher.combine(String(describing: calendar.identifier))
+        hasher.combine(calendar.timeZone.identifier)
+        hasher.combine(calendar.firstWeekday)
+        hasher.combine(calendar.minimumDaysInFirstWeek)
         hasher.combine(selectedTags.sorted())
         hasher.combine(includeTagMatchMode.rawValue)
         hasher.combine(excludedTags.sorted())

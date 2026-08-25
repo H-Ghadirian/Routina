@@ -150,6 +150,7 @@ struct HomeFeature {
             isFilterSheetPresented: Bool = false,
             selectedTimelineRange: TimelineRange = .all,
             selectedTimelineFilterType: TimelineFilterType = .all,
+            selectedTimelineStatusFilter: TimelineStatusFilter = .all,
             selectedTimelineTag: String? = nil,
             selectedTimelineTags: Set<String> = [],
             selectedTimelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
@@ -240,7 +241,10 @@ struct HomeFeature {
             )
             self.timelineFilters = HomeTimelineFiltersState(
                 selectedRange: selectedTimelineRange,
-                selectedFilterType: selectedTimelineFilterType,
+                selectedFilterType: selectedTimelineFilterType.isStatusCase ? .all : selectedTimelineFilterType,
+                selectedStatusFilter: selectedTimelineStatusFilter == .all
+                    ? TimelineStatusFilter(legacyFilterType: selectedTimelineFilterType)
+                    : selectedTimelineStatusFilter,
                 selectedTag: selectedTimelineTag,
                 selectedTags: selectedTimelineTags.isEmpty ? selectedTimelineTag.map { [$0] } ?? [] : selectedTimelineTags,
                 includeTagMatchMode: selectedTimelineIncludeTagMatchMode,
@@ -459,6 +463,11 @@ struct HomeFeature {
         var selectedTimelineFilterType: TimelineFilterType {
             get { timelineFilters.selectedFilterType }
             set { timelineFilters.selectedFilterType = newValue }
+        }
+
+        var selectedTimelineStatusFilter: TimelineStatusFilter {
+            get { timelineFilters.selectedStatusFilter }
+            set { timelineFilters.selectedStatusFilter = newValue }
         }
 
         var selectedTimelineTag: String? {
@@ -712,6 +721,7 @@ struct HomeFeature {
         // Timeline filter actions
         case selectedTimelineRangeChanged(TimelineRange)
         case selectedTimelineFilterTypeChanged(TimelineFilterType)
+        case selectedTimelineStatusFilterChanged(TimelineStatusFilter)
         case selectedTimelineTagChanged(String?)
         case selectedTimelineTagsChanged(Set<String>)
         case selectedTimelineIncludeTagMatchModeChanged(RoutineTagMatchMode)
@@ -1377,6 +1387,9 @@ struct HomeFeature {
 
             case let .selectedTimelineFilterTypeChanged(filterType):
                 return filterMutationHandler().applyTimelineFilterMutation(.selectedFilterType(filterType), state: &state)
+
+            case let .selectedTimelineStatusFilterChanged(statusFilter):
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedStatusFilter(statusFilter), state: &state)
 
             case let .selectedTimelineTagChanged(tag):
                 return filterMutationHandler().applyTimelineFilterMutation(.selectedTag(tag), state: &state)

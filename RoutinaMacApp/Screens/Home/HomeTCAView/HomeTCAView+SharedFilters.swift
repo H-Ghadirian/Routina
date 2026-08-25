@@ -207,6 +207,7 @@ extension HomeTCAView {
             "taskEstimate:\(store.selectedEstimationFilter.rawValue)",
             "timelineEstimate:\(store.selectedTimelineEstimationFilter.rawValue)",
             "timelineType:\(store.selectedTimelineFilterType.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled, includingPlaces: isPlacesEnabled, includingNotes: isNotesEnabled, includingAway: isAwayEnabled, includingSleep: includesMacSleepTimelineFilters).rawValue)",
+            "timelineStatus:\(store.selectedTimelineStatusFilter.rawValue)",
             "timelineMedia:\(store.selectedTimelineMediaFilter.rawValue)",
             "eventsEmotions:\(areMacEventEmotionActionsEnabled)",
             "places:\(isPlacesEnabled)",

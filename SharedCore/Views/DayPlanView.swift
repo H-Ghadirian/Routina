@@ -1375,6 +1375,7 @@ private struct DayPlanTimelinePanelView: View {
     @StateObject private var completedSprintFocusBlocksCache = DayPlanSprintFocusBlocksCache()
     @StateObject private var activeSprintFocusBlocksCache = DayPlanSprintFocusBlocksCache()
     @StateObject private var renderSnapshotCache = DayPlanTimelineRenderSnapshotCache()
+    @StateObject private var calendarTaskFilterCache = DayPlanCalendarTaskFilterCache()
     @StateObject private var plannedDateTaskVisibilityCache = DayPlanPlannedDateTaskVisibilityCache()
     @StateObject private var dayTaskListItemsCache = DayPlanDayTaskListItemsCache()
     @AppStorage(
@@ -1413,6 +1414,7 @@ private struct DayPlanTimelinePanelView: View {
             completedSprintFocusBlocksCache: completedSprintFocusBlocksCache,
             activeSprintFocusBlocksCache: activeSprintFocusBlocksCache,
             renderSnapshotCache: renderSnapshotCache,
+            calendarTaskFilterCache: calendarTaskFilterCache,
             plannedDateTaskVisibilityCache: plannedDateTaskVisibilityCache,
             dayTaskListItemsCache: dayTaskListItemsCache,
             calendarFilters: calendarFilters,
@@ -1958,6 +1960,50 @@ private struct DayPlanTimelineRenderSnapshot {
     var planFocusAllocatedMinutesBySessionID: [UUID: Int]
 }
 
+private struct DayPlanCalendarTaskFilterSnapshot {
+    var allTaskIDs: Set<UUID>
+    var currentTasks: [RoutineTask]
+    var currentTaskIDs: Set<UUID>
+
+    var isFilterActive: Bool {
+        currentTaskIDs != allTaskIDs
+    }
+}
+
+@MainActor
+private final class DayPlanCalendarTaskFilterCache: ObservableObject {
+    private struct Key: Equatable {
+        var dataSnapshotID: UUID
+        var filterSeed: Int
+    }
+
+    private var cachedKey: Key?
+    private var cachedSnapshot: DayPlanCalendarTaskFilterSnapshot?
+
+    func snapshot(
+        dataSnapshotID: UUID,
+        tasks: [RoutineTask],
+        filterSeed: Int,
+        filter: (RoutineTask) -> Bool
+    ) -> DayPlanCalendarTaskFilterSnapshot {
+        let key = Key(dataSnapshotID: dataSnapshotID, filterSeed: filterSeed)
+        if cachedKey == key, let cachedSnapshot {
+            return cachedSnapshot
+        }
+
+        let allTaskIDs = Set(tasks.map(\.id))
+        let currentTasks = filterSeed == 0 ? tasks : tasks.filter(filter)
+        let snapshot = DayPlanCalendarTaskFilterSnapshot(
+            allTaskIDs: allTaskIDs,
+            currentTasks: currentTasks,
+            currentTaskIDs: filterSeed == 0 ? allTaskIDs : Set(currentTasks.map(\.id))
+        )
+        cachedKey = key
+        cachedSnapshot = snapshot
+        return snapshot
+    }
+}
+
 @MainActor
 private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
     private var cachedKey: DayPlanTimelineRenderSnapshotKey?
@@ -2424,6 +2470,7 @@ private struct DayPlanTimelinePanelContentView: View {
     @ObservedObject var completedSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
     @ObservedObject var activeSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
     @ObservedObject var renderSnapshotCache: DayPlanTimelineRenderSnapshotCache
+    @ObservedObject var calendarTaskFilterCache: DayPlanCalendarTaskFilterCache
     @ObservedObject var plannedDateTaskVisibilityCache: DayPlanPlannedDateTaskVisibilityCache
     @ObservedObject var dayTaskListItemsCache: DayPlanDayTaskListItemsCache
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
@@ -2476,8 +2523,14 @@ private struct DayPlanTimelinePanelContentView: View {
             activeSprintFocusBlocksCache: activeSprintFocusBlocksCache
         )
         let visibleDates = renderSnapshot.visibleDates
-        let allTaskIDs = Set(renderSnapshot.tasks.map(\.id))
-        let currentTasks = renderSnapshot.tasks.filter(calendarTaskFilter)
+        let taskFilterSnapshot = calendarTaskFilterCache.snapshot(
+            dataSnapshotID: dataSnapshotID,
+            tasks: renderSnapshot.tasks,
+            filterSeed: calendarTaskFilterCacheSeed,
+            filter: calendarTaskFilter
+        )
+        let allTaskIDs = taskFilterSnapshot.allTaskIDs
+        let currentTasks = taskFilterSnapshot.currentTasks
         let currentSleepSessions = renderSnapshot.sleepSessions
         let currentAwaySessions = renderSnapshot.awaySessions
         let currentFocusSessions = renderSnapshot.focusSessions
@@ -2499,8 +2552,8 @@ private struct DayPlanTimelinePanelContentView: View {
         let activeFocusRenderSessions = renderSnapshot.activeFocusRenderSessions
         let activeSprintFocusSessions = renderSnapshot.activeSprintFocusSessions
         let planFocusAllocatedMinutesBySessionID = renderSnapshot.planFocusAllocatedMinutesBySessionID
-        let currentTaskIDs = Set(currentTasks.map(\.id))
-        let isCalendarTaskFilterActive = currentTaskIDs != allTaskIDs
+        let currentTaskIDs = taskFilterSnapshot.currentTaskIDs
+        let isCalendarTaskFilterActive = taskFilterSnapshot.isFilterActive
         let filterAvailability = DayPlanCalendarFilterAvailability(
             includesEvents: includesEvents,
             includesAway: includesAway,

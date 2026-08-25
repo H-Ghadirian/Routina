@@ -131,6 +131,7 @@ enum AppFeatureTemporaryViewStateSupport {
             hideUnavailableRoutines: existing.hideUnavailableRoutines,
             homeSelectedTimelineRange: existing.homeSelectedTimelineRange,
             homeSelectedTimelineFilterType: existing.homeSelectedTimelineFilterType,
+            homeSelectedTimelineStatusFilter: existing.homeSelectedTimelineStatusFilter,
             homeSelectedTimelineTag: existing.homeSelectedTimelineTag,
             homeSelectedTimelineTags: existing.homeSelectedTimelineTags,
             homeTimelineIncludeTagMatchMode: existing.homeTimelineIncludeTagMatchMode,

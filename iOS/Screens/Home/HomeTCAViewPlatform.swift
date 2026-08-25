@@ -470,13 +470,8 @@ detailContent
             homeToolbarContent
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            HomePinnedFocusTimerBanner(taskNamesByID: store.taskNamesByID) { deepLink in
-                switch deepLink {
-                case let .task(taskID):
-                    openTask(taskID)
-                case .goal, .note, .event, .sprint, .sleep:
-                    RoutinaDeepLinkDispatcher.open(deepLink)
-                }
+            HomePinnedFocusTimerBanner(taskNamesByID: store.taskNamesByID) { presentation in
+                activeFocusPresentation = presentation
             }
         }
     }
@@ -526,6 +521,361 @@ struct HomeIOSView: View {
     }
 }
 
+struct ActiveFocusControlPresentation: Identifiable, Equatable {
+    let id: UUID
+    let kind: FocusSessionKind
+}
+
+struct ActiveFocusControlSheet: View {
+    @Environment(\.calendar) private var calendar
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Query(
+        filter: #Predicate<FocusSession> { session in
+            session.completedAt == nil && session.abandonedAt == nil
+        },
+        sort: \FocusSession.startedAt,
+        order: .reverse
+    ) private var focusSessions: [FocusSession]
+    @Query(
+        filter: #Predicate<SprintFocusSessionRecord> { session in
+            session.stoppedAt == nil
+        },
+        sort: \SprintFocusSessionRecord.startedAt,
+        order: .reverse
+    ) private var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query private var tasks: [RoutineTask]
+    @Query private var sprints: [BoardSprintRecord]
+    @State private var isPerformingAction = false
+    @State private var actionErrorMessage: String?
+
+    let presentation: ActiveFocusControlPresentation
+    let onOpenTask: (UUID) -> Void
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let status = activeStatus {
+                    ScrollView {
+                        activeContent(status)
+                            .padding(20)
+                    }
+                } else {
+                    ContentUnavailableView(
+                        "Focus Ended",
+                        systemImage: "checkmark.circle",
+                        description: Text("This timer is no longer active on this iPhone.")
+                    )
+                }
+            }
+            .navigationTitle("Focus")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .interactiveDismissDisabled(isPerformingAction)
+        .alert(
+            "Couldn’t Update Focus",
+            isPresented: Binding(
+                get: { actionErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        actionErrorMessage = nil
+                    }
+                }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                actionErrorMessage = nil
+            }
+        } message: {
+            Text(actionErrorMessage ?? "")
+        }
+    }
+
+    private func activeContent(_ status: ActiveFocusControlStatus) -> some View {
+        VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(status.kindTitle, systemImage: status.systemImage)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.teal)
+
+                Text(status.title)
+                    .font(.title2.weight(.bold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(status.timeText(at: context.date))
+                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+
+                    Text(status.stateText(at: context.date))
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            focusActionButtons(status)
+
+            if let taskID = status.taskID {
+                Button {
+                    dismiss()
+                    onOpenTask(taskID)
+                } label: {
+                    Label("Open Task", systemImage: "arrow.right.circle")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .disabled(isPerformingAction)
+            }
+
+            Text("Finish saves the focused time in history. Abandon ends the timer without keeping it as completed Focus history.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
+    private func focusActionButtons(_ status: ActiveFocusControlStatus) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                pauseResumeButton(status)
+                finishButton
+            }
+
+            VStack(spacing: 10) {
+                pauseResumeButton(status)
+                finishButton
+            }
+        }
+
+        Button(role: .destructive) {
+            performAction(dismissesOnSuccess: true) {
+                try FocusSessionSupport.abandonFocus(
+                    sessionID: presentation.id,
+                    kind: presentation.kind,
+                    context: modelContext
+                )
+            }
+        } label: {
+            Label("Abandon", systemImage: "xmark.circle")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .disabled(isPerformingAction)
+    }
+
+    private func pauseResumeButton(_ status: ActiveFocusControlStatus) -> some View {
+        Button {
+            performAction(dismissesOnSuccess: false) {
+                if status.isPaused {
+                    return try FocusSessionSupport.resumeFocus(
+                        sessionID: presentation.id,
+                        kind: presentation.kind,
+                        calendar: calendar,
+                        context: modelContext
+                    )
+                }
+                return try FocusSessionSupport.pauseFocus(
+                    sessionID: presentation.id,
+                    kind: presentation.kind,
+                    calendar: calendar,
+                    context: modelContext
+                )
+            }
+        } label: {
+            Label(
+                status.isPaused ? "Resume" : "Pause",
+                systemImage: status.isPaused ? "play.circle.fill" : "pause.circle.fill"
+            )
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(.teal)
+        .controlSize(.large)
+        .disabled(isPerformingAction)
+    }
+
+    private var finishButton: some View {
+        Button {
+            performAction(dismissesOnSuccess: true) {
+                try FocusSessionSupport.finishFocus(
+                    sessionID: presentation.id,
+                    kind: presentation.kind,
+                    context: modelContext,
+                    calendar: calendar
+                )
+            }
+        } label: {
+            Label("Finish", systemImage: "checkmark.circle.fill")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.teal)
+        .controlSize(.large)
+        .disabled(isPerformingAction)
+    }
+
+    private var activeStatus: ActiveFocusControlStatus? {
+        switch presentation.kind {
+        case .task, .tag, .unassigned:
+            guard let session = focusSessions.first(where: { $0.id == presentation.id }) else {
+                return nil
+            }
+
+            let task = session.isTaskFocus
+                ? tasks.first(where: { $0.id == session.taskID })
+                : nil
+            let title: String
+            if let tagTitle = session.focusTagTitle {
+                title = tagTitle
+            } else if session.isUnassigned {
+                title = "Unassigned focus"
+            } else {
+                title = normalizedTitle(task?.name, fallback: "Task focus")
+            }
+
+            return ActiveFocusControlStatus(
+                title: title,
+                kind: presentation.kind,
+                taskID: session.isTaskFocus ? session.taskID : nil,
+                startedAt: session.startedAt ?? .now,
+                plannedDurationSeconds: session.plannedDurationSeconds,
+                pausedAt: session.pausedAt,
+                accumulatedPausedSeconds: session.accumulatedPausedSeconds
+            )
+
+        case .sprint:
+            guard let session = sprintFocusSessions.first(where: { $0.id == presentation.id }) else {
+                return nil
+            }
+            let sprintTitle = sprints.first(where: { $0.id == session.sprintID })?.title
+            return ActiveFocusControlStatus(
+                title: normalizedTitle(sprintTitle, fallback: "Sprint focus"),
+                kind: .sprint,
+                taskID: nil,
+                startedAt: session.startedAt,
+                plannedDurationSeconds: 0,
+                pausedAt: session.pausedAt,
+                accumulatedPausedSeconds: session.accumulatedPausedSeconds
+            )
+        }
+    }
+
+    private func performAction(
+        dismissesOnSuccess: Bool,
+        action: () throws -> Bool
+    ) {
+        guard !isPerformingAction else { return }
+        isPerformingAction = true
+        defer { isPerformingAction = false }
+
+        do {
+            guard try action() else {
+                actionErrorMessage = "The timer changed on another device. Close this screen and try again after iCloud finishes syncing."
+                return
+            }
+            if dismissesOnSuccess {
+                dismiss()
+            }
+        } catch {
+            actionErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func normalizedTitle(_ title: String?, fallback: String) -> String {
+        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmedTitle.isEmpty ? fallback : trimmedTitle
+    }
+}
+
+private struct ActiveFocusControlStatus {
+    let title: String
+    let kind: FocusSessionKind
+    let taskID: UUID?
+    let startedAt: Date
+    let plannedDurationSeconds: TimeInterval
+    let pausedAt: Date?
+    let accumulatedPausedSeconds: TimeInterval
+
+    var isPaused: Bool {
+        pausedAt != nil
+    }
+
+    var kindTitle: String {
+        switch kind {
+        case .task:
+            return "Task Focus"
+        case .tag:
+            return "Tag Focus"
+        case .sprint:
+            return "Sprint Focus"
+        case .unassigned:
+            return "Focus"
+        }
+    }
+
+    var systemImage: String {
+        switch kind {
+        case .task:
+            return "timer"
+        case .tag:
+            return "tag.fill"
+        case .sprint:
+            return "flag.checkered"
+        case .unassigned:
+            return "stopwatch"
+        }
+    }
+
+    func timeText(at date: Date) -> String {
+        if overtimeSeconds(at: date) > 0 {
+            return "+\(FocusSessionFormatting.durationText(seconds: overtimeSeconds(at: date)))"
+        }
+        return FocusSessionFormatting.durationText(seconds: displaySeconds(at: date))
+    }
+
+    func stateText(at date: Date) -> String {
+        if isPaused {
+            return "Paused"
+        }
+        if overtimeSeconds(at: date) > 0 {
+            return "Overtime"
+        }
+        return plannedDurationSeconds > 0 ? "Remaining" : "Elapsed"
+    }
+
+    private func displaySeconds(at date: Date) -> TimeInterval {
+        let elapsed = elapsedSeconds(at: date)
+        guard plannedDurationSeconds > 0 else { return elapsed }
+        return max(0, plannedDurationSeconds - elapsed)
+    }
+
+    private func overtimeSeconds(at date: Date) -> TimeInterval {
+        guard plannedDurationSeconds > 0 else { return 0 }
+        return max(0, elapsedSeconds(at: date) - plannedDurationSeconds)
+    }
+
+    private func elapsedSeconds(at date: Date) -> TimeInterval {
+        let endDate = pausedAt ?? date
+        return max(0, endDate.timeIntervalSince(startedAt) - max(0, accumulatedPausedSeconds))
+    }
+}
+
 private struct HomePinnedFocusTimerBanner: View {
     @Query(
         filter: #Predicate<FocusSession> { session in
@@ -543,14 +893,12 @@ private struct HomePinnedFocusTimerBanner: View {
     ) private var sprintFocusSessions: [SprintFocusSessionRecord]
     @Query private var sprints: [BoardSprintRecord]
     let taskNamesByID: [UUID: String]
-    let onOpen: (RoutinaDeepLink) -> Void
+    let onOpen: (ActiveFocusControlPresentation) -> Void
 
     var body: some View {
         if let status = activeStatus {
             Button {
-                if let deepLink = status.deepLink {
-                    onOpen(deepLink)
-                }
+                onOpen(status.presentation)
             } label: {
                 SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
                     HStack(spacing: 10) {
@@ -568,10 +916,15 @@ private struct HomePinnedFocusTimerBanner: View {
                             .monospacedDigit()
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
                     }
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 14)
                     .frame(maxWidth: .infinity, minHeight: 42)
+                    .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .routinaGlassCard(cornerRadius: 10, tint: .teal, tintOpacity: 0.08, interactive: true)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -584,7 +937,8 @@ private struct HomePinnedFocusTimerBanner: View {
             .padding(.top, 6)
             .padding(.bottom, 8)
             .routinaGlassPanel(cornerRadius: 0, tint: .teal, tintOpacity: 0.04)
-            .accessibilityLabel(status.deepLink == nil ? "Running timer for \(status.title)" : "Open running timer for \(status.title)")
+            .accessibilityLabel("Open \(status.isPaused ? "paused" : "running") timer for \(status.title)")
+            .accessibilityHint("Shows Focus controls")
             .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
@@ -615,24 +969,19 @@ private struct HomePinnedFocusTimerBanner: View {
         let taskTitle = session.isTaskFocus ? taskNamesByID[session.taskID] : nil
         let kind: HomePinnedFocusTimerStatus.Kind
         let title: String
-        let targetID: UUID?
         if let tagTitle = session.focusTagTitle {
             kind = .tag
             title = tagTitle
-            targetID = nil
         } else if session.isUnassigned {
             kind = .unassigned
             title = "Unassigned focus"
-            targetID = nil
         } else {
             kind = .task
             title = normalizedTitle(taskTitle, fallback: "Task focus")
-            targetID = session.taskID
         }
 
         return HomePinnedFocusTimerStatus(
             id: session.id,
-            targetID: targetID,
             kind: kind,
             title: title,
             startedAt: startedAt,
@@ -650,7 +999,6 @@ private struct HomePinnedFocusTimerBanner: View {
         let sprintTitle = sprints.first { $0.id == session.sprintID }?.title
         return HomePinnedFocusTimerStatus(
             id: session.id,
-            targetID: session.sprintID,
             kind: .sprint,
             title: normalizedTitle(sprintTitle, fallback: "Sprint focus"),
             startedAt: session.startedAt,
@@ -675,13 +1023,16 @@ private struct HomePinnedFocusTimerStatus: Equatable {
     }
 
     let id: UUID
-    let targetID: UUID?
     let kind: Kind
     let title: String
     let startedAt: Date
     let plannedDurationSeconds: TimeInterval
     let pausedAt: Date?
     let accumulatedPausedSeconds: TimeInterval
+
+    var presentation: ActiveFocusControlPresentation {
+        ActiveFocusControlPresentation(id: id, kind: focusKind)
+    }
 
     var systemImage: String {
         if isPaused {
@@ -700,17 +1051,16 @@ private struct HomePinnedFocusTimerStatus: Equatable {
         }
     }
 
-    var deepLink: RoutinaDeepLink? {
-        guard let targetID else { return nil }
+    private var focusKind: FocusSessionKind {
         switch kind {
         case .task:
-            return .task(targetID)
+            return .task
         case .tag:
-            return nil
+            return .tag
         case .sprint:
-            return .sprint(targetID)
+            return .sprint
         case .unassigned:
-            return nil
+            return .unassigned
         }
     }
 
@@ -718,7 +1068,7 @@ private struct HomePinnedFocusTimerStatus: Equatable {
         plannedDurationSeconds <= 0
     }
 
-    private var isPaused: Bool {
+    var isPaused: Bool {
         pausedAt != nil
     }
 

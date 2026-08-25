@@ -788,6 +788,32 @@ Given an explicit full sync receives multiple task-deletion tombstones
 When it removes their task-backed history
 Then it batches the tombstones and scans each related model family once for the pull
 
+### iOS Home Active Focus Banner Opens Complete Controls
+
+Area: Tasks / Focus / iOS Home
+Decision links: [0123](../decisions/0123-pause-focus-timers.md), [0127](../decisions/0127-pause-board-focus-timers.md), [0264](../decisions/0264-match-button-hit-areas-to-visual-surfaces.md), [0545](../decisions/0545-bound-ios-foreground-focus-reconciliation.md), [0661](../decisions/0661-make-ios-active-focus-banner-actionable.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/ActiveFocusControlSourceTests.swift`
+- `Tests/Shared/FocusSessionSupportTests.swift`
+
+Given iOS Home shows an active task, tag, unassigned, or sprint Focus timer
+When the person taps anywhere on the visible timer banner
+Then iOS opens the active-Focus control sheet for that exact session
+And the sheet offers Pause or Resume, Finish, and Abandon
+And task Focus also offers Open Task
+
+Given the active Focus began on Mac and was imported to iPhone
+When the person changes it from the iOS control sheet
+Then the shared Focus mutation records the change for synchronization back to Mac
+And Finish preserves completed Focus history
+And Abandon removes the active session without completed history
+
+Given another device ended the exact session before an iOS action is applied
+When the person attempts an action from the stale sheet
+Then iOS reports that the timer changed
+And it does not mutate a different active Focus session
+
 ### iOS Task Detail Keeps Maintenance Actions Together
 
 Area: Tasks / UI
@@ -960,10 +986,10 @@ And Show/Hide plus All/Any remain available without duplicating selected rows
 And searching keeps active rules visible while narrowing unselected tags
 And returning to Filters shows every selected Hidden and Included tag in a wrapping tag-only summary
 
-### Mac All Filters Use Current Task Ladder Values And Searchable Tags
+### Mac Shared Filters Use Current Task Ladder Values And Searchable Tags
 
 Area: Tasks / Timeline / Planner / macOS UI
-Decision links: [0364](../decisions/0364-rename-shared-mac-filter-scope-to-all.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md)
+Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md), [0660](../decisions/0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
@@ -973,7 +999,7 @@ Coverage:
 
 Given a repeating task has lower stored After-done values and higher current
 Now values because of Changes over time
-When the person selects Task Ladder value filters in Mac `All`
+When the person selects Task Ladder value filters in Mac `Shared`
 Then Task List, task-backed Timeline activity, and task-backed Calendar items
 use the current values with independent minimum Importance, Urgency, and
 Pressure thresholds, exact Thinking needed, and estimate-presence matching
@@ -981,12 +1007,29 @@ And standalone Timeline activity is excluded only while a Task Ladder value
 filter is active
 
 Given the saved tag catalog is large
-When the ordinary `All` Tags card opens
+When the ordinary `Shared` Tags card opens
 Then it shows no catalog cloud, only `No tag filter` or active rule chips
 And All/Any appears only for multi-tag rules
 When Add tags opens
 Then search, selected tags, bounded suggestions, counts, and a lazy Browse list
 make the catalog deliberately available
+
+Given filters are active in one or more Planner filter scopes
+When the Mac filter companion pane opens
+Then its picker reads `Shared` / `Task List` / `Timeline` / `Calendar`
+And active dots expose filtered scopes while the selected scope explains its ownership
+
+Given Timeline contains routine and todo outcome history
+When Type `Todos` and Status `Done` are selected
+Then both selections remain active and only completed todo history matches
+
+Given the filter pane is expanded fullscreen on a wide Mac window
+When its content renders
+Then it stays centered within an 840-point maximum and minimizes to the 420-point pane
+
+Given Planner Calendar data and shared filters are unchanged
+When SwiftUI reevaluates the Calendar during scrolling
+Then cached task membership and ID sets are reused without rederiving current Task Ladder values
 
 ### Mac Stats Defers The Tag Catalog To Searchable Pickers
 
@@ -2728,7 +2771,7 @@ Coverage:
 
 Given Mac Home is showing Planner in Calendar or List mode
 When the Planner header filter button is pressed
-Then the `Both` / `Task List` / `Timeline` / `Calendar` filter surface opens in a right-side companion pane while the current workspace remains visible
+Then the `Shared` / `Task List` / `Timeline` / `Calendar` filter surface opens in a right-side companion pane while the current workspace remains visible
 And task-detail panes, the board inspector, and Planner-local right sidebars do not remain open beside it
 When the user expands the filter pane fullscreen and then minimizes it
 Then the filter surface returns to the right-side companion pane

@@ -7,6 +7,7 @@ struct HomeMacSidebarPresentation {
     let boardScopeTitle: String
     let selectedTimelineRange: TimelineRange
     let selectedTimelineFilterType: TimelineFilterType
+    let selectedTimelineStatusFilter: TimelineStatusFilter = .all
     let selectedTimelineTags: Set<String>
     let selectedTimelineFlags: Set<String>
     let selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
@@ -55,6 +56,7 @@ struct HomeMacSidebarPresentation {
     var hasCustomFiltersApplied: Bool {
         if mode == .timeline {
             return selectedTimelineFilterType != .all
+                || selectedTimelineStatusFilter != .all
                 || !selectedTimelineTags.isEmpty
                 || !selectedTimelineFlags.isEmpty
                 || selectedTimelineImportanceUrgencyFilter != nil

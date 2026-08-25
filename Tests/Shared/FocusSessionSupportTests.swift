@@ -222,6 +222,76 @@ struct FocusSessionSupportTests {
     }
 
     @Test
+    func sprintFocusSupportsPauseResumeAndFinishThroughSharedActions() throws {
+        let context = makeInMemoryContext()
+        let sprint = BoardSprintRecord(title: "Release", status: .active)
+        let session = SprintFocusSessionRecord(
+            sprintID: sprint.id,
+            startedAt: makeDate("2026-05-30T08:00:00Z")
+        )
+        context.insert(sprint)
+        context.insert(session)
+        try context.save()
+
+        let paused = try FocusSessionSupport.pauseFocus(
+            sessionID: session.id,
+            kind: .sprint,
+            pausedAt: makeDate("2026-05-30T08:10:00Z"),
+            context: context
+        )
+        let resumed = try FocusSessionSupport.resumeFocus(
+            sessionID: session.id,
+            kind: .sprint,
+            resumedAt: makeDate("2026-05-30T08:20:00Z"),
+            context: context
+        )
+        let finished = try FocusSessionSupport.finishFocus(
+            sessionID: session.id,
+            kind: .sprint,
+            endedAt: makeDate("2026-05-30T08:30:00Z"),
+            context: context
+        )
+
+        #expect(paused)
+        #expect(resumed)
+        #expect(finished)
+        #expect(session.pausedAt == nil)
+        #expect(session.accumulatedPausedSeconds == 10 * 60)
+        #expect(session.stoppedAt == makeDate("2026-05-30T08:30:00Z"))
+        #expect(session.activeDurationSeconds() == 20 * 60)
+    }
+
+    @Test
+    func abandoningSprintFocusRemovesTheActiveSessionAndAllocations() throws {
+        let context = makeInMemoryContext()
+        let sprint = BoardSprintRecord(title: "Release", status: .active)
+        let session = SprintFocusSessionRecord(
+            sprintID: sprint.id,
+            startedAt: makeDate("2026-05-30T08:00:00Z")
+        )
+        let allocation = SprintFocusAllocationRecord(
+            sessionID: session.id,
+            taskID: UUID(),
+            minutes: 5
+        )
+        context.insert(sprint)
+        context.insert(session)
+        context.insert(allocation)
+        try context.save()
+
+        let abandoned = try FocusSessionSupport.abandonFocus(
+            sessionID: session.id,
+            kind: .sprint,
+            endedAt: makeDate("2026-05-30T08:15:00Z"),
+            context: context
+        )
+
+        #expect(abandoned)
+        #expect(try context.fetch(FetchDescriptor<SprintFocusSessionRecord>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<SprintFocusAllocationRecord>()).isEmpty)
+    }
+
+    @Test
     func finishUnassignedFocusDoesNotFinishTaskFocusWithoutMatchingKind() throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Write", interval: 1, lastDone: nil, emoji: nil)

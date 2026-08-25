@@ -4,6 +4,7 @@ struct HomeMacTimelineFiltersDetailView: View {
     @State private var selectedTab: HomeMacTimelineFilterDetailTab = .filter
 
     @Binding var selectedType: TimelineFilterType
+    @Binding var selectedStatus: TimelineStatusFilter
     @Binding var selectedMediaFilter: TaskMediaFilter
     @Binding var selectedFlags: Set<String>
     @Binding var includeFlagMatchMode: RoutineTagMatchMode
@@ -108,7 +109,7 @@ struct HomeMacTimelineFiltersDetailView: View {
                 includingAway: includesAwayFilters,
                 includingSleep: includesSleepFilters
             ),
-            selection: contentTypeBinding
+            selection: $selectedType
         ) { type in
             Text(type.title)
         }
@@ -117,10 +118,10 @@ struct HomeMacTimelineFiltersDetailView: View {
     private var statusPicker: some View {
         RoutinaGlassSegmentedControl(
             accessibilityLabel: "Status",
-            options: TimelineFilterType.statusCases,
-            selection: statusBinding
+            options: TimelineStatusFilter.allCases,
+            selection: $selectedStatus
         ) { status in
-            Text(status.rawValue)
+            Text(status.title)
         }
     }
 
@@ -132,32 +133,6 @@ struct HomeMacTimelineFiltersDetailView: View {
         ) { filter in
             Text(filter.title)
         }
-    }
-
-    private var contentTypeBinding: Binding<TimelineFilterType> {
-        Binding(
-            get: {
-                selectedType.isStatusCase
-                    ? .all
-                    : selectedType.normalized(
-                        includingEventEmotion: includesEventEmotionFilters,
-                        includingPlaces: includesPlaceFilters,
-                        includingNotes: includesNoteFilters,
-                        includingAway: includesAwayFilters,
-                        includingSleep: includesSleepFilters
-                    )
-            },
-            set: { selectedType = $0 }
-        )
-    }
-
-    private var statusBinding: Binding<TimelineFilterType> {
-        Binding(
-            get: {
-                selectedType.isStatusCase ? selectedType : .all
-            },
-            set: { selectedType = $0 }
-        )
     }
 
     private func timelineRowFieldVisibilityBinding(_ field: HomeTimelineRowField) -> Binding<Bool> {

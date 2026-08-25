@@ -1704,8 +1704,23 @@ final class PerformanceRegressionTests: XCTestCase {
         let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
         let boardSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Board.swift")
         let timelineSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
+        guard
+            let fullscreenFilterStart = detailSource.range(of: "private var fullscreenFilterDetailContent: some View"),
+            let fullscreenFilterEnd = detailSource.range(
+                of: "private var mainDetailContent: some View",
+                range: fullscreenFilterStart.upperBound..<detailSource.endIndex
+            )
+        else {
+            XCTFail("Fullscreen filter detail source boundary is missing.")
+            return
+        }
+        let fullscreenFilterSource = String(
+            detailSource[fullscreenFilterStart.lowerBound..<fullscreenFilterEnd.lowerBound]
+        )
 
         XCTAssertTrue(detailSource.contains("static let filterDetailPaneWidth: CGFloat = 420"))
+        XCTAssertTrue(detailSource.contains("static let fullscreenFilterContentMaxWidth: CGFloat = 840"))
+        XCTAssertTrue(fullscreenFilterSource.contains("MacDetailContainerSizing.fullscreenFilterContentMaxWidth"))
         XCTAssertTrue(detailSource.contains("private var filterDetailPane: some View"))
         XCTAssertTrue(detailSource.contains("private var fullscreenFilterDetailContent: some View"))
         XCTAssertTrue(detailSource.contains("onMinimizeFullscreenFilterDetail"))
@@ -1722,6 +1737,8 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(sidebarSource.contains("macCalendarFiltersDetailContent"))
         XCTAssertTrue(sidebarSource.contains("minimumSegmentWidth: 82"))
         XCTAssertTrue(sidebarSource.contains("horizontalPadding: 8"))
+        XCTAssertTrue(sidebarSource.contains("macFilterScopeIsActive"))
+        XCTAssertTrue(sidebarSource.contains("Text(macFilterDetailScope.scopeDescription)"))
         XCTAssertFalse(sidebarSource.contains("minimumSegmentWidth: 132"))
         XCTAssertFalse(sidebarSource.contains(".frame(maxWidth: 520)"))
         XCTAssertFalse(routineFilterSource.contains(".frame(width: 520)"))
@@ -1733,10 +1750,17 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("var platformFlagFilterBar: some View"))
         XCTAssertFalse(timelineFilterSource.contains(".frame(width: 420)"))
         XCTAssertTrue(timelineFilterSource.contains(".frame(maxWidth: .infinity)"))
+        XCTAssertTrue(timelineFilterSource.contains("@Binding var selectedStatus: TimelineStatusFilter"))
+        XCTAssertTrue(timelineFilterSource.contains("selection: $selectedType"))
+        XCTAssertTrue(timelineFilterSource.contains("selection: $selectedStatus"))
+        XCTAssertFalse(timelineFilterSource.contains("private var statusBinding"))
         XCTAssertTrue(calendarFilterSource.contains("HomeMacCalendarFiltersDetailView"))
         XCTAssertTrue(calendarFilterSource.contains("DayPlanCalendarFilterState"))
         XCTAssertFalse(toolbarSource.contains("HomeMacToolbarFilterButton"))
         XCTAssertTrue(dayPlanSource.contains("onCalendarFilterButtonPressed"))
+        XCTAssertTrue(dayPlanSource.contains("DayPlanCalendarTaskFilterCache"))
+        XCTAssertTrue(dayPlanSource.contains("calendarTaskFilterCache.snapshot("))
+        XCTAssertFalse(dayPlanSource.contains("renderSnapshot.tasks.filter(calendarTaskFilter)"))
         XCTAssertTrue(dayPlanSource.contains("if showsCalendarFilterButton {\n                calendarFilterButton\n            }\n\n            if effectiveDisplayMode == .calendar"))
         XCTAssertFalse(
             detailSource.contains("if store.isMacFilterDetailPresented {\n                filterView()"),

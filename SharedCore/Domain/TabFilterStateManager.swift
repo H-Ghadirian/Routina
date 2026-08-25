@@ -350,6 +350,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var hideUnavailableRoutines: Bool
     var homeSelectedTimelineRange: TimelineRange
     var homeSelectedTimelineFilterType: TimelineFilterType
+    var homeSelectedTimelineStatusFilter: TimelineStatusFilter = .all
     var homeSelectedTimelineTag: String?
     var homeSelectedTimelineTags: Set<String>
     var homeTimelineIncludeTagMatchMode: RoutineTagMatchMode
@@ -418,6 +419,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         hideUnavailableRoutines: Bool,
         homeSelectedTimelineRange: TimelineRange,
         homeSelectedTimelineFilterType: TimelineFilterType,
+        homeSelectedTimelineStatusFilter: TimelineStatusFilter = .all,
         homeSelectedTimelineTag: String?,
         homeSelectedTimelineTags: Set<String>? = nil,
         homeTimelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
@@ -485,6 +487,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.hideUnavailableRoutines = hideUnavailableRoutines
         self.homeSelectedTimelineRange = homeSelectedTimelineRange
         self.homeSelectedTimelineFilterType = homeSelectedTimelineFilterType
+        self.homeSelectedTimelineStatusFilter = homeSelectedTimelineStatusFilter
         self.homeSelectedTimelineTag = homeSelectedTimelineTag
         self.homeSelectedTimelineTags = homeSelectedTimelineTags ?? homeSelectedTimelineTag.map { [$0] } ?? []
         self.homeTimelineIncludeTagMatchMode = homeTimelineIncludeTagMatchMode
@@ -554,6 +557,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case hideUnavailableRoutines
         case homeSelectedTimelineRange
         case homeSelectedTimelineFilterType
+        case homeSelectedTimelineStatusFilter
         case homeSelectedTimelineTag
         case homeSelectedTimelineTags
         case homeTimelineIncludeTagMatchMode
@@ -628,6 +632,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             hideUnavailableRoutines: try container.decodeIfPresent(Bool.self, forKey: .hideUnavailableRoutines) ?? false,
             homeSelectedTimelineRange: try container.decodeIfPresent(TimelineRange.self, forKey: .homeSelectedTimelineRange) ?? .all,
             homeSelectedTimelineFilterType: try container.decodeIfPresent(TimelineFilterType.self, forKey: .homeSelectedTimelineFilterType) ?? .all,
+            homeSelectedTimelineStatusFilter: try container.decodeIfPresent(TimelineStatusFilter.self, forKey: .homeSelectedTimelineStatusFilter) ?? .all,
             homeSelectedTimelineTag: try container.decodeIfPresent(String.self, forKey: .homeSelectedTimelineTag),
             homeSelectedTimelineTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineTags),
             homeTimelineIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineIncludeTagMatchMode) ?? .all,
@@ -698,6 +703,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         hideUnavailableRoutines: false,
         homeSelectedTimelineRange: .all,
         homeSelectedTimelineFilterType: .all,
+        homeSelectedTimelineStatusFilter: .all,
         homeSelectedTimelineTag: nil,
         homeSelectedTimelineTags: [],
         homeTimelineIncludeTagMatchMode: .all,

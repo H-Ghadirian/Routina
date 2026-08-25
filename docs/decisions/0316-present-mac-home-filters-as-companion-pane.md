@@ -17,6 +17,7 @@ Accepted
 ## Refined By
 
 - [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
+- [0660: Make Mac Planner Filters Explicit, Composable, and Bounded](0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
 
 ## Context
 

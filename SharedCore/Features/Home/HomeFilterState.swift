@@ -97,6 +97,7 @@ struct HomeTaskFiltersState: Equatable {
 struct HomeTimelineFiltersState: Equatable {
     var selectedRange: TimelineRange = .all
     var selectedFilterType: TimelineFilterType = .all
+    var selectedStatusFilter: TimelineStatusFilter = .all
     var selectedTag: String? = nil
     var selectedTags: Set<String> = []
     var includeTagMatchMode: RoutineTagMatchMode = .all
@@ -208,7 +209,14 @@ enum HomeTemporaryViewStateMapper {
             taskFilters: taskFilters,
             timelineFilters: HomeTimelineFiltersState(
                 selectedRange: persistedState.homeSelectedTimelineRange,
-                selectedFilterType: persistedState.homeSelectedTimelineFilterType,
+                selectedFilterType: persistedState.homeSelectedTimelineFilterType.isStatusCase
+                    ? .all
+                    : persistedState.homeSelectedTimelineFilterType,
+                selectedStatusFilter: persistedState.homeSelectedTimelineStatusFilter == .all
+                    ? TimelineStatusFilter(
+                        legacyFilterType: persistedState.homeSelectedTimelineFilterType
+                    )
+                    : persistedState.homeSelectedTimelineStatusFilter,
                 selectedTag: persistedState.homeSelectedTimelineTag,
                 selectedTags: persistedState.homeSelectedTimelineTags,
                 includeTagMatchMode: persistedState.homeTimelineIncludeTagMatchMode,
@@ -275,6 +283,7 @@ enum HomeTemporaryViewStateMapper {
             hideUnavailableRoutines: values.hideUnavailableRoutines,
             homeSelectedTimelineRange: values.timelineFilters.selectedRange,
             homeSelectedTimelineFilterType: values.timelineFilters.selectedFilterType,
+            homeSelectedTimelineStatusFilter: values.timelineFilters.selectedStatusFilter,
             homeSelectedTimelineTag: values.timelineFilters.selectedTag,
             homeSelectedTimelineTags: values.timelineFilters.effectiveSelectedTags,
             homeTimelineIncludeTagMatchMode: values.timelineFilters.includeTagMatchMode,

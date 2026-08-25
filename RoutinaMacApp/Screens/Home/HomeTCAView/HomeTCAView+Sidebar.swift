@@ -143,6 +143,7 @@ extension HomeTCAView {
 
     private var macHasTimelineFiltersApplied: Bool {
         store.selectedTimelineFilterType != .all
+            || store.selectedTimelineStatusFilter != .all
             || !store.selectedTimelineTags.isEmpty
             || !store.selectedTimelineFlags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
@@ -237,6 +238,7 @@ extension HomeTCAView {
     func clearAllMacTimelineFilters() {
         store.send(.selectedTimelineRangeChanged(.all))
         store.send(.selectedTimelineFilterTypeChanged(.all))
+        store.send(.selectedTimelineStatusFilterChanged(.all))
         store.send(.selectedTimelineTagsChanged([]))
         store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
         store.send(.selectedTimelineFlagsChanged([]))
@@ -1217,17 +1219,79 @@ extension HomeTCAView {
     }
 
     private var macHomeFilterScopePicker: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Filter scope",
-            options: HomeMacFilterDetailScope.allCases,
-            selection: $macFilterDetailScope,
-            minimumSegmentWidth: 82,
-            horizontalPadding: 8,
-            fillsAvailableWidth: true
-        ) { scope in
-            Label(scope.title, systemImage: scope.systemImage)
+        VStack(alignment: .leading, spacing: 8) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Filter scope",
+                options: HomeMacFilterDetailScope.allCases,
+                selection: $macFilterDetailScope,
+                minimumSegmentWidth: 82,
+                horizontalPadding: 8,
+                fillsAvailableWidth: true
+            ) { scope in
+                HStack(spacing: 6) {
+                    Label(scope.title, systemImage: scope.systemImage)
+
+                    if macFilterScopeIsActive(scope) {
+                        Circle()
+                            .fill(.primary)
+                            .frame(width: 6, height: 6)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .accessibilityValue(macFilterScopeIsActive(scope) ? "Filters active" : "No active filters")
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            Text(macFilterDetailScope.scopeDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private func macFilterScopeIsActive(_ scope: HomeMacFilterDetailScope) -> Bool {
+        switch scope {
+        case .both:
+            return !store.selectedTags.isEmpty
+                || !store.selectedTimelineTags.isEmpty
+                || !store.excludedTags.isEmpty
+                || !store.selectedTimelineExcludedTags.isEmpty
+                || store.selectedImportanceUrgencyFilter != nil
+                || store.selectedTimelineImportanceUrgencyFilter != nil
+                || store.selectedPressureFilter != nil
+                || store.selectedTimelinePressureFilter != nil
+                || store.selectedThinkingNeededFilter != nil
+                || store.selectedTimelineThinkingNeededFilter != nil
+                || store.selectedEstimationFilter != .all
+                || store.selectedTimelineEstimationFilter != .all
+        case .taskList:
+            return store.taskListMode != .all
+                || store.selectedFilter != .all
+                || !store.advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || store.taskListViewMode != .all
+                || store.taskListSortOrder != .smart
+                || store.createdDateFilter != .all
+                || store.selectedTodoStateFilter != nil
+                || store.selectedGoalFilter != .all
+                || store.selectedMediaFilter != .all
+                || !store.selectedFlags.isEmpty
+                || store.selectedManualPlaceFilterID != nil
+                || store.hideAssumedDoneTasks
+                || store.hideUnavailableRoutines
+                || !store.showArchivedTasks
+        case .timeline:
+            return effectiveMacTimelineFilterType != .all
+                || store.selectedTimelineStatusFilter != .all
+                || store.selectedTimelineMediaFilter != .all
+                || !store.selectedTimelineFlags.isEmpty
+        case .calendar:
+            return dayPlanCalendarFilters.hasActiveFilters(
+                availability: DayPlanCalendarFilterAvailability(
+                    includesEvents: areMacEventEmotionActionsEnabled,
+                    includesAway: isAwayEnabled,
+                    includesSleep: isAwayEnabled
+                )
+            )
+        }
     }
 
     var macCalendarFiltersDetailContent: some View {

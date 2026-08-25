@@ -8,9 +8,13 @@ Accepted
 
 2026-08-24
 
+## Revised By
+
+- [0660: Make Mac Planner Filters Explicit, Composable, and Bounded](0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
+
 ## Revises
 
-- [0364: Rename Shared Mac Filter Scope to All](0364-rename-shared-mac-filter-scope-to-all.md)
+- [0364: Rename Shared Mac Filter Scope to All](superseded/0364-rename-shared-mac-filter-scope-to-all.md)
 - [0563: Present Importance and Urgency as Independent Task Controls](0563-present-importance-and-urgency-as-independent-task-controls.md)
 
 ## Refines

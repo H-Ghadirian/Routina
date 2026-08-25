@@ -154,6 +154,42 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     }
 }
 
+enum TimelineStatusFilter: String, CaseIterable, Identifiable, Sendable, Equatable, Codable {
+    case all = "All"
+    case done = "Done"
+    case missed = "Missed"
+    case canceled = "Canceled"
+
+    var id: Self { self }
+    var title: String { rawValue }
+
+    init(legacyFilterType: TimelineFilterType) {
+        switch legacyFilterType {
+        case .done:
+            self = .done
+        case .missed:
+            self = .missed
+        case .canceled:
+            self = .canceled
+        default:
+            self = .all
+        }
+    }
+
+    func matches(kind: RoutineLogKind, entryType: TimelineEntryType) -> Bool {
+        switch self {
+        case .all:
+            return true
+        case .done:
+            return entryType == .task && kind == .completed
+        case .missed:
+            return entryType == .task && kind == .missed
+        case .canceled:
+            return entryType == .task && kind == .canceled
+        }
+    }
+}
+
 enum TimelineEntryType: Equatable {
     case task
     case event
@@ -443,10 +479,15 @@ enum TimelineLogic {
         noteAttachmentNoteIDs: Set<UUID> = [],
         range: TimelineRange,
         filterType: TimelineFilterType,
+        statusFilter: TimelineStatusFilter = .all,
         mediaFilter: TaskMediaFilter = .all,
         now: Date,
         calendar: Calendar
         ) -> [TimelineEntry] {
+        let contentFilterType = filterType.isStatusCase ? TimelineFilterType.all : filterType
+        let effectiveStatusFilter = statusFilter == .all
+            ? TimelineStatusFilter(legacyFilterType: filterType)
+            : statusFilter
         let lookup = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let currentTaskLadderValuesByTaskID = Dictionary(
             tasks.map { task in
@@ -496,7 +537,7 @@ enum TimelineLogic {
                 return nil
             }
 
-            switch filterType {
+            switch contentFilterType {
             case .all: break
             case .routines: if taskType != .routine { return nil }
             case .todos: if taskType != .todo { return nil }
@@ -507,9 +548,8 @@ enum TimelineLogic {
             case .places: return nil
             case .sleep: return nil
             case .away: return nil
-            case .done: if log.kind != .completed { return nil }
-            case .missed: if log.kind != .missed { return nil }
-            case .canceled: if log.kind != .canceled { return nil }
+            case .done, .missed, .canceled:
+                break
             }
 
             return TimelineEntry(
@@ -538,7 +578,7 @@ enum TimelineLogic {
         }
 
         let eventEntries = events.compactMap { event -> TimelineEntry? in
-            guard filterType == .all || filterType == .events,
+            guard contentFilterType == .all || contentFilterType == .events,
                   mediaFilter == .all
             else {
                 return nil
@@ -564,7 +604,7 @@ enum TimelineLogic {
         }
 
         let emotionEntries = emotionLogs.compactMap { emotion -> TimelineEntry? in
-            guard filterType == .all || filterType == .emotions,
+            guard contentFilterType == .all || contentFilterType == .emotions,
                   mediaFilter == .all
             else {
                 return nil
@@ -593,7 +633,7 @@ enum TimelineLogic {
             if let cutoff, timestamp < cutoff { return nil }
 
             let hasFileAttachment = noteAttachmentNoteIDs.contains(note.id)
-            guard filterType == .all || filterType == .notes,
+            guard contentFilterType == .all || contentFilterType == .notes,
                   HomeDisplayFilterSupport.matchesMediaFilter(
                     mediaFilter,
                     hasImage: note.hasImage,
@@ -624,7 +664,7 @@ enum TimelineLogic {
         }
 
         let focusEntries = focusSessions.compactMap { session -> TimelineEntry? in
-            guard filterType == .all || filterType == .focus,
+            guard contentFilterType == .all || contentFilterType == .focus,
                   mediaFilter == .all,
                   session.state != .abandoned,
                   let startedAt = session.startedAt
@@ -702,7 +742,7 @@ enum TimelineLogic {
             uniquingKeysWith: { first, _ in first }
         )
         let sprintFocusEntries = sprintFocusSessions.compactMap { session -> TimelineEntry? in
-            guard filterType == .all || filterType == .focus,
+            guard contentFilterType == .all || contentFilterType == .focus,
                   mediaFilter == .all
             else {
                 return nil
@@ -739,7 +779,7 @@ enum TimelineLogic {
         }
 
         let sleepEntries = sleepSessions.compactMap { session -> TimelineEntry? in
-            guard filterType == .all || filterType == .sleep,
+            guard contentFilterType == .all || contentFilterType == .sleep,
                   mediaFilter == .all,
                   let startedAt = session.startedAt
             else {
@@ -768,7 +808,7 @@ enum TimelineLogic {
 
         let placeEntries = placeCheckInSessions.compactMap { session -> TimelineEntry? in
             let hasImage = session.hasImage
-            guard filterType == .all || filterType == .places,
+            guard contentFilterType == .all || contentFilterType == .places,
                   HomeDisplayFilterSupport.matchesMediaFilter(
                     mediaFilter,
                     hasImage: hasImage,
@@ -802,7 +842,7 @@ enum TimelineLogic {
         }
 
         let awayEntries = awaySessions.compactMap { session -> TimelineEntry? in
-            guard filterType == .all || filterType == .away else {
+            guard contentFilterType == .all || contentFilterType == .away else {
                 return nil
             }
 
@@ -848,7 +888,7 @@ enum TimelineLogic {
             )
         }
 
-        return logEntries
+        return (logEntries
             + eventEntries
             + emotionEntries
             + noteEntries
@@ -856,7 +896,10 @@ enum TimelineLogic {
             + sprintFocusEntries
             + sleepEntries
             + placeEntries
-            + awayEntries
+            + awayEntries)
+            .filter {
+                effectiveStatusFilter.matches(kind: $0.kind, entryType: $0.entryType)
+            }
     }
 
     static func logsIncludingLastDoneFallbacks(

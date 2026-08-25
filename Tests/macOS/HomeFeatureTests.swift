@@ -118,10 +118,10 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func macFilterDetailScopeTitlesUseAllForSharedScope() {
-        #expect(HomeMacFilterDetailScope.both.title == "All")
+    func macFilterDetailScopeTitlesNameSharedScopeExplicitly() {
+        #expect(HomeMacFilterDetailScope.both.title == "Shared")
         #expect(HomeMacFilterDetailScope.allCases.map(\.title) == [
-            "All",
+            "Shared",
             "Task List",
             "Timeline",
             "Calendar",
@@ -600,13 +600,15 @@ struct HomeFeatureTests {
         }
 
         #expect(store.state.selectedTimelineRange == .week)
-        #expect(store.state.selectedTimelineFilterType == .done)
+        #expect(store.state.selectedTimelineFilterType == .all)
+        #expect(store.state.selectedTimelineStatusFilter == .done)
         #expect(store.state.selectedTimelineMediaFilter == .withImage)
         #expect(hideUnavailableUpdates.value == [false])
         #expect(persistedState.value?.homeSelectedTags == [])
         #expect(persistedState.value?.homeSelectedTimelineTags == [])
         #expect(persistedState.value?.homeSelectedTimelineRange == .week)
-        #expect(persistedState.value?.homeSelectedTimelineFilterType == .done)
+        #expect(persistedState.value?.homeSelectedTimelineFilterType == .all)
+        #expect(persistedState.value?.homeSelectedTimelineStatusFilter == .done)
         #expect(persistedState.value?.homeSelectedTimelineMediaFilter == .withImage)
     }
 

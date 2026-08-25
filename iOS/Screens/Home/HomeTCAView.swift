@@ -71,6 +71,7 @@ struct HomeTCAView: View {
     )
     @State var taskListPresentationRevision: UInt = 0
     @State var searchTaskCreationText: String?
+    @State var activeFocusPresentation: ActiveFocusControlPresentation?
 
     init(
         store: StoreOf<HomeFeature>,
@@ -108,6 +109,15 @@ homeContent
                         date: $planningDateDraft,
                         onCancel: dismissPlanningDatePicker,
                         onSave: savePlanningDatePicker
+                    )
+                }
+                .sheet(item: $activeFocusPresentation) { presentation in
+                    ActiveFocusControlSheet(
+                        presentation: presentation,
+                        onOpenTask: { taskID in
+                            activeFocusPresentation = nil
+                            openTask(taskID)
+                        }
                     )
                 }
                 .task(id: taskListPresentationRefreshToken) {

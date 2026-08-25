@@ -274,6 +274,8 @@ struct HomeFilterEditorTests {
             taskListModeRawValue: "Routines",
             taskFilters: HomeTaskFiltersState(),
             timelineFilters: HomeTimelineFiltersState(
+                selectedFilterType: .todos,
+                selectedStatusFilter: .done,
                 selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(
                     importance: .level3,
                     urgency: .level2
@@ -297,9 +299,25 @@ struct HomeFilterEditorTests {
         )
 
         #expect(restored.timelineFilters.selectedImportanceUrgencyFilter == values.timelineFilters.selectedImportanceUrgencyFilter)
+        #expect(restored.timelineFilters.selectedFilterType == .todos)
+        #expect(restored.timelineFilters.selectedStatusFilter == .done)
         #expect(restored.timelineFilters.selectedPressureFilter == .medium)
         #expect(restored.timelineFilters.selectedThinkingNeededFilter == .high)
         #expect(restored.timelineFilters.selectedEstimationFilter == .withEstimate)
+    }
+
+    @Test
+    func temporaryViewStateMigratesLegacyTimelineOutcomeSelection() {
+        var legacyState = TemporaryViewState.default
+        legacyState.homeSelectedTimelineFilterType = .done
+
+        let restored = HomeTemporaryViewStateMapper.restore(
+            from: legacyState,
+            defaultHideUnavailableRoutines: false
+        )
+
+        #expect(restored.timelineFilters.selectedFilterType == .all)
+        #expect(restored.timelineFilters.selectedStatusFilter == .done)
     }
 
     @Test
@@ -320,6 +338,7 @@ struct HomeFilterEditorTests {
         var timelineFilters = HomeTimelineFiltersState(
             selectedRange: .week,
             selectedFilterType: .done,
+            selectedStatusFilter: .missed,
             selectedTag: "amazon",
             selectedTags: ["amazon"],
             includeTagMatchMode: .any,
@@ -351,6 +370,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedEstimationFilter == .all)
         #expect(timelineFilters.selectedRange == .week)
         #expect(timelineFilters.selectedFilterType == .done)
+        #expect(timelineFilters.selectedStatusFilter == .missed)
         #expect(timelineFilters.effectiveSelectedTags.isEmpty)
         #expect(timelineFilters.includeTagMatchMode == .all)
         #expect(timelineFilters.selectedExcludedTags.isEmpty)
