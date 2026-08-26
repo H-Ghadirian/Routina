@@ -16,6 +16,9 @@ private struct HomeTaskListPresentationRefreshToken: Equatable {
 
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
+    let timelineStore: StoreOf<TimelineFeature>?
+    let backlogStore: StoreOf<BacklogFeature>?
+    let taskRankingStore: StoreOf<TaskRankingFeature>?
     let externalSearchText: Binding<String>?
     let isActive: Bool
     @Environment(\.calendar) var calendar
@@ -75,10 +78,16 @@ struct HomeTCAView: View {
 
     init(
         store: StoreOf<HomeFeature>,
+        timelineStore: StoreOf<TimelineFeature>? = nil,
+        backlogStore: StoreOf<BacklogFeature>? = nil,
+        taskRankingStore: StoreOf<TaskRankingFeature>? = nil,
         searchText: Binding<String>? = nil,
         isActive: Bool = true
     ) {
         self.store = store
+        self.timelineStore = timelineStore
+        self.backlogStore = backlogStore
+        self.taskRankingStore = taskRankingStore
         self.externalSearchText = searchText
         self.isActive = isActive
     }

@@ -14,7 +14,7 @@ enum TaskRankingValueMode: String, CaseIterable, Equatable, Hashable, Identifiab
     }
 }
 
-/// The task attributes that can be inspected in the Mac task-ranking workspace.
+/// The task attributes that can be inspected in the Task Ladder workspace.
 /// Estimated time deliberately remains a factual sort rather than a manual ladder.
 enum TaskRankingMetric: String, CaseIterable, Codable, Equatable, Hashable, Identifiable, Sendable {
     case pressure
@@ -445,7 +445,7 @@ struct TaskRankingSearchPresentation: Equatable {
     }
 }
 
-/// A stable, feature-owned snapshot consumed directly by the scrolling Mac task-ranking view.
+/// A stable, feature-owned snapshot consumed directly by scrolling Task Ladder views.
 struct TaskRankingPresentation: Equatable {
     struct LinkedTaskChildSuggestion: Identifiable, Equatable, Sendable {
         struct ID: Hashable, Sendable {

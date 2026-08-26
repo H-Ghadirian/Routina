@@ -796,7 +796,7 @@ struct TaskRankingPresentationTests {
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
         let featureSource = try Self.sourceFile(
-            "RoutinaMacApp/Features/TaskRanking/TaskRankingFeature.swift"
+            "SharedCore/Features/Home/TaskRankingFeature.swift"
         )
         let sharedEditorSource = try Self.sourceFile(
             "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
@@ -869,7 +869,7 @@ struct TaskRankingPresentationTests {
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
         let featureSource = try Self.sourceFile(
-            "RoutinaMacApp/Features/TaskRanking/TaskRankingFeature.swift"
+            "SharedCore/Features/Home/TaskRankingFeature.swift"
         )
 
         #expect(viewSource.contains("store.send(.groupSelected(task.id))"))

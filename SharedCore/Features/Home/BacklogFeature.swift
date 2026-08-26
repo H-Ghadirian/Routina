@@ -17,6 +17,8 @@ struct BacklogFeature {
         var flagRules: [RoutineFlagRule] = []
         var presentation = BacklogTaskListPresentation.empty
         var searchText = ""
+        var collapsedSuperSectionIDs: Set<UUID> = []
+        var collapsedSubsectionIDs: Set<UUID> = []
         var selectedTaskID: UUID?
         var taskDetailState: TaskDetailFeature.State?
         var isLoading = false
@@ -32,9 +34,12 @@ struct BacklogFeature {
         case automaticRefresh
         case tasksLoaded([RoutineTask], [HomeCustomTaskSection], [RoutineFlagRule])
         case loadFailed(String)
+        case errorDismissed
         case customSectionsChanged([HomeCustomTaskSection])
         case customSectionsDeleted([HomeCustomTaskSection], Set<UUID>)
         case searchTextChanged(String)
+        case superSectionDisclosureToggled(UUID)
+        case subsectionDisclosureToggled(UUID)
         case taskSelected(UUID)
         case taskDetail(TaskDetailFeature.Action)
         case moveTask(UUID, to: UUID?)
@@ -50,7 +55,7 @@ struct BacklogFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                guard state.tasks.isEmpty, !state.isLoading else { return .none }
+                guard !state.isLoading else { return .none }
                 state.isLoading = true
                 return loadTasks()
 
@@ -103,6 +108,10 @@ struct BacklogFeature {
                 state.errorMessage = message
                 return .none
 
+            case .errorDismissed:
+                state.errorMessage = nil
+                return .none
+
             case let .customSectionsChanged(customSections):
                 state.customSections = HomeCustomTaskSectionStorage.sanitized(customSections)
                 rebuildPresentation(&state)
@@ -118,6 +127,16 @@ struct BacklogFeature {
                 guard state.searchText != searchText else { return .none }
                 state.searchText = searchText
                 rebuildPresentation(&state)
+                return .none
+
+            case let .superSectionDisclosureToggled(sectionID):
+                guard HomeTaskSearchIndex.query(state.searchText) == nil else { return .none }
+                state.collapsedSuperSectionIDs.toggleMembership(of: sectionID)
+                return .none
+
+            case let .subsectionDisclosureToggled(subsectionID):
+                guard HomeTaskSearchIndex.query(state.searchText) == nil else { return .none }
+                state.collapsedSubsectionIDs.toggleMembership(of: subsectionID)
                 return .none
 
             case let .taskSelected(taskID):
@@ -219,6 +238,16 @@ struct BacklogFeature {
             } catch {
                 send(.loadFailed("Couldn’t update tasks after deleting the section. \(error.localizedDescription)"))
             }
+        }
+    }
+}
+
+private extension Set {
+    mutating func toggleMembership(of element: Element) {
+        if contains(element) {
+            remove(element)
+        } else {
+            insert(element)
         }
     }
 }

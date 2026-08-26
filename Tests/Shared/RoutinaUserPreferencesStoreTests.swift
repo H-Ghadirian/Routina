@@ -60,4 +60,35 @@ struct RoutinaUserPreferencesStoreTests {
         #expect(defaults[.appSettingTagColors] == "{\"Focus\":\"#445566\"}")
         #expect(!RoutinaUserPreferencesStore.applyToDefaults(from: context, defaults: defaults))
     }
+
+    @Test
+    func preferenceBridgeAppliesNewestDuplicateAndRemovesStaleRecord() throws {
+        let suiteName = "RoutinaUserPreferencesStoreTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.register(defaults: AppSettingsDefaults.boolValues)
+        defaults.register(defaults: AppSettingsDefaults.stringValues)
+        defaults.register(defaults: AppSettingsDefaults.intValues)
+
+        let context = makeInMemoryContext()
+        let stale = RoutinaUserPreferences(
+            updatedAt: Date(timeIntervalSince1970: 1_000)
+        )
+        stale.customTaskSections = ""
+        let current = RoutinaUserPreferences(
+            updatedAt: Date(timeIntervalSince1970: 2_000)
+        )
+        current.customTaskSections = "mac-backlog-sections"
+        context.insert(stale)
+        context.insert(current)
+        try context.save()
+
+        #expect(RoutinaUserPreferencesStore.applyToDefaults(from: context, defaults: defaults))
+        #expect(defaults[.appSettingCustomTaskSections] == "mac-backlog-sections")
+
+        let remaining = try context.fetch(FetchDescriptor<RoutinaUserPreferences>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.updatedAt == Date(timeIntervalSince1970: 2_000))
+    }
 }

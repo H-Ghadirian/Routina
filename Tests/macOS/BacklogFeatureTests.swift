@@ -97,4 +97,44 @@ struct BacklogFeatureTests {
             $0.taskDetailState = nil
         }
     }
+
+    @Test
+    func workspaceSwitchPreservesBacklogDisclosureChoices() async {
+        let superSectionID = UUID()
+        let subsectionID = UUID()
+        let store = TestStore(initialState: BacklogFeature.State()) {
+            BacklogFeature()
+        }
+
+        await store.send(.superSectionDisclosureToggled(superSectionID)) {
+            $0.collapsedSuperSectionIDs = [superSectionID]
+        }
+        await store.send(.subsectionDisclosureToggled(subsectionID)) {
+            $0.collapsedSubsectionIDs = [subsectionID]
+        }
+
+        await store.send(.workspaceDeactivated)
+
+        #expect(store.state.collapsedSuperSectionIDs == [superSectionID])
+        #expect(store.state.collapsedSubsectionIDs == [subsectionID])
+    }
+
+    @Test
+    func searchExpansionDoesNotMutateBacklogDisclosureChoices() async {
+        let superSectionID = UUID()
+        let subsectionID = UUID()
+        var initialState = BacklogFeature.State()
+        initialState.searchText = "mail"
+        initialState.collapsedSuperSectionIDs = [superSectionID]
+        initialState.collapsedSubsectionIDs = [subsectionID]
+        let store = TestStore(initialState: initialState) {
+            BacklogFeature()
+        }
+
+        await store.send(.superSectionDisclosureToggled(superSectionID))
+        await store.send(.subsectionDisclosureToggled(subsectionID))
+
+        #expect(store.state.collapsedSuperSectionIDs == [superSectionID])
+        #expect(store.state.collapsedSubsectionIDs == [subsectionID])
+    }
 }

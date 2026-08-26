@@ -56,10 +56,13 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - [0652](../decisions/0652-keep-effort-fields-independent-and-disclosures-honest.md)
 - [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md)
 - [0659](../decisions/0659-progressively-reveal-mac-stats-single-choice-filters.md)
+- [0664](../decisions/0664-open-ios-workspaces-from-the-home-list.md)
 
 ## Current Contract
 
 - The macOS main window uses a labeled workspace menu for Planner, Backlog, Task Ladder, Stats, and enabled Goals or Adventure surfaces. Backlog and Task Ladder replace the main content as full-size peer workspaces instead of opening separate windows. Settings is visible in the menu but opens the standard macOS Settings window, and New remains a separate action.
+- The iOS Home task list ends with native Backlog, Timeline, and Task Ladder rows in that order. They open inside Home's existing navigation hierarchy and do not change the bottom tab bar. The dedicated Search tab omits these workspace rows. A truly empty Home keeps its `Add New Task` action and shows the same three rows below it so organization and history remain reachable before any task exists.
+- Timeline can render inside an existing iOS navigation hierarchy without creating a second compact navigation stack or iPad split hierarchy. Its ordinary bottom-tab presentation continues owning its navigation container, and both routes reuse the same Timeline feature state while loading only when their visible route is active.
 - Mac Add Task is a transient workspace. Cancel returns to the workspace that launched it, including Backlog, while a successful full-form save keeps the existing behavior of selecting the new task in Planner. If the app relaunches while Add Task was open, the launching workspace—not Add Task—is the restored destination.
 - The native left task sidebar and its titlebar toggle belong to Planner-style task navigation; Backlog and Task Ladder hide that toggle while their full workspace is active. Right-side panes remain contextual companions for filters, Go to date, and task details, with one companion role active at a time. Routina does not place global navigation in a second right drawer or a modal overlay drawer.
 - The Mac Planner Focus picker shows the locally remembered duration as Last choice and selects it by default. It uses the latest attributed Focus session only when no picker duration has been saved, while task selection remains explicit.

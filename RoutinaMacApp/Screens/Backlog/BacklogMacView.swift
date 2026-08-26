@@ -24,8 +24,6 @@ struct BacklogMacView: View {
     @State private var newSectionTaskID: UUID?
     @State private var isNewSectionPromptPresented = false
     @State private var newSubsectionTitleBySectionID: [UUID: String] = [:]
-    @State private var collapsedSectionIDs: Set<UUID> = []
-    @State private var collapsedSubsectionIDs: Set<UUID> = []
 
     var body: some View {
         HSplitView {
@@ -134,7 +132,7 @@ struct BacklogMacView: View {
     }
 
     private func backlogSection(_ section: BacklogTaskListPresentation.Section) -> some View {
-        let isExpanded = isSearching || !collapsedSectionIDs.contains(section.id)
+        let isExpanded = isSearching || !store.collapsedSuperSectionIDs.contains(section.id)
 
         return VStack(alignment: .leading, spacing: 5) {
             Button {
@@ -189,7 +187,7 @@ struct BacklogMacView: View {
         _ subsection: BacklogTaskListPresentation.Subsection,
         parentSection: HomeCustomTaskSection
     ) -> some View {
-        let isExpanded = isSearching || !collapsedSubsectionIDs.contains(subsection.id)
+        let isExpanded = isSearching || !store.collapsedSubsectionIDs.contains(subsection.id)
 
         return VStack(alignment: .leading, spacing: 5) {
             Button {
@@ -558,20 +556,12 @@ struct BacklogMacView: View {
 
     private func toggleSection(_ sectionID: UUID) {
         guard !isSearching else { return }
-        if collapsedSectionIDs.contains(sectionID) {
-            collapsedSectionIDs.remove(sectionID)
-        } else {
-            collapsedSectionIDs.insert(sectionID)
-        }
+        store.send(.superSectionDisclosureToggled(sectionID))
     }
 
     private func toggleSubsection(_ subsectionID: UUID) {
         guard !isSearching else { return }
-        if collapsedSubsectionIDs.contains(subsectionID) {
-            collapsedSubsectionIDs.remove(subsectionID)
-        } else {
-            collapsedSubsectionIDs.insert(subsectionID)
-        }
+        store.send(.subsectionDisclosureToggled(subsectionID))
     }
 
     private func sectionColor(_ section: HomeCustomTaskSection) -> Color {

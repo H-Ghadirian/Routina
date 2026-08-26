@@ -3964,6 +3964,11 @@ When either workspace presents an unbounded task catalog
 Then its reducer-owned cached snapshot feeds the scrolling list
 And Home's list body does not derive that workspace presentation
 
+Given Mac and iOS each created a logical user-preferences singleton before receiving the other device's CloudKit record
+And the newer synchronized record contains the Mac Backlog section catalog
+When iOS applies the imported preferences
+Then Routina keeps the newest record, removes the stale duplicate, and exposes the same Backlog sections on iOS
+
 Given the person opens Timeline from Home
 Then Timeline uses Home's existing navigation hierarchy
 And it does not install a second compact navigation stack or iPad split hierarchy

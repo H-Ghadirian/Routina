@@ -293,3 +293,5 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0117 — Report signed CloudKit environment in diagnostics](0117-report-signed-cloudkit-environment-in-diagnostics.md)
 - [0118 — Sandbox every embedded macOS executable](0118-sandbox-every-embedded-macos-executable.md)
 - [0119 — Scope Security task entitlement reads to macOS](0119-scope-security-task-entitlement-reads-to-macos.md)
+- [0248 — Keep workspace presentation state above conditional views](0248-keep-workspace-presentation-state-above-conditional-views.md)
+- [0251 — Canonicalize synchronized singleton records before applying preferences](0251-canonicalize-synchronized-singleton-records-before-applying-preferences.md)

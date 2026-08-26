@@ -110,23 +110,49 @@ enum RoutinaUserPreferencesStore {
     }
 
     static func fetchOrCreate(in context: ModelContext) throws -> RoutinaUserPreferences {
-        try fetchOrCreateResult(in: context).preferences
+        let result = try fetchOrCreateResult(in: context)
+        if result.removedDuplicates {
+            try context.save()
+        }
+        return result.preferences
     }
 
     private static func fetchOrCreateResult(
         in context: ModelContext
-    ) throws -> (preferences: RoutinaUserPreferences, wasInserted: Bool) {
-        let singletonID = RoutinaUserPreferences.singletonID
-        let descriptor = FetchDescriptor<RoutinaUserPreferences>(
-            predicate: #Predicate { $0.id == singletonID }
-        )
-        if let existing = try context.fetch(descriptor).first {
-            return (existing, false)
+    ) throws -> (
+        preferences: RoutinaUserPreferences,
+        wasInserted: Bool,
+        removedDuplicates: Bool
+    ) {
+        let result = try canonicalPreferences(in: context)
+        if let preferences = result.preferences {
+            return (preferences, false, result.removedDuplicates)
         }
 
         let preferences = RoutinaUserPreferences()
         context.insert(preferences)
-        return (preferences, true)
+        return (preferences, true, false)
+    }
+
+    private static func canonicalPreferences(
+        in context: ModelContext
+    ) throws -> (
+        preferences: RoutinaUserPreferences?,
+        removedDuplicates: Bool
+    ) {
+        let singletonID = RoutinaUserPreferences.singletonID
+        let descriptor = FetchDescriptor<RoutinaUserPreferences>(
+            predicate: #Predicate { $0.id == singletonID }
+        )
+        let matching = try context.fetch(descriptor)
+        guard let canonical = matching.max(by: { $0.updatedAt < $1.updatedAt }) else {
+            return (nil, false)
+        }
+
+        for duplicate in matching where duplicate !== canonical {
+            context.delete(duplicate)
+        }
+        return (canonical, matching.count > 1)
     }
 
     static func migrateDefaultsIfNeeded(in context: ModelContext) {
@@ -140,6 +166,8 @@ enum RoutinaUserPreferencesStore {
             let didChange = copyDefaults(to: result.preferences, from: SharedDefaults.app)
             if result.wasInserted || didChange {
                 result.preferences.updatedAt = Date()
+            }
+            if result.wasInserted || didChange || result.removedDuplicates {
                 try context.save()
             }
             SharedDefaults.app.set(true, forKey: migratedDefaultsKey)
@@ -156,8 +184,10 @@ enum RoutinaUserPreferencesStore {
         do {
             let result = try fetchOrCreateResult(in: context)
             let didChange = copyDefaults(to: result.preferences, from: defaults)
-            guard result.wasInserted || didChange else { return false }
-            result.preferences.updatedAt = Date()
+            guard result.wasInserted || didChange || result.removedDuplicates else { return false }
+            if result.wasInserted || didChange {
+                result.preferences.updatedAt = Date()
+            }
             try context.save()
             return true
         } catch {
@@ -172,12 +202,13 @@ enum RoutinaUserPreferencesStore {
         defaults: UserDefaults = SharedDefaults.app
     ) -> Bool {
         do {
-            let singletonID = RoutinaUserPreferences.singletonID
-            let descriptor = FetchDescriptor<RoutinaUserPreferences>(
-                predicate: #Predicate { $0.id == singletonID }
-            )
-            guard let preferences = try context.fetch(descriptor).first else { return false }
-            return copy(preferences, to: defaults)
+            let result = try canonicalPreferences(in: context)
+            guard let preferences = result.preferences else { return false }
+            let didChange = copy(preferences, to: defaults)
+            if result.removedDuplicates {
+                try context.save()
+            }
+            return didChange
         } catch {
             NSLog("User preference defaults apply failed: \(error.localizedDescription)")
             return false

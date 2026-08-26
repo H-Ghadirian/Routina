@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowContent: View, DestinationContent: View>: View {
+struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowContent: View, DestinationContent: View, WorkspaceNavigationContent: View>: View {
     let presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
     let presentationRevision: UInt
     let selectedTaskID: Binding<UUID?>
@@ -13,6 +13,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
     let onDelete: (IndexSet, [HomeFeature.RoutineDisplay]) -> Void
     let onScroll: (CGFloat, CGFloat) -> Void
     let destinationContent: (UUID) -> DestinationContent
+    let workspaceNavigationContent: () -> WorkspaceNavigationContent
     @AppStorage(
         UserDefaultBoolValueKey.appSettingDailyRoutinesSectionCollapsed.rawValue,
         store: SharedDefaults.app
@@ -39,7 +40,8 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         @ViewBuilder rowContent: @escaping (HomeFeature.RoutineDisplay, Int?, Bool, HomeTaskListMoveContext?) -> RowContent,
         onDelete: @escaping (IndexSet, [HomeFeature.RoutineDisplay]) -> Void,
         onScroll: @escaping (CGFloat, CGFloat) -> Void,
-        @ViewBuilder destinationContent: @escaping (UUID) -> DestinationContent
+        @ViewBuilder destinationContent: @escaping (UUID) -> DestinationContent,
+        @ViewBuilder workspaceNavigationContent: @escaping () -> WorkspaceNavigationContent
     ) {
         self.presentation = presentation
         self.presentationRevision = presentationRevision
@@ -53,6 +55,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         self.onDelete = onDelete
         self.onScroll = onScroll
         self.destinationContent = destinationContent
+        self.workspaceNavigationContent = workspaceNavigationContent
     }
 
     var body: some View {
@@ -122,6 +125,8 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
                     sectionHeader(for: section, expansionState: expansionState)
                 }
             }
+
+            workspaceNavigationContent()
         }
         .listStyle(.sidebar)
         .onScrollGeometryChange(for: CGFloat.self) { geometry in

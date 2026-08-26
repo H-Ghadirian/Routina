@@ -80,7 +80,7 @@ struct MacWorkspaceNavigationSourceTests {
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift"
         )
         let backlogFeatureSource = try Self.sourceFile(
-            "RoutinaMacApp/Features/Backlog/BacklogFeature.swift"
+            "SharedCore/Features/Home/BacklogFeature.swift"
         )
 
         #expect(sidebarSource.contains("backlogStore.send(.workspaceDeactivated)"))

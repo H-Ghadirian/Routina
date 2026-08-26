@@ -1,7 +1,7 @@
 import Foundation
 
-/// A stable, reducer-owned snapshot for the Mac Backlog window.  The main
-/// sidebar intentionally does not build this presentation while it scrolls.
+/// A stable, reducer-owned snapshot for Backlog workspaces. Home intentionally
+/// does not build this presentation while its task list scrolls.
 struct BacklogTaskListPresentation: Equatable {
     struct OutsideBacklogResult: Identifiable, Equatable {
         enum RevealDestination: Equatable {

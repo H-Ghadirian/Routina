@@ -114,7 +114,7 @@ struct TaskRankingFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                guard state.tasks.isEmpty, !state.isLoading else { return .none }
+                guard !state.isLoading else { return .none }
                 state.isLoading = true
                 return loadTasks()
 
@@ -504,14 +504,14 @@ struct TaskRankingFeature {
                     tasks: tasks,
                     logs: logs
                 ).completedDatesByTaskID
-                await send(.tasksLoaded(
+                send(.tasksLoaded(
                     tasks,
                     appSettingsClient.flagRules(),
                     appSettingsClient.taskLadderOrganization(),
                     completionDatesByTaskID
                 ))
             } catch {
-                await send(.loadFailed("Couldn’t load task ranking. \(error.localizedDescription)"))
+                send(.loadFailed("Couldn’t load task ranking. \(error.localizedDescription)"))
             }
         }
         .cancellable(id: CancelID.load, cancelInFlight: true)
@@ -532,7 +532,7 @@ struct TaskRankingFeature {
                 appSettingsClient.setTaskLadderOrganization(organization)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                await send(.loadFailed("Couldn’t update task ranking. \(error.localizedDescription)"))
+                send(.loadFailed("Couldn’t update task ranking. \(error.localizedDescription)"))
             }
         }
     }
@@ -554,7 +554,7 @@ struct TaskRankingFeature {
                     context: modelContext()
                 )
             } catch {
-                await send(.loadFailed("Couldn’t update completion behavior. \(error.localizedDescription)"))
+                send(.loadFailed("Couldn’t update completion behavior. \(error.localizedDescription)"))
             }
         }
     }
@@ -571,7 +571,7 @@ struct TaskRankingFeature {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 guard let task = tasks.first(where: { $0.id == taskID }) else {
-                    await send(.loadFailed("Couldn’t find that task to update its changes over time."))
+                    send(.loadFailed("Couldn’t find that task to update its changes over time."))
                     return
                 }
                 task.importance = importance
@@ -590,7 +590,7 @@ struct TaskRankingFeature {
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                await send(.loadFailed("Couldn’t update changes over time. \(error.localizedDescription)"))
+                send(.loadFailed("Couldn’t update changes over time. \(error.localizedDescription)"))
             }
         }
     }

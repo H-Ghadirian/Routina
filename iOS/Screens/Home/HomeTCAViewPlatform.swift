@@ -352,6 +352,8 @@ detailContent
             handleCompactHeaderScroll(oldOffset: oldOffset, newOffset: newOffset)
         } destinationContent: { taskID in
             taskDetailDestination(taskID: taskID)
+        } workspaceNavigationContent: {
+            homeWorkspaceNavigationSection
         }
     }
 
@@ -448,14 +450,7 @@ detailContent
             isEmpty: showsLoadedEmptyTaskList,
             navigationTitle: homeNavigationTitle
         ) {
-            emptyStateView(
-                title: "No tasks yet",
-                message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
-                systemImage: "checklist",
-                actionTitle: "Add New Task"
-            ) {
-                openAddTask()
-            }
+            emptyHomeContent
         } taskListContent: {
             if showsInitialTaskLoading {
                 HomeLoadingStateView()
@@ -473,6 +468,55 @@ detailContent
             HomePinnedFocusTimerBanner(taskNamesByID: store.taskNamesByID) { presentation in
                 activeFocusPresentation = presentation
             }
+        }
+    }
+
+    @ViewBuilder
+    private var emptyHomeContent: some View {
+        if showsHomeWorkspaceNavigation,
+           timelineStore != nil,
+           backlogStore != nil,
+           taskRankingStore != nil {
+            List {
+                Section {
+                    inlineEmptyStateRow(
+                        title: "No tasks yet",
+                        message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
+                        systemImage: "checklist",
+                        actionTitle: "Add New Task",
+                        action: openAddTask
+                    )
+                }
+
+                homeWorkspaceNavigationSection
+            }
+            .listStyle(.insetGrouped)
+        } else {
+            emptyStateView(
+                title: "No tasks yet",
+                message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
+                systemImage: "checklist",
+                actionTitle: "Add New Task",
+                action: openAddTask
+            )
+        }
+    }
+
+    private var showsHomeWorkspaceNavigation: Bool {
+        externalSearchText == nil
+    }
+
+    @ViewBuilder
+    private var homeWorkspaceNavigationSection: some View {
+        if showsHomeWorkspaceNavigation,
+           let timelineStore,
+           let backlogStore,
+           let taskRankingStore {
+            HomeIOSWorkspaceNavigationSection(
+                backlogStore: backlogStore,
+                timelineStore: timelineStore,
+                taskRankingStore: taskRankingStore
+            )
         }
     }
 }
@@ -499,15 +543,24 @@ private struct HomeManualCloudRefreshProgressBanner: View {
 
 struct HomeIOSView: View {
     let store: StoreOf<HomeFeature>
+    private let timelineStore: StoreOf<TimelineFeature>?
+    private let backlogStore: StoreOf<BacklogFeature>?
+    private let taskRankingStore: StoreOf<TaskRankingFeature>?
     private let searchText: Binding<String>?
     private let isActive: Bool
 
     init(
         store: StoreOf<HomeFeature>,
+        timelineStore: StoreOf<TimelineFeature>? = nil,
+        backlogStore: StoreOf<BacklogFeature>? = nil,
+        taskRankingStore: StoreOf<TaskRankingFeature>? = nil,
         searchText: Binding<String>? = nil,
         isActive: Bool = true
     ) {
         self.store = store
+        self.timelineStore = timelineStore
+        self.backlogStore = backlogStore
+        self.taskRankingStore = taskRankingStore
         self.searchText = searchText
         self.isActive = isActive
     }
@@ -515,6 +568,9 @@ struct HomeIOSView: View {
     var body: some View {
         HomeTCAView(
             store: store,
+            timelineStore: timelineStore,
+            backlogStore: backlogStore,
+            taskRankingStore: taskRankingStore,
             searchText: searchText,
             isActive: isActive
         )

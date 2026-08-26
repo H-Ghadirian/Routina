@@ -7,6 +7,7 @@ struct TimelineView: View {
     let store: StoreOf<TimelineFeature>
     let presentationID: UUID
     let isActive: Bool
+    let ownsNavigationContainer: Bool
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -40,6 +41,18 @@ struct TimelineView: View {
     @State private var selectedTimelineEntryID: UUID?
     @State private var editingAwaySession: AwaySession?
     @State private var presentedFilterDetail: IOSFilterDetailDestination?
+
+    init(
+        store: StoreOf<TimelineFeature>,
+        presentationID: UUID,
+        isActive: Bool,
+        ownsNavigationContainer: Bool = true
+    ) {
+        self.store = store
+        self.presentationID = presentationID
+        self.isActive = isActive
+        self.ownsNavigationContainer = ownsNavigationContainer
+    }
 
     var body: some View {
         timelineWithRoutingObservers
@@ -113,7 +126,7 @@ struct TimelineView: View {
 
     @ViewBuilder
     private var timelineRoot: some View {
-        if usesSidebarLayout {
+        if usesSidebarLayout && ownsNavigationContainer {
             NavigationSplitView {
                 timelineSidebarContent
                     .navigationSplitViewColumnWidth(min: 320, ideal: 420, max: 520)
@@ -121,21 +134,27 @@ struct TimelineView: View {
                 timelineSidebarDetail
             }
             .navigationSplitViewStyle(.balanced)
-        } else {
+        } else if ownsNavigationContainer {
             NavigationStack {
-                content
-                    .navigationTitle("Timeline")
-                    .routinaTimelineNavigationTitleDisplayMode()
-                    .toolbar {
-                        ToolbarItem(placement: .primaryAction) {
-                            filterSheetButton
-                        }
-                    }
-                    .navigationDestination(for: UUID.self) { taskID in
-                        timelineDetailDestination(taskID: taskID)
-                    }
+                compactTimelineContent
             }
+        } else {
+            compactTimelineContent
         }
+    }
+
+    private var compactTimelineContent: some View {
+        content
+            .navigationTitle("Timeline")
+            .routinaTimelineNavigationTitleDisplayMode()
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    filterSheetButton
+                }
+            }
+            .navigationDestination(for: UUID.self) { taskID in
+                timelineDetailDestination(taskID: taskID)
+            }
     }
 
     private var usesSidebarLayout: Bool {
