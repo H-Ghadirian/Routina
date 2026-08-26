@@ -1,6 +1,11 @@
 import ComposableArchitecture
 import SwiftUI
 
+private struct TaskLadderGroupEditorPresentation: Identifiable {
+    let id = UUID()
+    let group: TaskLadderGroup?
+}
+
 struct TaskRankingMacView: View {
     let store: StoreOf<TaskRankingFeature>
     @AppStorage(
@@ -16,8 +21,7 @@ struct TaskRankingMacView: View {
         store: SharedDefaults.app
     ) private var taskLadderOrganizationRawValue = ""
     @State private var collapsedSectionIDs = Set<String>()
-    @State private var isGroupEditorPresented = false
-    @State private var editingGroupID: UUID?
+    @State private var groupEditorPresentation: TaskLadderGroupEditorPresentation?
     @State private var placementTaskID: UUID?
     @State private var isRepeatingTaskGroupEditorPresented = false
     @State private var repeatingTaskGroupParentID: UUID?
@@ -71,9 +75,9 @@ struct TaskRankingMacView: View {
             },
             message: { Text(store.errorMessage ?? "") }
         )
-        .sheet(isPresented: $isGroupEditorPresented) {
+        .sheet(item: $groupEditorPresentation) { presentation in
             TaskLadderGroupEditorSheet(
-                group: editingGroupID.flatMap { store.organization.group(id: $0) },
+                group: presentation.group,
                 onSave: { store.send(.groupSaved($0)) },
                 onDelete: { store.send(.groupDeleted($0)) }
             )
@@ -175,8 +179,7 @@ struct TaskRankingMacView: View {
 
             Menu {
                 Button("New Container Group…") {
-                    editingGroupID = nil
-                    isGroupEditorPresented = true
+                    groupEditorPresentation = TaskLadderGroupEditorPresentation(group: nil)
                 }
 
                 Button("Use Repeating Task as Group…") {
@@ -704,8 +707,8 @@ struct TaskRankingMacView: View {
                     store.send(.childLadderOpened(task.id))
                 }
                 Button("Edit Group…") {
-                    editingGroupID = task.id
-                    isGroupEditorPresented = true
+                    guard let group = store.organization.group(id: task.id) else { return }
+                    groupEditorPresentation = TaskLadderGroupEditorPresentation(group: group)
                 }
             } else {
                 Button("Open Task") {
@@ -816,8 +819,7 @@ struct TaskRankingMacView: View {
                 group: group,
                 childCount: store.detailGroupChildCount,
                 onEdit: {
-                    editingGroupID = group.id
-                    isGroupEditorPresented = true
+                    groupEditorPresentation = TaskLadderGroupEditorPresentation(group: group)
                 }
             )
         } else {

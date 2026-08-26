@@ -655,6 +655,13 @@ When it contains placed tasks
 Then those tasks return to the root
 And no task data or history is deleted
 
+Given Learning is an existing container-only Task Ladder group
+When the person opens Edit Group for the first time
+Then Learning's name, emoji, and current metric choices appear together
+When the person changes only one metric
+Then Save is enabled
+And saving preserves Learning's name and emoji while applying that metric change
+
 ### Mac Task Ladder Groups Can Inherit Categorical Values
 
 Area: Tasks / Mac Task Ladder / Groups

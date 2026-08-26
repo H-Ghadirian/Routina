@@ -829,6 +829,26 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func taskLadderGroupEditorSnapshotsExistingGroupBeforePresentation() throws {
+        let rankingSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+        let editorSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
+        )
+
+        #expect(rankingSource.contains("struct TaskLadderGroupEditorPresentation: Identifiable"))
+        #expect(rankingSource.contains("let group: TaskLadderGroup?"))
+        #expect(rankingSource.contains(".sheet(item: $groupEditorPresentation)"))
+        #expect(rankingSource.contains("group: presentation.group"))
+        #expect(rankingSource.contains("TaskLadderGroupEditorPresentation(group: group)"))
+        #expect(!rankingSource.contains("isGroupEditorPresented"))
+        #expect(!rankingSource.contains("editingGroupID"))
+        #expect(editorSource.contains("_group = State(initialValue: group ?? TaskLadderGroup(name: \"\"))"))
+        #expect(editorSource.contains(".disabled(group.name.trimmingCharacters"))
+    }
+
+    @Test
     func taskLadderOffersDirectRepeatingTaskGroupFlow() throws {
         let rankingSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
