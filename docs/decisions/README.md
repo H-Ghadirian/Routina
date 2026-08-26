@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0666](0666-keep-mac-task-ladder-chrome-context-specific.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), [0565](0565-collapse-mac-task-ladder-value-sections.md), [0576](0576-offer-direct-repeating-task-ladder-grouping.md), [0632](0632-integrate-mac-workspaces-in-the-main-window.md), and [0634](0634-unify-mac-workspace-search-and-creation.md):** Mac Task Ladder states workspace identity, metric/direction, count, group action, nested scope, section meaning, and container semantics once at their owning UI layer instead of repeating them across adjacent headers.
 - **[0665](0665-persist-mac-planner-header-choices-locally.md) refines [0191](0191-support-one-day-planner-view.md), [0210](0210-store-durable-preferences-in-swiftdata.md), [0609](0609-keep-planner-range-choices-actionable-in-compact-headers.md), and [0654](0654-progressively-reveal-mac-planner-header-choices.md):** Mac Planner restores its Planner view, Calendar task view, and preferred range after workspace recreation or relaunch, while adaptive width fallbacks and temporary header expansion remain unpersisted.
 - **[0664](0664-open-ios-workspaces-from-the-home-list.md) revises [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0574](0574-separate-task-ladder-placement-from-completion.md), and refines [0033](0033-use-app-owned-ios-more-tab.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), and [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md):** iOS Home ends with Backlog, Timeline, and Task Ladder navigation rows, opens each inside Home's existing navigation hierarchy, and shares cached Backlog and Task Ladder feature state with macOS without changing the tab bar.
 - **[0663](0663-allow-optional-multiline-mac-task-titles.md) refines [0038](0038-configure-home-task-row-fields.md), [0254](0254-move-mac-task-row-appearance-to-home-filter-detail.md), and [0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md):** Mac Task List appearance offers an off-by-default Multiline Titles option that lets long main-list task titles wrap while keeping secondary labels and metadata below the complete title block.
@@ -794,6 +795,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0666](0666-keep-mac-task-ladder-chrome-context-specific.md) | Keep Mac Task Ladder Chrome Context-Specific | Accepted | 2026-08-26 |
 | [0665](0665-persist-mac-planner-header-choices-locally.md) | Persist Mac Planner Header Choices Locally | Accepted | 2026-08-26 |
 | [0664](0664-open-ios-workspaces-from-the-home-list.md) | Open iOS Workspaces From the Home List | Accepted | 2026-08-26 |
 | [0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md) | Reserve the First Mac Task-Row Line for the Title | Accepted | 2026-08-25 |

@@ -812,7 +812,7 @@ struct TaskRankingPresentation: Equatable {
                         component: "known",
                         scopeTaskID: scopePath.last
                     ),
-                    title: metric.directionTitle(isReversed: isReversed),
+                    title: "Has estimate",
                     value: nil,
                     tasks: knownTasks,
                     isMissingValue: false,

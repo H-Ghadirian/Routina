@@ -575,6 +575,32 @@ Given a task is Gentle, cadence-free, or one-off
 When Task Ladder resolves its values
 Then no Changes over time rule changes its Base value
 
+### Mac Task Ladder Header States Each Concept Once
+
+Area: Tasks / Mac Task Ladder / UI
+Decision links: [0666](../decisions/0666-keep-mac-task-ladder-chrome-context-specific.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0632](../decisions/0632-integrate-mac-workspaces-in-the-main-window.md), [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+
+Given the person opens the root Mac Task Ladder
+Then the global workspace menu is its only visible `Task Ladder` title
+And the compact Ladder control bar shows metric, direction, item count, `Add Group`, and refresh
+And the root list starts with value sections instead of another title and sort-description block
+And read-only section meaning remains available to accessibility without visible `Read only` or `Separate` captions
+
+Given Estimated time is selected
+Then the sort control states `Shortest first` or `Longest first` once
+And its value sections are named `Has estimate` and `No estimate`
+
+Given the person enters a nested group
+Then one local back-and-group-title row identifies that scope
+And the global controls continue to own direction and count
+
+Given a container group's details are visible
+Then its subtitle states only its actionable task count
+And one concise sentence explains that its tasks complete independently
+
 ### Mac Task Ladder Separates Placement From Completion
 
 Area: Tasks / Mac Task Ladder / Relationships
@@ -619,6 +645,10 @@ Given Exercise is a task-backed group and Company is a container-only group
 When the person single-clicks either row in Task Ladder
 Then the right side shows Exercise's normal task details or Company's group details
 And the current ladder scope does not change
+And exactly the clicked row shows the selection tint
+When the person selects another task or group after scrolling through lazy rows
+Then the previous row loses its tint
+And only the newly selected row remains visibly selected
 When the person double-clicks either group row
 Then Task Ladder opens that group's inner ladder
 And the context menu also offers explicit details and inner-ladder commands

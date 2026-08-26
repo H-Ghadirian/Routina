@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0253 — Capture observable selection before lazy row construction](0253-capture-observable-selection-before-lazy-row-construction.md)
 - [0252 — Snapshot editor identity with its presentation](0252-snapshot-editor-identity-with-its-presentation.md)
 - [0250 — Persist choice state at the workspace boundary](0250-persist-choice-state-at-the-workspace-boundary.md)
 - [0249 — Present dependent sheet inputs atomically](0249-present-dependent-sheet-inputs-atomically.md)

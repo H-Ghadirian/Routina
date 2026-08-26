@@ -605,14 +605,14 @@ struct TaskLadderGroupDetailView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(group.displayName)
                         .font(.largeTitle.weight(.semibold))
-                    Text("Task Ladder group · \(childCount) \(childCount == 1 ? "task" : "tasks")")
+                    Text(childCount == 1 ? "1 actionable task" : "\(childCount) actionable tasks")
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button("Edit Group", action: onEdit)
             }
 
-            Text("This is an organizational container. Completing a task inside it never completes the group.")
+            Text("Tasks inside this group are completed independently.")
                 .font(.body)
                 .foregroundStyle(.secondary)
 

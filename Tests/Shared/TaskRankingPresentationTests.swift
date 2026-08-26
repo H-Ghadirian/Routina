@@ -648,6 +648,7 @@ struct TaskRankingPresentationTests {
 
         #expect(shortestFirst.sections.first?.tasks.map(\.id) == [fifteen.id, sixteen.id])
         #expect(longestFirst.sections.first?.tasks.map(\.id) == [sixteen.id, fifteen.id])
+        #expect(shortestFirst.sections.first?.title == "Has estimate")
         #expect(shortestFirst.sections.allSatisfy { !$0.supportsManualOrdering })
         #expect(shortestFirst.sections.last?.title == "No estimate")
         #expect(
@@ -906,6 +907,43 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func taskLadderCapturesSelectionBeforeBuildingLazyRows() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+
+        #expect(source.contains("let selectedTaskID = store.selectedTaskID"))
+        #expect(source.contains("let selectedGroupID = store.selectedGroupID"))
+        #expect(source.contains("let selectedNodeID: TaskLadderNodeID?"))
+        #expect(source.contains("selectedNodeID: selectedNodeID"))
+        #expect(source.contains("let isSelected = selectedNodeID == nodeID"))
+        #expect(source.contains(".accessibilityAddTraits(isSelected ? .isSelected : [])"))
+        #expect(!source.contains("? store.selectedGroupID == task.id"))
+    }
+
+    @Test
+    func macTaskLadderChromeStatesEachConceptOnce() throws {
+        let rankingSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+        let groupDetailSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
+        )
+
+        #expect(rankingSource.contains("Label(\"Add Group\", systemImage: \"folder.badge.plus\")"))
+        #expect(rankingSource.contains("Text(taskCountLabel)"))
+        #expect(rankingSource.contains("if !store.scopePath.isEmpty"))
+        #expect(rankingSource.contains("Text(store.scopeParentName ?? \"Nested tasks\")"))
+        #expect(!rankingSource.contains("Text(store.scopeParentName ?? \"Task Ladder\")"))
+        #expect(!rankingSource.contains("private var listSubtitle"))
+        #expect(!rankingSource.contains("section.isMissingValue ? \"Separate\" : \"Read only\""))
+        #expect(rankingSource.contains("read only"))
+        #expect(groupDetailSource.contains("Tasks inside this group are completed independently."))
+        #expect(!groupDetailSource.contains("This is an organizational container."))
+        #expect(!groupDetailSource.contains("Task Ladder group ·"))
+    }
+
+    @Test
     func taskLadderValueSectionsHaveIndependentCollapsibleHeaders() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
@@ -916,7 +954,8 @@ struct TaskRankingPresentationTests {
         #expect(source.contains("toggleRankingSection(section)"))
         #expect(source.contains("collapsedSectionIDs.insert(section.id)"))
         #expect(source.contains("collapsedSectionIDs.remove(section.id)"))
-        #expect(source.contains("accessibilityValue(isCollapsed ? \"Collapsed\" : \"Expanded\")"))
+        #expect(source.contains("section.supportsManualOrdering"))
+        #expect(source.contains("read only"))
     }
 
     @Test

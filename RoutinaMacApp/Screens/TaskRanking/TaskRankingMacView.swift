@@ -145,12 +145,6 @@ struct TaskRankingMacView: View {
 
     private var workspaceControls: some View {
         HStack(spacing: 10) {
-            Text(store.scopeParentName ?? "Task Ladder")
-                .font(.headline)
-                .lineLimit(1)
-
-            Spacer(minLength: 12)
-
             Picker("Rank by", selection: Binding(
                 get: { store.metric },
                 set: { store.send(.metricChanged($0)) }
@@ -177,6 +171,22 @@ struct TaskRankingMacView: View {
                 .help("Base shows saved values; Now applies each repeating task’s due-date rule")
             }
 
+            Button {
+                store.send(.directionToggled)
+            } label: {
+                Label(
+                    store.metric.directionTitle(isReversed: store.isReversed),
+                    systemImage: "arrow.up.arrow.down"
+                )
+            }
+            .help("Reverse order: \(store.metric.directionTitle(isReversed: !store.isReversed))")
+
+            Spacer(minLength: 12)
+
+            Text(taskCountLabel)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
             Menu {
                 Button("New Container Group…") {
                     groupEditorPresentation = TaskLadderGroupEditorPresentation(group: nil)
@@ -191,22 +201,12 @@ struct TaskRankingMacView: View {
                         && store.presentation.eligibleTaskIDs.contains($0.id)
                 })
             } label: {
-                Label("Add Task Ladder Group", systemImage: "folder.badge.plus")
+                Label("Add Group", systemImage: "folder.badge.plus")
                     .frame(minWidth: 24, minHeight: 24)
                     .contentShape(Rectangle())
             }
             .menuStyle(.borderlessButton)
             .help("Create a container group or use a repeating task as a group")
-
-            Button {
-                store.send(.directionToggled)
-            } label: {
-                Label(
-                    store.metric.directionTitle(isReversed: store.isReversed),
-                    systemImage: "arrow.up.arrow.down"
-                )
-            }
-            .help("Reverse order: \(store.metric.directionTitle(isReversed: !store.isReversed))")
 
             Button {
                 store.send(.refresh)
@@ -225,38 +225,43 @@ struct TaskRankingMacView: View {
     }
 
     private var rankingList: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    if !store.scopePath.isEmpty {
-                        Button {
-                            store.send(.scopeBackTapped)
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .frame(width: 22, height: 22)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .help("Back to previous ladder")
+        // Capture row chrome state before entering the lazy builder. Store reads made
+        // only while SwiftUI realizes a lazy row do not reliably invalidate sibling
+        // rows, which can leave an old Task Ladder selection tint on reused rows.
+        let selectedTaskID = store.selectedTaskID
+        let selectedGroupID = store.selectedGroupID
+        let selectedNodeID: TaskLadderNodeID? = if let selectedGroupID {
+            .group(selectedGroupID)
+        } else if let selectedTaskID {
+            .task(selectedTaskID)
+        } else {
+            nil
+        }
+        let currentScopeSearchMatchTaskIDs = store.currentScopeSearchMatchTaskIDs
+
+        return VStack(alignment: .leading, spacing: 0) {
+            if !store.scopePath.isEmpty {
+                HStack(spacing: 8) {
+                    Button {
+                        store.send(.scopeBackTapped)
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .frame(width: 22, height: 22)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .help("Back to previous ladder")
 
-                    Text(ladderTitle)
+                    Text(store.scopeParentName ?? "Nested tasks")
                         .font(.title2.weight(.semibold))
+                        .lineLimit(1)
 
-                    Spacer(minLength: 8)
-
-                    Text(taskCountLabel)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
                 }
+                .padding(16)
 
-                Text(listSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                Divider()
             }
-            .padding(16)
-
-            Divider()
 
             if store.isLoading && store.presentation.isEmpty {
                 ProgressView("Loading active tasks…")
@@ -308,7 +313,7 @@ struct TaskRankingMacView: View {
 
                             ForEach(store.presentation.sections) { section in
                                 let containsSearchMatch = section.tasks.contains {
-                                    store.currentScopeSearchMatchTaskIDs.contains($0.id)
+                                    currentScopeSearchMatchTaskIDs.contains($0.id)
                                 }
                                 let isCollapsed = collapsedSectionIDs.contains(section.id)
                                     && !containsSearchMatch
@@ -317,7 +322,12 @@ struct TaskRankingMacView: View {
                                     if !isCollapsed {
                                         ForEach(section.tasks) { task in
                                             VStack(spacing: 0) {
-                                                rankingRow(task, in: section)
+                                                rankingRow(
+                                                    task,
+                                                    in: section,
+                                                    selectedNodeID: selectedNodeID,
+                                                    isSearchMatch: currentScopeSearchMatchTaskIDs.contains(task.id)
+                                                )
                                                 if task.id != section.tasks.last?.id {
                                                     Divider().padding(.leading, 12)
                                                 }
@@ -563,11 +573,6 @@ struct TaskRankingMacView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 0)
-                if !section.supportsManualOrdering {
-                    Text(section.isMissingValue ? "Separate" : "Read only")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
                 Image(systemName: "chevron.down")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -580,7 +585,11 @@ struct TaskRankingMacView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(isCollapsed ? "Expand" : "Collapse") \(section.title)")
-        .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
+        .accessibilityValue(
+            section.supportsManualOrdering
+                ? (isCollapsed ? "Collapsed" : "Expanded")
+                : "\(isCollapsed ? "Collapsed" : "Expanded"), read only"
+        )
         .background(section.isMissingValue ? Color.secondary.opacity(0.08) : Color.accentColor.opacity(0.09))
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -604,16 +613,17 @@ struct TaskRankingMacView: View {
 
     private func rankingRow(
         _ task: RoutineTask,
-        in section: TaskRankingPresentation.Section
+        in section: TaskRankingPresentation.Section,
+        selectedNodeID: TaskLadderNodeID?,
+        isSearchMatch: Bool
     ) -> some View {
         let metadata = store.presentation.rowMetadataByTaskID[task.id]
         let isGroup = metadata?.isGroup == true
         let isTaskGroup = metadata?.isTaskGroup == true
         let childCount = metadata?.childCount ?? 0
         let canOpenInnerLadder = isGroup || isTaskGroup || childCount > 0
-        let isSelected = isGroup
-            ? store.selectedGroupID == task.id
-            : store.selectedTaskID == task.id
+        let nodeID: TaskLadderNodeID = isGroup ? .group(task.id) : .task(task.id)
+        let isSelected = selectedNodeID == nodeID
         return HStack(spacing: 9) {
             Button {
                 if isGroup {
@@ -694,10 +704,11 @@ struct TaskRankingMacView: View {
         .background(
             isSelected
                 ? Color.accentColor.opacity(0.14)
-                : store.currentScopeSearchMatchTaskIDs.contains(task.id)
+                : isSearchMatch
                     ? Color.yellow.opacity(0.12)
                     : .clear
         )
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .contextMenu {
             if isGroup {
                 Button("Show Group Details") {
@@ -835,30 +846,10 @@ struct TaskRankingMacView: View {
     private var taskCountLabel: String {
         if isSearching {
             let count = store.searchPresentation.matches.count
-            return count == 1 ? "1 Ladder match" : "\(count) Ladder matches"
+            return count == 1 ? "1 match" : "\(count) matches"
         }
         let count = store.presentation.taskCount
-        if !store.scopePath.isEmpty {
-            return count == 1 ? "1 task" : "\(count) tasks"
-        }
-        return count == 1 ? "1 task" : "\(count) tasks"
-    }
-
-    private var listSubtitle: String {
-        let rankingDescription: String
-        if store.metric == .estimatedTime {
-            rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • factual sort"
-        } else if store.metric.supportsTemporalWeight && store.valueMode == .now {
-            rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • current due-date values • read only"
-        } else {
-            rankingDescription = "\(store.metric.directionTitle(isReversed: store.isReversed)) • move tasks within or between values"
-        }
-        guard !store.scopePath.isEmpty else { return rankingDescription }
-        return "Nested tasks • \(rankingDescription)"
-    }
-
-    private var ladderTitle: String {
-        store.scopeParentName ?? "Task Ladder"
+        return count == 1 ? "1 item" : "\(count) items"
     }
 
     private var isSearching: Bool {
