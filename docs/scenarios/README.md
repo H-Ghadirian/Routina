@@ -332,12 +332,17 @@ Decision links: [0641](../decisions/0641-create-backlog-sections-from-context.md
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
+- `Tests/macOS/BacklogFeatureTests.swift`
 - `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
 
 Given a person creates an empty Backlog super section
 When its cached task presentation contains no assigned task
 Then the super section remains visible and can immediately create one level of subsection
 And either hierarchy level can be collapsed across its full visible header surface
+
+Given a person collapses any Backlog super sections or subsections
+When they switch to Planner, Task Ladder, or another main-window workspace and return to Backlog
+Then those same hierarchy levels remain collapsed
 
 Given Backlog contains tasks in direct sections, nested subsections, and `Hidden by flag`
 When the person enters a query in the persistent top search/create field
@@ -2894,6 +2899,11 @@ When the person presses Focus in the Mac Planner header
 Then one Focus sheet opens directly without an intermediate duration menu
 And that sheet presents count-up and fixed durations beside task and tag attribution
 
+Given the eligible Focus task snapshot contains tasks tagged `Health` and `HSE`
+When the person opens the Mac Focus sheet
+Then the task rows and tag strip come from the same presentation snapshot
+And the `#Health` and `#HSE` filters are visible when their tagged task rows are visible
+
 Given the latest attributed Focus session was count-up on an available `#HSE` tag
 When the person opens the Focus sheet again
 Then `Count up · #HSE` is selected by default
@@ -3910,3 +3920,32 @@ When the detail sheet appears
 Then its navigation title identifies the filter
 And the picker options begin without repeating the same visible title
 And assistive technologies retain a useful control label
+
+### iOS Home Keeps Organization And History Workspaces Reachable
+
+Area: Tasks / Timeline / UI
+Decision links: [0033](../decisions/0033-use-app-owned-ios-more-tab.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0664](../decisions/0664-open-ios-workspaces-from-the-home-list.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/IOSHomeWorkspaceNavigationSourceTests.swift`
+
+Given the person reaches the end of the iOS Home task list
+Then Backlog, Timeline, and Task Ladder appear in that order
+And each full visible row opens its workspace through Home navigation
+And the bottom tab bar remains unchanged
+
+Given Home has no tasks
+Then Add New Task remains available
+And the same three workspace rows remain below the empty state
+
+Given the person uses the dedicated Search tab
+Then the workspace rows do not appear among task-search results
+
+Given the person opens Backlog or Task Ladder from Home
+When either workspace presents an unbounded task catalog
+Then its reducer-owned cached snapshot feeds the scrolling list
+And Home's list body does not derive that workspace presentation
+
+Given the person opens Timeline from Home
+Then Timeline uses Home's existing navigation hierarchy
+And it does not install a second compact navigation stack or iPad split hierarchy

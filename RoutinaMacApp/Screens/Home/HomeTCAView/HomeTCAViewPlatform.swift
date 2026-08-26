@@ -209,18 +209,11 @@ extension HomeTCAView {
     }
 
     private func presentHomeToolbarFocusPicker() {
-        let availableTags = FocusSessionTagRecency.orderedAvailableTags(
-            RoutineTag.allTags(from: homeToolbarFocusStartTasks.map(\.tags)),
-            focusSessions: focusSessions
-        )
-        homeToolbarFocusPickerAvailableTags = availableTags
-        let rememberedDuration = FocusSessionStartDefaults.rememberedDuration()
-        homeToolbarFocusPickerDefaults = FocusSessionStartDefaults.latest(
+        homeToolbarFocusPickerPresentation = HomeMacFocusTimerPickerPresentation.make(
+            tasks: homeToolbarFocusStartTasks,
             focusSessions: focusSessions,
-            availableTags: availableTags,
-            rememberedDuration: rememberedDuration
+            rememberedDuration: FocusSessionStartDefaults.rememberedDuration()
         )
-        isHomeToolbarFocusPickerPresented = true
     }
 
     private func pauseHomeToolbarPlanFocus(_ session: FocusSession) {

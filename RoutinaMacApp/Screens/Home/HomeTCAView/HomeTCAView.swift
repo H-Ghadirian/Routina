@@ -371,12 +371,7 @@ struct HomeTCAView: View {
     @State var isCustomTaskSectionDeleteConfirmationPresented = false
     @State var pendingDeleteCustomTaskSectionID: UUID?
     @State var pendingDeleteCustomTaskSectionTitle = ""
-    @State var isHomeToolbarFocusPickerPresented = false
-    @State var homeToolbarFocusPickerAvailableTags: [String] = []
-    @State var homeToolbarFocusPickerDefaults = FocusSessionStartDefaults(
-        duration: FocusSessionStartDefaults.fallbackDuration,
-        tagName: nil
-    )
+    @State var homeToolbarFocusPickerPresentation: HomeMacFocusTimerPickerPresentation?
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool
@@ -468,11 +463,11 @@ homeContent
                         onSave: savePlanningDatePicker
                     )
                 }
-                .sheet(isPresented: $isHomeToolbarFocusPickerPresented) {
+                .sheet(item: $homeToolbarFocusPickerPresentation) { presentation in
                     HomeMacFocusTimerTaskPickerSheet(
-                        tasks: homeToolbarFocusStartTasks,
-                        availableTags: homeToolbarFocusPickerAvailableTags,
-                        defaults: homeToolbarFocusPickerDefaults
+                        tasks: presentation.tasks,
+                        availableTags: presentation.availableTags,
+                        defaults: presentation.defaults
                     )
                 }
                 .confirmationDialog(

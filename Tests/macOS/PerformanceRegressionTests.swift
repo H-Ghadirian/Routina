@@ -39,9 +39,32 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertFalse(pickerSource.contains("focusSessions.reduce"))
         XCTAssertTrue(platformSource.contains("private func presentHomeToolbarFocusPicker()"))
         XCTAssertTrue(platformSource.contains("FocusSessionStartDefaults.rememberedDuration()"))
-        XCTAssertTrue(platformSource.contains("FocusSessionStartDefaults.latest("))
-        XCTAssertTrue(homeSource.contains(".sheet(isPresented: $isHomeToolbarFocusPickerPresented)"))
+        XCTAssertTrue(pickerSource.contains("FocusSessionStartDefaults.latest("))
+        XCTAssertTrue(homeSource.contains(".sheet(item: $homeToolbarFocusPickerPresentation)"))
+        XCTAssertTrue(homeSource.contains("tasks: presentation.tasks"))
+        XCTAssertTrue(homeSource.contains("availableTags: presentation.availableTags"))
+        XCTAssertTrue(platformSource.contains("HomeMacFocusTimerPickerPresentation.make("))
+        XCTAssertFalse(homeSource.contains("homeToolbarFocusPickerAvailableTags"))
         XCTAssertFalse(homeSource.contains("homeToolbarFocusPickerDuration"))
+    }
+
+    func testMacFocusPickerPresentationSnapshotsTasksTagsAndDefaultsTogether() {
+        let task = RoutineTask(
+            name: "Exercise",
+            tags: ["Health"],
+            scheduleMode: .fixedInterval
+        )
+
+        let presentation = HomeMacFocusTimerPickerPresentation.make(
+            tasks: [task],
+            focusSessions: [],
+            rememberedDuration: 0
+        )
+
+        XCTAssertEqual(presentation.tasks.map(\.id), [task.id])
+        XCTAssertEqual(presentation.availableTags, ["Health"])
+        XCTAssertEqual(presentation.defaults.duration, 0)
+        XCTAssertNil(presentation.defaults.tagName)
     }
 
     func testMacTaskCreatedToastAnchorsItsTrailingActions() throws {
@@ -645,7 +668,7 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testBacklogUsesCoalescedSemanticRefreshes() throws {
         let viewSource = try Self.sourceFile("RoutinaMacApp/Screens/Backlog/BacklogMacView.swift")
-        let featureSource = try Self.sourceFile("RoutinaMacApp/Features/Backlog/BacklogFeature.swift")
+        let featureSource = try Self.sourceFile("SharedCore/Features/Home/BacklogFeature.swift")
 
         XCTAssertFalse(
             viewSource.contains("ModelContext.didSave"),

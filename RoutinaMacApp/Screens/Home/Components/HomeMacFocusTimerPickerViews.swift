@@ -1,11 +1,55 @@
 import SwiftData
 import SwiftUI
 
+struct HomeMacFocusTimerPickerTask: Identifiable {
+    let model: RoutineTask
+    let id: UUID
+    let title: String
+    let tags: [String]
+    let isOneOffTask: Bool
+
+    init(model: RoutineTask) {
+        self.model = model
+        id = model.id
+        title = RoutineTask.trimmedName(model.name).flatMap { $0.isEmpty ? nil : $0 } ?? "Untitled task"
+        tags = model.tags
+        isOneOffTask = model.isOneOffTask
+    }
+}
+
+struct HomeMacFocusTimerPickerPresentation: Identifiable {
+    let id = UUID()
+    let tasks: [HomeMacFocusTimerPickerTask]
+    let availableTags: [String]
+    let defaults: FocusSessionStartDefaults
+
+    static func make(
+        tasks: [RoutineTask],
+        focusSessions: [FocusSession],
+        rememberedDuration: TimeInterval?
+    ) -> Self {
+        let taskSnapshots = tasks.map(HomeMacFocusTimerPickerTask.init(model:))
+        let availableTags = FocusSessionTagRecency.orderedAvailableTags(
+            RoutineTag.allTags(from: taskSnapshots.map(\.tags)),
+            focusSessions: focusSessions
+        )
+        return Self(
+            tasks: taskSnapshots,
+            availableTags: availableTags,
+            defaults: FocusSessionStartDefaults.latest(
+                focusSessions: focusSessions,
+                availableTags: availableTags,
+                rememberedDuration: rememberedDuration
+            )
+        )
+    }
+}
+
 struct HomeMacFocusTimerTaskPickerSheet: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    let tasks: [RoutineTask]
+    let tasks: [HomeMacFocusTimerPickerTask]
     let availableTags: [String]
     @State private var searchText = ""
     @State private var selectedDuration: TimeInterval
@@ -13,7 +57,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
     @State private var selectedTag: String?
 
     init(
-        tasks: [RoutineTask],
+        tasks: [HomeMacFocusTimerPickerTask],
         availableTags: [String],
         defaults: FocusSessionStartDefaults
     ) {
@@ -24,7 +68,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         _selectedTag = State(initialValue: defaults.tagName)
     }
 
-    private var filteredTasks: [RoutineTask] {
+    private var filteredTasks: [HomeMacFocusTimerPickerTask] {
         let trimmedSearch = tagAutocompleteDraft
         let tagFilteredTasks = tasks.filter { task in
             guard let selectedTag else { return true }
@@ -33,7 +77,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         guard !trimmedSearch.isEmpty else { return tagFilteredTasks }
 
         return tagFilteredTasks.filter { task in
-            taskTitle(task).localizedCaseInsensitiveContains(trimmedSearch)
+            task.title.localizedCaseInsensitiveContains(trimmedSearch)
                 || task.tags.contains { $0.localizedCaseInsensitiveContains(trimmedSearch) }
         }
     }
@@ -214,7 +258,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         .buttonStyle(.plain)
     }
 
-    private func taskRow(_ task: RoutineTask) -> some View {
+    private func taskRow(_ task: HomeMacFocusTimerPickerTask) -> some View {
         HStack(spacing: 10) {
             Image(systemName: task.isOneOffTask ? "checkmark.circle" : "repeat")
                 .font(.headline)
@@ -222,7 +266,7 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(taskTitle(task))
+                Text(task.title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
@@ -306,10 +350,10 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         }
     }
 
-    private func startFocus(for task: RoutineTask) {
+    private func startFocus(for task: HomeMacFocusTimerPickerTask) {
         do {
             _ = try FocusSessionSupport.startTaskFocus(
-                task: task,
+                task: task.model,
                 plannedDurationSeconds: selectedDuration,
                 context: modelContext,
                 calendar: calendar
@@ -319,10 +363,6 @@ struct HomeMacFocusTimerTaskPickerSheet: View {
         } catch {
             NSLog("Failed to start focus from toolbar task picker: \(error.localizedDescription)")
         }
-    }
-
-    private func taskTitle(_ task: RoutineTask) -> String {
-        RoutineTask.trimmedName(task.name).flatMap { $0.isEmpty ? nil : $0 } ?? "Untitled task"
     }
 
     private func tagsMatch(_ lhs: String?, _ rhs: String?) -> Bool {
