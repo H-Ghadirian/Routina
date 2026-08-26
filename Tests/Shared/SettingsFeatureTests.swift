@@ -2082,6 +2082,14 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func savedMacPlannerChoicesCountAsTemporaryViewStateToReset() {
+        var appSettingsClient = AppSettingsClient.noop
+        appSettingsClient.hasSavedMacPlannerPresentationPreferences = { true }
+
+        #expect(SettingsExecutionSupport.hasTemporaryViewStateToReset(appSettingsClient: appSettingsClient))
+    }
+
+    @Test
     func exportRoutineDataTapped_cancelledSelectionFinishesGracefully() async {
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()

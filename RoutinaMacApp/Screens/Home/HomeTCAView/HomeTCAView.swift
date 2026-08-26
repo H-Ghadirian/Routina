@@ -341,12 +341,19 @@ struct HomeTCAView: View {
     @State var isRestoringMacNavigationHistory = false
     @State var taskDetailPanePlacement: MacTaskDetailPanePlacement?
     @State var plannerTaskDetailDoneSelection: MacPlannerDoneTaskDetailSelection?
-    @State var dayPlanDisplayMode: DayPlanDisplayMode = .calendar
-    @State var dayPlanCalendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
+    @State var dayPlanDisplayMode = MacPlannerPresentationPreferencesStore.load().displayMode
+    @State var dayPlanCalendarTaskViewMode = MacPlannerPresentationPreferencesStore.load().calendarTaskViewMode
     @State var dayPlanCalendarFilters = DayPlanCalendarFilterState()
     @State var fullscreenTaskDetailReturnMode: MacHomeDetailMode?
     @State var fullscreenTaskDetailReturnPlacement: MacTaskDetailPanePlacement?
-    @StateObject var dayPlanPlanner = DayPlanPlannerState()
+    @StateObject var dayPlanPlanner = DayPlanPlannerState(
+        visibleRangeMode: MacPlannerPresentationPreferencesStore.load().visibleRangeMode,
+        preferredVisibleRangeModeDidChange: { mode in
+            MacPlannerPresentationPreferencesStore.update { preferences in
+                preferences.visibleRangeMode = mode
+            }
+        }
+    )
     @StateObject var macTaskListPresentationCache = HomeMacTaskListPresentationCache()
     @StateObject var macTimelinePresentationCache = HomeMacTimelinePresentationCache()
     @State var dayPlanUnplannedCompletedFilterDate: Date?

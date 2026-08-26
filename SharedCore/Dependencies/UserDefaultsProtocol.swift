@@ -148,6 +148,7 @@ enum AppSettingsDefaults {
         .appSettingMacStatsSummaryDisplayMode,
         .appSettingHiddenDayPlanTimelineActivityIDs,
         .appSettingTemporaryViewState,
+        .appSettingMacPlannerPresentationPreferences,
         .appSettingCustomTaskSections,
         .appSettingMacHomeTaskListSectionOrder,
         .appSettingMacTaskRankingReversedMetrics,
@@ -306,6 +307,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingMacAdventureUnlockedStageIDs
     case appSettingHiddenDayPlanTimelineActivityIDs
     case appSettingTemporaryViewState
+    case appSettingMacPlannerPresentationPreferences
     case appSettingProtectionBlockingEnabledModes
     case appSettingBlockingWebsiteDomains
     case appSettingFocusShieldSelection
@@ -387,6 +389,7 @@ struct AppSettingsClient: Sendable {
     var customTaskSections: @Sendable () -> [HomeCustomTaskSection] = { [] }
     var temporaryViewState: @Sendable () -> TemporaryViewState?
     var setTemporaryViewState: @Sendable (TemporaryViewState?) -> Void
+    var hasSavedMacPlannerPresentationPreferences: @Sendable () -> Bool = { false }
     var resetTemporaryViewState: @Sendable () -> Void
     var resetAllSettingsToDefaults: @Sendable () -> Void = {}
 }
@@ -884,10 +887,14 @@ extension AppSettingsClient {
         setTemporaryViewState: { state in
             TemporaryViewStateDefaultsStore.storeIfChanged(state)
         },
+        hasSavedMacPlannerPresentationPreferences: {
+            SharedDefaults.app[.appSettingMacPlannerPresentationPreferences] != nil
+        },
         resetTemporaryViewState: {
             SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
             SharedDefaults.app[.appSettingTemporaryViewState] = nil
             SharedDefaults.app[.appSettingHiddenDayPlanTimelineActivityIDs] = nil
+            SharedDefaults.app[.appSettingMacPlannerPresentationPreferences] = nil
             AppSettingsPersistenceMirror.schedule()
         },
         resetAllSettingsToDefaults: {

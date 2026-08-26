@@ -432,6 +432,24 @@ Given a matching task is excluded by lifecycle, Blocked state, a Flag, or an unf
 Then the task appears separately under `Outside Task Ladder` with the reason
 And an existing global match suppresses creation even when it is outside the active Ladder
 
+### Mac Planner Restores Its Header Choices
+
+Area: Planner / macOS UI
+Decision links: [0665](../decisions/0665-persist-mac-planner-header-choices-locally.md), [0654](../decisions/0654-progressively-reveal-mac-planner-header-choices.md), [0609](../decisions/0609-keep-planner-range-choices-actionable-in-compact-headers.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given a person selects Timeline, or selects List while Calendar is active
+And they explicitly select Day, 3 Days, or Week
+When they switch to another main-window workspace and return to Planner, or relaunch Routina
+Then Planner restores the selected Planner view, Calendar task view, and preferred range
+
+Given the saved preferred range is Week
+When a narrow Planner width temporarily renders 3 Days or Day
+Then the adaptive fallback does not replace the saved Week preference
+And Week returns when the Planner becomes wide enough again
+
 ### Mac Task Detail Closes Without Historical Refresh Work
 
 Area: Tasks / Planner / Performance

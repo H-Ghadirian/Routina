@@ -100,6 +100,30 @@ extension HomeTCAView {
     typealias MacSidebarMode = HomeFeature.MacSidebarMode
     typealias MacSidebarSelection = HomeFeature.MacSidebarSelection
 
+    private var persistedDayPlanDisplayModeBinding: Binding<DayPlanDisplayMode> {
+        Binding(
+            get: { dayPlanDisplayMode },
+            set: { mode in
+                dayPlanDisplayMode = mode
+                MacPlannerPresentationPreferencesStore.update { preferences in
+                    preferences.displayMode = mode
+                }
+            }
+        )
+    }
+
+    private var persistedDayPlanCalendarTaskViewModeBinding: Binding<DayPlanCalendarTaskViewMode> {
+        Binding(
+            get: { dayPlanCalendarTaskViewMode },
+            set: { mode in
+                dayPlanCalendarTaskViewMode = mode
+                MacPlannerPresentationPreferencesStore.update { preferences in
+                    preferences.calendarTaskViewMode = mode
+                }
+            }
+        )
+    }
+
     private var homeTopToolbarChrome: some View {
         HomeMacTopToolbarChrome(
             mode: homeToolbarMode,
@@ -375,8 +399,8 @@ extension HomeTCAView {
                         adventureProgression: adventureProgression,
                         showsPlaces: isPlacesEnabled,
                         mainDetailMode: mainDetailModeBinding,
-                        dayPlanDisplayMode: $dayPlanDisplayMode,
-                        dayPlanCalendarTaskViewMode: $dayPlanCalendarTaskViewMode,
+                        dayPlanDisplayMode: persistedDayPlanDisplayModeBinding,
+                        dayPlanCalendarTaskViewMode: persistedDayPlanCalendarTaskViewModeBinding,
                         dayPlanCalendarFilters: $dayPlanCalendarFilters,
                         isDayPlanCalendarFilterDetailPresented: isPlannerFilterDetailPresented,
                         plannerTimelineActivityDates: isPlannerTimelineListVisible

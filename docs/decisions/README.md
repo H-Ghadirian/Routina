@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0665](0665-persist-mac-planner-header-choices-locally.md) refines [0191](0191-support-one-day-planner-view.md), [0210](0210-store-durable-preferences-in-swiftdata.md), [0609](0609-keep-planner-range-choices-actionable-in-compact-headers.md), and [0654](0654-progressively-reveal-mac-planner-header-choices.md):** Mac Planner restores its Planner view, Calendar task view, and preferred range after workspace recreation or relaunch, while adaptive width fallbacks and temporary header expansion remain unpersisted.
+- **[0664](0664-open-ios-workspaces-from-the-home-list.md) revises [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md), [0561](0561-add-separate-mac-task-ranking-ladder.md), and [0574](0574-separate-task-ladder-placement-from-completion.md), and refines [0033](0033-use-app-owned-ios-more-tab.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), and [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md):** iOS Home ends with Backlog, Timeline, and Task Ladder navigation rows, opens each inside Home's existing navigation hierarchy, and shares cached Backlog and Task Ladder feature state with macOS without changing the tab bar.
 - **[0663](0663-allow-optional-multiline-mac-task-titles.md) refines [0038](0038-configure-home-task-row-fields.md), [0254](0254-move-mac-task-row-appearance-to-home-filter-detail.md), and [0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md):** Mac Task List appearance offers an off-by-default Multiline Titles option that lets long main-list task titles wrap while keeping secondary labels and metadata below the complete title block.
 - **[0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md) refines [0038](0038-configure-home-task-row-fields.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0452](0452-label-date-planned-tasks-in-their-ordinary-section.md), and [0636](0636-replace-configurable-flags-with-built-in-behaviors.md):** Mac main task-list rows reserve the first content line for the title and consolidate planning labels, Tags, Flags, Goals, and lifecycle status on the next line, with Flags independently configurable in Task Row appearance.
 - **[0661](0661-make-ios-active-focus-banner-actionable.md) refines [0123](0123-pause-focus-timers.md), [0127](0127-pause-board-focus-timers.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), and [0545](0545-bound-ios-foreground-focus-reconciliation.md):** The full iOS Home active-Focus banner always opens controls for task, tag, unassigned, and sprint timers, with Open Task available for task-backed Focus.
@@ -792,6 +794,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0665](0665-persist-mac-planner-header-choices-locally.md) | Persist Mac Planner Header Choices Locally | Accepted | 2026-08-26 |
+| [0664](0664-open-ios-workspaces-from-the-home-list.md) | Open iOS Workspaces From the Home List | Accepted | 2026-08-26 |
 | [0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md) | Reserve the First Mac Task-Row Line for the Title | Accepted | 2026-08-25 |
 | [0661](0661-make-ios-active-focus-banner-actionable.md) | Make the iOS Active Focus Banner Actionable | Accepted | 2026-08-25 |
 | [0660](0660-make-mac-planner-filters-explicit-composable-and-bounded.md) | Make Mac Planner Filters Explicit, Composable, and Bounded | Accepted | 2026-08-24 |

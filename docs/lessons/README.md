@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0250 — Persist choice state at the workspace boundary](0250-persist-choice-state-at-the-workspace-boundary.md)
 - [0249 — Present dependent sheet inputs atomically](0249-present-dependent-sheet-inputs-atomically.md)
 - [0248 — Keep workspace presentation state above conditional views](0248-keep-workspace-presentation-state-above-conditional-views.md)
 - [0247 — Give synchronized session status an action destination](0247-give-synchronized-session-status-an-action-destination.md)

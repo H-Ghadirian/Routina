@@ -266,17 +266,28 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func macPlannerCalendarListModeIsOwnedByHomeState() throws {
+    func macPlannerChoicesAreOwnedByPersistedHomePresentationState() throws {
         let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
         let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
 
         #expect(
-            homeSource.contains("@State var dayPlanCalendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule"),
-            "Mac Home should own the embedded Planner Calendar Schedule/List state so fullscreen rebuilds do not reset it."
+            homeSource.contains(
+                "@State var dayPlanDisplayMode = MacPlannerPresentationPreferencesStore.load().displayMode"
+            )
         )
-        #expect(platformSource.contains("dayPlanCalendarTaskViewMode: $dayPlanCalendarTaskViewMode"))
+        #expect(
+            homeSource.contains(
+                "@State var dayPlanCalendarTaskViewMode = MacPlannerPresentationPreferencesStore.load().calendarTaskViewMode"
+            ),
+            "Mac Home should restore the embedded Planner choices instead of recreating hard-coded defaults."
+        )
+        #expect(homeSource.contains("visibleRangeMode: MacPlannerPresentationPreferencesStore.load().visibleRangeMode"))
+        #expect(platformSource.contains("dayPlanDisplayMode: persistedDayPlanDisplayModeBinding"))
+        #expect(platformSource.contains("dayPlanCalendarTaskViewMode: persistedDayPlanCalendarTaskViewModeBinding"))
+        #expect(platformSource.contains("preferences.displayMode = mode"))
+        #expect(platformSource.contains("preferences.calendarTaskViewMode = mode"))
         #expect(detailSource.contains("@Binding var dayPlanCalendarTaskViewMode: DayPlanCalendarTaskViewMode"))
         #expect(detailSource.contains("calendarTaskViewMode: $dayPlanCalendarTaskViewMode"))
         #expect(
@@ -287,6 +298,67 @@ struct DayPlanPlannerStateTests {
             !dayPlanSource.contains("@State private var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule\n    @State private var isCalendarFilterSidebarPresented"),
             "DayPlanDetailView should not reset Calendar List to Schedule when the Mac detail child is recreated."
         )
+    }
+
+    @Test
+    func macPlannerPresentationPreferencesPersistEveryChoiceAndDecodeOlderPayloads() throws {
+        let suiteName = "MacPlannerPresentationPreferencesStoreTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        #expect(MacPlannerPresentationPreferencesStore.load(from: defaults) == .default)
+        #expect(
+            MacPlannerPresentationPreferencesStore.update(in: defaults) { preferences in
+                preferences.displayMode = .list
+                preferences.calendarTaskViewMode = .list
+                preferences.visibleRangeMode = .threeDays
+            }
+        )
+        #expect(
+            MacPlannerPresentationPreferencesStore.load(from: defaults) == MacPlannerPresentationPreferences(
+                displayMode: .list,
+                calendarTaskViewMode: .list,
+                visibleRangeMode: .threeDays
+            )
+        )
+        #expect(
+            !MacPlannerPresentationPreferencesStore.update(in: defaults) { preferences in
+                preferences.visibleRangeMode = .threeDays
+            },
+            "Restoring or reselecting the current choice must not rewrite equivalent preferences."
+        )
+
+        defaults[.appSettingMacPlannerPresentationPreferences] = #"{"displayMode":"list"}"#
+        #expect(
+            MacPlannerPresentationPreferencesStore.load(from: defaults) == MacPlannerPresentationPreferences(
+                displayMode: .list,
+                calendarTaskViewMode: .schedule,
+                visibleRangeMode: .week
+            )
+        )
+    }
+
+    @Test
+    func adaptivePlannerRangeFallbackDoesNotReplacePersistedPreferredRange() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        var persistedModes: [DayPlanVisibleRangeMode] = []
+        let planner = DayPlanPlannerState(
+            visibleRangeMode: .week,
+            preferredVisibleRangeModeDidChange: { persistedModes.append($0) }
+        )
+
+        planner.setAdaptiveVisibleRangeMode(
+            forAvailableWidth: 350,
+            calendar: calendar,
+            context: context
+        )
+        #expect(planner.visibleRangeMode == .day)
+        #expect(persistedModes.isEmpty)
+
+        planner.setVisibleRangeMode(.threeDays, calendar: calendar, context: context)
+        #expect(persistedModes == [.threeDays])
     }
 
     @Test

@@ -12,7 +12,7 @@ struct DayPlanFocusedSleep: Equatable {
     }
 }
 
-enum DayPlanVisibleRangeMode: String, CaseIterable, Identifiable {
+enum DayPlanVisibleRangeMode: String, CaseIterable, Codable, Identifiable, Sendable {
     case day
     case threeDays
     case week
@@ -46,7 +46,7 @@ enum DayPlanVisibleRangeMode: String, CaseIterable, Identifiable {
     }
 }
 
-enum DayPlanDisplayMode: String, CaseIterable, Identifiable {
+enum DayPlanDisplayMode: String, CaseIterable, Codable, Identifiable, Sendable {
     case calendar
     case list
 
@@ -71,7 +71,7 @@ enum DayPlanDisplayMode: String, CaseIterable, Identifiable {
     }
 }
 
-enum DayPlanCalendarTaskViewMode: String, CaseIterable, Identifiable {
+enum DayPlanCalendarTaskViewMode: String, CaseIterable, Codable, Identifiable, Sendable {
     case schedule
     case list
 
@@ -137,6 +137,76 @@ enum DayPlanHourSpacing: String, CaseIterable, Identifiable {
     }
 }
 
+struct MacPlannerPresentationPreferences: Codable, Equatable, Sendable {
+    var displayMode: DayPlanDisplayMode = .calendar
+    var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
+    var visibleRangeMode: DayPlanVisibleRangeMode = .week
+
+    static let `default` = Self()
+
+    init(
+        displayMode: DayPlanDisplayMode = .calendar,
+        calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule,
+        visibleRangeMode: DayPlanVisibleRangeMode = .week
+    ) {
+        self.displayMode = displayMode
+        self.calendarTaskViewMode = calendarTaskViewMode
+        self.visibleRangeMode = visibleRangeMode
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case displayMode
+        case calendarTaskViewMode
+        case visibleRangeMode
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        displayMode = try container.decodeIfPresent(DayPlanDisplayMode.self, forKey: .displayMode) ?? .calendar
+        calendarTaskViewMode = try container.decodeIfPresent(
+            DayPlanCalendarTaskViewMode.self,
+            forKey: .calendarTaskViewMode
+        ) ?? .schedule
+        visibleRangeMode = try container.decodeIfPresent(
+            DayPlanVisibleRangeMode.self,
+            forKey: .visibleRangeMode
+        ) ?? .week
+    }
+}
+
+enum MacPlannerPresentationPreferencesStore {
+    static func load(
+        from defaults: UserDefaults = SharedDefaults.app
+    ) -> MacPlannerPresentationPreferences {
+        guard
+            let rawValue = defaults[.appSettingMacPlannerPresentationPreferences],
+            let data = rawValue.data(using: .utf8),
+            let preferences = try? JSONDecoder().decode(MacPlannerPresentationPreferences.self, from: data)
+        else {
+            return .default
+        }
+        return preferences
+    }
+
+    @discardableResult
+    static func update(
+        in defaults: UserDefaults = SharedDefaults.app,
+        _ changes: (inout MacPlannerPresentationPreferences) -> Void
+    ) -> Bool {
+        var preferences = load(from: defaults)
+        let previousPreferences = preferences
+        changes(&preferences)
+        guard preferences != previousPreferences,
+              let data = try? JSONEncoder().encode(preferences),
+              let rawValue = String(data: data, encoding: .utf8)
+        else {
+            return false
+        }
+        defaults[.appSettingMacPlannerPresentationPreferences] = rawValue
+        return true
+    }
+}
+
 private struct DayPlanPlannerUndoSnapshot: Equatable {
     var dayKey: String
     var blocks: [DayPlanBlock]
@@ -184,6 +254,7 @@ final class DayPlanPlannerState: ObservableObject {
 
     @Published private var visibleDate: Date
     private var preferredVisibleRangeMode: DayPlanVisibleRangeMode
+    private let preferredVisibleRangeModeDidChange: ((DayPlanVisibleRangeMode) -> Void)?
     @Published private var maximumAdaptiveVisibleRangeMode: DayPlanVisibleRangeMode = .week
     private var pendingResizeUndo: DayPlanPendingResizeUndo?
     private var plannerUndoChange: DayPlanPlannerUndoChange?
@@ -192,12 +263,14 @@ final class DayPlanPlannerState: ObservableObject {
 
     init(
         selectedDate: Date = DayPlanPlannerState.defaultSelectedDate(),
-        visibleRangeMode: DayPlanVisibleRangeMode = .week
+        visibleRangeMode: DayPlanVisibleRangeMode = .week,
+        preferredVisibleRangeModeDidChange: ((DayPlanVisibleRangeMode) -> Void)? = nil
     ) {
         self.selectedDate = selectedDate
         self.visibleDate = selectedDate
         self.visibleRangeMode = visibleRangeMode
         self.preferredVisibleRangeMode = visibleRangeMode
+        self.preferredVisibleRangeModeDidChange = preferredVisibleRangeModeDidChange
         undoTarget.planner = self
     }
 
@@ -1211,7 +1284,11 @@ final class DayPlanPlannerState: ObservableObject {
         calendar: Calendar,
         context: ModelContext
     ) {
+        let preferredModeChanged = preferredVisibleRangeMode != mode
         preferredVisibleRangeMode = mode
+        if preferredModeChanged {
+            preferredVisibleRangeModeDidChange?(mode)
+        }
         applyEffectiveVisibleRangeMode(
             Self.effectiveVisibleRangeMode(
                 preferred: preferredVisibleRangeMode,
