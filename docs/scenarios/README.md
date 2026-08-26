@@ -3369,6 +3369,26 @@ When the user opens Settings -> Appearance -> Task Row
 Then the matching Goals or Places option is absent, including from the preview and shown-fields count
 And enabling the feature restores the option without changing its stored visibility choice
 
+### Mac Main Task Titles Can Wrap Without Mixing Metadata
+
+Area: Tasks, Settings
+Decision links: [0662](../decisions/0662-reserve-the-first-mac-task-row-line-for-the-title.md), [0663](../decisions/0663-allow-optional-multiline-mac-task-titles.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/Shared/HomeMacTaskRowMetadataLayoutSourceTests.swift`
+- `Tests/Shared/SettingsFeatureTests.swift`
+
+Given the user opens the Mac filter companion pane's `Task List` -> `Appearance` tab
+When `Multiline Titles` is off
+Then main task-list titles remain on one line and truncate when needed
+
+When `Multiline Titles` is on
+Then long main task-list titles wrap onto additional lines
+And secondary labels plus later metadata remain below the complete title block
+And changing another Task Row field preserves the multiline choice
+And iOS task rows remain unchanged
+
 ### Mac Task Form Section Titles Stay Consistent
 
 Area: Tasks

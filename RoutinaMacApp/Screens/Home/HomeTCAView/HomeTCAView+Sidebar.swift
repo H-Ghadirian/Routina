@@ -1349,6 +1349,9 @@ extension HomeTCAView {
             showsPlaceTaskRowField: isPlacesEnabled,
             onTaskRowFieldVisibilityChanged: { field, isVisible in
                 settingsStore.send(.taskRowFieldVisibilityChanged(field, isVisible))
+            },
+            onTaskRowMultilineTitlesChanged: { isEnabled in
+                settingsStore.send(.taskRowMultilineTitlesChanged(isEnabled))
             }
         ) {
             tagFilterBar

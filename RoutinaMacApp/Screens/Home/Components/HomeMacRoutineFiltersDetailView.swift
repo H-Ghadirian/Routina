@@ -36,6 +36,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     let showsFlagSection: Bool
     let showsPlaceTaskRowField: Bool
     let onTaskRowFieldVisibilityChanged: (HomeTaskRowField, Bool) -> Void
+    let onTaskRowMultilineTitlesChanged: (Bool) -> Void
     @ViewBuilder let tagSectionContent: () -> TagContent
     @ViewBuilder let placeSectionContent: () -> PlaceContent
     @ViewBuilder let flagSectionContent: () -> FlagContent
@@ -115,6 +116,16 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
 
     private var appearanceTabContent: some View {
         HomeMacSidebarSectionCard(title: "Task Row") {
+            Toggle(isOn: taskRowMultilineTitlesBinding) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Multiline Titles")
+                    Text("Wrap long task titles onto additional lines.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+
             ForEach(macTaskRowFields) { field in
                 Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -356,6 +367,13 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
         Binding(
             get: { taskRowVisibility.shows(field) },
             set: { onTaskRowFieldVisibilityChanged(field, $0) }
+        )
+    }
+
+    private var taskRowMultilineTitlesBinding: Binding<Bool> {
+        Binding(
+            get: { taskRowVisibility.allowsMultilineTitles },
+            set: { onTaskRowMultilineTitlesChanged($0) }
         )
     }
 

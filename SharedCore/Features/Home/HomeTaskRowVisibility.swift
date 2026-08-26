@@ -117,19 +117,39 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
 
 struct HomeTaskRowVisibility: Equatable, Sendable {
     static let defaultValue = HomeTaskRowVisibility()
+    private static let multilineTitlesStorageValue = "multilineTitles"
 
     var hiddenFields: Set<HomeTaskRowField>
+    var allowsMultilineTitles: Bool
 
-    init(hiddenFields: Set<HomeTaskRowField> = []) {
+    init(
+        hiddenFields: Set<HomeTaskRowField> = [],
+        allowsMultilineTitles: Bool = false
+    ) {
         self.hiddenFields = hiddenFields.intersection(Set(HomeTaskRowField.allCases))
+        self.allowsMultilineTitles = allowsMultilineTitles
     }
 
     init(storageRawValue: String?) {
-        self.init(hiddenFields: HomeTaskRowField.decodedHiddenFields(from: storageRawValue))
+        let storedValues = Set(
+            storageRawValue?
+                .split(separator: ",")
+                .map(String.init) ?? []
+        )
+        self.init(
+            hiddenFields: HomeTaskRowField.decodedHiddenFields(from: storageRawValue),
+            allowsMultilineTitles: storedValues.contains(Self.multilineTitlesStorageValue)
+        )
     }
 
     var storageRawValue: String? {
-        HomeTaskRowField.encodedHiddenFields(hiddenFields)
+        var storedValues = HomeTaskRowField.allCases
+            .filter { hiddenFields.contains($0) }
+            .map(\.rawValue)
+        if allowsMultilineTitles {
+            storedValues.append(Self.multilineTitlesStorageValue)
+        }
+        return storedValues.isEmpty ? nil : storedValues.joined(separator: ",")
     }
 
     var summaryText: String {
@@ -149,6 +169,16 @@ struct HomeTaskRowVisibility: Equatable, Sendable {
         } else {
             updatedFields.insert(field)
         }
-        return HomeTaskRowVisibility(hiddenFields: updatedFields)
+        return HomeTaskRowVisibility(
+            hiddenFields: updatedFields,
+            allowsMultilineTitles: allowsMultilineTitles
+        )
+    }
+
+    func settingMultilineTitles(_ isEnabled: Bool) -> HomeTaskRowVisibility {
+        HomeTaskRowVisibility(
+            hiddenFields: hiddenFields,
+            allowsMultilineTitles: isEnabled
+        )
     }
 }

@@ -245,7 +245,11 @@ extension HomeTCAView {
             VStack(alignment: .leading, spacing: 3) {
                 Text(task.name)
                     .font(.headline)
-                    .lineLimit(1)
+                    .lineLimit(rowVisibility.allowsMultilineTitles ? nil : 1)
+                    .fixedSize(
+                        horizontal: false,
+                        vertical: rowVisibility.allowsMultilineTitles
+                    )
                     .layoutPriority(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
 

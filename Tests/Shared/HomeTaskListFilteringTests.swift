@@ -2897,6 +2897,19 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func taskRowVisibilityRoundTripsOptInMultilineTitles() {
+        let visibility = HomeTaskRowVisibility(
+            hiddenFields: [.tags, .icon],
+            allowsMultilineTitles: true
+        )
+
+        #expect(visibility.storageRawValue == "icon,tags,multilineTitles")
+        #expect(HomeTaskRowVisibility(storageRawValue: visibility.storageRawValue) == visibility)
+        #expect(!HomeTaskRowVisibility.defaultValue.allowsMultilineTitles)
+        #expect(visibility.setting(.tags, visible: true).allowsMultilineTitles)
+    }
+
+    @Test
     func rowColorAndColorBadgeVisibilityAreIndependent() {
         let hiddenRowColor = HomeTaskRowVisibility(hiddenFields: [.rowColor])
         let hiddenColorBadge = HomeTaskRowVisibility(hiddenFields: [.colorBadge])

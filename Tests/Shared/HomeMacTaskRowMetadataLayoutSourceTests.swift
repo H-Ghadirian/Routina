@@ -26,6 +26,8 @@ struct HomeMacTaskRowMetadataLayoutSourceTests {
         #expect(functionSource.contains("HomeStatusBadgeView(style: statusBadgeStyle)"))
         #expect(functionSource.contains("showsFlags: rowVisibility.shows(.flags)"))
         #expect(functionSource.contains("showsGoals: rowVisibility.shows(.goals)"))
+        #expect(functionSource.contains(".lineLimit(rowVisibility.allowsMultilineTitles ? nil : 1)"))
+        #expect(functionSource.contains("vertical: rowVisibility.allowsMultilineTitles"))
     }
 
     @Test
@@ -38,6 +40,17 @@ struct HomeMacTaskRowMetadataLayoutSourceTests {
         #expect(source.contains("ForEach(task.flags, id: \\.self)"))
         #expect(source.contains("ForEach(task.goalTitles, id: \\.self)"))
         #expect(source.contains("Label(flag, systemImage: \"flag.fill\")"))
+    }
+
+    @Test
+    func taskListAppearanceExposesTheMultilineTitleOption() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacRoutineFiltersDetailView.swift"
+        )
+
+        #expect(source.contains("Text(\"Multiline Titles\")"))
+        #expect(source.contains("get: { taskRowVisibility.allowsMultilineTitles }"))
+        #expect(source.contains("set: { onTaskRowMultilineTitlesChanged($0) }"))
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
