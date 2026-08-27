@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0681: Move Mac Focus Into the New Menu](../0681-move-mac-focus-into-new-menu.md)
 
 ## Date
 
@@ -10,14 +10,14 @@ Accepted
 
 ## Refines
 
-- [0244: Start Mac Toolbar Focus With Task Picker](0244-start-mac-toolbar-focus-with-task-picker.md)
-- [0311: Move Mac Home Mode Strip to Toolbar](0311-move-mac-home-mode-strip-to-toolbar.md)
-- [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
-- [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
+- [0244: Start Mac Toolbar Focus With Task Picker](../0244-start-mac-toolbar-focus-with-task-picker.md)
+- [0311: Move Mac Home Mode Strip to Toolbar](../0311-move-mac-home-mode-strip-to-toolbar.md)
+- [0317: Use Principal Search in the Mac Home Toolbar](../0317-use-principal-search-in-mac-home-toolbar.md)
+- [0319: Open Planner Filters in the Home Filter Pane](../0319-open-planner-filters-in-home-filter-pane.md)
 
 ## Revised By
 
-- [0603: Start Mac Focus From One Recalling Sheet](0603-start-mac-focus-from-one-recalling-sheet.md) revises the duration-first presentation while preserving Planner-header ownership.
+- [0603: Start Mac Focus From One Recalling Sheet](../0603-start-mac-focus-from-one-recalling-sheet.md) revises the duration-first presentation while preserving Planner-header ownership.
 
 ## Context
 
@@ -29,7 +29,7 @@ Keeping Focus in the global Home toolbar also made the top chrome feel less stab
 
 Mac Home no longer shows the Focus start/control branch in the top toolbar command row. The Planner Calendar header shows the Focus control beside the Planner filter button.
 
-The moved control keeps the existing behavior from [0244](0244-start-mac-toolbar-focus-with-task-picker.md): duration choices open the task picker before starting task-backed focus. If an unassigned plan-focus session is active, the header shows the plan-focus pause/resume/finish/abandon menu. If another focus timer is active, the header shows the active focus badge while hiding only unassigned plan-focus status.
+The moved control keeps the existing behavior from [0244](../0244-start-mac-toolbar-focus-with-task-picker.md): duration choices open the task picker before starting task-backed focus. If an unassigned plan-focus session is active, the header shows the plan-focus pause/resume/finish/abandon menu. If another focus timer is active, the header shows the active focus badge while hiding only unassigned plan-focus status.
 
 The Focus control is Calendar-local and does not render in Planner Timeline mode. Search remains in the principal/top search surface, and the Home toolbar command row keeps Home navigation, Add, Places when enabled, and optional progress controls.
 

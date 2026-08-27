@@ -6,7 +6,7 @@ Date: 2026-06-14
 
 Refines: [0205 Run Plan Focus From Planner](0205-run-plan-focus-from-planner.md)
 
-Refined By: [0333 Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md); duration-first presentation revised by [0603 Start Mac Focus From One Recalling Sheet](0603-start-mac-focus-from-one-recalling-sheet.md)
+Refined By: [0333 Move Mac Focus Control to Planner Calendar Header](superseded/0333-move-mac-focus-control-to-planner-calendar-header.md); duration-first presentation revised by [0603 Start Mac Focus From One Recalling Sheet](0603-start-mac-focus-from-one-recalling-sheet.md)
 
 ## Context
 
@@ -14,7 +14,7 @@ Mac exposes a compact `Start Focus Timer` menu. The earlier plan-focus behavior 
 
 ## Decision
 
-The Mac `Start Focus Timer` duration choices open a task picker sheet before starting focus. The sheet shows a search field and active, assignable tasks; selecting a task starts a normal task-backed focus session with the chosen count-up or fixed duration. [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) later moves this primary Focus entry from the Home toolbar to the Planner Calendar header.
+The Mac `Start Focus Timer` duration choices open a task picker sheet before starting focus. The sheet shows a search field and active, assignable tasks; selecting a task starts a normal task-backed focus session with the chosen count-up or fixed duration. [0333](superseded/0333-move-mac-focus-control-to-planner-calendar-header.md) later moves this primary Focus entry from the Home toolbar to the Planner Calendar header.
 
 Unassigned plan focus remains available from planner and section flows that intentionally support allocation after the fact. Completed unassigned sessions can still be assigned from Stats and compatibility pending-focus assignment surfaces.
 

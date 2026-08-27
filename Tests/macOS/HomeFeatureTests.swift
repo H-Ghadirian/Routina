@@ -192,7 +192,7 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func macAddMenuVisibleActions_collapsesToTaskWithDefaultHiddenSurfaces() {
+    func macAddMenuVisibleActions_keepsTaskAndFocusWithDefaultHiddenSurfaces() {
         #expect(
             MacAddMenuShortcut.visibleActions(
                 eventEmotionEnabled: false,
@@ -200,8 +200,13 @@ struct HomeFeatureTests {
                 goalsEnabled: false,
                 placesEnabled: false,
                 awayEnabled: false
-            ) == [.task]
+            ) == [.task, .focus]
         )
+        #expect(MacAddMenuShortcut.task.menuTitle == "Add New Task")
+        #expect(MacAddMenuShortcut.task.commandTitle == "Add New Task")
+        #expect(MacAddMenuShortcut.task.shortcutTitle == "⌃⌥⌘T")
+        #expect(MacAddMenuShortcut.focus.menuTitle == "Focus")
+        #expect(MacAddMenuShortcut.focus.shortcutTitle == "⌃⌥⌘F")
     }
 
     @Test
@@ -213,7 +218,7 @@ struct HomeFeatureTests {
                 goalsEnabled: true,
                 placesEnabled: true,
                 awayEnabled: true
-            ) == [.event, .emotion, .note, .goal, .task, .checkIn, .away]
+            ) == [.event, .emotion, .note, .goal, .task, .focus, .checkIn, .away]
         )
     }
 

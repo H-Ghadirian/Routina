@@ -3,8 +3,8 @@ import XCTest
 
 final class PerformanceRegressionTests: XCTestCase {
     func testMacFocusStartUsesOneRecallingSheet() throws {
-        let toolbarSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"
+        let controlsSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacSidebarModeStripView.swift"
         )
         let pickerSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacFocusTimerPickerViews.swift"
@@ -16,21 +16,10 @@ final class PerformanceRegressionTests: XCTestCase {
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
         )
 
-        let buttonStart = try XCTUnwrap(
-            toolbarSource.range(of: "struct HomeMacPlanFocusToolbarButton: View")
-        )
-        let buttonEnd = try XCTUnwrap(
-            toolbarSource.range(
-                of: "@MainActor\nprivate func planFocusToolbarLabel",
-                range: buttonStart.upperBound..<toolbarSource.endIndex
-            )
-        )
-        let buttonSource = toolbarSource[buttonStart.lowerBound..<buttonEnd.lowerBound]
-
-        XCTAssertTrue(buttonSource.contains("onTaskFocusRequested()"))
+        XCTAssertTrue(controlsSource.contains("case .focus:\n            onFocus()"))
         XCTAssertFalse(
-            buttonSource.contains("Menu {"),
-            "Focus should open its sheet directly instead of presenting duration choices first."
+            controlsSource.contains("HomeMacPlanFocusToolbarButton"),
+            "The New menu Focus action should open the recalling sheet without restoring a second Planner button."
         )
         XCTAssertTrue(pickerSource.contains("private var durationPicker: some View"))
         XCTAssertTrue(pickerSource.contains("Last choice:"))
@@ -931,10 +920,7 @@ final class PerformanceRegressionTests: XCTestCase {
             "The header should apply the independent Go to date presentation decision."
         )
         XCTAssertTrue(dayPlanSource.contains("shouldUseIconOnlyDatePickerButton("))
-        XCTAssertTrue(
-            dayPlanSource.contains("needsCompactDateButtonForFit || (showsCalendarControlSet && showsExtraUtilityControl)"),
-            "A loaded Calendar Focus control should collapse Go to date independently of the progressive choice controls."
-        )
+        XCTAssertFalse(dayPlanSource.contains("showsExtraUtilityControl"))
         XCTAssertFalse(
             dayPlanSource.contains("usesIconOnlyMacDatePickerButton ? nil : 210"),
             "The regular date/range button should not reserve blank horizontal space beyond its content."
@@ -947,11 +933,11 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(dayPlanSource.contains("shouldUseCompactDateButtonForFit"))
         XCTAssertTrue(dayPlanSource.contains("static let dateButtonTransitionReserveWidth: Double = 120"))
         XCTAssertTrue(dayPlanSource.contains("static let minimumRegularCalendarHeaderAvailableWidth: Double = 1520"))
-        XCTAssertTrue(dayPlanSource.contains("static let minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth: Double = 1720"))
+        XCTAssertFalse(dayPlanSource.contains("minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth"))
         XCTAssertTrue(dayPlanSource.contains("effectiveAvailableWidth("))
         XCTAssertTrue(dayPlanSource.contains("return min(parentWidth, measuredWidth)"))
-        XCTAssertTrue(dayPlanSource.contains("macFocusControlIsVisible: macHeaderFocusControlIsVisible"))
-        XCTAssertTrue(detailSource.contains("private var plannerHeaderFocusControlIsVisible: Bool"))
+        XCTAssertFalse(dayPlanSource.contains("macFocusControl"))
+        XCTAssertFalse(detailSource.contains("plannerHeaderFocusControl"))
         XCTAssertTrue(dayPlanSource.contains("showsCalendarControlSet: effectiveDisplayMode == .calendar"))
         XCTAssertTrue(dayPlanSource.contains("parentAvailableWidth: macHeaderAvailableWidth"))
         XCTAssertTrue(dayPlanSource.contains(".onChange(of: parentAvailableWidth)"))
@@ -1171,26 +1157,17 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
-    func testPlannerHeaderKeepsFocusAvailableAcrossDisplayModesAndOnlyHidesUnassignedPlanFocusBadge() throws {
+    func testHomeNewMenuOwnsFocusInsteadOfThePlannerHeader() throws {
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
-        let badgeSource = try Self.sourceFile("RoutinaMacApp/Screens/Shared/RoutinaMacFocusTimerToolbarBadge.swift")
+        let controlsSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacSidebarModeStripView.swift")
+        let statusMenuSource = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacFocusTimerStatusBarController.swift")
 
-        XCTAssertTrue(
-            dayPlanSource.contains("if let macFocusControl")
-                && !dayPlanSource.contains("if effectiveDisplayMode == .calendar, let macFocusControl"),
-            "Planner should keep the Focus control visible in both Calendar and Timeline modes."
-        )
-        XCTAssertTrue(
-            detailSource.contains("RoutinaMacFocusTimerToolbarBadge(")
-                && detailSource.contains("hiddenKinds: [.unassigned]"),
-            "Planner should hide only its own unassigned Plan Focus badge while still showing active board or task timers."
-        )
-        XCTAssertFalse(
-            detailSource.contains("if mainDetailMode != .planner"),
-            "Do not hide the entire active focus badge in Planner; board/sprint focus still needs to be visible there."
-        )
-        XCTAssertTrue(badgeSource.contains("return !hiddenKinds.contains(kind)"))
+        XCTAssertFalse(dayPlanSource.contains("macFocusControl"))
+        XCTAssertFalse(detailSource.contains("plannerHeaderFocusControl"))
+        XCTAssertTrue(controlsSource.contains("case .focus:\n            onFocus()"))
+        XCTAssertTrue(controlsSource.contains(".disabled(shortcut == .focus && isFocusDisabled)"))
+        XCTAssertTrue(statusMenuSource.contains("status.isPaused ? \"Resume Timer\" : \"Pause Timer\""))
     }
 
     func testMacHomeFocusToolbarUsesSingleTimerSlot() throws {
@@ -1205,6 +1182,9 @@ final class PerformanceRegressionTests: XCTestCase {
         let taskToolbarSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift")
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
         let toolbarComponentsSource = try Self.sourceFile("RoutinaMacApp/Screens/Shared/MacToolbarComponents.swift")
+        let controlsSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacSidebarModeStripView.swift")
+        let shortcutSource = try Self.sourceFile("RoutinaMacApp/Commands/MacAddMenuShortcut.swift")
+        let commandSource = try Self.sourceFile("RoutinaMacApp/Commands/RoutineCommands.swift")
 
         XCTAssertTrue(
             source.contains("HomeMacToolbarSearchField("),
@@ -1679,16 +1659,14 @@ final class PerformanceRegressionTests: XCTestCase {
             "Task and timeline search should have one active text field. Duplicating the shared search binding in the sidebar steals first responder from the toolbar field."
         )
         XCTAssertFalse(source.contains("RoutinaMacFocusTimerToolbarItem(hiddenKinds: [.unassigned])"))
-        XCTAssertTrue(detailSource.contains("macHeaderFocusControl:"))
-        XCTAssertTrue(detailSource.contains("HomeMacActivePlanFocusToolbarButton("))
-        XCTAssertTrue(detailSource.contains("RoutinaMacFocusTimerToolbarBadge("))
-        XCTAssertTrue(detailSource.contains("HomeMacPlanFocusToolbarButton("))
-        XCTAssertTrue(dayPlanSource.contains("if let macFocusControl"))
-        XCTAssertFalse(dayPlanSource.contains("if effectiveDisplayMode == .calendar, let macFocusControl"))
-        XCTAssertFalse(
-            source.contains("Assign Pending Focus"),
-            "The Planner Calendar focus menu should only start task-backed timers; pending unassigned focus assignment is no longer a header action."
-        )
+        XCTAssertFalse(detailSource.contains("plannerHeaderFocusControl"))
+        XCTAssertFalse(dayPlanSource.contains("macFocusControl"))
+        XCTAssertTrue(controlsSource.contains("Label(shortcut.menuTitle, systemImage: shortcut.systemImage)"))
+        XCTAssertTrue(controlsSource.contains(".keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)"))
+        XCTAssertFalse(controlsSource.contains("onlyVisibleAddMenuShortcut"))
+        XCTAssertTrue(shortcutSource.contains("return \"Add New Task\""))
+        XCTAssertTrue(shortcutSource.contains("case .focus:   return \"f\""))
+        XCTAssertTrue(commandSource.contains("addMenuCommand(.focus, notificationName: .routinaMacOpenFocus)"))
     }
 
     func testMacSearchNoResultSidebarCanOpenSeededAddTask() throws {

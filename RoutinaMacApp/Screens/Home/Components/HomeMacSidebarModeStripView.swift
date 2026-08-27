@@ -8,6 +8,8 @@ struct HomeMacWorkspaceToolbarControls: View {
     let onAddNote: () -> Void
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
+    let onFocus: () -> Void
+    let isFocusDisabled: Bool
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
 
@@ -107,21 +109,8 @@ struct HomeMacWorkspaceToolbarControls: View {
         }
     }
 
-    @ViewBuilder
     private var addControl: some View {
-        if let shortcut = onlyVisibleAddMenuShortcut {
-            Button {
-                performAddMenuAction(shortcut)
-            } label: {
-                addControlLabel
-            }
-            .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
-            .buttonStyle(.plain)
-            .accessibilityLabel(shortcut.commandTitle)
-            .help(shortcut.commandTitle)
-        } else {
-            addOptionsMenu
-        }
+        addOptionsMenu
     }
 
     private var addOptionsMenu: some View {
@@ -134,9 +123,10 @@ struct HomeMacWorkspaceToolbarControls: View {
                 Button {
                     performAddMenuAction(shortcut)
                 } label: {
-                    Label(shortcut.title, systemImage: shortcut.systemImage)
+                    Label(shortcut.menuTitle, systemImage: shortcut.systemImage)
                 }
                 .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
+                .disabled(shortcut == .focus && isFocusDisabled)
             }
         } label: {
             addControlLabel
@@ -171,11 +161,6 @@ struct HomeMacWorkspaceToolbarControls: View {
         )
     }
 
-    private var onlyVisibleAddMenuShortcut: MacAddMenuShortcut? {
-        let shortcuts = visibleAddMenuShortcuts
-        return shortcuts.count == 1 ? shortcuts[0] : nil
-    }
-
     private func performAddMenuAction(_ shortcut: MacAddMenuShortcut) {
         switch shortcut {
         case .event:
@@ -188,6 +173,8 @@ struct HomeMacWorkspaceToolbarControls: View {
             onAddGoal()
         case .task:
             onAddTask()
+        case .focus:
+            onFocus()
         case .checkIn:
             onCheckIn()
         case .away:
@@ -205,9 +192,9 @@ struct HomeMacWorkspaceToolbarControls: View {
         let awayAction = isAwayEnabled ? ", or away" : ""
         let personalPrefix = personalActions.isEmpty ? "" : "\(personalActions.joined(separator: ", ")), "
         if isGoalsTabEnabled {
-            return "Add \(personalPrefix)goal, task\(placeAction)\(awayAction)"
+            return "Add \(personalPrefix)goal or task, or start Focus\(placeAction)\(awayAction)"
         }
-        return "Add \(personalPrefix)task\(placeAction)\(awayAction)"
+        return "Add \(personalPrefix)task or start Focus\(placeAction)\(awayAction)"
     }
 }
 

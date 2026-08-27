@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0681: Move Mac Focus Into the New Menu](../0681-move-mac-focus-into-new-menu.md)
 
 ## Date
 

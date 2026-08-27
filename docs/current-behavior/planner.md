@@ -83,10 +83,12 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0654](../decisions/0654-progressively-reveal-mac-planner-header-choices.md)
 - [0665](../decisions/0665-persist-mac-planner-header-choices-locally.md)
 - [0660](../decisions/0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
+- [0681](../decisions/0681-move-mac-focus-into-new-menu.md)
 
 ## Current Contract
 
 - The Mac Planner Focus sheet stores the duration selected in its picker in device-local preferences, shows it as Last choice, and selects it by default on the next opening. That remembered duration takes precedence over attributed Focus-session history; history remains the fallback when no picker choice has been saved, and the default is 25 minutes when neither source has a value.
+- On Mac, Focus starts from the global top-toolbar `+` menu instead of a separate Planner-header button. The standard menu presents `Add New Task` with Control-Option-Command-T and `Focus` with Control-Option-Command-F using native visible shortcut labels. Focus opens the existing task/tag-and-duration sheet, is unavailable while another Focus or sprint timer is active or no startable work exists, and leaves active-timer management to Routina's macOS timer/status menu. Calendar and Timeline headers do not reserve Focus width or change `Go to date` solely because Focus state changes.
 
 - Timeline activity is evidence for completed, missed, canceled, sleep, place, note, emotion, event, and accepted focus activity.
 - Timeline list surfaces show newest activity first in normal, non-inverted lists, with date headers above their rows.

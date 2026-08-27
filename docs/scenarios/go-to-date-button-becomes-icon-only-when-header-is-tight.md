@@ -17,12 +17,6 @@ Then the `Go to date` button shows the calendar icon without an ellipsized date 
 And the view, Calendar task-view, and range choices remain available as compact triggers that reveal one segmented control at a time
 And its accessibility value and help still expose the selected date or range
 
-Given loaded data makes the Planner Focus control visible in Mac Calendar
-When the header is rendered
-Then the `Go to date` button shows only its calendar icon
-And the view, Calendar task-view, and range choices keep their independent one-at-a-time expansion state
-And its accessibility value and help still expose the selected date or range
-
 Given the calendar can render only Day or 3 Days
 When the person expands the range control
 Then Go to date remains icon-only

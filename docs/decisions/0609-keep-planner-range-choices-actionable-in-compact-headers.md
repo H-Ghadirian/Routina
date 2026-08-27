@@ -7,7 +7,7 @@ The segmented-versus-menu presentation is revised by
 Range eligibility, readable day widths, preferred-range restoration, and the
 icon-only date fallback remain active.
 
-The loaded Focus-control behavior is refined by [0614: Collapse the Planner date label when Focus is visible](0614-collapse-planner-date-label-when-focus-is-visible.md), which allows the date button to collapse independently of the other header choices.
+The loaded Focus-control behavior is refined by [0614: Collapse the Planner date label when Focus is visible](superseded/0614-collapse-planner-date-label-when-focus-is-visible.md), which allows the date button to collapse independently of the other header choices.
 
 Date: 2026-08-18
 

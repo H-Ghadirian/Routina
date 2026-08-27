@@ -438,7 +438,6 @@ struct DayPlanDetailView: View {
     var selectedTask: RoutineTask? = nil
     var isTaskDetailInspectorPresented = false
     var macHeaderAvailableWidth: CGFloat? = nil
-    var macHeaderFocusControlIsVisible = false
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
     var calendarTaskViewMode: Binding<DayPlanCalendarTaskViewMode> = .constant(.schedule)
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
@@ -449,7 +448,6 @@ struct DayPlanDetailView: View {
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
     var calendarTaskFilterCacheSeed = 0
     var calendarListRevealsHiddenTasks = false
-    var macHeaderFocusControl: (() -> AnyView)? = nil
     var listContent: ((DayPlanTimelineDateJumpRequest?) -> AnyView)? = nil
     var timelineActivityDates: [Date] = []
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
@@ -476,10 +474,8 @@ struct DayPlanDetailView: View {
                 showsDisplayModePicker: listContent != nil,
                 isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
                 parentAvailableWidth: macHeaderAvailableWidth,
-                macFocusControlIsVisible: macHeaderFocusControlIsVisible,
                 listFilterButtonIsActive: listFilterButtonIsActive,
                 listFilterButtonAccessibilityValue: listFilterButtonAccessibilityValue,
-                macFocusControl: macHeaderFocusControl,
                 onCalendarFilterButtonPressed: onCalendarFilterButtonPressed
             )
 
@@ -625,10 +621,8 @@ private struct DayPlanHeaderView: View {
     var showsDisplayModePicker = false
     var isTaskDetailInspectorPresented = false
     var parentAvailableWidth: CGFloat? = nil
-    var macFocusControlIsVisible = false
     var listFilterButtonIsActive = false
     var listFilterButtonAccessibilityValue: String? = nil
-    var macFocusControl: (() -> AnyView)? = nil
     var onCalendarFilterButtonPressed: (() -> Void)? = nil
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
@@ -673,8 +667,7 @@ private struct DayPlanHeaderView: View {
         DayPlanHeaderRangePickerVisibility.shouldUseCompactDateButtonForFit(
             availableWidth: Double(effectiveMacHeaderAvailableWidth),
             expandedControlsWidth: Double(macHeaderExpandedControlsWidth),
-            showsCalendarControlSet: effectiveDisplayMode == .calendar,
-            showsExtraUtilityControl: macFocusControlIsVisible
+            showsCalendarControlSet: effectiveDisplayMode == .calendar
         )
 #else
         false
@@ -775,12 +768,6 @@ private struct DayPlanHeaderView: View {
 
     private func plannerUtilityCluster(forceIconOnlyDatePickerButton: Bool?) -> some View {
         HStack(alignment: .center, spacing: 8) {
-#if os(macOS)
-            if let macFocusControl {
-                macFocusControl()
-            }
-#endif
-
             if showsCalendarFilterButton {
                 calendarFilterButton
             }
@@ -1167,9 +1154,7 @@ private struct DayPlanHeaderView: View {
     private var usesIconOnlyMacDatePickerButton: Bool {
 #if os(macOS)
         DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-            needsCompactDateButtonForFit: needsCompactMacDateButtonForFit,
-            showsCalendarControlSet: effectiveDisplayMode == .calendar,
-            showsExtraUtilityControl: macFocusControlIsVisible
+            needsCompactDateButtonForFit: needsCompactMacDateButtonForFit
         )
 #else
         false
@@ -1281,7 +1266,6 @@ enum DayPlanHeaderRangePickerVisibility {
     static let compactVisibleRangeModePickerWidth: CGFloat = 96
     static let dateButtonTransitionReserveWidth: Double = 120
     static let minimumRegularCalendarHeaderAvailableWidth: Double = 1520
-    static let minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth: Double = 1720
 
     static func effectiveAvailableWidth(
         parentWidth: Double?,
@@ -1305,28 +1289,21 @@ enum DayPlanHeaderRangePickerVisibility {
     static func shouldUseCompactDateButtonForFit(
         availableWidth: Double,
         expandedControlsWidth: Double,
-        showsCalendarControlSet: Bool = true,
-        showsExtraUtilityControl: Bool = false
+        showsCalendarControlSet: Bool = true
     ) -> Bool {
         guard availableWidth > 0 else { return false }
-        if showsCalendarControlSet {
-            let minimumRegularWidth = showsExtraUtilityControl
-                ? minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth
-                : minimumRegularCalendarHeaderAvailableWidth
-            if availableWidth < minimumRegularWidth {
-                return true
-            }
+        if showsCalendarControlSet,
+           availableWidth < minimumRegularCalendarHeaderAvailableWidth {
+            return true
         }
         guard expandedControlsWidth > 0 else { return false }
         return expandedControlsWidth + dateButtonTransitionReserveWidth > availableWidth + 0.5
     }
 
     static func shouldUseIconOnlyDatePickerButton(
-        needsCompactDateButtonForFit: Bool,
-        showsCalendarControlSet: Bool,
-        showsExtraUtilityControl: Bool
+        needsCompactDateButtonForFit: Bool
     ) -> Bool {
-        needsCompactDateButtonForFit || (showsCalendarControlSet && showsExtraUtilityControl)
+        needsCompactDateButtonForFit
     }
 }
 

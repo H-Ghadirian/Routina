@@ -159,6 +159,8 @@ extension HomeTCAView {
             onAddNote: openAddNote,
             onAddGoal: openAddGoal,
             onAddTask: openAddTask,
+            onFocus: presentHomeToolbarFocusPicker,
+            isFocusDisabled: isHomeToolbarFocusActionDisabled,
             onCheckIn: openCheckInFromAddMenu,
             onStartAway: openAwayFromAddMenu,
             onOpenSettings: {
@@ -211,12 +213,14 @@ extension HomeTCAView {
         return .standard
     }
 
-    private var homeToolbarActiveFocusSessions: [FocusSession] {
-        activeToolbarFocusSessions
-    }
-
     private var homeToolbarFocusStartDisplayCount: Int {
         store.routineDisplays.count + store.awayRoutineDisplays.count
+    }
+
+    private var isHomeToolbarFocusActionDisabled: Bool {
+        homeToolbarFocusStartDisplayCount == 0
+            || !activeToolbarFocusSessions.isEmpty
+            || !activeToolbarSprintFocusSessions.isEmpty
     }
 
     var homeToolbarFocusStartTasks: [RoutineTask] {
@@ -233,60 +237,12 @@ extension HomeTCAView {
     }
 
     private func presentHomeToolbarFocusPicker() {
+        guard !isHomeToolbarFocusActionDisabled else { return }
         homeToolbarFocusPickerPresentation = HomeMacFocusTimerPickerPresentation.make(
             tasks: homeToolbarFocusStartTasks,
             focusSessions: focusSessions,
             rememberedDuration: FocusSessionStartDefaults.rememberedDuration()
         )
-    }
-
-    private func pauseHomeToolbarPlanFocus(_ session: FocusSession) {
-        do {
-            _ = try FocusSessionSupport.pauseFocus(
-                sessionID: session.id,
-                kind: .unassigned,
-                context: modelContext
-            )
-        } catch {
-            NSLog("Failed to pause plan focus from toolbar: \(error.localizedDescription)")
-        }
-    }
-
-    private func resumeHomeToolbarPlanFocus(_ session: FocusSession) {
-        do {
-            _ = try FocusSessionSupport.resumeFocus(
-                sessionID: session.id,
-                kind: .unassigned,
-                context: modelContext
-            )
-        } catch {
-            NSLog("Failed to resume plan focus from toolbar: \(error.localizedDescription)")
-        }
-    }
-
-    private func finishHomeToolbarPlanFocus(_ session: FocusSession) {
-        do {
-            _ = try FocusSessionSupport.finishFocus(
-                sessionID: session.id,
-                kind: .unassigned,
-                context: modelContext,
-                calendar: calendar
-            )
-        } catch {
-            NSLog("Failed to finish plan focus from toolbar: \(error.localizedDescription)")
-        }
-    }
-
-    private func abandonHomeToolbarPlanFocus(_ session: FocusSession) {
-        do {
-            _ = try FocusSessionSupport.abandonFocus(
-                sessionID: session.id,
-                kind: .unassigned,
-                context: modelContext
-            )
-        } catch {
-            NSLog("Failed to abandon plan focus from toolbar: \(error.localizedDescription)")
-        }
     }
 
     @ViewBuilder
@@ -375,15 +331,6 @@ extension HomeTCAView {
                         && detailSurfaceMode == .planner
                     let isPlannerTimelineListVisible = isPlannerSurfaceVisible
                         && dayPlanDisplayMode == .list
-                    let toolbarActiveFocusSessions = homeToolbarActiveFocusSessions
-                    let toolbarActivePlanFocusSession = toolbarActiveFocusSessions.first(where: \.isUnassigned)
-                    let toolbarIsPlanFocusStartDisabled = toolbarActivePlanFocusSession != nil
-                        || toolbarActiveFocusSessions.contains { !$0.isUnassigned }
-                        || !activeToolbarSprintFocusSessions.isEmpty
-                    let toolbarFocusStartTaskCount = toolbarActivePlanFocusSession == nil
-                        ? homeToolbarFocusStartDisplayCount
-                        : 0
-
                     MacDetailContainerView(
                         store: store,
                         isBoardPresented: isMacBoardMode,
@@ -409,9 +356,6 @@ extension HomeTCAView {
                         isPlannerTimelineFilterActive: isPlannerTimelineListVisible && macHasActiveTimelineFilters,
                         plannerTimelineFilterSummary: isPlannerTimelineListVisible ? macActiveTimelineFiltersSummary : nil,
                         plannerSearchText: macSearchPresentationText,
-                        focusStartTaskCount: toolbarFocusStartTaskCount,
-                        activePlanFocusSession: toolbarActivePlanFocusSession,
-                        isPlanFocusStartDisabled: toolbarIsPlanFocusStartDisabled,
                         isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                         taskDetailPanePlacement: $taskDetailPanePlacement,
                         plannerTaskDetailDoneSelection: plannerTaskDetailDoneSelection,
@@ -436,21 +380,6 @@ extension HomeTCAView {
                         },
                         onOpenEventDetails: openSavedEvent,
                         onToggleDayPlanCalendarFilters: toggleMacCalendarFilterDetailFromPlanner,
-                        onTaskFocusRequested: {
-                            presentHomeToolbarFocusPicker()
-                        },
-                        onPausePlanFocus: { session in
-                            pauseHomeToolbarPlanFocus(session)
-                        },
-                        onResumePlanFocus: { session in
-                            resumeHomeToolbarPlanFocus(session)
-                        },
-                        onFinishPlanFocus: { session in
-                            finishHomeToolbarPlanFocus(session)
-                        },
-                        onAbandonPlanFocus: { session in
-                            abandonHomeToolbarPlanFocus(session)
-                        },
                         onEditNote: openEditNote,
                         onDeleteNote: closeDeletedNote,
                         onToggleBoardInspector: toggleMacBoardTicketInspector,
@@ -733,6 +662,7 @@ extension HomeTCAView {
             mode: effectiveMacSidebarMode,
             onOpenRoutines: showRoutinesInSidebar,
             onOpenAddTask: openAddTask,
+            onOpenFocus: presentHomeToolbarFocusPicker,
             onOpenAddEvent: openAddEvent,
             onOpenAddEmotion: openAddEmotion,
             onOpenAddNote: openAddNote,

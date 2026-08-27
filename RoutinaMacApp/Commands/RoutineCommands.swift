@@ -13,6 +13,7 @@ extension Notification.Name {
     static let routinaMacOpenBacklogInMainWindow = Notification.Name("routina.mac.openBacklogInMainWindow")
     static let routinaMacOpenTaskLadderInMainWindow = Notification.Name("routina.mac.openTaskLadderInMainWindow")
     static let routinaMacOpenAddTask = Notification.Name("routina.mac.openAddTask")
+    static let routinaMacOpenFocus = Notification.Name("routina.mac.openFocus")
     static let routinaMacOpenAddEvent = Notification.Name("routina.mac.openAddEvent")
     static let routinaMacOpenAddEmotion = Notification.Name("routina.mac.openAddEmotion")
     static let routinaMacOpenAddNote = Notification.Name("routina.mac.openAddNote")
@@ -184,6 +185,7 @@ struct RoutineCommands: Commands {
             #endif
 
             addMenuCommand(.task, notificationName: .routinaMacOpenAddTask)
+            addMenuCommand(.focus, notificationName: .routinaMacOpenFocus)
             #if !SWIFT_PACKAGE
             if isPlacesEnabled {
                 addMenuCommand(.checkIn, notificationName: .routinaMacOpenCheckIn)

@@ -19,7 +19,7 @@ Accepted
 
 ## Refined By
 
-- [0333: Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
+- [0333: Move Mac Focus Control to Planner Calendar Header](superseded/0333-move-mac-focus-control-to-planner-calendar-header.md)
 - [0364: Rename Shared Mac Filter Scope to All](superseded/0364-rename-shared-mac-filter-scope-to-all.md)
 - [0660: Make Mac Planner Filters Explicit, Composable, and Bounded](0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
 
@@ -31,7 +31,7 @@ The Planner header already has a compact filter button beside the date/range uti
 
 ## Decision
 
-Mac Home removes the top toolbar command-row filter icon. The centered search field, mode strip, Add controls, Places when enabled, and optional Progress controls remain in the toolbar command row. [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) later moves Focus controls beside the Planner Calendar filter button.
+Mac Home removes the top toolbar command-row filter icon. The centered search field, mode strip, Add controls, Places when enabled, and optional Progress controls remain in the toolbar command row. [0333](superseded/0333-move-mac-focus-control-to-planner-calendar-header.md) later moves Focus controls beside the Planner Calendar filter button.
 
 The Planner header filter button remains visible in Calendar mode and is also visible in Planner List mode. Pressing it opens the existing right-side Home filter companion pane and selects a new top-level `Calendar` scope. The companion pane scope picker is now `Both` / `Task List` / `Timeline` / `Calendar`.
 

@@ -42,6 +42,7 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
     let mode: HomeFeature.MacSidebarMode
     let onOpenRoutines: () -> Void
     let onOpenAddTask: () -> Void
+    let onOpenFocus: () -> Void
     let onOpenAddEvent: () -> Void
     let onOpenAddEmotion: () -> Void
     let onOpenAddNote: () -> Void
@@ -60,6 +61,7 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         mode: HomeFeature.MacSidebarMode,
         onOpenRoutines: @escaping () -> Void,
         onOpenAddTask: @escaping () -> Void,
+        onOpenFocus: @escaping () -> Void,
         onOpenAddEvent: @escaping () -> Void,
         onOpenAddEmotion: @escaping () -> Void,
         onOpenAddNote: @escaping () -> Void,
@@ -77,6 +79,7 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         self.mode = mode
         self.onOpenRoutines = onOpenRoutines
         self.onOpenAddTask = onOpenAddTask
+        self.onOpenFocus = onOpenFocus
         self.onOpenAddEvent = onOpenAddEvent
         self.onOpenAddEmotion = onOpenAddEmotion
         self.onOpenAddNote = onOpenAddNote
@@ -105,6 +108,9 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddTask)) { _ in
                 onOpenAddTask()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenFocus)) { _ in
+                onOpenFocus()
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddEvent)) { _ in
                 onOpenAddEvent()

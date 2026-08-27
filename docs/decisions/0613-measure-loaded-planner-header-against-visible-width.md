@@ -2,7 +2,9 @@
 
 Status: Accepted
 
-The date-button behavior for a visible Focus control is refined by [0614: Collapse the Planner date label when Focus is visible](0614-collapse-planner-date-label-when-focus-is-visible.md).
+The date-button behavior for a visible Focus control is refined by [0614: Collapse the Planner date label when Focus is visible](superseded/0614-collapse-planner-date-label-when-focus-is-visible.md).
+
+Revised by [0681: Move Mac Focus Into the New Menu](0681-move-mac-focus-into-new-menu.md), which removes the Planner-header Focus control and its extra-width condition while preserving visible-width measurement for the remaining Planner controls.
 
 Date: 2026-08-18
 

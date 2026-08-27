@@ -16,8 +16,12 @@ Accepted
 
 - [0612: Require comfortable width for expanded Planner header](0612-require-comfortable-width-for-expanded-planner-header.md)
 - [0613: Measure loaded Planner header against visible width](0613-measure-loaded-planner-header-against-visible-width.md)
-- [0614: Collapse the Planner date label when Focus is visible](0614-collapse-planner-date-label-when-focus-is-visible.md)
+- [0614: Collapse the Planner date label when Focus is visible](superseded/0614-collapse-planner-date-label-when-focus-is-visible.md)
 - [0644: Progressively reveal Mac Task Detail value options](0644-progressively-reveal-mac-task-detail-value-options.md)
+
+## Revised By
+
+- [0681: Move Mac Focus Into the New Menu](0681-move-mac-focus-into-new-menu.md) removes the Planner-header Focus control and its date-label fit exception.
 
 ## Context
 
@@ -47,9 +51,8 @@ Calendar/Timeline, Schedule/List, and Day/3 Days/Week use the same interaction.
   render. Preferred-range restoration, adaptive Day fallback, and readable
   day-column sizing do not change.
 - `Go to date` keeps its separate icon-only fallback. The fit probe measures a
-  header with the widest single choice expanded, preserves the existing
-  breathing-room and comfort thresholds, and still collapses the date label
-  directly when the Calendar Focus control is visible.
+  header with the widest single choice expanded and preserves the existing
+  breathing-room and comfort thresholds.
 - The existing iOS segmented layout does not change.
 
 ## Consequences

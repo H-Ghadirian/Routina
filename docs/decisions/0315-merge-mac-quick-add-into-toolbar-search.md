@@ -11,7 +11,7 @@ Accepted
 ## Refines
 
 - [0074: Parse Mac Add Task Title](0074-parse-mac-add-task-title.md)
-- [0278: Open Single Mac Add Action Directly](0278-open-single-mac-add-action-directly.md)
+- [0278: Open Single Mac Add Action Directly](superseded/0278-open-single-mac-add-action-directly.md)
 - [0310: Show Mac Home Toolbar Search](0310-show-mac-home-toolbar-search.md)
 
 ## Refined By

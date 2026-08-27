@@ -11,11 +11,15 @@ Accepted
 ## Revises
 
 - The duration-first presentation in [0244: Start Mac Toolbar Focus With Task Picker](0244-start-mac-toolbar-focus-with-task-picker.md)
-- The retained duration-first behavior in [0333: Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
+- The retained duration-first behavior in [0333: Move Mac Focus Control to Planner Calendar Header](superseded/0333-move-mac-focus-control-to-planner-calendar-header.md)
 
 ## Refines
 
 - [0267: Support Mac Toolbar Tag Focus](0267-support-mac-toolbar-tag-focus.md)
+
+## Revised By
+
+- [0681: Move Mac Focus Into the New Menu](0681-move-mac-focus-into-new-menu.md) moves the unchanged recalling sheet behind the global `+` action menu.
 
 ## Context
 
@@ -27,7 +31,7 @@ Focus choice, making repeated sessions unnecessarily repetitive.
 
 ## Decision
 
-Pressing the Mac Planner Focus control opens the Focus picker sheet directly.
+Pressing the Mac Focus action opens the Focus picker sheet directly.
 The sheet owns the count-up and fixed-duration choices alongside task search,
 tag filtering, task starts, and tag starts.
 

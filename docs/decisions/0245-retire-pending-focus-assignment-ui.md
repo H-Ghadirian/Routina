@@ -6,7 +6,7 @@ Date: 2026-06-15
 
 Refines: [0244 Start Mac Toolbar Focus With Task Picker](0244-start-mac-toolbar-focus-with-task-picker.md), [0106 Support Unassigned Watch Focus Sessions](0106-support-unassigned-watch-focus-sessions.md)
 
-Refined By: [0333 Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
+Refined By: [0333 Move Mac Focus Control to Planner Calendar Header](superseded/0333-move-mac-focus-control-to-planner-calendar-header.md)
 
 ## Context
 
@@ -16,7 +16,7 @@ The Stats dashboard also exposed an `Unassigned Focus` assignment card. With the
 
 ## Decision
 
-The primary Mac `Start Focus Timer` menu only starts attributed focus timers. It does not show `Assign Pending Focus`. [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) later moves this menu from the Home toolbar to the Planner Calendar header.
+The primary Mac `Start Focus Timer` menu only starts attributed focus timers. It does not show `Assign Pending Focus`. [0333](superseded/0333-move-mac-focus-control-to-planner-calendar-header.md) later moves this menu from the Home toolbar to the Planner Calendar header.
 
 Stats dashboards no longer surface the `Unassigned Focus` assignment card on macOS or iOS. The dashboard enum case remains readable for saved preference compatibility, but it is no longer available to show or add.
 

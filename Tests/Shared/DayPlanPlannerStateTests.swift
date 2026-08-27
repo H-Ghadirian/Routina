@@ -776,48 +776,16 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func plannerHeaderUsesIconOnlyDateButtonEarlierWhenFocusControlIsVisible() {
+    func plannerHeaderUsesIconOnlyDateButtonOnlyWhenFitRequiresIt() {
         #expect(
-            DayPlanHeaderRangePickerVisibility.minimumRegularCalendarHeaderWithExtraUtilityAvailableWidth
-                > DayPlanHeaderRangePickerVisibility.minimumRegularCalendarHeaderAvailableWidth
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                needsCompactDateButtonForFit: false
+            ) == false
         )
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseCompactDateButtonForFit(
-                availableWidth: 1600,
-                expandedControlsWidth: 760,
-                showsExtraUtilityControl: true
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
+                needsCompactDateButtonForFit: true
             )
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseCompactDateButtonForFit(
-                availableWidth: 1600,
-                expandedControlsWidth: 760
-            ) == false
-        )
-    }
-
-    @Test
-    func plannerHeaderUsesIconOnlyDateButtonWhenFocusControlIsVisible() {
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-                needsCompactDateButtonForFit: false,
-                showsCalendarControlSet: true,
-                showsExtraUtilityControl: true
-            )
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-                needsCompactDateButtonForFit: false,
-                showsCalendarControlSet: true,
-                showsExtraUtilityControl: false
-            ) == false
-        )
-        #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDatePickerButton(
-                needsCompactDateButtonForFit: false,
-                showsCalendarControlSet: false,
-                showsExtraUtilityControl: true
-            ) == false
         )
     }
 

@@ -38,6 +38,8 @@ struct HomeMacTopToolbarChrome: View {
     let onAddNote: () -> Void
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
+    let onFocus: () -> Void
+    let isFocusDisabled: Bool
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
     let onOpenSettings: () -> Void
@@ -133,6 +135,8 @@ struct HomeMacTopToolbarChrome: View {
                 onAddNote: onAddNote,
                 onAddGoal: onAddGoal,
                 onAddTask: onAddTask,
+                onFocus: onFocus,
+                isFocusDisabled: isFocusDisabled,
                 onCheckIn: onCheckIn,
                 onStartAway: onStartAway
             )
@@ -1587,140 +1591,6 @@ private final class HomeMacToolbarSearchTextEditorView: NSView {
         textField.needsLayout = true
         textField.layoutSubtreeIfNeeded()
     }
-}
-
-struct HomeMacActivePlanFocusToolbarButton: View {
-    let session: FocusSession
-    let onPause: (FocusSession) -> Void
-    let onResume: (FocusSession) -> Void
-    let onFinish: (FocusSession) -> Void
-    let onAbandon: (FocusSession) -> Void
-    var trailingPadding: CGFloat = 8
-
-    var body: some View {
-        Menu {
-            Button {
-                if session.isPaused {
-                    onResume(session)
-                } else {
-                    onPause(session)
-                }
-            } label: {
-                Label(session.isPaused ? "Resume" : "Pause", systemImage: session.isPaused ? "play.fill" : "pause.fill")
-            }
-
-            Button {
-                onFinish(session)
-            } label: {
-                Label("Finish", systemImage: "checkmark.circle.fill")
-            }
-
-            Divider()
-
-            Button(role: .destructive) {
-                onAbandon(session)
-            } label: {
-                Label("Abandon", systemImage: "xmark.circle")
-            }
-        } label: {
-            SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
-                planFocusToolbarLabel {
-                    Image(systemName: session.isPaused ? "pause.fill" : "stopwatch.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-
-                    Text(activeTimeText(at: context.date))
-                        .font(.subheadline.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(.primary)
-
-                    Text(activeStatusText(at: context.date))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .fixedSize(horizontal: true, vertical: false)
-                .transaction { transaction in
-                    transaction.animation = nil
-                }
-            }
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .controlSize(.small)
-        .help("Start Focus Timer running")
-        .padding(.trailing, trailingPadding)
-    }
-
-    private func activeTimeText(at date: Date) -> String {
-        let elapsedSeconds = session.activeDurationSeconds(at: date)
-        guard session.plannedDurationSeconds > 0 else {
-            return FocusSessionFormatting.durationText(seconds: elapsedSeconds)
-        }
-        return FocusSessionFormatting.durationText(
-            seconds: max(0, session.plannedDurationSeconds - elapsedSeconds)
-        )
-    }
-
-    private func activeStatusText(at date: Date) -> String {
-        if session.isPaused {
-            return "paused"
-        }
-        if session.plannedDurationSeconds > 0,
-           session.activeDurationSeconds(at: date) > session.plannedDurationSeconds {
-            return "overtime"
-        }
-        return session.plannedDurationSeconds > 0 ? "left" : "elapsed"
-    }
-}
-
-struct HomeMacPlanFocusToolbarButton: View {
-    let focusStartTaskCount: Int
-    let isDisabled: Bool
-    let onTaskFocusRequested: () -> Void
-    var trailingPadding: CGFloat = 8
-
-    var body: some View {
-        Button {
-            onTaskFocusRequested()
-        } label: {
-            planFocusToolbarLabel {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-
-                Text("Focus")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-            }
-        }
-        .buttonStyle(.plain)
-        .controlSize(.small)
-        .disabled(isDisabled)
-        .help(planFocusHelpTitle)
-        .padding(.trailing, trailingPadding)
-    }
-
-    private var planFocusHelpTitle: String {
-        let taskText = focusStartTaskCount == 1 ? "1 task" : "\(focusStartTaskCount) tasks"
-        return isDisabled ? "Stop the active focus timer before starting another focus timer" : "Start Focus Timer for \(taskText)"
-    }
-}
-
-@MainActor
-private func planFocusToolbarLabel<Content: View>(
-    @ViewBuilder content: () -> Content
-) -> some View {
-    HStack(spacing: 6) {
-        content()
-    }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 7)
-    .frame(minHeight: 34)
-    .routinaGlassCard(
-        cornerRadius: 8,
-        interactive: true
-    )
-    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-    .fixedSize(horizontal: true, vertical: false)
 }
 
 struct HomeMacBoardInspectorToolbarButton: View {

@@ -64,9 +64,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let isPlannerTimelineFilterActive: Bool
     let plannerTimelineFilterSummary: String?
     let plannerSearchText: String
-    let focusStartTaskCount: Int
-    let activePlanFocusSession: FocusSession?
-    let isPlanFocusStartDisabled: Bool
     @Binding var isBoardInspectorPresented: Bool
     @Binding var taskDetailPanePlacement: MacTaskDetailPanePlacement?
     let plannerTaskDetailDoneSelection: MacPlannerDoneTaskDetailSelection?
@@ -85,11 +82,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let onOpenDayPlanCalendarListTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
     let onOpenEventDetails: (UUID) -> Void
     let onToggleDayPlanCalendarFilters: () -> Void
-    let onTaskFocusRequested: () -> Void
-    let onPausePlanFocus: (FocusSession) -> Void
-    let onResumePlanFocus: (FocusSession) -> Void
-    let onFinishPlanFocus: (FocusSession) -> Void
-    let onAbandonPlanFocus: (FocusSession) -> Void
     let onEditNote: (UUID) -> Void
     let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
@@ -340,7 +332,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                         plannerContentWidth - DayPlanWeekCalendarSizing.detailHorizontalPadding,
                         0
                     ),
-                    macHeaderFocusControlIsVisible: plannerHeaderFocusControlIsVisible,
                     displayMode: $dayPlanDisplayMode,
                     calendarTaskViewMode: $dayPlanCalendarTaskViewMode,
                     calendarFilters: $dayPlanCalendarFilters,
@@ -351,9 +342,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     calendarTaskFilter: calendarTaskFilter,
                     calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
                     calendarListRevealsHiddenTasks: plannerCalendarListRevealsHiddenTasks,
-                    macHeaderFocusControl: {
-                        AnyView(plannerHeaderFocusControl)
-                    },
                     listContent: { dateJumpRequest in
                         AnyView(plannerListView(dateJumpRequest))
                     },
@@ -554,37 +542,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 in: [$0]
             )
         }
-    }
-
-    @ViewBuilder
-    private var plannerHeaderFocusControl: some View {
-        if let activePlanFocusSession {
-            HomeMacActivePlanFocusToolbarButton(
-                session: activePlanFocusSession,
-                onPause: onPausePlanFocus,
-                onResume: onResumePlanFocus,
-                onFinish: onFinishPlanFocus,
-                onAbandon: onAbandonPlanFocus,
-                trailingPadding: 0
-            )
-        } else if isPlanFocusStartDisabled {
-            RoutinaMacFocusTimerToolbarBadge(
-                hiddenKinds: [.unassigned]
-            )
-        } else if focusStartTaskCount > 0 {
-            HomeMacPlanFocusToolbarButton(
-                focusStartTaskCount: focusStartTaskCount,
-                isDisabled: isPlanFocusStartDisabled,
-                onTaskFocusRequested: onTaskFocusRequested,
-                trailingPadding: 0
-            )
-        }
-    }
-
-    private var plannerHeaderFocusControlIsVisible: Bool {
-        activePlanFocusSession != nil
-            || isPlanFocusStartDisabled
-            || focusStartTaskCount > 0
     }
 
     private var shouldShowListTaskDetailPane: Bool {

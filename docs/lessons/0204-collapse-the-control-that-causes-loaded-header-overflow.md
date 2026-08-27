@@ -20,4 +20,4 @@ When one optional control creates a predictable loaded-state width increase, app
 
 ## Regression Safeguard
 
-`DayPlanPlannerStateTests.plannerHeaderUsesIconOnlyDateButtonWhenFocusControlIsVisible` covers the presentation rule, and `Tests/macOS/PerformanceRegressionTests.swift` guards its wiring into the rendered header. The behavior is recorded in [Decision 0614](../decisions/0614-collapse-planner-date-label-when-focus-is-visible.md) and the Planner header scenarios.
+`DayPlanPlannerStateTests.plannerHeaderUsesIconOnlyDateButtonWhenFocusControlIsVisible` covered the original presentation rule, and `Tests/macOS/PerformanceRegressionTests.swift` guarded its wiring into the rendered header. That behavior is recorded in superseded [Decision 0614](../decisions/superseded/0614-collapse-planner-date-label-when-focus-is-visible.md); [Decision 0681](../decisions/0681-move-mac-focus-into-new-menu.md) later removed the Planner-header Focus control and therefore the special fit condition.

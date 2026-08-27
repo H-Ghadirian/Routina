@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0681: Move Mac Focus Into the New Menu](../0681-move-mac-focus-into-new-menu.md)
 
 ## Date
 
@@ -10,10 +10,10 @@ Accepted
 
 ## Refines
 
-- [0174: Do Not Restore Mac Add Task Composer](0174-do-not-restore-mac-add-task-composer.md)
-- [0220: Nest Sleep and Gate Mac Event and Emotion Actions](0220-nest-sleep-and-gate-mac-event-emotion-actions.md)
-- [0275: Hide Places Behind Beta Toggle](0275-hide-places-behind-beta-toggle.md)
-- [0277: Hide Notes and Away Behind Beta Toggles](0277-hide-notes-and-away-behind-beta-toggles.md)
+- [0174: Do Not Restore Mac Add Task Composer](../0174-do-not-restore-mac-add-task-composer.md)
+- [0220: Nest Sleep and Gate Mac Event and Emotion Actions](../0220-nest-sleep-and-gate-mac-event-emotion-actions.md)
+- [0275: Hide Places Behind Beta Toggle](../0275-hide-places-behind-beta-toggle.md)
+- [0277: Hide Notes and Away Behind Beta Toggles](../0277-hide-notes-and-away-behind-beta-toggles.md)
 
 ## Context
 
