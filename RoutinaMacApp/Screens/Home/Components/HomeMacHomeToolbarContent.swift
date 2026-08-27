@@ -39,7 +39,7 @@ struct HomeMacTopToolbarChrome: View {
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
     let onFocus: () -> Void
-    let isFocusDisabled: Bool
+    let focusAvailability: MacFocusMenuAvailability
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
     let onOpenSettings: () -> Void
@@ -136,7 +136,7 @@ struct HomeMacTopToolbarChrome: View {
                 onAddGoal: onAddGoal,
                 onAddTask: onAddTask,
                 onFocus: onFocus,
-                isFocusDisabled: isFocusDisabled,
+                focusAvailability: focusAvailability,
                 onCheckIn: onCheckIn,
                 onStartAway: onStartAway
             )

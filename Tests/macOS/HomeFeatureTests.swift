@@ -223,6 +223,42 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macFocusMenuAvailability_usesEligibleWorkInsteadOfVisibleHomeRows() {
+        #expect(
+            MacFocusMenuAvailability.resolve(
+                hasStartableTasks: true,
+                hasActiveFocus: false,
+                hasActiveSprintFocus: false
+            ) == .available
+        )
+        #expect(
+            MacFocusMenuAvailability.resolve(
+                hasStartableTasks: false,
+                hasActiveFocus: false,
+                hasActiveSprintFocus: false
+            ) == .noStartableTasks
+        )
+    }
+
+    @Test
+    func macFocusMenuAvailability_blocksCompetingTimers() {
+        #expect(
+            MacFocusMenuAvailability.resolve(
+                hasStartableTasks: true,
+                hasActiveFocus: true,
+                hasActiveSprintFocus: false
+            ) == .activeFocus
+        )
+        #expect(
+            MacFocusMenuAvailability.resolve(
+                hasStartableTasks: true,
+                hasActiveFocus: false,
+                hasActiveSprintFocus: true
+            ) == .activeSprintFocus
+        )
+    }
+
+    @Test
     func macPlanToDoMenuHidesTomorrowWhenTomorrowSectionSettingIsOff() throws {
         let key = UserDefaultBoolValueKey.appSettingShowTomorrowInTaskList.rawValue
         let previousValue = SharedDefaults.app.object(forKey: key)

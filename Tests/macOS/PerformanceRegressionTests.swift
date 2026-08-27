@@ -1161,12 +1161,17 @@ final class PerformanceRegressionTests: XCTestCase {
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
         let controlsSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacSidebarModeStripView.swift")
+        let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
         let statusMenuSource = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacFocusTimerStatusBarController.swift")
 
         XCTAssertFalse(dayPlanSource.contains("macFocusControl"))
         XCTAssertFalse(detailSource.contains("plannerHeaderFocusControl"))
         XCTAssertTrue(controlsSource.contains("case .focus:\n            onFocus()"))
-        XCTAssertTrue(controlsSource.contains(".disabled(shortcut == .focus && isFocusDisabled)"))
+        XCTAssertTrue(controlsSource.contains(".disabled(shortcut == .focus && focusAvailability.isDisabled)"))
+        XCTAssertTrue(controlsSource.contains("Text(\"New\")"))
+        XCTAssertTrue(controlsSource.contains(".menuIndicator(.hidden)"))
+        XCTAssertTrue(platformSource.contains("hasStartableTasks: !homeToolbarFocusStartTasks.isEmpty"))
+        XCTAssertFalse(platformSource.contains("homeToolbarFocusStartDisplayCount"))
         XCTAssertTrue(statusMenuSource.contains("status.isPaused ? \"Resume Timer\" : \"Pause Timer\""))
     }
 

@@ -160,7 +160,7 @@ extension HomeTCAView {
             onAddGoal: openAddGoal,
             onAddTask: openAddTask,
             onFocus: presentHomeToolbarFocusPicker,
-            isFocusDisabled: isHomeToolbarFocusActionDisabled,
+            focusAvailability: homeToolbarFocusAvailability,
             onCheckIn: openCheckInFromAddMenu,
             onStartAway: openAwayFromAddMenu,
             onOpenSettings: {
@@ -213,14 +213,12 @@ extension HomeTCAView {
         return .standard
     }
 
-    private var homeToolbarFocusStartDisplayCount: Int {
-        store.routineDisplays.count + store.awayRoutineDisplays.count
-    }
-
-    private var isHomeToolbarFocusActionDisabled: Bool {
-        homeToolbarFocusStartDisplayCount == 0
-            || !activeToolbarFocusSessions.isEmpty
-            || !activeToolbarSprintFocusSessions.isEmpty
+    private var homeToolbarFocusAvailability: MacFocusMenuAvailability {
+        MacFocusMenuAvailability.resolve(
+            hasStartableTasks: !homeToolbarFocusStartTasks.isEmpty,
+            hasActiveFocus: !activeToolbarFocusSessions.isEmpty,
+            hasActiveSprintFocus: !activeToolbarSprintFocusSessions.isEmpty
+        )
     }
 
     var homeToolbarFocusStartTasks: [RoutineTask] {
@@ -237,7 +235,7 @@ extension HomeTCAView {
     }
 
     private func presentHomeToolbarFocusPicker() {
-        guard !isHomeToolbarFocusActionDisabled else { return }
+        guard !homeToolbarFocusAvailability.isDisabled else { return }
         homeToolbarFocusPickerPresentation = HomeMacFocusTimerPickerPresentation.make(
             tasks: homeToolbarFocusStartTasks,
             focusSessions: focusSessions,

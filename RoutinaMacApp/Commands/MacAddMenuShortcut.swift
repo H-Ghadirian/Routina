@@ -150,3 +150,44 @@ enum MacAddMenuShortcut: CaseIterable, Identifiable, Equatable {
         return actions
     }
 }
+
+enum MacFocusMenuAvailability: Equatable {
+    case available
+    case noStartableTasks
+    case activeFocus
+    case activeSprintFocus
+
+    static func resolve(
+        hasStartableTasks: Bool,
+        hasActiveFocus: Bool,
+        hasActiveSprintFocus: Bool
+    ) -> Self {
+        if hasActiveFocus {
+            return .activeFocus
+        }
+        if hasActiveSprintFocus {
+            return .activeSprintFocus
+        }
+        if !hasStartableTasks {
+            return .noStartableTasks
+        }
+        return .available
+    }
+
+    var isDisabled: Bool {
+        self != .available
+    }
+
+    var helpText: String {
+        switch self {
+        case .available:
+            return MacAddMenuShortcut.focus.detail
+        case .noStartableTasks:
+            return "Add an active task before starting Focus."
+        case .activeFocus:
+            return "Manage the active Focus timer from the timer menu."
+        case .activeSprintFocus:
+            return "Finish the active sprint timer before starting Focus."
+        }
+    }
+}

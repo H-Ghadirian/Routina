@@ -9,7 +9,7 @@ struct HomeMacWorkspaceToolbarControls: View {
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
     let onFocus: () -> Void
-    let isFocusDisabled: Bool
+    let focusAvailability: MacFocusMenuAvailability
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
 
@@ -91,6 +91,7 @@ struct HomeMacWorkspaceToolbarControls: View {
             )
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .fixedSize()
         .accessibilityLabel("Workspace: \(selectedMode.workspaceTitle)")
         .help("Switch workspace")
@@ -126,29 +127,49 @@ struct HomeMacWorkspaceToolbarControls: View {
                     Label(shortcut.menuTitle, systemImage: shortcut.systemImage)
                 }
                 .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
-                .disabled(shortcut == .focus && isFocusDisabled)
+                .disabled(shortcut == .focus && focusAvailability.isDisabled)
+                .help(shortcut == .focus ? focusAvailability.helpText : shortcut.detail)
             }
         } label: {
             addControlLabel
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .fixedSize()
         .accessibilityLabel("New")
         .help(helpLabelForAddMenu)
     }
 
     private var addControlLabel: some View {
-        Image(systemName: "plus")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(Color.accentColor)
-            .frame(width: 32, height: 32)
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .routinaGlassPanel(
-                cornerRadius: 10,
-                tint: .secondary,
-                tintOpacity: 0.10,
-                interactive: true
-            )
+        HStack(spacing: 7) {
+            Image(systemName: "plus")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 18, height: 18)
+                .background {
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.14))
+                }
+
+            Text("New")
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+
+            Image(systemName: "chevron.down")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(.secondary)
+        }
+        .foregroundStyle(.primary)
+        .padding(.leading, 7)
+        .padding(.trailing, 9)
+        .frame(height: 32)
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .routinaGlassPanel(
+            cornerRadius: 10,
+            tint: .accentColor,
+            tintOpacity: 0.11,
+            interactive: true
+        )
     }
 
     private var visibleAddMenuShortcuts: [MacAddMenuShortcut] {

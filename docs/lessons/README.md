@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0257 — Gate global actions from domain eligibility](0257-gate-global-actions-from-domain-eligibility.md)
 - [0256 — Give the label the flexible width in switch rows](0256-give-the-label-the-flexible-width-in-switch-rows.md)
 - [0255 — Do not carry compact row caps into wide layouts](0255-do-not-carry-compact-row-caps-into-wide-layouts.md)
 - [0254 — Wrap SwiftUI binding callbacks in explicit setters](0254-wrap-swiftui-binding-callbacks-in-explicit-setters.md)

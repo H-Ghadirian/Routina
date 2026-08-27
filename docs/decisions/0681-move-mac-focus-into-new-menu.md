@@ -27,6 +27,10 @@ Accepted
 - [0264: Match Button Hit Areas to Visual Surfaces](0264-match-button-hit-areas-to-visual-surfaces.md)
 - [0341: Consolidate the Mac Home Toolbar Row](0341-consolidate-mac-home-toolbar-row.md)
 
+## Revised By
+
+- [0682: Present Mac New Menu as One Labeled Control](0682-present-mac-new-menu-as-one-labeled-control.md) gives the trigger one labeled surface and derives Focus availability from its eligible-task snapshot.
+
 ## Context
 
 The Mac Planner header exposed Focus as a separate labeled control beside its

@@ -3029,16 +3029,19 @@ And choosing a date updates the Planner selected date without scoping the Timeli
 ### Mac New Menu Owns Focus
 
 Area: Home / Focus
-Decision links: [0681](../decisions/0681-move-mac-focus-into-new-menu.md)
+Decision links: [0681](../decisions/0681-move-mac-focus-into-new-menu.md), [0682](../decisions/0682-present-mac-new-menu-as-one-labeled-control.md)
 Current behavior: [UI](../current-behavior/ui.md), [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTests.swift`
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given Mac Home uses standard production action availability
-When the user presses the global `+` control
+When the user presses the global `New` (+) control
 Then the native menu shows Add New Task followed by Focus
 And it shows Control-Option-Command-T and Control-Option-Command-F beside those actions
+Given the eligible Focus-task snapshot contains an active task
+And the current Home presentation has no visible task rows
+Then Focus remains enabled in the global New menu
 When Planner shows Calendar or Timeline
 Then neither header renders a separate Focus control
 And choosing Focus or pressing its shortcut opens the existing task, tag, and duration sheet
@@ -3053,7 +3056,7 @@ Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given no protected session prevents a new attributed Focus start
-When the person presses Focus in the Mac Planner header
+When the person presses Focus in the Mac global New menu
 Then one Focus sheet opens directly without an intermediate duration menu
 And that sheet presents count-up and fixed durations beside task and tag attribution
 
