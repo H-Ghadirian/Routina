@@ -164,7 +164,7 @@ struct HomeMacSharedFlagFiltersView: View {
                 selectedFlags: selectedFlags,
                 includeFlagMatchMode: Binding(
                     get: { includeFlagMatchMode },
-                    set: onIncludeFlagMatchModeChange
+                    set: { mode in onIncludeFlagMatchModeChange(mode) }
                 ),
                 onToggleFlag: { flag in
                     onSelectIncludedFlags(
@@ -183,7 +183,7 @@ struct HomeMacSharedFlagFiltersView: View {
                 selectedFlags: excludedFlags,
                 includeFlagMatchMode: Binding(
                     get: { excludeFlagMatchMode },
-                    set: onExcludeFlagMatchModeChange
+                    set: { mode in onExcludeFlagMatchModeChange(mode) }
                 ),
                 onToggleFlag: { flag in
                     onSelectExcludedFlags(

@@ -504,7 +504,7 @@ And task assignments are not scanned or rewritten
 ### A Flag Can Keep Tasks Out Of Mac Calendar List
 
 Area: Tasks / Planner / Calendar List
-Decision links: [0674](../decisions/0674-hide-flagged-tasks-from-calendar-list.md), [0636](../decisions/0636-replace-configurable-flags-with-built-in-behaviors.md), [0369](../decisions/0369-show-day-task-list-columns-in-planner-calendar.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0677](../decisions/0677-centralize-mac-flag-filters-under-shared.md), [0674](../decisions/0674-hide-flagged-tasks-from-calendar-list.md), [0636](../decisions/0636-replace-configurable-flags-with-built-in-behaviors.md), [0369](../decisions/0369-show-day-task-list-columns-in-planner-calendar.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Planner](../current-behavior/planner.md), [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineTagTests.swift`
@@ -522,6 +522,11 @@ Given the Flag is removed from that task
 When Calendar List refreshes
 Then the task returns whenever its normal date, search, layer, and shared-filter conditions match
 And the refresh reuses cached exclusion membership instead of scanning all tasks from scrolling row builders
+
+Given that same Flag remains assigned
+When the person selects Hide from Calendar List under Shared Include flags
+Then matching tasks deliberately return to Calendar List for temporary review
+And selecting an overlapping Shared exclusion hides them because Exclude wins
 
 ### Settings Search Opens a Matching Destination
 
@@ -1240,13 +1245,35 @@ When the person opens Filter flags
 Then every selected Flag is visible at the top with direct removal
 And the remaining cached Flag options are searchable without filtering them from scrolling rows
 
-Given Mac Task List Filters has available Flags
+### Mac Shared Flag Filters Apply Across Task-Backed Surfaces
+
+Area: Tasks / Planner / Timeline / UI
+Decision links: [0677](../decisions/0677-centralize-mac-flag-filters-under-shared.md), [0672](../decisions/0672-align-mac-task-and-timeline-flag-filters-with-tags.md), [0660](../decisions/0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [Planner](../current-behavior/planner.md), [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/HomeMacAllFiltersSourceTests.swift`
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/Shared/TimelineLogicTests.swift`
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/Shared/TabFilterStateManagerTests.swift`
+
+Given Mac Shared Filters has available Flags
 When no Flag filter is selected
-Then one direct tinted Include flags action is visible without an All Flags chip or inline catalog
-When the person opens it
+Then direct tinted Include flags and Exclude flags actions are visible without an All Flags chip or inline catalog
+And Task List, Timeline, and Calendar do not repeat Flag controls in their own scopes
+
+When the person opens either action
 Then a searchable picker keeps selected Flags pinned and remaining Flags in Browse
-And selected Flags return as removable chips beneath the action
-And All/Any appears only when multiple Flags are selected
+And selected Flags return as removable chips beneath the owning action
+And each side shows All/Any only when it contains multiple Flags
+
+When the person selects Shared Flag rules
+Then they apply to Task List, task-backed Timeline activity, Calendar Schedule tasks, and all Calendar List task sections
+And standalone Timeline records remain unaffected
+And Include deliberately recovers normally hidden matches
+And Exclude is evaluated last and wins overlaps
+And Stats keeps its independent Flag filters
+And Calendar keeps its separate Assumed done layer toggle
 
 ### iOS Goal Gate Hides The Home Goal Filter
 
@@ -2921,7 +2948,7 @@ Then the sidebar does not automatically select a fallback row or close the filte
 ### Timeline Flag Rules Hide by Default and Remain Recoverable
 
 Area: Timeline / Flags
-Decision links: [0582](../decisions/0582-hide-flagged-task-activity-from-timeline.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0677](../decisions/0677-centralize-mac-flag-filters-under-shared.md), [0582](../decisions/0582-hide-flagged-task-activity-from-timeline.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineTagTests.swift`
@@ -2933,12 +2960,13 @@ When no Timeline Flag filter is selected
 Then that task's completion, missed, canceled, and task-linked Focus activity is omitted from iOS Timeline and Mac Planner Timeline
 And the history, task, Stats, notifications, Planner Calendar, and unrelated context records remain unchanged
 
-When the person selects that Flag in Timeline Filters
+When the person selects that Flag in iOS Timeline Filters or Mac Shared Filters
 Then matching task activity appears even though the rule normally hides it
 And multiple selected Flags use the chosen `All` or `Any` matching mode
 And clearing the Flag selection restores the default hidden presentation
 And the filter catalog remains available from the cached pre-hide snapshot without whole-history work in scrolling row builders
-And Mac Timeline presents selection through the same direct searchable Include flags action and removable chips as Task List, without a disclosure card, Default Timeline chip, or inline Reveal by Flag catalog
+And Mac Timeline does not duplicate Shared's direct searchable actions, removable chips, or Flag catalog
+And Shared Exclude flags can suppress matching task activity after an Include match
 
 ### iOS Timeline Refreshes After Synced Activity
 
