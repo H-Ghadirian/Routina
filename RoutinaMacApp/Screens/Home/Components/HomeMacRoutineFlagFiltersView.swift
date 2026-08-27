@@ -170,11 +170,7 @@ struct HomeMacSharedFlagFiltersView: View {
 
     @ViewBuilder
     private var flagRuleSummary: some View {
-        if selectedFlags.isEmpty && excludedFlags.isEmpty {
-            Text("No flag filters")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        } else {
+        if !selectedFlags.isEmpty || !excludedFlags.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 if !selectedFlags.isEmpty {
                     selectedFlagRule(

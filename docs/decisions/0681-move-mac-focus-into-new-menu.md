@@ -29,7 +29,7 @@ Accepted
 
 ## Revised By
 
-- [0682: Present Mac New Menu as One Labeled Control](0682-present-mac-new-menu-as-one-labeled-control.md) gives the trigger one labeled surface and derives Focus availability from its eligible-task snapshot.
+- [0686: Combine Mac Workspace and Actions in One Menu](0686-combine-mac-workspace-and-actions-in-one-menu.md) places Add New Task and Focus above the workspace destinations in one menu, carries forward eligible-task availability, and exposes active-timer state beside both the sidebar toggle and disabled Focus row.
 
 ## Context
 

@@ -211,14 +211,18 @@ struct HomeFeatureTests {
 
     @Test
     func macAddMenuVisibleActions_preservesMenuOrderWithOptionalSurfacesEnabled() {
+        let visibleActions = MacAddMenuShortcut.visibleActions(
+            eventEmotionEnabled: true,
+            notesEnabled: true,
+            goalsEnabled: true,
+            placesEnabled: true,
+            awayEnabled: true
+        )
+
+        #expect(visibleActions == [.event, .emotion, .note, .goal, .task, .focus, .checkIn, .away])
         #expect(
-            MacAddMenuShortcut.visibleActions(
-                eventEmotionEnabled: true,
-                notesEnabled: true,
-                goalsEnabled: true,
-                placesEnabled: true,
-                awayEnabled: true
-            ) == [.event, .emotion, .note, .goal, .task, .focus, .checkIn, .away]
+            MacAddMenuShortcut.combinedMenuActions(from: visibleActions)
+                == [.task, .focus, .event, .emotion, .note, .goal, .checkIn, .away]
         )
     }
 
@@ -242,20 +246,23 @@ struct HomeFeatureTests {
 
     @Test
     func macFocusMenuAvailability_blocksCompetingTimers() {
-        #expect(
-            MacFocusMenuAvailability.resolve(
-                hasStartableTasks: true,
-                hasActiveFocus: true,
-                hasActiveSprintFocus: false
-            ) == .activeFocus
+        let activeFocus = MacFocusMenuAvailability.resolve(
+            hasStartableTasks: true,
+            hasActiveFocus: true,
+            hasActiveSprintFocus: false
         )
-        #expect(
-            MacFocusMenuAvailability.resolve(
-                hasStartableTasks: true,
-                hasActiveFocus: false,
-                hasActiveSprintFocus: true
-            ) == .activeSprintFocus
+        let activeSprint = MacFocusMenuAvailability.resolve(
+            hasStartableTasks: true,
+            hasActiveFocus: false,
+            hasActiveSprintFocus: true
         )
+
+        #expect(activeFocus == .activeFocus)
+        #expect(activeSprint == .activeSprintFocus)
+        #expect(activeFocus.hasActiveTimer)
+        #expect(activeSprint.hasActiveTimer)
+        #expect(!MacFocusMenuAvailability.available.hasActiveTimer)
+        #expect(!MacFocusMenuAvailability.noStartableTasks.hasActiveTimer)
     }
 
     @Test

@@ -106,6 +106,7 @@ struct HomeMacAllFiltersSourceTests {
         #expect(tagFilters.contains("Text(\"Tag filters\")"))
         #expect(tagFilters.contains("options: HomeMacFilterRuleSide.allCases"))
         #expect(tagFilters.contains("if activeSelectedTags.count > 1"))
+        #expect(!tagFilters.contains("Text(\"No tag filters\")"))
     }
 
     @Test
@@ -140,6 +141,7 @@ struct HomeMacAllFiltersSourceTests {
         #expect(flagFilters.contains("HomeMacSharedFlagFilterPicker("))
         #expect(flagFilters.contains("Text(\"Flag filters\")"))
         #expect(flagFilters.contains("if activeSelectedFlags.count > 1"))
+        #expect(!flagFilters.contains("Text(\"No flag filters\")"))
         #expect(!flagFilters.contains("Text(\"Add more\")"))
         #expect(!flagFilters.contains("title: \"All Flags\""))
 

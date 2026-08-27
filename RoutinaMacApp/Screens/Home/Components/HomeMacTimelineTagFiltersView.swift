@@ -50,11 +50,7 @@ struct HomeMacTimelineTagFiltersView: View {
 
     @ViewBuilder
     private var compactTagRuleSummary: some View {
-        if selectedTags.isEmpty && selectedExcludedTags.isEmpty {
-            Text("No tag filters")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        } else {
+        if !selectedTags.isEmpty || !selectedExcludedTags.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 if !selectedTags.isEmpty {
                     compactTagRule(

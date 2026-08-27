@@ -53,10 +53,14 @@ struct HomeMacTopToolbarChrome: View {
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
             if showsSidebarToggle {
-                HomeMacSidebarVisibilityToolbarButton(
-                    isCollapsed: isSidebarCollapsed,
-                    onToggle: onToggleSidebar
-                )
+                HStack(spacing: 8) {
+                    HomeMacSidebarVisibilityToolbarButton(
+                        isCollapsed: isSidebarCollapsed,
+                        onToggle: onToggleSidebar
+                    )
+
+                    RoutinaMacFocusTimerToolbarBadge(showsTitle: false)
+                }
                 .padding(.leading, HomeMacToolbarSearchLayout.sidebarToggleLeadingPadding)
             }
         }
@@ -221,7 +225,7 @@ enum HomeMacToolbarSearchLayout {
     static let parserPreviewTrailingPadding: CGFloat = 22
     static let topToolbarHeight: CGFloat = 62
     static let topToolbarHorizontalPadding: CGFloat = 18
-    static let trafficLightReservedLeadingPadding: CGFloat = 142
+    static let trafficLightReservedLeadingPadding: CGFloat = 184
     static let sidebarToggleLeadingPadding: CGFloat = 28
     static let sidebarToggleButtonSize: CGFloat = 28
 

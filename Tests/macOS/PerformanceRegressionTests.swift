@@ -1168,8 +1168,15 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertFalse(detailSource.contains("plannerHeaderFocusControl"))
         XCTAssertTrue(controlsSource.contains("case .focus:\n            onFocus()"))
         XCTAssertTrue(controlsSource.contains(".disabled(shortcut == .focus && focusAvailability.isDisabled)"))
-        XCTAssertTrue(controlsSource.contains("Text(\"New\")"))
-        XCTAssertTrue(controlsSource.contains(".menuIndicator(.hidden)"))
+        XCTAssertTrue(controlsSource.contains("Label(\"Another timer is running\", systemImage: \"info.circle\")"))
+        XCTAssertTrue(controlsSource.contains("shortcut == .focus && focusAvailability.hasActiveTimer"))
+        XCTAssertFalse(controlsSource.contains("Text(\"New\")"))
+        XCTAssertFalse(controlsSource.contains(".menuIndicator(.hidden)"))
+        XCTAssertTrue(controlsSource.contains("ForEach(combinedMenuShortcuts)"))
+        XCTAssertTrue(controlsSource.contains("MacAddMenuShortcut.combinedMenuActions(from: visibleAddMenuShortcuts)"))
+        XCTAssertTrue(controlsSource.contains("ForEach(availableWorkspaceModes)"))
+        XCTAssertFalse(controlsSource.contains("private var addOptionsMenu"))
+        XCTAssertFalse(controlsSource.contains(".frame(width: 32, height: 32)"))
         XCTAssertTrue(platformSource.contains("hasStartableTasks: !homeToolbarFocusStartTasks.isEmpty"))
         XCTAssertFalse(platformSource.contains("homeToolbarFocusStartDisplayCount"))
         XCTAssertTrue(statusMenuSource.contains("status.isPaused ? \"Resume Timer\" : \"Pause Timer\""))
@@ -1199,6 +1206,10 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(
             source.contains("struct HomeMacTopToolbarChrome: View"),
             "Home search should live in the SwiftUI top chrome so text input and animation remain in the main view hierarchy."
+        )
+        XCTAssertTrue(
+            source.contains("RoutinaMacFocusTimerToolbarBadge(showsTitle: false)"),
+            "An active timer should remain visible immediately beside the Home sidebar toggle."
         )
         XCTAssertTrue(
             platformSource.contains("private var homeTopToolbarChrome: some View"),
@@ -1264,7 +1275,7 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("static let focusedWidth: CGFloat = 860"))
         XCTAssertTrue(source.contains("static let topToolbarHeight: CGFloat = 62"))
         XCTAssertTrue(source.contains("static let topToolbarHorizontalPadding: CGFloat = 18"))
-        XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 142"))
+        XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 184"))
         XCTAssertTrue(
             source.contains("ZStack(alignment: .center) {"),
             "The toolbar row should center search independently of asymmetric leading and trailing controls."
@@ -1538,7 +1549,7 @@ final class PerformanceRegressionTests: XCTestCase {
             "Fullscreen must not add a separate visible reserve band above the integrated Home toolbar."
         )
         XCTAssertTrue(platformSource.contains(".padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight)"))
-        XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 142"))
+        XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 184"))
         XCTAssertTrue(source.contains("static let sidebarToggleLeadingPadding: CGFloat = 28"))
         XCTAssertTrue(
             source.contains(".padding(.leading, HomeMacToolbarSearchLayout.trafficLightReservedLeadingPadding)"),

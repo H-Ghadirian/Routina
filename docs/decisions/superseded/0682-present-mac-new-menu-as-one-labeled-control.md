@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0684: Restore Compact Mac Menu Triggers and Surface the Active Timer](0684-restore-compact-mac-menu-triggers-and-surface-the-active-timer.md), followed by [0685: Merge Mac Workspace and Action Menus Into One Segmented Control](0685-merge-mac-workspace-and-action-menus-into-one-segmented-control.md) and [0686: Combine Mac Workspace and Actions in One Menu](../0686-combine-mac-workspace-and-actions-in-one-menu.md)
 
 ## Date
 
@@ -10,13 +10,13 @@ Accepted
 
 ## Revises
 
-- [0681: Move Mac Focus Into the New Menu](0681-move-mac-focus-into-new-menu.md)
+- [0681: Move Mac Focus Into the New Menu](../0681-move-mac-focus-into-new-menu.md)
 
 ## Refines
 
-- [0188: Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md)
-- [0264: Match Button Hit Areas to Visual Surfaces](0264-match-button-hit-areas-to-visual-surfaces.md)
-- [0341: Consolidate Mac Home Toolbar Row](0341-consolidate-mac-home-toolbar-row.md)
+- [0188: Prefer Self-Explanatory UI Over Instructional Copy](../0188-prefer-self-explanatory-ui-over-instructional-copy.md)
+- [0264: Match Button Hit Areas to Visual Surfaces](../0264-match-button-hit-areas-to-visual-surfaces.md)
+- [0341: Consolidate Mac Home Toolbar Row](../0341-consolidate-mac-home-toolbar-row.md)
 
 ## Context
 

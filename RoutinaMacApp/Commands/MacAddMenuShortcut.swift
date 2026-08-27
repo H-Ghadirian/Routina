@@ -149,6 +149,12 @@ enum MacAddMenuShortcut: CaseIterable, Identifiable, Equatable {
         }
         return actions
     }
+
+    static func combinedMenuActions(from visibleActions: [Self]) -> [Self] {
+        let primaryActions: [Self] = [.task, .focus]
+        return primaryActions.filter { visibleActions.contains($0) }
+            + visibleActions.filter { !primaryActions.contains($0) }
+    }
 }
 
 enum MacFocusMenuAvailability: Equatable {
@@ -176,6 +182,15 @@ enum MacFocusMenuAvailability: Equatable {
 
     var isDisabled: Bool {
         self != .available
+    }
+
+    var hasActiveTimer: Bool {
+        switch self {
+        case .activeFocus, .activeSprintFocus:
+            return true
+        case .available, .noStartableTasks:
+            return false
+        }
     }
 
     var helpText: String {
