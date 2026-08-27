@@ -211,7 +211,8 @@ extension HomeTCAView {
         rowNumber: Int,
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
         rowVisibility suppliedRowVisibility: HomeTaskRowVisibility? = nil,
-        showsPlannedTodayLabel: Bool = false
+        showsPlannedTodayLabel: Bool = false,
+        searchResultLocationTitle: String? = nil
     ) -> some View {
         let metadataText = metadataPresenter.rowMetadataText(for: task)
         let rowVisibility = suppliedRowVisibility ?? taskRowVisibility
@@ -252,6 +253,13 @@ extension HomeTCAView {
                     )
                     .layoutPriority(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                if let searchResultLocationTitle {
+                    Label(searchResultLocationTitle, systemImage: "folder.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
 
                 if showsSecondaryLabels {
                     HStack(alignment: .center, spacing: 6) {
@@ -973,6 +981,10 @@ extension HomeTCAView {
                     metadataPresenter: metadataPresenter,
                     rowVisibility: rowVisibility,
                     showsPlannedTodayLabel: presentation.showsPlannedTodayLabel(
+                        for: task.taskID,
+                        in: section
+                    ),
+                    searchResultLocationTitle: presentation.searchResultLocationTitle(
                         for: task.taskID,
                         in: section
                     ),
@@ -2151,6 +2163,7 @@ extension HomeTCAView {
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
         rowVisibility: HomeTaskRowVisibility,
         showsPlannedTodayLabel: Bool,
+        searchResultLocationTitle: String?,
         allowsPlannerDrag: Bool
     ) -> some View {
         let row = platformRoutineRow(
@@ -2158,7 +2171,8 @@ extension HomeTCAView {
             rowNumber: rowNumber,
             metadataPresenter: metadataPresenter,
             rowVisibility: rowVisibility,
-            showsPlannedTodayLabel: showsPlannedTodayLabel
+            showsPlannedTodayLabel: showsPlannedTodayLabel,
+            searchResultLocationTitle: searchResultLocationTitle
         )
             .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task, rowVisibility: rowVisibility))
             .padding(.horizontal, 8)

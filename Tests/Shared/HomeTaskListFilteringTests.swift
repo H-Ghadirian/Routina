@@ -1496,6 +1496,70 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func plannerSearchFallbackRevealsBacklogAssignedMatchWithItsLocation() throws {
+        let backlogSectionID = UUID()
+        let backlogTaskID = UUID()
+        let backlogTask = TestTaskDisplay(
+            taskID: backlogTaskID,
+            name: "Go to library",
+            flags: ["Hide from Task Lists"],
+            customTaskSectionID: backlogSectionID
+        )
+        let filtering = makeFiltering(
+            searchText: "library",
+            flagRules: [
+                RoutineFlagRule(
+                    flag: "Hide from Task Lists",
+                    kind: .hideFromTaskLists
+                )
+            ]
+        )
+        let ordinaryPresentation = HomeTaskListPresentation.sidebar(
+            filtering: filtering,
+            routineDisplays: [backlogTask],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(
+                    id: backlogSectionID,
+                    surface: .backlog,
+                    title: "Tracking",
+                    createdAt: nil
+                )
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different search.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(ordinaryPresentation.sections.isEmpty)
+
+        let presentationWithoutBacklogFlagReveal = ordinaryPresentation.appendingFlagRuleRevealResults(
+            from: [],
+            filtering: filtering
+        )
+        let searchPresentation = presentationWithoutBacklogFlagReveal.addingSearchFallbackResults(
+            from: [backlogTask],
+            filtering: filtering,
+            locationTitle: { _ in "Backlog › Tracking" }
+        )
+        let searchSection = try #require(searchPresentation.sections.first)
+
+        #expect(searchSection.title == "Search Results")
+        #expect(searchSection.tasks.map(\.taskID) == [backlogTaskID])
+        #expect(searchSection.includeMarkDone == false)
+        #expect(searchPresentation.sections.count == 1)
+        #expect(
+            searchPresentation.searchResultLocationTitle(
+                for: backlogTaskID,
+                in: searchSection
+            ) == "Backlog › Tracking"
+        )
+    }
+
+    @Test
     func sidebarPresentationAppliesPersistentTopLevelSectionOrderAndReindexesRows() {
         let pinnedID = UUID()
         let regularID = UUID()

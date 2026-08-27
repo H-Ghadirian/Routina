@@ -459,18 +459,21 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
     let hiddenUnavailableTaskCount: Int
     let emptyState: HomeTaskListEmptyState?
     let datePlannedTodayTaskIDs: Set<UUID>
+    let searchResultLocationTitlesByTaskID: [UUID: String]
 
     init(
         sections: [HomeTaskListPresentationSection<Display>],
         hiddenUnavailableTaskCount: Int,
         emptyState: HomeTaskListEmptyState?,
-        datePlannedTodayTaskIDs: Set<UUID> = []
+        datePlannedTodayTaskIDs: Set<UUID> = [],
+        searchResultLocationTitlesByTaskID: [UUID: String] = [:]
     ) {
         self.sections = sections
         self.visibleTaskCount = sections.reduce(0) { $0 + $1.tasks.count }
         self.hiddenUnavailableTaskCount = hiddenUnavailableTaskCount
         self.emptyState = emptyState
         self.datePlannedTodayTaskIDs = datePlannedTodayTaskIDs
+        self.searchResultLocationTitlesByTaskID = searchResultLocationTitlesByTaskID
     }
 
     func showsPlannedTodayLabel(
@@ -480,16 +483,32 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         section.kind != .plannedToday && datePlannedTodayTaskIDs.contains(taskID)
     }
 
+    func searchResultLocationTitle(
+        for taskID: UUID,
+        in section: HomeTaskListPresentationSection<Display>
+    ) -> String? {
+        guard section.identityKey == "searchResults" else { return nil }
+        return searchResultLocationTitlesByTaskID[taskID]
+    }
+
     func addingSearchFallbackResults(
         from sourceDisplays: [Display],
         filtering: HomeTaskListFiltering<Display>,
-        title: String = "Search Results"
+        title: String = "Search Results",
+        locationTitle: (Display) -> String? = { _ in nil }
     ) -> Self {
         let presentedTaskIDs = Set(sections.flatMap(\.tasks).map(\.taskID))
         let fallbackTasks = filtering.searchFallbackTasks(from: sourceDisplays).filter {
             !presentedTaskIDs.contains($0.taskID)
         }
         guard !fallbackTasks.isEmpty else { return self }
+
+        var resultLocationTitlesByTaskID = searchResultLocationTitlesByTaskID
+        for task in fallbackTasks {
+            if let locationTitle = locationTitle(task) {
+                resultLocationTitlesByTaskID[task.taskID] = locationTitle
+            }
+        }
 
         let section = HomeTaskListPresentationSection(
             kind: .regular,
@@ -505,7 +524,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             sections: sections + [section],
             hiddenUnavailableTaskCount: hiddenUnavailableTaskCount,
             emptyState: nil,
-            datePlannedTodayTaskIDs: datePlannedTodayTaskIDs
+            datePlannedTodayTaskIDs: datePlannedTodayTaskIDs,
+            searchResultLocationTitlesByTaskID: resultLocationTitlesByTaskID
         )
     }
 
@@ -534,7 +554,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             sections: sections + [section],
             hiddenUnavailableTaskCount: hiddenUnavailableTaskCount,
             emptyState: nil,
-            datePlannedTodayTaskIDs: datePlannedTodayTaskIDs
+            datePlannedTodayTaskIDs: datePlannedTodayTaskIDs,
+            searchResultLocationTitlesByTaskID: searchResultLocationTitlesByTaskID
         )
     }
 

@@ -151,25 +151,32 @@ extension HomeTCAView {
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
         showArchivedTasks: Bool
     ) -> HomeTaskListPresentation<HomeFeature.RoutineDisplay> {
-        let sourceDisplays = macSearchFallbackSourceDisplays(
+        let searchFallbackSourceDisplays = macSearchFallbackSourceDisplays(
             routineDisplays: routineDisplays,
             awayRoutineDisplays: awayRoutineDisplays,
             archivedRoutineDisplays: archivedRoutineDisplays,
             showArchivedTasks: showArchivedTasks
         )
+        let flagRuleSourceDisplays = macFlagRuleRevealSourceDisplays(
+            from: searchFallbackSourceDisplays
+        )
         let presentationWithFlagRuleResults = presentation.appendingFlagRuleRevealResults(
-            from: sourceDisplays,
+            from: flagRuleSourceDisplays,
             filtering: filtering
         )
 
         let trimmedSearchText = macSearchPresentationText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSearchText.isEmpty else {
-        return presentationWithFlagRuleResults
+            return presentationWithFlagRuleResults
         }
+        let backlogLocationTitlesBySectionID = macBacklogLocationTitlesBySectionID()
 
         return presentationWithFlagRuleResults.addingSearchFallbackResults(
-            from: sourceDisplays,
-            filtering: filtering
+            from: searchFallbackSourceDisplays,
+            filtering: filtering,
+            locationTitle: { task in
+                task.customTaskSectionID.flatMap { backlogLocationTitlesBySectionID[$0] }
+            }
         )
     }
 
@@ -187,6 +194,14 @@ extension HomeTCAView {
         }
         sourceDisplays += store.boardTodoDisplays
 
+        return sourceDisplays.filter { task in
+            seenTaskIDs.insert(task.taskID).inserted
+        }
+    }
+
+    private func macFlagRuleRevealSourceDisplays(
+        from sourceDisplays: [HomeFeature.RoutineDisplay]
+    ) -> [HomeFeature.RoutineDisplay] {
         let backlogSectionIDs = Set(
             customTaskSections
                 .filter { $0.surface == .backlog }
@@ -194,11 +209,21 @@ extension HomeTCAView {
         )
 
         return sourceDisplays.filter { task in
-            guard !(task.customTaskSectionID.map(backlogSectionIDs.contains) ?? false) else {
-                return false
-            }
-            return seenTaskIDs.insert(task.taskID).inserted
+            !(task.customTaskSectionID.map(backlogSectionIDs.contains) ?? false)
         }
+    }
+
+    private func macBacklogLocationTitlesBySectionID() -> [UUID: String] {
+        let backlogSections = customTaskSections.filter { $0.surface == .backlog }
+        return Dictionary(uniqueKeysWithValues: backlogSections.compactMap { section in
+            guard let pathTitles = HomeCustomTaskSectionStorage.pathTitles(
+                for: section.id,
+                in: backlogSections
+            ) else {
+                return nil
+            }
+            return (section.id, (["Backlog"] + pathTitles).joined(separator: " › "))
+        })
     }
 
     func filteredTasks(
