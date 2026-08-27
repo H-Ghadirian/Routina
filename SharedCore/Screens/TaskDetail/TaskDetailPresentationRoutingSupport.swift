@@ -101,21 +101,21 @@ struct TaskDetailUndoCompletionAlertCopy: Equatable {
             Self(
                 title: "Remove log?",
                 actionTitle: "Remove",
-                message: "This will permanently remove this routine log and may update the routine's schedule."
+                message: "This will permanently remove this repeating-task log and may update the task's schedule."
             )
 
         case .adaptiveRemoval:
             Self(
                 title: "Undo log?",
                 actionTitle: "Undo",
-                message: "This will remove the selected completion log and may update the routine's schedule."
+                message: "This will remove the selected completion log and may update the task's schedule."
             )
 
         case .undoOnly:
             Self(
                 title: "Undo log?",
                 actionTitle: "Undo",
-                message: "This will remove the selected log and may update the routine's schedule."
+                message: "This will remove the selected log and may update the task's schedule."
             )
         }
     }
@@ -139,7 +139,7 @@ extension View {
         let routing = store.taskDetailPresentationRouting
 
         return alert(
-            "Delete routine?",
+            "Delete repeating task?",
             isPresented: routing.deleteConfirmation
         ) {
             Button("Delete", role: .destructive) {
@@ -147,7 +147,7 @@ extension View {
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("This will permanently remove \(store.task.name ?? "this routine") and its logs.")
+            Text("This will permanently remove \(store.task.name ?? "this repeating task") and its logs.")
         }
     }
 
@@ -202,7 +202,7 @@ extension View {
 
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Choose whether this completion should also satisfy a linked routine.")
+            Text("Choose whether this completion should also satisfy a linked repeating task.")
         }
     }
 }

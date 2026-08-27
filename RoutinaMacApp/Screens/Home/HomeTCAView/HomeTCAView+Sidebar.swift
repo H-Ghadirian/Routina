@@ -64,7 +64,7 @@ extension HomeTCAView {
         case .routines:
             return "Tasks"
         case .todos:
-            return "Todos"
+            return "One-time"
         }
     }
 
@@ -75,7 +75,7 @@ extension HomeTCAView {
         case .routines:
             return "Filter Tasks"
         case .todos:
-            return "Filter Todos"
+            return "Filter One-time"
         }
     }
 
@@ -145,7 +145,8 @@ extension HomeTCAView {
         store.selectedTimelineFilterType != .all
             || store.selectedTimelineStatusFilter != .all
             || !store.selectedTimelineTags.isEmpty
-            || !store.selectedTimelineFlags.isEmpty
+            || !macSharedSelectedFlags.isEmpty
+            || !macSharedExcludedFlags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
             || store.selectedTimelinePressureFilter != nil
             || store.selectedTimelineThinkingNeededFilter != nil
@@ -176,8 +177,10 @@ extension HomeTCAView {
             selectedTodoStateFilter: store.selectedTodoStateFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
-            selectedFlags: store.selectedFlags,
-            includeFlagMatchMode: store.includeFlagMatchMode,
+            selectedFlags: macSharedSelectedFlags,
+            includeFlagMatchMode: macSharedIncludeFlagMatchMode,
+            excludedFlags: macSharedExcludedFlags,
+            excludeFlagMatchMode: macSharedExcludeFlagMatchMode,
             excludedTags: store.excludedTags,
             selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             hasSelectedPlaceFilter: isPlacesEnabled && store.selectedManualPlaceFilterID != nil,
@@ -243,6 +246,10 @@ extension HomeTCAView {
         store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
         store.send(.selectedTimelineFlagsChanged([]))
         store.send(.selectedTimelineIncludeFlagMatchModeChanged(.all))
+        store.send(.selectedFlagsChanged([]))
+        store.send(.includeFlagMatchModeChanged(.all))
+        store.send(.excludedFlagsChanged([]))
+        store.send(.excludeFlagMatchModeChanged(.any))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
         store.send(.selectedTimelinePressureFilterChanged(nil))
         store.send(.selectedTimelineThinkingNeededFilterChanged(nil))
@@ -908,7 +915,7 @@ extension HomeTCAView {
                     Divider()
                     emptyStateView(
                         title: "No tasks yet",
-                        message: "Add a routine or to-do, and the sidebar will organize what needs attention for you.",
+                        message: "Add a repeating or one-time task, and the sidebar will organize what needs attention for you.",
                         systemImage: "checklist"
                     ) {
                         openAddTask()
@@ -921,7 +928,7 @@ extension HomeTCAView {
                     Divider()
                     HomeLoadingStateView(
                         title: "Loading Board",
-                        message: "Fetching todos and workflow state.",
+                        message: "Fetching one-time tasks and workflow state.",
                         systemImage: "square.grid.3x3.topleft.filled"
                     )
                 }
@@ -1054,6 +1061,10 @@ extension HomeTCAView {
         store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
         store.send(.selectedTimelineFlagsChanged([]))
         store.send(.selectedTimelineIncludeFlagMatchModeChanged(.all))
+        store.send(.selectedFlagsChanged([]))
+        store.send(.includeFlagMatchModeChanged(.all))
+        store.send(.excludedFlagsChanged([]))
+        store.send(.excludeFlagMatchModeChanged(.any))
         store.send(.selectedTimelineExcludedTagsChanged([]))
         store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
@@ -1083,6 +1094,10 @@ extension HomeTCAView {
         store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
         store.send(.selectedTimelineFlagsChanged([]))
         store.send(.selectedTimelineIncludeFlagMatchModeChanged(.all))
+        store.send(.selectedFlagsChanged([]))
+        store.send(.includeFlagMatchModeChanged(.all))
+        store.send(.excludedFlagsChanged([]))
+        store.send(.excludeFlagMatchModeChanged(.any))
         store.send(.selectedTimelineExcludedTagsChanged([]))
         store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
@@ -1158,9 +1173,9 @@ extension HomeTCAView {
         case .all:
             return "No matching tasks"
         case .routines:
-            return "No matching routines"
+            return "No matching repeating tasks"
         case .todos:
-            return "No matching todos"
+            return "No matching one-time tasks"
         }
     }
 
@@ -1174,9 +1189,9 @@ extension HomeTCAView {
         case .all:
             return isPlacesEnabled ? "Try a different place or clear a few filters." : "Clear a few filters and try again."
         case .routines:
-            return isPlacesEnabled ? "Try a different place or switch back to all routines." : "Clear a few filters or switch back to all routines."
+            return isPlacesEnabled ? "Try a different place or switch back to all repeating tasks." : "Clear a few filters or switch back to all repeating tasks."
         case .todos:
-            return isPlacesEnabled ? "Try a different place or switch back to all todos." : "Clear a few filters or switch back to all todos."
+            return isPlacesEnabled ? "Try a different place or switch back to all one-time tasks." : "Clear a few filters or switch back to all one-time tasks."
         }
     }
 
@@ -1263,6 +1278,8 @@ extension HomeTCAView {
                 || store.selectedTimelineThinkingNeededFilter != nil
                 || store.selectedEstimationFilter != .all
                 || store.selectedTimelineEstimationFilter != .all
+                || !macSharedSelectedFlags.isEmpty
+                || !macSharedExcludedFlags.isEmpty
         case .taskList:
             return store.taskListMode != .all
                 || store.selectedFilter != .all
@@ -1273,7 +1290,6 @@ extension HomeTCAView {
                 || store.selectedTodoStateFilter != nil
                 || store.selectedGoalFilter != .all
                 || store.selectedMediaFilter != .all
-                || !store.selectedFlags.isEmpty
                 || store.selectedManualPlaceFilterID != nil
                 || store.hideAssumedDoneTasks
                 || store.hideUnavailableRoutines
@@ -1282,7 +1298,6 @@ extension HomeTCAView {
             return effectiveMacTimelineFilterType != .all
                 || store.selectedTimelineStatusFilter != .all
                 || store.selectedTimelineMediaFilter != .all
-                || !store.selectedTimelineFlags.isEmpty
         case .calendar:
             return dayPlanCalendarFilters.hasActiveFilters(
                 availability: DayPlanCalendarFilterAvailability(

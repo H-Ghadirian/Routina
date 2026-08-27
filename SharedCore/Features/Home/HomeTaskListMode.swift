@@ -7,7 +7,16 @@ enum HomeTaskListMode: String, CaseIterable, Equatable, Identifiable {
 
     var id: Self { self }
 
-    var title: String { rawValue }
+    var title: String {
+        switch self {
+        case .all:
+            return "All"
+        case .routines:
+            return "Repeating"
+        case .todos:
+            return "One-time"
+        }
+    }
 
     var systemImage: String {
         switch self {
@@ -29,9 +38,9 @@ enum HomeTaskListMode: String, CaseIterable, Equatable, Identifiable {
         case .all:
             return "Show all tasks"
         case .routines:
-            return "Show routines"
+            return "Show repeating tasks"
         case .todos:
-            return "Show todos"
+            return "Show one-time tasks"
         }
     }
 }

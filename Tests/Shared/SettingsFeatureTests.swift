@@ -1699,9 +1699,9 @@ struct SettingsFeatureTests {
         } assert: {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
-        await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Cleaning in 1 routine.")) {
+        await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Cleaning in 1 task.")) {
             $0.tags.isTagOperationInProgress = false
-            $0.tags.tagStatusMessage = "Updated tag to Cleaning in 1 routine."
+            $0.tags.tagStatusMessage = "Updated tag to Cleaning in 1 task."
         }
 
         let persistedTask = try #require(
@@ -1787,9 +1787,9 @@ struct SettingsFeatureTests {
         } assert: {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
-        await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Health in 2 routines and 1 goal and 1 note.")) {
+        await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Health in 2 tasks and 1 goal and 1 note.")) {
             $0.tags.isTagOperationInProgress = false
-            $0.tags.tagStatusMessage = "Updated tag to Health in 2 routines and 1 goal and 1 note."
+            $0.tags.tagStatusMessage = "Updated tag to Health in 2 tasks and 1 goal and 1 note."
         }
 
         let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -1904,9 +1904,9 @@ struct SettingsFeatureTests {
         } assert: {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
-        await store.receive(.tagOperationFinished(success: true, message: "Deleted Morning from 3 routines and 1 goal and 1 note.")) {
+        await store.receive(.tagOperationFinished(success: true, message: "Deleted Morning from 3 tasks and 1 goal and 1 note.")) {
             $0.tags.isTagOperationInProgress = false
-            $0.tags.tagStatusMessage = "Deleted Morning from 3 routines and 1 goal and 1 note."
+            $0.tags.tagStatusMessage = "Deleted Morning from 3 tasks and 1 goal and 1 note."
         }
 
         let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -2101,7 +2101,7 @@ struct SettingsFeatureTests {
         await store.send(.exportRoutineDataTapped) {
             $0.dataTransfer.isDataTransferInProgress = true
             $0.dataTransfer.activeOperation = .export
-            $0.dataTransfer.dataTransferStatusMessage = "Saving routine data..."
+            $0.dataTransfer.dataTransferStatusMessage = "Saving task data..."
         }
 
         await store.receive(.routineDataTransferFinished(success: false, message: "Save canceled.")) {
@@ -2143,7 +2143,7 @@ struct SettingsFeatureTests {
         await store.send(.exportRoutineDataDestinationSelected(packageURL)) {
             $0.dataTransfer.isDataTransferInProgress = true
             $0.dataTransfer.activeOperation = .export
-            $0.dataTransfer.dataTransferStatusMessage = "Saving routine data..."
+            $0.dataTransfer.dataTransferStatusMessage = "Saving task data..."
         }
 
         await store.receive(.routineDataTransferFinished(success: true, message: "Saved to \(packageURL.lastPathComponent).")) {
@@ -2183,7 +2183,7 @@ struct SettingsFeatureTests {
         await store.send(.importRoutineDataTapped) {
             $0.dataTransfer.isDataTransferInProgress = true
             $0.dataTransfer.activeOperation = .import
-            $0.dataTransfer.dataTransferStatusMessage = "Loading routine data..."
+            $0.dataTransfer.dataTransferStatusMessage = "Loading task data..."
         }
 
         await store.receive(.routineDataTransferFinished(success: false, message: "Load canceled.")) {
@@ -2241,7 +2241,7 @@ struct SettingsFeatureTests {
         await store.send(.importRoutineDataSourceSelected(packageURL)) {
             $0.dataTransfer.isDataTransferInProgress = true
             $0.dataTransfer.activeOperation = .import
-            $0.dataTransfer.dataTransferStatusMessage = "Loading routine data..."
+            $0.dataTransfer.dataTransferStatusMessage = "Loading task data..."
         }
 
         var cloudEstimate = CloudUsageEstimate.zero
@@ -2254,7 +2254,7 @@ struct SettingsFeatureTests {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
 
-        let successMessage = "Loaded 1 routines, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 away sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
+        let successMessage = "Loaded 1 tasks, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 away sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
         await store.receive(.routineDataTransferFinished(success: true, message: successMessage)) {
             $0.dataTransfer.isDataTransferInProgress = false
             $0.dataTransfer.activeOperation = nil

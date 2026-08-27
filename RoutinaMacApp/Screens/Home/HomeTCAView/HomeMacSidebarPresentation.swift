@@ -101,9 +101,9 @@ private extension HomeFeature.TaskListMode {
         case .all:
             return "All"
         case .routines:
-            return "Routines"
+            return "Repeating"
         case .todos:
-            return "Todos"
+            return "One-time"
         }
     }
 
@@ -112,9 +112,9 @@ private extension HomeFeature.TaskListMode {
         case .all:
             return "Filter All"
         case .routines:
-            return "Filter Routines"
+            return "Filter Repeating"
         case .todos:
-            return "Filter Todos"
+            return "Filter One-time"
         }
     }
 }

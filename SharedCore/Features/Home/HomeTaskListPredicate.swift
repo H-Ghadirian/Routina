@@ -37,6 +37,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
             && matchesSelectedFlags(task)
+            && matchesExcludedFlags(task)
             && matchesExcludedTags(task)
     }
 
@@ -265,6 +266,14 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
         HomeDisplayFilterSupport.matchesSelectedFlags(
             configuration.selectedFlags,
             mode: configuration.includeFlagMatchMode,
+            in: task.flags
+        )
+    }
+
+    private func matchesExcludedFlags(_ task: Display) -> Bool {
+        HomeDisplayFilterSupport.matchesExcludedFlags(
+            configuration.excludedFlags,
+            mode: configuration.excludeFlagMatchMode,
             in: task.flags
         )
     }

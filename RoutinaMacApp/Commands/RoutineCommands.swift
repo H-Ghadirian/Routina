@@ -213,7 +213,7 @@ struct RoutineCommands: Commands {
 
             Divider()
 
-            Button("Routines") {
+            Button("Planner") {
                 NotificationCenter.default.post(name: .routinaMacOpenRoutinesInSidebar, object: nil)
             }
             .keyboardShortcut("1", modifiers: [.command, .option])

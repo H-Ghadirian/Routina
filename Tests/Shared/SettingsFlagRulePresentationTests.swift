@@ -24,9 +24,22 @@ struct SettingsFlagRulePresentationTests {
             .autoAssumeDone
         ])
         #expect(state.availableRuleKinds(for: "reference") == [
+            .hideFromCalendarList,
             .hideFromTimeline,
             .hideFromTaskLadder
         ])
+    }
+
+    @Test
+    func builtInCatalogIncludesCalendarListVisibility() {
+        #expect(RoutineFlagRuleKind.allCases == [
+            .hideFromTaskLists,
+            .hideFromCalendarList,
+            .hideFromTimeline,
+            .hideFromTaskLadder,
+            .autoAssumeDone
+        ])
+        #expect(RoutineFlagRuleKind.hideFromCalendarList.builtInFlagName == "Hide from Calendar List")
     }
 
     @Test

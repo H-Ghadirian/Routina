@@ -127,7 +127,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
 
     func cadenceDescription(for task: Display) -> String {
         if task.isOneOffTask {
-            return "One-off todo"
+            return "One-time task"
         }
         if !task.cadenceEnabled {
             return "No cadence"

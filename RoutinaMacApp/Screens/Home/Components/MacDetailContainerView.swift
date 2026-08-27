@@ -350,6 +350,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     calendarSearchText: plannerSearchText,
                     calendarTaskFilter: calendarTaskFilter,
                     calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
+                    calendarListRevealsHiddenTasks: plannerCalendarListRevealsHiddenTasks,
                     macHeaderFocusControl: {
                         AnyView(plannerHeaderFocusControl)
                     },
@@ -399,8 +400,14 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         let includeTagMatchMode = store.includeTagMatchMode
         let excludedTags = store.excludedTags
         let excludeTagMatchMode = store.excludeTagMatchMode
+        let selectedFlags = plannerCalendarSharedSelectedFlags
+        let includeFlagMatchMode = plannerCalendarSharedIncludeFlagMatchMode
+        let excludedFlags = store.excludedFlags
+        let excludeFlagMatchMode = store.excludeFlagMatchMode
         let hasSelectedTags = !selectedTags.isEmpty
         let hasExcludedTags = !excludedTags.isEmpty
+        let hasSelectedFlags = !selectedFlags.isEmpty
+        let hasExcludedFlags = !excludedFlags.isEmpty
         let hasTaskLadderFilter = selectedImportanceUrgencyFilter != nil
             || selectedPressureFilter != nil
             || selectedThinkingNeededFilter != nil
@@ -408,7 +415,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         let referenceDate = Date()
         let filterCalendar = calendar
 
-        guard hasTaskLadderFilter || hasSelectedTags || hasExcludedTags else {
+        guard hasTaskLadderFilter || hasSelectedTags || hasExcludedTags
+                || hasSelectedFlags || hasExcludedFlags else {
             return { _ in true }
         }
 
@@ -435,6 +443,18 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 ) {
                     return false
                 }
+            }
+
+            if !HomeDisplayFilterSupport.matchesSelectedFlags(
+                selectedFlags,
+                mode: includeFlagMatchMode,
+                in: task.flags
+            ) || !HomeDisplayFilterSupport.matchesExcludedFlags(
+                excludedFlags,
+                mode: excludeFlagMatchMode,
+                in: task.flags
+            ) {
+                return false
             }
 
             guard hasSelectedTags || hasExcludedTags else { return true }
@@ -465,13 +485,19 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         let includeTagMatchMode = store.includeTagMatchMode
         let excludedTags = store.excludedTags
         let excludeTagMatchMode = store.excludeTagMatchMode
+        let selectedFlags = plannerCalendarSharedSelectedFlags
+        let includeFlagMatchMode = plannerCalendarSharedIncludeFlagMatchMode
+        let excludedFlags = store.excludedFlags
+        let excludeFlagMatchMode = store.excludeFlagMatchMode
 
         guard selectedImportanceUrgencyFilter != nil
                 || selectedPressureFilter != nil
                 || selectedThinkingNeededFilter != nil
                 || selectedEstimationFilter != .all
                 || !selectedTags.isEmpty
-                || !excludedTags.isEmpty else {
+                || !excludedTags.isEmpty
+                || !selectedFlags.isEmpty
+                || !excludedFlags.isEmpty else {
             return 0
         }
 
@@ -489,7 +515,45 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         hasher.combine(includeTagMatchMode.rawValue)
         hasher.combine(excludedTags.sorted())
         hasher.combine(excludeTagMatchMode.rawValue)
+        hasher.combine(selectedFlags.sorted())
+        hasher.combine(includeFlagMatchMode.rawValue)
+        hasher.combine(excludedFlags.sorted())
+        hasher.combine(excludeFlagMatchMode.rawValue)
         return hasher.finalize()
+    }
+
+    private var plannerCalendarSharedSelectedFlags: Set<String> {
+        let excludedFlags = store.excludedFlags
+        return Set(
+            RoutineFlag.deduplicated(
+                Array(store.selectedFlags) + Array(store.selectedTimelineFlags)
+            )
+        )
+        .filter { selectedFlag in
+            !HomeFlagFilterMutationSupport.contains(selectedFlag, in: excludedFlags)
+        }
+    }
+
+    private var plannerCalendarSharedIncludeFlagMatchMode: RoutineTagMatchMode {
+        if store.includeFlagMatchMode == store.selectedTimelineIncludeFlagMatchMode {
+            return store.includeFlagMatchMode
+        }
+        if !store.selectedFlags.isEmpty && store.selectedTimelineFlags.isEmpty {
+            return store.includeFlagMatchMode
+        }
+        if store.selectedFlags.isEmpty && !store.selectedTimelineFlags.isEmpty {
+            return store.selectedTimelineIncludeFlagMatchMode
+        }
+        return .all
+    }
+
+    private var plannerCalendarListRevealsHiddenTasks: Bool {
+        plannerCalendarSharedSelectedFlags.contains {
+            RoutineFlag.contains(
+                RoutineFlagRuleKind.hideFromCalendarList.builtInFlagName,
+                in: [$0]
+            )
+        }
     }
 
     @ViewBuilder
@@ -772,8 +836,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 systemImage: "sidebar.right",
                 description: Text(
                     store.routineTasks.isEmpty
-                        ? "Add a routine or to-do to see its details here."
-                        : "Choose a routine or to-do from the sidebar to see its details."
+                        ? "Add a repeating or one-time task to see its details here."
+                        : "Choose a repeating or one-time task from the sidebar to see its details."
                 )
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)

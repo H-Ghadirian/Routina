@@ -7,7 +7,16 @@ enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatabl
 
     var id: Self { self }
 
-    var title: String { rawValue }
+    var title: String {
+        switch self {
+        case .all:
+            return "All"
+        case .routines:
+            return "Repeating"
+        case .todos:
+            return "One-time"
+        }
+    }
 }
 
 typealias StatsIncludedTagMutation = HomeIncludedTagMutation

@@ -1,5 +1,10 @@
 import SwiftUI
 
+enum HomeMacTagFiltersPresentation {
+    case detailed
+    case compactActions
+}
+
 struct HomeMacTimelineTagFiltersView: View {
     let availableTags: [String]
     let suggestedRelatedTags: [String]
@@ -15,14 +20,115 @@ struct HomeMacTimelineTagFiltersView: View {
     let onSelectSuggestedTag: (String) -> Void
     let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
     let onToggleExcludedTag: (String) -> Void
+    var presentation = HomeMacTagFiltersPresentation.detailed
 
     @State private var isIncludePickerPresented = false
     @State private var isExcludePickerPresented = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            includeTagSection
-            excludeTagSection
+        switch presentation {
+        case .detailed:
+            VStack(alignment: .leading, spacing: 20) {
+                includeTagSection
+                excludeTagSection
+            }
+        case .compactActions:
+            VStack(alignment: .leading, spacing: 12) {
+                compactIncludeTagSection
+                compactExcludeTagSection
+            }
+        }
+    }
+
+    private var compactIncludeTagSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                isIncludePickerPresented = true
+            } label: {
+                Label("Include tags", systemImage: "plus")
+                    .padding(.horizontal, 14)
+                    .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.teal.opacity(0.18))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color.teal.opacity(0.34), lineWidth: 1)
+            }
+            .popover(isPresented: $isIncludePickerPresented, arrowEdge: .trailing) {
+                HomeMacTagFilterPicker(
+                    title: "Include tags",
+                    availableTags: availableTags,
+                    suggestedTags: suggestedRelatedTags,
+                    selectedTags: selectedTags,
+                    tagCount: tagCount,
+                    tagColor: tagColor,
+                    selectedTint: .accentColor,
+                    onToggle: toggleIncludedTag
+                )
+            }
+
+            if !selectedTags.isEmpty {
+                selectedTagChips(tags: selectedTags, isExcluded: false)
+
+                if selectedTags.count > 1 {
+                    compactMatchModeControl(
+                        accessibilityLabel: "Include when a task has",
+                        selection: includeTagMatchMode,
+                        onSelect: onIncludeTagMatchModeChange
+                    )
+                }
+            }
+        }
+    }
+
+    private var compactExcludeTagSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                isExcludePickerPresented = true
+            } label: {
+                Label("Exclude tags", systemImage: "minus")
+                    .padding(.horizontal, 14)
+                    .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.teal.opacity(0.18))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color.teal.opacity(0.34), lineWidth: 1)
+            }
+            .popover(isPresented: $isExcludePickerPresented, arrowEdge: .trailing) {
+                HomeMacTagFilterPicker(
+                    title: "Exclude tags",
+                    availableTags: availableExcludeTags,
+                    suggestedTags: [],
+                    selectedTags: selectedExcludedTags,
+                    tagCount: tagCount,
+                    tagColor: tagColor,
+                    selectedTint: .red,
+                    onToggle: onToggleExcludedTag
+                )
+            }
+
+            if !selectedExcludedTags.isEmpty {
+                selectedTagChips(tags: selectedExcludedTags, isExcluded: true)
+
+                if selectedExcludedTags.count > 1 {
+                    compactMatchModeControl(
+                        accessibilityLabel: "Exclude when a task has",
+                        selection: excludeTagMatchMode,
+                        onSelect: onExcludeTagMatchModeChange
+                    )
+                }
+            }
         }
     }
 
@@ -157,6 +263,22 @@ struct HomeMacTimelineTagFiltersView: View {
             ) { mode in
                 Text(mode.rawValue)
             }
+        }
+    }
+
+    private func compactMatchModeControl(
+        accessibilityLabel: String,
+        selection: RoutineTagMatchMode,
+        onSelect: @escaping (RoutineTagMatchMode) -> Void
+    ) -> some View {
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: accessibilityLabel,
+            options: RoutineTagMatchMode.allCases,
+            selection: selection,
+            onSelect: onSelect,
+            fillsAvailableWidth: true
+        ) { mode in
+            Text(mode.rawValue)
         }
     }
 

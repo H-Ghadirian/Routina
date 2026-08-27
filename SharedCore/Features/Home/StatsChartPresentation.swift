@@ -148,7 +148,7 @@ struct StatsChartPresentation {
 
     func chartSectionSubtitle(totalCount: Int, averagePerDay: Double, dayCount: Int) -> String {
         if totalCount == 0 {
-            return "Your chart will fill in as you complete routines."
+            return "Your chart will fill in as you complete repeating tasks."
         }
 
         return "Average \(averagePerDayText(for: averagePerDay)) per day across \(dayCount) days."
@@ -168,16 +168,16 @@ struct StatsChartPresentation {
             return "Bubbles scale by completions for matching tags in \(periodDescription.lowercased())."
         }
         if !points.isEmpty {
-            return "No completions yet, so bubbles scale by matching routines per tag."
+            return "No completions yet, so bubbles scale by matching repeating tasks per tag."
         }
-        return "Complete tagged routines to see which themes are getting the most attention."
+        return "Complete tagged repeating tasks to see which themes are getting the most attention."
     }
 
     func tagUsageValueText(for point: TagUsageChartPoint) -> String {
         if point.completionCount > 0 {
             return point.completionCount == 1 ? "1 done" : "\(point.completionCount) done"
         }
-        return point.linkedRoutineCount == 1 ? "1 routine" : "\(point.linkedRoutineCount) routines"
+        return point.linkedRoutineCount == 1 ? "1 repeating task" : "\(point.linkedRoutineCount) repeating tasks"
     }
 
     func tagUsageColumnCount(for count: Int) -> Int {

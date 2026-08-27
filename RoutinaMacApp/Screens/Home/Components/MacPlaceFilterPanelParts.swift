@@ -50,9 +50,9 @@ struct MacPlaceFilterAllItemsRow: View {
         case .all:
             return "All tasks"
         case .routines:
-            return "All routines"
+            return "All repeating tasks"
         case .todos:
-            return "All todos"
+            return "All one-time tasks"
         }
     }
 
@@ -61,9 +61,9 @@ struct MacPlaceFilterAllItemsRow: View {
         case .all:
             return "Show every task without filtering by place."
         case .routines:
-            return "Show every routine without filtering by place."
+            return "Show every repeating task without filtering by place."
         case .todos:
-            return "Show every todo without filtering by place."
+            return "Show every one-time task without filtering by place."
         }
     }
 

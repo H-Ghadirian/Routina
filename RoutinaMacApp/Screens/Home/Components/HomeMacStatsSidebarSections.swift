@@ -1,5 +1,90 @@
 import SwiftUI
 
+struct HomeMacStatsInlinePickerSection<PickerContent: View, DetailContent: View>: View {
+    let title: String
+    let systemImage: String
+    let tint: Color
+    @ViewBuilder let picker: () -> PickerContent
+    @ViewBuilder let detail: () -> DetailContent
+
+    init(
+        title: String,
+        systemImage: String,
+        tint: Color,
+        @ViewBuilder picker: @escaping () -> PickerContent,
+        @ViewBuilder detail: @escaping () -> DetailContent
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.tint = tint
+        self.picker = picker
+        self.detail = detail
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(tint)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        Circle()
+                            .fill(tint.opacity(0.16))
+                    )
+
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .layoutPriority(1)
+
+                Spacer(minLength: 8)
+
+                picker()
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .controlSize(.large)
+                    .frame(width: 124)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+
+            detail()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.caption)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .routinaGlassPanel(
+            cornerRadius: 18,
+            tint: tint,
+            tintOpacity: 0.08
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(tint.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
+extension HomeMacStatsInlinePickerSection where DetailContent == EmptyView {
+    init(
+        title: String,
+        systemImage: String,
+        tint: Color,
+        @ViewBuilder picker: @escaping () -> PickerContent
+    ) {
+        self.init(
+            title: title,
+            systemImage: systemImage,
+            tint: tint,
+            picker: picker,
+            detail: { EmptyView() }
+        )
+    }
+}
+
 struct HomeMacStatsQuerySection: View {
     @Binding var advancedQuery: String
     let queryOptions: HomeAdvancedQueryOptions
@@ -28,34 +113,28 @@ struct HomeMacStatsQuerySection: View {
 struct HomeMacStatsTaskTypeSection: View {
     let selectedTaskTypeFilter: StatsTaskTypeFilter
     let onSelectTaskTypeFilter: (StatsTaskTypeFilter) -> Void
-    @Binding var isExpanded: Bool
-    let onSelectionComplete: () -> Void
 
     var body: some View {
-        HomeMacCollapsibleFilterSection(
+        HomeMacStatsInlinePickerSection(
             title: "Show",
-            summaryText: selectedTaskTypeFilter.title,
             systemImage: selectedTaskTypeFilter.macSidebarIconName,
-            tint: .blue,
-            isExpanded: $isExpanded
+            tint: .blue
         ) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Stats task type",
-                options: StatsTaskTypeFilter.allCases,
-                selection: selectedTaskTypeFilter,
-                onSelect: { filter in
-                    onSelectTaskTypeFilter(filter)
-                    onSelectionComplete()
-                },
-                minimumSegmentWidth: 92,
-                horizontalPadding: 10,
-                fillsAvailableWidth: true,
-                maximumSegmentsPerRow: 2
-            ) { filter in
-                Label(filter.title, systemImage: filter.macSidebarIconName)
+            Picker("Stats task type", selection: selectionBinding) {
+                ForEach(StatsTaskTypeFilter.allCases) { filter in
+                    Text(filter.title).tag(filter)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var selectionBinding: Binding<StatsTaskTypeFilter> {
+        Binding(
+            get: { selectedTaskTypeFilter },
+            set: { filter in
+                onSelectTaskTypeFilter(filter)
+            }
+        )
     }
 }
 
@@ -63,81 +142,53 @@ struct HomeMacStatsDashboardScopeSection: View {
     let selectedDashboardScope: StatsDashboardScope
     let availableDashboardScopes: [StatsDashboardScope]
     let onSelectDashboardScope: (StatsDashboardScope) -> Void
-    @Binding var isExpanded: Bool
-    let onSelectionComplete: () -> Void
 
     var body: some View {
-        HomeMacCollapsibleFilterSection(
+        HomeMacStatsInlinePickerSection(
             title: "Scope",
-            summaryText: selectedDashboardScope.title,
             systemImage: selectedDashboardScope.macSidebarIconName,
-            tint: .blue,
-            isExpanded: $isExpanded
+            tint: .blue
         ) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Stats scope",
-                options: availableDashboardScopes,
-                selection: selectedDashboardScope,
-                onSelect: { scope in
-                    onSelectDashboardScope(scope)
-                    onSelectionComplete()
-                },
-                minimumSegmentWidth: 92
-            ) { scope in
-                Label(scope.title, systemImage: scope.macSidebarIconName)
+            Picker("Stats scope", selection: selectionBinding) {
+                ForEach(availableDashboardScopes) { scope in
+                    Text(scope.title).tag(scope)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var selectionBinding: Binding<StatsDashboardScope> {
+        Binding(
+            get: { selectedDashboardScope },
+            set: { scope in
+                onSelectDashboardScope(scope)
+            }
+        )
     }
 }
 
 struct HomeMacStatsRangeSection: View {
     let selectedRange: DoneChartRange
     let onSelectRange: (DoneChartRange) -> Void
-    @Binding var isExpanded: Bool
-    let onPresetSelectionComplete: () -> Void
     @State private var customStart = Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date()
     @State private var customEnd = Date()
 
     var body: some View {
-        HomeMacCollapsibleFilterSection(
+        HomeMacStatsInlinePickerSection(
             title: "Time Range",
-            summaryText: selectedRangeSummary,
             systemImage: selectedRange.macSidebarIconName,
-            tint: .blue,
-            isExpanded: $isExpanded
+            tint: .blue
         ) {
-            VStack(alignment: .leading, spacing: 12) {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Stats time range",
-                    options: DoneChartRange.allCases,
-                    selection: selectedRange,
-                    onSelect: { range in
-                        onSelectRange(range)
-                        onPresetSelectionComplete()
-                    },
-                    minimumSegmentWidth: 112,
-                    horizontalPadding: 10,
-                    fillsAvailableWidth: true,
-                    maximumSegmentsPerRow: 2
-                ) { range in
-                    Label(range.rawValue, systemImage: range.macSidebarIconName)
+            Picker("Stats time range", selection: rangeKindBinding) {
+                ForEach(DoneChartRange.allCases) { range in
+                    Text(range.rawValue).tag(range.kind.rawValue)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Button {
-                    onSelectRange(.custom(from: customStart, through: customEnd))
-                } label: {
-                    Label(
-                        selectedRange.kind == .custom ? selectedRange.periodDescription : "Custom range",
-                        systemImage: "calendar.badge.plus"
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                if selectedRange.kind == .custom {
+                Divider()
+                Text("Custom…").tag(DoneChartRange.Kind.custom.rawValue)
+            }
+        } detail: {
+            if selectedRange.kind == .custom {
+                VStack(alignment: .leading, spacing: 12) {
                     DatePicker("From", selection: $customStart, in: ...customEnd, displayedComponents: .date)
                         .onChange(of: customStart) { _, _ in applyCustomDates() }
                     DatePicker("Through", selection: $customEnd, in: customStart..., displayedComponents: .date)
@@ -149,8 +200,25 @@ struct HomeMacStatsRangeSection: View {
         .onChange(of: selectedRange) { _, _ in syncCustomDates() }
     }
 
-    private var selectedRangeSummary: String {
-        selectedRange.kind == .custom ? selectedRange.periodDescription : selectedRange.rawValue
+    private var rangeKindBinding: Binding<String> {
+        Binding(
+            get: { selectedRange.kind.rawValue },
+            set: { rawValue in
+                selectRangeKind(rawValue)
+            }
+        )
+    }
+
+    private func selectRangeKind(_ rawValue: String) {
+        if rawValue == DoneChartRange.Kind.custom.rawValue {
+            onSelectRange(.custom(from: customStart, through: customEnd))
+            return
+        }
+
+        guard let range = DoneChartRange.allCases.first(where: { $0.kind.rawValue == rawValue }) else {
+            return
+        }
+        onSelectRange(range)
     }
 
     private func applyCustomDates() {
@@ -166,37 +234,17 @@ struct HomeMacStatsRangeSection: View {
 
 struct HomeMacStatsImportanceFilterSection: View {
     @Binding var selectedFilter: ImportanceUrgencyFilterCell?
-    @Binding var isExpanded: Bool
-    let onSelectionComplete: () -> Void
 
     var body: some View {
-        HomeMacCollapsibleFilterSection(
+        HomeMacStatsInlinePickerSection(
             title: "Importance",
-            summaryText: minimumImportance.map { "\($0.title)+" } ?? "All",
             systemImage: "star.fill",
-            tint: .orange,
-            isExpanded: $isExpanded
+            tint: .orange
         ) {
-            VStack(alignment: .leading, spacing: 12) {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Minimum importance",
-                    options: importanceOptions,
-                    selection: minimumImportance,
-                    onSelect: { importance in
-                        minimumImportanceBinding.wrappedValue = importance
-                        onSelectionComplete()
-                    },
-                    horizontalPadding: 10,
-                    verticalPadding: 8,
-                    fillsAvailableWidth: true,
-                    maximumSegmentsPerRow: 2
-                ) { importance in
-                    Text(importance.map { "\($0.title)+" } ?? "All")
+            Picker("Minimum importance", selection: minimumImportanceBinding) {
+                ForEach(importanceOptions, id: \.self) { importance in
+                    Text(importance.map { "\($0.title)+" } ?? "All").tag(importance)
                 }
-
-                Text("All includes every importance level. Other choices set the minimum importance a task must have.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -224,37 +272,17 @@ struct HomeMacStatsImportanceFilterSection: View {
 
 struct HomeMacStatsUrgencyFilterSection: View {
     @Binding var selectedFilter: ImportanceUrgencyFilterCell?
-    @Binding var isExpanded: Bool
-    let onSelectionComplete: () -> Void
 
     var body: some View {
-        HomeMacCollapsibleFilterSection(
+        HomeMacStatsInlinePickerSection(
             title: "Urgency",
-            summaryText: minimumUrgency.map { "\($0.title)+" } ?? "All",
             systemImage: "clock.badge.exclamationmark",
-            tint: .red,
-            isExpanded: $isExpanded
+            tint: .red
         ) {
-            VStack(alignment: .leading, spacing: 12) {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Minimum urgency",
-                    options: urgencyOptions,
-                    selection: minimumUrgency,
-                    onSelect: { urgency in
-                        minimumUrgencyBinding.wrappedValue = urgency
-                        onSelectionComplete()
-                    },
-                    horizontalPadding: 10,
-                    verticalPadding: 8,
-                    fillsAvailableWidth: true,
-                    maximumSegmentsPerRow: 2
-                ) { urgency in
-                    Text(urgency.map { "\($0.title)+" } ?? "All")
+            Picker("Minimum urgency", selection: minimumUrgencyBinding) {
+                ForEach(urgencyOptions, id: \.self) { urgency in
+                    Text(urgency.map { "\($0.title)+" } ?? "All").tag(urgency)
                 }
-
-                Text("All includes every urgency level. Other choices set the minimum urgency a task must have.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
     }

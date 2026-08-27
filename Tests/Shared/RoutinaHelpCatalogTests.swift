@@ -44,7 +44,7 @@ struct RoutinaHelpCatalogTests {
         let details = result.details.joined(separator: " ")
 
         #expect(result.id == "repeating-tasks")
-        #expect(details.contains("Repeating routine set to Due"))
+        #expect(details.contains("repeating task set to Due"))
         #expect(details.contains("active interval or calendar cadence"))
         #expect(details.contains("form explains which choice is needed"))
     }

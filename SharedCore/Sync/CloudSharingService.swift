@@ -274,11 +274,11 @@ enum CloudSharingError: LocalizedError {
         case .cloudSyncDisabled:
             return "CloudKit sharing is unavailable because Cloud sync is disabled for this build."
         case .invalidPayload:
-            return "The routine could not be prepared for sharing."
+            return "The repeating task could not be prepared for sharing."
         case .invalidSharedRecord:
-            return "The CloudKit share did not contain a Routina routine."
+            return "The CloudKit share did not contain a Routina repeating task."
         case .missingRootRecord:
-            return "The shared routine record could not be found."
+            return "The shared task record could not be found."
         }
     }
 }

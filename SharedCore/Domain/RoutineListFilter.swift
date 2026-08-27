@@ -8,4 +8,8 @@ enum RoutineListFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case doneToday = "Done Today"
 
     var id: String { rawValue }
+
+    var title: String {
+        self == .todos ? "One-time" : rawValue
+    }
 }

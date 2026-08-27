@@ -12,6 +12,25 @@ import Testing
 @MainActor
 struct RoutinaQuickAddParserTests {
     @Test
+    func parseRemovesUserFacingTaskTypeStarters() throws {
+        let repeating = try #require(RoutinaQuickAddParser.parse(
+            "repeating task Water plants every day",
+            referenceDate: makeDate("2026-04-23T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+        let oneTime = try #require(RoutinaQuickAddParser.parse(
+            "one-time task Pay rent tomorrow",
+            referenceDate: makeDate("2026-04-23T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+
+        #expect(repeating.name == "Water plants")
+        #expect(repeating.scheduleMode.taskType == .routine)
+        #expect(oneTime.name == "Pay rent")
+        #expect(oneTime.scheduleMode.taskType == .todo)
+    }
+
+    @Test
     func parseWeeklyRoutineWithMetadata() throws {
         let draft = try #require(RoutinaQuickAddParser.parse(
             "Water plants every Saturday at 9am #home @Balcony !high 25m",
@@ -206,7 +225,7 @@ struct RoutinaQuickAddParserTests {
         #expect(draft.tags.isEmpty)
         #expect(draft.placeName == nil)
         #expect(draft.hasDetectedMetadata)
-        #expect(draft.summaryText == "Todo · Link · YouTube")
+        #expect(draft.summaryText == "One-time task · Link · YouTube")
     }
 
     @Test
@@ -411,7 +430,7 @@ struct RoutinaQuickAddParserTests {
 
         #expect(draft.name == "Clean desk")
         #expect(draft.scheduleMode == .softInterval)
-        #expect(draft.summaryText == "Gentle routine · Every 2 days")
+        #expect(draft.summaryText == "Gentle repeating task · Every 2 days")
     }
 
     @Test

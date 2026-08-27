@@ -1304,7 +1304,7 @@ struct TaskRankingPresentationTests {
         let task = RoutineTask(name: "Legacy", scheduleMode: .softInterval)
 
         #expect(!RoutineTaskTemporalWeightResolver.supportsTemporalWeight(task))
-        #expect(task.scheduleMode.taskType.userFacingTitle == "Routine")
+        #expect(task.scheduleMode.taskType.userFacingTitle == "Repeating task")
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

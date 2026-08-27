@@ -89,11 +89,11 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
     }
 
     private func matchesTaskType(_ value: String, task: Display) -> Bool {
-        if ["todo", "todos", "task", "oneoff", "one-off"].contains(value) {
+        if ["todo", "todos", "task", "oneoff", "one-off", "onetime", "one-time"].contains(value) {
             return task.isOneOffTask
         }
-        if ["routine", "routines", "recurring"].contains(value) {
-            return task.scheduleMode.taskType == .routine
+        if ["routine", "routines", "recurring", "repeating"].contains(value) {
+            return !task.isOneOffTask
         }
         return false
     }
@@ -118,7 +118,7 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
             return task.todoState == .ready
         case "blocked":
             return task.todoState == .blocked
-        case "todo", "routine":
+        case "todo", "routine", "one-time", "onetime", "repeating":
             return matchesTaskType(value, task: task)
         default:
             return task.todoState?.displayTitle.normalizedQueryText.contains(value) ?? false

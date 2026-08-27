@@ -1056,6 +1056,7 @@ enum DayPlanDayTaskListPresentation {
         logs: [RoutineLog] = [],
         referenceDate: Date = Date(),
         calendar: Calendar,
+        excludedTaskIDs: Set<UUID> = [],
         visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
     ) -> [DayPlanDayTaskListItem] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
@@ -1069,6 +1070,7 @@ enum DayPlanDayTaskListPresentation {
             .compactMap { offset, allDayBlock -> DayPlanDayTaskListItem? in
                 guard let taskID = allDayBlock.taskID,
                       !allDayBlock.isEvent,
+                      !excludedTaskIDs.contains(taskID),
                       allDayBlockIntersects(allDayBlock, date: date, calendar: calendar) else {
                     return nil
                 }
@@ -1104,6 +1106,7 @@ enum DayPlanDayTaskListPresentation {
         let plannedDateItems = plannedDateTasks
             .compactMap { task -> DayPlanDayTaskListItem? in
                 guard !plannedTaskIDs.contains(task.id),
+                      !excludedTaskIDs.contains(task.id),
                       !completionContext.hasCompletion(
                         task.id,
                         dayKey: dayKey
@@ -1136,6 +1139,7 @@ enum DayPlanDayTaskListPresentation {
 
         let timedItems = timedBlocks
             .compactMap { block -> DayPlanDayTaskListItem? in
+                guard !excludedTaskIDs.contains(block.taskID) else { return nil }
                 let section: DayPlanDayTaskListItem.Section
                 if block.taskID == FocusSession.unassignedTaskID {
                     section = .done
@@ -1183,6 +1187,7 @@ enum DayPlanDayTaskListPresentation {
                 guard activity.kind == .completed else { return nil }
 
                 let block = activity.block
+                guard !excludedTaskIDs.contains(block.taskID) else { return nil }
                 let section: DayPlanDayTaskListItem.Section
                 let identifierPrefix: String
                 if activity.source.isSyntheticAssumedDone {
@@ -1532,6 +1537,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
         var firstWeekday: Int
         var minimumDaysInFirstWeek: Int
         var visibilitySignature: DayPlanDayTaskListVisibilitySignature
+        var excludedTaskIDs: Set<UUID>
         var completionReferenceMinute: Int
         var timedBlocks: [TimedBlockSignature]
         var timelineActivities: [TimelineActivitySignature]
@@ -1543,7 +1549,8 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             timelineActivityBlocks: [DayPlanTimelineActivityBlock],
             referenceDate: Date,
             calendar: Calendar,
-            visibilitySignature: DayPlanDayTaskListVisibilitySignature
+            visibilitySignature: DayPlanDayTaskListVisibilitySignature,
+            excludedTaskIDs: Set<UUID>
         ) {
             self.dataSnapshotID = dataSnapshotID
             dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
@@ -1552,6 +1559,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             firstWeekday = calendar.firstWeekday
             minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
             self.visibilitySignature = visibilitySignature
+            self.excludedTaskIDs = excludedTaskIDs
             completionReferenceMinute = Int(referenceDate.timeIntervalSinceReferenceDate / 60)
             self.timedBlocks = timedBlocks.map(TimedBlockSignature.init(block:))
             timelineActivities = timelineActivityBlocks
@@ -1621,6 +1629,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
         referenceDate: Date = Date(),
         calendar: Calendar,
         visibilitySignature: DayPlanDayTaskListVisibilitySignature = .unfiltered,
+        excludedTaskIDs: Set<UUID> = [],
         visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
     ) -> [DayPlanDayTaskListItem] {
         let signature = Signature(
@@ -1630,7 +1639,8 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             timelineActivityBlocks: timelineActivityBlocks,
             referenceDate: referenceDate,
             calendar: calendar,
-            visibilitySignature: visibilitySignature
+            visibilitySignature: visibilitySignature,
+            excludedTaskIDs: excludedTaskIDs
         )
         if let items = itemsBySignature[signature] {
             return items
@@ -1646,6 +1656,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             logs: logs,
             referenceDate: referenceDate,
             calendar: calendar,
+            excludedTaskIDs: excludedTaskIDs,
             visibilityCache: visibilityCache
         )
         if itemsBySignature.count > 96 {

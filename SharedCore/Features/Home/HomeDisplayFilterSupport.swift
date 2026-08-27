@@ -276,6 +276,9 @@ enum HomeDisplayFilterSupport {
         taskFilters.selectedFlags = taskFilters.selectedFlags.filter {
             RoutineFlag.contains($0, in: allAvailableFlags)
         }
+        taskFilters.excludedFlags = taskFilters.excludedFlags.filter {
+            RoutineFlag.contains($0, in: allAvailableFlags)
+        }
 
         let includeScopedDisplays = allDisplays.filter {
             matchesSelectedTags(

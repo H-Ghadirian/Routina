@@ -53,7 +53,7 @@ struct SettingsTimelineRowPreviewView: View {
 
     @ViewBuilder
     private var timelineKindBadge: some View {
-        Text("Routine")
+        Text("Repeating task")
             .font(.caption2.weight(.semibold))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)

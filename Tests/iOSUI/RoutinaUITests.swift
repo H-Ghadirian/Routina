@@ -138,8 +138,8 @@ struct RoutinaUITests {
         #expect(statsTab.waitForExistence(timeout: 10))
         statsTab.tap()
 
-        let activeRoutinesTitle = app.staticTexts["Active routines"].firstMatch
-        let archivedRoutinesTitle = app.staticTexts["Archived routines"].firstMatch
+        let activeRoutinesTitle = app.staticTexts["Active repeating tasks"].firstMatch
+        let archivedRoutinesTitle = app.staticTexts["Archived repeating tasks"].firstMatch
         let activeRoutinesCaption = app.staticTexts["1 paused excluded"].firstMatch
         let archivedRoutinesCaption = app.staticTexts["Paused and hidden from Home"].firstMatch
 

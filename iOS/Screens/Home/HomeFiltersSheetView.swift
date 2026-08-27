@@ -201,7 +201,7 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                         selection: bindings.selectedFilter
                     ) {
                         ForEach(configuration.availableFilters) { filter in
-                            Text(filter.rawValue).tag(filter)
+                            Text(filter.title).tag(filter)
                         }
                     }
                     .pickerStyle(.inline)
@@ -209,7 +209,7 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                 }
             }
         case .todoState:
-            HomeFiltersDetailSheet(title: "Todo State") {
+            HomeFiltersDetailSheet(title: "One-time State") {
                 Section {
                     HomeTodoStateFilterChips(
                         selectedTodoStateFilter: bindings.selectedTodoStateFilter

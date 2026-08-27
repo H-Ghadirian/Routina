@@ -32,7 +32,7 @@ struct TaskDetailCompletionButtonTitlePresentation {
             return "Select the completion date to undo"
         }
         if task.isArchived() {
-            return "Resume the routine to mark dates done"
+            return "Resume the repeating task to mark dates done"
         }
         if task.usesOngoingLifecycle && task.isOngoing {
             if task.isMultiDayRoutine, isSelectedDateBeforeOngoingStart {
@@ -81,7 +81,7 @@ struct TaskDetailCompletionButtonTitlePresentation {
             return "Done \(dueItems.count) due items"
         }
         if task.hasSequentialSteps && !calendar.isDateInToday(selectedDate) {
-            return "Step routines can only be progressed today"
+            return "Step repeating tasks can only be progressed today"
         }
         if RoutineDateMath.usesExactTimedOccurrences(for: task) {
             return exactTimedOccurrenceTitle

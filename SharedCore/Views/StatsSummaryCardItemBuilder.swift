@@ -203,7 +203,7 @@ enum StatsSummaryCardItemBuilder {
             StatsSummaryCardItem(
                 icon: "arrow.clockwise",
                 accent: .indigo,
-                title: "Routines",
+                title: "Repeating tasks",
                 value: metrics.routineCount.formatted(),
                 accessibilityIdentifier: "stats.summary.routineCount"
             )
@@ -213,7 +213,7 @@ enum StatsSummaryCardItemBuilder {
             StatsSummaryCardItem(
                 icon: "checkmark.circle",
                 accent: .cyan,
-                title: "Open todos",
+                title: "Open one-time tasks",
                 value: metrics.openTodoCount.formatted(),
                 accessibilityIdentifier: "stats.summary.todoCount"
             )
@@ -348,7 +348,7 @@ enum StatsSummaryCardItemBuilder {
     }
 
     private static func goalCaption(metrics: StatsFeatureMetrics) -> String {
-        "\(metrics.goalsCreatedCount) new, \(metrics.archivedGoalCount) archived"
+        "\(metrics.archivedGoalCount) archived"
     }
 
     private static func healthCaption(for selectedRange: DoneChartRange) -> String {
@@ -420,7 +420,6 @@ enum StatsDashboardReportAvailability {
         case "goals":
             return metrics.activeGoalCount > 0
                 || metrics.archivedGoalCount > 0
-                || metrics.goalsCreatedCount > 0
         case "goalProgress":
             return !metrics.goalProgressChartPoints.isEmpty
         case "routineCount":

@@ -168,7 +168,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .tags:
             return ["labels", "colors", "related tags"]
         case .flags:
-            return ["task behavior", "hide", "timeline", "task ladder", "auto assume done"]
+            return ["task behavior", "hide", "calendar list", "timeline", "task ladder", "auto assume done"]
         case .sections:
             return ["task list", "backlog", "super section", "subsection"]
         case .appearance:
@@ -197,7 +197,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     var searchDetailTerms: [String] {
         switch self {
         case .general:
-            return ["App Lock", "Battery routines"]
+            return ["App Lock", "Battery repeating tasks"]
         case .devices:
             return ["Device sessions", "Sync devices"]
         case .notifications:
@@ -213,6 +213,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .flags:
             return [
                 "Hide from Task Lists",
+                "Hide from Calendar List",
                 "Hide from Timeline",
                 "Hide from Task Ladder",
                 "Auto Assume Done"
@@ -308,7 +309,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .general:
             return SettingsSectionRowPresentation(
-                subtitle: "App Lock: \(state.appearance.isAppLockEnabled ? "On" : "Off") • Battery routines"
+                subtitle: "App Lock: \(state.appearance.isAppLockEnabled ? "On" : "Off") • Battery repeating tasks"
             )
 
         case .devices:
@@ -427,7 +428,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             return state.dataTransfer.overviewSubtitle
         }
 
-        return "Sync, export, and import routine data"
+        return "Sync, export, and import task data"
     }
 
     private func dataContinuityValue(in state: SettingsFeatureState) -> String? {
@@ -483,27 +484,27 @@ enum SettingsQuickAddSyntaxGuide {
     static let examples: [SettingsQuickAddExample] = [
         SettingsQuickAddExample(
             phrase: "Water plants every Saturday at 9am #home",
-            result: "Creates a weekly routine on Saturday at 9:00 AM with #home."
+            result: "Creates a weekly repeating task on Saturday at 9:00 AM with #home."
         ),
         SettingsQuickAddExample(
             phrase: "Submit report tomorrow at 5pm !high #work",
-            result: "Creates a high-priority todo due tomorrow at 5:00 PM."
+            result: "Creates a high-priority one-time task due tomorrow at 5:00 PM."
         ),
         SettingsQuickAddExample(
             phrase: "Clean desk every 2 days softly @Home",
-            result: "Creates a Gentle routine every 2 days and links it to Home."
+            result: "Creates a Gentle repeating task every 2 days and links it to Home."
         ),
         SettingsQuickAddExample(
             phrase: "Pay rent monthly on 1st at 8am #finance",
-            result: "Creates a monthly routine on the 1st at 8:00 AM."
+            result: "Creates a monthly repeating task on the 1st at 8:00 AM."
         ),
         SettingsQuickAddExample(
             phrase: "Read for 25m today",
-            result: "Creates a todo available today and enables a 25-minute focus estimate."
+            result: "Creates a one-time task available today and enables a 25-minute focus estimate."
         ),
         SettingsQuickAddExample(
             phrase: "Physiotherapist 25 August 15:00",
-            result: "Creates a todo available on the next 25 August at 15:00."
+            result: "Creates a one-time task available on the next 25 August at 15:00."
         )
     ]
 
@@ -528,14 +529,14 @@ enum SettingsQuickAddSyntaxGuide {
             ]
         ),
         SettingsQuickAddSyntaxGroup(
-            title: "Routines",
+            title: "Repeating tasks",
             rows: [
-                SettingsQuickAddSyntaxItem(syntax: "daily", detail: "Creates a daily routine."),
-                SettingsQuickAddSyntaxItem(syntax: "every day", detail: "Also creates a daily routine."),
-                SettingsQuickAddSyntaxItem(syntax: "every 2 days", detail: "Creates an interval routine."),
-                SettingsQuickAddSyntaxItem(syntax: "every Monday", detail: "Creates a weekly routine."),
-                SettingsQuickAddSyntaxItem(syntax: "weekly on Monday", detail: "Also creates a weekly routine."),
-                SettingsQuickAddSyntaxItem(syntax: "monthly on 15th", detail: "Creates a monthly routine.")
+                SettingsQuickAddSyntaxItem(syntax: "daily", detail: "Creates a daily repeating task."),
+                SettingsQuickAddSyntaxItem(syntax: "every day", detail: "Also creates a daily repeating task."),
+                SettingsQuickAddSyntaxItem(syntax: "every 2 days", detail: "Creates an interval repeating task."),
+                SettingsQuickAddSyntaxItem(syntax: "every Monday", detail: "Creates a weekly repeating task."),
+                SettingsQuickAddSyntaxItem(syntax: "weekly on Monday", detail: "Also creates a weekly repeating task."),
+                SettingsQuickAddSyntaxItem(syntax: "monthly on 15th", detail: "Creates a monthly repeating task.")
             ]
         ),
         SettingsQuickAddSyntaxGroup(
@@ -546,17 +547,17 @@ enum SettingsQuickAddSyntaxGuide {
                 SettingsQuickAddSyntaxItem(syntax: "!urgent", detail: "Sets urgent priority."),
                 SettingsQuickAddSyntaxItem(syntax: "!high / !medium / !low", detail: "Sets priority."),
                 SettingsQuickAddSyntaxItem(syntax: "25m / 45 min / 1h", detail: "Adds an estimated focus duration."),
-                SettingsQuickAddSyntaxItem(syntax: "soft / softly", detail: "Creates a Gentle routine when used with recurrence.")
+                SettingsQuickAddSyntaxItem(syntax: "soft / softly", detail: "Creates a Gentle repeating task when used with recurrence.")
             ]
         )
     ]
 
     static let notes: [String] = [
-        "No date or recurrence creates a normal todo.",
-        "Recurrence phrases create routines.",
+        "No date or recurrence creates a normal one-time task.",
+        "Recurrence phrases create repeating tasks.",
         "Times apply to the due date or recurrence in the same phrase.",
         "Tags and places stop at spaces, so use one-word names.",
-        "Optional starters like add, create, new, task, todo, routine, and remind me to are removed from the final title."
+        "Optional starters like add, create, new, task, one-time task, repeating task, and remind me to are removed from the final title. Legacy todo and routine starters also work."
     ]
 
     static func visibleExamples(includingPlaces: Bool) -> [SettingsQuickAddExample] {
@@ -596,7 +597,7 @@ extension SettingsNotificationsState {
         if systemSettingsNotificationsEnabled == false {
             return "Disabled in System Settings"
         }
-        return "Routine reminders are turned off"
+        return "Repeating-task reminders are turned off"
     }
 }
 
@@ -634,7 +635,7 @@ extension SettingsAppearanceState {
             return "Routina will ask for \(appLockMethodDescription) whenever the app becomes active."
         }
 
-        return "Require \(appLockMethodDescription) before showing your routines."
+        return "Require \(appLockMethodDescription) before showing your tasks."
     }
 }
 
@@ -830,10 +831,10 @@ extension RoutineTagSummary {
         let routinesOnly = max(0, linkedRoutineCount - linkedTodoCount)
         var parts: [String] = []
         if routinesOnly > 0 {
-            parts.append(routinesOnly == 1 ? "1 routine" : "\(routinesOnly) routines")
+            parts.append(routinesOnly == 1 ? "1 repeating task" : "\(routinesOnly) repeating tasks")
         }
         if linkedTodoCount > 0 {
-            parts.append(linkedTodoCount == 1 ? "1 todo" : "\(linkedTodoCount) todos")
+            parts.append(linkedTodoCount == 1 ? "1 one-time task" : "\(linkedTodoCount) one-time tasks")
         }
         if linkedGoalCount > 0 {
             parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
@@ -855,10 +856,10 @@ extension RoutineTagSummary {
         let routinesOnly = max(0, linkedRoutineCount - linkedTodoCount)
         var parts: [String] = []
         if routinesOnly > 0 {
-            parts.append(routinesOnly == 1 ? "1 routine" : "\(routinesOnly) routines")
+            parts.append(routinesOnly == 1 ? "1 repeating task" : "\(routinesOnly) repeating tasks")
         }
         if linkedTodoCount > 0 {
-            parts.append(linkedTodoCount == 1 ? "1 todo" : "\(linkedTodoCount) todos")
+            parts.append(linkedTodoCount == 1 ? "1 one-time task" : "\(linkedTodoCount) one-time tasks")
         }
         if linkedGoalCount > 0 {
             parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")

@@ -210,7 +210,7 @@ enum SettingsRoutineDataTransferActionExecution {
 
     private static func importSuccessMessage(for summary: SettingsRoutineDataPersistence.ImportSummary) -> String {
         var parts = [
-            "\(summary.tasks) routines",
+            "\(summary.tasks) tasks",
             "\(summary.goals) goals",
             "\(summary.places) places",
             "\(summary.logs) logs",

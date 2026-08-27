@@ -324,6 +324,8 @@ struct HomeTaskListFilteringConfiguration {
     var includeTagMatchMode: RoutineTagMatchMode
     var selectedFlags: Set<String> = []
     var includeFlagMatchMode: RoutineTagMatchMode = .all
+    var excludedFlags: Set<String> = []
+    var excludeFlagMatchMode: RoutineTagMatchMode = .any
     var excludedTags: Set<String>
     var excludeTagMatchMode: RoutineTagMatchMode
     var searchText: String

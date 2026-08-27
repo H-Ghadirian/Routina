@@ -802,7 +802,7 @@ struct HomeMacToolbarSearchParserPreview: View {
 
         if draft.scheduleMode != .oneOff {
             rows.append(ParsedRow(
-                title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle routine" : "Repeats",
+                title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle repeating" : "Repeats",
                 value: draft.recurrenceRule.displayText(calendar: calendar),
                 systemImage: "calendar"
             ))

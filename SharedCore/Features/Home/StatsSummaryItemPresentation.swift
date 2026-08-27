@@ -9,9 +9,9 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
         case .all:
             return "Active items"
         case .routines:
-            return "Active routines"
+            return "Active repeating tasks"
         case .todos:
-            return "Active todos"
+            return "Active one-time tasks"
         }
     }
 
@@ -20,9 +20,9 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
         case .all:
             return "Archived items"
         case .routines:
-            return "Archived routines"
+            return "Archived repeating tasks"
         case .todos:
-            return "Archived todos"
+            return "Archived one-time tasks"
         }
     }
 
@@ -32,9 +32,9 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             case .all:
                 return "No items created yet"
             case .routines:
-                return "No routines created yet"
+                return "No repeating tasks created yet"
             case .todos:
-                return "No todos created yet"
+                return "No one-time tasks created yet"
             }
         }
 
@@ -46,12 +46,12 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
                     : "All matching items are archived"
             case .routines:
                 return archivedItemCount == 1
-                    ? "Your only routine is paused"
-                    : "All routines are currently paused"
+                    ? "Your only repeating task is paused"
+                    : "All repeating tasks are currently paused"
             case .todos:
                 return archivedItemCount == 1
-                    ? "Your only todo is archived"
-                    : "All todos are currently archived"
+                    ? "Your only one-time task is archived"
+                    : "All one-time tasks are currently archived"
             }
         }
 
@@ -62,7 +62,7 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             case .routines:
                 return "Everything is currently in rotation"
             case .todos:
-                return "All matching todos are currently active"
+                return "All matching one-time tasks are currently active"
             }
         }
 
@@ -74,11 +74,11 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
         case .routines:
             return archivedItemCount == 1
                 ? "1 paused excluded"
-                : "\(archivedItemCount) paused routines excluded"
+                : "\(archivedItemCount) paused repeating tasks excluded"
         case .todos:
             return archivedItemCount == 1
                 ? "1 archived excluded"
-                : "\(archivedItemCount) archived todos excluded"
+                : "\(archivedItemCount) archived one-time tasks excluded"
         }
     }
 
@@ -88,9 +88,9 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             case .all:
                 return "No items created yet"
             case .routines:
-                return "No routines created yet"
+                return "No repeating tasks created yet"
             case .todos:
-                return "No todos created yet"
+                return "No one-time tasks created yet"
             }
         }
 
@@ -99,9 +99,9 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             case .all:
                 return "No archived items right now"
             case .routines:
-                return "No archived routines right now"
+                return "No archived repeating tasks right now"
             case .todos:
-                return "No archived todos right now"
+                return "No archived one-time tasks right now"
             }
         }
 

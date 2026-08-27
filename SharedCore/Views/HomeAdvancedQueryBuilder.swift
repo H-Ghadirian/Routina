@@ -58,7 +58,7 @@ struct HomeAdvancedQueryBuilder: View {
                 .accessibilityHidden(true)
             }
 
-            TextField(state.tokens.isEmpty ? "tag:work -state:done type:todo" : "", text: draftBinding)
+            TextField(state.tokens.isEmpty ? "tag:work -state:done type:one-time" : "", text: draftBinding)
                 .focused($isFocused)
                 .textFieldStyle(.plain)
                 .advancedQueryInputTraits()

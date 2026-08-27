@@ -24,7 +24,16 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case canceled = "Canceled"
     var id: Self { self }
 
-    var title: String { rawValue }
+    var title: String {
+        switch self {
+        case .routines:
+            return "Repeating"
+        case .todos:
+            return "One-time"
+        default:
+            return rawValue
+        }
+    }
 
     static let timelinePigmentCases: [TimelineFilterType] = [
         .all,
@@ -338,11 +347,11 @@ struct TimelineEntry: Identifiable, Equatable {
     var taskKindLabel: String {
         switch taskType {
         case .routine:
-            return "Routine"
+            return "Repeating task"
         case .todo:
-            return "Todo"
+            return "One-time task"
         case nil:
-            return isOneOff ? "Todo" : "Routine"
+            return isOneOff ? "One-time task" : "Repeating task"
         }
     }
 }
@@ -962,18 +971,29 @@ enum TimelineLogic {
         _ entries: [TimelineEntry],
         selectedFlags: Set<String>,
         includeFlagMatchMode: RoutineTagMatchMode,
+        excludedFlags: Set<String> = [],
+        excludeFlagMatchMode: RoutineTagMatchMode = .any,
         rules: [RoutineFlagRule]
     ) -> [TimelineEntry] {
-        guard !selectedFlags.isEmpty else {
-            return entries.filter {
+        let includedEntries: [TimelineEntry]
+        if selectedFlags.isEmpty {
+            includedEntries = entries.filter {
                 !RoutineFlagRules.hidesFromTimeline(flags: $0.flags, rules: rules)
+            }
+        } else {
+            includedEntries = entries.filter {
+                HomeDisplayFilterSupport.matchesSelectedFlags(
+                    selectedFlags,
+                    mode: includeFlagMatchMode,
+                    in: $0.flags
+                )
             }
         }
 
-        return entries.filter {
-            HomeDisplayFilterSupport.matchesSelectedFlags(
-                selectedFlags,
-                mode: includeFlagMatchMode,
+        return includedEntries.filter {
+            HomeDisplayFilterSupport.matchesExcludedFlags(
+                excludedFlags,
+                mode: excludeFlagMatchMode,
                 in: $0.flags
             )
         }

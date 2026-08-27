@@ -10,6 +10,14 @@ extension HomeTCAView {
             selectedPressureFilter: macSharedPressureFilterBinding,
             selectedThinkingNeededFilter: macSharedThinkingNeededFilterBinding,
             selectedEstimationFilter: macSharedEstimationFilterBinding,
+            showsFlagSection: !presentation.availableFlags.isEmpty
+                || !presentation.selectedFlags.isEmpty
+                || !presentation.excludedFlags.isEmpty,
+            availableFlags: presentation.availableFlags,
+            selectedFlags: presentation.selectedFlags,
+            excludedFlags: presentation.excludedFlags,
+            includeFlagMatchMode: presentation.includeFlagMatchMode,
+            excludeFlagMatchMode: presentation.excludeFlagMatchMode,
             showsTagSection: !presentation.availableTags.isEmpty
                 || !presentation.selectedTags.isEmpty
                 || !presentation.selectedExcludedTags.isEmpty,
@@ -65,6 +73,27 @@ extension HomeTCAView {
                     excludedTags: mutation.excludedTags,
                     preferredTags: presentation.availableTags
                 )
+            },
+            onSelectIncludedFlags: { flags in
+                applyMacSharedFlags(
+                    selectedFlags: flags,
+                    excludedFlags: presentation.excludedFlags,
+                    preferredFlags: presentation.availableFlags
+                )
+            },
+            onIncludeFlagMatchModeChange: { mode in
+                store.send(.includeFlagMatchModeChanged(mode))
+                store.send(.selectedTimelineIncludeFlagMatchModeChanged(mode))
+            },
+            onSelectExcludedFlags: { flags in
+                applyMacSharedFlags(
+                    selectedFlags: presentation.selectedFlags,
+                    excludedFlags: flags,
+                    preferredFlags: presentation.availableFlags
+                )
+            },
+            onExcludeFlagMatchModeChange: { mode in
+                store.send(.excludeFlagMatchModeChanged(mode))
             }
         )
         .onAppear {
@@ -141,6 +170,7 @@ extension HomeTCAView {
 
     private func makeMacSharedFiltersPresentation() -> HomeMacSharedFiltersPresentation {
         let homeData = homeTagFilterData
+        let homeFlagData = homeFlagFilterData
         let timelineEntries = filteredTimelineEntriesForTagging
         let timelineTagNames = RoutineTag.allTags(from: timelineEntries.map(\.tags))
         let availableTags = macMergedTagList(
@@ -148,6 +178,12 @@ extension HomeTCAView {
             timelineTagNames
         )
         let sharedFilterState = macSharedFilterState(preferredTags: availableTags)
+        let availableFlags = macMergedFlagList(
+            homeFlagData.flagOptions.map(\.name),
+            availableTimelineFlags,
+            Array(sharedFilterState.selectedFlags),
+            Array(sharedFilterState.excludedFlags)
+        )
         let selectedTags = sharedFilterState.selectedTags
         let selectedExcludedTags = sharedFilterState.excludedTags
         let includeMode = sharedFilterState.includeTagMatchMode
@@ -161,6 +197,11 @@ extension HomeTCAView {
         )
 
         return HomeMacSharedFiltersPresentation(
+            availableFlags: availableFlags,
+            selectedFlags: sharedFilterState.selectedFlags,
+            excludedFlags: sharedFilterState.excludedFlags,
+            includeFlagMatchMode: sharedFilterState.includeFlagMatchMode,
+            excludeFlagMatchMode: sharedFilterState.excludeFlagMatchMode,
             availableTags: availableTags,
             availableExcludeTags: HomeTagFilterMutationSupport.availableExcludeTags(
                 from: availableTags,
@@ -198,6 +239,12 @@ extension HomeTCAView {
             "timelineIncludeMode:\(store.selectedTimelineIncludeTagMatchMode.rawValue)",
             "taskExcludeMode:\(store.excludeTagMatchMode.rawValue)",
             "timelineExcludeMode:\(store.selectedTimelineExcludeTagMatchMode.rawValue)",
+            "taskFlags:\(macSignatureString(store.selectedFlags))",
+            "timelineFlags:\(macSignatureString(store.selectedTimelineFlags))",
+            "excludedFlags:\(macSignatureString(store.excludedFlags))",
+            "taskFlagIncludeMode:\(store.includeFlagMatchMode.rawValue)",
+            "timelineFlagIncludeMode:\(store.selectedTimelineIncludeFlagMatchMode.rawValue)",
+            "flagExcludeMode:\(store.excludeFlagMatchMode.rawValue)",
             "taskPriority:\(macSignatureString(store.selectedImportanceUrgencyFilter))",
             "timelinePriority:\(macSignatureString(store.selectedTimelineImportanceUrgencyFilter))",
             "taskPressure:\(store.selectedPressureFilter?.rawValue ?? "")",
@@ -231,6 +278,7 @@ extension HomeTCAView {
                     display.taskID.uuidString,
                     display.isOneOffTask.description,
                     macSignatureString(display.tags),
+                    macSignatureString(display.flags),
                     display.importance.rawValue,
                     display.urgency.rawValue,
                     display.currentTaskLadderImportance.rawValue,
@@ -251,6 +299,7 @@ extension HomeTCAView {
                 "task",
                 task.id.uuidString,
                 task.tagsStorage,
+                task.flagsStorage,
                 task.importanceRawValue,
                 task.urgencyRawValue,
                 task.pressureRawValue,
@@ -390,7 +439,23 @@ extension HomeTCAView {
         macSharedFilterState(preferredTags: []).selectedImportanceUrgencyFilter
     }
 
-    private func macSharedFilterState(preferredTags: [String]) -> HomeSharedFilterState {
+    var macSharedSelectedFlags: Set<String> {
+        macSharedFilterState(preferredTags: []).selectedFlags
+    }
+
+    var macSharedExcludedFlags: Set<String> {
+        macSharedFilterState(preferredTags: []).excludedFlags
+    }
+
+    var macSharedIncludeFlagMatchMode: RoutineTagMatchMode {
+        macSharedFilterState(preferredTags: []).includeFlagMatchMode
+    }
+
+    var macSharedExcludeFlagMatchMode: RoutineTagMatchMode {
+        macSharedFilterState(preferredTags: []).excludeFlagMatchMode
+    }
+
+    func macSharedFilterState(preferredTags: [String]) -> HomeSharedFilterState {
         HomeSharedFilterStateResolver.resolvedState(
             taskSelectedTags: store.selectedTags,
             timelineSelectedTags: store.selectedTimelineTags,
@@ -400,6 +465,12 @@ extension HomeTCAView {
             timelineIncludeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
             taskExcludeTagMatchMode: store.excludeTagMatchMode,
             timelineExcludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
+            taskSelectedFlags: store.selectedFlags,
+            timelineSelectedFlags: store.selectedTimelineFlags,
+            taskExcludedFlags: store.excludedFlags,
+            taskIncludeFlagMatchMode: store.includeFlagMatchMode,
+            timelineIncludeFlagMatchMode: store.selectedTimelineIncludeFlagMatchMode,
+            taskExcludeFlagMatchMode: store.excludeFlagMatchMode,
             taskImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             timelineImportanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
             taskPressureFilter: store.selectedPressureFilter,
@@ -438,6 +509,24 @@ extension HomeTCAView {
         }
         if store.selectedTimelineExcludeTagMatchMode != sharedState.excludeTagMatchMode {
             store.send(.selectedTimelineExcludeTagMatchModeChanged(sharedState.excludeTagMatchMode))
+        }
+        if store.selectedFlags != sharedState.selectedFlags {
+            store.send(.selectedFlagsChanged(sharedState.selectedFlags))
+        }
+        if store.selectedTimelineFlags != sharedState.selectedFlags {
+            store.send(.selectedTimelineFlagsChanged(sharedState.selectedFlags))
+        }
+        if store.excludedFlags != sharedState.excludedFlags {
+            store.send(.excludedFlagsChanged(sharedState.excludedFlags))
+        }
+        if store.includeFlagMatchMode != sharedState.includeFlagMatchMode {
+            store.send(.includeFlagMatchModeChanged(sharedState.includeFlagMatchMode))
+        }
+        if store.selectedTimelineIncludeFlagMatchMode != sharedState.includeFlagMatchMode {
+            store.send(.selectedTimelineIncludeFlagMatchModeChanged(sharedState.includeFlagMatchMode))
+        }
+        if store.excludeFlagMatchMode != sharedState.excludeFlagMatchMode {
+            store.send(.excludeFlagMatchModeChanged(sharedState.excludeFlagMatchMode))
         }
 
         let taskFilter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter)
@@ -487,6 +576,23 @@ extension HomeTCAView {
         store.send(.selectedTimelineTagsChanged(selectedTags))
         store.send(.excludedTagsChanged(excludedTags))
         store.send(.selectedTimelineExcludedTagsChanged(excludedTags))
+    }
+
+    private func applyMacSharedFlags(
+        selectedFlags rawSelectedFlags: Set<String>,
+        excludedFlags rawExcludedFlags: Set<String>,
+        preferredFlags: [String]
+    ) {
+        var selectedFlags = macMergedFlagSet(rawSelectedFlags, preferredFlags: preferredFlags)
+        let excludedFlags = macMergedFlagSet(rawExcludedFlags, preferredFlags: preferredFlags)
+
+        selectedFlags = selectedFlags.filter { selectedFlag in
+            !HomeFlagFilterMutationSupport.contains(selectedFlag, in: excludedFlags)
+        }
+
+        store.send(.selectedFlagsChanged(selectedFlags))
+        store.send(.selectedTimelineFlagsChanged(selectedFlags))
+        store.send(.excludedFlagsChanged(excludedFlags))
     }
 
     private func macSharedTagCounts(
@@ -541,6 +647,17 @@ extension HomeTCAView {
             }
     }
 
+    private func macMergedFlagSet(_ sets: Set<String>..., preferredFlags: [String]) -> Set<String> {
+        Set(RoutineFlag.deduplicated(sets.flatMap { Array($0) }, preferredFlags: preferredFlags))
+    }
+
+    private func macMergedFlagList(_ lists: [String]...) -> [String] {
+        RoutineFlag.deduplicated(lists.flatMap { $0 })
+            .sorted { lhs, rhs in
+                lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
+            }
+    }
+
     private func macSignatureString(_ values: [String]) -> String {
         values.sorted {
             $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
@@ -582,6 +699,11 @@ struct HomeMacSharedFiltersPresentationSignature: Hashable {
 }
 
 struct HomeMacSharedFiltersPresentation {
+    let availableFlags: [String]
+    let selectedFlags: Set<String>
+    let excludedFlags: Set<String>
+    let includeFlagMatchMode: RoutineTagMatchMode
+    let excludeFlagMatchMode: RoutineTagMatchMode
     let availableTags: [String]
     let availableExcludeTags: [String]
     let suggestedRelatedTags: [String]
@@ -608,6 +730,12 @@ private struct HomeMacSharedFiltersDetailView: View {
     @Binding var selectedPressureFilter: RoutineTaskPressure?
     @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
     @Binding var selectedEstimationFilter: TaskEstimationFilter
+    let showsFlagSection: Bool
+    let availableFlags: [String]
+    let selectedFlags: Set<String>
+    let excludedFlags: Set<String>
+    let includeFlagMatchMode: RoutineTagMatchMode
+    let excludeFlagMatchMode: RoutineTagMatchMode
     let showsTagSection: Bool
     let availableTags: [String]
     let suggestedRelatedTags: [String]
@@ -623,6 +751,10 @@ private struct HomeMacSharedFiltersDetailView: View {
     let onSelectSuggestedTag: (String) -> Void
     let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
     let onToggleExcludedTag: (String) -> Void
+    let onSelectIncludedFlags: (Set<String>) -> Void
+    let onIncludeFlagMatchModeChange: (RoutineTagMatchMode) -> Void
+    let onSelectExcludedFlags: (Set<String>) -> Void
+    let onExcludeFlagMatchModeChange: (RoutineTagMatchMode) -> Void
 
     var body: some View {
         Group {
@@ -633,44 +765,39 @@ private struct HomeMacSharedFiltersDetailView: View {
                 selectedEstimationFilter: $selectedEstimationFilter
             )
 
+            if showsFlagSection {
+                HomeMacSharedFlagFiltersView(
+                    availableFlags: availableFlags,
+                    selectedFlags: selectedFlags,
+                    excludedFlags: excludedFlags,
+                    includeFlagMatchMode: includeFlagMatchMode,
+                    excludeFlagMatchMode: excludeFlagMatchMode,
+                    onSelectIncludedFlags: onSelectIncludedFlags,
+                    onIncludeFlagMatchModeChange: onIncludeFlagMatchModeChange,
+                    onSelectExcludedFlags: onSelectExcludedFlags,
+                    onExcludeFlagMatchModeChange: onExcludeFlagMatchModeChange
+                )
+            }
+
             if showsTagSection {
-                HomeMacCollapsibleFilterSection(
-                    title: "Tags",
-                    summaryText: tagsSummary,
-                    systemImage: "tag.fill",
-                    tint: .teal
-                ) {
-                    HomeMacTimelineTagFiltersView(
-                        availableTags: availableTags,
-                        suggestedRelatedTags: suggestedRelatedTags,
-                        availableExcludeTags: availableExcludeTags,
-                        selectedTags: selectedTags,
-                        includeTagMatchMode: includeTagMatchMode,
-                        excludeTagMatchMode: excludeTagMatchMode,
-                        selectedExcludedTags: selectedExcludedTags,
-                        tagCount: tagCount,
-                        tagColor: tagColor,
-                        onSelectTags: onSelectTags,
-                        onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
-                        onSelectSuggestedTag: onSelectSuggestedTag,
-                        onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
-                        onToggleExcludedTag: onToggleExcludedTag
-                    )
-                }
+                HomeMacTimelineTagFiltersView(
+                    availableTags: availableTags,
+                    suggestedRelatedTags: suggestedRelatedTags,
+                    availableExcludeTags: availableExcludeTags,
+                    selectedTags: selectedTags,
+                    includeTagMatchMode: includeTagMatchMode,
+                    excludeTagMatchMode: excludeTagMatchMode,
+                    selectedExcludedTags: selectedExcludedTags,
+                    tagCount: tagCount,
+                    tagColor: tagColor,
+                    onSelectTags: onSelectTags,
+                    onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
+                    onSelectSuggestedTag: onSelectSuggestedTag,
+                    onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
+                    onToggleExcludedTag: onToggleExcludedTag,
+                    presentation: .compactActions
+                )
             }
         }
-    }
-
-    private var tagsSummary: String {
-        var rules: [String] = []
-        if !selectedTags.isEmpty {
-            let mode = selectedTags.count > 1 ? "\(includeTagMatchMode.rawValue) of " : ""
-            rules.append("Includes \(mode)\(selectedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
-        }
-        if !selectedExcludedTags.isEmpty {
-            let mode = selectedExcludedTags.count > 1 ? "\(excludeTagMatchMode.rawValue) of " : ""
-            rules.append("Excludes \(mode)\(selectedExcludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
-        }
-        return rules.isEmpty ? "No tag filter" : rules.joined(separator: " · ")
     }
 }

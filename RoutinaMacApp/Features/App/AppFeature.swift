@@ -281,6 +281,8 @@ struct AppFeature {
              .includeTagMatchModeChanged,
              .selectedFlagsChanged,
              .includeFlagMatchModeChanged,
+             .excludedFlagsChanged,
+             .excludeFlagMatchModeChanged,
              .excludedTagsChanged,
              .excludeTagMatchModeChanged,
              .selectedManualPlaceFilterIDChanged,

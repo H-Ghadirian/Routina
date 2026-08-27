@@ -71,19 +71,19 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
         switch scheduleMode {
         case .oneOff:
             if let availabilityDate = exactAvailabilityDate() {
-                return "Todo at \(availabilityDate.formatted(date: .abbreviated, time: .shortened))"
+                return "One-time task at \(availabilityDate.formatted(date: .abbreviated, time: .shortened))"
             }
             if let availabilityStartDate {
-                return "Todo on \(availabilityStartDate.formatted(date: .abbreviated, time: .omitted))"
+                return "One-time task on \(availabilityStartDate.formatted(date: .abbreviated, time: .omitted))"
             }
             if let deadline {
-                return "Todo due \(deadline.formatted(date: .abbreviated, time: .shortened))"
+                return "One-time task due \(deadline.formatted(date: .abbreviated, time: .shortened))"
             }
-            return "Todo"
+            return "One-time task"
         case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist:
-            return "Gentle routine · \(recurrenceRule.displayText())"
+            return "Gentle repeating task · \(recurrenceRule.displayText())"
         case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist:
-            return "Routine · \(recurrenceRule.displayText())"
+            return "Repeating task · \(recurrenceRule.displayText())"
         }
     }
 
@@ -732,7 +732,7 @@ enum RoutinaQuickAddParser {
 
         let leadingPatterns = [
             #"^(add|create|new)\s+"#,
-            #"^(todo|task|routine)\s+"#,
+            #"^(one[- ]time task|repeating task|todo|task|routine)\s+"#,
             #"^remind\s+me\s+to\s+"#
         ]
 

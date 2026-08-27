@@ -29,7 +29,7 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
         case .rowNumber:
             return "Row Number"
         case .taskTypeBadge:
-            return "Routine / Todo Badge"
+            return "Repeating / One-time Badge"
         case .statusBadge:
             return "Status Badge"
         case .schedule:
@@ -62,11 +62,11 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
         case .rowNumber:
             return "Visible position in the current list."
         case .taskTypeBadge:
-            return "Routine or todo label in All mode."
+            return "Repeating or one-time label in All mode."
         case .statusBadge:
-            return "Due, overdue, done, paused, and todo state."
+            return "Due, overdue, done, paused, and one-time state."
         case .schedule:
-            return "Recurrence cadence and todo deadlines."
+            return "Recurrence cadence and one-time deadlines."
         case .pressure:
             return "Low, medium, and high pressure labels."
         case .progress:

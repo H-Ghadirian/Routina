@@ -871,7 +871,7 @@ detailBody
 
     private var routineHeaderSection: some View {
         TaskDetailHeaderSectionView(
-            title: store.task.name ?? "Routine",
+            title: store.task.name ?? "Repeating task",
             statusContextMessage: statusContextMessage,
             badgeRows: routineHeaderBadgeRows,
             tags: store.task.tags,

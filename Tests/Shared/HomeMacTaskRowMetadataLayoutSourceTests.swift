@@ -48,7 +48,8 @@ struct HomeMacTaskRowMetadataLayoutSourceTests {
             "RoutinaMacApp/Screens/Home/Components/HomeMacRoutineFiltersDetailView.swift"
         )
 
-        #expect(source.contains("Text(\"Multiline Titles\")"))
+        #expect(source.contains("HomeMacFilterAppearanceToggleRow("))
+        #expect(source.contains("\"Multiline Titles\","))
         #expect(source.contains("get: { taskRowVisibility.allowsMultilineTitles }"))
         #expect(source.contains("set: { onTaskRowMultilineTitlesChanged($0) }"))
     }

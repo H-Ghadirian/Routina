@@ -30,7 +30,7 @@ struct StatsActiveItemsInfoPopover: View {
         VStack(alignment: .leading, spacing: 8) {
             StatsActiveItemsFormulaRow(
                 title: "Matching items",
-                formula: "\(breakdown.routineCount.formatted()) routines + \(breakdown.todoCount.formatted()) todos",
+                formula: "\(breakdown.routineCount.formatted()) repeating + \(breakdown.todoCount.formatted()) one-time",
                 result: breakdown.matchingCount.formatted()
             )
 
@@ -44,11 +44,11 @@ struct StatsActiveItemsInfoPopover: View {
 
     private var todoBreakdown: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Todo breakdown")
+            Text("One-time breakdown")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Text("\(breakdown.openTodoCount.formatted()) open + \(breakdown.completedTodoCount.formatted()) completed + \(breakdown.canceledTodoCount.formatted()) canceled = \(breakdown.todoCount.formatted()) todos")
+            Text("\(breakdown.openTodoCount.formatted()) open + \(breakdown.completedTodoCount.formatted()) completed + \(breakdown.canceledTodoCount.formatted()) canceled = \(breakdown.todoCount.formatted()) one-time tasks")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

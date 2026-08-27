@@ -40,7 +40,7 @@ struct TaskDetailPresentationRoutingSupportTests {
 
         #expect(copy.title == "Remove log?")
         #expect(copy.actionTitle == "Remove")
-        #expect(copy.message == "This will permanently remove this routine log and may update the routine's schedule.")
+        #expect(copy.message == "This will permanently remove this repeating-task log and may update the task's schedule.")
     }
 
     @Test
@@ -52,7 +52,7 @@ struct TaskDetailPresentationRoutingSupportTests {
 
         #expect(copy.title == "Undo log?")
         #expect(copy.actionTitle == "Undo")
-        #expect(copy.message == "This will remove the selected completion log and may update the routine's schedule.")
+        #expect(copy.message == "This will remove the selected completion log and may update the task's schedule.")
     }
 
     @Test
@@ -64,6 +64,6 @@ struct TaskDetailPresentationRoutingSupportTests {
 
         #expect(copy.title == "Undo log?")
         #expect(copy.actionTitle == "Undo")
-        #expect(copy.message == "This will remove the selected log and may update the routine's schedule.")
+        #expect(copy.message == "This will remove the selected log and may update the task's schedule.")
     }
 }

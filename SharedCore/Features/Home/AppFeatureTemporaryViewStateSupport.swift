@@ -57,6 +57,8 @@ enum AppFeatureTemporaryViewStateSupport {
         taskFilters.includeTagMatchMode = .all
         taskFilters.selectedFlags = []
         taskFilters.includeFlagMatchMode = .all
+        taskFilters.excludedFlags = []
+        taskFilters.excludeFlagMatchMode = .any
         taskFilters.excludedTags = []
         taskFilters.excludeTagMatchMode = .any
         taskFilters.selectedManualPlaceFilterID = nil
@@ -118,6 +120,8 @@ enum AppFeatureTemporaryViewStateSupport {
             homeIncludeTagMatchMode: existing.homeIncludeTagMatchMode,
             homeSelectedFlags: existing.homeSelectedFlags,
             homeIncludeFlagMatchMode: existing.homeIncludeFlagMatchMode,
+            homeExcludedFlags: existing.homeExcludedFlags,
+            homeExcludeFlagMatchMode: existing.homeExcludeFlagMatchMode,
             homeExcludedTags: existing.homeExcludedTags,
             homeExcludeTagMatchMode: existing.homeExcludeTagMatchMode,
             homeSelectedManualPlaceFilterID: existing.homeSelectedManualPlaceFilterID,

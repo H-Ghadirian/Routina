@@ -108,15 +108,11 @@ struct HomeMacCalendarFiltersDetailView: View {
     private var appearanceTabContent: some View {
         HomeMacSidebarSectionCard(title: "Calendar Task Row") {
             ForEach(DayPlanCalendarListRowField.allCases) { field in
-                Toggle(isOn: rowFieldVisibilityBinding(field)) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(field.title)
-                        Text(field.subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .toggleStyle(.switch)
+                HomeMacFilterAppearanceToggleRow(
+                    field.title,
+                    subtitle: field.subtitle,
+                    isOn: rowFieldVisibilityBinding(field)
+                )
             }
 
             Text("Shown: \(calendarListRowVisibility.summaryText)")

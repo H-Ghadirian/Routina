@@ -69,7 +69,7 @@ enum TaskDetailDateMetadataPresentation {
         calendar: Calendar = .current
     ) -> String {
         if calendar.isDateInToday(selectedDate) {
-            return "Cancel todo"
+            return "Cancel one-time task"
         }
         return "Cancel for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
     }

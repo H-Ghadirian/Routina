@@ -56,9 +56,9 @@ struct MacPlaceFilterOptionFactory {
         case .all:
             return count == 1 ? "1 task" : "\(count) tasks"
         case .routines:
-            return count == 1 ? "1 routine" : "\(count) routines"
+            return count == 1 ? "1 repeating task" : "\(count) repeating tasks"
         case .todos:
-            return count == 1 ? "1 todo" : "\(count) todos"
+            return count == 1 ? "1 one-time task" : "\(count) one-time tasks"
         }
     }
 

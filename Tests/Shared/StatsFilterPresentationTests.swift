@@ -9,6 +9,19 @@ import Testing
 
 struct StatsFilterPresentationTests {
     @Test
+    func createdTaskPresentationUsesRepeatingAndOneTimeNouns() {
+        let repeating = StatsCreatedTasksPresentation(taskTypeFilter: .routines, selectedRange: .week)
+        let oneTime = StatsCreatedTasksPresentation(taskTypeFilter: .todos, selectedRange: .week)
+
+        #expect(repeating.noun(count: 1) == "repeating task")
+        #expect(repeating.noun(count: 2) == "repeating tasks")
+        #expect(oneTime.noun(count: 1) == "one-time task")
+        #expect(oneTime.noun(count: 2) == "one-time tasks")
+        #expect(StatsMetricScope.general.title == "General Stats")
+        #expect(StatsMetricScope.dateRange.title == "Date Range Stats")
+    }
+
+    @Test
     func activeSheetFilterCountTracksEveryStatsFilterBucket() {
         let presentation = makePresentation(
             taskTypeFilter: .todos,

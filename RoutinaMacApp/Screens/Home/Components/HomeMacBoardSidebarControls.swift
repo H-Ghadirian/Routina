@@ -162,7 +162,7 @@ struct HomeMacBacklogRoutingTagsEditor: View {
             .routinaGlassCard(cornerRadius: 6, tint: .secondary, tintOpacity: 0.10, interactive: true)
 
             if backlog.routingTags.isEmpty {
-                Text("Tagged new todos land here automatically.")
+                Text("Tagged new one-time tasks land here automatically.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             } else {

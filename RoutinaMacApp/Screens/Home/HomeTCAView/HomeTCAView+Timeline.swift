@@ -38,6 +38,8 @@ struct HomeMacTimelinePresentationSignature: Equatable {
     let includeTagMatchMode: RoutineTagMatchMode
     let selectedFlags: Set<String>
     let includeFlagMatchMode: RoutineTagMatchMode
+    let excludedFlags: Set<String>
+    let excludeFlagMatchMode: RoutineTagMatchMode
     let excludedTags: Set<String>
     let excludeTagMatchMode: RoutineTagMatchMode
     let importanceUrgencyFilter: ImportanceUrgencyFilterCell?
@@ -124,8 +126,10 @@ extension HomeTCAView {
             mediaFilter: store.selectedTimelineMediaFilter,
             selectedTags: store.selectedTimelineTags,
             includeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
-            selectedFlags: store.selectedTimelineFlags,
-            includeFlagMatchMode: store.selectedTimelineIncludeFlagMatchMode,
+            selectedFlags: macSharedSelectedFlags,
+            includeFlagMatchMode: macSharedIncludeFlagMatchMode,
+            excludedFlags: macSharedExcludedFlags,
+            excludeFlagMatchMode: macSharedExcludeFlagMatchMode,
             excludedTags: store.selectedTimelineExcludedTags,
             excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
             importanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
@@ -184,13 +188,18 @@ extension HomeTCAView {
             calendar: calendar
         )
         let availableFlags = TimelineLogic.availableFlags(from: unfilteredBaseEntries)
-        let selectedFlags = store.selectedTimelineFlags.filter {
+        let selectedFlags = macSharedSelectedFlags.filter {
+            RoutineFlag.contains($0, in: availableFlags)
+        }
+        let excludedFlags = macSharedExcludedFlags.filter {
             RoutineFlag.contains($0, in: availableFlags)
         }
         let baseEntries = TimelineLogic.entriesVisibleForFlags(
             unfilteredBaseEntries,
             selectedFlags: selectedFlags,
-            includeFlagMatchMode: store.selectedTimelineIncludeFlagMatchMode,
+            includeFlagMatchMode: macSharedIncludeFlagMatchMode,
+            excludedFlags: excludedFlags,
+            excludeFlagMatchMode: macSharedExcludeFlagMatchMode,
             rules: store.flagRules
         )
         let filteredEntries = baseEntries
@@ -318,7 +327,8 @@ extension HomeTCAView {
         effectiveMacTimelineFilterType != .all
             || store.selectedTimelineStatusFilter != .all
             || !store.selectedTimelineTags.isEmpty
-            || !store.selectedTimelineFlags.isEmpty
+            || !macSharedSelectedFlags.isEmpty
+            || !macSharedExcludedFlags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
             || store.selectedTimelinePressureFilter != nil
             || store.selectedTimelineThinkingNeededFilter != nil
@@ -676,8 +686,12 @@ extension HomeTCAView {
             labels.append("\(store.selectedTimelineIncludeTagMatchMode.rawValue) \(store.selectedTimelineTags.count) tags")
         }
 
-        if !store.selectedTimelineFlags.isEmpty {
-            labels.append("\(store.selectedTimelineIncludeFlagMatchMode.rawValue) \(store.selectedTimelineFlags.count) flags")
+        if !macSharedSelectedFlags.isEmpty {
+            labels.append("\(macSharedIncludeFlagMatchMode.rawValue) \(macSharedSelectedFlags.count) flags")
+        }
+
+        if !macSharedExcludedFlags.isEmpty {
+            labels.append("not \(macSharedExcludedFlags.count) flags")
         }
 
         if !store.selectedTimelineExcludedTags.isEmpty {
@@ -764,15 +778,6 @@ extension HomeTCAView {
                 get: { store.selectedTimelineMediaFilter },
                 set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
             ),
-            selectedFlags: Binding(
-                get: { store.selectedTimelineFlags },
-                set: { store.send(.selectedTimelineFlagsChanged($0)) }
-            ),
-            includeFlagMatchMode: Binding(
-                get: { store.selectedTimelineIncludeFlagMatchMode },
-                set: { store.send(.selectedTimelineIncludeFlagMatchModeChanged($0)) }
-            ),
-            availableFlags: availableTimelineFlags,
             timelineRowVisibility: timelineRowVisibility,
             showsTypeSection: showsMacTimelineTypeFilterSection,
             onTimelineRowFieldVisibilityChanged: { field, isVisible in

@@ -24,49 +24,60 @@ struct MacStatsPriorityFilterPresentationTests {
     }
 
     @Test
-    func singleChoiceSectionsShareOneTemporaryExpansionState() throws {
+    func singleChoiceSectionsUseInlineMenuPickersWithoutExpansionState() throws {
         let sidebar = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacStatsSidebarView.swift"
         )
-
-        #expect(sidebar.contains("@State private var expandedSingleChoiceSection"))
-        #expect(sidebar.contains("isExpanded: expansionBinding(for: .scope)"))
-        #expect(sidebar.contains("isExpanded: expansionBinding(for: .taskType)"))
-        #expect(sidebar.contains("isExpanded: expansionBinding(for: .timeRange)"))
-        #expect(sidebar.contains("isExpanded: expansionBinding(for: .importance)"))
-        #expect(sidebar.contains("isExpanded: expansionBinding(for: .urgency)"))
-        #expect(sidebar.contains("expandedSingleChoiceSection = isExpanded ? section : nil"))
-    }
-
-    @Test
-    func singleChoiceSelectionsCollapseButCustomDateEditingStaysExpanded() throws {
         let sections = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacStatsSidebarSections.swift"
         )
 
-        #expect(sections.contains("onPresetSelectionComplete()"))
-        #expect(sections.contains("onSelectionComplete()"))
-        #expect(sections.contains("onSelectRange(.custom(from: customStart, through: customEnd))"))
-
-        let customSelection = try #require(
-            sections.range(of: "onSelectRange(.custom(from: customStart, through: customEnd))")
-        )
-        let followingText = sections[customSelection.upperBound...].prefix(100)
-        #expect(!followingText.contains("onPresetSelectionComplete()"))
-        #expect(sections.contains("selectedRange.kind == .custom ? selectedRange.periodDescription"))
+        #expect(!sidebar.contains("expandedSingleChoiceSection"))
+        #expect(!sidebar.contains("expansionBinding"))
+        #expect(sections.contains("struct HomeMacStatsInlinePickerSection"))
+        #expect(sections.components(separatedBy: "HomeMacStatsInlinePickerSection(").count == 6)
+        #expect(sections.components(separatedBy: ".pickerStyle(.menu)").count == 2)
+        #expect(!sections.contains("RoutinaGlassSegmentedControl"))
     }
 
     @Test
-    func collapsibleSectionsRespectReduceMotionAndExposeCurrentSummary() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/Components/HomeMacImportanceUrgencyMatrixView.swift"
+    func customRangeSelectionRevealsOnlyItsDateEditor() throws {
+        let sections = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacStatsSidebarSections.swift"
         )
 
-        #expect(source.contains("@Environment(\\.accessibilityReduceMotion)"))
-        #expect(source.contains("accessibilityReduceMotion ? nil : .snappy"))
-        #expect(source.contains(".accessibilityValue(accessibilityValue)"))
-        #expect(source.contains(".accessibilityHint(isExpanded ? \"Hide options\" : \"Show all options\")"))
-        #expect(source.contains(".contentShape(Rectangle())"))
+        #expect(sections.contains("Text(\"Custom…\").tag(DoneChartRange.Kind.custom.rawValue)"))
+        #expect(sections.contains("if selectedRange.kind == .custom"))
+        #expect(sections.contains("DatePicker(\"From\""))
+        #expect(sections.contains("DatePicker(\"Through\""))
+        #expect(sections.contains("onSelectRange(.custom(from: customStart, through: customEnd))"))
+        #expect(!sections.contains("onPresetSelectionComplete"))
+    }
+
+    @Test
+    func inlinePickerCardsKeepPassiveTintedCardPresentation() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacStatsSidebarSections.swift"
+        )
+
+        #expect(source.contains(".controlSize(.large)"))
+        #expect(source.contains(".frame(width: 124)"))
+        #expect(source.contains("tintOpacity: 0.08"))
+        #expect(source.contains(".strokeBorder(tint.opacity(0.18), lineWidth: 1)"))
+    }
+
+    @Test
+    func inlinePickersRetainAccessibleLabelsWhileHidingDuplicateVisualLabels() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacStatsSidebarSections.swift"
+        )
+
+        #expect(source.contains("Picker(\"Stats scope\""))
+        #expect(source.contains("Picker(\"Stats task type\""))
+        #expect(source.contains("Picker(\"Stats time range\""))
+        #expect(source.contains("Picker(\"Minimum importance\""))
+        #expect(source.contains("Picker(\"Minimum urgency\""))
+        #expect(source.contains(".labelsHidden()"))
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

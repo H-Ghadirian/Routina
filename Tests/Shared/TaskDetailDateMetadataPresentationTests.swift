@@ -34,7 +34,7 @@ struct TaskDetailDateMetadataPresentationTests {
         #expect(
             TaskDetailDateMetadataPresentation.cancelTodoButtonTitle(
                 selectedDate: today
-            ) == "Cancel todo"
+            ) == "Cancel one-time task"
         )
     }
 

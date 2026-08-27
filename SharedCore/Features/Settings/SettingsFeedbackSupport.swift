@@ -64,7 +64,7 @@ enum SettingsFeedbackSupport {
     ) -> [String] {
         var parts: [String] = []
         if routineCount > 0 {
-            parts.append(routineCount == 1 ? "1 routine" : "\(routineCount) routines")
+            parts.append(routineCount == 1 ? "1 task" : "\(routineCount) tasks")
         }
         if goalCount > 0 {
             parts.append(goalCount == 1 ? "1 goal" : "\(goalCount) goals")

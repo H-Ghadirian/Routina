@@ -35,7 +35,7 @@ let usageVisibility = SettingsCloudUsageVisibility(
 )
 SettingsMacDetailShell(
     title: "iCloud & Backup",
-    subtitle: "Sync routines across devices, save backup packages, and manage the cloud copy when needed."
+    subtitle: "Sync tasks across devices, save backup packages, and manage the cloud copy when needed."
 ) {
     SettingsMacDetailCard(title: "iCloud") {
         HStack(spacing: 10) {
@@ -293,7 +293,7 @@ struct SettingsMacShortcutsDetailView: View {
             SettingsMacShortcutRowModel(title: "Search or Create", detail: "Focus Home search and create a task from a new query.", shortcut: quickAddShortcut.title),
             SettingsMacShortcutRowModel(title: "Back", detail: "Return to the previous Home view.", shortcut: "⌘←"),
             SettingsMacShortcutRowModel(title: "Forward", detail: "Move forward after going back.", shortcut: "⌘→"),
-            SettingsMacShortcutRowModel(title: "Routines", detail: "Switch the sidebar back to routines.", shortcut: "⌥⌘1"),
+            SettingsMacShortcutRowModel(title: "Planner", detail: "Switch the sidebar back to tasks.", shortcut: "⌥⌘1"),
             SettingsMacShortcutRowModel(title: "Stats", detail: "Open stats from anywhere in the app.", shortcut: "⌥⌘2"),
             SettingsMacShortcutRowModel(title: "Timeline", detail: "Open Planner List.", shortcut: "⌥⌘3"),
             SettingsMacShortcutRowModel(title: "Save", detail: "Confirm supported edit sheets and dialogs.", shortcut: "Return"),
@@ -348,9 +348,9 @@ struct SettingsMacQuickAddDetailView: View {
 
     private var quickAddSubtitle: String {
         if isPlacesEnabled {
-            return "Use compact phrases to create todos, routines, deadlines, tags, places, priority, and focus estimates."
+            return "Use compact phrases to create one-time tasks, repeating tasks, deadlines, tags, places, priority, and focus estimates."
         }
-        return "Use compact phrases to create todos, routines, deadlines, tags, priority, and focus estimates."
+        return "Use compact phrases to create one-time tasks, repeating tasks, deadlines, tags, priority, and focus estimates."
     }
 }
 
@@ -733,7 +733,7 @@ private struct SettingsMacBetaExperimentsCard: View {
             Toggle("Show Home task type tabs", isOn: $areHomeTaskListModeTabsVisible)
                 .toggleStyle(.switch)
 
-            Text("Show All, Todos, and Routines tabs in the Home sidebar.")
+            Text("Show All, One-time, and Repeating tabs in the Home sidebar.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
@@ -748,8 +748,8 @@ private struct SettingsMacBetaExperimentsCard: View {
                 .toggleStyle(.switch)
 
             Text(store.appearance.isNotesEnabled
-                ? "Show the All, Routines, Todos, Notes, and other quick filters in Timeline."
-                : "Show the All, Routines, Todos, and other quick filters in Timeline.")
+                ? "Show the All, Repeating, One-time, Notes, and other quick filters in Timeline."
+                : "Show the All, Repeating, One-time, and other quick filters in Timeline.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 

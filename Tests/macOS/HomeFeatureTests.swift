@@ -561,6 +561,10 @@ struct HomeFeatureTests {
                 selectedFilter: .doneToday,
                 selectedTags: ["amazon"],
                 includeTagMatchMode: .any,
+                selectedFlags: ["Reference"],
+                includeFlagMatchMode: .any,
+                excludedFlags: ["Private"],
+                excludeFlagMatchMode: .all,
                 excludedTags: ["admin"],
                 excludeTagMatchMode: .all,
                 selectedImportanceUrgencyFilter: matrixFilter,
@@ -568,6 +572,8 @@ struct HomeFeatureTests {
                 selectedTimelineFilterType: .done,
                 selectedTimelineTags: ["amazon"],
                 selectedTimelineIncludeTagMatchMode: .any,
+                selectedTimelineFlags: ["Reference"],
+                selectedTimelineIncludeFlagMatchMode: .any,
                 selectedTimelineExcludedTags: ["admin"],
                 selectedTimelineExcludeTagMatchMode: .all,
                 selectedTimelineImportanceUrgencyFilter: matrixFilter,
@@ -589,11 +595,17 @@ struct HomeFeatureTests {
             $0.selectedFilter = .all
             $0.selectedTags = []
             $0.includeTagMatchMode = .all
+            $0.selectedFlags = []
+            $0.includeFlagMatchMode = .all
+            $0.excludedFlags = []
+            $0.excludeFlagMatchMode = .any
             $0.excludedTags = []
             $0.excludeTagMatchMode = .any
             $0.selectedImportanceUrgencyFilter = nil
             $0.selectedTimelineTags = []
             $0.selectedTimelineIncludeTagMatchMode = .all
+            $0.selectedTimelineFlags = []
+            $0.selectedTimelineIncludeFlagMatchMode = .all
             $0.selectedTimelineExcludedTags = []
             $0.selectedTimelineExcludeTagMatchMode = .any
             $0.selectedTimelineImportanceUrgencyFilter = nil
@@ -606,6 +618,9 @@ struct HomeFeatureTests {
         #expect(hideUnavailableUpdates.value == [false])
         #expect(persistedState.value?.homeSelectedTags == [])
         #expect(persistedState.value?.homeSelectedTimelineTags == [])
+        #expect(persistedState.value?.homeSelectedFlags == [])
+        #expect(persistedState.value?.homeExcludedFlags == [])
+        #expect(persistedState.value?.homeSelectedTimelineFlags == [])
         #expect(persistedState.value?.homeSelectedTimelineRange == .week)
         #expect(persistedState.value?.homeSelectedTimelineFilterType == .all)
         #expect(persistedState.value?.homeSelectedTimelineStatusFilter == .done)

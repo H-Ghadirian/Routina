@@ -165,7 +165,7 @@ VStack(alignment: .leading, spacing: 10) {
                 currentRelatedTags
                 relatedTagEntryField
 
-                Text("Related tags appear as suggestions across filters and routine forms.")
+                Text("Related tags appear as suggestions across filters and task forms.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

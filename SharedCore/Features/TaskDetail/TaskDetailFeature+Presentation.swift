@@ -752,7 +752,7 @@ extension TaskDetailFeature.State {
 
     var frequencyText: String {
         if task.isOneOffTask {
-            return "One-off todo"
+            return "One-time task"
         }
         if !task.cadenceEnabled {
             return "None"

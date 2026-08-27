@@ -127,7 +127,7 @@ struct SettingsSectionViewSupportTests {
         #expect(sections.first == .general)
         #expect(SettingsSectionID.general.title == "General")
         #expect(SettingsSectionID.general.rowPresentation(in: state) == SettingsSectionRowPresentation(
-            subtitle: "App Lock: On • Battery routines"
+            subtitle: "App Lock: On • Battery repeating tasks"
         ))
     }
 
@@ -149,7 +149,7 @@ struct SettingsSectionViewSupportTests {
         #expect(SettingsSectionID.filteredSections(sections, matching: "no such setting").isEmpty)
         #expect(SettingsSectionID.filteredSections(sections, matching: "   ") == sections)
         #expect(SettingsSectionID.flags.searchResultSubtitle(for: "hide") ==
-            "Matches: Hide from Task Lists • Hide from Timeline • Hide from Task Ladder")
+            "Matches: Hide from Task Lists • Hide from Calendar List • Hide from Timeline • Hide from Task Ladder")
         #expect(SettingsSectionID.flags.searchResultSubtitle(for: "flags") == nil)
     }
 
@@ -347,7 +347,7 @@ struct SettingsSectionViewSupportTests {
 
         let presentation = SettingsSectionID.iCloud.rowPresentation(in: state)
 
-        #expect(presentation.subtitle == "Sync, export, and import routine data")
+        #expect(presentation.subtitle == "Sync, export, and import task data")
         #expect(presentation.value == nil)
     }
 

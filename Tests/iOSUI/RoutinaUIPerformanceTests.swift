@@ -120,7 +120,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         scrollToBothEdges(in: app, swipeCount: 16)
 
         tapTab("Home", in: app)
-        XCTAssertTrue(app.navigationBars["Todos"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["One-time"].waitForExistence(timeout: 10))
         selectAllHomeTasks(in: app)
         scrollToBothEdges(in: app, swipeCount: 60)
 
@@ -316,7 +316,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
                 )
 
                 XCTAssertTrue(
-                    app.staticTexts["No matching todos"].waitForExistence(timeout: 30),
+                    app.staticTexts["No matching one-time tasks"].waitForExistence(timeout: 30),
                     "Search cycle \(cycle) did not settle on the expected no-match result"
                 )
 
@@ -744,7 +744,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
 
     private func homeBackButton(in app: XCUIApplication) -> XCUIElement {
         app.navigationBars.buttons.matching(
-            NSPredicate(format: "label IN %@", ["Back", "All", "Todos", "Routines", "Routina"])
+            NSPredicate(format: "label IN %@", ["Back", "All", "One-time", "Repeating", "Routina"])
         ).firstMatch
     }
 }

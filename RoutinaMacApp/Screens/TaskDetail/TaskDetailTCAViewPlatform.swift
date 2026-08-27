@@ -246,7 +246,7 @@ struct CloudSharingToolbarButton: NSViewRepresentable {
         private func presentCloudSharingUnavailableAlert(from view: NSView) {
             let alert = NSAlert()
             alert.messageText = "Cloud Sharing Unavailable"
-            alert.informativeText = "macOS did not provide the Cloud Sharing service for this routine."
+            alert.informativeText = "macOS did not provide the Cloud Sharing service for this repeating task."
             alert.alertStyle = .warning
             if let window = view.window {
                 alert.beginSheetModal(for: window)

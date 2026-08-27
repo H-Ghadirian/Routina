@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0669: Use Inline Menu Pickers for Mac Stats Single-Choice Filters](../0669-use-inline-menu-pickers-for-mac-stats-single-choice-filters.md)
 
 ## Date
 
@@ -10,11 +10,11 @@ Accepted
 
 ## Refines
 
-- [0188: Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md)
-- [0264: Match Button Hit Areas to Visual Surfaces](0264-match-button-hit-areas-to-visual-surfaces.md)
-- [0415: Support Custom Stats Date Ranges](0415-support-custom-stats-date-ranges.md)
-- [0599: Separate Mac Stats Priority Filters](0599-separate-mac-stats-priority-filters.md)
-- [0654: Progressively Reveal Mac Planner Header Choices](0654-progressively-reveal-mac-planner-header-choices.md)
+- [0188: Prefer Self-Explanatory UI Over Instructional Copy](../0188-prefer-self-explanatory-ui-over-instructional-copy.md)
+- [0264: Match Button Hit Areas to Visual Surfaces](../0264-match-button-hit-areas-to-visual-surfaces.md)
+- [0415: Support Custom Stats Date Ranges](../0415-support-custom-stats-date-ranges.md)
+- [0599: Separate Mac Stats Priority Filters](../0599-separate-mac-stats-priority-filters.md)
+- [0654: Progressively Reveal Mac Planner Header Choices](../0654-progressively-reveal-mac-planner-header-choices.md)
 
 ## Context
 
@@ -61,3 +61,8 @@ multi-step nature of Custom Range editing.
   control after the first change.
 - Multi-value filters retain the deliberate repeated-editing behavior they
   need.
+
+## Supersession Note
+
+Decision 0669 replaces progressive single-choice expansion with fixed inline
+native menu pickers. Custom Range still reveals its two date fields when chosen.

@@ -57,13 +57,21 @@ struct TaskFormPresentationTests {
     }
 
     @Test
-    func userFacingTaskTypeSelectorsContainOnlyRoutineAndTodo() {
-        #expect(RoutineTaskType.routine.userFacingTitle == "Routine")
-        #expect(RoutineTaskType.allCases.map(\.userFacingTitle) == ["Routine", "Todo"])
-        #expect(RoutineTaskType.routine.pluralTitle == "Routines")
+    func userFacingTaskTypeSelectorsUseFormTerminologyWhileRawValuesStayCompatible() {
+        #expect(RoutineTaskType.routine.rawValue == "Routine")
+        #expect(RoutineTaskType.todo.rawValue == "Todo")
+        #expect(RoutineTaskType.routine.userFacingTitle == "Repeating task")
+        #expect(RoutineTaskType.allCases.map(\.userFacingTitle) == ["Repeating task", "One-time task"])
+        #expect(RoutineTaskType.routine.pluralTitle == "Repeating tasks")
         #expect(HomeTaskListMode.allCases == [.all, .routines, .todos])
+        #expect(HomeTaskListMode.allCases.map(\.title) == ["All", "Repeating", "One-time"])
         #expect(!TimelineFilterType.allCases.map(\.rawValue).contains("Records"))
+        #expect(TimelineFilterType.routines.title == "Repeating")
+        #expect(TimelineFilterType.todos.title == "One-time")
         #expect(StatsTaskTypeFilter.allCases == [.all, .routines, .todos])
+        #expect(StatsTaskTypeFilter.routines.rawValue == "Routines")
+        #expect(StatsTaskTypeFilter.todos.rawValue == "Todos")
+        #expect(StatsTaskTypeFilter.allCases.map(\.title) == ["All", "Repeating", "One-time"])
     }
 
     @Test @MainActor
@@ -127,19 +135,19 @@ struct TaskFormPresentationTests {
 
         #expect(fixed.isStepBasedMode == false)
         #expect(fixed.showsRepeatControls)
-        #expect(fixed.scheduleModeDescription == "One scheduled routine that finishes after every checklist item is done.")
-        #expect(fixed.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "The routine is done when every checklist item is completed.")
+        #expect(fixed.scheduleModeDescription == "One scheduled repeating task that finishes after every checklist item is done.")
+        #expect(fixed.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "The repeating task is done when every checklist item is completed.")
         #expect(runout.showsRepeatControls)
         #expect(
             runout.checklistSectionDescription(includesDerivedChecklistDueDetail: true)
-                == "Set how often each item becomes due. The earliest due item makes the routine due."
+                == "Set how often each item becomes due. The earliest due item makes the repeating task due."
         )
         #expect(gentle.showsRepeatControls)
 
         #expect(oneOff.isStepBasedMode)
         #expect(oneOff.showsRepeatControls == false)
-        #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
-        #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the todo.")
+        #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this one-time task.")
+        #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the one-time task.")
         #expect(RoutineScheduleMode.softInterval.scheduleBehavior == .soft)
         #expect(RoutineScheduleMode.softInterval.replacingRoutineFinishMode(.checklist) == .softIntervalChecklist)
         #expect(RoutineScheduleMode.softIntervalChecklist.replacingRoutineFinishMode(.standard) == .softInterval)
@@ -200,7 +208,7 @@ struct TaskFormPresentationTests {
         #expect(TaskFormPresentation.checklistIntervalLabel(for: 2) == "Every 2 days")
         #expect(TaskFormPresentation.estimatedDurationLabel(for: 125) == "2 hours 5 minutes")
         #expect(TaskFormPresentation.storyPointsLabel(for: 1) == "1 story point")
-        #expect(weekly.weeklyRecurrenceTimeHelpText() == "Optional. Leave this off to keep the routine due any time on \(weekdaySymbols[1]).")
+        #expect(weekly.weeklyRecurrenceTimeHelpText() == "Optional. Leave this off to keep the repeating task due any time on \(weekdaySymbols[1]).")
         #expect(monthly.monthlyRecurrenceTimeHelpText(explicitTimeText: "9:30 AM") == "Due on the 11th of each month at 9:30 AM.")
         #expect(presentation(recurrenceDayOfMonth: 31).monthlyRecurrenceSummary == "Due on the last day of each month.")
         #expect(presentation(recurrenceDayOfMonth: 30).monthlyRecurrenceSummary == "Due on the 30th; shorter months use their last day.")

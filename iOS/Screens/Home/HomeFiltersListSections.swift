@@ -303,7 +303,7 @@ struct HomeFiltersTodoStateSection: View {
     var body: some View {
         if taskListMode == .todos || taskListMode == .all {
             HomeFiltersPickerEntry(
-                title: "Todo state",
+                title: "One-time state",
                 systemImage: "checkmark.circle",
                 value: selectedTodoStateFilter?.displayTitle ?? "All",
                 destination: .todoState,

@@ -111,7 +111,7 @@ extension SettingsCloudState {
         if !cloudSyncAvailable {
             return "Unavailable in this build"
         }
-        return "Sync routines across devices"
+        return "Sync tasks across devices"
     }
 
     var syncStatusText: String {
@@ -150,7 +150,7 @@ extension SettingsDataTransferState {
         if !dataTransferStatusMessage.isEmpty {
             return dataTransferStatusMessage
         }
-        return "Export or import your routine data"
+        return "Export or import your task data"
     }
 
     var statusText: String {

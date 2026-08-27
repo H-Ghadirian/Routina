@@ -3,6 +3,17 @@ import Testing
 
 struct StatsDashboardItemAvailabilityTests {
     @Test
+    func taskInventoryIsGeneralWhileMissedAndActivityAreDateRangeStats() {
+        #expect(StatsDashboardItem.routineCount.metricScope == .general)
+        #expect(StatsDashboardItem.todoCount.metricScope == .general)
+        #expect(StatsDashboardItem.activeItems.metricScope == .general)
+        #expect(StatsDashboardItem.archivedItems.metricScope == .general)
+        #expect(StatsDashboardItem.totalMissed.metricScope == .dateRange)
+        #expect(StatsDashboardItem.totalDones.metricScope == .dateRange)
+        #expect(StatsDashboardItem.hero.metricScope == .dateRange)
+    }
+
+    @Test
     func healthAccessPrompt_isDashboardItem() {
         #expect(StatsDashboardItem.allCases.contains(.healthAccess))
         #expect(StatsDashboardItem.healthAccess.title == "Apple Health")

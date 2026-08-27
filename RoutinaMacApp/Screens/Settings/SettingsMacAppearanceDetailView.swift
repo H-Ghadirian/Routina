@@ -61,7 +61,7 @@ SettingsMacDetailShell(
     }
 
     if isBoardScreenEnabled {
-        SettingsMacDetailCard(title: "Todo Board") {
+        SettingsMacDetailCard(title: "One-time Task Board") {
             Toggle("Compact cards", isOn: $isMacTodoBoardCompactCards)
                 .toggleStyle(.switch)
 
@@ -102,7 +102,7 @@ SettingsMacDetailShell(
             }
             .buttonStyle(.borderedProminent)
 
-            Text("Adds realistic routines, todos, history, planner blocks, focus sessions, goals, notes, events, and wellness activity. Existing data is preserved.")
+            Text("Adds realistic repeating tasks, one-time tasks, history, planner blocks, focus sessions, goals, notes, events, and wellness activity. Existing data is preserved.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
@@ -212,7 +212,7 @@ struct SettingsMacGeneralDetailView: View {
     var body: some View {
 SettingsMacDetailShell(
     title: "General",
-    subtitle: "Configure app-wide behavior and device-aware routines."
+    subtitle: "Configure app-wide behavior and device-aware repeating tasks."
 ) {
     SettingsMacDetailCard(title: "App Lock") {
         Toggle("Require unlock when opening Routina", isOn: appLockBinding)
@@ -260,12 +260,12 @@ SettingsMacDetailShell(
         Toggle("Show Tomorrow section", isOn: showTomorrowInTaskListBinding)
             .toggleStyle(.switch)
 
-        Toggle("Separate daily routines in task list", isOn: separateDailyRoutinesInTaskListBinding)
+        Toggle("Separate daily repeating tasks in task list", isOn: separateDailyRoutinesInTaskListBinding)
             .toggleStyle(.switch)
     }
 
-    SettingsMacDetailCard(title: "Battery Routines") {
-        Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
+    SettingsMacDetailCard(title: "Battery Repeating Tasks") {
+        Toggle("Create charge repeating tasks", isOn: batteryRoutineMonitoringBinding)
             .toggleStyle(.switch)
 
         Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
@@ -273,7 +273,7 @@ SettingsMacDetailShell(
         }
         .disabled(!batteryRoutineMonitoringEnabled)
 
-        Text("When enabled, Routina creates one charge routine for this Mac and turns it red, urgent, and pinned when the battery is below the threshold.")
+        Text("When enabled, Routina creates one charge repeating task for this Mac and turns it red, urgent, and pinned when the battery is below the threshold.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }

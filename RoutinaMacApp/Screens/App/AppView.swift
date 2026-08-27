@@ -54,7 +54,7 @@ let tabView = TabView(
 Group {
     if store.selectedTab == .search {
         tabView
-            .searchable(text: $searchText, prompt: "Search routines and todos")
+            .searchable(text: $searchText, prompt: "Search repeating and one-time tasks")
             .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
                 PlatformSupport.applyAppIcon(.persistedSelection)
                 store.send(.cloudSettingsChanged)

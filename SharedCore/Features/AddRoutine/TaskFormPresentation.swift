@@ -399,9 +399,9 @@ struct TaskFormPresentation {
     var notesHelpText: String {
         switch taskType {
         case .todo:
-            return "Capture extra context, links, or reminders for this todo."
+            return "Capture extra context, links, or reminders for this one-time task."
         case .routine:
-            return "Add any details you want to keep with this routine."
+            return "Add any details you want to keep with this repeating task."
         }
     }
 
@@ -428,12 +428,12 @@ struct TaskFormPresentation {
 
     var scheduleModeDescription: String {
         switch scheduleMode {
-        case .fixedInterval: return "One scheduled routine. Mark it done once, or advance its steps."
+        case .fixedInterval: return "One scheduled repeating task. Mark it done once, or advance its steps."
         case .softInterval: return "Always visible. Highlight it again after enough time has passed."
-        case .fixedIntervalChecklist: return "One scheduled routine that finishes after every checklist item is done."
+        case .fixedIntervalChecklist: return "One scheduled repeating task that finishes after every checklist item is done."
         case .softIntervalChecklist: return "Always visible. Finish it by completing every checklist item."
-        case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the routine."
-        case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the routine overdue."
+        case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the repeating task."
+        case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the repeating task overdue."
         case .oneOff: return "This task does not repeat."
         }
     }
@@ -441,32 +441,32 @@ struct TaskFormPresentation {
     var routineFormatDescription: String {
         switch scheduleMode.routineFormat {
         case .standard: return "Mark it done once, or advance its steps."
-        case .checklist: return "The routine is done when every checklist item is completed."
-        case .runout: return "Checklist items have their own timing; the earliest due item drives the routine."
+        case .checklist: return "The repeating task is done when every checklist item is completed."
+        case .runout: return "Checklist items have their own timing; the earliest due item drives the repeating task."
         }
     }
 
     var stepsSectionDescription: String {
         switch scheduleMode {
         case .oneOff:
-            return "Steps run in order. Leave this empty for a single-step todo."
+            return "Steps run in order. Leave this empty for a single-step one-time task."
         default:
-            return "Steps run in order. Leave this empty for a one-step routine."
+            return "Steps run in order. Leave this empty for a one-step repeating task."
         }
     }
 
     func checklistSectionDescription(includesDerivedChecklistDueDetail: Bool) -> String {
         switch scheduleMode {
         case .fixedIntervalChecklist, .softIntervalChecklist:
-            return "The routine is done when every checklist item is completed."
+            return "The repeating task is done when every checklist item is completed."
         case .derivedFromChecklist, .softDerivedFromChecklist:
             return includesDerivedChecklistDueDetail
-                ? "Set how often each item becomes due. The earliest due item makes the routine due."
-                : "The routine becomes due when the earliest checklist item is due."
+                ? "Set how often each item becomes due. The earliest due item makes the repeating task due."
+                : "The repeating task becomes due when the earliest checklist item is due."
         case .fixedInterval, .softInterval:
-            return "Use checklist items for parts you want to tick off before finishing the routine."
+            return "Use checklist items for parts you want to tick off before finishing the repeating task."
         case .oneOff:
-            return "Use checklist items for parts you want to tick off before finishing the todo."
+            return "Use checklist items for parts you want to tick off before finishing the one-time task."
         }
     }
 
@@ -551,7 +551,7 @@ struct TaskFormPresentation {
             guard let explicitTimeText else { return weeklyRecurrenceSummary }
             return "Due every \(Self.weekdayListText(for: selectedWeekdaysForSummary)) at \(explicitTimeText)."
         }
-        return "Optional. Leave this off to keep the routine due any time on \(Self.weekdayListText(for: selectedWeekdaysForSummary))."
+        return "Optional. Leave this off to keep the repeating task due any time on \(Self.weekdayListText(for: selectedWeekdaysForSummary))."
     }
 
     var monthlyRecurrenceSummary: String {
@@ -719,11 +719,11 @@ struct TaskFormPresentation {
         let resolvedDay = clampedMonthDay(day)
         switch resolvedDay {
         case 31:
-            return "Optional. Leave this off to keep the routine due any time on the last day of each month."
+            return "Optional. Leave this off to keep the repeating task due any time on the last day of each month."
         case 29, 30:
-            return "Optional. Leave this off to keep the routine due any time on the \(ordinalDay(resolvedDay)); shorter months use their last day."
+            return "Optional. Leave this off to keep the repeating task due any time on the \(ordinalDay(resolvedDay)); shorter months use their last day."
         default:
-            return "Optional. Leave this off to keep the routine due any time on the \(ordinalDay(resolvedDay)) of each month."
+            return "Optional. Leave this off to keep the repeating task due any time on the \(ordinalDay(resolvedDay)) of each month."
         }
     }
 
@@ -732,7 +732,7 @@ struct TaskFormPresentation {
         guard selectedDays.count > 1 else {
             return monthlyOptionalAnyTimeSentence(for: selectedDays.first ?? 1)
         }
-        return "Optional. Leave this off to keep the routine due any time on the \(formattedList(selectedDays.map(monthDayListLabel)))."
+        return "Optional. Leave this off to keep the repeating task due any time on the \(formattedList(selectedDays.map(monthDayListLabel)))."
     }
 
     private static func clampedMonthDay(_ day: Int) -> Int {

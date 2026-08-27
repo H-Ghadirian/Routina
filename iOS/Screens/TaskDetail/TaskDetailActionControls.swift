@@ -220,8 +220,8 @@ struct TaskDetailRoutinePrimaryActionSection: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("More routine actions")
-        .accessibilityHint("Not today, pause, pause until, or resume this routine")
+        .accessibilityLabel("More repeating-task actions")
+        .accessibilityHint("Not today, pause, pause until, or resume this repeating task")
     }
 
     private var pauseUntilActionTitle: String {
@@ -231,14 +231,14 @@ struct TaskDetailRoutinePrimaryActionSection: View {
     @ViewBuilder
     private var explanatoryMessages: some View {
         if store.isStepRoutineOffToday {
-            Text("Step-based routines can only be progressed for today.")
+            Text("Step-based repeating tasks can only be progressed for today.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
 
         if store.isChecklistCompletionFromStoredItems && !store.canUndoSelectedDate && !store.isSelectedDateAssumedDone {
-            Text("Complete checklist items below to finish this routine.")
+            Text("Complete checklist items below to finish this repeating task.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

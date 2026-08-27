@@ -327,7 +327,7 @@ struct HomeMacAdventureView: View {
                             .font(.system(size: 30, weight: .bold))
                             .foregroundStyle(.white)
                             .shadow(color: .black.opacity(0.52), radius: 2, y: 1)
-                        Text("Earn coins from real routine progress, then choose which companions and artifacts to unlock.")
+                        Text("Earn coins from real repeating-task progress, then choose which companions and artifacts to unlock.")
                             .font(.callout.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.92))
                             .lineLimit(2)

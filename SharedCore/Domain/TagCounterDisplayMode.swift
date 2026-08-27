@@ -31,13 +31,13 @@ enum TagCounterDisplayMode: String, CaseIterable, Equatable, Identifiable, Senda
         case .none:
             return "Shows tag names without numbers."
         case .linkedAndDone:
-            return "Shows linked routines and done counts side by side."
+            return "Shows linked repeating tasks and done counts side by side."
         case .combinedTotal:
-            return "Shows one number for linked routines plus done counts."
+            return "Shows one number for linked repeating tasks plus done counts."
         case .linkedOnly:
-            return "Shows only how many routines use each tag."
+            return "Shows only how many repeating tasks use each tag."
         case .doneOnly:
-            return "Shows only how many times tagged routines were done."
+            return "Shows only how many times tagged repeating tasks were done."
         }
     }
 

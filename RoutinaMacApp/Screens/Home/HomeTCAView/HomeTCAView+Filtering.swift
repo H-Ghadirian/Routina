@@ -28,8 +28,10 @@ extension HomeTCAView {
                 createdDateFilter: store.createdDateFilter,
                 selectedTags: store.selectedTags,
                 includeTagMatchMode: store.includeTagMatchMode,
-                selectedFlags: store.selectedFlags,
-                includeFlagMatchMode: store.includeFlagMatchMode,
+                selectedFlags: macSharedSelectedFlags,
+                includeFlagMatchMode: macSharedIncludeFlagMatchMode,
+                excludedFlags: macSharedExcludedFlags,
+                excludeFlagMatchMode: macSharedExcludeFlagMatchMode,
                 excludedTags: store.excludedTags,
                 excludeTagMatchMode: store.excludeTagMatchMode,
                 searchText: macSearchPresentationText,
@@ -101,8 +103,10 @@ extension HomeTCAView {
             createdDateFilter: store.createdDateFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
-            selectedFlags: store.selectedFlags,
-            includeFlagMatchMode: store.includeFlagMatchMode,
+            selectedFlags: macSharedSelectedFlags,
+            includeFlagMatchMode: macSharedIncludeFlagMatchMode,
+            excludedFlags: macSharedExcludedFlags,
+            excludeFlagMatchMode: macSharedExcludeFlagMatchMode,
             excludedTags: store.excludedTags,
             excludeTagMatchMode: store.excludeTagMatchMode,
             searchText: macSearchPresentationText,
@@ -384,6 +388,8 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let includeTagMatchMode: RoutineTagMatchMode
     let selectedFlags: Set<String>
     let includeFlagMatchMode: RoutineTagMatchMode
+    let excludedFlags: Set<String>
+    let excludeFlagMatchMode: RoutineTagMatchMode
     let excludedTags: Set<String>
     let excludeTagMatchMode: RoutineTagMatchMode
     let searchText: String
@@ -427,6 +433,8 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         includeTagMatchMode: RoutineTagMatchMode,
         selectedFlags: Set<String>,
         includeFlagMatchMode: RoutineTagMatchMode,
+        excludedFlags: Set<String>,
+        excludeFlagMatchMode: RoutineTagMatchMode,
         excludedTags: Set<String>,
         excludeTagMatchMode: RoutineTagMatchMode,
         searchText: String,
@@ -474,6 +482,8 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.includeTagMatchMode = includeTagMatchMode
         self.selectedFlags = selectedFlags
         self.includeFlagMatchMode = includeFlagMatchMode
+        self.excludedFlags = excludedFlags
+        self.excludeFlagMatchMode = excludeFlagMatchMode
         self.excludedTags = excludedTags
         self.excludeTagMatchMode = excludeTagMatchMode
         self.searchText = searchText

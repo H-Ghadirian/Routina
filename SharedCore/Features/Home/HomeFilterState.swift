@@ -8,6 +8,8 @@ struct HomeTaskFiltersState: Equatable {
     var includeTagMatchMode: RoutineTagMatchMode = .all
     var selectedFlags: Set<String> = []
     var includeFlagMatchMode: RoutineTagMatchMode = .all
+    var excludedFlags: Set<String> = []
+    var excludeFlagMatchMode: RoutineTagMatchMode = .any
     var excludedTags: Set<String> = []
     var excludeTagMatchMode: RoutineTagMatchMode = .any
     var selectedManualPlaceFilterID: UUID? = nil
@@ -33,6 +35,8 @@ struct HomeTaskFiltersState: Equatable {
             includeTagMatchMode: includeTagMatchMode,
             selectedFlags: selectedFlags,
             includeFlagMatchMode: includeFlagMatchMode,
+            excludedFlags: excludedFlags,
+            excludeFlagMatchMode: excludeFlagMatchMode,
             excludedTags: excludedTags,
             excludeTagMatchMode: excludeTagMatchMode,
             selectedFilter: selectedFilter,
@@ -74,6 +78,8 @@ struct HomeTaskFiltersState: Equatable {
         includeTagMatchMode = snapshot.includeTagMatchMode
         selectedFlags = snapshot.selectedFlags
         includeFlagMatchMode = snapshot.includeFlagMatchMode
+        excludedFlags = snapshot.excludedFlags
+        excludeFlagMatchMode = snapshot.excludeFlagMatchMode
         excludedTags = snapshot.excludedTags
         excludeTagMatchMode = snapshot.excludeTagMatchMode
         selectedFilter = snapshot.selectedFilter
@@ -173,6 +179,8 @@ enum HomeTemporaryViewStateMapper {
             includeTagMatchMode: persistedState.homeIncludeTagMatchMode,
             selectedFlags: persistedState.homeSelectedFlags,
             includeFlagMatchMode: persistedState.homeIncludeFlagMatchMode,
+            excludedFlags: persistedState.homeExcludedFlags,
+            excludeFlagMatchMode: persistedState.homeExcludeFlagMatchMode,
             excludedTags: persistedState.homeExcludedTags,
             excludeTagMatchMode: persistedState.homeExcludeTagMatchMode,
             selectedManualPlaceFilterID: persistedState.homeSelectedManualPlaceFilterID,
@@ -264,6 +272,8 @@ enum HomeTemporaryViewStateMapper {
             homeIncludeTagMatchMode: taskFilters.includeTagMatchMode,
             homeSelectedFlags: taskFilters.selectedFlags,
             homeIncludeFlagMatchMode: taskFilters.includeFlagMatchMode,
+            homeExcludedFlags: taskFilters.excludedFlags,
+            homeExcludeFlagMatchMode: taskFilters.excludeFlagMatchMode,
             homeExcludedTags: taskFilters.excludedTags,
             homeExcludeTagMatchMode: taskFilters.excludeTagMatchMode,
             homeSelectedManualPlaceFilterID: taskFilters.selectedManualPlaceFilterID,

@@ -71,7 +71,7 @@ enum BatteryRoutineDeviceKind: String, CaseIterable, Sendable {
     }
 
     var defaultNotes: String {
-        "Routina updates this routine when this device battery is below the configured threshold. Pause the routine to disable battery prompts for this device."
+        "Routina updates this repeating task when this device battery is below the configured threshold. Pause the task to disable battery prompts for this device."
     }
 }
 

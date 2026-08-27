@@ -642,7 +642,7 @@ homeContent
             ContentUnavailableView(
                 "Select a task",
                 systemImage: "checklist",
-                description: Text("Choose a routine or to-do from the sidebar to see its schedule, logs, and actions.")
+                description: Text("Choose a repeating or one-time task from the sidebar to see its schedule, logs, and actions.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -741,11 +741,11 @@ homeContent
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.yellow)
 
-            Label("\(store.routineTasks.filter { !$0.isOneOffTask }.count) routines", systemImage: "arrow.clockwise")
+            Label("\(store.routineTasks.filter { !$0.isOneOffTask }.count) repeating", systemImage: "arrow.clockwise")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Label("\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count) todos", systemImage: "checkmark.circle")
+            Label("\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count) one-time", systemImage: "checkmark.circle")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
@@ -818,8 +818,8 @@ homeContent
             )
         } else if store.routineTasks.contains(where: { $0.id == taskID }) {
             HomeLoadingStateView(
-                title: "Opening Routine",
-                message: "Loading routine details and recent activity.",
+                title: "Opening Task",
+                message: "Loading task details and recent activity.",
                 systemImage: "checklist",
                 showsSkeleton: false
             )
@@ -829,9 +829,9 @@ homeContent
                 }
         } else {
             ContentUnavailableView(
-                "Routine not found",
+                "Task not found",
                 systemImage: "exclamationmark.triangle",
-                description: Text("The selected routine is no longer available.")
+                description: Text("The selected task is no longer available.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

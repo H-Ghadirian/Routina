@@ -153,6 +153,7 @@ enum RoutineFlag {
 /// kind, allowing future behavior to be added without changing persisted data.
 enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case hideFromTaskLists
+    case hideFromCalendarList
     case hideFromTimeline
     case hideFromTaskLadder
     case autoAssumeDone
@@ -166,6 +167,8 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
         switch self {
         case .hideFromTaskLists:
             return "Hide from Task Lists"
+        case .hideFromCalendarList:
+            return "Hide from Calendar List"
         case .hideFromTimeline:
             return "Hide from Timeline"
         case .hideFromTaskLadder:
@@ -179,6 +182,8 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
         switch self {
         case .hideFromTaskLists:
             return "Hide tasks from normal task lists"
+        case .hideFromCalendarList:
+            return "Hide tasks from Calendar List"
         case .hideFromTimeline:
             return "Hide task activity from Timeline"
         case .hideFromTaskLadder:
@@ -192,6 +197,8 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
         switch self {
         case .hideFromTaskLists:
             return "Tasks remain available when you search for them."
+        case .hideFromCalendarList:
+            return "Tasks remain visible in Calendar Schedule and other views."
         case .hideFromTimeline:
             return "Task activity remains available when this Flag is selected in Timeline filters."
         case .hideFromTaskLadder:
@@ -205,6 +212,8 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
         switch self {
         case .hideFromTaskLists:
             return "eye.slash"
+        case .hideFromCalendarList:
+            return "calendar.badge.minus"
         case .hideFromTimeline:
             return "clock.badge.xmark"
         case .hideFromTaskLadder:
@@ -299,6 +308,13 @@ enum RoutineFlagRules {
         rules: [RoutineFlagRule]
     ) -> Bool {
         !flagsHidingFromTaskLists(flags, rules: rules).isEmpty
+    }
+
+    static func hidesFromCalendarList(
+        flags: [String],
+        rules: [RoutineFlagRule]
+    ) -> Bool {
+        containsConfiguredFlag(.hideFromCalendarList, in: flags, rules: rules)
     }
 
     static func enablesAutoAssumeDone(

@@ -492,13 +492,36 @@ Coverage:
 
 Given Settings is opened on iOS or macOS
 When the Flags destination loads
-Then it shows exactly the four canonical built-in behavior Flags
+Then it shows exactly the five canonical built-in behavior Flags
+And one of them is Hide from Calendar List
 And it does not offer custom Flag creation or custom rule editing
 
 Given the persisted settings catalog is empty or contains non-canonical entries
 When the app launches
-Then the catalog is repaired to the four canonical built-in values
+Then the catalog is repaired to the five canonical built-in values
 And task assignments are not scanned or rewritten
+
+### A Flag Can Keep Tasks Out Of Mac Calendar List
+
+Area: Tasks / Planner / Calendar List
+Decision links: [0674](../decisions/0674-hide-flagged-tasks-from-calendar-list.md), [0636](../decisions/0636-replace-configurable-flags-with-built-in-behaviors.md), [0369](../decisions/0369-show-day-task-list-columns-in-planner-calendar.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Planner](../current-behavior/planner.md), [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/RoutineTagTests.swift`
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/Shared/SettingsFlagRulePresentationTests.swift`
+
+Given a task carries the built-in Hide from Calendar List Flag
+And that task otherwise belongs in Planned tasks, Assumed done, Confirmed assumed done, or Done for a visible day
+When Mac Planner shows Calendar List
+Then the task is absent from that section and its count
+And the task remains visible in Calendar Schedule and the focused day-task sidebar when their ordinary conditions match
+And its assumptions, completions, Timeline, Stats, and stored Planner evidence remain unchanged
+
+Given the Flag is removed from that task
+When Calendar List refreshes
+Then the task returns whenever its normal date, search, layer, and shared-filter conditions match
+And the refresh reuses cached exclusion membership instead of scanning all tasks from scrolling row builders
 
 ### Settings Search Opens a Matching Destination
 
@@ -517,7 +540,7 @@ And task content is not searched
 Given Settings is open on iOS or macOS
 When the person searches for `hide`
 Then Flags remains in the visible destination list
-And its result explains the matching inner behaviors: Hide from Task Lists, Hide from Timeline, and Hide from Task Ladder
+And its result explains the matching inner behaviors: Hide from Task Lists, Hide from Calendar List, Hide from Timeline, and Hide from Task Ladder
 And selecting the result opens Flags without changing its controls
 
 ### Mac Task Ladder Rows Show Task Identity Metadata
@@ -1049,7 +1072,7 @@ And returning to Filters shows every selected Hidden and Included tag in a wrapp
 ### Mac Shared Filters Use Current Task Ladder Values And Searchable Tags
 
 Area: Tasks / Timeline / Planner / macOS UI
-Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md), [0660](../decisions/0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
+Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md), [0660](../decisions/0660-make-mac-planner-filters-explicit-composable-and-bounded.md), [0673](../decisions/0673-use-compact-pickers-for-narrow-mac-filters.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
@@ -1067,10 +1090,13 @@ And standalone Timeline activity is excluded only while a Task Ladder value
 filter is active
 
 Given the saved tag catalog is large
-When the ordinary `Shared` Tags card opens
-Then it shows no catalog cloud, only `No tag filter` or active rule chips
+When `Shared` Tags appears
+Then it has no disclosure card or empty-state copy
+And direct tinted Include and Exclude actions stay visible
+When either rule has selected tags
+Then its removable chips appear beneath the corresponding action
 And All/Any appears only for multi-tag rules
-When Add tags opens
+When Include tags or Exclude tags opens
 Then search, selected tags, bounded suggestions, counts, and a lazy Browse list
 make the catalog deliberately available
 
@@ -1086,6 +1112,17 @@ Then both selections remain active and only completed todo history matches
 Given the filter pane is expanded fullscreen on a wide Mac window
 When its content renders
 Then it stays centered within an 840-point maximum and minimizes to the 420-point pane
+And segmented choices that fit use one equal-width row instead of compact wrapping
+And Task List visibility switches precede Task type with left-aligned labels,
+one trailing switch column, and a full-row toggle target
+And Task List, Timeline, and Calendar Appearance rows keep left-aligned labels,
+one trailing switch column, and a full-row toggle target
+
+Given the same controls render in the 420-point companion pane
+When their labels need more width
+Then single-choice controls that would wrap use compact menu pickers
+And each Task Ladder metric keeps its title leading and its picker trailing on one line
+And controls that already fit one line remain segmented
 
 Given Planner Calendar data and shared filters are unchanged
 When SwiftUI reevaluates the Calendar during scrolling
@@ -1108,30 +1145,53 @@ When the person chooses Add tags or Add tags to exclude
 Then the shared searchable picker presents selected, bounded Suggested, and lazy Browse rows as applicable
 And existing Stats filter matching and persistence remain unchanged
 
-### Mac Stats Progressively Reveals Single-Choice Filters
+### Mac Stats Uses Inline Menu Pickers For Single-Choice Filters
 
 Area: Stats / macOS UI
-Decision links: [0415](../decisions/0415-support-custom-stats-date-ranges.md), [0599](../decisions/0599-separate-mac-stats-priority-filters.md), [0654](../decisions/0654-progressively-reveal-mac-planner-header-choices.md), [0659](../decisions/0659-progressively-reveal-mac-stats-single-choice-filters.md)
+Decision links: [0415](../decisions/0415-support-custom-stats-date-ranges.md), [0599](../decisions/0599-separate-mac-stats-priority-filters.md), [0669](../decisions/0669-use-inline-menu-pickers-for-mac-stats-single-choice-filters.md)
 Current behavior: [Stats](../current-behavior/stats.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/MacStatsPriorityFilterPresentationTests.swift`
 
 Given the Mac Stats sidebar is visible
 When the person scans Scope, Show, Time Range, Importance, and Urgency
-Then each card stays collapsed with its current value visible
-When the person opens one of those cards
-Then its segmented choices expand inline and any other open single-choice card collapses
-And choosing an ordinary option applies the filter and collapses that card
+Then each passive card shows a native menu-style picker inline with its title
+And every picker keeps its current value visible without expansion state or segmented option surfaces
+When the person chooses an ordinary option
+Then the filter applies without changing the card height or moving later filters
+And Importance and Urgency continue to update independently
 
-Given Time Range is expanded
-When the person selects Custom Range and edits either inclusive date
-Then the date controls stay expanded for the remaining edit
-And the collapsed card later shows the exact selected period
+Given Time Range is visible
+When the person selects Custom
+Then inclusive From and Through date fields appear beneath only that row
+When the person selects Today, Week, Month, or Year
+Then those custom fields disappear and all five single-choice cards remain compact
 
-Given Reduce Motion is enabled
-When a single-choice card opens or closes
-Then the state changes without an expansion animation
-And the full card header remains clickable and exposes its current value and expansion state to accessibility
+Given a person uses accessibility navigation
+When they reach an inline picker
+Then its hidden picker label still names the filter while the adjacent visible card title is not duplicated
+
+### Stats Separates Current Inventory From Selected-Range Activity
+
+Area: Stats / UI
+Decision links: [0415](../decisions/0415-support-custom-stats-date-ranges.md), [0668](../decisions/0668-separate-general-stats-and-standardize-task-type-language.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/macOS/StatsMacDashboardItemAvailabilityTests.swift`
+- `Tests/iOS/StatsDashboardItemAvailabilityTests.swift`
+- `Tests/Shared/StatsFeatureDerivedStateSupportTests.swift`
+
+Given Stats has both current task inventory and selected-period activity
+When the dashboard is presented
+Then current Repeating-task, open One-time-task, active-item, archived-item, and goal totals appear under `General Stats`
+And activity, focus, wellbeing, and outcome evidence appears under `Date Range Stats`
+And Missed stays with Done and Canceled in Date Range Stats
+And changing only the selected range does not change General Stats totals
+
+Given Today or a one-day custom range is selected
+When created-task evidence exists
+Then `Tasks created per day` is omitted because there is no multi-day trend to chart
+And a multi-day range makes that chart available again
 
 ### iOS Priority Filters Keep Importance And Urgency Independent
 
@@ -1179,6 +1239,14 @@ Given one or more Flags are selected
 When the person opens Filter flags
 Then every selected Flag is visible at the top with direct removal
 And the remaining cached Flag options are searchable without filtering them from scrolling rows
+
+Given Mac Task List Filters has available Flags
+When no Flag filter is selected
+Then one direct tinted Include flags action is visible without an All Flags chip or inline catalog
+When the person opens it
+Then a searchable picker keeps selected Flags pinned and remaining Flags in Browse
+And selected Flags return as removable chips beneath the action
+And All/Any appears only when multiple Flags are selected
 
 ### iOS Goal Gate Hides The Home Goal Filter
 
@@ -1574,7 +1642,7 @@ And Task Detail shows no frequency and no cadence-derived notification is schedu
 ### Repeating Behavior Is Composable On Routines
 
 Area: Tasks
-Decision links: [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
+Decision links: [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md), [0668](../decisions/0668-separate-general-stats-and-standardize-task-type-language.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskFormPresentationTests.swift`
@@ -1594,7 +1662,7 @@ And creating the behavior does not require or create a separate task purpose
 ### Task-Kind Surfaces Match the Domain
 
 Area: Tasks / Stats / Settings
-Decision links: [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md)
+Decision links: [0642](../decisions/0642-unify-task-configuration-and-retire-legacy-task-kind-storage.md), [0668](../decisions/0668-separate-general-stats-and-standardize-task-type-language.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [Stats](../current-behavior/stats.md)
 Coverage:
 - `Tests/Shared/TaskFormPresentationTests.swift`
@@ -1607,9 +1675,10 @@ Coverage:
 
 Given the user opens task creation, Home or Timeline filters, Stats, or Settings
 When task-type choices and reports are presented
-Then only Routines and Todos are exposed as task types
+Then only Repeating and One-time are exposed as task types
+And persisted Routine and Todo raw values remain compatible without appearing as task-type labels
 And the persisted task-kind and schedule-mode enums contain no third compatibility case
-And schema, import, backup, sharing, filters, sections, badges, counts, and dashboard items use the same two-kind contract
+And schema, import, backup, sharing, filters, sections, badges, counts, and dashboard items preserve the same two-kind contract
 
 ### Compact And Structured Recurrence Stay Compatible
 
@@ -2869,6 +2938,7 @@ Then matching task activity appears even though the rule normally hides it
 And multiple selected Flags use the chosen `All` or `Any` matching mode
 And clearing the Flag selection restores the default hidden presentation
 And the filter catalog remains available from the cached pre-hide snapshot without whole-history work in scrolling row builders
+And Mac Timeline presents selection through the same direct searchable Include flags action and removable chips as Task List, without a disclosure card, Default Timeline chip, or inline Reveal by Flag catalog
 
 ### iOS Timeline Refreshes After Synced Activity
 

@@ -16,9 +16,9 @@ extension HomeTCAView {
         case .all:
             return "All"
         case .todos:
-            return "Todos"
+            return "One-time"
         case .routines:
-            return "Routines"
+            return "Repeating"
         }
     }
 
@@ -149,9 +149,9 @@ detailContent
         case .all:
             return "Search tasks"
         case .routines:
-            return "Search routines"
+            return "Search repeating tasks"
         case .todos:
-            return "Search todos"
+            return "Search one-time tasks"
         }
     }
 
@@ -169,7 +169,7 @@ detailContent
 
     var filterPicker: some View {
         RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Routine Filter",
+            accessibilityLabel: "Task Filter",
             options: iOSAvailableFilters,
             selection: Binding(
                 get: { store.selectedFilter },
@@ -177,7 +177,7 @@ detailContent
             ),
             fillsAvailableWidth: true
         ) { filter in
-            Text(filter.rawValue)
+            Text(filter.title)
         }
         .padding(.horizontal)
         .padding(.top, 4)
@@ -481,7 +481,7 @@ detailContent
                 Section {
                     inlineEmptyStateRow(
                         title: "No tasks yet",
-                        message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
+                        message: "Add a repeating or one-time task, and the home list will organize what needs attention for you.",
                         systemImage: "checklist",
                         actionTitle: "Add New Task",
                         action: openAddTask
@@ -494,7 +494,7 @@ detailContent
         } else {
             emptyStateView(
                 title: "No tasks yet",
-                message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
+                message: "Add a repeating or one-time task, and the home list will organize what needs attention for you.",
                 systemImage: "checklist",
                 actionTitle: "Add New Task",
                 action: openAddTask

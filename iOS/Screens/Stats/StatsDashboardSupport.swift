@@ -1,11 +1,14 @@
 import SwiftUI
 
 enum StatsDashboardBlock: Identifiable {
+    case scopeHeader(StatsMetricScope)
     case section(StatsDashboardItem)
     case summaryCards([StatsDashboardItem])
 
     var id: String {
         switch self {
+        case let .scopeHeader(scope):
+            return "scope:\(scope.rawValue)"
         case let .section(item):
             return item.rawValue
         case let .summaryCards(items):
@@ -159,9 +162,9 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
         case .totalMissed:
             return "Missed"
         case .routineCount:
-            return "Routines"
+            return "Repeating tasks"
         case .todoCount:
-            return "Open todos"
+            return "Open one-time tasks"
         case .activeItems:
             return "Active items"
         case .archivedItems:
@@ -321,6 +324,22 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return true
         default:
             return false
+        }
+    }
+
+    var metricScope: StatsMetricScope {
+        switch self {
+        case .goals,
+             .routineCount,
+             .todoCount,
+             .activeItems,
+             .archivedItems,
+             .unassignedFocus,
+             .recentWins,
+             .focusAchievements:
+            return .general
+        default:
+            return .dateRange
         }
     }
 

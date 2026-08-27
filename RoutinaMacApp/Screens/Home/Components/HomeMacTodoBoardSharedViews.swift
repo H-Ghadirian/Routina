@@ -98,7 +98,7 @@ struct HomeMacTodoBoardEmptyStateView: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
 
-                Text("Create a backlog or sprint in the sidebar, add a todo, or adjust filters.")
+                Text("Create a backlog or sprint in the sidebar, add a one-time task, or adjust filters.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

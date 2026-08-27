@@ -1718,6 +1718,7 @@ final class PerformanceRegressionTests: XCTestCase {
     func testMacHomeFiltersUseRightSideCompanionPane() throws {
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let filterContainerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacFilterDetailContainerView.swift")
+        let sharedFilterControlsSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacImportanceUrgencyMatrixView.swift")
         let routineFilterSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacRoutineFiltersDetailView.swift")
         let timelineFilterSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTimelineFiltersDetailView.swift")
         let calendarFilterSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacCalendarFiltersDetailView.swift")
@@ -1756,6 +1757,8 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(filterContainerSource.contains("GeometryReader"))
         XCTAssertTrue(filterContainerSource.contains(".frame(width: proxy.size.width, alignment: .topLeading)"))
         XCTAssertTrue(filterContainerSource.contains("compactHorizontalPadding"))
+        XCTAssertTrue(filterContainerSource.contains("HomeMacFilterDetailLayout(availableWidth: proxy.size.width)"))
+        XCTAssertTrue(filterContainerSource.contains(".environment(\\.homeMacFilterDetailLayout, layout)"))
         XCTAssertTrue(sidebarSource.contains("case .calendar:"))
         XCTAssertTrue(sidebarSource.contains("macCalendarFiltersDetailContent"))
         XCTAssertTrue(sidebarSource.contains("minimumSegmentWidth: 82"))
@@ -1767,6 +1770,26 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertFalse(routineFilterSource.contains(".frame(width: 520)"))
         XCTAssertTrue(routineFilterSource.contains(".frame(maxWidth: .infinity)"))
         XCTAssertTrue(routineFilterSource.contains("HomeMacSidebarSectionCard(title: \"Filters\")"))
+        XCTAssertTrue(routineFilterSource.contains("filterControlSection(\"Status\")"))
+        XCTAssertTrue(filterContainerSource.contains("struct HomeMacAdaptiveFilterChoiceControl"))
+        XCTAssertTrue(filterContainerSource.contains("filterLayout.usesCompactPickers"))
+        XCTAssertTrue(filterContainerSource.contains(".pickerStyle(.menu)"))
+        XCTAssertGreaterThanOrEqual(
+            routineFilterSource.components(
+                separatedBy: "HomeMacAdaptiveFilterChoiceControl("
+            ).count - 1,
+            6,
+            "Task List controls that previously wrapped in the companion pane should use adaptive compact pickers."
+        )
+        XCTAssertGreaterThanOrEqual(
+            sharedFilterControlsSource.components(
+                separatedBy: "HomeMacAdaptiveFilterChoiceControl("
+            ).count - 1,
+            5,
+            "Every Task Ladder value should use an adaptive compact picker."
+        )
+        XCTAssertFalse(routineFilterSource.contains("maximumSegmentsPerRow"))
+        XCTAssertFalse(sharedFilterControlsSource.contains("maximumSegmentsPerRow"))
         XCTAssertFalse(routineFilterSource.contains("HomeMacCollapsibleFilterSection(\n            title: \"Filters\""))
         XCTAssertTrue(routineFilterSource.contains("if showsFlagSection {\n                    flagSectionContent()\n                }"))
         XCTAssertTrue(sidebarSource.contains("showsFlagSection: homeFlagFilterData.hasFlags"))
@@ -1776,6 +1799,7 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(timelineFilterSource.contains("@Binding var selectedStatus: TimelineStatusFilter"))
         XCTAssertTrue(timelineFilterSource.contains("selection: $selectedType"))
         XCTAssertTrue(timelineFilterSource.contains("selection: $selectedStatus"))
+        XCTAssertTrue(timelineFilterSource.contains("fillsAvailableWidth: filterLayout.fillsAvailableWidth"))
         XCTAssertFalse(timelineFilterSource.contains("private var statusBinding"))
         XCTAssertTrue(calendarFilterSource.contains("HomeMacCalendarFiltersDetailView"))
         XCTAssertTrue(calendarFilterSource.contains("DayPlanCalendarFilterState"))
@@ -1797,6 +1821,49 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("isFilterDetailFullscreen: isMacFilterDetailFullscreen"))
         XCTAssertTrue(boardSource.contains("var macBoardCenterContent: some View {\n        macTodoBoardContent\n    }"))
         XCTAssertTrue(timelineSource.contains("isActive: isMacTimelineMode,\n                allowsFallbackSelection: !store.isMacFilterDetailPresented"))
+    }
+
+    func testMacFilterDetailLayoutUsesCompactPanePickersAndWideFullscreenRows() {
+        let companionLayout = HomeMacFilterDetailLayout(availableWidth: 420)
+        XCTAssertFalse(companionLayout.fillsAvailableWidth)
+        XCTAssertTrue(companionLayout.usesCompactPickers)
+
+        let fullscreenLayout = HomeMacFilterDetailLayout(availableWidth: 840)
+        XCTAssertTrue(fullscreenLayout.fillsAvailableWidth)
+        XCTAssertFalse(fullscreenLayout.usesCompactPickers)
+    }
+
+    func testMacFilterAppearanceRowsAlignNativeSwitchesWithFullWidthLabels() throws {
+        let rowSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacSidebarSectionCard.swift"
+        )
+        let appearanceSources = try [
+            "RoutinaMacApp/Screens/Home/Components/HomeMacRoutineFiltersDetailView.swift",
+            "RoutinaMacApp/Screens/Home/Components/HomeMacTimelineFiltersDetailView.swift",
+            "RoutinaMacApp/Screens/Home/Components/HomeMacCalendarFiltersDetailView.swift"
+        ].map(Self.sourceFile)
+
+        XCTAssertTrue(rowSource.contains("struct HomeMacFilterAppearanceToggleRow: View"))
+        XCTAssertTrue(rowSource.contains("Toggle(isOn: $isOn)"))
+        XCTAssertTrue(rowSource.contains(".toggleStyle(.switch)"))
+        XCTAssertGreaterThanOrEqual(
+            rowSource.components(
+                separatedBy: ".frame(maxWidth: .infinity, alignment: .leading)"
+            ).count - 1,
+            2,
+            "Both the native toggle and its label must accept the row width so every switch shares one trailing column."
+        )
+        XCTAssertTrue(
+            rowSource.contains(".contentShape(Rectangle())"),
+            "The expanded label surface must remain part of the toggle hit target."
+        )
+
+        for source in appearanceSources {
+            XCTAssertTrue(
+                source.contains("HomeMacFilterAppearanceToggleRow("),
+                "Every Mac filter Appearance screen must use the aligned shared switch row."
+            )
+        }
     }
 
     func testPlannerTimelineListUsesHomeTimelineFilters() throws {

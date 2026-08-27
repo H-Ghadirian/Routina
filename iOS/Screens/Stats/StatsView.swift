@@ -473,27 +473,36 @@ struct StatsView: View {
 
     private func dashboardBlocks(metrics: Metrics) -> [StatsDashboardBlock] {
         var blocks: [StatsDashboardBlock] = []
-        var pendingSummaryItems: [StatsDashboardItem] = []
+        let visibleItems = scopedVisibleOrderedDashboardItems
 
-        func flushSummaryItems() {
-            guard !pendingSummaryItems.isEmpty else { return }
-            blocks.append(.summaryCards(pendingSummaryItems))
-            pendingSummaryItems.removeAll()
-        }
+        for scope in [StatsMetricScope.general, .dateRange] {
+            let scopedItems = visibleItems.filter { $0.metricScope == scope }
+            guard !scopedItems.isEmpty else { continue }
 
-        for item in scopedVisibleOrderedDashboardItems {
-            if item.isSummaryCard {
-                pendingSummaryItems.append(item)
-            } else {
-                flushSummaryItems()
-                blocks.append(.section(item))
+            blocks.append(.scopeHeader(scope))
+            var pendingSummaryItems: [StatsDashboardItem] = []
+
+            func flushSummaryItems() {
+                guard !pendingSummaryItems.isEmpty else { return }
+                blocks.append(.summaryCards(pendingSummaryItems))
+                pendingSummaryItems.removeAll()
             }
+
+            for item in scopedItems {
+                if item.isSummaryCard {
+                    pendingSummaryItems.append(item)
+                } else {
+                    flushSummaryItems()
+                    blocks.append(.section(item))
+                }
+            }
+
+            flushSummaryItems()
         }
 
-        flushSummaryItems()
         return blocks.filter { block in
             switch block {
-            case .section:
+            case .scopeHeader, .section:
                 return true
             case let .summaryCards(items):
                 return !summaryCardItems(metrics: metrics, orderedBy: items).isEmpty
@@ -504,11 +513,28 @@ struct StatsView: View {
     @ViewBuilder
     private func dashboardBlockView(_ block: StatsDashboardBlock, metrics: Metrics) -> some View {
         switch block {
+        case let .scopeHeader(scope):
+            statsMetricScopeHeader(scope)
         case let .section(item):
             dashboardSection(item, metrics: metrics)
         case let .summaryCards(items):
             summaryCards(metrics: metrics, dashboardItems: items)
         }
+    }
+
+    private func statsMetricScopeHeader(_ scope: StatsMetricScope) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(scope.title)
+                .font(.title2.weight(.bold))
+
+            Text(scope == .general
+                 ? "Current totals; the selected date range does not change them."
+                 : selectedRange.periodDescription)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("stats.scope.\(scope.rawValue)")
     }
 
     @ViewBuilder

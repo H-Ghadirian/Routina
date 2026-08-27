@@ -1,5 +1,21 @@
 import Foundation
 
+enum StatsMetricScope: String, Identifiable {
+    case general
+    case dateRange
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .general:
+            return "General Stats"
+        case .dateRange:
+            return "Date Range Stats"
+        }
+    }
+}
+
 enum StatsDashboardOrderSupport {
     static func orderedItems<Item>(
         _ items: [Item],

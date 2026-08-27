@@ -340,27 +340,36 @@ struct StatsView: View {
 
     private func dashboardBlocks(snapshot: DashboardSnapshot) -> [StatsMacDashboardBlock] {
         var blocks: [StatsMacDashboardBlock] = []
-        var pendingSummaryItems: [StatsMacDashboardItem] = []
+        let visibleItems = scopedVisibleOrderedDashboardItems
 
-        func flushSummaryItems() {
-            guard !pendingSummaryItems.isEmpty else { return }
-            blocks.append(.summaryCards(pendingSummaryItems))
-            pendingSummaryItems.removeAll()
-        }
+        for scope in [StatsMetricScope.general, .dateRange] {
+            let scopedItems = visibleItems.filter { $0.metricScope == scope }
+            guard !scopedItems.isEmpty else { continue }
 
-        for item in scopedVisibleOrderedDashboardItems {
-            if item.isSummaryCard {
-                pendingSummaryItems.append(item)
-            } else {
-                flushSummaryItems()
-                blocks.append(.section(item))
+            blocks.append(.scopeHeader(scope))
+            var pendingSummaryItems: [StatsMacDashboardItem] = []
+
+            func flushSummaryItems() {
+                guard !pendingSummaryItems.isEmpty else { return }
+                blocks.append(.summaryCards(pendingSummaryItems))
+                pendingSummaryItems.removeAll()
             }
+
+            for item in scopedItems {
+                if item.isSummaryCard {
+                    pendingSummaryItems.append(item)
+                } else {
+                    flushSummaryItems()
+                    blocks.append(.section(item))
+                }
+            }
+
+            flushSummaryItems()
         }
 
-        flushSummaryItems()
         return blocks.filter { block in
             switch block {
-            case .section:
+            case .scopeHeader, .section:
                 return true
             case let .summaryCards(items):
                 return !summaryCardItems(snapshot: snapshot, orderedBy: items).isEmpty
@@ -371,11 +380,31 @@ struct StatsView: View {
     @ViewBuilder
     private func dashboardBlockView(_ block: StatsMacDashboardBlock, snapshot: DashboardSnapshot) -> some View {
         switch block {
+        case let .scopeHeader(scope):
+            statsMetricScopeHeader(scope, selectedRange: snapshot.selectedRange)
         case let .section(item):
             dashboardSection(item, snapshot: snapshot)
         case let .summaryCards(items):
             summaryCards(snapshot: snapshot, dashboardItems: items)
         }
+    }
+
+    private func statsMetricScopeHeader(
+        _ scope: StatsMetricScope,
+        selectedRange: DoneChartRange
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(scope.title)
+                .font(.title2.weight(.bold))
+
+            Text(scope == .general
+                 ? "Current totals; the selected date range does not change them."
+                 : selectedRange.periodDescription)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("stats.scope.\(scope.rawValue)")
     }
 
     @ViewBuilder

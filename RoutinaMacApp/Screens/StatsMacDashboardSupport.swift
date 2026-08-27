@@ -1,11 +1,14 @@
 import SwiftUI
 
 enum StatsMacDashboardBlock: Identifiable {
+    case scopeHeader(StatsMetricScope)
     case section(StatsMacDashboardItem)
     case summaryCards([StatsMacDashboardItem])
 
     var id: String {
         switch self {
+        case let .scopeHeader(scope):
+            return "scope:\(scope.rawValue)"
         case let .section(item):
             return item.rawValue
         case let .summaryCards(items):
@@ -146,9 +149,9 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .totalMissed:
             return "Missed"
         case .routineCount:
-            return "Routines"
+            return "Repeating tasks"
         case .todoCount:
-            return "Open todos"
+            return "Open one-time tasks"
         case .activeItems:
             return "Active items"
         case .archivedItems:
@@ -193,7 +196,7 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .unassignedFocus:
             return "Focus sessions waiting to be assigned."
         case .createdTasksChart:
-            return "A bar chart of routines and todos created over time."
+            return "A bar chart of repeating and one-time tasks created over time."
         case .completionChart:
             return "A bar chart of done, missed, and canceled activity over time."
         case .hourlyActivity:
@@ -305,6 +308,22 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         }
     }
 
+    var metricScope: StatsMetricScope {
+        switch self {
+        case .goals,
+             .routineCount,
+             .todoCount,
+             .activeItems,
+             .archivedItems,
+             .unassignedFocus,
+             .recentWins,
+             .focusAchievements:
+            return .general
+        default:
+            return .dateRange
+        }
+    }
+
     func isIncluded(in scope: StatsDashboardScope) -> Bool {
         switch scope {
         case .all:
@@ -356,7 +375,7 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .unassignedFocus:
             return false
-        case .dailyAverage, .focusAverage, .bestDay, .completionChart, .focusChart, .focusWorkChart:
+        case .dailyAverage, .focusAverage, .bestDay, .createdTasksChart, .completionChart, .focusChart, .focusWorkChart:
             return selectedRange.trailingDayCount > 1
         case .gitHub:
             return isGitFeaturesEnabled

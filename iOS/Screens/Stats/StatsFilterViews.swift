@@ -109,9 +109,9 @@ struct StatsSidebarContent: View {
         case .all:
             return "\(filteredTaskCount) matching items"
         case .routines:
-            return "Routine activity"
+            return "Repeating task activity"
         case .todos:
-            return "Todo activity"
+            return "One-time task activity"
         }
     }
 }
@@ -143,7 +143,7 @@ struct StatsActiveFilterChipBar: View {
 
                 if selectedTaskTypeFilter != .all {
                     compactFilterChip(
-                        title: selectedTaskTypeFilter.rawValue,
+                        title: selectedTaskTypeFilter.title,
                         systemImage: selectedTaskTypeFilter.iosStatsIconName,
                         action: onClearTaskType
                     )

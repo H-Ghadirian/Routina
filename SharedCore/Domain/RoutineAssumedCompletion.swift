@@ -7,7 +7,7 @@ enum RoutineAssumedCompletion {
     }
 
     static let defaultDoneTimeOfDay = RoutineTimeOfDay(hour: 12, minute: 0)
-    static let flagRuleAvailabilitySummary = "Available for scheduled daily, weekly, monthly, or yearly routines with one occurrence per day; eligible multi-day After done routines; and one-time tasks with one date and a Time block."
+    static let flagRuleAvailabilitySummary = "Available for scheduled daily, weekly, monthly, or yearly repeating tasks with one occurrence per day; eligible multi-day After done repeating tasks; and one-time tasks with one date and a Time block."
 
     static func isEligible(_ task: RoutineTask) -> Bool {
         task.autoAssumeDailyDone
@@ -124,10 +124,10 @@ enum RoutineAssumedCompletion {
             return "It is not available for tasks with steps."
         }
         if scheduleMode.routineFormat == .standard, hasChecklistItems {
-            return "It is not available for Standard routines with checklist items."
+            return "It is not available for Standard repeating tasks with checklist items."
         }
         if scheduleMode.isChecklistCompletionMode, !hasChecklistItems {
-            return "Checklist-completion routines need checklist items first."
+            return "Checklist-completion repeating tasks need checklist items first."
         }
         if scheduleMode == .oneOff {
             return "Use exactly one availability date and a Time block."
@@ -143,7 +143,7 @@ enum RoutineAssumedCompletion {
                 recurrenceRule,
                 scheduleMode: scheduleMode
            ) {
-            return "Only eligible multi-day After done Standard routines can use it."
+            return "Only eligible multi-day After done Standard repeating tasks can use it."
         }
         return "This schedule does not support auto-assume done."
     }

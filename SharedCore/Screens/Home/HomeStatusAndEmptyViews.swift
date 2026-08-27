@@ -146,7 +146,7 @@ struct HomeLoadingStateView: View {
 
     init(
         title: String = "Loading Home",
-        message: String = "Fetching routines, todos, and recent activity.",
+        message: String = "Fetching repeating tasks, one-time tasks, and recent activity.",
         systemImage: String = "arrow.triangle.2.circlepath",
         showsSkeleton: Bool = true
     ) {

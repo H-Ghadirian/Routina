@@ -17,6 +17,7 @@ struct HomeFilterPresentationTests {
             selectedTodoStateFilter: .inProgress,
             selectedTags: ["Focus", "Work"],
             selectedFlags: ["Reference", "Focus"],
+            excludedFlags: ["Private"],
             excludedTags: ["Errand", "Low"],
             hasSelectedPlaceFilter: true,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
@@ -28,7 +29,7 @@ struct HomeFilterPresentationTests {
             hideUnavailableRoutines: true
         )
 
-        #expect(presentation.activeOptionalFilterCount == 15)
+        #expect(presentation.activeOptionalFilterCount == 16)
         #expect(presentation.hasActiveOptionalFilters)
     }
 
@@ -44,6 +45,7 @@ struct HomeFilterPresentationTests {
             includeTagMatchMode: .any,
             selectedFlags: ["Reference", "Focus"],
             includeFlagMatchMode: .all,
+            excludedFlags: ["Private"],
             excludedTags: ["Errand"],
             selectedPlaceName: "Office",
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level3),
@@ -67,12 +69,13 @@ struct HomeFilterPresentationTests {
             "Query tag:work",
             "Any 2 tags",
             "All 2 flags",
+            "not Private",
             "not #Errand",
             "Office",
             "L4/L3+",
             "Away hidden"
         ])
-        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Assumed done hidden • Blocked +11 • 12 results")
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Assumed done hidden • Blocked +12 • 12 results")
     }
 
     @Test
@@ -112,7 +115,7 @@ struct HomeFilterPresentationTests {
         #expect(presentation.showsAssumedDoneVisibilityFilter)
         #expect(presentation.activeOptionalFilterCount == 1)
         #expect(presentation.hasActiveOptionalFilters)
-        #expect(presentation.filterLabels == ["Todos", "Assumed done hidden"])
+        #expect(presentation.filterLabels == ["One-time", "Assumed done hidden"])
     }
 
     @Test
@@ -124,7 +127,7 @@ struct HomeFilterPresentationTests {
 
         #expect(routines.showsAssumedDoneVisibilityFilter)
         #expect(routines.activeOptionalFilterCount == 1)
-        #expect(routines.filterLabels == ["Routines", "Assumed done hidden"])
+        #expect(routines.filterLabels == ["Repeating", "Assumed done hidden"])
     }
 
     @Test
@@ -139,8 +142,8 @@ struct HomeFilterPresentationTests {
         let presentation = HomeFilterPresentation(taskListKind: .todos)
 
         #expect(presentation.hasTaskTypeFilter)
-        #expect(presentation.filterLabels == ["Todos"])
-        #expect(presentation.activeTaskFiltersSummary(resultCount: 4, maxVisibleCount: 4) == "Todos • 4 results")
+        #expect(presentation.filterLabels == ["One-time"])
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 4, maxVisibleCount: 4) == "One-time • 4 results")
     }
 
     @Test
@@ -155,9 +158,9 @@ struct HomeFilterPresentationTests {
             hasSavedPlaces: false
         )
 
-        #expect(selected.placeFilterPluralNoun == "routines")
-        #expect(selected.placeFilterAllTitle == "All routines")
-        #expect(selected.manualPlaceFilterDescription == "Showing only routines linked to Gym.")
+        #expect(selected.placeFilterPluralNoun == "repeating tasks")
+        #expect(selected.placeFilterAllTitle == "All repeating tasks")
+        #expect(selected.manualPlaceFilterDescription == "Showing only repeating tasks linked to Gym.")
         #expect(empty.placeFilterSectionDescription == "Save a place in Settings, then link it to a task to filter by place here.")
     }
 
@@ -174,7 +177,7 @@ struct HomeFilterPresentationTests {
             locationAuthorizationStatus: .denied
         )
 
-        #expect(hiddenAway.locationStatusText == "3 routines are hidden because you are away from their matching places.")
-        #expect(unavailable.locationStatusText == "Location access is off, so place-based routines stay visible.")
+        #expect(hiddenAway.locationStatusText == "3 repeating tasks are hidden because you are away from their matching places.")
+        #expect(unavailable.locationStatusText == "Location access is off, so place-based repeating tasks stay visible.")
     }
 }

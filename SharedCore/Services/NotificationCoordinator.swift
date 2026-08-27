@@ -441,7 +441,7 @@ enum NotificationCoordinator {
         let fallbackTitle: String
         switch payload.kind {
         case .task:
-            fallbackTitle = payload.isOneOffTask ? "Your task" : "Your routine"
+            fallbackTitle = payload.isOneOffTask ? "Your one-time task" : "Your repeating task"
         case .event:
             fallbackTitle = "Your event"
         }
@@ -540,7 +540,7 @@ enum NotificationCoordinator {
         if payload.isOneOffTask, let dueDate = payload.dueDate {
             return "This task is due \(dueDate.formatted(date: .abbreviated, time: .shortened)). Open Routina to review it."
         }
-        return "Open Routina to review this routine."
+        return "Open Routina to review this repeating task."
     }
 
     private static func activeReminderDate(

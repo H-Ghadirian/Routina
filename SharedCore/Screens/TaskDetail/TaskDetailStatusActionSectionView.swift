@@ -442,14 +442,14 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
     @ViewBuilder
     private var helperMessages: some View {
         if !isOneOffTask, isStepRoutineOffToday {
-            helperText("Step-based routines can only be progressed for today.")
+            helperText("Step-based repeating tasks can only be progressed for today.")
         }
 
         if !isOneOffTask,
            isChecklistCompletionRoutine,
            !canUndoSelectedDate,
            !isSelectedDateAssumedDone {
-            helperText("Complete checklist items below to finish this routine.")
+            helperText("Complete checklist items below to finish this repeating task.")
         }
 
         if let pauseDescription = pauseArchivePresentation.description {

@@ -69,7 +69,7 @@ struct GoalsTCAView: View {
             ContentUnavailableView {
                 Label("No goals yet", systemImage: "target")
             } description: {
-                Text("Create a goal to group routines and todos by outcome.")
+                Text("Create a goal to group repeating and one-time tasks by outcome.")
             } actions: {
                 Button {
                     store.send(.addGoalTapped)
@@ -166,8 +166,8 @@ private struct GoalListRow: View {
 
                 HStack(spacing: 8) {
                     Text("\(goal.openTaskCount) open")
-                    Text("\(goal.routineCount) routines")
-                    Text("\(goal.todoCount) todos")
+                    Text("\(goal.routineCount) repeating")
+                    Text("\(goal.todoCount) one-time")
                     if goal.childGoalCount > 0 {
                         Text("\(goal.childGoalCount) sub-goals")
                     }
@@ -255,8 +255,8 @@ private struct GoalDetailView: View {
 
                 Section("Overview") {
                     LabeledContent("Open Items", value: "\(goal.openTaskCount)")
-                    LabeledContent("Routines", value: "\(goal.routineCount)")
-                    LabeledContent("Todos", value: "\(goal.todoCount)")
+                    LabeledContent("Repeating", value: "\(goal.routineCount)")
+                    LabeledContent("One-time", value: "\(goal.todoCount)")
                     if let parentGoal = goal.parentGoal {
                         LabeledContent("Parent Goal", value: parentGoal.displayTitle)
                     }
@@ -264,7 +264,7 @@ private struct GoalDetailView: View {
                         LabeledContent("Sub-goals", value: "\(goal.childGoalCount)")
                     }
                     if goal.completedTodoCount > 0 {
-                        LabeledContent("Done Todos", value: "\(goal.completedTodoCount)")
+                        LabeledContent("Done one-time", value: "\(goal.completedTodoCount)")
                     }
                     if let targetDate = goal.targetDate {
                         LabeledContent(

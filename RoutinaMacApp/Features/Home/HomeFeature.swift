@@ -131,6 +131,8 @@ struct HomeFeature {
             includeTagMatchMode: RoutineTagMatchMode = .all,
             selectedFlags: Set<String> = [],
             includeFlagMatchMode: RoutineTagMatchMode = .all,
+            excludedFlags: Set<String> = [],
+            excludeFlagMatchMode: RoutineTagMatchMode = .any,
             excludedTags: Set<String> = [],
             excludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedManualPlaceFilterID: UUID? = nil,
@@ -221,6 +223,8 @@ struct HomeFeature {
                 includeTagMatchMode: includeTagMatchMode,
                 selectedFlags: selectedFlags,
                 includeFlagMatchMode: includeFlagMatchMode,
+                excludedFlags: excludedFlags,
+                excludeFlagMatchMode: excludeFlagMatchMode,
                 excludedTags: excludedTags,
                 excludeTagMatchMode: excludeTagMatchMode,
                 selectedManualPlaceFilterID: selectedManualPlaceFilterID,
@@ -368,6 +372,16 @@ struct HomeFeature {
         var includeFlagMatchMode: RoutineTagMatchMode {
             get { taskFilters.includeFlagMatchMode }
             set { taskFilters.includeFlagMatchMode = newValue }
+        }
+
+        var excludedFlags: Set<String> {
+            get { taskFilters.excludedFlags }
+            set { taskFilters.excludedFlags = newValue }
+        }
+
+        var excludeFlagMatchMode: RoutineTagMatchMode {
+            get { taskFilters.excludeFlagMatchMode }
+            set { taskFilters.excludeFlagMatchMode = newValue }
         }
 
         var excludedTags: Set<String> {
@@ -699,6 +713,8 @@ struct HomeFeature {
         case includeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedFlagsChanged(Set<String>)
         case includeFlagMatchModeChanged(RoutineTagMatchMode)
+        case excludedFlagsChanged(Set<String>)
+        case excludeFlagMatchModeChanged(RoutineTagMatchMode)
         case excludedTagsChanged(Set<String>)
         case excludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedManualPlaceFilterIDChanged(UUID?)
@@ -1320,6 +1336,12 @@ struct HomeFeature {
 
             case let .includeFlagMatchModeChanged(mode):
                 return filterMutationHandler().applyTaskFilterMutation(.includeFlagMatchMode(mode), state: &state)
+
+            case let .excludedFlagsChanged(flags):
+                return filterMutationHandler().applyTaskFilterMutation(.excludedFlags(flags), state: &state)
+
+            case let .excludeFlagMatchModeChanged(mode):
+                return filterMutationHandler().applyTaskFilterMutation(.excludeFlagMatchMode(mode), state: &state)
 
             case let .excludedTagsChanged(tags):
                 return filterMutationHandler().applyTaskFilterMutation(.excludedTags(tags), state: &state)

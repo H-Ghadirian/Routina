@@ -863,15 +863,15 @@ extension HomeTCAView {
             return "Search timeline"
         }
         if isMacBoardSidebarPresented {
-            return "Search todos"
+            return "Search one-time tasks"
         }
         switch store.taskListMode {
         case .all:
             return "Search tasks"
         case .routines:
-            return "Search routines"
+            return "Search repeating tasks"
         case .todos:
-            return "Search todos"
+            return "Search one-time tasks"
         }
     }
 
@@ -1618,16 +1618,16 @@ extension HomeTCAView {
     }
 
     private var deleteConfirmationTitle: String {
-        store.pendingDeleteTaskIDs.count == 1 ? "Delete routine?" : "Delete routines?"
+        store.pendingDeleteTaskIDs.count == 1 ? "Delete task?" : "Delete tasks?"
     }
 
     private var deleteConfirmationMessage: String {
         guard store.pendingDeleteTaskIDs.count == 1 else {
-            return "This will permanently remove \(store.pendingDeleteTaskIDs.count) routines and their logs."
+            return "This will permanently remove \(store.pendingDeleteTaskIDs.count) tasks and their logs."
         }
 
         let taskID = store.pendingDeleteTaskIDs[0]
-        let routineName = store.routineTasks.first(where: { $0.id == taskID })?.name ?? "this routine"
+        let routineName = store.routineTasks.first(where: { $0.id == taskID })?.name ?? "this task"
         return "This will permanently remove \(routineName) and its logs."
     }
 

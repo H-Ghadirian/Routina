@@ -196,7 +196,7 @@ public enum RoutinaHelpCatalog {
             summary: "Tags describe and organize tasks; Flags can apply explicit behavior rules to tasks.",
             details: [
                 "Use Tags for topics, projects, contexts, search, grouping, and filtering, such as #Home or #Admin.",
-                "Use Flags when a task needs a behavior rule, such as hiding it from normal task lists, Task Ladder, or Timeline, or enabling another supported task behavior.",
+                "Use Flags when a task needs a behavior rule, such as hiding it from normal task lists, Calendar List, Task Ladder, or Timeline, or enabling another supported task behavior.",
                 "A task can have both Tags and Flags. Neither one archives or deletes the task unless an explicitly assigned Flag rule says how a surface should treat it.",
                 "Filters for Tags and Flags are independent, so revealing a hidden task in one surface does not change its saved Flag assignment."
             ],
@@ -211,6 +211,7 @@ public enum RoutinaHelpCatalog {
                 "filter",
                 "hide",
                 "rules",
+                "calendar list",
                 "task ladder",
                 "timeline"
             ],
@@ -296,17 +297,17 @@ public enum RoutinaHelpCatalog {
         ),
         RoutinaHelpTopic(
             id: "repeating-tasks",
-            title: "Repeating tasks and routines",
+            title: "Repeating tasks",
             summary: "Repeating tasks preserve reusable work while separating cadence, availability, due pressure, and completion meaning.",
             details: [
-                "Due routines can become due or overdue. Gentle routines stay available without overdue pressure and can use a later nudge.",
+                "Due repeating tasks can become due or overdue. Gentle repeating tasks stay available without overdue pressure and can use a later nudge.",
                 "A repeating task can repeat by interval, calendar pattern, checklist item runout, or have no cadence. Availability separately says whether it is all-day, at a time, in a time block, or within a window.",
                 "No schedule keeps reusable work available immediately after completion. When needed pauses it after completion until you choose Resume.",
                 "Standard completion finishes the occurrence directly. Checklist and sequential-step options can require more progress before completion.",
-                "Changes over time appears with the Task Ladder values for a Repeating routine set to Due with an active interval or calendar cadence. The form explains which choice is needed when the rule is unavailable."
+                "Changes over time appears with the Task Ladder values for a repeating task set to Due with an active interval or calendar cadence. The form explains which choice is needed when the rule is unavailable."
             ],
             aliases: [
-                "routines",
+                "repeating tasks",
                 "recurring tasks",
                 "repeat types",
                 "due versus gentle",
@@ -332,7 +333,7 @@ public enum RoutinaHelpCatalog {
             availability: "Repeating tasks are available across platforms; advanced combinations vary by task type and platform.",
             relatedTopicIDs: ["planner-time-meanings", "assumed-done"],
             exampleQuestions: [
-                "What is the difference between Due and Gentle routines?",
+                "What is the difference between Due and Gentle repeating tasks?",
                 "What does When needed do?",
                 "What is the difference between No schedule and When needed?",
                 "How do I enable changes over time?"

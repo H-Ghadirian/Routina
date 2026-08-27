@@ -1,7 +1,45 @@
+import Foundation
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
 struct StatsMacDashboardItemAvailabilityTests {
+    @Test
+    func taskInventoryIsGeneralWhileMissedAndActivityAreDateRangeStats() {
+        #expect(StatsMacDashboardItem.routineCount.metricScope == .general)
+        #expect(StatsMacDashboardItem.todoCount.metricScope == .general)
+        #expect(StatsMacDashboardItem.activeItems.metricScope == .general)
+        #expect(StatsMacDashboardItem.archivedItems.metricScope == .general)
+        #expect(StatsMacDashboardItem.totalMissed.metricScope == .dateRange)
+        #expect(StatsMacDashboardItem.totalDones.metricScope == .dateRange)
+        #expect(StatsMacDashboardItem.hero.metricScope == .dateRange)
+    }
+
+    @Test
+    func createdTasksChartRequiresMoreThanOneDay() {
+        let day = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        let oneDayCustom = DoneChartRange.custom(from: day, through: day)
+
+        for range in [DoneChartRange.today, oneDayCustom] {
+            #expect(!StatsMacDashboardItem.createdTasksChart.isAvailable(
+                selectedRange: range,
+                isGitFeaturesEnabled: true,
+                isGoalsTabEnabled: true,
+                areMacEventEmotionActionsEnabled: true,
+                isStatsWinsEnabled: true,
+                isStatsAchievementsEnabled: true
+            ))
+        }
+
+        #expect(StatsMacDashboardItem.createdTasksChart.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: false,
+            isGoalsTabEnabled: false,
+            areMacEventEmotionActionsEnabled: false,
+            isStatsWinsEnabled: false,
+            isStatsAchievementsEnabled: false
+        ))
+    }
+
     @Test
     func unassignedFocus_isRetiredFromDashboardAvailability() {
         #expect(!StatsMacDashboardItem.unassignedFocus.isAvailable(

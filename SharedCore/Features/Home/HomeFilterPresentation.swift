@@ -10,9 +10,9 @@ enum HomeFilterTaskListKind: Equatable, Sendable {
         case .all:
             return "tasks"
         case .routines:
-            return "routines"
+            return "repeating tasks"
         case .todos:
-            return "todos"
+            return "one-time tasks"
         }
     }
 
@@ -21,9 +21,9 @@ enum HomeFilterTaskListKind: Equatable, Sendable {
         case .all:
             return "All tasks"
         case .routines:
-            return "All routines"
+            return "All repeating tasks"
         case .todos:
-            return "All todos"
+            return "All one-time tasks"
         }
     }
 }
@@ -40,6 +40,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let includeTagMatchMode: RoutineTagMatchMode
     let selectedFlags: Set<String>
     let includeFlagMatchMode: RoutineTagMatchMode
+    let excludedFlags: Set<String>
+    let excludeFlagMatchMode: RoutineTagMatchMode
     let excludedTags: Set<String>
     let selectedPlaceName: String?
     let hasSelectedPlaceFilter: Bool
@@ -68,6 +70,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
         includeTagMatchMode: RoutineTagMatchMode = .all,
         selectedFlags: Set<String> = [],
         includeFlagMatchMode: RoutineTagMatchMode = .all,
+        excludedFlags: Set<String> = [],
+        excludeFlagMatchMode: RoutineTagMatchMode = .any,
         excludedTags: Set<String> = [],
         selectedPlaceName: String? = nil,
         hasSelectedPlaceFilter: Bool = false,
@@ -95,6 +99,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.includeTagMatchMode = includeTagMatchMode
         self.selectedFlags = selectedFlags
         self.includeFlagMatchMode = includeFlagMatchMode
+        self.excludedFlags = excludedFlags
+        self.excludeFlagMatchMode = excludeFlagMatchMode
         self.excludedTags = excludedTags
         self.selectedPlaceName = selectedPlaceName
         self.hasSelectedPlaceFilter = hasSelectedPlaceFilter
@@ -116,6 +122,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         var count = 0
         if !selectedTags.isEmpty { count += 1 }
         if !selectedFlags.isEmpty { count += 1 }
+        if !excludedFlags.isEmpty { count += 1 }
         count += excludedTags.count
         if hasSelectedPlaceFilter { count += 1 }
         if normalizedImportanceUrgencyFilter != nil { count += 1 }
@@ -220,6 +227,14 @@ struct HomeFilterPresentation: Equatable, Sendable {
             labels.append("\(includeFlagMatchMode.rawValue) \(selectedFlags.count) flags")
         }
 
+        if !excludedFlags.isEmpty {
+            if excludedFlags.count == 1, let flag = excludedFlags.first {
+                labels.append("not \(flag)")
+            } else {
+                labels.append("not \(excludeFlagMatchMode.rawValue.lowercased()) \(excludedFlags.count) flags")
+            }
+        }
+
         if !excludedTags.isEmpty {
             if excludedTags.count == 1, let tag = excludedTags.first {
                 labels.append("not #\(tag)")
@@ -289,18 +304,18 @@ struct HomeFilterPresentation: Equatable, Sendable {
         switch locationAuthorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             if awayRoutineCount == 0 {
-                return "All place-linked routines are currently available."
+                return "All place-linked repeating tasks are currently available."
             }
             if hideUnavailableRoutines {
-                return "\(awayRoutineCount) routines are hidden because you are away from their matching places."
+                return "\(awayRoutineCount) repeating tasks are hidden because you are away from their matching places."
             }
-            return "\(awayRoutineCount) routines are away from their matching places and shown below."
+            return "\(awayRoutineCount) repeating tasks are away from their matching places and shown below."
         case .notDetermined:
-            return "Allow location access to automatically separate place-based routines. Until then they stay visible."
+            return "Allow location access to automatically separate place-based repeating tasks. Until then they stay visible."
         case .disabled:
-            return "Location services are disabled on this device, so place-based routines stay visible."
+            return "Location services are disabled on this device, so place-based repeating tasks stay visible."
         case .restricted, .denied:
-            return "Location access is off, so place-based routines stay visible."
+            return "Location access is off, so place-based repeating tasks stay visible."
         }
     }
 
@@ -331,9 +346,9 @@ private extension HomeFilterTaskListKind {
         case .all:
             return "All"
         case .routines:
-            return "Routines"
+            return "Repeating"
         case .todos:
-            return "Todos"
+            return "One-time"
         }
     }
 }

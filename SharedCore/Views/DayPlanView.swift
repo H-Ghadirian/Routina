@@ -448,6 +448,7 @@ struct DayPlanDetailView: View {
     var calendarSearchText = ""
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
     var calendarTaskFilterCacheSeed = 0
+    var calendarListRevealsHiddenTasks = false
     var macHeaderFocusControl: (() -> AnyView)? = nil
     var listContent: ((DayPlanTimelineDateJumpRequest?) -> AnyView)? = nil
     var timelineActivityDates: [Date] = []
@@ -495,6 +496,7 @@ struct DayPlanDetailView: View {
                     calendarSearchText: calendarSearchText,
                     calendarTaskFilter: calendarTaskFilter,
                     calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
+                    calendarListRevealsHiddenTasks: calendarListRevealsHiddenTasks,
                     calendarTaskViewMode: calendarTaskViewMode.wrappedValue,
                     isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
@@ -1356,6 +1358,7 @@ private struct DayPlanTimelinePanelView: View {
     var calendarSearchText = ""
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
     var calendarTaskFilterCacheSeed = 0
+    var calendarListRevealsHiddenTasks = false
     var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
@@ -1421,6 +1424,7 @@ private struct DayPlanTimelinePanelView: View {
             calendarSearchText: calendarSearchText,
             calendarTaskFilter: calendarTaskFilter,
             calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
+            calendarListRevealsHiddenTasks: calendarListRevealsHiddenTasks,
             calendarTaskViewMode: calendarTaskViewMode,
             isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented,
             isDatePickerSidebarPresented: isDatePickerSidebarPresented,
@@ -1720,6 +1724,7 @@ private struct DayPlanTimelineDataSnapshotSignature: Equatable {
         var autoAssumeDoneTimeOfDayHour: Int?
         var autoAssumeDoneTimeOfDayMinute: Int?
         var estimatedDurationMinutes: Int?
+        var flagsStorage: String
         var stepsStorage: String
         var checklistItemsStorage: String
         var completedChecklistItemIDsStorage: String
@@ -1761,6 +1766,7 @@ private struct DayPlanTimelineDataSnapshotSignature: Equatable {
             autoAssumeDoneTimeOfDayHour = task.autoAssumeDoneTimeOfDayHour
             autoAssumeDoneTimeOfDayMinute = task.autoAssumeDoneTimeOfDayMinute
             estimatedDurationMinutes = task.estimatedDurationMinutes
+            flagsStorage = task.flagsStorage
             stepsStorage = task.stepsStorage
             checklistItemsStorage = task.checklistItemsStorage
             completedChecklistItemIDsStorage = task.completedChecklistItemIDsStorage
@@ -1964,6 +1970,7 @@ private struct DayPlanCalendarTaskFilterSnapshot {
     var allTaskIDs: Set<UUID>
     var currentTasks: [RoutineTask]
     var currentTaskIDs: Set<UUID>
+    var calendarListHiddenTaskIDs: Set<UUID>
 
     var isFilterActive: Bool {
         currentTaskIDs != allTaskIDs
@@ -1975,6 +1982,7 @@ private final class DayPlanCalendarTaskFilterCache: ObservableObject {
     private struct Key: Equatable {
         var dataSnapshotID: UUID
         var filterSeed: Int
+        var revealsHiddenCalendarListTasks: Bool
     }
 
     private var cachedKey: Key?
@@ -1984,19 +1992,37 @@ private final class DayPlanCalendarTaskFilterCache: ObservableObject {
         dataSnapshotID: UUID,
         tasks: [RoutineTask],
         filterSeed: Int,
+        revealsHiddenCalendarListTasks: Bool,
         filter: (RoutineTask) -> Bool
     ) -> DayPlanCalendarTaskFilterSnapshot {
-        let key = Key(dataSnapshotID: dataSnapshotID, filterSeed: filterSeed)
+        let key = Key(
+            dataSnapshotID: dataSnapshotID,
+            filterSeed: filterSeed,
+            revealsHiddenCalendarListTasks: revealsHiddenCalendarListTasks
+        )
         if cachedKey == key, let cachedSnapshot {
             return cachedSnapshot
         }
 
         let allTaskIDs = Set(tasks.map(\.id))
         let currentTasks = filterSeed == 0 ? tasks : tasks.filter(filter)
+        let calendarListHiddenTaskIDs: Set<UUID> = revealsHiddenCalendarListTasks
+            ? []
+            : Set(
+                currentTasks.lazy
+                    .filter {
+                        RoutineFlag.contains(
+                            RoutineFlagRuleKind.hideFromCalendarList.builtInFlagName,
+                            in: $0.flags
+                        )
+                    }
+                    .map(\.id)
+            )
         let snapshot = DayPlanCalendarTaskFilterSnapshot(
             allTaskIDs: allTaskIDs,
             currentTasks: currentTasks,
-            currentTaskIDs: filterSeed == 0 ? allTaskIDs : Set(currentTasks.map(\.id))
+            currentTaskIDs: filterSeed == 0 ? allTaskIDs : Set(currentTasks.map(\.id)),
+            calendarListHiddenTaskIDs: calendarListHiddenTaskIDs
         )
         cachedKey = key
         cachedSnapshot = snapshot
@@ -2477,6 +2503,7 @@ private struct DayPlanTimelinePanelContentView: View {
     var calendarSearchText = ""
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
     var calendarTaskFilterCacheSeed = 0
+    var calendarListRevealsHiddenTasks = false
     var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
@@ -2527,6 +2554,7 @@ private struct DayPlanTimelinePanelContentView: View {
             dataSnapshotID: dataSnapshotID,
             tasks: renderSnapshot.tasks,
             filterSeed: calendarTaskFilterCacheSeed,
+            revealsHiddenCalendarListTasks: calendarListRevealsHiddenTasks,
             filter: calendarTaskFilter
         )
         let allTaskIDs = taskFilterSnapshot.allTaskIDs
@@ -2553,6 +2581,7 @@ private struct DayPlanTimelinePanelContentView: View {
         let activeSprintFocusSessions = renderSnapshot.activeSprintFocusSessions
         let planFocusAllocatedMinutesBySessionID = renderSnapshot.planFocusAllocatedMinutesBySessionID
         let currentTaskIDs = taskFilterSnapshot.currentTaskIDs
+        let calendarListHiddenTaskIDs = taskFilterSnapshot.calendarListHiddenTaskIDs
         let isCalendarTaskFilterActive = taskFilterSnapshot.isFilterActive
         let filterAvailability = DayPlanCalendarFilterAvailability(
             includesEvents: includesEvents,
@@ -2633,7 +2662,9 @@ private struct DayPlanTimelinePanelContentView: View {
             visibleAllDayBlocks,
             context: renderSnapshot.visibleBlockContext
         )
-        let calendarDayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { date in
+        let dayTaskListItemsForVisibility: (Date, Set<UUID>) -> [DayPlanDayTaskListItem] = {
+            date,
+            excludedTaskIDs in
             dayTaskResolutionOverlay.applying(
                 to: dayTaskListItems(
                     on: date,
@@ -2653,11 +2684,18 @@ private struct DayPlanTimelinePanelContentView: View {
                             assumedDoneSummaryBlocksByDayKey: visibleAssumedDoneSummaryBlocksByDayKey
                         )
                         : [],
-                    visibilitySignature: dayTaskListVisibilitySignature
+                    visibilitySignature: dayTaskListVisibilitySignature,
+                    excludedTaskIDs: excludedTaskIDs
                 ),
                 on: date,
                 calendar: calendar
             )
+        }
+        let calendarDayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { date in
+            dayTaskListItemsForVisibility(date, [])
+        }
+        let calendarListColumnItems: (Date) -> [DayPlanDayTaskListItem] = { date in
+            dayTaskListItemsForVisibility(date, calendarListHiddenTaskIDs)
         }
 
         VStack(alignment: .leading, spacing: 12) {
@@ -2782,7 +2820,7 @@ private struct DayPlanTimelinePanelContentView: View {
                 dayTaskCounts: { date in
                     DayPlanDayTaskCounts(items: calendarDayTaskListItems(date))
                 },
-                dayTaskListItems: calendarDayTaskListItems,
+                dayTaskListItems: calendarListColumnItems,
                 dayTaskTint: { taskID in
                     tintsByTaskID[taskID] ?? .accentColor
                 },
@@ -3491,7 +3529,8 @@ private struct DayPlanTimelinePanelContentView: View {
         logs: [RoutineLog],
         referenceDate: Date,
         timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
-        visibilitySignature: DayPlanDayTaskListVisibilitySignature
+        visibilitySignature: DayPlanDayTaskListVisibilitySignature,
+        excludedTaskIDs: Set<UUID> = []
     ) -> [DayPlanDayTaskListItem] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
         return dayTaskListItemsCache.items(
@@ -3506,6 +3545,7 @@ private struct DayPlanTimelinePanelContentView: View {
             referenceDate: referenceDate,
             calendar: calendar,
             visibilitySignature: visibilitySignature,
+            excludedTaskIDs: excludedTaskIDs,
             visibilityCache: plannedDateTaskVisibilityCache
         )
     }
@@ -7851,7 +7891,7 @@ private struct DayPlanTaskCandidateRow: View {
                         if let estimatedDurationMinutes = task.estimatedDurationMinutes {
                             Label(DayPlanFormatting.durationText(estimatedDurationMinutes), systemImage: "timer")
                         }
-                        Text(task.isOneOffTask ? "Task" : "Routine")
+                        Text(task.isOneOffTask ? "One-time" : "Repeating")
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)

@@ -283,7 +283,7 @@ private enum HomeAdvancedQueryField: String, CaseIterable, Equatable {
         case .tag:
             return "Task tag"
         case .place:
-            return "Routine place"
+            return "Task place"
         case .type:
             return "Task type"
         case .state:
@@ -412,7 +412,7 @@ private extension HomeAdvancedQueryInputState {
         case .place:
             options.places.map { ($0, Self.queryValue($0)) }.uniquedByQueryValue()
         case .type:
-            [("Todo", "todo"), ("Routine", "routine")]
+            [("One-time", "one-time"), ("Repeating", "repeating")]
         case .state:
             [
                 ("Done", "done"),

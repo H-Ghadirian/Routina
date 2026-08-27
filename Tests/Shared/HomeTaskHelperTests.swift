@@ -316,7 +316,7 @@ struct HomeTaskHelperTests {
         )
 
         #expect(source.contains("struct HomeLoadingStateView"))
-        #expect(source.contains("Fetching routines, todos, and recent activity."))
+        #expect(source.contains("Fetching repeating tasks, one-time tasks, and recent activity."))
         #expect(source.contains("Image(systemName: systemImage)"))
         #expect(source.contains("SwiftUI.TimelineView(.animation)"))
         #expect(source.contains("accessibilityReduceMotion"))

@@ -33,7 +33,7 @@ extension PlatformSupport {
     @MainActor
     static func selectRoutineDataImportURL() async -> URL? {
         let panel = NSOpenPanel()
-        panel.title = "Load Routine Data"
+        panel.title = "Load Task Data"
         panel.prompt = "Load"
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = true

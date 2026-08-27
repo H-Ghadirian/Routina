@@ -126,7 +126,7 @@ struct MacPlaceFilterPanel: View {
     @ViewBuilder
     private var panelContent: some View {
         if options.isEmpty {
-            Text("Save places in Settings to filter routines with a map-based view here.")
+            Text("Save places in Settings to filter repeating tasks with a map-based view here.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
@@ -192,9 +192,9 @@ struct MacPlaceFilterPanel: View {
         case .all:
             return "tasks"
         case .routines:
-            return "routines"
+            return "repeating tasks"
         case .todos:
-            return "todos"
+            return "one-time tasks"
         }
     }
 

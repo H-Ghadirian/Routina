@@ -221,22 +221,22 @@ List {
             .foregroundStyle(.secondary)
     }
 
-    Section("Battery Routines") {
-        Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
+    Section("Battery Repeating Tasks") {
+        Toggle("Create charge repeating tasks", isOn: batteryRoutineMonitoringBinding)
 
         Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
             Text("Low battery threshold \(batteryRoutineThresholdPercent)%")
         }
         .disabled(!batteryRoutineMonitoringEnabled)
 
-        Text("When enabled, Routina creates one charge routine for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
+        Text("When enabled, Routina creates one charge repeating task for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
             .foregroundStyle(.secondary)
     }
 
     Section("Navigation") {
         Toggle("Show Home task-type tabs", isOn: $isHomeTaskListModeTabsVisible)
 
-        Text("Show All / Routines / Todos tabs in the Home toolbar. Turn off to switch task type from Filters instead.")
+        Text("Show All / Repeating / One-time tabs in the Home toolbar. Turn off to switch task type from Filters instead.")
             .foregroundStyle(.secondary)
     }
 

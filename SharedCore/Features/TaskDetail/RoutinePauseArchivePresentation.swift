@@ -20,7 +20,7 @@ struct RoutinePauseArchivePresentation: Equatable {
         if isOneOffTask {
             actionTitle = isPaused ? "Restore Task" : "Archive Task"
         } else {
-            actionTitle = isPaused ? "Resume Routine" : "Pause Routine"
+            actionTitle = isPaused ? "Resume Repeating Task" : "Pause Repeating Task"
         }
         let secondaryActionTitle = isPaused || isOneOffTask ? nil : "Not today!"
 
@@ -31,12 +31,12 @@ struct RoutinePauseArchivePresentation: Equatable {
                 description: isPaused
                     ? isOneOffTask
                         ? "Archived tasks stay out of the main list and won't send reminders until restored."
-                        : "Archived routines stay out of the main list and won't send reminders until resumed."
+                        : "Archived repeating tasks stay out of the main list and won't send reminders until resumed."
                     : nil,
                 secondaryActionTitle: secondaryActionTitle,
                 secondaryActionDescription: isPaused || isOneOffTask
                     ? nil
-                    : "Hides this routine until tomorrow and restores it automatically."
+                    : "Hides this repeating task until tomorrow and restores it automatically."
             )
 
         case .editSheet:
@@ -45,10 +45,10 @@ struct RoutinePauseArchivePresentation: Equatable {
                 description: isPaused
                     ? isOneOffTask
                         ? "This task is archived right now. Restore it to bring it back to the main list and notifications."
-                        : "This routine is archived right now. Resume it to bring it back to the main list and notifications."
+                        : "This repeating task is archived right now. Resume it to bring it back to the main list and notifications."
                     : isOneOffTask
                         ? "Archiving moves this task into the archived list, hides it from the main list, and stops notifications."
-                        : "Pausing moves this routine into the archived list, hides it from the main list, and stops notifications.",
+                        : "Pausing moves this repeating task into the archived list, hides it from the main list, and stops notifications.",
                 secondaryActionTitle: secondaryActionTitle,
                 secondaryActionDescription: isPaused || isOneOffTask
                     ? nil

@@ -95,9 +95,9 @@ enum TaskDetailLogPresentation {
         case .timeSpentRemoved:
             return "Removed time spent"
         case .ongoingStarted:
-            return "Started multi-day routine"
+            return "Started multi-day repeating task"
         case .ongoingStopped:
-            return "Stopped multi-day routine"
+            return "Stopped multi-day repeating task"
         }
     }
 

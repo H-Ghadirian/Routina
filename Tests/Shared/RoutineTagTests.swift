@@ -229,6 +229,20 @@ struct RoutineTagTests {
             ) == ["REFERENCE"]
         )
 
+        let calendarListRules = RoutineFlagRules.adding(
+            .hideFromCalendarList,
+            for: "Calendar noise",
+            in: rules
+        )
+        #expect(RoutineFlagRules.hidesFromCalendarList(
+            flags: ["calendar noise"],
+            rules: calendarListRules
+        ))
+        #expect(!RoutineFlagRules.hidesFromCalendarList(
+            flags: ["Reference"],
+            rules: calendarListRules
+        ))
+
         let taskLadderRules = RoutineFlagRules.adding(
             .hideFromTaskLadder,
             for: "Someday",

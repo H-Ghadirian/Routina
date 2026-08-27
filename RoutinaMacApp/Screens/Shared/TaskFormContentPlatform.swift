@@ -710,12 +710,12 @@ struct TaskFormContent: View {
             break
         }
         switch model.scheduleMode.wrappedValue {
-        case .fixedInterval: return "A repeating routine with one shared cadence."
-        case .softInterval: return "A gentle routine that stays visible and resurfaces without overdue pressure."
-        case .fixedIntervalChecklist: return "A routine you complete by finishing every checklist item."
-        case .softIntervalChecklist: return "A gentle routine you complete by finishing every checklist item."
-        case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
-        case .softDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
+        case .fixedInterval: return "A repeating task with one shared cadence."
+        case .softInterval: return "A gentle repeating task that stays visible and resurfaces without overdue pressure."
+        case .fixedIntervalChecklist: return "A repeating task you complete by finishing every checklist item."
+        case .softIntervalChecklist: return "A gentle repeating task you complete by finishing every checklist item."
+        case .derivedFromChecklist: return "A repeating task driven by the due dates of its checklist items."
+        case .softDerivedFromChecklist: return "A gentle repeating task driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
         }
     }

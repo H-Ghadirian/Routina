@@ -374,6 +374,14 @@ struct HomeTaskListFilteringTests {
         ).filteredTasks([referenceTask, focusTask, unrelatedTask])
         #expect(Set(anyMatching.map(\.name)) == ["Log sleep", "Plan week"])
 
+        let excludingHealth = makeFiltering(
+            selectedFlags: ["Reference", "Focus"],
+            includeFlagMatchMode: .any,
+            excludedFlags: ["Health"],
+            excludeFlagMatchMode: .any
+        ).filteredTasks([referenceTask, focusTask, unrelatedTask])
+        #expect(excludingHealth.map(\.name) == ["Plan week"])
+
         let hiddenReferenceRule = [RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)]
         let hiddenFiltering = makeFiltering(
             selectedFlags: ["Reference"],
@@ -831,7 +839,7 @@ struct HomeTaskListFilteringTests {
         )
 
         #expect(presentation.sections.map(\.kind) == [.daily, .tag])
-        #expect(presentation.sections.map(\.title) == ["Daily Routines", "#Pantry"])
+        #expect(presentation.sections.map(\.title) == ["Daily repeating tasks", "#Pantry"])
         #expect(presentation.sections.map { $0.tasks.map(\.taskID) } == [[dailyRunoutID], [weeklyRunoutID]])
     }
 
@@ -1032,6 +1040,19 @@ struct HomeTaskListFilteringTests {
             .filteredTasks(tasks)
 
         #expect(result.map(\.name) == ["Draft launch plan"])
+    }
+
+    @Test
+    func advancedQueryAcceptsUserFacingTaskTypeTermsAndLegacyAliases() {
+        let tasks = [
+            TestTaskDisplay(name: "One-time", isOneOffTask: true),
+            TestTaskDisplay(name: "Repeating", isOneOffTask: false)
+        ]
+
+        #expect(makeFiltering(advancedQuery: "type:one-time").filteredTasks(tasks).map(\.name) == ["One-time"])
+        #expect(makeFiltering(advancedQuery: "type:repeating").filteredTasks(tasks).map(\.name) == ["Repeating"])
+        #expect(makeFiltering(advancedQuery: "type:todo").filteredTasks(tasks).map(\.name) == ["One-time"])
+        #expect(makeFiltering(advancedQuery: "type:routine").filteredTasks(tasks).map(\.name) == ["Repeating"])
     }
 
     @Test
@@ -1324,7 +1345,7 @@ struct HomeTaskListFilteringTests {
         )
 
         #expect(presentation.sections.map(\.kind) == [.daily, .regular, .archived])
-        #expect(presentation.sections.map(\.title) == ["Daily Routines", "On Track", "Archived"])
+        #expect(presentation.sections.map(\.title) == ["Daily repeating tasks", "On Track", "Archived"])
         #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Daily", "Daily Done"], ["Weekly"], ["Archived"]])
         #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2, 3])
     }
@@ -1345,7 +1366,7 @@ struct HomeTaskListFilteringTests {
         )
 
         #expect(presentation.sections.map(\.kind) == [.daily, .tag, .tag])
-        #expect(presentation.sections.map(\.title) == ["Daily Routines", "#Errand", "#Focus"])
+        #expect(presentation.sections.map(\.title) == ["Daily repeating tasks", "#Errand", "#Focus"])
         #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Daily Focus"], ["Todo Errand"], ["Weekly Focus"]])
         #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 2])
     }
@@ -1366,7 +1387,7 @@ struct HomeTaskListFilteringTests {
         )
 
         #expect(presentation.sections.map(\.kind) == [.daily, .regular])
-        #expect(presentation.sections.map(\.title) == ["Daily Routines", "Tasks"])
+        #expect(presentation.sections.map(\.title) == ["Daily repeating tasks", "Tasks"])
         #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Daily"], ["Todo", "Weekly"]])
     }
 
@@ -1400,8 +1421,8 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.isEmpty)
         #expect(presentation.hiddenUnavailableTaskCount == 1)
         #expect(presentation.emptyState == HomeTaskListEmptyState(
-            title: "No routines available here",
-            message: "1 routines are hidden because you are away from their matching places.",
+            title: "No repeating tasks available here",
+            message: "1 repeating task is hidden because you are away from its matching place.",
             systemImage: "location.slash"
         ))
     }
@@ -1672,7 +1693,7 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .future])
         #expect(presentation.sections.map(\.title) == ["Today", "Future"])
         #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1])
-        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily Routines")])
+        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily repeating tasks")])
         #expect(presentation.sections.first?.taskGroups.map(\.isCollapsible) == [true])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["daily"])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [dailyID])
@@ -1711,7 +1732,7 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.map(\.title) == ["Today", "Future"])
         #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2])
         #expect(planSection?.tasks.map(\.taskID) == [plannedID, dailyID])
-        #expect(planSection?.taskGroups.map(\.title) == [nil, String?("Daily Routines")])
+        #expect(planSection?.taskGroups.map(\.title) == [nil, String?("Daily repeating tasks")])
         #expect(planSection?.taskGroups.map(\.isCollapsible) == [false, true])
         #expect(planSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["plannedToday", "daily"])
         #expect(planSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[plannedID], [dailyID]])
@@ -2261,7 +2282,7 @@ struct HomeTaskListFilteringTests {
         let futureSection = presentation.sections.last
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .future])
         #expect(presentation.sections.map(\.title) == ["Today", "Future"])
-        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily Routines")])
+        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily repeating tasks")])
         #expect(presentation.sections.first?.taskGroups.map(\.isCollapsible) == [true])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["daily"])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [focusID])
@@ -2299,7 +2320,7 @@ struct HomeTaskListFilteringTests {
         #expect(tagGroup?.kind == .tag)
         #expect(tagGroup?.isCollapsible == true)
         #expect(tagGroup?.moveContext?.sectionKey == "tag:focus")
-        #expect(tagGroup?.childGroups.map(\.title) == [String?("Todos"), String?("Routines")])
+        #expect(tagGroup?.childGroups.map(\.title) == [String?("One-time tasks"), String?("Repeating tasks")])
         #expect(tagGroup?.childGroups.map(\.id) == ["tag:focus:todos", "tag:focus:routines"])
         #expect(tagGroup?.childGroups.map(\.isCollapsible) == [true, true])
         #expect(tagGroup?.childGroups.map { $0.tasks.map(\.taskID) } == [[todoID], [routineID]])
@@ -2408,7 +2429,7 @@ struct HomeTaskListFilteringTests {
         let futureSection = presentation.sections.last
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .future])
         #expect(presentation.sections.map(\.title) == ["Today", "Future"])
-        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily Routines")])
+        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily repeating tasks")])
         #expect(presentation.sections.first?.taskGroups.map(\.isCollapsible) == [true])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["daily"])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[dailyID]])
@@ -2965,6 +2986,8 @@ private func makeFiltering(
     includeTagMatchMode: RoutineTagMatchMode = .all,
     selectedFlags: Set<String> = [],
     includeFlagMatchMode: RoutineTagMatchMode = .all,
+    excludedFlags: Set<String> = [],
+    excludeFlagMatchMode: RoutineTagMatchMode = .any,
     excludedTags: Set<String> = [],
     excludeTagMatchMode: RoutineTagMatchMode = .any,
     searchText: String = "",
@@ -2997,6 +3020,8 @@ private func makeFiltering(
             includeTagMatchMode: includeTagMatchMode,
             selectedFlags: selectedFlags,
             includeFlagMatchMode: includeFlagMatchMode,
+            excludedFlags: excludedFlags,
+            excludeFlagMatchMode: excludeFlagMatchMode,
             excludedTags: excludedTags,
             excludeTagMatchMode: excludeTagMatchMode,
             searchText: searchText,

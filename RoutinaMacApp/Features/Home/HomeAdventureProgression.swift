@@ -778,7 +778,7 @@ enum HomeAdventureProgressionBuilder {
                     StageTemplate("lunar-2", "lunar-archive", 14, "Memory Vault", "Captured thoughts become map progress.", 8_800, 520, 76, 330),
                     StageTemplate("lunar-3", "lunar-archive", 15, "Starlit Sprint", "A larger action history lights the archive.", 10_600, 620, 90, 390),
                     StageTemplate("lunar-4", "lunar-archive", 16, "Moonlit Library", "Balance focus, rest, and tasks.", 12_600, 735, 105, 460),
-                    StageTemplate("lunar-5", "lunar-archive", 17, "Orbit Hall", "A long-lived routine history opens the hall.", 15_000, 865, 122, 540),
+                    StageTemplate("lunar-5", "lunar-archive", 17, "Orbit Hall", "A long-lived repeating-task history opens the hall.", 15_000, 865, 122, 540),
                     StageTemplate("lunar-6", "lunar-archive", 18, "Archive Gate", "Clear the archive with mature momentum.", 17_800, 1_010, 140, 640)
                 ]
             ),
@@ -811,7 +811,7 @@ enum HomeAdventureProgressionBuilder {
                 requiredActions: 2_750,
                 stages: [
                     StageTemplate("forge-1", "nebula-forge", 25, "Ignition Bay", "Open the forge after sustained months.", 54_000, 2_750, 323, 2_000),
-                    StageTemplate("forge-2", "nebula-forge", 26, "Star Anvil", "Shape the long arc of your routines.", 62_500, 3_150, 360, 2_350),
+                    StageTemplate("forge-2", "nebula-forge", 26, "Star Anvil", "Shape the long arc of your repeating tasks.", 62_500, 3_150, 360, 2_350),
                     StageTemplate("forge-3", "nebula-forge", 27, "Plasma Loom", "High-volume action history powers the loom.", 72_000, 3_600, 400, 2_750),
                     StageTemplate("forge-4", "nebula-forge", 28, "Comet Foundry", "Cross from productivity into endurance.", 83_000, 4_100, 444, 3_200),
                     StageTemplate("forge-5", "nebula-forge", 29, "Nebula Crown", "The final map asks for rare consistency.", 95_500, 4_650, 492, 3_750),
@@ -826,7 +826,7 @@ enum HomeAdventureProgressionBuilder {
             ItemTemplate("trail-compass", "Trail Compass", "Unlocked after the first few wins.", "location.north.line.fill", .tool, 200, 1),
             ItemTemplate("meadow-guide", "Meadow Guide", "A tiny guide for the first map.", "sun.max.fill", .companion, 900, 4),
             ItemTemplate("focus-lantern", "Focus Lantern", "A badge for showing up to focus.", "lamp.desk.fill", .tool, 1_900, 7),
-            ItemTemplate("quiet-keeper", "Quiet Keeper", "A calm character for balanced routines.", "sparkles", .companion, 3_500, 10),
+            ItemTemplate("quiet-keeper", "Quiet Keeper", "A calm character for balanced repeating tasks.", "sparkles", .companion, 3_500, 10),
             ItemTemplate("city-banner", "City Banner", "Marks the second-world clear.", "flag.checkered", .artifact, 6_000, 12),
             ItemTemplate("lunar-key", "Lunar Key", "Signals entry into the archive.", "key.fill", .artifact, 11_000, 15),
             ItemTemplate("archive-cloak", "Archive Cloak", "A late archive artifact.", "theatermasks.fill", .artifact, 18_500, 18),

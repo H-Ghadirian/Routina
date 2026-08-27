@@ -1079,7 +1079,7 @@ struct TaskDetailTCAView: View {
         )
 
         return TaskDetailHeaderSectionView(
-            title: store.task.name ?? "Routine",
+            title: store.task.name ?? "Repeating task",
             titleDragPayload: taskTitlePlannerDragPayload,
             statusContextMessage: statusContextMessage,
             badgeRows: routineHeaderBadgeRows(

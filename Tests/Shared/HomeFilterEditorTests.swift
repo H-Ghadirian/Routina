@@ -164,9 +164,21 @@ struct HomeFilterEditorTests {
             taskFilters: &taskFilters,
             hideUnavailableRoutines: &hideUnavailableRoutines
         )
+        HomeFilterEditor.apply(
+            .excludedFlags(["Private"]),
+            taskFilters: &taskFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+        HomeFilterEditor.apply(
+            .excludeFlagMatchMode(.all),
+            taskFilters: &taskFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
 
         #expect(taskFilters.selectedFlags == ["Reference", "Focus"])
         #expect(taskFilters.includeFlagMatchMode == .any)
+        #expect(taskFilters.excludedFlags == ["Private"])
+        #expect(taskFilters.excludeFlagMatchMode == .all)
     }
 
     @Test
@@ -179,6 +191,8 @@ struct HomeFilterEditorTests {
             includeTagMatchMode: .any,
             selectedFlags: ["Reference", "Focus"],
             includeFlagMatchMode: .any,
+            excludedFlags: ["Private"],
+            excludeFlagMatchMode: .all,
             excludedTags: ["Admin"],
             excludeTagMatchMode: .all,
             selectedManualPlaceFilterID: UUID(),
@@ -208,6 +222,8 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.includeTagMatchMode == .all)
         #expect(taskFilters.selectedFlags.isEmpty)
         #expect(taskFilters.includeFlagMatchMode == .all)
+        #expect(taskFilters.excludedFlags.isEmpty)
+        #expect(taskFilters.excludeFlagMatchMode == .any)
         #expect(taskFilters.excludedTags.isEmpty)
         #expect(taskFilters.excludeTagMatchMode == .any)
         #expect(taskFilters.selectedManualPlaceFilterID == nil)
@@ -328,6 +344,10 @@ struct HomeFilterEditorTests {
             selectedTag: "amazon",
             selectedTags: ["amazon"],
             includeTagMatchMode: .any,
+            selectedFlags: ["Reference"],
+            includeFlagMatchMode: .any,
+            excludedFlags: ["Private"],
+            excludeFlagMatchMode: .all,
             excludedTags: ["admin"],
             excludeTagMatchMode: .all,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
@@ -342,6 +362,8 @@ struct HomeFilterEditorTests {
             selectedTag: "amazon",
             selectedTags: ["amazon"],
             includeTagMatchMode: .any,
+            selectedFlags: ["Reference"],
+            includeFlagMatchMode: .any,
             selectedExcludedTags: ["admin"],
             excludeTagMatchMode: .all,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
@@ -364,6 +386,10 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.includeTagMatchMode == .all)
         #expect(taskFilters.excludedTags.isEmpty)
         #expect(taskFilters.excludeTagMatchMode == .any)
+        #expect(taskFilters.selectedFlags.isEmpty)
+        #expect(taskFilters.includeFlagMatchMode == .all)
+        #expect(taskFilters.excludedFlags.isEmpty)
+        #expect(taskFilters.excludeFlagMatchMode == .any)
         #expect(taskFilters.selectedImportanceUrgencyFilter == nil)
         #expect(taskFilters.selectedPressureFilter == nil)
         #expect(taskFilters.selectedThinkingNeededFilter == nil)
@@ -375,6 +401,8 @@ struct HomeFilterEditorTests {
         #expect(timelineFilters.includeTagMatchMode == .all)
         #expect(timelineFilters.selectedExcludedTags.isEmpty)
         #expect(timelineFilters.excludeTagMatchMode == .any)
+        #expect(timelineFilters.selectedFlags.isEmpty)
+        #expect(timelineFilters.includeFlagMatchMode == .all)
         #expect(timelineFilters.selectedImportanceUrgencyFilter == nil)
         #expect(timelineFilters.selectedPressureFilter == nil)
         #expect(timelineFilters.selectedThinkingNeededFilter == nil)
@@ -603,5 +631,33 @@ struct HomeFilterEditorTests {
         )
 
         #expect(state.selectedPressureFilter == nil)
+    }
+
+    @Test
+    func sharedFilterStateResolverMergesLegacyFlagSelectionsAndLetsExclusionWin() {
+        let state = HomeSharedFilterStateResolver.resolvedState(
+            taskSelectedTags: [],
+            timelineSelectedTags: [],
+            taskExcludedTags: [],
+            timelineExcludedTags: [],
+            taskIncludeTagMatchMode: .all,
+            timelineIncludeTagMatchMode: .all,
+            taskExcludeTagMatchMode: .any,
+            timelineExcludeTagMatchMode: .any,
+            taskSelectedFlags: ["Reference", "Private"],
+            timelineSelectedFlags: ["Focus"],
+            taskExcludedFlags: ["PRIVATE"],
+            taskIncludeFlagMatchMode: .all,
+            timelineIncludeFlagMatchMode: .any,
+            taskExcludeFlagMatchMode: .all,
+            taskImportanceUrgencyFilter: nil,
+            timelineImportanceUrgencyFilter: nil,
+            preferredTags: []
+        )
+
+        #expect(state.selectedFlags == ["Focus", "Reference"])
+        #expect(state.excludedFlags == ["PRIVATE"])
+        #expect(state.includeFlagMatchMode == .all)
+        #expect(state.excludeFlagMatchMode == .all)
     }
 }

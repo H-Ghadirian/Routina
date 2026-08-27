@@ -196,6 +196,8 @@ struct HomeMacImportanceUrgencyMatrixView: View {
 }
 
 struct HomeMacTaskLadderFiltersSection: View {
+    @Environment(\.homeMacFilterDetailLayout) private var filterLayout
+
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
     @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
@@ -210,60 +212,55 @@ struct HomeMacTaskLadderFiltersSection: View {
         ) {
             VStack(alignment: .leading, spacing: 16) {
                 filterControl("Importance") {
-                    RoutinaGlassSegmentedControl(
+                    HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Minimum current importance",
                         options: importanceOptions,
                         selection: minimumImportanceBinding,
-                        fillsAvailableWidth: true,
-                        maximumSegmentsPerRow: 2
+                        compactPickerFillsAvailableWidth: false
                     ) { value in
                         Text(value.map { "\($0.title)+" } ?? "All")
                     }
                 }
 
                 filterControl("Urgency") {
-                    RoutinaGlassSegmentedControl(
+                    HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Minimum current urgency",
                         options: urgencyOptions,
                         selection: minimumUrgencyBinding,
-                        fillsAvailableWidth: true,
-                        maximumSegmentsPerRow: 2
+                        compactPickerFillsAvailableWidth: false
                     ) { value in
                         Text(value.map { "\($0.title)+" } ?? "All")
                     }
                 }
 
                 filterControl("Pressure") {
-                    RoutinaGlassSegmentedControl(
+                    HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Minimum current pressure",
                         options: pressureOptions,
                         selection: $selectedPressureFilter,
-                        fillsAvailableWidth: true,
-                        maximumSegmentsPerRow: 2
+                        compactPickerFillsAvailableWidth: false
                     ) { value in
                         Text(value.map { "\($0.title)+" } ?? "All")
                     }
                 }
 
                 filterControl("Thinking needed") {
-                    RoutinaGlassSegmentedControl(
+                    HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Thinking needed",
                         options: thinkingOptions,
                         selection: $selectedThinkingNeededFilter,
-                        fillsAvailableWidth: true,
-                        maximumSegmentsPerRow: 2
+                        compactPickerFillsAvailableWidth: false
                     ) { value in
                         Text(value?.title ?? "All")
                     }
                 }
 
                 filterControl("Estimated time") {
-                    RoutinaGlassSegmentedControl(
+                    HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Estimated time",
                         options: TaskEstimationFilter.allCases,
                         selection: $selectedEstimationFilter,
-                        fillsAvailableWidth: true,
-                        maximumSegmentsPerRow: 2
+                        compactPickerFillsAvailableWidth: false
                     ) { value in
                         Label(value.title, systemImage: value.systemImage)
                     }
@@ -276,16 +273,31 @@ struct HomeMacTaskLadderFiltersSection: View {
         }
     }
 
+    @ViewBuilder
     private func filterControl<Content: View>(
         _ title: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            content()
+        if filterLayout.usesCompactPickers {
+            HStack(alignment: .center, spacing: 12) {
+                filterTitle(title)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                content()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                filterTitle(title)
+                content()
+            }
         }
+    }
+
+    private func filterTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
     }
 
     private var importanceOptions: [RoutineTaskImportance?] {

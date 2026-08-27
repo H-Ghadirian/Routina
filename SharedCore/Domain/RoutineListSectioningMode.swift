@@ -60,7 +60,7 @@ enum RoutineListSectioningMode: String, CaseIterable, Equatable, Identifiable {
         case .deadlineDate:
             return "Keeps Due Soon, then groups the rest by deadline date."
         case .tags:
-            return "Groups active routines and todos by their first tag."
+            return "Groups active repeating and one-time tasks by their first tag."
         }
     }
 

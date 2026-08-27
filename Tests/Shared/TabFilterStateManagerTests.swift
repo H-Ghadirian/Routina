@@ -83,6 +83,8 @@ struct TabFilterStateManagerTests {
             includeTagMatchMode: .all,
             selectedFlags: ["Reference", "Focus"],
             includeFlagMatchMode: .any,
+            excludedFlags: ["Private"],
+            excludeFlagMatchMode: .all,
             excludedTags: [],
             selectedFilter: .all,
             selectedManualPlaceFilterID: nil
@@ -95,6 +97,8 @@ struct TabFilterStateManagerTests {
 
         #expect(decoded.selectedFlags == ["Reference", "Focus"])
         #expect(decoded.includeFlagMatchMode == .any)
+        #expect(decoded.excludedFlags == ["Private"])
+        #expect(decoded.excludeFlagMatchMode == .all)
     }
 
     @Test
@@ -119,6 +123,8 @@ struct TabFilterStateManagerTests {
     @Test
     func temporaryViewStateRoundTripPreservesTimelineFlagFilters() throws {
         var state = TemporaryViewState.default
+        state.homeExcludedFlags = ["Private"]
+        state.homeExcludeFlagMatchMode = .all
         state.homeSelectedTimelineFlags = ["Private"]
         state.homeTimelineIncludeFlagMatchMode = .any
         state.timelineSelectedFlags = ["Reference", "Private"]
@@ -130,6 +136,8 @@ struct TabFilterStateManagerTests {
         )
 
         #expect(decoded.homeSelectedTimelineFlags == ["Private"])
+        #expect(decoded.homeExcludedFlags == ["Private"])
+        #expect(decoded.homeExcludeFlagMatchMode == .all)
         #expect(decoded.homeTimelineIncludeFlagMatchMode == .any)
         #expect(decoded.timelineSelectedFlags == ["Reference", "Private"])
         #expect(decoded.timelineIncludeFlagMatchMode == .all)

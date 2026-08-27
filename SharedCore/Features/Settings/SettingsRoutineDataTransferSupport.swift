@@ -7,9 +7,9 @@ enum SettingsRoutineDataTransferOperation: Equatable, Sendable {
     var inProgressMessage: String {
         switch self {
         case .export:
-            return "Saving routine data..."
+            return "Saving task data..."
         case .import:
-            return "Loading routine data..."
+            return "Loading task data..."
         }
     }
 }

@@ -159,7 +159,7 @@ SettingsMacDetailShell(
     title: "Notifications",
     subtitle: "Choose when Routina should remind you and review every notification currently scheduled on this Mac."
 ) {
-    SettingsMacDetailCard(title: "Routine Reminders") {
+    SettingsMacDetailCard(title: "Repeating-task Reminders") {
         Toggle("Enable notifications", isOn: notificationsBinding)
             .toggleStyle(.switch)
 

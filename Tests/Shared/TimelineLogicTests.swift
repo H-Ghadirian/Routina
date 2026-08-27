@@ -1402,11 +1402,29 @@ struct TimelineLogicTests {
             includeFlagMatchMode: .any,
             rules: rules
         )
+        let excludedPrivateEntries = TimelineLogic.entriesVisibleForFlags(
+            entries,
+            selectedFlags: [],
+            includeFlagMatchMode: .all,
+            excludedFlags: ["Private"],
+            excludeFlagMatchMode: .any,
+            rules: []
+        )
+        let exclusionWinsEntries = TimelineLogic.entriesVisibleForFlags(
+            entries,
+            selectedFlags: ["Private", "Reference"],
+            includeFlagMatchMode: .any,
+            excludedFlags: ["Private"],
+            excludeFlagMatchMode: .any,
+            rules: rules
+        )
 
         #expect(defaultEntries.map(\.id) == [referenceEntry.id, plainEntry.id])
         #expect(privateEntries.map(\.id) == [privateEntry.id, combinedEntry.id])
         #expect(allSelectedEntries.map(\.id) == [combinedEntry.id])
         #expect(anySelectedEntries.map(\.id) == [privateEntry.id, referenceEntry.id, combinedEntry.id])
+        #expect(excludedPrivateEntries.map(\.id) == [referenceEntry.id, plainEntry.id])
+        #expect(exclusionWinsEntries.map(\.id) == [referenceEntry.id])
         #expect(TimelineLogic.availableFlags(from: entries) == ["Private", "Reference"])
     }
 

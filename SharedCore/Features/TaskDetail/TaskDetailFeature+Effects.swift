@@ -974,7 +974,7 @@ extension TaskDetailFeature {
                     entity: .task,
                     entityID: taskID,
                     entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: "Started ongoing routine",
+                    details: "Started ongoing repeating task",
                     at: startedAt,
                     in: context
                 )
@@ -1030,7 +1030,7 @@ extension TaskDetailFeature {
                     entity: .task,
                     entityID: taskID,
                     entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: "Finished ongoing routine",
+                    details: "Finished ongoing repeating task",
                     at: finishedAt,
                     in: context
                 )

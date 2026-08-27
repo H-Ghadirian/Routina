@@ -120,9 +120,9 @@ struct HomeBoardPresentation: Equatable {
     var scopeDescription: String {
         switch selectedScope {
         case .backlog:
-            return "Default backlog for todos that are not assigned to a named backlog or sprint."
+            return "Default backlog for one-time tasks that are not assigned to a named backlog or sprint."
         case .namedBacklog:
-            return "Named backlog for grouping todos before they move into a sprint."
+            return "Named backlog for grouping one-time tasks before they move into a sprint."
         case .currentSprint:
             return activeSprints.count == 1
                 ? "Currently active sprint."

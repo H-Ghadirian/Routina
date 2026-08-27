@@ -10,6 +10,10 @@ struct HomeSharedFilterState: Equatable {
     var excludedTags: Set<String>
     var includeTagMatchMode: RoutineTagMatchMode
     var excludeTagMatchMode: RoutineTagMatchMode
+    var selectedFlags: Set<String>
+    var excludedFlags: Set<String>
+    var includeFlagMatchMode: RoutineTagMatchMode
+    var excludeFlagMatchMode: RoutineTagMatchMode
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     var selectedPressureFilter: RoutineTaskPressure?
     var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
@@ -26,6 +30,12 @@ enum HomeSharedFilterStateResolver {
         timelineIncludeTagMatchMode: RoutineTagMatchMode,
         taskExcludeTagMatchMode: RoutineTagMatchMode,
         timelineExcludeTagMatchMode: RoutineTagMatchMode,
+        taskSelectedFlags: Set<String> = [],
+        timelineSelectedFlags: Set<String> = [],
+        taskExcludedFlags: Set<String> = [],
+        taskIncludeFlagMatchMode: RoutineTagMatchMode = .all,
+        timelineIncludeFlagMatchMode: RoutineTagMatchMode = .all,
+        taskExcludeFlagMatchMode: RoutineTagMatchMode = .any,
         taskImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
         timelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
         taskPressureFilter: RoutineTaskPressure? = nil,
@@ -49,6 +59,11 @@ enum HomeSharedFilterStateResolver {
         .filter { excludedTag in
             !HomeTagFilterMutationSupport.contains(excludedTag, in: selectedTags)
         }
+        let excludedFlags = mergedFlagSet(taskExcludedFlags)
+        let selectedFlags = mergedFlagSet(taskSelectedFlags, timelineSelectedFlags)
+            .filter { selectedFlag in
+                !HomeFlagFilterMutationSupport.contains(selectedFlag, in: excludedFlags)
+            }
 
         return HomeSharedFilterState(
             selectedTags: selectedTags,
@@ -67,6 +82,16 @@ enum HomeSharedFilterStateResolver {
                 timelineHasSelection: !timelineExcludedTags.isEmpty,
                 fallback: .any
             ),
+            selectedFlags: selectedFlags,
+            excludedFlags: excludedFlags,
+            includeFlagMatchMode: resolvedMatchMode(
+                taskIncludeFlagMatchMode,
+                timelineIncludeFlagMatchMode,
+                taskHasSelection: !taskSelectedFlags.isEmpty,
+                timelineHasSelection: !timelineSelectedFlags.isEmpty,
+                fallback: .all
+            ),
+            excludeFlagMatchMode: taskExcludeFlagMatchMode,
             selectedImportanceUrgencyFilter: resolvedImportanceUrgencyFilter(
                 taskImportanceUrgencyFilter,
                 timelineImportanceUrgencyFilter
@@ -91,6 +116,10 @@ enum HomeSharedFilterStateResolver {
         preferredTags: [String]
     ) -> Set<String> {
         Set(RoutineTag.deduplicated(sets.flatMap { Array($0) }, preferredTags: preferredTags))
+    }
+
+    private static func mergedFlagSet(_ sets: Set<String>...) -> Set<String> {
+        Set(RoutineFlag.deduplicated(sets.flatMap { Array($0) }))
     }
 
     private static func resolvedMatchMode(
@@ -151,6 +180,8 @@ enum HomeTaskFilterMutation: Equatable {
     case includeTagMatchMode(RoutineTagMatchMode)
     case selectedFlags(Set<String>)
     case includeFlagMatchMode(RoutineTagMatchMode)
+    case excludedFlags(Set<String>)
+    case excludeFlagMatchMode(RoutineTagMatchMode)
     case excludedTags(Set<String>)
     case excludeTagMatchMode(RoutineTagMatchMode)
     case selectedManualPlaceFilterID(UUID?)
@@ -238,6 +269,8 @@ enum HomeFilterEditor {
         taskFilters.includeTagMatchMode = .all
         taskFilters.selectedFlags = []
         taskFilters.includeFlagMatchMode = .all
+        taskFilters.excludedFlags = []
+        taskFilters.excludeFlagMatchMode = .any
         taskFilters.excludedTags = []
         taskFilters.excludeTagMatchMode = .any
         taskFilters.selectedManualPlaceFilterID = nil
@@ -282,6 +315,8 @@ enum HomeFilterEditor {
         timelineFilters.selectedPressureFilter = nil
         timelineFilters.selectedThinkingNeededFilter = nil
         timelineFilters.selectedEstimationFilter = .all
+        timelineFilters.selectedFlags = []
+        timelineFilters.includeFlagMatchMode = .all
 
         return HomeFilterMutationResult(didResetHideUnavailableRoutines: didResetHideUnavailableRoutines)
     }
@@ -313,6 +348,12 @@ enum HomeFilterEditor {
 
         case let .includeFlagMatchMode(mode):
             taskFilters.includeFlagMatchMode = mode
+
+        case let .excludedFlags(flags):
+            taskFilters.excludedFlags = Set(RoutineFlag.deduplicated(Array(flags)))
+
+        case let .excludeFlagMatchMode(mode):
+            taskFilters.excludeFlagMatchMode = mode
 
         case let .excludedTags(tags):
             taskFilters.excludedTags = tags

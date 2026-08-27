@@ -23,9 +23,9 @@ struct StatsCreatedTasksPresentation {
         case .all:
             return count == 1 ? "task" : "tasks"
         case .routines:
-            return count == 1 ? "routine" : "routines"
+            return count == 1 ? "repeating task" : "repeating tasks"
         case .todos:
-            return count == 1 ? "todo" : "todos"
+            return count == 1 ? "one-time task" : "one-time tasks"
         }
     }
 }

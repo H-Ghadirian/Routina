@@ -670,7 +670,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 HomeTaskListPresentationSection(
                     kind: .daily,
                     identityKey: "daily",
-                    title: "Daily Routines",
+                    title: "Daily repeating tasks",
                     tasks: dailyTasks,
                     rowNumberOffset: offset,
                     includeMarkDone: true,
@@ -1131,7 +1131,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             groups.append(
                 HomeTaskListPresentationTaskGroup(
                     kind: .daily,
-                    title: separateDailyRoutinesInTaskList ? "Daily Routines" : nil,
+                    title: separateDailyRoutinesInTaskList ? "Daily repeating tasks" : nil,
                     tasks: dailyTasks,
                     moveContext: HomeTaskListMoveContext(
                         sectionKey: HomeTaskListFiltering<Display>.dailyManualOrderSectionKey,
@@ -1229,7 +1229,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             HomeTaskListPresentationTaskGroup(
                 kind: .regular,
                 identityKey: "\(section.identityKey):todos",
-                title: "Todos",
+                title: "One-time tasks",
                 tasks: todos,
                 moveContext: nil,
                 isCollapsible: true
@@ -1237,7 +1237,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             HomeTaskListPresentationTaskGroup(
                 kind: .regular,
                 identityKey: "\(section.identityKey):routines",
-                title: "Routines",
+                title: "Repeating tasks",
                 tasks: routines,
                 moveContext: nil,
                 isCollapsible: true
@@ -1283,8 +1283,10 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
 
         if hiddenUnavailableTaskCount > 0 {
             return HomeTaskListEmptyState(
-                title: "No routines available here",
-                message: "\(hiddenUnavailableTaskCount) routines are hidden because you are away from their matching places.",
+                title: "No repeating tasks available here",
+                message: hiddenUnavailableTaskCount == 1
+                    ? "1 repeating task is hidden because you are away from its matching place."
+                    : "\(hiddenUnavailableTaskCount) repeating tasks are hidden because you are away from their matching places.",
                 systemImage: "location.slash"
             )
         }
@@ -1301,9 +1303,9 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         case .all:
             return "No matching tasks"
         case .routines:
-            return "No matching routines"
+            return "No matching repeating tasks"
         case .todos:
-            return "No matching todos"
+            return "No matching one-time tasks"
         }
     }
 }

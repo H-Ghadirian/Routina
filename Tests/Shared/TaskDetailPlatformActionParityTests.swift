@@ -23,7 +23,7 @@ struct TaskDetailPlatformActionParityTests {
         #expect(routineActions.contains(".frame(width: 54)"))
         #expect(routineActions.contains(".frame(minHeight: 50, maxHeight: .infinity)"))
         #expect(routineActions.contains(".contentShape(Rectangle())"))
-        #expect(routineActions.contains(".accessibilityLabel(\"More routine actions\")"))
+        #expect(routineActions.contains(".accessibilityLabel(\"More repeating-task actions\")"))
         #expect(routineActions.contains("Not today — hide until tomorrow"))
         #expect(routineActions.contains("Divider()"))
 

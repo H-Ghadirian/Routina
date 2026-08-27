@@ -56,7 +56,7 @@ let tabView = TabView(
 
     SwiftUI.Tab(Tab.search.rawValue, systemImage: "magnifyingglass", value: AppTabBarItem.search, role: .search) {
         platformSearchHomeView(searchText: $appliedSearchText)
-            .searchable(text: $searchText, prompt: "Search routines and todos")
+            .searchable(text: $searchText, prompt: "Search repeating and one-time tasks")
             .onChange(of: searchText) { _, rawSearchText in
                 scheduleSearchPresentationUpdate(for: rawSearchText)
             }

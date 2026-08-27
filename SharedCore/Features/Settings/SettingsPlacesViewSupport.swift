@@ -44,9 +44,9 @@ extension SettingsPlacesState {
 
         let linkedRoutinesText: String
         if place.linkedRoutineCount == 1 {
-            linkedRoutinesText = "1 linked routine will be unlinked"
+            linkedRoutinesText = "1 linked repeating task will be unlinked"
         } else {
-            linkedRoutinesText = "\(place.linkedRoutineCount) linked routines will be unlinked"
+            linkedRoutinesText = "\(place.linkedRoutineCount) linked repeating tasks will be unlinked"
         }
 
         return "Delete \(place.name)? This cannot be undone, and \(linkedRoutinesText)."
@@ -70,13 +70,13 @@ extension SettingsPlacesState {
     var locationHelpText: String {
         switch locationAuthorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
-            return "Choose a point on the map and adjust the radius. Routina will show place-based routines when you are inside that circle."
+            return "Choose a point on the map and adjust the radius. Routina will show place-based repeating tasks when you are inside that circle."
         case .notDetermined:
             return "Choose a point on the map and adjust the radius. Allow location access later so Routina can tell when you are inside the saved circle."
         case .disabled:
             return "Location services are disabled on this device. You can still save places, but Routina will not know when you are inside them."
         case .restricted, .denied:
-            return "Location access is off. You can still save places, but place-linked routines stay visible until you enable location again."
+            return "Location access is off. You can still save places, but place-linked repeating tasks stay visible until you enable location again."
         }
     }
 }
@@ -84,8 +84,8 @@ extension SettingsPlacesState {
 extension RoutinePlaceSummary {
     var settingsSubtitle: String {
         let linkedText = linkedRoutineCount == 1
-            ? "1 linked routine"
-            : "\(linkedRoutineCount) linked routines"
+            ? "1 linked repeating task"
+            : "\(linkedRoutineCount) linked repeating tasks"
         let kindText = kind.map { "\($0) • " } ?? ""
         return "\(kindText)\(Int(radiusMeters)) m radius • \(linkedText)"
     }

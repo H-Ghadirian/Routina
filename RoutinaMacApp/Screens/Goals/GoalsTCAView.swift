@@ -37,7 +37,7 @@ struct MacGoalsSidebarView: View {
             ContentUnavailableView {
                 Label("No goals yet", systemImage: "target")
             } description: {
-                Text("Create a goal to group routines and todos by outcome.")
+                Text("Create a goal to group repeating and one-time tasks by outcome.")
             } actions: {
                 Button {
                     store.send(.addGoalTapped)
@@ -50,7 +50,7 @@ struct MacGoalsSidebarView: View {
             ContentUnavailableView {
                 Label("No goals yet", systemImage: "target")
             } description: {
-                Text("Create a goal to group routines and todos by outcome.")
+                Text("Create a goal to group repeating and one-time tasks by outcome.")
             } actions: {
                 Button {
                     store.send(.addGoalTapped)
@@ -438,12 +438,12 @@ private struct GoalDetailPane: View {
         Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 32, verticalSpacing: 12) {
             GridRow {
                 MetricLabel(title: "Open Items", value: "\(goal.openTaskCount)")
-                MetricLabel(title: "Routines", value: "\(goal.routineCount)")
-                MetricLabel(title: "Todos", value: "\(goal.todoCount)")
+                MetricLabel(title: "Repeating", value: "\(goal.routineCount)")
+                MetricLabel(title: "One-time", value: "\(goal.todoCount)")
             }
 
             GridRow {
-                MetricLabel(title: "Done Todos", value: "\(goal.completedTodoCount)")
+                MetricLabel(title: "Done one-time", value: "\(goal.completedTodoCount)")
                 MetricLabel(title: "Sub-goals", value: "\(goal.childGoalCount)")
                 MetricLabel(
                     title: "Linked Tasks",

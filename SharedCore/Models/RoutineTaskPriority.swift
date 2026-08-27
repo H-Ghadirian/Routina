@@ -7,9 +7,9 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     var userFacingTitle: String {
         switch self {
         case .routine:
-            return "Routine"
+            return "Repeating task"
         case .todo:
-            return "Todo"
+            return "One-time task"
         }
     }
 
@@ -25,9 +25,9 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     var pluralTitle: String {
         switch self {
         case .routine:
-            return "Routines"
+            return "Repeating tasks"
         case .todo:
-            return "Todos"
+            return "One-time tasks"
         }
     }
 }

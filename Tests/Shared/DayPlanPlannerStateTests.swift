@@ -137,6 +137,141 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func calendarListExcludesFlaggedTaskIDsFromEveryTaskSection() throws {
+        let calendar = gregorianCalendar
+        let selectedDate = try #require(date("2026-08-27T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
+        let hiddenTaskIDs = Set((0..<4).map { _ in UUID() })
+        let visibleTaskIDs = (0..<4).map { _ in UUID() }
+        let plannedBlocks = [
+            DayPlanBlock(
+                taskID: try #require(hiddenTaskIDs.first),
+                dayKey: dayKey,
+                startMinute: 8 * 60,
+                durationMinutes: 30,
+                titleSnapshot: "Hidden planned"
+            ),
+            DayPlanBlock(
+                taskID: visibleTaskIDs[0],
+                dayKey: dayKey,
+                startMinute: 9 * 60,
+                durationMinutes: 30,
+                titleSnapshot: "Visible planned"
+            )
+        ]
+        let hiddenActivityTaskIDs = Array(hiddenTaskIDs.dropFirst())
+        let activities = [
+            DayPlanTimelineActivityBlock(
+                block: DayPlanBlock(
+                    taskID: hiddenActivityTaskIDs[0],
+                    dayKey: dayKey,
+                    startMinute: 10 * 60,
+                    durationMinutes: 30,
+                    titleSnapshot: "Hidden assumed",
+                    updatedAt: selectedDate
+                ),
+                kind: .completed,
+                source: .assumedDone
+            ),
+            DayPlanTimelineActivityBlock(
+                block: DayPlanBlock(
+                    taskID: visibleTaskIDs[1],
+                    dayKey: dayKey,
+                    startMinute: 11 * 60,
+                    durationMinutes: 30,
+                    titleSnapshot: "Visible assumed",
+                    updatedAt: selectedDate
+                ),
+                kind: .completed,
+                source: .assumedDone
+            ),
+            DayPlanTimelineActivityBlock(
+                block: DayPlanBlock(
+                    taskID: hiddenActivityTaskIDs[1],
+                    dayKey: dayKey,
+                    startMinute: 12 * 60,
+                    durationMinutes: 30,
+                    titleSnapshot: "Hidden confirmed assumption",
+                    updatedAt: selectedDate
+                ),
+                kind: .completed,
+                source: .log(UUID()),
+                isConfirmedAssumedDone: true
+            ),
+            DayPlanTimelineActivityBlock(
+                block: DayPlanBlock(
+                    taskID: visibleTaskIDs[2],
+                    dayKey: dayKey,
+                    startMinute: 13 * 60,
+                    durationMinutes: 30,
+                    titleSnapshot: "Visible confirmed assumption",
+                    updatedAt: selectedDate
+                ),
+                kind: .completed,
+                source: .log(UUID()),
+                isConfirmedAssumedDone: true
+            ),
+            DayPlanTimelineActivityBlock(
+                block: DayPlanBlock(
+                    taskID: hiddenActivityTaskIDs[2],
+                    dayKey: dayKey,
+                    startMinute: 14 * 60,
+                    durationMinutes: 30,
+                    titleSnapshot: "Hidden done",
+                    updatedAt: selectedDate
+                ),
+                kind: .completed,
+                source: .log(UUID())
+            ),
+            DayPlanTimelineActivityBlock(
+                block: DayPlanBlock(
+                    taskID: visibleTaskIDs[3],
+                    dayKey: dayKey,
+                    startMinute: 15 * 60,
+                    durationMinutes: 30,
+                    titleSnapshot: "Visible done",
+                    updatedAt: selectedDate
+                ),
+                kind: .completed,
+                source: .log(UUID())
+            )
+        ]
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: selectedDate,
+            timedBlocks: plannedBlocks,
+            allDayBlocks: [],
+            timelineActivityBlocks: activities,
+            calendar: calendar,
+            excludedTaskIDs: hiddenTaskIDs
+        )
+
+        #expect(Set(items.map(\.taskID)) == Set(visibleTaskIDs))
+        #expect(
+            Set(items.map(\.section.rawValue))
+                == Set(DayPlanDayTaskListItem.Section.allCases.map(\.rawValue))
+        )
+    }
+
+    @Test
+    func calendarListFlagUsesCachedMembershipWithoutChangingFocusedDayRows() throws {
+        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let macDetailSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"
+        )
+
+        #expect(source.contains("var calendarListHiddenTaskIDs: Set<UUID>"))
+        #expect(source.contains("revealsHiddenCalendarListTasks: Bool"))
+        #expect(source.contains("revealsHiddenCalendarListTasks\n            ? []"))
+        #expect(source.contains("flagsStorage = task.flagsStorage"))
+        #expect(source.contains("dayTaskListItems: calendarListColumnItems"))
+        #expect(source.contains("items: calendarDayTaskListItems(date)"))
+        #expect(macDetailSource.contains("plannerCalendarSharedSelectedFlags"))
+        #expect(macDetailSource.contains("plannerCalendarListRevealsHiddenTasks"))
+        #expect(macDetailSource.contains("HomeDisplayFilterSupport.matchesExcludedFlags("))
+    }
+
+    @Test
     func calendarListRowVisibilityRoundTripsHiddenFields() {
         let visibility = DayPlanCalendarListRowVisibility(
             hiddenFields: [.icon, .rowColor]

@@ -24,7 +24,7 @@ struct IOSSmartAddDetectedChipsTests {
         )
         let available = try #require(rows.first { $0.title == "Available" })
 
-        #expect(available.value == "Todo at \(expectedDate.formatted(date: .abbreviated, time: .shortened))")
+        #expect(available.value == "One-time task at \(expectedDate.formatted(date: .abbreviated, time: .shortened))")
         #expect(available.systemImage == "calendar")
         #expect(IOSSmartAddDetectedChips.hasDetections(in: draft))
     }

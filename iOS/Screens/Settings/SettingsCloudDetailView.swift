@@ -74,14 +74,14 @@ List {
         Button {
             isBackupExporterPresented = true
         } label: {
-            Label("Export Routine Data", systemImage: "square.and.arrow.down")
+            Label("Export Task Data", systemImage: "square.and.arrow.down")
         }
         .disabled(store.dataTransfer.isDataTransferInProgress)
 
         Button {
             isBackupImporterPresented = true
         } label: {
-            Label("Import Routine Data", systemImage: "square.and.arrow.up")
+            Label("Import Task Data", systemImage: "square.and.arrow.up")
         }
         .disabled(store.dataTransfer.isDataTransferInProgress)
     }

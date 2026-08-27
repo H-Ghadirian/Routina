@@ -38,7 +38,7 @@ struct StatsTagUsageSection: View {
             if points.isEmpty {
                 StatsEmptyChartStateView(
                     systemImage: "tag",
-                    message: "Tags will appear here after matching routines are completed.",
+                    message: "Tags will appear here after matching repeating tasks are completed.",
                     colorScheme: colorScheme
                 )
             } else {

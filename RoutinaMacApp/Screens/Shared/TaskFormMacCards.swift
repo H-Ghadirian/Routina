@@ -393,7 +393,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
     private func smartNameRows(for draft: RoutinaQuickAddDraft) -> [SmartNameRow] {
         var rows = [
             SmartNameRow(
-                title: draft.scheduleMode == .oneOff ? "Task" : "Routine",
+                title: draft.scheduleMode == .oneOff ? "One-time" : "Repeating",
                 value: draft.name,
                 systemImage: "textformat"
             )
@@ -401,7 +401,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
 
         if draft.scheduleMode != .oneOff {
             rows.append(SmartNameRow(
-                title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle routine" : "Repeats",
+                title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle repeating" : "Repeats",
                 value: draft.recurrenceRule.displayText(calendar: smartNameCalendar),
                 systemImage: "calendar"
             ))

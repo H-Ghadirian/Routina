@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, FlagContent: View>: View {
     @State private var selectedTab: HomeMacRoutineFilterDetailTab = .filter
+    @Environment(\.homeMacFilterDetailLayout) private var filterLayout
     @AppStorage(
         UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
         store: SharedDefaults.app
@@ -116,28 +117,18 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
 
     private var appearanceTabContent: some View {
         HomeMacSidebarSectionCard(title: "Task Row") {
-            Toggle(isOn: taskRowMultilineTitlesBinding) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Multiline Titles")
-                    Text("Wrap long task titles onto additional lines.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .toggleStyle(.switch)
+            HomeMacFilterAppearanceToggleRow(
+                "Multiline Titles",
+                subtitle: "Wrap long task titles onto additional lines.",
+                isOn: taskRowMultilineTitlesBinding
+            )
 
             ForEach(macTaskRowFields) { field in
-                Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(field.title)
-                        if let subtitle = field.subtitle {
-                            Text(subtitle)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .toggleStyle(.switch)
+                HomeMacFilterAppearanceToggleRow(
+                    field.title,
+                    subtitle: field.subtitle,
+                    isOn: taskRowFieldVisibilityBinding(field)
+                )
             }
 
             Text("Shown: \(macTaskRowSummaryText)")
@@ -155,7 +146,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
             accessibilityLabel: "Task type",
             options: taskListModeOptions,
             selection: $taskListMode,
-            minimumSegmentWidth: 112
+            minimumSegmentWidth: 112,
+            fillsAvailableWidth: filterLayout.fillsAvailableWidth
         ) { mode in
             Label(mode.title, systemImage: taskListModeSystemImage(mode))
         }
@@ -179,21 +171,23 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     private var coreFilterCard: some View {
         HomeMacSidebarSectionCard(title: "Filters") {
             VStack(alignment: .leading, spacing: 18) {
-                filterControlSection("Task type") {
-                    taskListModePicker
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 12) {
                     blockedTasksToggle
                     assumedDoneTasksToggle
                     archivedToggle
+                }
+
+                filterControlSection("Task type") {
+                    taskListModePicker
                 }
 
                 filterControlSection("Created") {
                     createdDatePicker
                 }
 
-                filterPicker
+                filterControlSection("Status") {
+                    filterPicker
+                }
 
                 if showsGoalFilter {
                     filterControlSection("Goal") {
@@ -206,14 +200,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
                 }
 
                 if taskListMode == .todos || taskListMode == .all {
-                    filterControlSection("Todo State") {
+                    filterControlSection("One-time State") {
                         todoStateFilterSection
                     }
                 }
 
-                if showsFlagSection {
-                    flagSectionContent()
-                }
             }
         }
     }
@@ -232,8 +223,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     }
 
     private var blockedTasksToggle: some View {
-        Toggle("Show blocked tasks", isOn: showBlockedTasksBinding)
-            .toggleStyle(.switch)
+        HomeMacFilterAppearanceToggleRow(
+            "Show blocked tasks",
+            isOn: showBlockedTasksBinding
+        )
     }
 
     private var showBlockedTasksBinding: Binding<Bool> {
@@ -244,27 +237,24 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     }
 
     private var filterPicker: some View {
-        RoutinaGlassSegmentedControl(
+        HomeMacAdaptiveFilterChoiceControl(
             accessibilityLabel: "Status filter",
             options: availableFilters,
             selection: $selectedFilter,
             minimumSegmentWidth: 92,
-            fillsAvailableWidth: true,
-            maximumSegmentsPerRow: availableFilters.count > 3 ? 2 : nil
+            usesPickerInCompactLayout: availableFilters.count > 3
         ) { filter in
-            Text(filter.rawValue)
+            Text(filter.title)
         }
     }
 
     private var groupingPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            RoutinaGlassSegmentedControl(
+            HomeMacAdaptiveFilterChoiceControl(
                 accessibilityLabel: "Grouping",
                 options: RoutineListSectioningMode.allCases,
                 selection: $routineListSectioningMode,
-                minimumSegmentWidth: 126,
-                fillsAvailableWidth: true,
-                maximumSegmentsPerRow: 2
+                minimumSegmentWidth: 126
             ) { mode in
                 Label(mode.title, systemImage: mode.systemImage)
             }
@@ -277,9 +267,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
                 VStack(alignment: .leading, spacing: 8) {
                     Toggle("Show overdue and due soon separately", isOn: $separateDeadlineStatusInTagSections)
                         .toggleStyle(.switch)
+                        .frame(maxWidth: .infinity)
 
-                    Toggle("Separate todos and routines", isOn: $separateTodosAndRoutinesInTagSections)
+                    Toggle("Separate one-time and repeating tasks", isOn: $separateTodosAndRoutinesInTagSections)
                         .toggleStyle(.switch)
+                        .frame(maxWidth: .infinity)
                 }
                 .padding(.top, 4)
             }
@@ -287,13 +279,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     }
 
     private var sortPicker: some View {
-        RoutinaGlassSegmentedControl(
+        HomeMacAdaptiveFilterChoiceControl(
             accessibilityLabel: "Sort",
             options: HomeTaskListSortOrder.allCases,
             selection: $taskListSortOrder,
-            minimumSegmentWidth: 126,
-            fillsAvailableWidth: true,
-            maximumSegmentsPerRow: 2
+            minimumSegmentWidth: 126
         ) { order in
             Label(order.title, systemImage: order.systemImage)
         }
@@ -304,56 +294,55 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
             accessibilityLabel: "Goal",
             options: HomeTaskGoalFilter.allCases,
             selection: $selectedGoalFilter,
-            minimumSegmentWidth: 92
+            minimumSegmentWidth: 92,
+            fillsAvailableWidth: filterLayout.fillsAvailableWidth
         ) { filter in
             Text(filter.title)
         }
     }
 
     private var mediaPicker: some View {
-        RoutinaGlassSegmentedControl(
+        HomeMacAdaptiveFilterChoiceControl(
             accessibilityLabel: "Media",
             options: TaskMediaFilter.allCases,
             selection: $selectedMediaFilter,
-            minimumSegmentWidth: 104,
-            fillsAvailableWidth: true,
-            maximumSegmentsPerRow: 2
+            minimumSegmentWidth: 104
         ) { filter in
             Label(filter.title, systemImage: filter.systemImage)
         }
     }
 
     private var createdDatePicker: some View {
-        RoutinaGlassSegmentedControl(
+        HomeMacAdaptiveFilterChoiceControl(
             accessibilityLabel: "Created",
             options: HomeTaskCreatedDateFilter.allCases,
             selection: $createdDateFilter,
-            minimumSegmentWidth: 126,
-            fillsAvailableWidth: true,
-            maximumSegmentsPerRow: 2
+            minimumSegmentWidth: 126
         ) { filter in
             Label(filter.title, systemImage: filter.systemImage)
         }
     }
 
     private var archivedToggle: some View {
-        Toggle("Show archived list", isOn: $showArchivedTasks)
-            .toggleStyle(.switch)
+        HomeMacFilterAppearanceToggleRow(
+            "Show archived list",
+            isOn: $showArchivedTasks
+        )
     }
 
     private var assumedDoneTasksToggle: some View {
-        Toggle("Hide assumed-done tasks", isOn: $hideAssumedDoneTasks)
-            .toggleStyle(.switch)
+        HomeMacFilterAppearanceToggleRow(
+            "Hide assumed-done tasks",
+            isOn: $hideAssumedDoneTasks
+        )
     }
 
     private var todoStateFilterSection: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Todo State",
+        HomeMacAdaptiveFilterChoiceControl(
+            accessibilityLabel: "One-time State",
             options: todoStateOptions,
             selection: $selectedTodoStateFilter,
-            minimumSegmentWidth: 80,
-            fillsAvailableWidth: true,
-            maximumSegmentsPerRow: 2
+            minimumSegmentWidth: 80
         ) { state in
             Text(state?.displayTitle ?? "Any State")
         }
