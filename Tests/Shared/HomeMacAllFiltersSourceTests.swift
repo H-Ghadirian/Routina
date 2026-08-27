@@ -25,7 +25,7 @@ struct HomeMacAllFiltersSourceTests {
     }
 
     @Test
-    func compactTaskLadderFiltersPairLeadingTitlesWithTrailingPickers() throws {
+    func compactTaskLadderFiltersPairLeadingTitlesWithEqualWidthTrailingPickers() throws {
         let controls = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacImportanceUrgencyMatrixView.swift"
         )
@@ -33,15 +33,37 @@ struct HomeMacAllFiltersSourceTests {
             "RoutinaMacApp/Screens/Home/Components/HomeMacFilterDetailContainerView.swift"
         )
 
-        #expect(controls.contains("@Environment(\\.homeMacFilterDetailLayout) private var filterLayout"))
-        #expect(controls.contains("if filterLayout.usesCompactPickers"))
-        #expect(controls.contains("HStack(alignment: .center, spacing: 12)"))
-        #expect(controls.contains(".frame(maxWidth: .infinity, alignment: .leading)"))
         #expect(
-            controls.components(separatedBy: "compactPickerFillsAvailableWidth: false").count - 1 == 5
+            controls.components(
+                separatedBy: "HomeMacAdaptiveFilterControlRow(\""
+            ).count - 1 == 5
         )
-        #expect(adaptivePicker.contains(".fixedSize(horizontal: !compactPickerFillsAvailableWidth"))
-        #expect(adaptivePicker.contains("alignment: compactPickerFillsAvailableWidth ? .leading : .trailing"))
+        #expect(
+            controls.components(
+                separatedBy: "compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth"
+            ).count - 1 == 5
+        )
+        #expect(adaptivePicker.contains("static let compactPickerWidth: CGFloat = 156"))
+        #expect(adaptivePicker.contains("HStack(alignment: .center, spacing: 12)"))
+        #expect(adaptivePicker.contains(".frame(maxWidth: .infinity, alignment: .leading)"))
+        #expect(adaptivePicker.contains(".frame(width: compactPickerWidth, alignment: .leading)"))
+    }
+
+    @Test
+    func compactTaskListPickersPairLeadingTitlesWithTheSharedPickerWidth() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacRoutineFiltersDetailView.swift"
+        )
+
+        for title in ["Created", "Media", "One-time State", "Grouping", "Sort"] {
+            #expect(source.contains("HomeMacAdaptiveFilterControlRow(\"\(title)\")"))
+        }
+        #expect(source.contains("pairsInCompactLayout: availableFilters.count > 3"))
+        #expect(
+            source.components(
+                separatedBy: "compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth"
+            ).count - 1 == 6
+        )
     }
 
     @Test
@@ -62,7 +84,7 @@ struct HomeMacAllFiltersSourceTests {
     }
 
     @Test
-    func sharedTagsUseDirectCompactActionsWithoutADisclosureCard() throws {
+    func sharedTagsUseOneCombinedRulePickerWithVisibleActiveRules() throws {
         let sharedFilters = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+SharedFilters.swift"
         )
@@ -73,12 +95,17 @@ struct HomeMacAllFiltersSourceTests {
         #expect(sharedFilters.contains("presentation: .compactActions"))
         #expect(!sharedFilters.contains("HomeMacCollapsibleFilterSection("))
         #expect(!sharedFilters.contains("private var tagsSummary"))
-        #expect(tagFilters.contains("Label(\"Include tags\", systemImage: \"plus\")"))
-        #expect(tagFilters.contains("Label(\"Exclude tags\", systemImage: \"minus\")"))
+        #expect(tagFilters.contains("Label(\"Edit tag filters…\", systemImage: \"slider.horizontal.3\")"))
         #expect(tagFilters.contains("Color.teal.opacity(0.18)"))
-        #expect(tagFilters.contains("if !selectedTags.isEmpty"))
-        #expect(tagFilters.contains("if !selectedExcludedTags.isEmpty"))
-        #expect(tagFilters.contains("compactMatchModeControl("))
+        #expect(tagFilters.contains("HomeMacDirectFilterGroup("))
+        #expect(tagFilters.contains("title: \"Tags\""))
+        #expect(tagFilters.contains("systemImage: \"tag.fill\""))
+        #expect(tagFilters.contains("private var compactTagRuleSummary"))
+        #expect(tagFilters.contains("selectedTagChips(tags: tags, isExcluded: isExcluded)"))
+        #expect(tagFilters.contains("HomeMacCombinedTagFilterPicker("))
+        #expect(tagFilters.contains("Text(\"Tag filters\")"))
+        #expect(tagFilters.contains("options: HomeMacFilterRuleSide.allCases"))
+        #expect(tagFilters.contains("if activeSelectedTags.count > 1"))
     }
 
     @Test
@@ -105,10 +132,24 @@ struct HomeMacAllFiltersSourceTests {
         #expect(flagFilters.contains("if !selectedFlags.isEmpty"))
         #expect(flagFilters.contains("if selectedFlags.count > 1"))
         #expect(flagFilters.contains("struct HomeMacSharedFlagFiltersView: View"))
-        #expect(flagFilters.contains("actionTitle: \"Exclude flags\""))
-        #expect(flagFilters.contains("actionSystemImage: \"minus\""))
+        #expect(flagFilters.contains("HomeMacDirectFilterGroup("))
+        #expect(flagFilters.contains("title: \"Flags\""))
+        #expect(flagFilters.contains("systemImage: \"flag.fill\""))
+        #expect(flagFilters.contains("Label(\"Edit flag filters…\", systemImage: \"slider.horizontal.3\")"))
+        #expect(flagFilters.contains("private var flagRuleSummary"))
+        #expect(flagFilters.contains("HomeMacSharedFlagFilterPicker("))
+        #expect(flagFilters.contains("Text(\"Flag filters\")"))
+        #expect(flagFilters.contains("if activeSelectedFlags.count > 1"))
         #expect(!flagFilters.contains("Text(\"Add more\")"))
         #expect(!flagFilters.contains("title: \"All Flags\""))
+
+        let group = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacImportanceUrgencyMatrixView.swift"
+        )
+        #expect(group.contains("struct HomeMacDirectFilterGroup<Content: View>: View"))
+        #expect(group.contains("enum HomeMacFilterRuleSide: String, CaseIterable, Identifiable"))
+        #expect(group.contains(".routinaGlassPanel("))
+        #expect(group.contains("tintOpacity: 0.08"))
 
         #expect(sharedFilters.contains("HomeMacSharedFlagFiltersView("))
         #expect(!taskListFilters.contains("if showsFlagSection"))

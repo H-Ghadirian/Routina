@@ -1077,7 +1077,7 @@ And returning to Filters shows every selected Hidden and Included tag in a wrapp
 ### Mac Shared Filters Use Current Task Ladder Values And Searchable Tags
 
 Area: Tasks / Timeline / Planner / macOS UI
-Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md), [0660](../decisions/0660-make-mac-planner-filters-explicit-composable-and-bounded.md), [0673](../decisions/0673-use-compact-pickers-for-narrow-mac-filters.md)
+Decision links: [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0656](../decisions/0656-make-mac-all-filters-task-ladder-complete-and-searchable.md), [0660](../decisions/0660-make-mac-planner-filters-explicit-composable-and-bounded.md), [0673](../decisions/0673-use-compact-pickers-for-narrow-mac-filters.md), [0680](../decisions/0680-align-compact-filter-titles-with-equal-width-pickers.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
@@ -1126,7 +1126,8 @@ one trailing switch column, and a full-row toggle target
 Given the same controls render in the 420-point companion pane
 When their labels need more width
 Then single-choice controls that would wrap use compact menu pickers
-And each Task Ladder metric keeps its title leading and its picker trailing on one line
+And Shared Task Ladder and Task List menu rows keep their titles leading and their pickers trailing on one line
+And all of those picker controls have the same width
 And controls that already fit one line remain segmented
 
 Given Planner Calendar data and shared filters are unchanged
@@ -3025,18 +3026,22 @@ When the user presses the `Go to date` header button
 Then the Planner date picker opens in the right-side Planner sidebar
 And choosing a date updates the Planner selected date without scoping the Timeline list to that date
 
-### Planner Timeline Keeps Focus Control
+### Mac New Menu Owns Focus
 
-Area: Planner
-Decision links: [0422](../decisions/0422-keep-mac-focus-control-in-planner-timeline.md)
-Current behavior: [Planner](../current-behavior/planner.md)
+Area: Home / Focus
+Decision links: [0681](../decisions/0681-move-mac-focus-into-new-menu.md)
+Current behavior: [UI](../current-behavior/ui.md), [Planner](../current-behavior/planner.md)
 Coverage:
+- `Tests/macOS/HomeFeatureTests.swift`
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
-Given Mac Planner is showing the Focus control in Calendar mode
-When the user switches to Timeline mode
-Then the same Focus control remains visible beside the Planner filter button
-And task-backed, tag-backed, active, paused, and completion menu behavior remains unchanged
+Given Mac Home uses standard production action availability
+When the user presses the global `+` control
+Then the native menu shows Add New Task followed by Focus
+And it shows Control-Option-Command-T and Control-Option-Command-F beside those actions
+When Planner shows Calendar or Timeline
+Then neither header renders a separate Focus control
+And choosing Focus or pressing its shortcut opens the existing task, tag, and duration sheet
 
 ### Mac Focus Starts From One Recalling Sheet
 

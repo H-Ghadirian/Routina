@@ -25,6 +25,10 @@ enum HomeMacFilterDetailLayout: Equatable {
     }
 }
 
+enum HomeMacFilterControlLayout {
+    static let compactPickerWidth: CGFloat = 156
+}
+
 private struct HomeMacFilterDetailLayoutKey: EnvironmentKey {
     static let defaultValue = HomeMacFilterDetailLayout.compact
 }
@@ -44,7 +48,7 @@ struct HomeMacAdaptiveFilterChoiceControl<Option: Hashable, OptionLabel: View>: 
     let selection: Binding<Option>
     let minimumSegmentWidth: CGFloat
     let usesPickerInCompactLayout: Bool
-    let compactPickerFillsAvailableWidth: Bool
+    let compactPickerWidth: CGFloat?
     @ViewBuilder let label: (Option) -> OptionLabel
 
     init(
@@ -53,7 +57,7 @@ struct HomeMacAdaptiveFilterChoiceControl<Option: Hashable, OptionLabel: View>: 
         selection: Binding<Option>,
         minimumSegmentWidth: CGFloat = 68,
         usesPickerInCompactLayout: Bool = true,
-        compactPickerFillsAvailableWidth: Bool = true,
+        compactPickerWidth: CGFloat? = nil,
         @ViewBuilder label: @escaping (Option) -> OptionLabel
     ) {
         self.accessibilityLabel = accessibilityLabel
@@ -61,29 +65,13 @@ struct HomeMacAdaptiveFilterChoiceControl<Option: Hashable, OptionLabel: View>: 
         self.selection = selection
         self.minimumSegmentWidth = minimumSegmentWidth
         self.usesPickerInCompactLayout = usesPickerInCompactLayout
-        self.compactPickerFillsAvailableWidth = compactPickerFillsAvailableWidth
+        self.compactPickerWidth = compactPickerWidth
         self.label = label
     }
 
     var body: some View {
         if filterLayout.usesCompactPickers && usesPickerInCompactLayout {
-            Picker(selection: selection) {
-                ForEach(options, id: \.self) { option in
-                    label(option)
-                        .tag(option)
-                }
-            } label: {
-                Text(accessibilityLabel)
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .controlSize(.large)
-            .fixedSize(horizontal: !compactPickerFillsAvailableWidth, vertical: false)
-            .frame(
-                maxWidth: compactPickerFillsAvailableWidth ? .infinity : nil,
-                alignment: compactPickerFillsAvailableWidth ? .leading : .trailing
-            )
-            .accessibilityLabel(accessibilityLabel)
+            compactMenuPicker
         } else {
             RoutinaGlassSegmentedControl(
                 accessibilityLabel: accessibilityLabel,
@@ -94,6 +82,73 @@ struct HomeMacAdaptiveFilterChoiceControl<Option: Hashable, OptionLabel: View>: 
                 label: label
             )
         }
+    }
+
+    @ViewBuilder
+    private var compactMenuPicker: some View {
+        if let compactPickerWidth {
+            menuPicker
+                .frame(width: compactPickerWidth, alignment: .leading)
+        } else {
+            menuPicker
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var menuPicker: some View {
+        Picker(selection: selection) {
+            ForEach(options, id: \.self) { option in
+                label(option)
+                    .tag(option)
+            }
+        } label: {
+            Text(accessibilityLabel)
+        }
+        .pickerStyle(.menu)
+        .labelsHidden()
+        .controlSize(.large)
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
+struct HomeMacAdaptiveFilterControlRow<Content: View>: View {
+    @Environment(\.homeMacFilterDetailLayout) private var filterLayout
+
+    let title: String
+    let pairsInCompactLayout: Bool
+    @ViewBuilder let content: () -> Content
+
+    init(
+        _ title: String,
+        pairsInCompactLayout: Bool = true,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.pairsInCompactLayout = pairsInCompactLayout
+        self.content = content
+    }
+
+    var body: some View {
+        if filterLayout.usesCompactPickers && pairsInCompactLayout {
+            HStack(alignment: .center, spacing: 12) {
+                controlTitle
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                content()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                controlTitle
+                content()
+            }
+        }
+    }
+
+    private var controlTitle: some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
     }
 }
 

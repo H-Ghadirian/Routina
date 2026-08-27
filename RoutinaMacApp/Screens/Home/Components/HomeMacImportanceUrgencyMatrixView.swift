@@ -1,5 +1,58 @@
 import SwiftUI
 
+enum HomeMacFilterRuleSide: String, CaseIterable, Identifiable {
+    case include = "Include"
+    case exclude = "Exclude"
+
+    var id: Self { self }
+}
+
+struct HomeMacDirectFilterGroup<Content: View>: View {
+    let title: String
+    let systemImage: String
+    let tint: Color
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(tint)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        Circle()
+                            .fill(tint.opacity(0.16))
+                    )
+
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .accessibilityAddTraits(.isHeader)
+
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.caption)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .routinaGlassPanel(
+            cornerRadius: 18,
+            tint: tint,
+            tintOpacity: 0.08
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(tint.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
 struct HomeMacCollapsibleFilterSection<Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -196,8 +249,6 @@ struct HomeMacImportanceUrgencyMatrixView: View {
 }
 
 struct HomeMacTaskLadderFiltersSection: View {
-    @Environment(\.homeMacFilterDetailLayout) private var filterLayout
-
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
     @Binding var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
@@ -211,56 +262,56 @@ struct HomeMacTaskLadderFiltersSection: View {
             tint: .orange
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                filterControl("Importance") {
+                HomeMacAdaptiveFilterControlRow("Importance") {
                     HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Minimum current importance",
                         options: importanceOptions,
                         selection: minimumImportanceBinding,
-                        compactPickerFillsAvailableWidth: false
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
                     ) { value in
                         Text(value.map { "\($0.title)+" } ?? "All")
                     }
                 }
 
-                filterControl("Urgency") {
+                HomeMacAdaptiveFilterControlRow("Urgency") {
                     HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Minimum current urgency",
                         options: urgencyOptions,
                         selection: minimumUrgencyBinding,
-                        compactPickerFillsAvailableWidth: false
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
                     ) { value in
                         Text(value.map { "\($0.title)+" } ?? "All")
                     }
                 }
 
-                filterControl("Pressure") {
+                HomeMacAdaptiveFilterControlRow("Pressure") {
                     HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Minimum current pressure",
                         options: pressureOptions,
                         selection: $selectedPressureFilter,
-                        compactPickerFillsAvailableWidth: false
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
                     ) { value in
                         Text(value.map { "\($0.title)+" } ?? "All")
                     }
                 }
 
-                filterControl("Thinking needed") {
+                HomeMacAdaptiveFilterControlRow("Thinking needed") {
                     HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Thinking needed",
                         options: thinkingOptions,
                         selection: $selectedThinkingNeededFilter,
-                        compactPickerFillsAvailableWidth: false
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
                     ) { value in
                         Text(value?.title ?? "All")
                     }
                 }
 
-                filterControl("Estimated time") {
+                HomeMacAdaptiveFilterControlRow("Estimated time") {
                     HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Estimated time",
                         options: TaskEstimationFilter.allCases,
                         selection: $selectedEstimationFilter,
-                        compactPickerFillsAvailableWidth: false
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
                     ) { value in
                         Label(value.title, systemImage: value.systemImage)
                     }
@@ -271,33 +322,6 @@ struct HomeMacTaskLadderFiltersSection: View {
                     .foregroundStyle(.secondary)
             }
         }
-    }
-
-    @ViewBuilder
-    private func filterControl<Content: View>(
-        _ title: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        if filterLayout.usesCompactPickers {
-            HStack(alignment: .center, spacing: 12) {
-                filterTitle(title)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                content()
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-            VStack(alignment: .leading, spacing: 8) {
-                filterTitle(title)
-                content()
-            }
-        }
-    }
-
-    private func filterTitle(_ title: String) -> some View {
-        Text(title)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
     }
 
     private var importanceOptions: [RoutineTaskImportance?] {

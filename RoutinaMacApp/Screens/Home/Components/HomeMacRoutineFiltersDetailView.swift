@@ -104,11 +104,15 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     private var sortTabContent: some View {
         HomeMacSidebarSectionCard(title: "Sorting") {
             VStack(alignment: .leading, spacing: 18) {
-                filterControlSection("Grouping") {
-                    groupingPicker
+                VStack(alignment: .leading, spacing: 8) {
+                    HomeMacAdaptiveFilterControlRow("Grouping") {
+                        groupingPicker
+                    }
+
+                    groupingSupplementaryContent
                 }
 
-                filterControlSection("Sort") {
+                HomeMacAdaptiveFilterControlRow("Sort") {
                     sortPicker
                 }
             }
@@ -181,11 +185,14 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
                     taskListModePicker
                 }
 
-                filterControlSection("Created") {
+                HomeMacAdaptiveFilterControlRow("Created") {
                     createdDatePicker
                 }
 
-                filterControlSection("Status") {
+                HomeMacAdaptiveFilterControlRow(
+                    "Status",
+                    pairsInCompactLayout: availableFilters.count > 3
+                ) {
                     filterPicker
                 }
 
@@ -195,12 +202,12 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
                     }
                 }
 
-                filterControlSection("Media") {
+                HomeMacAdaptiveFilterControlRow("Media") {
                     mediaPicker
                 }
 
                 if taskListMode == .todos || taskListMode == .all {
-                    filterControlSection("One-time State") {
+                    HomeMacAdaptiveFilterControlRow("One-time State") {
                         todoStateFilterSection
                     }
                 }
@@ -242,23 +249,27 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
             options: availableFilters,
             selection: $selectedFilter,
             minimumSegmentWidth: 92,
-            usesPickerInCompactLayout: availableFilters.count > 3
+            usesPickerInCompactLayout: availableFilters.count > 3,
+            compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
         ) { filter in
             Text(filter.title)
         }
     }
 
     private var groupingPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HomeMacAdaptiveFilterChoiceControl(
-                accessibilityLabel: "Grouping",
-                options: RoutineListSectioningMode.allCases,
-                selection: $routineListSectioningMode,
-                minimumSegmentWidth: 126
-            ) { mode in
-                Label(mode.title, systemImage: mode.systemImage)
-            }
+        HomeMacAdaptiveFilterChoiceControl(
+            accessibilityLabel: "Grouping",
+            options: RoutineListSectioningMode.allCases,
+            selection: $routineListSectioningMode,
+            minimumSegmentWidth: 126,
+            compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+        ) { mode in
+            Label(mode.title, systemImage: mode.systemImage)
+        }
+    }
 
+    private var groupingSupplementaryContent: some View {
+        Group {
             Text(routineListSectioningMode.subtitle)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -283,7 +294,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
             accessibilityLabel: "Sort",
             options: HomeTaskListSortOrder.allCases,
             selection: $taskListSortOrder,
-            minimumSegmentWidth: 126
+            minimumSegmentWidth: 126,
+            compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
         ) { order in
             Label(order.title, systemImage: order.systemImage)
         }
@@ -306,7 +318,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
             accessibilityLabel: "Media",
             options: TaskMediaFilter.allCases,
             selection: $selectedMediaFilter,
-            minimumSegmentWidth: 104
+            minimumSegmentWidth: 104,
+            compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
         ) { filter in
             Label(filter.title, systemImage: filter.systemImage)
         }
@@ -317,7 +330,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
             accessibilityLabel: "Created",
             options: HomeTaskCreatedDateFilter.allCases,
             selection: $createdDateFilter,
-            minimumSegmentWidth: 126
+            minimumSegmentWidth: 126,
+            compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
         ) { filter in
             Label(filter.title, systemImage: filter.systemImage)
         }
@@ -342,7 +356,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
             accessibilityLabel: "One-time State",
             options: todoStateOptions,
             selection: $selectedTodoStateFilter,
-            minimumSegmentWidth: 80
+            minimumSegmentWidth: 80,
+            compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
         ) { state in
             Text(state?.displayTitle ?? "Any State")
         }
