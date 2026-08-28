@@ -239,24 +239,7 @@ extension HomeTCAView {
     }
 
     func clearAllMacTimelineFilters() {
-        store.send(.selectedTimelineRangeChanged(.all))
-        store.send(.selectedTimelineFilterTypeChanged(.all))
-        store.send(.selectedTimelineStatusFilterChanged(.all))
-        store.send(.selectedTimelineTagsChanged([]))
-        store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
-        store.send(.selectedTimelineFlagsChanged([]))
-        store.send(.selectedTimelineIncludeFlagMatchModeChanged(.all))
-        store.send(.selectedFlagsChanged([]))
-        store.send(.includeFlagMatchModeChanged(.all))
-        store.send(.excludedFlagsChanged([]))
-        store.send(.excludeFlagMatchModeChanged(.any))
-        store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
-        store.send(.selectedTimelinePressureFilterChanged(nil))
-        store.send(.selectedTimelineThinkingNeededFilterChanged(nil))
-        store.send(.selectedTimelineEstimationFilterChanged(.all))
-        store.send(.selectedTimelineMediaFilterChanged(.all))
-        store.send(.selectedTimelineExcludedTagsChanged([]))
-        store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
+        store.send(.clearTimelineAndSharedFilters)
     }
 
     func toggleMacCalendarFilterDetailFromPlanner() {
@@ -1263,7 +1246,7 @@ extension HomeTCAView {
         }
     }
 
-    private func macFilterScopeIsActive(_ scope: HomeMacFilterDetailScope) -> Bool {
+    func macFilterScopeIsActive(_ scope: HomeMacFilterDetailScope) -> Bool {
         switch scope {
         case .both:
             return !store.selectedTags.isEmpty

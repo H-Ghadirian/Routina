@@ -343,14 +343,14 @@ And the manual Refresh Backlog control remains immediately available when no ref
 ### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
 
 Area: Tasks / Mac Backlog
-Decision links: [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
 - `Tests/macOS/BacklogFeatureTests.swift`
 - `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
 
-Given a person creates an empty Backlog super section
+Given a person creates an empty Backlog super section with no active search or filter
 When its cached task presentation contains no assigned task
 Then the super section remains visible and can immediately create one level of subsection
 And either hierarchy level can be collapsed across its full visible header surface
@@ -400,6 +400,22 @@ Given Backlog is the active Mac workspace
 When the person opens Add Task from New and cancels without saving
 Then Routina returns to Backlog instead of showing Planner
 And Backlog remains the relaunch destination while the transient Add Task workspace is open
+
+Given Backlog contains Repeating and One-time tasks with different status, creation dates, current Task Ladder values, estimates, media, Tags, and Flags
+When the person opens the top-toolbar filter beside the Backlog workspace menu and composes those choices
+Then only matching Backlog-owned rows remain in the cached hierarchy
+And subsections with no matching rows are omitted
+And super sections with neither a direct match nor a matching subsection are omitted
+And Planner layers, Timeline outcomes, main-task-list visibility and appearance, grouping, and sorting are absent
+And the unfiltered Backlog-owned catalog remains available for Tag and Flag selection
+And changing filters never moves tasks or rewrites their Backlog paths
+When the person clears the filters
+Then deliberately empty Backlog sections and subsections return
+
+Given an active Backlog filter hides a task that matches the current search query
+When Routina evaluates search creation and outside-Backlog results
+Then the hidden Backlog task still prevents duplicate creation
+And it is not mislabeled as `Found outside Backlog`
 
 ### Mac Backlog Applies Surface-Scoped Tag Rules to Hidden Tasks
 
@@ -2933,20 +2949,33 @@ Given one task qualifies for Today or Tomorrow and an ordinary section
 When Home task-list presentation is derived
 Then the planning section and ordinary section each contain one stable row for that task, without duplicates inside either section
 
-### Planner Filter Button Uses a Companion Pane
+### Planner and Backlog Filter Button Uses a Companion Pane
 
 Area: UI
-Decision links: [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md), [0316](../decisions/0316-present-mac-home-filters-as-companion-pane.md), [0319](../decisions/0319-open-planner-filters-in-home-filter-pane.md)
+Decision links: [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md), [0316](../decisions/0316-present-mac-home-filters-as-companion-pane.md), [0319](../decisions/0319-open-planner-filters-in-home-filter-pane.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
+- `Tests/Shared/MacWorkspaceNavigationSourceTests.swift`
+- `Tests/Shared/BacklogTaskListPresentationTests.swift`
+- `Tests/macOS/BacklogFeatureTests.swift`
 
-Given Mac Home is showing Planner in Calendar or List mode
-When the Planner header filter button is pressed
+Given Mac Home is showing Planner in Calendar or Timeline mode
+Then one filter button appears immediately to the left of the top-right workspace menu
+And the workspace menu keeps the same trailing position when the filter appears or disappears
+And Planner's local header has no second filter button
+When the top-toolbar filter button is pressed
 Then the `Shared` / `Task List` / `Timeline` / `Calendar` filter surface opens in a right-side companion pane while the current workspace remains visible
 And task-detail panes, the board inspector, and Planner-local right sidebars do not remain open beside it
 When the user expands the filter pane fullscreen and then minimizes it
 Then the filter surface returns to the right-side companion pane
+
+Given Mac Home is showing Backlog
+When the same top-toolbar filter button is pressed
+Then Backlog's independent filter surface opens with the same companion, fullscreen, minimize, and close behavior
+
+Given Mac Home is showing Task Ladder, Stats, Settings, Details, or another non-Planner/non-Backlog workspace
+Then the top-toolbar filter button is absent
 
 ### Timeline Filters Do Not Auto-Open Row Details
 
@@ -3019,14 +3048,20 @@ Decision links: [0309](../decisions/0309-show-full-timeline-in-planner-list-mode
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
+- `Tests/macOS/HomeFeatureTests.swift`
+- `Tests/Shared/HomeFilterEditorTests.swift`
+- `Tests/Shared/MacWorkspaceNavigationSourceTests.swift`
 
 Given Mac Planner is in `List` mode
-When the companion filter pane changes shared `Both` filters or Timeline-specific filters
+When the companion filter pane changes `Shared` filters or Timeline-specific filters
 Then the Planner List timeline rows use the same filtered entry set as the Timeline sidebar
 And an empty filtered list explains that search or filters may be hiding entries
 When active Timeline filters hide newer activity while older matching rows remain visible
 Then Planner Timeline shows an active-filter notice with a direct clear action above the rows
-And the Planner header filter button is highlighted and opens the `Timeline` scope in the companion filter pane
+And the top-toolbar filter button is highlighted and opens the `Timeline` scope in the companion filter pane
+When the person uses that direct clear action
+Then Timeline-owned and Shared filters affecting Timeline reset together
+And Task List-only filters remain unchanged
 
 ### Planner Timeline Keeps Go To Date
 

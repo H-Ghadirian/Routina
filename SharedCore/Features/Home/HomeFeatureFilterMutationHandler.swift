@@ -76,6 +76,21 @@ struct HomeFeatureFilterMutationHandler<State: HomeFeatureFilterMutationState, A
         return .none
     }
 
+    func clearTimelineAndSharedFilters(state: inout State) -> Effect<Action> {
+        var taskFilters = state.taskFilters
+        var timelineFilters = state.timelineFilters
+        let result = HomeFilterEditor.clearTimelineAndSharedFilters(
+            taskFilters: &taskFilters,
+            timelineFilters: &timelineFilters
+        )
+        state.taskFilters = taskFilters
+        state.timelineFilters = timelineFilters
+        if result.shouldPersistTemporaryViewState {
+            persistTemporaryViewState(state)
+        }
+        return .none
+    }
+
     func applyTimelineFilterMutation(
         _ mutation: HomeTimelineFilterMutation,
         state: inout State

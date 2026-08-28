@@ -414,6 +414,84 @@ struct HomeFilterEditorTests {
     }
 
     @Test
+    func clearTimelineAndSharedFiltersPreservesTaskListOnlyFilters() {
+        let placeID = UUID()
+        var taskFilters = HomeTaskFiltersState(
+            selectedFilter: .doneToday,
+            advancedQuery: "project:launch",
+            selectedTags: ["Shared tag"],
+            includeTagMatchMode: .any,
+            selectedFlags: ["Reference"],
+            includeFlagMatchMode: .any,
+            excludedFlags: ["Private"],
+            excludeFlagMatchMode: .all,
+            excludedTags: ["Admin"],
+            excludeTagMatchMode: .all,
+            selectedManualPlaceFilterID: placeID,
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            selectedTodoStateFilter: .inProgress,
+            selectedPressureFilter: .medium,
+            selectedThinkingNeededFilter: .high,
+            selectedGoalFilter: .withoutGoal,
+            selectedMediaFilter: .withImage,
+            selectedEstimationFilter: .withEstimate,
+            hideAssumedDoneTasks: true,
+            taskListViewMode: .actionable,
+            taskListSortOrder: .createdOldestFirst,
+            createdDateFilter: .last7Days,
+            showArchivedTasks: false
+        )
+        var timelineFilters = HomeTimelineFiltersState(
+            selectedRange: .week,
+            selectedFilterType: .todos,
+            selectedStatusFilter: .missed,
+            selectedTags: ["Shared tag"],
+            includeTagMatchMode: .any,
+            selectedFlags: ["Reference"],
+            includeFlagMatchMode: .any,
+            selectedExcludedTags: ["Admin"],
+            excludeTagMatchMode: .all,
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            selectedPressureFilter: .medium,
+            selectedThinkingNeededFilter: .high,
+            selectedEstimationFilter: .withEstimate,
+            selectedMediaFilter: .withImage
+        )
+
+        let result = HomeFilterEditor.clearTimelineAndSharedFilters(
+            taskFilters: &taskFilters,
+            timelineFilters: &timelineFilters
+        )
+
+        #expect(taskFilters.effectiveSelectedTags.isEmpty)
+        #expect(taskFilters.includeTagMatchMode == .all)
+        #expect(taskFilters.excludedTags.isEmpty)
+        #expect(taskFilters.excludeTagMatchMode == .any)
+        #expect(taskFilters.selectedFlags.isEmpty)
+        #expect(taskFilters.includeFlagMatchMode == .all)
+        #expect(taskFilters.excludedFlags.isEmpty)
+        #expect(taskFilters.excludeFlagMatchMode == .any)
+        #expect(taskFilters.selectedImportanceUrgencyFilter == nil)
+        #expect(taskFilters.selectedPressureFilter == nil)
+        #expect(taskFilters.selectedThinkingNeededFilter == nil)
+        #expect(taskFilters.selectedEstimationFilter == .all)
+        #expect(taskFilters.selectedFilter == .doneToday)
+        #expect(taskFilters.advancedQuery == "project:launch")
+        #expect(taskFilters.selectedManualPlaceFilterID == placeID)
+        #expect(taskFilters.selectedTodoStateFilter == .inProgress)
+        #expect(taskFilters.selectedGoalFilter == .withoutGoal)
+        #expect(taskFilters.selectedMediaFilter == .withImage)
+        #expect(taskFilters.hideAssumedDoneTasks)
+        #expect(taskFilters.taskListViewMode == .actionable)
+        #expect(taskFilters.taskListSortOrder == .createdOldestFirst)
+        #expect(taskFilters.createdDateFilter == .last7Days)
+        #expect(!taskFilters.showArchivedTasks)
+        #expect(timelineFilters == HomeTimelineFiltersState())
+        #expect(!result.didResetHideUnavailableRoutines)
+        #expect(result.shouldPersistTemporaryViewState)
+    }
+
+    @Test
     func transitionTaskListModePreservesFullFilterSnapshot() {
         let placeID = UUID()
         var taskFilters = HomeTaskFiltersState(

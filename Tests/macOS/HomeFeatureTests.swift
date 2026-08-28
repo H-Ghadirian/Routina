@@ -676,6 +676,106 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func clearTimelineAndSharedFilters_resetsBothSharedCopiesAndPreservesTaskListOnlyFilters() async {
+        let context = makeInMemoryContext()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let placeID = UUID()
+        let matrixFilter = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                selectedFilter: .doneToday,
+                selectedTags: ["Shared tag"],
+                includeTagMatchMode: .any,
+                selectedFlags: ["Reference"],
+                includeFlagMatchMode: .any,
+                excludedFlags: ["Private"],
+                excludeFlagMatchMode: .all,
+                excludedTags: ["Admin"],
+                excludeTagMatchMode: .all,
+                selectedManualPlaceFilterID: placeID,
+                selectedImportanceUrgencyFilter: matrixFilter,
+                selectedTodoStateFilter: .inProgress,
+                selectedPressureFilter: .medium,
+                selectedThinkingNeededFilter: .high,
+                selectedGoalFilter: .withoutGoal,
+                selectedMediaFilter: .withImage,
+                selectedEstimationFilter: .withEstimate,
+                selectedTimelineRange: .week,
+                selectedTimelineFilterType: .todos,
+                selectedTimelineStatusFilter: .missed,
+                selectedTimelineTags: ["Shared tag"],
+                selectedTimelineIncludeTagMatchMode: .any,
+                selectedTimelineFlags: ["Reference"],
+                selectedTimelineIncludeFlagMatchMode: .any,
+                selectedTimelineExcludedTags: ["Admin"],
+                selectedTimelineExcludeTagMatchMode: .all,
+                selectedTimelineImportanceUrgencyFilter: matrixFilter,
+                selectedTimelinePressureFilter: .medium,
+                selectedTimelineThinkingNeededFilter: .high,
+                selectedTimelineEstimationFilter: .withEstimate,
+                selectedTimelineMediaFilter: .withImage
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.temporaryViewState = { .default }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.clearTimelineAndSharedFilters) {
+            $0.selectedTags = []
+            $0.includeTagMatchMode = .all
+            $0.selectedFlags = []
+            $0.includeFlagMatchMode = .all
+            $0.excludedFlags = []
+            $0.excludeFlagMatchMode = .any
+            $0.excludedTags = []
+            $0.excludeTagMatchMode = .any
+            $0.selectedImportanceUrgencyFilter = nil
+            $0.selectedPressureFilter = nil
+            $0.selectedThinkingNeededFilter = nil
+            $0.selectedEstimationFilter = .all
+            $0.selectedTimelineRange = .all
+            $0.selectedTimelineFilterType = .all
+            $0.selectedTimelineStatusFilter = .all
+            $0.selectedTimelineTags = []
+            $0.selectedTimelineIncludeTagMatchMode = .all
+            $0.selectedTimelineFlags = []
+            $0.selectedTimelineIncludeFlagMatchMode = .all
+            $0.selectedTimelineExcludedTags = []
+            $0.selectedTimelineExcludeTagMatchMode = .any
+            $0.selectedTimelineImportanceUrgencyFilter = nil
+            $0.selectedTimelinePressureFilter = nil
+            $0.selectedTimelineThinkingNeededFilter = nil
+            $0.selectedTimelineEstimationFilter = .all
+            $0.selectedTimelineMediaFilter = .all
+        }
+
+        #expect(store.state.selectedFilter == .doneToday)
+        #expect(store.state.selectedManualPlaceFilterID == placeID)
+        #expect(store.state.selectedTodoStateFilter == .inProgress)
+        #expect(store.state.selectedGoalFilter == .withoutGoal)
+        #expect(store.state.selectedMediaFilter == .withImage)
+        #expect(persistedState.value?.homeSelectedTags == [])
+        #expect(persistedState.value?.homeExcludedTags == [])
+        #expect(persistedState.value?.homeSelectedFlags == [])
+        #expect(persistedState.value?.homeExcludedFlags == [])
+        #expect(persistedState.value?.homeSelectedTimelineTags == [])
+        #expect(persistedState.value?.homeSelectedTimelineFlags == [])
+        #expect(persistedState.value?.homeSelectedTimelineRange == .all)
+        #expect(persistedState.value?.homeSelectedTimelineFilterType == .all)
+        #expect(persistedState.value?.homeSelectedTimelineStatusFilter == .all)
+        #expect(persistedState.value?.homeSelectedTimelineMediaFilter == .all)
+        #expect(persistedState.value?.homeSelectedFilter == .doneToday)
+        #expect(persistedState.value?.homeSelectedManualPlaceFilterID == placeID)
+        #expect(persistedState.value?.homeSelectedTodoStateFilter == .inProgress)
+        #expect(persistedState.value?.homeSelectedGoalFilter == .withoutGoal)
+        #expect(persistedState.value?.homeSelectedMediaFilter == .withImage)
+    }
+
+    @Test
     func selectedFilterChanged_overwritesPersistedSnapshotForCurrentMode() async {
         let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)

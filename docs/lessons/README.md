@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0261 — Prune filtered hierarchy at the presentation boundary](0261-prune-filtered-hierarchy-at-the-presentation-boundary.md)
+- [0260 — Clear synchronized filter state atomically](0260-clear-synchronized-filter-state-atomically.md)
 - [0259 — Split continuous intervals at calendar-day boundaries](0259-split-continuous-intervals-at-calendar-day-boundaries.md)
 - [0258 — Preserve accepted toolbar control silhouettes](0258-preserve-accepted-toolbar-control-silhouettes.md)
 - [0257 — Gate global actions from domain eligibility](0257-gate-global-actions-from-domain-eligibility.md)

@@ -322,6 +322,42 @@ enum HomeFilterEditor {
     }
 
     @discardableResult
+    static func clearTimelineAndSharedFilters(
+        taskFilters: inout HomeTaskFiltersState,
+        timelineFilters: inout HomeTimelineFiltersState
+    ) -> HomeFilterMutationResult {
+        taskFilters.setSelectedTags([])
+        taskFilters.includeTagMatchMode = .all
+        taskFilters.excludedTags = []
+        taskFilters.excludeTagMatchMode = .any
+        taskFilters.selectedFlags = []
+        taskFilters.includeFlagMatchMode = .all
+        taskFilters.excludedFlags = []
+        taskFilters.excludeFlagMatchMode = .any
+        taskFilters.selectedImportanceUrgencyFilter = nil
+        taskFilters.selectedPressureFilter = nil
+        taskFilters.selectedThinkingNeededFilter = nil
+        taskFilters.selectedEstimationFilter = .all
+
+        timelineFilters.selectedRange = .all
+        timelineFilters.selectedFilterType = .all
+        timelineFilters.selectedStatusFilter = .all
+        timelineFilters.setSelectedTags([])
+        timelineFilters.includeTagMatchMode = .all
+        timelineFilters.selectedFlags = []
+        timelineFilters.includeFlagMatchMode = .all
+        timelineFilters.selectedExcludedTags = []
+        timelineFilters.excludeTagMatchMode = .any
+        timelineFilters.selectedImportanceUrgencyFilter = nil
+        timelineFilters.selectedPressureFilter = nil
+        timelineFilters.selectedThinkingNeededFilter = nil
+        timelineFilters.selectedEstimationFilter = .all
+        timelineFilters.selectedMediaFilter = .all
+
+        return HomeFilterMutationResult()
+    }
+
+    @discardableResult
     static func apply(
         _ mutation: HomeTaskFilterMutation,
         taskFilters: inout HomeTaskFiltersState,

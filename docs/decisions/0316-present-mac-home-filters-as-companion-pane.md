@@ -18,6 +18,7 @@ Accepted
 
 - [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
 - [0660: Make Mac Planner Filters Explicit, Composable, and Bounded](0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
+- [0690: Place Mac Filters Beside Planner and Backlog Workspaces](0690-place-mac-filters-beside-planner-and-backlog-workspaces.md)
 
 ## Context
 

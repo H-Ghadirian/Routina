@@ -68,3 +68,7 @@ including current Task Ladder value derivation.
   window-wide controls or sparse single-column cards.
 - Planner Calendar scrolling no longer repeats shared task-filter and current
   Task Ladder derivation work for an unchanged snapshot.
+
+## Refined By
+
+- [0690: Place Mac Filters Beside Planner and Backlog Workspaces](0690-place-mac-filters-beside-planner-and-backlog-workspaces.md)

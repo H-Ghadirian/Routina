@@ -442,6 +442,7 @@ struct DayPlanDetailView: View {
     var calendarTaskViewMode: Binding<DayPlanCalendarTaskViewMode> = .constant(.schedule)
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterDetailPresented = false
+    var showsCalendarFilterButton = true
     var listFilterButtonIsActive = false
     var listFilterButtonAccessibilityValue: String? = nil
     var calendarSearchText = ""
@@ -468,7 +469,7 @@ struct DayPlanDetailView: View {
                 isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                 isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
                 isCalendarFilterDetailPresented: isCalendarFilterDetailPresented,
-                showsCalendarFilterButton: true,
+                showsCalendarFilterButton: showsCalendarFilterButton,
                 displayMode: displayMode,
                 calendarTaskViewMode: calendarTaskViewMode,
                 showsDisplayModePicker: listContent != nil,

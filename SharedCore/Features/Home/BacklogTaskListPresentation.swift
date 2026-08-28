@@ -1,8 +1,168 @@
 import Foundation
 
+struct BacklogFilterState: Equatable {
+    var taskListMode: HomeTaskListMode = .all
+    var selectedTodoState: TodoState?
+    var createdDateFilter: HomeTaskCreatedDateFilter = .all
+    var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    var selectedPressureFilter: RoutineTaskPressure?
+    var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
+    var selectedEstimationFilter: TaskEstimationFilter = .all
+    var selectedMediaFilter: TaskMediaFilter = .all
+    var selectedTags: Set<String> = []
+    var includeTagMatchMode: RoutineTagMatchMode = .all
+    var excludedTags: Set<String> = []
+    var excludeTagMatchMode: RoutineTagMatchMode = .any
+    var selectedFlags: Set<String> = []
+    var includeFlagMatchMode: RoutineTagMatchMode = .all
+    var excludedFlags: Set<String> = []
+    var excludeFlagMatchMode: RoutineTagMatchMode = .any
+
+    static let `default` = Self()
+
+    var hasActiveFilters: Bool {
+        taskListMode != .all
+            || selectedTodoState != nil
+            || createdDateFilter != .all
+            || selectedImportanceUrgencyFilter != nil
+            || selectedPressureFilter != nil
+            || selectedThinkingNeededFilter != nil
+            || selectedEstimationFilter != .all
+            || selectedMediaFilter != .all
+            || !selectedTags.isEmpty
+            || !excludedTags.isEmpty
+            || !selectedFlags.isEmpty
+            || !excludedFlags.isEmpty
+    }
+
+    func matches(
+        _ task: RoutineTask,
+        fileAttachmentTaskIDs: Set<UUID>,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard matchesTaskType(task),
+              HomeDisplayFilterSupport.matchesTodoStateFilter(
+                selectedTodoState,
+                isOneOffTask: task.isOneOffTask,
+                todoState: task.todoState
+              ),
+              matchesCreatedDate(task, referenceDate: referenceDate, calendar: calendar),
+              HomeDisplayFilterSupport.matchesThinkingNeededFilter(
+                selectedThinkingNeededFilter,
+                thinkingNeeded: task.thinkingNeeded
+              ),
+              HomeDisplayFilterSupport.matchesEstimationFilter(
+                selectedEstimationFilter,
+                estimatedDurationMinutes: task.estimatedDurationMinutes
+              ),
+              HomeDisplayFilterSupport.matchesMediaFilter(
+                selectedMediaFilter,
+                hasImage: task.hasImage,
+                hasFileAttachment: fileAttachmentTaskIDs.contains(task.id),
+                hasVoiceNote: task.hasVoiceNote
+              ),
+              HomeDisplayFilterSupport.matchesSelectedTags(
+                selectedTags,
+                mode: includeTagMatchMode,
+                in: task.tags
+              ),
+              HomeDisplayFilterSupport.matchesExcludedTags(
+                excludedTags,
+                mode: excludeTagMatchMode,
+                in: task.tags
+              ),
+              HomeDisplayFilterSupport.matchesSelectedFlags(
+                selectedFlags,
+                mode: includeFlagMatchMode,
+                in: task.flags
+              ),
+              HomeDisplayFilterSupport.matchesExcludedFlags(
+                excludedFlags,
+                mode: excludeFlagMatchMode,
+                in: task.flags
+              ) else {
+            return false
+        }
+
+        let currentValues = RoutineTaskTemporalWeightResolver.effectiveWeights(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        return HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
+            selectedImportanceUrgencyFilter,
+            importance: currentValues.importance,
+            urgency: currentValues.urgency
+        ) && HomeDisplayFilterSupport.matchesMinimumPressureFilter(
+            selectedPressureFilter,
+            pressure: currentValues.pressure
+        )
+    }
+
+    private func matchesTaskType(_ task: RoutineTask) -> Bool {
+        switch taskListMode {
+        case .all:
+            return true
+        case .routines:
+            return !task.isOneOffTask
+        case .todos:
+            return task.isOneOffTask
+        }
+    }
+
+    private func matchesCreatedDate(
+        _ task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        switch createdDateFilter {
+        case .all:
+            return true
+        case .today:
+            guard let createdAt = task.createdAt else { return false }
+            return calendar.isDate(createdAt, inSameDayAs: referenceDate)
+        case .yesterday:
+            guard let createdAt = task.createdAt,
+                  let yesterday = calendar.date(byAdding: .day, value: -1, to: referenceDate)
+            else {
+                return false
+            }
+            return calendar.isDate(createdAt, inSameDayAs: yesterday)
+        case .last7Days:
+            return matchesCreatedWithinDays(7, task: task, referenceDate: referenceDate, calendar: calendar)
+        case .last30Days:
+            return matchesCreatedWithinDays(30, task: task, referenceDate: referenceDate, calendar: calendar)
+        }
+    }
+
+    private func matchesCreatedWithinDays(
+        _ days: Int,
+        task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard let createdAt = task.createdAt else { return false }
+        let createdDay = calendar.startOfDay(for: createdAt)
+        let referenceDay = calendar.startOfDay(for: referenceDate)
+        guard let lowerBound = calendar.date(byAdding: .day, value: -(days - 1), to: referenceDay) else {
+            return false
+        }
+        return createdDay >= lowerBound && createdDay <= referenceDay
+    }
+}
+
 /// A stable, reducer-owned snapshot for Backlog workspaces. Home intentionally
 /// does not build this presentation while its task list scrolls.
 struct BacklogTaskListPresentation: Equatable {
+    struct FilterCatalog: Equatable {
+        let tags: [String]
+        let tagCounts: [String: Int]
+        let flags: [String]
+
+        static let empty = Self(tags: [], tagCounts: [:], flags: [])
+    }
+
     struct OutsideBacklogResult: Identifiable, Equatable {
         enum RevealDestination: Equatable {
             case planner
@@ -40,6 +200,10 @@ struct BacklogTaskListPresentation: Equatable {
     /// remain separate from the scoped result count so search never implies
     /// that a Radar or archived task belongs to Backlog.
     let outsideBacklogResults: [OutsideBacklogResult]
+    /// Search creation remains duplicate-aware even when a Backlog-only filter
+    /// suppresses the matching row from the visible hierarchy.
+    let hasAnySearchResult: Bool
+    let filterCatalog: FilterCatalog
 
     var taskCount: Int {
         sections.reduce(0) { $0 + $1.taskCount } + hiddenByFlagTasks.count
@@ -50,13 +214,22 @@ struct BacklogTaskListPresentation: Equatable {
     }
 
     static var empty: Self {
-        Self(sections: [], hiddenByFlagTasks: [], outsideBacklogResults: [])
+        Self(
+            sections: [],
+            hiddenByFlagTasks: [],
+            outsideBacklogResults: [],
+            hasAnySearchResult: false,
+            filterCatalog: .empty
+        )
     }
 
     static func make(
         tasks: [RoutineTask],
         customSections: [HomeCustomTaskSection],
         flagRules: [RoutineFlagRule],
+        availableFlags: [String] = [],
+        filters: BacklogFilterState = .default,
+        fileAttachmentTaskIDs: Set<UUID> = [],
         searchText: String = "",
         referenceDate: Date,
         calendar: Calendar
@@ -100,16 +273,38 @@ struct BacklogTaskListPresentation: Equatable {
             }
             return (task.id, automaticSectionID)
         })
+        let unassignedHiddenByFlagTasks = tasks.filter { task in
+            guard task.customTaskSectionID.map(backlogSectionIDs.contains) != true,
+                  automaticSectionIDByTaskID[task.id] == nil,
+                  isActiveBacklogCandidate(task, referenceDate: referenceDate, calendar: calendar)
+            else {
+                return false
+            }
+            return RoutineFlagRules.hidesFromTaskLists(flags: task.flags, rules: flagRules)
+        }
+        let allBacklogTaskIDs = Set(backlogSectionIDByTaskID.keys)
+            .union(unassignedHiddenByFlagTasks.map(\.id))
+        let allBacklogTasks = tasks.filter { allBacklogTaskIDs.contains($0.id) }
+        let filterCatalog = makeFilterCatalog(
+            tasks: allBacklogTasks,
+            availableFlags: availableFlags
+        )
         let tasksBySectionID: [UUID: [RoutineTask]] = Dictionary(grouping: tasks.filter { task in
             guard let sectionID = backlogSectionIDByTaskID[task.id] else {
                 return false
             }
-            return matchesSearch(
+            return filters.matches(
+                task,
+                fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) && matchesSearch(
                 task,
                 normalizedQuery: normalizedSearchQuery,
                 pathTitles: pathTitlesBySectionID[sectionID] ?? []
             )
         }) { backlogSectionIDByTaskID[$0.id]! }
+        let shouldPruneEmptyHierarchy = normalizedSearchQuery != nil || filters.hasActiveFilters
 
         let presentationSections = topLevelSections.compactMap { section -> Section? in
             let directTasks = sorted(tasksBySectionID[section.id] ?? [])
@@ -122,11 +317,11 @@ struct BacklogTaskListPresentation: Equatable {
                     tasks: sorted(tasksBySectionID[subsection.id] ?? [])
                 )
             }
-            let subsections = normalizedSearchQuery == nil
-                ? allSubsections
-                : allSubsections.filter { !$0.tasks.isEmpty }
+            let subsections = shouldPruneEmptyHierarchy
+                ? allSubsections.filter { !$0.tasks.isEmpty }
+                : allSubsections
 
-            guard normalizedSearchQuery == nil
+            guard !shouldPruneEmptyHierarchy
                     || !directTasks.isEmpty
                     || !subsections.isEmpty else {
                 return nil
@@ -134,28 +329,22 @@ struct BacklogTaskListPresentation: Equatable {
             return Section(section: section, tasks: directTasks, subsections: subsections)
         }
 
-        let hiddenByFlagTasks = sorted(tasks.filter { task in
-            guard task.customTaskSectionID.map(backlogSectionIDs.contains) != true,
-                  automaticSectionIDByTaskID[task.id] == nil,
-                  isActiveBacklogCandidate(task, referenceDate: referenceDate, calendar: calendar)
-            else {
-                return false
-            }
-            return RoutineFlagRules.hidesFromTaskLists(flags: task.flags, rules: flagRules)
-                && matchesSearch(task, normalizedQuery: normalizedSearchQuery)
+        let hiddenByFlagTasks = sorted(unassignedHiddenByFlagTasks.filter { task in
+            filters.matches(
+                task,
+                fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) && matchesSearch(task, normalizedQuery: normalizedSearchQuery)
         })
 
-        let backlogTaskIDs = Set(
-            tasksBySectionID.values.flatMap { $0.map(\.id) }
-                + hiddenByFlagTasks.map(\.id)
-        )
         let radarSections = sections.filter { $0.surface == .radar }
         let outsideBacklogResults: [OutsideBacklogResult]
         if normalizedSearchQuery == nil {
             outsideBacklogResults = []
         } else {
             outsideBacklogResults = sorted(tasks.filter { task in
-                !backlogTaskIDs.contains(task.id)
+                !allBacklogTaskIDs.contains(task.id)
                     && matchesSearch(
                         task,
                         normalizedQuery: normalizedSearchQuery,
@@ -176,12 +365,41 @@ struct BacklogTaskListPresentation: Equatable {
                 )
             }
         }
+        let hasFilteredBacklogSearchResult = normalizedSearchQuery.map { query in
+            allBacklogTasks.contains { task in
+                let sectionID = backlogSectionIDByTaskID[task.id]
+                return matchesSearch(
+                    task,
+                    normalizedQuery: query,
+                    pathTitles: sectionID.flatMap { pathTitlesBySectionID[$0] } ?? []
+                )
+            }
+        } ?? false
 
         return Self(
             sections: presentationSections,
             hiddenByFlagTasks: hiddenByFlagTasks,
-            outsideBacklogResults: outsideBacklogResults
+            outsideBacklogResults: outsideBacklogResults,
+            hasAnySearchResult: hasFilteredBacklogSearchResult || !outsideBacklogResults.isEmpty,
+            filterCatalog: filterCatalog
         )
+    }
+
+    private static func makeFilterCatalog(
+        tasks: [RoutineTask],
+        availableFlags: [String]
+    ) -> FilterCatalog {
+        let tagCounts = tasks.reduce(into: [String: Int]()) { counts, task in
+            for tag in task.tags {
+                guard let normalizedTag = RoutineTag.normalized(tag) else { continue }
+                counts[normalizedTag, default: 0] += 1
+            }
+        }
+        let tags = tagCounts.keys.sorted {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }
+        let flags = RoutineFlag.allFlags(from: [availableFlags] + tasks.map(\.flags))
+        return FilterCatalog(tags: tags, tagCounts: tagCounts, flags: flags)
     }
 
     private static func matchesSearch(

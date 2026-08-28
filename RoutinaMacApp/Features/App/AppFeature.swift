@@ -273,6 +273,8 @@ struct AppFeature {
             return nil
         case .clearTaskListAndSharedFilters:
             return .homeFilterCleared
+        case .clearTimelineAndSharedFilters:
+            return .timelineFilterCleared
         case .selectedFilterChanged,
              .advancedQueryChanged,
              .selectedTagChanged,

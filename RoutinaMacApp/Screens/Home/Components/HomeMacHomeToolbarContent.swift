@@ -17,6 +17,8 @@ struct HomeMacTopToolbarChrome: View {
     let showsPlaces: Bool
     let showsSearch: Bool
     let showsSidebarToggle: Bool
+    let isFilterPresented: Bool
+    let isFilterActive: Bool
     @Binding var progressMode: MacHomeProgressMode
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     @Binding var searchText: String
@@ -43,6 +45,7 @@ struct HomeMacTopToolbarChrome: View {
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
     let onOpenSettings: () -> Void
+    let onToggleFilters: () -> Void
     let isBoardInspectorPresented: Bool
     let onToggleBoardInspector: () -> Void
     let onToggleSidebar: () -> Void
@@ -131,6 +134,15 @@ struct HomeMacTopToolbarChrome: View {
 
     private var toolbarCommandCluster: some View {
         HStack(spacing: 10) {
+            if HomeMacToolbarFilterPresentation.isVisible(for: selectedSidebarMode) {
+                HomeMacToolbarFilterButton(
+                    isPresented: isFilterPresented,
+                    isActive: isFilterActive,
+                    workspaceTitle: selectedSidebarMode.workspaceTitle,
+                    onToggle: onToggleFilters
+                )
+            }
+
             HomeMacWorkspaceToolbarControls(
                 selectedMode: $selectedSidebarMode,
                 onOpenSettings: onOpenSettings,
@@ -179,6 +191,41 @@ struct HomeMacTopToolbarChrome: View {
                 .help("\(doneCount) total done")
             }
         }
+    }
+}
+
+enum HomeMacToolbarFilterPresentation {
+    static func isVisible(for mode: HomeFeature.MacSidebarMode) -> Bool {
+        mode == .routines || mode == .backlog
+    }
+}
+
+private struct HomeMacToolbarFilterButton: View {
+    let isPresented: Bool
+    let isActive: Bool
+    let workspaceTitle: String
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            Image(
+                systemName: isActive
+                    ? "line.3.horizontal.decrease.circle.fill"
+                    : "line.3.horizontal.decrease.circle"
+            )
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(isPresented || isActive ? Color.accentColor : Color.secondary)
+            .frame(width: 32, height: 32)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isPresented ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(workspaceTitle) filters")
+        .accessibilityValue(isActive ? "Filters active" : "No active filters")
+        .help("\(workspaceTitle) filters")
     }
 }
 

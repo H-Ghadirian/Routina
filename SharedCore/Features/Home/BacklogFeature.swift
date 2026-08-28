@@ -15,6 +15,10 @@ struct BacklogFeature {
         var tasks: [RoutineTask] = []
         var customSections: [HomeCustomTaskSection] = []
         var flagRules: [RoutineFlagRule] = []
+        var definedFlags: [String] = []
+        var tagColors: [String: String] = [:]
+        var fileAttachmentTaskIDs: Set<UUID> = []
+        var filters = BacklogFilterState.default
         var presentation = BacklogTaskListPresentation.empty
         var searchText = ""
         var collapsedSuperSectionIDs: Set<UUID> = []
@@ -32,12 +36,21 @@ struct BacklogFeature {
         case refresh
         case routineDataChanged
         case automaticRefresh
-        case tasksLoaded([RoutineTask], [HomeCustomTaskSection], [RoutineFlagRule])
+        case tasksLoaded(
+            [RoutineTask],
+            [HomeCustomTaskSection],
+            [RoutineFlagRule],
+            Set<UUID>,
+            [String],
+            [String: String]
+        )
         case loadFailed(String)
         case errorDismissed
         case customSectionsChanged([HomeCustomTaskSection])
         case customSectionsDeleted([HomeCustomTaskSection], Set<UUID>)
         case searchTextChanged(String)
+        case filtersChanged(BacklogFilterState)
+        case clearFilters
         case superSectionDisclosureToggled(UUID)
         case subsectionDisclosureToggled(UUID)
         case taskSelected(UUID)
@@ -88,11 +101,21 @@ struct BacklogFeature {
                 guard !state.isLoading else { return .none }
                 return loadTasks()
 
-            case let .tasksLoaded(tasks, customSections, flagRules):
+            case let .tasksLoaded(
+                tasks,
+                customSections,
+                flagRules,
+                fileAttachmentTaskIDs,
+                definedFlags,
+                tagColors
+            ):
                 state.isLoading = false
                 state.tasks = tasks
                 state.customSections = customSections
                 state.flagRules = RoutineFlagRules.sanitized(flagRules)
+                state.fileAttachmentTaskIDs = fileAttachmentTaskIDs
+                state.definedFlags = RoutineFlag.allFlags(from: [definedFlags])
+                state.tagColors = tagColors
                 state.errorMessage = nil
                 rebuildPresentation(&state)
 
@@ -126,6 +149,18 @@ struct BacklogFeature {
             case let .searchTextChanged(searchText):
                 guard state.searchText != searchText else { return .none }
                 state.searchText = searchText
+                rebuildPresentation(&state)
+                return .none
+
+            case let .filtersChanged(filters):
+                guard state.filters != filters else { return .none }
+                state.filters = filters
+                rebuildPresentation(&state)
+                return .none
+
+            case .clearFilters:
+                guard state.filters.hasActiveFilters else { return .none }
+                state.filters = .default
                 rebuildPresentation(&state)
                 return .none
 
@@ -174,6 +209,9 @@ struct BacklogFeature {
             tasks: state.tasks,
             customSections: state.customSections,
             flagRules: state.flagRules,
+            availableFlags: state.definedFlags,
+            filters: state.filters,
+            fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
             searchText: state.searchText,
             referenceDate: now,
             calendar: calendar
@@ -184,11 +222,17 @@ struct BacklogFeature {
         .run { @MainActor send in
             do {
                 let tasks = try modelContext().fetch(FetchDescriptor<RoutineTask>())
+                let fileAttachmentTaskIDs = Set(
+                    try modelContext().fetch(FetchDescriptor<RoutineAttachment>()).map(\.taskID)
+                )
                 send(
                     .tasksLoaded(
                         tasks,
                         appSettingsClient.customTaskSections(),
-                        appSettingsClient.flagRules()
+                        appSettingsClient.flagRules(),
+                        fileAttachmentTaskIDs,
+                        appSettingsClient.definedFlags(),
+                        appSettingsClient.tagColors()
                     )
                 )
             } catch {

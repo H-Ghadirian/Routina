@@ -225,6 +225,80 @@ struct BacklogTaskListPresentationTests {
     }
 
     @Test
+    func activeFiltersPruneEmptyHierarchyAndClearingRestoresIt() throws {
+        let projectsID = UUID()
+        let writingID = UUID()
+        let researchID = UUID()
+        let somedayID = UUID()
+        let matchingTask = RoutineTask(
+            name: "Draft proposal",
+            customTaskSectionID: writingID,
+            scheduleMode: .oneOff
+        )
+        let filteredTask = RoutineTask(
+            name: "Review sources",
+            customTaskSectionID: researchID
+        )
+        let sections = [
+            HomeCustomTaskSection(
+                id: projectsID,
+                surface: .backlog,
+                title: "Projects",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: writingID,
+                parentSectionID: projectsID,
+                surface: .backlog,
+                title: "Writing",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: researchID,
+                parentSectionID: projectsID,
+                surface: .backlog,
+                title: "Research",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(
+                id: somedayID,
+                surface: .backlog,
+                title: "Someday",
+                createdAt: nil
+            )
+        ]
+        var filters = BacklogFilterState.default
+        filters.taskListMode = .todos
+
+        let filteredPresentation = BacklogTaskListPresentation.make(
+            tasks: [matchingTask, filteredTask],
+            customSections: sections,
+            flagRules: [],
+            filters: filters,
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        let visibleSection = try #require(filteredPresentation.sections.first)
+        #expect(filteredPresentation.sections.map(\.id) == [projectsID])
+        #expect(visibleSection.tasks.isEmpty)
+        #expect(visibleSection.subsections.map(\.id) == [writingID])
+        #expect(visibleSection.subsections.first?.tasks.map(\.id) == [matchingTask.id])
+
+        let restoredPresentation = BacklogTaskListPresentation.make(
+            tasks: [matchingTask, filteredTask],
+            customSections: sections,
+            flagRules: [],
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        #expect(restoredPresentation.sections.map(\.id) == [projectsID, somedayID])
+        #expect(restoredPresentation.sections.first?.subsections.map(\.id) == [writingID, researchID])
+        #expect(restoredPresentation.sections.last?.taskCount == 0)
+    }
+
+    @Test
     func searchFiltersEveryBacklogGroupAndRetainsMatchingHierarchy() throws {
         let writingID = UUID()
         let researchID = UUID()
@@ -372,5 +446,99 @@ struct BacklogTaskListPresentationTests {
         #expect(result.task.id == completedTask.id)
         #expect(result.locationTitle == "Completed")
         #expect(result.revealDestination == .timeline)
+    }
+
+    @Test
+    func appliesBacklogOnlyFiltersAtTheCachedPresentationBoundary() throws {
+        let sectionID = UUID()
+        let referenceDate = Date(timeIntervalSince1970: 1_000_000)
+        let matchingTask = RoutineTask(
+            name: "Prepare proposal",
+            customTaskSectionID: sectionID,
+            importance: .level4,
+            urgency: .level4,
+            pressure: .high,
+            thinkingNeeded: .high,
+            tags: ["Work"],
+            flags: ["Someday"],
+            scheduleMode: .oneOff,
+            createdAt: referenceDate,
+            todoStateRawValue: TodoState.inProgress.rawValue,
+            estimatedDurationMinutes: 45
+        )
+        let filteredTask = RoutineTask(
+            name: "Read a book",
+            customTaskSectionID: sectionID,
+            tags: ["Reading"],
+            flags: ["Later"]
+        )
+        let section = HomeCustomTaskSection(
+            id: sectionID,
+            surface: .backlog,
+            title: "Someday",
+            createdAt: nil
+        )
+        var filters = BacklogFilterState.default
+        filters.taskListMode = .todos
+        filters.selectedTodoState = .inProgress
+        filters.createdDateFilter = .today
+        filters.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell(
+            importance: .level3,
+            urgency: .level3
+        )
+        filters.selectedPressureFilter = .medium
+        filters.selectedThinkingNeededFilter = .high
+        filters.selectedEstimationFilter = .withEstimate
+        filters.selectedMediaFilter = .withFile
+        filters.selectedTags = ["Work"]
+        filters.selectedFlags = ["Someday"]
+
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [matchingTask, filteredTask],
+            customSections: [section],
+            flagRules: [],
+            availableFlags: ["Someday", "Later", "Unassigned"],
+            filters: filters,
+            fileAttachmentTaskIDs: [matchingTask.id],
+            referenceDate: referenceDate,
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        #expect(presentation.sections.first?.tasks.map(\.id) == [matchingTask.id])
+        #expect(presentation.filterCatalog.tags == ["reading", "work"])
+        #expect(presentation.filterCatalog.tagCounts["work"] == 1)
+        #expect(presentation.filterCatalog.flags == ["Later", "Someday", "Unassigned"])
+    }
+
+    @Test
+    func filteredBacklogSearchMatchesStillPreventDuplicateCreation() {
+        let sectionID = UUID()
+        let task = RoutineTask(
+            name: "Renew passport",
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let section = HomeCustomTaskSection(
+            id: sectionID,
+            surface: .backlog,
+            title: "Someday",
+            createdAt: nil
+        )
+        var filters = BacklogFilterState.default
+        filters.taskListMode = .routines
+
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [task],
+            customSections: [section],
+            flagRules: [],
+            filters: filters,
+            searchText: "passport",
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        #expect(presentation.taskCount == 0)
+        #expect(presentation.outsideBacklogResults.isEmpty)
+        #expect(presentation.hasAnySearchResult)
     }
 }

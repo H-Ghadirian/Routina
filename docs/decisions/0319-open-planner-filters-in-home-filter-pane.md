@@ -22,6 +22,7 @@ Accepted
 - [0333: Move Mac Focus Control to Planner Calendar Header](superseded/0333-move-mac-focus-control-to-planner-calendar-header.md)
 - [0364: Rename Shared Mac Filter Scope to All](superseded/0364-rename-shared-mac-filter-scope-to-all.md)
 - [0660: Make Mac Planner Filters Explicit, Composable, and Bounded](0660-make-mac-planner-filters-explicit-composable-and-bounded.md)
+- [0690: Place Mac Filters Beside Planner and Backlog Workspaces](0690-place-mac-filters-beside-planner-and-backlog-workspaces.md)
 
 ## Context
 

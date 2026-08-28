@@ -336,6 +336,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     calendarTaskViewMode: $dayPlanCalendarTaskViewMode,
                     calendarFilters: $dayPlanCalendarFilters,
                     isCalendarFilterDetailPresented: isDayPlanCalendarFilterDetailPresented,
+                    showsCalendarFilterButton: false,
                     listFilterButtonIsActive: isPlannerTimelineFilterActive,
                     listFilterButtonAccessibilityValue: plannerTimelineFilterSummary,
                     calendarSearchText: plannerSearchText,

@@ -733,6 +733,7 @@ struct HomeFeature {
         case isFilterSheetPresentedChanged(Bool)
         case clearOptionalFilters
         case clearTaskListAndSharedFilters
+        case clearTimelineAndSharedFilters
 
         // Timeline filter actions
         case selectedTimelineRangeChanged(TimelineRange)
@@ -1401,6 +1402,9 @@ struct HomeFeature {
 
             case .clearTaskListAndSharedFilters:
                 return filterMutationHandler().clearTaskListAndSharedFilters(state: &state)
+
+            case .clearTimelineAndSharedFilters:
+                return filterMutationHandler().clearTimelineAndSharedFilters(state: &state)
 
             // MARK: - Timeline filter actions
 

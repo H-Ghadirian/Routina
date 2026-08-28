@@ -92,6 +92,45 @@ struct MacWorkspaceNavigationSourceTests {
     }
 
     @Test
+    func filterEntryLivesBesidePlannerAndBacklogWorkspaceControl() throws {
+        let toolbarSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"
+        )
+        let platformSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
+        )
+        let detailContainerSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"
+        )
+        let backlogSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Backlog/BacklogMacView.swift"
+        )
+        let sidebarSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift"
+        )
+
+        #expect(toolbarSource.contains("mode == .routines || mode == .backlog"))
+        #expect(toolbarSource.contains("HomeMacToolbarFilterButton("))
+        let commandClusterStart = try #require(
+            toolbarSource.range(of: "private var toolbarCommandCluster")
+        )
+        let commandClusterSource = toolbarSource[commandClusterStart.lowerBound...]
+        let filterButtonRange = try #require(
+            commandClusterSource.range(of: "HomeMacToolbarFilterButton(")
+        )
+        let workspaceControlRange = try #require(
+            commandClusterSource.range(of: "HomeMacWorkspaceToolbarControls(")
+        )
+        #expect(filterButtonRange.lowerBound < workspaceControlRange.lowerBound)
+        #expect(platformSource.contains("onToggleFilters: toggleHomeToolbarFilters"))
+        #expect(detailContainerSource.contains("showsCalendarFilterButton: false"))
+        #expect(backlogSource.contains("These filters affect Backlog only."))
+        #expect(backlogSource.contains("BacklogMacFiltersDetailView"))
+        #expect(sidebarSource.contains("func clearAllMacTimelineFilters()"))
+        #expect(sidebarSource.contains("store.send(.clearTimelineAndSharedFilters)"))
+    }
+
+    @Test
     func backlogCreationChooserNamesTheDestinationInUserTerms() throws {
         let homeSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift"

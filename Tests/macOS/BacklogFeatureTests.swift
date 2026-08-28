@@ -57,7 +57,7 @@ struct BacklogFeatureTests {
         }
 
         await store.send(.automaticRefresh)
-        await store.receive(.tasksLoaded([], [], []))
+        await store.receive(.tasksLoaded([], [], [], [], [], [:]))
     }
 
     @Test
@@ -72,7 +72,7 @@ struct BacklogFeatureTests {
         await store.send(.refresh) {
             $0.isLoading = true
         }
-        await store.receive(.tasksLoaded([], [], [])) {
+        await store.receive(.tasksLoaded([], [], [], [], [], [:])) {
             $0.isLoading = false
         }
     }
@@ -136,5 +136,79 @@ struct BacklogFeatureTests {
 
         #expect(store.state.collapsedSuperSectionIDs == [superSectionID])
         #expect(store.state.collapsedSubsectionIDs == [subsectionID])
+    }
+
+    @Test
+    func filterChangesRebuildTheCachedBacklogPresentationWithoutChangingSearch() async {
+        let sectionID = UUID()
+        let emptySectionID = UUID()
+        let oneOff = RoutineTask(
+            name: "Renew passport",
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let repeating = RoutineTask(
+            name: "Read weekly",
+            customTaskSectionID: sectionID
+        )
+        let section = HomeCustomTaskSection(
+            id: sectionID,
+            surface: .backlog,
+            title: "Someday",
+            createdAt: nil
+        )
+        let emptySection = HomeCustomTaskSection(
+            id: emptySectionID,
+            surface: .backlog,
+            title: "Empty",
+            createdAt: nil
+        )
+        var initialState = BacklogFeature.State()
+        initialState.tasks = [oneOff, repeating]
+        initialState.customSections = [section, emptySection]
+        initialState.presentation = BacklogTaskListPresentation.make(
+            tasks: initialState.tasks,
+            customSections: initialState.customSections,
+            flagRules: [],
+            referenceDate: Date(timeIntervalSince1970: 1_000),
+            calendar: Calendar(identifier: .gregorian)
+        )
+        let store = TestStore(initialState: initialState) {
+            BacklogFeature()
+        } withDependencies: {
+            $0.calendar = Calendar(identifier: .gregorian)
+            $0.date.now = Date(timeIntervalSince1970: 1_000)
+        }
+        var filters = BacklogFilterState.default
+        filters.taskListMode = .todos
+
+        await store.send(.filtersChanged(filters)) {
+            $0.filters = filters
+            $0.presentation = BacklogTaskListPresentation.make(
+                tasks: $0.tasks,
+                customSections: $0.customSections,
+                flagRules: [],
+                filters: filters,
+                referenceDate: Date(timeIntervalSince1970: 1_000),
+                calendar: Calendar(identifier: .gregorian)
+            )
+        }
+
+        #expect(store.state.presentation.sections.first?.tasks.map(\.id) == [oneOff.id])
+        #expect(store.state.presentation.sections.map(\.id) == [sectionID])
+        #expect(store.state.searchText.isEmpty)
+
+        await store.send(.clearFilters) {
+            $0.filters = .default
+            $0.presentation = BacklogTaskListPresentation.make(
+                tasks: $0.tasks,
+                customSections: $0.customSections,
+                flagRules: [],
+                referenceDate: Date(timeIntervalSince1970: 1_000),
+                calendar: Calendar(identifier: .gregorian)
+            )
+        }
+
+        #expect(store.state.presentation.sections.map(\.id) == [sectionID, emptySectionID])
     }
 }

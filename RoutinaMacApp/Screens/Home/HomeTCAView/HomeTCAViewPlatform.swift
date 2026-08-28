@@ -134,6 +134,8 @@ extension HomeTCAView {
             showsPlaces: isPlacesEnabled,
             showsSearch: showsHomeToolbarSearch,
             showsSidebarToggle: !isMacBacklogMode && !isMacTaskLadderMode,
+            isFilterPresented: store.isMacFilterDetailPresented,
+            isFilterActive: homeToolbarFilterIsActive,
             progressMode: macHomeProgressModeBinding,
             selectedSidebarMode: macSidebarModeBinding,
             searchText: toolbarSearchTextBinding,
@@ -166,6 +168,7 @@ extension HomeTCAView {
             onOpenSettings: {
                 openWindow(id: RoutinaMacSceneID.settings)
             },
+            onToggleFilters: toggleHomeToolbarFilters,
             isBoardInspectorPresented: isMacBoardTicketInspectorPresented,
             onToggleBoardInspector: toggleMacBoardTicketInspector,
             onToggleSidebar: toggleMacHomeSidebar
@@ -185,6 +188,31 @@ extension HomeTCAView {
     private var showsHomeToolbarSearch: Bool {
         !isMacStatsMode
             && !isMacAddTaskMode
+    }
+
+    private var homeToolbarFilterIsActive: Bool {
+        if isMacBacklogMode {
+            return backlogStore.filters.hasActiveFilters
+        }
+        guard isMacRoutinesMode else { return false }
+        return HomeMacFilterDetailScope.allCases.contains(where: macFilterScopeIsActive)
+    }
+
+    private func toggleHomeToolbarFilters() {
+        if isMacBacklogMode {
+            if store.isMacFilterDetailPresented {
+                closeMacFilterDetailPane()
+            } else {
+                withAnimation(MacHomeDetailAnimation.secondaryPane) {
+                    isMacFilterDetailFullscreen = false
+                    store.send(.setMacFilterDetailPresented(true))
+                }
+            }
+            return
+        }
+
+        guard isMacRoutinesMode else { return }
+        toggleMacCalendarFilterDetailFromPlanner()
     }
 
     var toolbarSearchTextBinding: Binding<String> {
@@ -251,8 +279,15 @@ extension HomeTCAView {
                     BacklogMacView(
                         store: backlogStore,
                         onShowTaskInPlanner: showBacklogTaskInPlanner,
-                        onShowTaskInTimeline: showBacklogTaskInTimeline
-                    )
+                        onShowTaskInTimeline: showBacklogTaskInTimeline,
+                        isFilterPresented: store.isMacFilterDetailPresented,
+                        isFilterFullscreen: isMacFilterDetailFullscreen,
+                        onExpandFilter: expandMacFilterDetailPane,
+                        onMinimizeFilter: minimizeFullscreenMacFilterDetail,
+                        onCloseFilter: closeMacFilterDetailPane
+                    ) {
+                        BacklogMacFiltersDetailView(store: backlogStore)
+                    }
                 } else if isMacTaskLadderMode {
                     TaskRankingMacView(store: taskRankingStore)
                 } else {
@@ -1006,8 +1041,7 @@ extension HomeTCAView {
 
     private var activeToolbarSearchHasResult: Bool {
         if isMacBacklogMode {
-            return backlogStore.presentation.taskCount > 0
-                || !backlogStore.presentation.outsideBacklogResults.isEmpty
+            return backlogStore.presentation.hasAnySearchResult
         }
         if isMacTaskLadderMode {
             return !taskRankingStore.searchPresentation.matches.isEmpty

@@ -1,19 +1,37 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct BacklogMacView: View {
+struct BacklogMacView<FilterView: View>: View {
     let store: StoreOf<BacklogFeature>
     let onShowTaskInPlanner: (UUID, String) -> Void
     let onShowTaskInTimeline: (UUID, String) -> Void
+    let isFilterPresented: Bool
+    let isFilterFullscreen: Bool
+    let onExpandFilter: () -> Void
+    let onMinimizeFilter: () -> Void
+    let onCloseFilter: () -> Void
+    @ViewBuilder let filterView: () -> FilterView
 
     init(
         store: StoreOf<BacklogFeature>,
         onShowTaskInPlanner: @escaping (UUID, String) -> Void = { _, _ in },
-        onShowTaskInTimeline: @escaping (UUID, String) -> Void = { _, _ in }
+        onShowTaskInTimeline: @escaping (UUID, String) -> Void = { _, _ in },
+        isFilterPresented: Bool,
+        isFilterFullscreen: Bool,
+        onExpandFilter: @escaping () -> Void,
+        onMinimizeFilter: @escaping () -> Void,
+        onCloseFilter: @escaping () -> Void,
+        @ViewBuilder filterView: @escaping () -> FilterView
     ) {
         self.store = store
         self.onShowTaskInPlanner = onShowTaskInPlanner
         self.onShowTaskInTimeline = onShowTaskInTimeline
+        self.isFilterPresented = isFilterPresented
+        self.isFilterFullscreen = isFilterFullscreen
+        self.onExpandFilter = onExpandFilter
+        self.onMinimizeFilter = onMinimizeFilter
+        self.onCloseFilter = onCloseFilter
+        self.filterView = filterView
     }
 
     @AppStorage(
@@ -26,13 +44,7 @@ struct BacklogMacView: View {
     @State private var newSubsectionTitleBySectionID: [UUID: String] = [:]
 
     var body: some View {
-        HSplitView {
-            sidebar
-                .frame(minWidth: 280, idealWidth: 330, maxWidth: 420)
-
-            detail
-                .frame(minWidth: 620, maxWidth: .infinity, maxHeight: .infinity)
-        }
+        backlogContent
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             store.send(.onAppear)
@@ -56,6 +68,125 @@ struct BacklogMacView: View {
                 resetNewSectionPrompt()
             }
         }
+    }
+
+    @ViewBuilder
+    private var backlogContent: some View {
+        if isFilterPresented && isFilterFullscreen {
+            fullscreenFilterContent
+        } else {
+            contentWithOptionalFilterPane
+        }
+    }
+
+    private var workspaceContent: some View {
+        HSplitView {
+            sidebar
+                .frame(minWidth: 280, idealWidth: 330, maxWidth: 420)
+
+            detail
+                .frame(minWidth: 620, maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var contentWithOptionalFilterPane: some View {
+        GeometryReader { proxy in
+            let filterPaneWidth = isFilterPresented ? MacDetailContainerSizing.filterDetailPaneWidth : 0
+            let workspaceWidth = max(proxy.size.width - filterPaneWidth, 0)
+
+            HStack(spacing: 0) {
+                workspaceContent
+                    .frame(width: workspaceWidth)
+                    .frame(maxHeight: .infinity)
+                    .clipped()
+
+                if isFilterPresented {
+                    filterPane
+                }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .leading)
+            .clipped()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(MacHomeDetailAnimation.secondaryPane, value: isFilterPresented)
+    }
+
+    private var filterPane: some View {
+        VStack(spacing: 0) {
+            filterHeader(showsFullscreenAction: true)
+            Divider()
+            filterView()
+        }
+        .frame(width: MacDetailContainerSizing.filterDetailPaneWidth)
+        .frame(maxHeight: .infinity)
+        .background(Color.secondary.opacity(0.045), ignoresSafeAreaEdges: [])
+        .overlay(alignment: .leading) {
+            Divider()
+        }
+        .transition(.move(edge: .trailing).combined(with: .opacity))
+        .zIndex(1)
+    }
+
+    private var fullscreenFilterContent: some View {
+        VStack(spacing: 0) {
+            filterHeader(showsFullscreenAction: false)
+            Divider()
+            filterView()
+                .frame(
+                    maxWidth: MacDetailContainerSizing.fullscreenFilterContentMaxWidth,
+                    maxHeight: .infinity,
+                    alignment: .top
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func filterHeader(showsFullscreenAction: Bool) -> some View {
+        HStack(spacing: 10) {
+            Label("Filters", systemImage: "line.3.horizontal.decrease.circle")
+                .font(.headline)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            filterHeaderButton(
+                systemName: showsFullscreenAction
+                    ? "arrow.up.left.and.arrow.down.right"
+                    : "arrow.down.right.and.arrow.up.left",
+                title: showsFullscreenAction ? "Open Fullscreen" : "Minimize",
+                action: showsFullscreenAction ? onExpandFilter : onMinimizeFilter
+            )
+
+            filterHeaderButton(
+                systemName: "xmark",
+                title: "Close",
+                action: onCloseFilter
+            )
+        }
+        .padding(.horizontal, showsFullscreenAction ? 14 : 20)
+        .padding(.vertical, showsFullscreenAction ? 10 : 12)
+    }
+
+    private func filterHeaderButton(
+        systemName: String,
+        title: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.secondary)
+                .frame(width: 30, height: 30)
+                .background {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Color.secondary.opacity(0.08))
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .help(title)
     }
 
     private var sidebar: some View {
@@ -567,5 +698,187 @@ struct BacklogMacView: View {
     private func sectionColor(_ section: HomeCustomTaskSection) -> Color {
         guard let colorHex = section.colorHex else { return .accentColor }
         return Color(hex: colorHex)
+    }
+}
+
+struct BacklogMacFiltersDetailView: View {
+    let store: StoreOf<BacklogFeature>
+
+    var body: some View {
+        HomeMacFilterDetailContainerView(
+            title: "Backlog Filters",
+            showsTitle: false
+        ) {
+            header
+            coreFilters
+            taskLadderFilters
+            tagFilters
+            flagFilters
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Backlog")
+                    .font(.title2.weight(.semibold))
+
+                Text("These filters affect Backlog only.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Button("Clear Filters") {
+                store.send(.clearFilters)
+            }
+            .disabled(!store.filters.hasActiveFilters)
+        }
+    }
+
+    private var coreFilters: some View {
+        HomeMacSidebarSectionCard(title: "Filters") {
+            VStack(alignment: .leading, spacing: 18) {
+                HomeMacAdaptiveFilterControlRow("Task type") {
+                    HomeMacAdaptiveFilterChoiceControl(
+                        accessibilityLabel: "Backlog task type",
+                        options: HomeTaskListMode.allCases,
+                        selection: filterBinding(\.taskListMode),
+                        minimumSegmentWidth: 112,
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                    ) { mode in
+                        Label(mode.title, systemImage: mode.systemImage)
+                    }
+                }
+
+                HomeMacAdaptiveFilterControlRow("Created") {
+                    HomeMacAdaptiveFilterChoiceControl(
+                        accessibilityLabel: "Backlog created date",
+                        options: HomeTaskCreatedDateFilter.allCases,
+                        selection: filterBinding(\.createdDateFilter),
+                        minimumSegmentWidth: 126,
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                    ) { filter in
+                        Label(filter.title, systemImage: filter.systemImage)
+                    }
+                }
+
+                if store.filters.taskListMode != .routines {
+                    HomeMacAdaptiveFilterControlRow("Status") {
+                        HomeMacAdaptiveFilterChoiceControl(
+                            accessibilityLabel: "Backlog one-time status",
+                            options: todoStateOptions,
+                            selection: filterBinding(\.selectedTodoState),
+                            minimumSegmentWidth: 92,
+                            compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                        ) { state in
+                            if let state {
+                                Label(state.displayTitle, systemImage: state.systemImage)
+                            } else {
+                                Label("All", systemImage: "circle.grid.2x2")
+                            }
+                        }
+                    }
+                }
+
+                HomeMacAdaptiveFilterControlRow("Media") {
+                    HomeMacAdaptiveFilterChoiceControl(
+                        accessibilityLabel: "Backlog media",
+                        options: TaskMediaFilter.allCases,
+                        selection: filterBinding(\.selectedMediaFilter),
+                        minimumSegmentWidth: 104,
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                    ) { filter in
+                        Label(filter.title, systemImage: filter.systemImage)
+                    }
+                }
+            }
+        }
+    }
+
+    private var taskLadderFilters: some View {
+        HomeMacTaskLadderFiltersSection(
+            selectedImportanceUrgencyFilter: filterBinding(\.selectedImportanceUrgencyFilter),
+            selectedPressureFilter: filterBinding(\.selectedPressureFilter),
+            selectedThinkingNeededFilter: filterBinding(\.selectedThinkingNeededFilter),
+            selectedEstimationFilter: filterBinding(\.selectedEstimationFilter)
+        )
+    }
+
+    private var tagFilters: some View {
+        HomeMacTimelineTagFiltersView(
+            availableTags: store.presentation.filterCatalog.tags,
+            suggestedRelatedTags: [],
+            availableExcludeTags: store.presentation.filterCatalog.tags,
+            selectedTags: store.filters.selectedTags,
+            includeTagMatchMode: store.filters.includeTagMatchMode,
+            excludeTagMatchMode: store.filters.excludeTagMatchMode,
+            selectedExcludedTags: store.filters.excludedTags,
+            tagCount: { tag in
+                store.presentation.filterCatalog.tagCounts[RoutineTag.normalized(tag) ?? tag, default: 0]
+            },
+            tagColor: { tag in
+                guard let hex = store.tagColors[RoutineTag.normalized(tag) ?? tag] else { return nil }
+                return Color(hex: hex)
+            },
+            onSelectTags: { updateFilter(\.selectedTags, to: $0) },
+            onIncludeTagMatchModeChange: { updateFilter(\.includeTagMatchMode, to: $0) },
+            onSelectSuggestedTag: { tag in
+                var tags = store.filters.selectedTags
+                tags.insert(tag)
+                updateFilter(\.selectedTags, to: tags)
+            },
+            onExcludeTagMatchModeChange: { updateFilter(\.excludeTagMatchMode, to: $0) },
+            onToggleExcludedTag: toggleExcludedTag,
+            presentation: .compactActions
+        )
+    }
+
+    private var flagFilters: some View {
+        HomeMacSharedFlagFiltersView(
+            availableFlags: store.presentation.filterCatalog.flags,
+            selectedFlags: store.filters.selectedFlags,
+            excludedFlags: store.filters.excludedFlags,
+            includeFlagMatchMode: store.filters.includeFlagMatchMode,
+            excludeFlagMatchMode: store.filters.excludeFlagMatchMode,
+            onSelectIncludedFlags: { updateFilter(\.selectedFlags, to: $0) },
+            onIncludeFlagMatchModeChange: { updateFilter(\.includeFlagMatchMode, to: $0) },
+            onSelectExcludedFlags: { updateFilter(\.excludedFlags, to: $0) },
+            onExcludeFlagMatchModeChange: { updateFilter(\.excludeFlagMatchMode, to: $0) }
+        )
+    }
+
+    private var todoStateOptions: [TodoState?] {
+        [nil] + TodoState.filterableCases.map(Optional.some)
+    }
+
+    private func filterBinding<Value: Equatable>(
+        _ keyPath: WritableKeyPath<BacklogFilterState, Value>
+    ) -> Binding<Value> {
+        Binding(
+            get: { store.filters[keyPath: keyPath] },
+            set: { updateFilter(keyPath, to: $0) }
+        )
+    }
+
+    private func updateFilter<Value: Equatable>(
+        _ keyPath: WritableKeyPath<BacklogFilterState, Value>,
+        to value: Value
+    ) {
+        guard store.filters[keyPath: keyPath] != value else { return }
+        var filters = store.filters
+        filters[keyPath: keyPath] = value
+        store.send(.filtersChanged(filters))
+    }
+
+    private func toggleExcludedTag(_ tag: String) {
+        var tags = store.filters.excludedTags
+        if let existing = tags.first(where: { RoutineTag.contains($0, in: [tag]) }) {
+            tags.remove(existing)
+        } else {
+            tags.insert(tag)
+        }
+        updateFilter(\.excludedTags, to: tags)
     }
 }
