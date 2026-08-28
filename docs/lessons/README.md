@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0259 — Split continuous intervals at calendar-day boundaries](0259-split-continuous-intervals-at-calendar-day-boundaries.md)
 - [0258 — Preserve accepted toolbar control silhouettes](0258-preserve-accepted-toolbar-control-silhouettes.md)
 - [0257 — Gate global actions from domain eligibility](0257-gate-global-actions-from-domain-eligibility.md)
 - [0256 — Give the label the flexible width in switch rows](0256-give-the-label-the-flexible-width-in-switch-rows.md)

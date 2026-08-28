@@ -5058,6 +5058,118 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func endedOvernightCountUpFocusSessionSplitsPlannerEvidenceAcrossDays() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T23:11:00Z"))
+        let endedAt = try #require(date("2026-05-08T10:00:00Z"))
+        let task = RoutineTask(
+            id: UUID(),
+            name: "Overnight focus",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            id: UUID(),
+            taskID: task.id,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: endedAt
+        )
+        context.insert(task)
+        context.insert(session)
+
+        _ = DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
+            for: task,
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: 0,
+            calendar: calendar,
+            context: context
+        )
+        _ = DayPlanFocusSessionPlannerSync.saveEndedCountUpFocusBlock(
+            for: task,
+            session: session,
+            endedAt: endedAt,
+            calendar: calendar,
+            context: context
+        )
+
+        let firstDayKey = DayPlanStorage.dayKey(for: startedAt, calendar: calendar)
+        let secondDayKey = DayPlanStorage.dayKey(for: endedAt, calendar: calendar)
+        let firstDayBlock = try #require(
+            DayPlanStorage.loadBlocks(forDayKey: firstDayKey, context: context).first
+        )
+        let secondDayBlock = try #require(
+            DayPlanStorage.loadBlocks(forDayKey: secondDayKey, context: context).first
+        )
+
+        #expect(firstDayBlock.id == session.id)
+        #expect(firstDayBlock.startMinute == 23 * 60 + 11)
+        #expect(firstDayBlock.durationMinutes == 49)
+        #expect(secondDayBlock.id != session.id)
+        #expect(secondDayBlock.startMinute == 0)
+        #expect(secondDayBlock.durationMinutes == 10 * 60)
+        #expect(firstDayBlock.durationMinutes + secondDayBlock.durationMinutes == 10 * 60 + 49)
+    }
+
+    @Test
+    func reconciliationRepairsMissingOvernightFocusContinuation() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T23:11:00Z"))
+        let endedAt = try #require(date("2026-05-08T10:00:00Z"))
+        let task = RoutineTask(
+            id: UUID(),
+            name: "Overnight focus",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            id: UUID(),
+            taskID: task.id,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: endedAt
+        )
+        context.insert(task)
+        context.insert(session)
+        _ = DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
+            for: task,
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: 0,
+            calendar: calendar,
+            context: context
+        )
+
+        let persistedDayCount = DayPlanFocusSessionPlannerSync.reconcileCountUpFocusSegments(
+            for: [session],
+            tasks: [task],
+            calendar: calendar,
+            context: context
+        )
+        let repeatedPersistedDayCount = DayPlanFocusSessionPlannerSync.reconcileCountUpFocusSegments(
+            for: [session],
+            tasks: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let firstDayKey = DayPlanStorage.dayKey(for: startedAt, calendar: calendar)
+        let secondDayKey = DayPlanStorage.dayKey(for: endedAt, calendar: calendar)
+        let firstDayBlock = try #require(
+            DayPlanStorage.loadBlocks(forDayKey: firstDayKey, context: context).first
+        )
+        let secondDayBlock = try #require(
+            DayPlanStorage.loadBlocks(forDayKey: secondDayKey, context: context).first
+        )
+
+        #expect(persistedDayCount == 2)
+        #expect(repeatedPersistedDayCount == 0)
+        #expect(firstDayBlock.durationMinutes == 49)
+        #expect(secondDayBlock.durationMinutes == 10 * 60)
+    }
+
+    @Test
     func endedPausedCountUpFocusSessionUpdatesPlannerBlockToFocusedMinutes() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

@@ -89,6 +89,21 @@ And it does not change the todo's task-level Actual time
 And it does not change any routine completion log's Actual time
 And iOS and macOS follow the same rule
 
+### Overnight Focus Appears On Every Occupied Calendar Day
+
+Area: Focus / Planner / Timeline
+Decision links: [0005](../decisions/0005-show-timeline-activity-in-day-planner.md), [0129](../decisions/0129-hide-abandoned-focus-sessions-from-timeline.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given a task or tag count-up Focus session starts before local midnight
+And the person finishes it after midnight
+When Routina derives or reconciles Planner evidence
+Then Timeline keeps one session with its complete focused duration
+And Calendar Schedule shows a day-bounded Focus block on every occupied date
+And an older stored block that stopped at the first midnight gains its missing continuation without duplicate writes on repeated reconciliation
+
 ### Mac Task Detail Effort Stays Compact And Reports Focus History
 
 Area: Tasks / Focus / macOS Task Details
