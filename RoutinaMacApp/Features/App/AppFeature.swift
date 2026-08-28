@@ -504,6 +504,7 @@ struct StatsFeature {
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var taskCountForSelectedTypeFilter: Int = 0
         var filteredTaskCount: Int = 0
+        var filteredTaskIDs: Set<UUID> = []
         var unassignedFocusSessions: [FocusSession] = []
         var assignableFocusTasks: [RoutineTask] = []
         var activeFocusSprints: [BoardSprintRecord] = []
@@ -979,6 +980,7 @@ struct StatsFeature {
         state.availableExcludeFlags = derivedState.availableExcludeFlags
         state.taskCountForSelectedTypeFilter = derivedState.taskCountForSelectedTypeFilter
         state.filteredTaskCount = derivedState.filteredTaskCount
+        state.filteredTaskIDs = derivedState.filteredTaskIDs
         state.metrics = derivedState.metrics
     }
 }

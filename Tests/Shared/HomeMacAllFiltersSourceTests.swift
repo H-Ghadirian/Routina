@@ -186,19 +186,27 @@ struct HomeMacAllFiltersSourceTests {
     }
 
     @Test
-    func statsUsesTheCompactSearchableTagFilterInsteadOfCatalogClouds() throws {
+    func statsUsesPlannerSharedTagAndFlagPanelsWithIndependentStateCallbacks() throws {
         let tagSection = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacStatsTagSections.swift"
+        )
+        let flagSection = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacStatsFlagFilterSection.swift"
         )
         let sidebar = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacStatsSidebarView.swift"
         )
 
         #expect(tagSection.contains("HomeMacTimelineTagFiltersView("))
-        #expect(tagSection.contains("return \"No tag filter\""))
+        #expect(tagSection.contains("presentation: .compactActions"))
+        #expect(!tagSection.contains("HomeMacCollapsibleFilterSection("))
         #expect(!tagSection.contains("ForEach(tagSummaries"))
         #expect(!tagSection.contains("availableExcludedTagsView"))
+        #expect(flagSection.contains("HomeMacSharedFlagFiltersView("))
+        #expect(flagSection.contains("symmetricDifference(updatedFlags)"))
+        #expect(!flagSection.contains("HomeMacCollapsibleFilterSection("))
         #expect(sidebar.contains("HomeMacStatsTagFilterSection("))
+        #expect(sidebar.contains("HomeMacStatsFlagFilterSection("))
         #expect(!sidebar.contains("HomeMacStatsSuggestedRelatedTagSection("))
     }
 

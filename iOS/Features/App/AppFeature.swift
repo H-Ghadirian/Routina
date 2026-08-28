@@ -514,6 +514,7 @@ struct StatsFeature {
         var tagColors: [String: String] = [:]
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var filteredTaskCount: Int = 0
+        var filteredTaskIDs: Set<UUID> = []
         var hasOneOffTasks = false
         var unassignedFocusSessions: [FocusSession] = []
         var assignableFocusTasks: [RoutineTask] = []
@@ -1100,6 +1101,7 @@ struct StatsFeature {
         state.selectedFlags = derivedState.selectedFlags
         state.excludedFlags = derivedState.excludedFlags
         state.filteredTaskCount = derivedState.filteredTaskCount
+        state.filteredTaskIDs = derivedState.filteredTaskIDs
         state.metrics = derivedState.metrics
     }
 }

@@ -160,6 +160,7 @@ struct StatsFeatureDerivedState: Equatable {
     var availableExcludeFlags: [String] = []
     var taskCountForSelectedTypeFilter: Int = 0
     var filteredTaskCount: Int = 0
+    var filteredTaskIDs: Set<UUID> = []
     var metrics = StatsFeatureMetrics()
 }
 
@@ -561,6 +562,7 @@ enum StatsFeatureDerivedStateBuilder {
             availableExcludeFlags: availableExcludeFlags,
             taskCountForSelectedTypeFilter: tasksMatchingTaskTypeAndMatrixFilters.count,
             filteredTaskCount: filteredTasks.count,
+            filteredTaskIDs: filteredTaskIDs,
             metrics: StatsFeatureMetrics(
                 chartPoints: chartPoints,
                 outcomeMixChartPoints: outcomeMixChartPoints,
@@ -731,35 +733,15 @@ enum StatsFeatureDerivedStateBuilder {
         referenceDate: Date,
         calendar: Calendar
     ) -> (count: Int, estimatedMinutes: Int) {
-        let endDay = calendar.startOfDay(for: referenceDate)
-        let startDay = calendar.date(
-            byAdding: .day,
-            value: -(selectedRange.trailingDayCount - 1),
-            to: endDay
-        ) ?? endDay
-        let logsByTaskID = Dictionary(grouping: logs, by: \.taskID)
-
-        return tasks.reduce(into: (count: 0, estimatedMinutes: 0)) { summary, task in
-            let taskLogs = logsByTaskID[task.id, default: []]
-            var day = startDay
-
-            while day <= endDay {
-                if RoutineAssumedCompletion.isAssumedDone(
-                    for: task,
-                    on: day,
-                    referenceDate: referenceDate,
-                    logs: taskLogs,
-                    calendar: calendar
-                ) {
-                    summary.count += 1
-                    summary.estimatedMinutes += task.estimatedDurationMinutes ?? 0
-                }
-
-                guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else {
-                    break
-                }
-                day = nextDay
-            }
+        StatsAssumedCompletionTaskSummaryBuilder.summaries(
+            tasks: tasks,
+            logs: logs,
+            selectedRange: selectedRange,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ).reduce(into: (count: 0, estimatedMinutes: 0)) { summary, taskSummary in
+            summary.count += taskSummary.occurrenceCount
+            summary.estimatedMinutes += taskSummary.estimatedMinutes
         }
     }
 

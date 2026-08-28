@@ -263,6 +263,7 @@ let package = Package(
                 "SharedCore/Features/Home/StatsFlagFilterSupport.swift",
                 "SharedCore/Features/Home/StatsFeatureDerivedStateSupport.swift",
                 "SharedCore/Features/Home/StatsSummaryItemPresentation.swift",
+                "SharedCore/Features/Home/StatsSummaryTaskListPresentation.swift",
                 "SharedCore/Features/Home/StatsTaskFilterResolver.swift",
                 "SharedCore/Features/Home/StatsTaskTypeMatrixFilterSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadEffectFactory.swift",

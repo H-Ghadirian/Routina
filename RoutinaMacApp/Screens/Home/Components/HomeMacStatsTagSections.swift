@@ -17,47 +17,22 @@ struct HomeMacStatsTagFilterSection: View {
     let onToggleExcludedTag: (String) -> Void
 
     var body: some View {
-        HomeMacCollapsibleFilterSection(
-            title: "Tags",
-            summaryText: summaryText,
-            systemImage: "tag.fill",
-            tint: .teal
-        ) {
-            HomeMacTimelineTagFiltersView(
-                availableTags: availableTags,
-                suggestedRelatedTags: suggestedRelatedTags,
-                availableExcludeTags: availableExcludeTags,
-                selectedTags: selectedTags,
-                includeTagMatchMode: includeTagMatchMode,
-                excludeTagMatchMode: excludeTagMatchMode,
-                selectedExcludedTags: selectedExcludedTags,
-                tagCount: tagCount,
-                tagColor: tagColor,
-                onSelectTags: onSelectTags,
-                onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
-                onSelectSuggestedTag: onSelectSuggestedTag,
-                onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
-                onToggleExcludedTag: onToggleExcludedTag
-            )
-        }
-    }
-
-    private var summaryText: String {
-        guard !selectedTags.isEmpty || !selectedExcludedTags.isEmpty else {
-            return "No tag filter"
-        }
-
-        var parts: [String] = []
-        if !selectedTags.isEmpty {
-            parts.append("Includes \(tagList(selectedTags))")
-        }
-        if !selectedExcludedTags.isEmpty {
-            parts.append("Excludes \(tagList(selectedExcludedTags))")
-        }
-        return parts.joined(separator: " · ")
-    }
-
-    private func tagList(_ tags: Set<String>) -> String {
-        tags.sorted().map { "#\($0)" }.joined(separator: ", ")
+        HomeMacTimelineTagFiltersView(
+            availableTags: availableTags,
+            suggestedRelatedTags: suggestedRelatedTags,
+            availableExcludeTags: availableExcludeTags,
+            selectedTags: selectedTags,
+            includeTagMatchMode: includeTagMatchMode,
+            excludeTagMatchMode: excludeTagMatchMode,
+            selectedExcludedTags: selectedExcludedTags,
+            tagCount: tagCount,
+            tagColor: tagColor,
+            onSelectTags: onSelectTags,
+            onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
+            onSelectSuggestedTag: onSelectSuggestedTag,
+            onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
+            onToggleExcludedTag: onToggleExcludedTag,
+            presentation: .compactActions
+        )
     }
 }

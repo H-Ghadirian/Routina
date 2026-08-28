@@ -59,6 +59,7 @@ struct StatsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isActiveItemsInfoPresented = false
+    @State private var presentedSummaryTaskList: StatsSummaryTaskListPresentation?
     @State private var isEditingDashboard = false
     @State private var isAddDashboardItemSheetPresented = false
     @State private var draggedDashboardItemID: String?
@@ -157,24 +158,13 @@ struct StatsView: View {
     private var activeItemsBreakdown: StatsActiveItemsBreakdown {
         StatsActiveItemsBreakdown(
             tasks: filteredTasksForCurrentStatsFilters,
+            referenceDate: selectedRange.referenceDate(relativeTo: Date()),
             calendar: calendar
         )
     }
 
     private var filteredTasksForCurrentStatsFilters: [RoutineTask] {
-        StatsTaskFilterResolver(
-            taskTypeFilter: selectedTaskTypeFilter,
-            selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
-            selectedTags: store.effectiveSelectedTags,
-            includeTagMatchMode: store.includeTagMatchMode,
-            excludedTags: store.excludedTags,
-            excludeTagMatchMode: store.excludeTagMatchMode,
-            selectedFlags: store.selectedFlags,
-            includeFlagMatchMode: store.includeFlagMatchMode,
-            excludedFlags: store.excludedFlags,
-            excludeFlagMatchMode: store.excludeFlagMatchMode
-        )
-        .filteredTasks(from: store.tasks)
+        store.tasks.filter { store.filteredTaskIDs.contains($0.id) }
     }
 
     private var surfaceGradient: LinearGradient {
@@ -482,21 +472,26 @@ struct StatsView: View {
     private func heroSection(snapshot: DashboardSnapshot) -> some View {
         let metrics = snapshot.metrics
 
-        return StatsHeroSectionView(
-            selectedRange: snapshot.selectedRange,
-            totalCount: metrics.totalCount,
-            activeDayCount: metrics.activeDayCount,
-            averagePerDay: metrics.averagePerDay,
-            highlightedBusiestDay: metrics.highlightedBusiestDay,
-            sparklinePoints: metrics.sparklinePoints,
-            sparklineMaxCount: metrics.sparklineMaxCount,
-            periodDescription: StatsChartInsightBuilder.userActivityPeriodDescription(
+        return interactiveSummaryTaskListCard(
+            StatsHeroSectionView(
                 selectedRange: snapshot.selectedRange,
-                chartPoints: metrics.chartPoints
+                totalCount: metrics.totalCount,
+                activeDayCount: metrics.activeDayCount,
+                averagePerDay: metrics.averagePerDay,
+                highlightedBusiestDay: metrics.highlightedBusiestDay,
+                sparklinePoints: metrics.sparklinePoints,
+                sparklineMaxCount: metrics.sparklineMaxCount,
+                periodDescription: StatsChartInsightBuilder.userActivityPeriodDescription(
+                    selectedRange: snapshot.selectedRange,
+                    chartPoints: metrics.chartPoints
+                ),
+                chartPresentation: snapshot.chartPresentation,
+                colorScheme: colorScheme,
+                heroGradient: heroGradient
             ),
-            chartPresentation: snapshot.chartPresentation,
-            colorScheme: colorScheme,
-            heroGradient: heroGradient
+            kind: .activityOverview,
+            title: "Activities logged",
+            cornerRadius: 30
         )
     }
 
@@ -552,6 +547,22 @@ struct StatsView: View {
 
     @ViewBuilder
     private func summaryCardView(for item: StatsSummaryCardItem) -> some View {
+        if let kind = StatsSummaryTaskListKind(
+            summaryAccessibilityIdentifier: item.accessibilityIdentifier
+        ) {
+            interactiveSummaryTaskListCard(
+                summaryCardContent(for: item),
+                kind: kind,
+                title: item.title,
+                cornerRadius: summaryDisplayMode == .cards ? 24 : 18
+            )
+        } else {
+            summaryCardContent(for: item)
+        }
+    }
+
+    @ViewBuilder
+    private func summaryCardContent(for item: StatsSummaryCardItem) -> some View {
         switch summaryDisplayMode {
         case .cards:
             StatsSummaryCard(
@@ -582,6 +593,70 @@ struct StatsView: View {
                 summaryCardAccessory(for: item)
             }
         }
+    }
+
+    private func interactiveSummaryTaskListCard<Content: View>(
+        _ content: Content,
+        kind: StatsSummaryTaskListKind,
+        title: String,
+        cornerRadius: CGFloat
+    ) -> some View {
+        content
+            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .onTapGesture {
+                showSummaryTaskList(kind: kind, title: title)
+            }
+            .focusable()
+            .focusEffectDisabled()
+            .onKeyPress(.return) {
+                showSummaryTaskList(kind: kind, title: title)
+                return .handled
+            }
+            .onKeyPress(SwiftUI.KeyEquivalent.space) {
+                showSummaryTaskList(kind: kind, title: title)
+                return .handled
+            }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint("Shows the tasks and sources behind this statistic")
+            .help("Show \(title) evidence")
+            .popover(
+                isPresented: summaryTaskListPopoverBinding(for: kind.rawValue),
+                arrowEdge: .top
+            ) {
+                if let presentation = presentedSummaryTaskList {
+                    StatsSummaryTaskListPopover(presentation: presentation)
+                }
+            }
+    }
+
+    private func showSummaryTaskList(
+        kind: StatsSummaryTaskListKind,
+        title: String
+    ) {
+        guard !isEditingDashboard, !isActiveItemsInfoPresented else { return }
+        let referenceDate = selectedRange.referenceDate(relativeTo: Date())
+        presentedSummaryTaskList = StatsSummaryTaskListPresentationBuilder.build(
+            kind: kind,
+            cardTitle: title,
+            tasks: store.tasks,
+            filteredTaskIDs: store.filteredTaskIDs,
+            logs: store.logs,
+            metrics: store.metrics,
+            selectedRange: selectedRange,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+    }
+
+    private func summaryTaskListPopoverBinding(for presentationID: String) -> Binding<Bool> {
+        Binding(
+            get: { presentedSummaryTaskList?.id == presentationID },
+            set: { isPresented in
+                if !isPresented, presentedSummaryTaskList?.id == presentationID {
+                    presentedSummaryTaskList = nil
+                }
+            }
+        )
     }
 
     @ViewBuilder
@@ -891,6 +966,7 @@ struct StatsView: View {
 
     private var activeItemsInfoButton: some View {
         Button {
+            presentedSummaryTaskList = nil
             isActiveItemsInfoPresented.toggle()
         } label: {
             Image(systemName: "info.circle")

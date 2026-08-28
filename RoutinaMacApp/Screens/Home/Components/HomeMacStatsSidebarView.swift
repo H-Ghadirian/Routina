@@ -75,7 +75,21 @@ struct HomeMacStatsSidebarView: View {
                     selectedFilter: $selectedImportanceUrgencyFilter
                 )
 
-                if !allTags.isEmpty {
+                if !availableFlags.isEmpty || !selectedFlags.isEmpty || !excludedFlags.isEmpty {
+                    HomeMacStatsFlagFilterSection(
+                        availableFlags: availableFlags,
+                        selectedFlags: selectedFlags,
+                        includeFlagMatchMode: includeFlagMatchMode,
+                        excludedFlags: excludedFlags,
+                        excludeFlagMatchMode: excludeFlagMatchMode,
+                        onIncludeFlagMatchModeChange: onIncludeFlagMatchModeChange,
+                        onExcludeFlagMatchModeChange: onExcludeFlagMatchModeChange,
+                        onToggleIncludedFlag: onToggleIncludedFlag,
+                        onToggleExcludedFlag: onToggleExcludedFlag
+                    )
+                }
+
+                if !allTags.isEmpty || !selectedTags.isEmpty || !selectedExcludedTags.isEmpty {
                     HomeMacStatsTagFilterSection(
                         availableTags: allTags,
                         suggestedRelatedTags: suggestedRelatedTags,
@@ -91,20 +105,6 @@ struct HomeMacStatsSidebarView: View {
                         onSelectSuggestedTag: onSelectSuggestedTag,
                         onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
                         onToggleExcludedTag: onToggleExcludedTag
-                    )
-                }
-
-                if !availableFlags.isEmpty {
-                    HomeMacStatsFlagFilterSection(
-                        availableFlags: availableFlags,
-                        selectedFlags: selectedFlags,
-                        includeFlagMatchMode: includeFlagMatchMode,
-                        excludedFlags: excludedFlags,
-                        excludeFlagMatchMode: excludeFlagMatchMode,
-                        onIncludeFlagMatchModeChange: onIncludeFlagMatchModeChange,
-                        onExcludeFlagMatchModeChange: onExcludeFlagMatchModeChange,
-                        onToggleIncludedFlag: onToggleIncludedFlag,
-                        onToggleExcludedFlag: onToggleExcludedFlag
                     )
                 }
             }
