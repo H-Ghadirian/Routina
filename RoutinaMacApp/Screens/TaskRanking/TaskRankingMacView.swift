@@ -357,19 +357,36 @@ struct TaskRankingMacView: View {
                                 Section {
                                     if !isCollapsed {
                                         ForEach(section.tasks) { task in
+                                            let metadata = presentation.rowMetadataByTaskID[task.id]
+                                            let nodeID: TaskLadderNodeID = metadata?.isGroup == true
+                                                ? .group(task.id)
+                                                : .task(task.id)
+                                            let rowIdentity = TaskLadderLazyRowIdentity(
+                                                nodeID: nodeID,
+                                                metric: presentation.metric,
+                                                valueMode: presentation.valueMode,
+                                                sectionID: section.id,
+                                                selectedNodeID: selectedNodeID
+                                            )
                                             VStack(spacing: 0) {
                                                 rankingRow(
                                                     task,
                                                     in: section,
-                                                    metadata: presentation.rowMetadataByTaskID[task.id],
-                                                    selectedNodeID: selectedNodeID,
+                                                    metadata: metadata,
+                                                    isSelected: rowIdentity.isSelected,
                                                     isSearchMatch: currentScopeSearchMatchTaskIDs.contains(task.id)
                                                 )
+                                                // Retain the stable task target used by search-location scrolling
+                                                // inside the presentation-scoped lazy-row identity.
+                                                .id(task.id)
                                                 if task.id != section.tasks.last?.id {
                                                     Divider().padding(.leading, 12)
                                                 }
                                             }
-                                            .id(task.id)
+                                            // A task can move through a completely different section layout when
+                                            // the metric or value mode changes. Recreate that lazy row at the item
+                                            // boundary so its later selection updates cannot reuse stale chrome.
+                                            .id(rowIdentity)
                                             .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
                                         }
                                     }
@@ -655,19 +672,13 @@ struct TaskRankingMacView: View {
         _ task: RoutineTask,
         in section: TaskRankingPresentation.Section,
         metadata: TaskRankingPresentation.RowMetadata?,
-        selectedNodeID: TaskLadderNodeID?,
+        isSelected: Bool,
         isSearchMatch: Bool
     ) -> some View {
         let isGroup = metadata?.isGroup == true
         let isTaskGroup = metadata?.isTaskGroup == true
         let childCount = metadata?.childCount ?? 0
         let canOpenInnerLadder = isGroup || isTaskGroup || childCount > 0
-        let nodeID: TaskLadderNodeID = isGroup ? .group(task.id) : .task(task.id)
-        let selectionIdentity = TaskLadderRowSelectionIdentity(
-            nodeID: nodeID,
-            selectedNodeID: selectedNodeID
-        )
-        let isSelected = selectionIdentity.isSelected
         return HStack(spacing: 9) {
             Button {
                 if isGroup {
@@ -753,9 +764,6 @@ struct TaskRankingMacView: View {
                     : .clear
         )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        // Keep the lazy item's semantic task ID stable while replacing only the
-        // old and new row chrome subtrees when their selected state flips.
-        .id(selectionIdentity)
         .contextMenu {
             if isGroup {
                 Button("Show Group Details") {

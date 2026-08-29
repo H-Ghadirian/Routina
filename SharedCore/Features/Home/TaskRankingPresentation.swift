@@ -1,11 +1,23 @@
 import Foundation
 
-struct TaskLadderRowSelectionIdentity: Equatable, Hashable, Sendable {
+struct TaskLadderLazyRowIdentity: Equatable, Hashable, Sendable {
     let nodeID: TaskLadderNodeID
+    let metric: TaskRankingMetric
+    let valueMode: TaskRankingValueMode
+    let sectionID: String
     let isSelected: Bool
 
-    init(nodeID: TaskLadderNodeID, selectedNodeID: TaskLadderNodeID?) {
+    init(
+        nodeID: TaskLadderNodeID,
+        metric: TaskRankingMetric,
+        valueMode: TaskRankingValueMode,
+        sectionID: String,
+        selectedNodeID: TaskLadderNodeID?
+    ) {
         self.nodeID = nodeID
+        self.metric = metric
+        self.valueMode = valueMode
+        self.sectionID = sectionID
         isSelected = nodeID == selectedNodeID
     }
 }

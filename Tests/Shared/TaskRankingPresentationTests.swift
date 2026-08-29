@@ -982,7 +982,7 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
-    func taskLadderObservesSelectionAtBodyAndRefreshesOnlyChangedRowChrome() throws {
+    func taskLadderObservesSelectionAtBodyAndRefreshesPresentationScopedLazyRows() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
@@ -1002,8 +1002,11 @@ struct TaskRankingPresentationTests {
         #expect(source.contains("let selectedGroupID = store.selectedGroupID"))
         #expect(source.contains("let selectedNodeID: TaskLadderNodeID?"))
         #expect(source.contains("selectedNodeID: selectedNodeID"))
-        #expect(source.contains("TaskLadderRowSelectionIdentity("))
-        #expect(source.contains(".id(selectionIdentity)"))
+        #expect(source.contains("TaskLadderLazyRowIdentity("))
+        #expect(source.contains("isSelected: rowIdentity.isSelected"))
+        #expect(source.contains(".id(rowIdentity)"))
+        #expect(source.contains(".id(task.id)"))
+        #expect(!source.contains(".id(selectionIdentity)"))
         #expect(source.contains(".accessibilityAddTraits(isSelected ? .isSelected : [])"))
         #expect(!source.contains("? store.selectedGroupID == task.id"))
     }
@@ -1034,26 +1037,49 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
-    func taskLadderRowSelectionIdentityChangesOnlyForOldAndNewSelection() {
+    func taskLadderLazyRowIdentityRefreshesMetricLayoutsAndOnlyChangedSelectionRows() {
         let firstID = UUID()
         let secondID = UUID()
         let unrelatedID = UUID()
         let firstNode = TaskLadderNodeID.task(firstID)
         let secondNode = TaskLadderNodeID.task(secondID)
         let unrelatedNode = TaskLadderNodeID.task(unrelatedID)
+        let nodes = [firstNode, secondNode, unrelatedNode]
 
-        let before = [firstNode, secondNode, unrelatedNode].map {
-            TaskLadderRowSelectionIdentity(nodeID: $0, selectedNodeID: firstNode)
+        let pressure = nodes.map {
+            TaskLadderLazyRowIdentity(
+                nodeID: $0,
+                metric: .pressure,
+                valueMode: .base,
+                sectionID: "shared-section",
+                selectedNodeID: firstNode
+            )
         }
-        let after = [firstNode, secondNode, unrelatedNode].map {
-            TaskLadderRowSelectionIdentity(nodeID: $0, selectedNodeID: secondNode)
+        let urgencyWithFirstSelected = nodes.map {
+            TaskLadderLazyRowIdentity(
+                nodeID: $0,
+                metric: .urgency,
+                valueMode: .base,
+                sectionID: "shared-section",
+                selectedNodeID: firstNode
+            )
+        }
+        let urgencyWithSecondSelected = nodes.map {
+            TaskLadderLazyRowIdentity(
+                nodeID: $0,
+                metric: .urgency,
+                valueMode: .base,
+                sectionID: "shared-section",
+                selectedNodeID: secondNode
+            )
         }
 
-        #expect(before[0] != after[0])
-        #expect(before[1] != after[1])
-        #expect(before[2] == after[2])
-        #expect(before.map(\.isSelected) == [true, false, false])
-        #expect(after.map(\.isSelected) == [false, true, false])
+        #expect(zip(pressure, urgencyWithFirstSelected).allSatisfy { $0.0 != $0.1 })
+        #expect(urgencyWithFirstSelected[0] != urgencyWithSecondSelected[0])
+        #expect(urgencyWithFirstSelected[1] != urgencyWithSecondSelected[1])
+        #expect(urgencyWithFirstSelected[2] == urgencyWithSecondSelected[2])
+        #expect(urgencyWithFirstSelected.map(\.isSelected) == [true, false, false])
+        #expect(urgencyWithSecondSelected.map(\.isSelected) == [false, true, false])
     }
 
     @Test
