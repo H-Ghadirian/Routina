@@ -5,6 +5,7 @@ struct HomeIOSRoutineRowView: View {
     let rowNumber: Int?
     let metadataText: String?
     let rowVisibility: HomeTaskRowVisibility
+    let showsGoals: Bool
     let showTaskTypeBadge: Bool
     let statusBadgeStyle: HomeStatusBadgeStyle?
     let iconBackgroundColor: Color
@@ -140,7 +141,7 @@ struct HomeIOSRoutineRowView: View {
 
     @ViewBuilder
     private var goals: some View {
-        if rowVisibility.shows(.goals), !task.goalTitles.isEmpty {
+        if showsGoals, !task.goalTitles.isEmpty {
             HStack(spacing: 8) {
                 ForEach(task.goalTitles, id: \.self) { goal in
                     Label(goal, systemImage: "target")

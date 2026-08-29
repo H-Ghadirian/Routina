@@ -378,6 +378,7 @@ extension HomeTCAView {
             rowNumber: rowNumber,
             metadataText: rowMetadataText(for: task),
             rowVisibility: taskRowVisibility,
+            showsGoals: isGoalsEnabled && taskRowVisibility.shows(.goals),
             showTaskTypeBadge: store.taskListMode == .all,
             statusBadgeStyle: badgeStyle(for: task).map { HomeStatusBadgeStyle($0) },
             iconBackgroundColor: rowIconBackgroundColor(for: task),

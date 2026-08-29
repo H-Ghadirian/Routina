@@ -1442,18 +1442,21 @@ And Exclude is evaluated last and wins overlaps
 And Stats keeps its independent Flag filters
 And Calendar keeps its separate Assumed done layer toggle
 
-### iOS Goal Gate Hides The Home Goal Filter
+### iOS Goal Gate Hides Goal Surfaces
 
 Area: Tasks / UI
-Decision links: [0212](../decisions/0212-hide-goals-tab-by-default.md), [0227](../decisions/0227-gate-stats-goal-event-reports.md)
-Current behavior: [Settings](../current-behavior/settings.md)
+Decision links: [0212](../decisions/0212-hide-goals-tab-by-default.md), [0227](../decisions/0227-gate-stats-goal-event-reports.md), [0538](../decisions/0538-gate-ios-goals-and-places-appearance-controls.md)
+Current behavior: [Settings](../current-behavior/settings.md), [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
 
-Given `Show Goals tab` is off in iOS Settings
-When the person opens Home Filters
-Then the Goal option is absent
-And enabling the setting restores the existing Goal filter without changing task or Goal data
+Given a task retains one or more linked Goals
+And the saved Task Row Appearance choice includes Goals
+And `Show Goals tab` is off in iOS Settings
+When the person opens Home Filters, views the task on Home, or opens Task Details
+Then the Goal filter, row labels, and detail summary are absent
+And the linked Goal data and saved Task Row Appearance choice remain unchanged
+And enabling the setting restores the Goal filter and linked Goal presentation
 
 ### iOS Task Form Tags Preserve Full Labels
 

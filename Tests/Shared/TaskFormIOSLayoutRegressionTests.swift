@@ -406,6 +406,26 @@ struct TaskFormIOSLayoutRegressionTests {
     }
 
     @Test
+    func linkedGoalPresentationsHideWhenTheGoalsFeatureIsDisabled() throws {
+        let homePlatform = try Self.sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")
+        let homeRow = try Self.sourceFile("iOS/Screens/Home/HomeIOSRoutineRowView.swift")
+        let taskDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
+
+        #expect(homePlatform.contains(
+            "showsGoals: isGoalsEnabled && taskRowVisibility.shows(.goals)"
+        ))
+        #expect(homeRow.contains("let showsGoals: Bool"))
+        #expect(homeRow.contains("if showsGoals, !task.goalTitles.isEmpty"))
+        #expect(taskDetail.contains(
+            "UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue"
+        ))
+        #expect(taskDetail.contains("private var isGoalsTabEnabled = false"))
+        #expect(taskDetail.contains(
+            "if isGoalsTabEnabled, !store.taskGoalSummaries.isEmpty"
+        ))
+    }
+
+    @Test
     func descriptionIsIndependentFromExperimentalNotesAndSupportsTargetedReveal() throws {
         let formSource = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormContentPlatform.swift"

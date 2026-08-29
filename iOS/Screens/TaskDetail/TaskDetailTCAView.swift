@@ -95,6 +95,10 @@ struct TaskDetailTCAView: View {
         store: SharedDefaults.app
     ) private var isTaskRelationshipVisualizerEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
@@ -891,7 +895,7 @@ detailBody
 
     @ViewBuilder
     private var headerGoalsBox: some View {
-        if !store.taskGoalSummaries.isEmpty {
+        if isGoalsTabEnabled, !store.taskGoalSummaries.isEmpty {
             TaskDetailGoalsHeaderBoxView(goals: store.taskGoalSummaries)
         }
     }

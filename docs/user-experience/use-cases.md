@@ -87,6 +87,8 @@ On Mac, `Shared` offers every Task Ladder value as an independent cross-surface 
 
 On Mac, the workspace-level filter action sits immediately left of the combined workspace menu and appears only for Planner and Backlog. The menu remains fixed at the trailing edge when Filters disappears in other workspaces. Planner keeps its established Shared, Task List, Timeline, and Calendar meanings, while Backlog offers only controls relevant to its own task collection: type/status, created date, current Task Ladder values, estimate, media, Tags, and Flags. The active-workspace icon makes a non-default filter discoverable without adding irrelevant chrome to Task Ladder, Stats, or other workspaces.
 
+Feature availability remains honest on iOS: when Goals is disabled, linked Goal labels and Task Detail summaries stay out of task surfaces without deleting the links, and enabling Goals restores them.
+
 **Successful outcome:** The person can identify a useful next action without first reorganizing the whole system.
 
 **Example:** Today's planned call and available daily routine are visible; next month's renewal stays in Future. A long `[iOS] Replace ProductSliderItem…` title uses the whole first line while `#HSE` and `In Progress` share the line below; enabling Multiline Titles reveals the title's remaining words above those labels. In a repeating release chain, “Release Candidate” shows Blocked until “Run Test.io” is completed. It stays unlocked when “Run Test.io” recurs or is paused, then the next “Release Candidate” pass waits for the next Test.io completion.
