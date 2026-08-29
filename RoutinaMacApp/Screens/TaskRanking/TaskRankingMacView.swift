@@ -28,9 +28,15 @@ struct TaskRankingMacView: View {
     @State private var temporalWeightTaskID: UUID?
 
     var body: some View {
-        // Observe selection at the view-body boundary, before HSplitView and the
-        // LazyVStack retain their child builders. Reading it only inside
-        // `rankingList` can update Task Details without invalidating reused rows.
+        // Observe list-driving snapshots and selection at the view-body boundary,
+        // before HSplitView and the LazyVStack retain their child builders.
+        // Reading them only inside descendant builders can leave old membership,
+        // counts, or row chrome visible after the feature publishes a replacement.
+        let presentation = store.presentation
+        let searchPresentation = store.searchPresentation
+        let currentScopeSearchMatchTaskIDs = store.currentScopeSearchMatchTaskIDs
+        let searchText = store.searchText
+        let isSearching = HomeTaskSearchIndex.query(searchText) != nil
         let selectedTaskID = store.selectedTaskID
         let selectedGroupID = store.selectedGroupID
         let selectedNodeID: TaskLadderNodeID? = if let selectedGroupID {
@@ -42,12 +48,23 @@ struct TaskRankingMacView: View {
         }
 
         return VStack(spacing: 0) {
-            workspaceControls
+            workspaceControls(
+                presentation: presentation,
+                searchPresentation: searchPresentation,
+                isSearching: isSearching
+            )
 
             Divider()
 
             HSplitView {
-                rankingList(selectedNodeID: selectedNodeID)
+                rankingList(
+                    presentation: presentation,
+                    searchPresentation: searchPresentation,
+                    currentScopeSearchMatchTaskIDs: currentScopeSearchMatchTaskIDs,
+                    searchText: searchText,
+                    isSearching: isSearching,
+                    selectedNodeID: selectedNodeID
+                )
                     .frame(minWidth: 340, idealWidth: 440, maxWidth: 560)
 
                 taskDetail
@@ -156,7 +173,11 @@ struct TaskRankingMacView: View {
         }
     }
 
-    private var workspaceControls: some View {
+    private func workspaceControls(
+        presentation: TaskRankingPresentation,
+        searchPresentation: TaskRankingSearchPresentation,
+        isSearching: Bool
+    ) -> some View {
         HStack(spacing: 10) {
             Picker("Rank by", selection: Binding(
                 get: { store.metric },
@@ -196,7 +217,11 @@ struct TaskRankingMacView: View {
 
             Spacer(minLength: 12)
 
-            Text(taskCountLabel)
+            Text(taskCountLabel(
+                presentation: presentation,
+                searchPresentation: searchPresentation,
+                isSearching: isSearching
+            ))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -211,7 +236,7 @@ struct TaskRankingMacView: View {
                 }
                 .disabled(!store.tasks.contains {
                     !$0.isOneOffTask
-                        && store.presentation.eligibleTaskIDs.contains($0.id)
+                        && presentation.eligibleTaskIDs.contains($0.id)
                 })
             } label: {
                 Label("Add Group", systemImage: "folder.badge.plus")
@@ -237,10 +262,15 @@ struct TaskRankingMacView: View {
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.35))
     }
 
-    private func rankingList(selectedNodeID: TaskLadderNodeID?) -> some View {
-        let currentScopeSearchMatchTaskIDs = store.currentScopeSearchMatchTaskIDs
-
-        return VStack(alignment: .leading, spacing: 0) {
+    private func rankingList(
+        presentation: TaskRankingPresentation,
+        searchPresentation: TaskRankingSearchPresentation,
+        currentScopeSearchMatchTaskIDs: Set<UUID>,
+        searchText: String,
+        isSearching: Bool,
+        selectedNodeID: TaskLadderNodeID?
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
             if !store.scopePath.isEmpty {
                 HStack(spacing: 8) {
                     Button {
@@ -264,12 +294,12 @@ struct TaskRankingMacView: View {
                 Divider()
             }
 
-            if store.isLoading && store.presentation.isEmpty {
+            if store.isLoading && presentation.isEmpty {
                 ProgressView("Loading active tasks…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if store.presentation.isEmpty
-                        && store.searchPresentation.matches.isEmpty
-                        && store.searchPresentation.outsideMatches.isEmpty {
+            } else if presentation.isEmpty
+                        && searchPresentation.matches.isEmpty
+                        && searchPresentation.outsideMatches.isEmpty {
                 ContentUnavailableView(
                     isSearching ? "No Task Ladder matches" : emptyStateTitle,
                     systemImage: isSearching ? "magnifyingglass" : "line.3.horizontal.decrease.circle",
@@ -286,21 +316,26 @@ struct TaskRankingMacView: View {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 0) {
                             if isSearching {
-                                taskLadderSearchResults
+                                taskLadderSearchResults(
+                                    searchPresentation: searchPresentation,
+                                    searchText: searchText
+                                )
 
                                 Color.clear
                                     .frame(height: 12)
                                     .accessibilityHidden(true)
                             }
 
-                            if !store.presentation.linkedTaskChildSuggestions.isEmpty {
-                                linkedTaskChildSuggestionsHeader
+                            if !presentation.linkedTaskChildSuggestions.isEmpty {
+                                linkedTaskChildSuggestionsHeader(
+                                    count: presentation.linkedTaskChildSuggestions.count
+                                )
 
-                                ForEach(store.presentation.linkedTaskChildSuggestions) { suggestion in
+                                ForEach(presentation.linkedTaskChildSuggestions) { suggestion in
                                     VStack(spacing: 0) {
                                         linkedTaskChildSuggestionRow(suggestion)
 
-                                        if suggestion.id != store.presentation.linkedTaskChildSuggestions.last?.id {
+                                        if suggestion.id != presentation.linkedTaskChildSuggestions.last?.id {
                                             Divider().padding(.leading, 12)
                                         }
                                     }
@@ -312,7 +347,7 @@ struct TaskRankingMacView: View {
                                     .accessibilityHidden(true)
                             }
 
-                            ForEach(store.presentation.sections) { section in
+                            ForEach(presentation.sections) { section in
                                 let containsSearchMatch = section.tasks.contains {
                                     currentScopeSearchMatchTaskIDs.contains($0.id)
                                 }
@@ -326,6 +361,7 @@ struct TaskRankingMacView: View {
                                                 rankingRow(
                                                     task,
                                                     in: section,
+                                                    metadata: presentation.rowMetadataByTaskID[task.id],
                                                     selectedNodeID: selectedNodeID,
                                                     isSearchMatch: currentScopeSearchMatchTaskIDs.contains(task.id)
                                                 )
@@ -369,20 +405,23 @@ struct TaskRankingMacView: View {
     }
 
     @ViewBuilder
-    private var taskLadderSearchResults: some View {
-        if store.searchPresentation.matches.isEmpty
-            && store.searchPresentation.outsideMatches.isEmpty {
-            ContentUnavailableView.search(text: store.searchText)
+    private func taskLadderSearchResults(
+        searchPresentation: TaskRankingSearchPresentation,
+        searchText: String
+    ) -> some View {
+        if searchPresentation.matches.isEmpty
+            && searchPresentation.outsideMatches.isEmpty {
+            ContentUnavailableView.search(text: searchText)
                 .padding(.vertical, 18)
         } else {
             VStack(alignment: .leading, spacing: 8) {
-                if !store.searchPresentation.matches.isEmpty {
+                if !searchPresentation.matches.isEmpty {
                     searchResultHeader(
                         title: "Found in Task Ladder",
-                        count: store.searchPresentation.matches.count
+                        count: searchPresentation.matches.count
                     )
 
-                    ForEach(store.searchPresentation.matches) { match in
+                    ForEach(searchPresentation.matches) { match in
                         Button {
                             store.send(.searchMatchSelected(match.task.id))
                         } label: {
@@ -418,14 +457,14 @@ struct TaskRankingMacView: View {
                     }
                 }
 
-                if !store.searchPresentation.outsideMatches.isEmpty {
+                if !searchPresentation.outsideMatches.isEmpty {
                     searchResultHeader(
                         title: "Outside Task Ladder",
-                        count: store.searchPresentation.outsideMatches.count
+                        count: searchPresentation.outsideMatches.count
                     )
-                    .padding(.top, store.searchPresentation.matches.isEmpty ? 0 : 6)
+                    .padding(.top, searchPresentation.matches.isEmpty ? 0 : 6)
 
-                    ForEach(store.searchPresentation.outsideMatches) { match in
+                    ForEach(searchPresentation.outsideMatches) { match in
                         Button {
                             store.send(.taskSelected(match.task.id))
                         } label: {
@@ -476,13 +515,13 @@ struct TaskRankingMacView: View {
         .padding(.horizontal, 4)
     }
 
-    private var linkedTaskChildSuggestionsHeader: some View {
+    private func linkedTaskChildSuggestionsHeader(count: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Label("Linked task suggestions", systemImage: "link.badge.plus")
                     .font(.headline)
 
-                Text("\(store.presentation.linkedTaskChildSuggestions.count)")
+                Text("\(count)")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
@@ -615,10 +654,10 @@ struct TaskRankingMacView: View {
     private func rankingRow(
         _ task: RoutineTask,
         in section: TaskRankingPresentation.Section,
+        metadata: TaskRankingPresentation.RowMetadata?,
         selectedNodeID: TaskLadderNodeID?,
         isSearchMatch: Bool
     ) -> some View {
-        let metadata = store.presentation.rowMetadataByTaskID[task.id]
         let isGroup = metadata?.isGroup == true
         let isTaskGroup = metadata?.isTaskGroup == true
         let childCount = metadata?.childCount ?? 0
@@ -851,17 +890,17 @@ struct TaskRankingMacView: View {
         }
     }
 
-    private var taskCountLabel: String {
+    private func taskCountLabel(
+        presentation: TaskRankingPresentation,
+        searchPresentation: TaskRankingSearchPresentation,
+        isSearching: Bool
+    ) -> String {
         if isSearching {
-            let count = store.searchPresentation.matches.count
+            let count = searchPresentation.matches.count
             return count == 1 ? "1 match" : "\(count) matches"
         }
-        let count = store.presentation.taskCount
+        let count = presentation.taskCount
         return count == 1 ? "1 item" : "\(count) items"
-    }
-
-    private var isSearching: Bool {
-        HomeTaskSearchIndex.query(store.searchText) != nil
     }
 
     private var emptyStateTitle: String {

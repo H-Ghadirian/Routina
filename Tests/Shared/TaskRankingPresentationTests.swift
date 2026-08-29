@@ -100,6 +100,36 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func pausedPrerequisiteWithoutACompletionKeepsItsDependentOutOfTheLadder() {
+        let dependent = RoutineTask(
+            name: "Buy airpods",
+            pressure: .low,
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.ready.rawValue
+        )
+        let pausedPrerequisite = RoutineTask(
+            name: "Plan and think about USA trip",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: dependent.id, kind: .blocks)
+            ],
+            pausedAt: referenceDate.addingTimeInterval(-100)
+        )
+
+        let presentation = TaskRankingPresentation.make(
+            tasks: [dependent, pausedPrerequisite],
+            flagRules: [],
+            metric: .pressure,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(presentation.taskCount == 0)
+        #expect(presentation.eligibleTaskIDs.isEmpty)
+        #expect(presentation.sections.isEmpty)
+    }
+
+    @Test
     func repeatingRelationshipBlockersUseCompletionHistoryHandoffs() {
         let olderBlockerCompletion = Date(timeIntervalSince1970: 200)
         let dependentCompletion = Date(timeIntervalSince1970: 300)
@@ -926,7 +956,7 @@ struct TaskRankingPresentationTests {
         #expect(source.contains(".linkedTaskChildSuggestionRejected("))
         #expect(source.contains(".linkedTaskChildSuggestionAccepted("))
         #expect(source.contains("keeps the task link and its completion behavior unchanged"))
-        #expect(source.contains("ForEach(store.presentation.linkedTaskChildSuggestions)"))
+        #expect(source.contains("ForEach(presentation.linkedTaskChildSuggestions)"))
     }
 
     @Test
@@ -960,7 +990,7 @@ struct TaskRankingPresentationTests {
         let bodyStart = try #require(source.range(of: "var body: some View"))
         let bodyEnd = try #require(
             source.range(
-                of: "private var workspaceControls",
+                of: "private func workspaceControls(",
                 range: bodyStart.upperBound..<source.endIndex
             )
         )
@@ -971,11 +1001,36 @@ struct TaskRankingPresentationTests {
         #expect(source.contains("let selectedTaskID = store.selectedTaskID"))
         #expect(source.contains("let selectedGroupID = store.selectedGroupID"))
         #expect(source.contains("let selectedNodeID: TaskLadderNodeID?"))
-        #expect(source.contains("rankingList(selectedNodeID: selectedNodeID)"))
+        #expect(source.contains("selectedNodeID: selectedNodeID"))
         #expect(source.contains("TaskLadderRowSelectionIdentity("))
         #expect(source.contains(".id(selectionIdentity)"))
         #expect(source.contains(".accessibilityAddTraits(isSelected ? .isSelected : [])"))
         #expect(!source.contains("? store.selectedGroupID == task.id"))
+    }
+
+    @Test
+    func taskLadderObservesReplacementPresentationsBeforeBuildingTheSplitView() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+
+        let bodyStart = try #require(source.range(of: "var body: some View"))
+        let bodyEnd = try #require(
+            source.range(
+                of: "private func workspaceControls(",
+                range: bodyStart.upperBound..<source.endIndex
+            )
+        )
+        let body = source[bodyStart.lowerBound..<bodyEnd.lowerBound]
+        let presentationRead = try #require(body.range(of: "let presentation = store.presentation"))
+        let splitView = try #require(body.range(of: "HSplitView {"))
+
+        #expect(presentationRead.lowerBound < splitView.lowerBound)
+        #expect(body.contains("workspaceControls(\n                presentation: presentation"))
+        #expect(body.contains("rankingList(\n                    presentation: presentation"))
+        #expect(source.contains("ForEach(presentation.sections)"))
+        #expect(source.contains("Text(taskCountLabel(\n                presentation: presentation"))
+        #expect(!source.contains("ForEach(store.presentation.sections)"))
     }
 
     @Test
@@ -1011,7 +1066,7 @@ struct TaskRankingPresentationTests {
         )
 
         #expect(rankingSource.contains("Label(\"Add Group\", systemImage: \"folder.badge.plus\")"))
-        #expect(rankingSource.contains("Text(taskCountLabel)"))
+        #expect(rankingSource.contains("Text(taskCountLabel("))
         #expect(rankingSource.contains("if !store.scopePath.isEmpty"))
         #expect(rankingSource.contains("Text(store.scopeParentName ?? \"Nested tasks\")"))
         #expect(!rankingSource.contains("Text(store.scopeParentName ?? \"Task Ladder\")"))

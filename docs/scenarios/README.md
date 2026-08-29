@@ -760,6 +760,14 @@ And only `Tax declaration` remains tinted
 When the person selects another task or group after scrolling through lazy rows
 Then the previous row loses its tint
 And only the newly selected row remains visibly selected
+
+Given `Buy airpods` is blocked by `Plan and think about USA trip`
+And the prerequisite is paused without ever completing or fulfilling its chain step
+When Task Ladder publishes a replacement cached presentation
+Then `Buy airpods` is absent from every visible metric section and the item count
+And the Mac split view replaces the old row membership and count together
+And it does not reset the scrolling container to apply that snapshot
+
 When the person double-clicks either group row
 Then Task Ladder opens that group's inner ladder
 And the context menu also offers explicit details and inner-ladder commands
