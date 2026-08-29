@@ -147,19 +147,13 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
         case .homeTaskType:
             HomeFiltersDetailSheet(title: "Task Type") {
                 Section {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Task type",
-                        options: HomeFeature.TaskListMode.allCases,
-                        selection: bindings.taskListMode,
-                        minimumSegmentWidth: 82,
-                        horizontalPadding: 10,
-                        fillsAvailableWidth: true
-                    ) { mode in
-                        Text(mode.title)
-                            .fixedSize(horizontal: true, vertical: false)
+                    Picker("Task type", selection: bindings.taskListMode) {
+                        ForEach(HomeFeature.TaskListMode.allCases) { mode in
+                            Label(mode.title, systemImage: mode.systemImage).tag(mode)
+                        }
                     }
-                } footer: {
-                    Text("Choose which tasks the Home list should show.")
+                    .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .visibility:
@@ -211,44 +205,45 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
         case .todoState:
             HomeFiltersDetailSheet(title: "One-time State") {
                 Section {
-                    HomeTodoStateFilterChips(
-                        selectedTodoStateFilter: bindings.selectedTodoStateFilter
-                    )
-                    .padding(.vertical, 4)
+                    Picker("One-time state", selection: bindings.selectedTodoStateFilter) {
+                        Label("Any state", systemImage: "square.grid.2x2")
+                            .tag(Optional<TodoState>.none)
+
+                        ForEach(TodoState.filterableCases) { state in
+                            Label(state.displayTitle, systemImage: state.systemImage)
+                                .tag(Optional(state))
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
                 }
             }
         case .pressure:
             HomeFiltersDetailSheet(title: "Pressure") {
                 Section {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Pressure",
-                        options: [Optional<RoutineTaskPressure>.none]
-                            + RoutineTaskPressure.allCases.map(Optional.some),
-                        selection: bindings.selectedPressureFilter,
-                        horizontalPadding: 10,
-                        verticalPadding: 8,
-                        fillsAvailableWidth: true,
-                        maximumSegmentsPerRow: 3
-                    ) { pressure in
-                        Text(pressure?.title ?? "All")
+                    Picker("Pressure", selection: bindings.selectedPressureFilter) {
+                        ForEach(pressureOptions, id: \.self) { pressure in
+                            Text(pressure?.title ?? "All").tag(pressure)
+                        }
                     }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                } footer: {
+                    Text("All does not filter by pressure. None shows tasks without a recorded pressure value.")
                 }
             }
         case .thinkingNeeded:
             HomeFiltersDetailSheet(title: "Thinking Needed") {
                 Section {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Thinking needed",
-                        options: [Optional<RoutineTaskThinkingNeeded>.none]
-                            + RoutineTaskThinkingNeeded.allCases.map(Optional.some),
-                        selection: bindings.selectedThinkingNeededFilter,
-                        horizontalPadding: 10,
-                        verticalPadding: 8,
-                        fillsAvailableWidth: true,
-                        maximumSegmentsPerRow: 3
-                    ) { level in
-                        Text(level?.title ?? "All")
+                    Picker("Thinking needed", selection: bindings.selectedThinkingNeededFilter) {
+                        ForEach(thinkingNeededOptions, id: \.self) { level in
+                            Text(level?.title ?? "All").tag(level)
+                        }
                     }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                } footer: {
+                    Text("All does not filter by thinking needed. None shows tasks without a recorded thinking-needed value.")
                 }
             }
         case .goal:
@@ -350,5 +345,13 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
             get: { bindings.taskListViewMode.wrappedValue == .all },
             set: { bindings.taskListViewMode.wrappedValue = $0 ? .all : .actionable }
         )
+    }
+
+    private var pressureOptions: [RoutineTaskPressure?] {
+        [nil] + RoutineTaskPressure.allCases.map(Optional.some)
+    }
+
+    private var thinkingNeededOptions: [RoutineTaskThinkingNeeded?] {
+        [nil] + RoutineTaskThinkingNeeded.allCases.map(Optional.some)
     }
 }

@@ -2171,18 +2171,26 @@ When one of its segments is selected and receives the bright selected glass surf
 Then the selected text and symbol use an explicit dark foreground
 And the selection does not inherit a dark-appearance primary foreground that disappears into the bright glass
 
-### iOS Task Type Segments Keep Full Labels
+### iOS Home Categorical Filter Sheets Use Grouped Rows
 
 Area: Tasks
-Decision links: [0024](../decisions/0024-adopt-liquid-glass-ui-surfaces.md), [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md)
+Decision links: [0696](../decisions/0696-use-grouped-rows-for-ios-home-filter-choices.md), [0537](../decisions/0537-keep-all-ios-home-filter-options-in-persistent-sheets.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/HomeIOSTaskTypeSegmentLayoutTests.swift`
 
-Given the iOS Home Filters sheet shows the `All`, `Routines`, and `Todos` task types
-When the Task Type segmented control is laid out at the sheet's compact width
-Then each segment prioritizes its complete text label
-And decorative symbols do not consume the space needed by `Routines`
+Given the iOS Home Filters sheet opens Task Type or One-time State
+When the person reviews its available choices
+Then every option appears as a full-width native grouped row
+And the selected row has the native picker checkmark
+And Task Type and One-time State rows retain recognizable symbols
+
+Given the iOS Home Filters sheet opens Importance, Urgency, Pressure, or Thinking needed
+When the person reviews its available choices
+Then every option appears as a full-width native grouped row
+And Importance and Urgency spell out their minimum-threshold meaning
+And Pressure and Thinking needed distinguish unfiltered `All` from exact-value `None`
+And changing one Priority filter preserves the other three filters
 
 ### iOS Home Tag Filtering Defers Catalog Work
 

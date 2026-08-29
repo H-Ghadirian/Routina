@@ -30,3 +30,9 @@ peer options inconsistent or force meaningful text to truncate.
 that it uses full fixed-size text labels, compact padding, and no competing
 `Label` symbols. The matching scenario is recorded in
 `docs/scenarios/README.md`.
+
+## Follow-up
+
+[Decision 0696](../decisions/0696-use-grouped-rows-for-ios-home-filter-choices.md)
+later replaced the Home Task Type segments with native grouped rows. The broader
+prevention rule still applies wherever compact segmented controls remain.

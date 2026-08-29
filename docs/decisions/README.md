@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0696](0696-use-grouped-rows-for-ios-home-filter-choices.md) refines [0089](0089-prefer-native-apple-platform-patterns.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md), and [0581](0581-separate-ios-priority-filter-controls.md):** iOS Home Task Type, One-time State, Importance, Urgency, Pressure, and Thinking needed detail sheets use native grouped-row pickers with explicit threshold and `All` / `None` semantics.
 - **[0694](0694-verify-portable-backups-and-preserve-restore-recovery.md) refines [0170](0170-treat-backup-reset-as-complete-user-data-operations.md) and [0693](0693-audit-backups-through-isolated-semantic-round-trips.md):** new backups carry portable source-matching receipts, restore preflights before a one-save replacement, and Routina retains ten verified pre-restore recovery points while keeping live-data comparison separate from CloudKit inventory.
 - **[0693](0693-audit-backups-through-isolated-semantic-round-trips.md) refines [0170](0170-treat-backup-reset-as-complete-user-data-operations.md):** a project-local command validates real backup packages and exercises two isolated semantic restore round trips without opening app or CloudKit stores, directly comparing current-schema sources while treating older supported schemas as migrations.
 - **[0692](0692-control-when-due-tasks-enter-task-ladder.md) revises [0561](0561-add-separate-mac-task-ranking-ladder.md) and refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0438](0438-allow-early-completion-of-untimed-scheduled-routines.md), [0562](0562-exclude-blocked-tasks-from-mac-task-ladder.md), [0570](0570-exclude-flagged-tasks-from-mac-task-ladder.md), [0634](0634-unify-mac-workspace-search-and-creation.md), and [0649](0649-give-each-task-ladder-metric-an-independent-time-rule.md):** one-time tasks with deadlines and repeating Due tasks can enter Task Ladder throughout, a chosen number of days before due, or only on due, without changing completion or other app surfaces.
@@ -817,6 +818,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0696](0696-use-grouped-rows-for-ios-home-filter-choices.md) | Use Grouped Rows for iOS Home Filter Choices | Accepted | 2026-08-29 |
 | [0694](0694-verify-portable-backups-and-preserve-restore-recovery.md) | Verify Portable Backups and Preserve Restore Recovery | Accepted | 2026-08-29 |
 | [0693](0693-audit-backups-through-isolated-semantic-round-trips.md) | Audit Backups Through Isolated Semantic Round Trips | Accepted | 2026-08-29 |
 | [0692](0692-control-when-due-tasks-enter-task-ladder.md) | Control When Due Tasks Enter Task Ladder | Accepted | 2026-08-29 |

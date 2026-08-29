@@ -431,17 +431,13 @@ struct HomeFiltersImportancePickerSheet: View {
     var body: some View {
         HomeFiltersDetailSheet(title: "Importance") {
             Section {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Minimum importance",
-                    options: importanceOptions,
-                    selection: minimumImportanceBinding,
-                    horizontalPadding: 10,
-                    verticalPadding: 8,
-                    fillsAvailableWidth: true,
-                    maximumSegmentsPerRow: 2
-                ) { importance in
-                    Text(importance.map { "\($0.title)+" } ?? "All")
+                Picker("Minimum importance", selection: minimumImportanceBinding) {
+                    ForEach(importanceOptions, id: \.self) { importance in
+                        Text(optionTitle(for: importance)).tag(importance)
+                    }
                 }
+                .pickerStyle(.inline)
+                .labelsHidden()
             } footer: {
                 Text("All includes every importance level. Other choices set the minimum importance a task must have.")
             }
@@ -450,6 +446,19 @@ struct HomeFiltersImportancePickerSheet: View {
 
     private var importanceOptions: [RoutineTaskImportance?] {
         [nil] + RoutineTaskImportance.allCases.dropFirst().map(Optional.some)
+    }
+
+    private func optionTitle(for importance: RoutineTaskImportance?) -> String {
+        switch importance {
+        case nil, .some(.level1):
+            return "All"
+        case .some(.level2):
+            return "Medium or higher"
+        case .some(.level3):
+            return "High or higher"
+        case .some(.level4):
+            return "Critical only"
+        }
     }
 
     private var minimumImportanceBinding: Binding<RoutineTaskImportance?> {
@@ -472,17 +481,13 @@ struct HomeFiltersUrgencyPickerSheet: View {
     var body: some View {
         HomeFiltersDetailSheet(title: "Urgency") {
             Section {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Minimum urgency",
-                    options: urgencyOptions,
-                    selection: minimumUrgencyBinding,
-                    horizontalPadding: 10,
-                    verticalPadding: 8,
-                    fillsAvailableWidth: true,
-                    maximumSegmentsPerRow: 2
-                ) { urgency in
-                    Text(urgency.map { "\($0.title)+" } ?? "All")
+                Picker("Minimum urgency", selection: minimumUrgencyBinding) {
+                    ForEach(urgencyOptions, id: \.self) { urgency in
+                        Text(optionTitle(for: urgency)).tag(urgency)
+                    }
                 }
+                .pickerStyle(.inline)
+                .labelsHidden()
             } footer: {
                 Text("All includes every urgency level. Other choices set the minimum urgency a task must have.")
             }
@@ -491,6 +496,19 @@ struct HomeFiltersUrgencyPickerSheet: View {
 
     private var urgencyOptions: [RoutineTaskUrgency?] {
         [nil] + RoutineTaskUrgency.allCases.dropFirst().map(Optional.some)
+    }
+
+    private func optionTitle(for urgency: RoutineTaskUrgency?) -> String {
+        switch urgency {
+        case nil, .some(.level1):
+            return "All"
+        case .some(.level2):
+            return "Medium or higher"
+        case .some(.level3):
+            return "High or higher"
+        case .some(.level4):
+            return "Immediate only"
+        }
     }
 
     private var minimumUrgencyBinding: Binding<RoutineTaskUrgency?> {

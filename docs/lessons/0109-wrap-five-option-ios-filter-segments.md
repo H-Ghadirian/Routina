@@ -21,3 +21,10 @@ For iOS filter segments with five human-readable values, constrain the row to at
 ## Regression Safeguard
 
 `HomeIOSTaskTypeSegmentLayoutTests.pressureAndThinkingFiltersWrapFiveValuesWithoutTruncatingMedium` checks that both filters keep the three-per-row, full-width configuration.
+
+## Follow-up
+
+[Decision 0696](../decisions/0696-use-grouped-rows-for-ios-home-filter-choices.md)
+later replaced the Home Pressure and Thinking needed segments with native
+grouped rows, removing the need to wrap those choices while preserving the
+original readability lesson for remaining segmented controls.
