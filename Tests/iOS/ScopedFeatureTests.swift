@@ -362,7 +362,6 @@ struct StatsFeatureTests {
         } withDependencies: {
             $0.modelContext = { context }
             $0.appSettingsClient = .noop
-            $0.healthStatsClient = .noop
         }
         store.exhaustivity = .off(showSkippedAssertions: false)
 

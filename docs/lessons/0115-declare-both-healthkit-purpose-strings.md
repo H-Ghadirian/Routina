@@ -8,7 +8,7 @@ App Store Connect rejected an iOS upload with server error 90683 because the pro
 
 ## Root Cause
 
-Routina correctly declared its read-only HealthKit purpose with `NSHealthShareUsageDescription`, but omitted the separate update-purpose key that Apple expects for a HealthKit-capable target. The HealthKit feature itself is intentional and reads optional movement data only.
+Routina correctly declared its then-current read-only HealthKit purpose with `NSHealthShareUsageDescription`, but omitted the separate update-purpose key that Apple expects for a HealthKit-capable target.
 
 ## Fix
 
@@ -16,8 +16,12 @@ Added an accurate `NSHealthUpdateUsageDescription` to both iOS Info plists. Its 
 
 ## Prevention Rule
 
-When an iOS target enables HealthKit, declare and maintain both HealthKit privacy-purpose strings in every shipped configuration. Keep the strings aligned with the app's actual read/write behavior; do not remove a real HealthKit capability merely to suppress a configuration requirement.
+When an iOS target enables HealthKit, declare and maintain both HealthKit privacy-purpose strings in every shipped configuration. Keep the strings aligned with the app's actual read/write behavior. If the product deliberately removes HealthKit, remove the implementation, entitlement, and purpose strings together.
 
 ## Regression Safeguard
 
-`AppStoreComplianceConfigurationTests.iOSHealthKitPurposeStringsDescribeOptionalReadOnlyStats` parses the development and production Info plists and verifies their exact, user-facing HealthKit descriptions.
+The original purpose-string safeguard was retired with the integration. `AppStoreComplianceConfigurationTests.iOSInitialReleaseOmitsHealthKit` now verifies that both iOS variants omit HealthKit entitlements and purpose strings.
+
+## Current Applicability
+
+[Decision 0697](../decisions/0697-omit-apple-health-from-the-first-release.md) removed HealthKit from the first release. This lesson remains the rule for any future reintroduction.

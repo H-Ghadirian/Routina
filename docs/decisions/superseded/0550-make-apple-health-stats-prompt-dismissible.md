@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0697](../0697-omit-apple-health-from-the-first-release.md)
 
 ## Date
 

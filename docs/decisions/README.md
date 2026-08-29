@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0697](0697-omit-apple-health-from-the-first-release.md) supersedes [0096](superseded/0096-show-healthkit-movement-stats.md) and [0550](superseded/0550-make-apple-health-stats-prompt-dismissible.md):** the first iOS and iPadOS release omits Apple Health UI, movement metrics, HealthKit implementation and capability declarations, and does not add a replacement health library.
 - **[0696](0696-use-grouped-rows-for-ios-home-filter-choices.md) refines [0089](0089-prefer-native-apple-platform-patterns.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md), and [0581](0581-separate-ios-priority-filter-controls.md):** iOS Home Task Type, One-time State, Importance, Urgency, Pressure, and Thinking needed detail sheets use native grouped-row pickers with explicit threshold and `All` / `None` semantics.
 - **[0694](0694-verify-portable-backups-and-preserve-restore-recovery.md) refines [0170](0170-treat-backup-reset-as-complete-user-data-operations.md) and [0693](0693-audit-backups-through-isolated-semantic-round-trips.md):** new backups carry portable source-matching receipts, restore preflights before a one-save replacement, and Routina retains ten verified pre-restore recovery points while keeping live-data comparison separate from CloudKit inventory.
 - **[0693](0693-audit-backups-through-isolated-semantic-round-trips.md) refines [0170](0170-treat-backup-reset-as-complete-user-data-operations.md):** a project-local command validates real backup packages and exercises two isolated semantic restore round trips without opening app or CloudKit stores, directly comparing current-schema sources while treating older supported schemas as migrations.
@@ -227,7 +228,6 @@ User-experience documents explain who needs what and what success looks like. De
 
 - **[0551](0551-collapse-confirmed-assumed-done-calendar-list-sections.md) refines [0530](0530-separate-confirmed-assumed-dones-in-calendar-list.md), [0529](0529-collapse-calendar-list-planned-task-sections.md), and [0509](0509-collapse-calendar-list-assumed-done-sections.md):** Mac Calendar `List` gives each day's Confirmed assumed done section its own disclosure, using the existing shared default without changing cached Planner presentation work.
 
-- **[0550](0550-make-apple-health-stats-prompt-dismissible.md) refines [0096](0096-show-healthkit-movement-stats.md) and [0113](0113-allow-stats-dashboard-reordering.md):** the optional iOS Apple Health connection prompt participates in Stats dashboard customization, so it can be hidden and restored without changing Health permissions.
 
 - **[0549](0549-filter-stats-by-task-flags.md) refines [0498](0498-filter-task-lists-by-flags.md), [0548](0548-keep-ios-stats-and-timeline-filter-details-in-sheets.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Stats can independently include or exclude task Flags with `All` / `Any` matching through cached task-bound metric snapshots.
 
@@ -1275,7 +1275,7 @@ These are ordered from newest resolver to oldest resolver.
 | [0093](0093-support-all-day-routines.md) | Support All-Day Tasks Across Schedule Types | Accepted | 2026-05-28 |
 | [0094](0094-suggest-only-completed-activity-in-planner-calendar.md) | Suggest Only Completed Activity in the Planner Calendar | Accepted | 2026-05-28 |
 | [0095](0095-drag-tasks-to-planner-all-day-lane.md) | Drag Tasks to the Planner All Day Lane | Accepted | 2026-05-28 |
-| [0096](0096-show-healthkit-movement-stats.md) | Show HealthKit Movement Stats in iOS Stats | Accepted | 2026-05-28 |
+| [0096](superseded/0096-show-healthkit-movement-stats.md) | Show HealthKit Movement Stats in iOS Stats | Superseded | 2026-05-28 |
 | [0097](0097-preserve-compact-more-destination.md) | Preserve Compact More Destination Across Tab Switches | Accepted | 2026-05-28 |
 | [0098](0098-support-markdown-text-editing-controls.md) | Support Markdown Text Editing Controls | Accepted | 2026-05-29 |
 | [0099](0099-block-selected-mac-apps-during-focus.md) | Block Selected Mac Apps During Focus | Accepted | 2026-05-29 |

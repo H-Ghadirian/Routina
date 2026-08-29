@@ -7,7 +7,6 @@ enum StatsSummaryCardItemBuilder {
         chartPresentation: StatsChartPresentation,
         taskTypeFilter: StatsTaskTypeFilter,
         filteredTaskCount: Int,
-        healthSummary: HealthStatsSummary? = nil,
         showsActiveAccessory: Bool = false
     ) -> [StatsSummaryCardItem] {
         var items: [StatsSummaryCardItem] = []
@@ -28,13 +27,6 @@ enum StatsSummaryCardItemBuilder {
                     accessibilityIdentifier: "stats.summary.dailyAverage"
                 )
             )
-        }
-
-        if let healthSummary {
-            items.append(contentsOf: healthItems(
-                summary: healthSummary,
-                selectedRange: selectedRange
-            ))
         }
 
         items.append(
@@ -245,48 +237,9 @@ enum StatsSummaryCardItemBuilder {
         return items.filter {
             StatsDashboardReportAvailability.isReportable(
                 summaryAccessibilityIdentifier: $0.accessibilityIdentifier,
-                metrics: metrics,
-                healthSummary: healthSummary
+                metrics: metrics
             )
         }
-    }
-
-    private static func healthItems(
-        summary: HealthStatsSummary,
-        selectedRange: DoneChartRange
-    ) -> [StatsSummaryCardItem] {
-        [
-            StatsSummaryCardItem(
-                icon: "figure.walk",
-                accent: .green,
-                title: "Steps",
-                value: wholeNumberText(summary.steps),
-                caption: healthCaption(for: selectedRange),
-                accessibilityIdentifier: "stats.summary.health.steps"
-            ),
-            StatsSummaryCardItem(
-                icon: "flame.fill",
-                accent: .orange,
-                title: "Active calories",
-                value: "\(wholeNumberText(summary.activeEnergyKilocalories)) kcal",
-                accessibilityIdentifier: "stats.summary.health.activeCalories"
-            ),
-            StatsSummaryCardItem(
-                icon: "map.fill",
-                accent: .mint,
-                title: "Distance",
-                value: distanceText(summary.walkingRunningDistanceMeters),
-                caption: "Walking/running",
-                accessibilityIdentifier: "stats.summary.health.distance"
-            ),
-            StatsSummaryCardItem(
-                icon: "figure.run",
-                accent: .cyan,
-                title: "Exercise",
-                value: "\(wholeNumberText(summary.exerciseMinutes)) min",
-                accessibilityIdentifier: "stats.summary.health.exercise"
-            )
-        ]
     }
 
     private static func emotionCaption(metrics: StatsFeatureMetrics) -> String {
@@ -351,33 +304,17 @@ enum StatsSummaryCardItemBuilder {
         "\(metrics.archivedGoalCount) archived"
     }
 
-    private static func healthCaption(for selectedRange: DoneChartRange) -> String {
-        "Apple Health, \(selectedRange.periodDescription.lowercased())"
-    }
-
     private static func estimatedMinutesText(_ minutes: Int) -> String {
         guard minutes > 0 else { return "0m" }
         return FocusSessionFormatting.compactDurationText(seconds: TimeInterval(minutes * 60))
     }
 
-    private static func wholeNumberText(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0)))
-    }
-
-    private static func distanceText(_ meters: Double) -> String {
-        let formatter = MeasurementFormatter()
-        formatter.unitOptions = .naturalScale
-        formatter.unitStyle = .short
-        formatter.numberFormatter.maximumFractionDigits = meters >= 1000 ? 1 : 0
-        return formatter.string(from: Measurement(value: meters, unit: UnitLength.meters))
-    }
 }
 
 enum StatsDashboardReportAvailability {
     static func isReportable(
         itemID: String,
-        metrics: StatsFeatureMetrics,
-        healthSummary: HealthStatsSummary? = nil
+        metrics: StatsFeatureMetrics
     ) -> Bool {
         switch itemID {
         case "hero",
@@ -391,14 +328,6 @@ enum StatsDashboardReportAvailability {
         case "assumedDones",
              "assumedEstimatedTime":
             return metrics.assumedDoneCount > 0
-        case "healthSteps":
-            return (healthSummary?.steps ?? 0) > 0
-        case "healthActiveCalories":
-            return (healthSummary?.activeEnergyKilocalories ?? 0) > 0
-        case "healthDistance":
-            return (healthSummary?.walkingRunningDistanceMeters ?? 0) > 0
-        case "healthExercise":
-            return (healthSummary?.exerciseMinutes ?? 0) > 0
         case "focusTime",
              "focusAverage",
              "focusChart",
@@ -456,40 +385,31 @@ enum StatsDashboardReportAvailability {
 
     static func isReportable(
         summaryAccessibilityIdentifier: String,
-        metrics: StatsFeatureMetrics,
-        healthSummary: HealthStatsSummary? = nil
+        metrics: StatsFeatureMetrics
     ) -> Bool {
         switch summaryAccessibilityIdentifier {
         case "stats.summary.dailyAverage":
-            return isReportable(itemID: "dailyAverage", metrics: metrics, healthSummary: healthSummary)
-        case "stats.summary.health.steps":
-            return isReportable(itemID: "healthSteps", metrics: metrics, healthSummary: healthSummary)
-        case "stats.summary.health.activeCalories":
-            return isReportable(itemID: "healthActiveCalories", metrics: metrics, healthSummary: healthSummary)
-        case "stats.summary.health.distance":
-            return isReportable(itemID: "healthDistance", metrics: metrics, healthSummary: healthSummary)
-        case "stats.summary.health.exercise":
-            return isReportable(itemID: "healthExercise", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "dailyAverage", metrics: metrics)
         case "stats.summary.focusTime":
-            return isReportable(itemID: "focusTime", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "focusTime", metrics: metrics)
         case "stats.summary.sleepTime":
-            return isReportable(itemID: "sleepTime", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "sleepTime", metrics: metrics)
         case "stats.summary.sleepSessions":
-            return isReportable(itemID: "sleepSessions", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "sleepSessions", metrics: metrics)
         case "stats.summary.awayTime":
-            return isReportable(itemID: "awayTime", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "awayTime", metrics: metrics)
         case "stats.summary.emotions":
-            return isReportable(itemID: "emotions", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "emotions", metrics: metrics)
         case "stats.summary.notes":
-            return isReportable(itemID: "notes", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "notes", metrics: metrics)
         case "stats.summary.events":
-            return isReportable(itemID: "events", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "events", metrics: metrics)
         case "stats.summary.goals":
-            return isReportable(itemID: "goals", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "goals", metrics: metrics)
         case "stats.summary.focusAverage":
-            return isReportable(itemID: "focusAverage", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "focusAverage", metrics: metrics)
         case "stats.summary.bestDay":
-            return isReportable(itemID: "bestDay", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "bestDay", metrics: metrics)
         case "stats.summary.totalDones":
             return metrics.totalDoneCount > 0
         case "stats.summary.assumedDones",
@@ -500,13 +420,13 @@ enum StatsDashboardReportAvailability {
         case "stats.summary.totalMissed":
             return metrics.totalMissedCount > 0
         case "stats.summary.routineCount":
-            return isReportable(itemID: "routineCount", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "routineCount", metrics: metrics)
         case "stats.summary.todoCount":
-            return isReportable(itemID: "todoCount", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "todoCount", metrics: metrics)
         case "stats.summary.activeRoutines":
-            return isReportable(itemID: "activeItems", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "activeItems", metrics: metrics)
         case "stats.summary.archivedRoutines":
-            return isReportable(itemID: "archivedItems", metrics: metrics, healthSummary: healthSummary)
+            return isReportable(itemID: "archivedItems", metrics: metrics)
         default:
             return true
         }

@@ -1,6 +1,6 @@
 # 0096: Show HealthKit Movement Stats in iOS Stats
 
-- Status: Accepted
+- Status: Superseded by [0697](../0697-omit-apple-health-from-the-first-release.md)
 - Date: 2026-05-28
 
 ## Context

@@ -531,10 +531,6 @@ struct StatsFeature {
         var isGitHubStatsLoading: Bool = false
         var gitHubStatsErrorMessage: String?
         var isGitFeaturesEnabled: Bool = false
-        var healthAccessState: HealthStatsAccessState = .notRequested
-        var healthSummary: HealthStatsSummary?
-        var isHealthStatsLoading: Bool = false
-        var healthStatsErrorMessage: String?
         var hasLoadedDataSnapshot = false
 
         var hasActiveFilters: Bool {
@@ -603,10 +599,6 @@ struct StatsFeature {
         case gitHubStatsRefreshRequested
         case gitHubStatsLoaded(GitHubStatsSnapshot)
         case gitHubStatsFailed(String)
-        case healthStatsAuthorizationRequested
-        case healthStatsRefreshRequested
-        case healthStatsLoaded(HealthStatsSummary)
-        case healthStatsFailed(String)
         case clearFilters
     }
 
@@ -616,7 +608,6 @@ struct StatsFeature {
     @Dependency(\.gitHubStatsClient) var gitHubStatsClient
     @Dependency(\.gitLabStatsClient) var gitLabStatsClient
     @Dependency(\.appSettingsClient) var appSettingsClient
-    @Dependency(\.healthStatsClient) var healthStatsClient
     @Dependency(\.modelContext) var modelContext
 
     var body: some ReducerOf<Self> {
@@ -703,7 +694,6 @@ struct StatsFeature {
                 )
                 state.tagColors = appSettingsClient.tagColors()
                 var effects: [Effect<Action>] = []
-                configureHealthStatsOnAppear(state: &state, effects: &effects)
                 state.isGitFeaturesEnabled = appSettingsClient.gitFeaturesEnabled()
                 guard state.isGitFeaturesEnabled else {
                     state.gitHubConnection = .disconnected
@@ -730,18 +720,10 @@ struct StatsFeature {
             case let .selectedRangeChanged(range):
                 state.selectedRange = range
                 refreshDerivedState(&state)
-                var effects: [Effect<Action>] = []
                 guard state.isGitFeaturesEnabled, state.gitHubConnection.isConnected else {
-                    if state.healthAccessState == .ready {
-                        effects.append(refreshHealthStatsEffect(state: &state))
-                    }
-                    return effects.isEmpty ? .none : .merge(effects)
+                    return .none
                 }
-                effects.append(refreshGitHubStatsEffect(state: &state, skipGitLab: true))
-                if state.healthAccessState == .ready {
-                    effects.append(refreshHealthStatsEffect(state: &state))
-                }
-                return .merge(effects)
+                return refreshGitHubStatsEffect(state: &state, skipGitLab: true)
 
             case let .taskTypeFilterChanged(filter):
                 state.taskTypeFilter = filter
@@ -835,25 +817,6 @@ struct StatsFeature {
                 state.gitHubStatsErrorMessage = message
                 return .none
 
-            case .healthStatsAuthorizationRequested:
-                return requestHealthStatsAuthorizationEffect(state: &state)
-
-            case .healthStatsRefreshRequested:
-                return refreshHealthStatsEffect(state: &state)
-
-            case let .healthStatsLoaded(summary):
-                state.healthAccessState = .ready
-                state.healthSummary = summary
-                state.isHealthStatsLoading = false
-                state.healthStatsErrorMessage = nil
-                return .none
-
-            case let .healthStatsFailed(message):
-                state.healthAccessState = state.healthSummary == nil ? .failed : .ready
-                state.isHealthStatsLoading = false
-                state.healthStatsErrorMessage = message
-                return .none
-
             case .clearFilters:
                 state.selectedRange = .week
                 state.taskTypeFilter = .all
@@ -868,8 +831,7 @@ struct StatsFeature {
                 state.selectedImportanceUrgencyFilter = nil
                 state.advancedQuery = ""
                 refreshDerivedState(&state)
-                guard state.healthAccessState == .ready else { return .none }
-                return refreshHealthStatsEffect(state: &state)
+                return .none
             }
         }
     }
@@ -921,102 +883,6 @@ struct StatsFeature {
                 ))
             } catch {
                 send(.dataRefreshFailed)
-            }
-        }
-    }
-
-    private func configureHealthStatsOnAppear(
-        state: inout State,
-        effects: inout [Effect<Action>]
-    ) {
-        guard healthStatsClient.isHealthDataAvailable() else {
-            state.healthAccessState = .unavailable
-            state.healthSummary = nil
-            state.isHealthStatsLoading = false
-            state.healthStatsErrorMessage = nil
-            return
-        }
-
-        guard healthStatsClient.hasRequestedAuthorization() else {
-            state.healthAccessState = .notRequested
-            state.isHealthStatsLoading = false
-            state.healthStatsErrorMessage = nil
-            return
-        }
-
-        state.healthAccessState = .ready
-        effects.append(refreshHealthStatsEffect(state: &state))
-    }
-
-    private func requestHealthStatsAuthorizationEffect(state: inout State) -> Effect<Action> {
-        guard healthStatsClient.isHealthDataAvailable() else {
-            state.healthAccessState = .unavailable
-            state.healthSummary = nil
-            state.isHealthStatsLoading = false
-            state.healthStatsErrorMessage = nil
-            return .none
-        }
-
-        state.isHealthStatsLoading = true
-        state.healthStatsErrorMessage = nil
-        let range = state.selectedRange
-        let referenceDate = now
-        let currentCalendar = calendar
-
-        return .run { send in
-            do {
-                let didCompleteAuthorization = try await self.healthStatsClient.requestAuthorization()
-                self.healthStatsClient.setHasRequestedAuthorization(didCompleteAuthorization)
-                guard didCompleteAuthorization else {
-                    await send(.healthStatsFailed("Health access was not granted."))
-                    return
-                }
-
-                let summary = try await self.healthStatsClient.fetchSummary(
-                    range,
-                    referenceDate,
-                    currentCalendar
-                )
-                await send(.healthStatsLoaded(summary))
-            } catch {
-                await send(.healthStatsFailed(error.localizedDescription))
-            }
-        }
-    }
-
-    private func refreshHealthStatsEffect(state: inout State) -> Effect<Action> {
-        guard healthStatsClient.isHealthDataAvailable() else {
-            state.healthAccessState = .unavailable
-            state.healthSummary = nil
-            state.isHealthStatsLoading = false
-            state.healthStatsErrorMessage = nil
-            return .none
-        }
-
-        guard healthStatsClient.hasRequestedAuthorization() || state.healthAccessState == .ready else {
-            state.healthAccessState = .notRequested
-            state.isHealthStatsLoading = false
-            state.healthStatsErrorMessage = nil
-            return .none
-        }
-
-        state.healthAccessState = .ready
-        state.isHealthStatsLoading = true
-        state.healthStatsErrorMessage = nil
-        let range = state.selectedRange
-        let referenceDate = now
-        let currentCalendar = calendar
-
-        return .run { send in
-            do {
-                let summary = try await self.healthStatsClient.fetchSummary(
-                    range,
-                    referenceDate,
-                    currentCalendar
-                )
-                await send(.healthStatsLoaded(summary))
-            } catch {
-                await send(.healthStatsFailed(error.localizedDescription))
             }
         }
     }

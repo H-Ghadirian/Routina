@@ -266,8 +266,7 @@ struct StatsView: View {
 
     private var availableDashboardItems: [StatsDashboardItem] {
         StatsDashboardItem.allCases.filter { item in
-            (item != .healthAccess || shouldShowHealthAccessCard)
-                && (item != .notes || isNotesEnabled)
+            (item != .notes || isNotesEnabled)
                 && (item != .awayTime || isAwayEnabled)
                 && (item != .sleepTime || isAwayEnabled)
                 && (item != .sleepSessions || isAwayEnabled)
@@ -278,7 +277,7 @@ struct StatsView: View {
                     isStatsWinsEnabled: isStatsWinsEnabled,
                     isStatsAchievementsEnabled: isStatsAchievementsEnabled
                 )
-                && item.isReportable(metrics: metrics, healthSummary: store.healthSummary)
+                && item.isReportable(metrics: metrics)
         }
     }
 
@@ -345,12 +344,6 @@ struct StatsView: View {
                 }
             }
         )
-    }
-
-    private var shouldShowHealthAccessCard: Bool {
-        store.healthAccessState != .ready
-            || store.healthSummary == nil
-            || store.healthStatsErrorMessage != nil
     }
 
     var body: some View {
@@ -764,10 +757,6 @@ struct StatsView: View {
     @ViewBuilder
     private func dashboardSection(_ item: StatsDashboardItem, metrics: Metrics) -> some View {
         switch item {
-        case .healthAccess:
-            editableDashboardSection(.healthAccess) {
-                healthAccessCard
-            }
         case .hero:
             editableDashboardSection(.hero) {
                 heroSection(metrics: metrics)
@@ -943,8 +932,7 @@ struct StatsView: View {
             selectedRange: selectedRange,
             chartPresentation: chartPresentation,
             taskTypeFilter: selectedTaskTypeFilter,
-            filteredTaskCount: filteredTaskCount,
-            healthSummary: store.healthSummary
+            filteredTaskCount: filteredTaskCount
         )
         let itemsByDashboardItem = Dictionary(
             uniqueKeysWithValues: items.map { (dashboardItem(for: $0), $0) }
@@ -964,17 +952,6 @@ struct StatsView: View {
             colorScheme: colorScheme,
             calendar: calendar,
             onRefresh: { store.send(.gitHubStatsRefreshRequested) }
-        )
-    }
-
-    private var healthAccessCard: some View {
-        StatsHealthAccessCard(
-            accessState: store.healthAccessState,
-            isLoading: store.isHealthStatsLoading,
-            errorMessage: store.healthStatsErrorMessage,
-            colorScheme: colorScheme,
-            onRequestAccess: { store.send(.healthStatsAuthorizationRequested) },
-            onRefresh: { store.send(.healthStatsRefreshRequested) }
         )
     }
 

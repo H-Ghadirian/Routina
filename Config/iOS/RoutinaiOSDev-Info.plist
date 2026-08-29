@@ -52,10 +52,6 @@
 	<string>Routina reads selected calendars only when you review events to add as tasks.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Routina reads selected calendars only when you review events to add as tasks.</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Routina reads movement data from Apple Health to show steps, active calories, distance, and exercise stats.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Routina does not write Apple Health data. It requests optional access only to show your movement stats after you choose Connect Health.</string>
 	<key>RoutinaMicrosoftGraphClientID</key>
 	<string></string>
 	<key>RoutinaDeepLinkURLScheme</key>

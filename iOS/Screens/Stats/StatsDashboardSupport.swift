@@ -18,13 +18,8 @@ enum StatsDashboardBlock: Identifiable {
 }
 
 enum StatsDashboardItem: String, CaseIterable, Identifiable {
-    case healthAccess
     case hero
     case dailyAverage
-    case healthSteps
-    case healthActiveCalories
-    case healthDistance
-    case healthExercise
     case focusTime
     case sleepTime
     case sleepSessions
@@ -64,14 +59,6 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
         switch summaryAccessibilityIdentifier {
         case "stats.summary.dailyAverage":
             self = .dailyAverage
-        case "stats.summary.health.steps":
-            self = .healthSteps
-        case "stats.summary.health.activeCalories":
-            self = .healthActiveCalories
-        case "stats.summary.health.distance":
-            self = .healthDistance
-        case "stats.summary.health.exercise":
-            self = .healthExercise
         case "stats.summary.focusTime":
             self = .focusTime
         case "stats.summary.sleepTime":
@@ -117,20 +104,10 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .healthAccess:
-            return "Apple Health"
         case .hero:
             return "Activity overview"
         case .dailyAverage:
             return "Daily average"
-        case .healthSteps:
-            return "Steps"
-        case .healthActiveCalories:
-            return "Active calories"
-        case .healthDistance:
-            return "Distance"
-        case .healthExercise:
-            return "Exercise"
         case .focusTime:
             return "Focus time"
         case .sleepTime:
@@ -200,11 +177,9 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .healthAccess:
-            return "Connect Apple Health to show movement stats."
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
         case .unassignedFocus:
             return "Focus sessions waiting to be assigned."
@@ -237,20 +212,10 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .healthAccess:
-            return "heart.text.square.fill"
         case .hero:
             return "chart.line.uptrend.xyaxis"
         case .dailyAverage:
             return "gauge.with.dots.needle.50percent"
-        case .healthSteps:
-            return "figure.walk"
-        case .healthActiveCalories:
-            return "flame.fill"
-        case .healthDistance:
-            return "map.fill"
-        case .healthExercise:
-            return "figure.run"
         case .focusTime:
             return "timer"
         case .sleepTime:
@@ -320,7 +285,7 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var isSummaryCard: Bool {
         switch self {
-        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return true
         default:
             return false
@@ -344,10 +309,6 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
     }
 
     func isIncluded(in scope: StatsDashboardScope) -> Bool {
-        if self == .healthAccess {
-            return true
-        }
-
         switch scope {
         case .all:
             return true
@@ -412,139 +373,10 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
         }
     }
 
-    func isReportable(
-        metrics: StatsFeatureMetrics,
-        healthSummary: HealthStatsSummary?
-    ) -> Bool {
+    func isReportable(metrics: StatsFeatureMetrics) -> Bool {
         StatsDashboardReportAvailability.isReportable(
             itemID: rawValue,
-            metrics: metrics,
-            healthSummary: healthSummary
+            metrics: metrics
         )
-    }
-}
-
-struct StatsHealthAccessCard: View {
-    let accessState: HealthStatsAccessState
-    let isLoading: Bool
-    let errorMessage: String?
-    let colorScheme: ColorScheme
-    let onRequestAccess: () -> Void
-    let onRefresh: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "heart.text.square.fill")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.pink)
-                    .frame(width: 44, height: 44)
-                    .routinaGlassCard(cornerRadius: 15, tint: .pink, tintOpacity: colorScheme == .dark ? 0.2 : 0.12)
-
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(title)
-                        .font(.headline)
-
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if let errorMessage, !errorMessage.isEmpty {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-
-                Spacer(minLength: 0)
-            }
-
-            if isLoading {
-                HStack(spacing: 10) {
-                    ProgressView()
-                    Text("Reading Health data")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-            } else if showsAction {
-                Button(action: action) {
-                    Label(actionTitle, systemImage: actionIcon)
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .routinaGlassPanel(cornerRadius: 24, tint: .pink, tintOpacity: colorScheme == .dark ? 0.12 : 0.08)
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
-        )
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("stats.health.access")
-    }
-
-    private var title: String {
-        switch accessState {
-        case .unavailable:
-            return "Health unavailable"
-        case .notRequested, .ready, .failed:
-            return "Apple Health"
-        }
-    }
-
-    private var message: String {
-        switch accessState {
-        case .unavailable:
-            return "Health data is unavailable on this device."
-        case .notRequested:
-            return "Connect Apple Health to show movement stats in this range."
-        case .ready:
-            return "Health stats are connected."
-        case .failed:
-            return "Routina could not read Health data."
-        }
-    }
-
-    private var showsAction: Bool {
-        accessState != .unavailable
-    }
-
-    private var actionTitle: String {
-        switch accessState {
-        case .notRequested:
-            return "Connect Health"
-        case .ready:
-            return "Refresh"
-        case .failed:
-            return "Try Again"
-        case .unavailable:
-            return ""
-        }
-    }
-
-    private var actionIcon: String {
-        switch accessState {
-        case .notRequested:
-            return "heart.text.square"
-        case .ready, .failed:
-            return "arrow.clockwise"
-        case .unavailable:
-            return "heart.slash"
-        }
-    }
-
-    private func action() {
-        switch accessState {
-        case .notRequested:
-            onRequestAccess()
-        case .ready, .failed:
-            onRefresh()
-        case .unavailable:
-            break
-        }
     }
 }

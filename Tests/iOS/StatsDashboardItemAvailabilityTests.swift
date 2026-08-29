@@ -14,18 +14,6 @@ struct StatsDashboardItemAvailabilityTests {
     }
 
     @Test
-    func healthAccessPrompt_isDashboardItem() {
-        #expect(StatsDashboardItem.allCases.contains(.healthAccess))
-        #expect(StatsDashboardItem.healthAccess.title == "Apple Health")
-        #expect(StatsDashboardItem.healthAccess.isReportable(
-            metrics: StatsFeatureMetrics(),
-            healthSummary: nil
-        ))
-        #expect(StatsDashboardItem.healthAccess.isIncluded(in: .focus))
-        #expect(StatsDashboardItem.healthAccess.isIncluded(in: .sleep))
-    }
-
-    @Test
     func unassignedFocus_isRetiredFromDashboardAvailability() {
         #expect(!StatsDashboardItem.unassignedFocus.isAvailable(
             selectedRange: .week,

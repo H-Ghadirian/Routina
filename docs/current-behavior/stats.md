@@ -35,14 +35,13 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0504](../decisions/0504-simplify-ios-focus-2048-stats-details.md)
 - [0505](../decisions/0505-use-dense-ios-stats-metric-tiles.md)
 - [0549](../decisions/0549-filter-stats-by-task-flags.md)
-- [0550](../decisions/0550-make-apple-health-stats-prompt-dismissible.md)
+- [0697](../decisions/0697-omit-apple-health-from-the-first-release.md)
 - [0658](../decisions/0658-defer-mac-stats-tag-catalog-to-searchable-pickers.md)
 - [0669](../decisions/0669-use-inline-menu-pickers-for-mac-stats-single-choice-filters.md)
 - [0668](../decisions/0668-separate-general-stats-and-standardize-task-type-language.md)
 - [0688](../decisions/0688-align-mac-stats-tag-and-flag-filters-with-shared-panels.md)
 - [0689](../decisions/0689-open-mac-stats-evidence-from-task-backed-rectangles.md)
 - [0691](../decisions/0691-split-focus-activity-across-local-days.md)
-- [0096](../decisions/0096-show-healthkit-movement-stats.md)
 
 ## Current Contract
 
@@ -76,6 +75,5 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
 - Stats summary cards show assumed-done daily Gentle-routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
 - Stats task-type filtering offers only `All`, `Repeating`, and `One-time`. The underlying filter raw values remain `Routines` and `Todos` for persisted-state compatibility, and no additional task-kind count, time card, filter, or dashboard item exists.
-- On iOS, users can choose Connect Health to grant read-only access to steps, active calories, walking/running distance, and exercise time for Stats. Routina neither writes Apple Health samples nor persists or syncs those values.
-- Before connecting, users can hide the Apple Health prompt in Stats Edit mode and restore it through Add to Stats while it remains relevant.
+- The first iOS and iPadOS release contains no Apple Health connection prompt, movement cards, HealthKit implementation, or HealthKit capability declarations.
 - Adventure derives progression from existing activity history and shares the Mac Stats sidebar tab behind a `Stats / Adventure` segment when enabled.

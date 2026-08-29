@@ -127,20 +127,28 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
-    func iOSHealthKitPurposeStringsDescribeOptionalReadOnlyStats() throws {
-        let expectedReadDescription =
-            "Routina reads movement data from Apple Health to show steps, active calories, distance, and exercise stats."
-        let expectedUpdateDescription =
-            "Routina does not write Apple Health data. It requests optional access only to show your movement stats after you choose Connect Health."
-
+    func iOSInitialReleaseOmitsHealthKit() throws {
         for relativePath in [
             "Config/iOS/RoutinaiOSProd-Info.plist",
             "Config/iOS/RoutinaiOSDev-Info.plist",
         ] {
             let info = try Self.propertyListDictionary(relativePath)
-            #expect(info["NSHealthShareUsageDescription"] as? String == expectedReadDescription)
-            #expect(info["NSHealthUpdateUsageDescription"] as? String == expectedUpdateDescription)
+            #expect(info["NSHealthShareUsageDescription"] == nil)
+            #expect(info["NSHealthUpdateUsageDescription"] == nil)
         }
+
+        for relativePath in [
+            "Config/iOS/RoutinaiOS.entitlements",
+            "Config/iOS/RoutinaiOSDev.entitlements",
+        ] {
+            let entitlements = try Self.propertyListDictionary(relativePath)
+            #expect(entitlements["com.apple.developer.healthkit"] == nil)
+        }
+
+        let statsFeature = try Self.sourceFile("iOS/Features/App/AppFeature.swift")
+        let statsView = try Self.sourceFile("iOS/Screens/Stats/StatsView.swift")
+        #expect(!statsFeature.contains("HealthStats"))
+        #expect(!statsView.contains("healthAccess"))
     }
 
     @Test

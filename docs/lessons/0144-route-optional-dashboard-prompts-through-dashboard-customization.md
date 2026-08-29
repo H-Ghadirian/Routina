@@ -28,8 +28,12 @@ place it beside that model as a fixed card.
 
 ## Regression Safeguard
 
-`StatsDashboardItemAvailabilityTests.healthAccessPrompt_isDashboardItem` and
-`IOSStatsDashboardPresentationTests.healthAccessPromptCanBeRemovedFromIOSStats`
-guard the item registration and its editable iOS render path. The expected
-behavior is documented in `docs/scenarios/README.md` and Decision
-[0550](../decisions/0550-make-apple-health-stats-prompt-dismissible.md).
+The original Apple Health safeguards were retired when the integration was
+removed. The general prevention rule remains applicable to future optional
+dashboard prompts.
+
+## Current Applicability
+
+[Decision 0697](../decisions/0697-omit-apple-health-from-the-first-release.md)
+removed the Apple Health prompt and superseded
+[Decision 0550](../decisions/superseded/0550-make-apple-health-stats-prompt-dismissible.md).
