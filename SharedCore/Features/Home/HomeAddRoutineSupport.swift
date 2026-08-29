@@ -66,6 +66,7 @@ enum HomeAddRoutineSupport {
             urgency: request.urgency,
             pressure: request.pressure,
             temporalWeightRule: request.temporalWeightRule,
+            taskLadderEntryWindow: request.taskLadderEntryWindow,
             thinkingNeeded: request.thinkingNeeded,
             imageData: request.imageData,
             voiceNoteData: request.voiceNote?.data,

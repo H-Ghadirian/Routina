@@ -102,6 +102,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editTemporalWeightRule },
                 set: { store.send(.editTemporalWeightRuleChanged($0)) }
             ),
+            taskLadderEntryWindow: Binding(
+                get: { store.editTaskLadderEntryWindow },
+                set: { store.send(.editTaskLadderEntryWindowChanged($0)) }
+            ),
             thinkingNeeded: Binding(
                 get: { store.editThinkingNeeded },
                 set: { store.send(.editThinkingNeededChanged($0)) }

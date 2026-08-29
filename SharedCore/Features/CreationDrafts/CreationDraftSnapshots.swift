@@ -59,6 +59,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var urgency: RoutineTaskUrgency = .level2
     var pressure: RoutineTaskPressure = .none
     var temporalWeightRule: RoutineTaskTemporalWeightRule?
+    var taskLadderEntryLeadDays: Int?
     var thinkingNeeded: RoutineTaskThinkingNeeded? = RoutineTaskThinkingNeeded.none
     var imageData: Data?
     var voiceNote: RoutineVoiceNote?
@@ -138,6 +139,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         urgency = basics.urgency
         pressure = basics.pressure
         temporalWeightRule = basics.temporalWeightRule
+        taskLadderEntryLeadDays = basics.taskLadderEntryWindow.storageLeadDays
         thinkingNeeded = basics.thinkingNeeded
         imageData = basics.imageData
         voiceNote = basics.voiceNote
@@ -216,6 +218,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             || urgency != .level2
             || pressure != .none
             || temporalWeightRule != nil
+            || taskLadderEntryLeadDays != nil
             || (thinkingNeeded ?? .none) != .none
             || imageData?.isEmpty == false
             || voiceNote != nil
@@ -293,6 +296,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         state.basics.urgency = urgency
         state.basics.pressure = pressure
         state.basics.temporalWeightRule = temporalWeightRule
+        state.basics.taskLadderEntryWindow = RoutineTaskLadderEntryWindow(
+            storageLeadDays: taskLadderEntryLeadDays
+        )
         state.basics.thinkingNeeded = thinkingNeeded ?? .none
         state.basics.imageData = imageData
         state.basics.voiceNote = voiceNote
@@ -370,6 +376,14 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             state.basics.plannedDate = exactAvailabilityDate
         }
         state.basics.temporalWeightRule = sanitizedTemporalWeightRule(for: state)
+        state.basics.taskLadderEntryWindow = RoutineTaskLadderEntryResolver.sanitizedWindow(
+            state.basics.taskLadderEntryWindow,
+            scheduleMode: state.schedule.scheduleMode,
+            cadenceEnabled: state.schedule.scheduleMode.taskType == .todo
+                ? true
+                : state.basics.cadenceEnabled,
+            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
+        )
         state.synchronizeRecurrenceDraftFromLegacy()
         AddRoutineValidationEditor.refreshNameValidation(state: &state)
     }

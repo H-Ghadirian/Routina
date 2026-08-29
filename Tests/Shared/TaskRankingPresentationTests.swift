@@ -792,6 +792,48 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func taskLadderSearchExplainsWhenAFutureTaskWillEnter() throws {
+        let interval = 30
+        let anchor = try #require(
+            calendar.date(byAdding: .day, value: -1, to: referenceDate)
+        )
+        let rent = RoutineTask(
+            name: "Rent",
+            pressure: .low,
+            scheduleMode: .fixedInterval,
+            interval: Int16(interval),
+            recurrenceRule: .interval(days: interval),
+            lastDone: anchor,
+            scheduleAnchor: anchor
+        )
+        rent.taskLadderEntryWindow = .onDueDate
+        let ranking = TaskRankingPresentation.make(
+            tasks: [rent],
+            flagRules: [],
+            metric: .estimatedTime,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let search = TaskRankingSearchPresentation.make(
+            tasks: [rent],
+            organization: TaskLadderOrganization(),
+            eligibleTaskIDs: ranking.eligibleTaskIDs,
+            flagRules: [],
+            metric: .estimatedTime,
+            valueMode: .base,
+            searchText: "rent",
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(ranking.taskCount == 0)
+        #expect(search.matches.isEmpty)
+        #expect(try #require(search.outsideMatches.first).reason == "Enters Task Ladder in 29 days")
+    }
+
+    @Test
     func taskLadderOffersBaseNowAndTemporalRuleEditing() throws {
         let viewSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
@@ -808,12 +850,15 @@ struct TaskRankingPresentationTests {
         #expect(viewSource.contains("TaskTemporalWeightRuleSheet("))
         #expect(sharedEditorSource.contains("Define the value after completion and the independent due-date behavior"))
         #expect(sharedEditorSource.contains("TaskTemporalWeightSummaryCard"))
+        #expect(sharedEditorSource.contains("TaskLadderEntryWindowEditor"))
         #expect(sharedEditorSource.contains("RoutineTaskTemporalWeightTiming.allCases"))
         #expect(sharedEditorSource.contains("case .gradualBeforeDue:"))
         #expect(sharedEditorSource.contains("case .gradualWhileOverdue:"))
         #expect(!sharedEditorSource.contains(".pickerStyle(.segmented)"))
         #expect(featureSource.contains("case temporalBoundaryReached"))
         #expect(featureSource.contains("scheduleTemporalRefresh(for: state)"))
+        #expect(featureSource.contains("needsEntryWindowRefresh"))
+        #expect(featureSource.contains("RoutineTaskLadderEntryResolver.supportsEntryWindow"))
         #expect(featureSource.contains("persistTemporalWeightRule("))
         #expect(featureSource.contains("importance: importance"))
     }
@@ -1203,6 +1248,90 @@ struct TaskRankingPresentationTests {
         #expect(migrated.pressure?.timing == .gradualBeforeDue)
         #expect(migrated.pressure?.days == 7)
         #expect(!RoutineTaskTemporalWeightStorage.serialize(migrated).contains("leadDays"))
+    }
+
+    @Test
+    func taskLadderEntryWindowUsesItsBeforeDueBoundaryAcrossEveryMetric() throws {
+        let interval = 10
+        let fourDaysBeforeDueAnchor = try #require(
+            calendar.date(byAdding: .day, value: -(interval - 4), to: referenceDate)
+        )
+        let task = RoutineTask(
+            name: "Prepare filing",
+            pressure: .high,
+            taskLadderEntryWindow: .beforeDue(days: 3),
+            scheduleMode: .fixedInterval,
+            interval: Int16(interval),
+            recurrenceRule: .interval(days: interval),
+            lastDone: fourDaysBeforeDueAnchor,
+            scheduleAnchor: fourDaysBeforeDueAnchor,
+            estimatedDurationMinutes: 15
+        )
+
+        let outside = TaskRankingPresentation.make(
+            tasks: [task],
+            flagRules: [],
+            metric: .estimatedTime,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        #expect(outside.taskCount == 0)
+
+        let threeDaysBeforeDueAnchor = try #require(
+            calendar.date(byAdding: .day, value: -(interval - 3), to: referenceDate)
+        )
+        task.lastDone = threeDaysBeforeDueAnchor
+        task.scheduleAnchor = threeDaysBeforeDueAnchor
+
+        let inside = TaskRankingPresentation.make(
+            tasks: [task],
+            flagRules: [],
+            metric: .estimatedTime,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        #expect(inside.eligibleTaskIDs == [task.id])
+        #expect(inside.taskCount == 1)
+    }
+
+    @Test
+    func taskLadderConfigurationPreservesLegacyTemporalRulesAndCopiesEntryWindow() throws {
+        let task = RoutineTask(
+            name: "Compatible",
+            pressure: .low,
+            scheduleMode: .fixedInterval,
+            interval: 7,
+            recurrenceRule: .interval(days: 7)
+        )
+        let temporalRule = RoutineTaskTemporalWeightRule(
+            pressure: RoutineTaskTemporalWeightPolicy(
+                target: .high,
+                timing: .gradualBeforeDue,
+                days: 3
+            )
+        )
+        task.temporalWeightRuleStorage = RoutineTaskTemporalWeightStorage.serialize(temporalRule)
+
+        #expect(task.temporalWeightRule == temporalRule)
+        #expect(task.taskLadderEntryWindow == .throughoutCycle)
+
+        task.taskLadderEntryWindow = .onDueDate
+        #expect(task.temporalWeightRule == temporalRule)
+        #expect(task.taskLadderEntryWindow == .onDueDate)
+        #expect(
+            RoutineTaskTemporalWeightStorage.deserialize(task.temporalWeightRuleStorage)
+                == temporalRule
+        )
+
+        task.temporalWeightRule = nil
+        #expect(task.temporalWeightRule == nil)
+        #expect(task.taskLadderEntryWindow == .onDueDate)
+
+        let copy = task.detachedCopy()
+        #expect(copy.taskLadderEntryWindow == .onDueDate)
+        #expect(copy.temporalWeightRuleStorage == task.temporalWeightRuleStorage)
     }
 
     @Test

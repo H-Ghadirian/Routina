@@ -406,6 +406,63 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func saveRequestSanitizesTaskLadderEntryWindowForItsSchedule() throws {
+        let repeatingState = makeState(
+            basics: AddRoutineBasicsState(
+                routineName: "Rent",
+                taskLadderEntryWindow: .beforeDue(days: 45)
+            ),
+            schedule: AddRoutineScheduleState(
+                scheduleMode: .fixedInterval,
+                frequency: .day,
+                frequencyValue: 30,
+                recurrenceKind: .intervalDays
+            )
+        )
+        let repeatingRequest = try #require(AddRoutineSaveRequest(state: repeatingState))
+        #expect(repeatingRequest.taskLadderEntryWindow == .beforeDue(days: 30))
+
+        let gentleState = makeState(
+            basics: AddRoutineBasicsState(
+                routineName: "Reflect",
+                taskLadderEntryWindow: .onDueDate
+            ),
+            schedule: AddRoutineScheduleState(scheduleMode: .softInterval)
+        )
+        let gentleRequest = try #require(AddRoutineSaveRequest(state: gentleState))
+        #expect(gentleRequest.taskLadderEntryWindow == .throughoutCycle)
+    }
+
+    @Test
+    func creationDraftPreservesTaskLadderEntryWindow() {
+        let state = makeState(
+            basics: AddRoutineBasicsState(
+                routineName: "Tax declaration",
+                taskLadderEntryWindow: .beforeDue(days: 14)
+            ),
+            schedule: AddRoutineScheduleState(
+                scheduleMode: .fixedInterval,
+                frequency: .day,
+                frequencyValue: 30,
+                recurrenceKind: .intervalDays
+            )
+        )
+        let snapshot = AddRoutineDraftSnapshot(state: state)
+        var restored = makeState(
+            schedule: AddRoutineScheduleState(
+                scheduleMode: .fixedInterval,
+                frequency: .day,
+                frequencyValue: 30,
+                recurrenceKind: .intervalDays
+            )
+        )
+
+        snapshot.apply(to: &restored)
+
+        #expect(restored.basics.taskLadderEntryWindow == .beforeDue(days: 14))
+    }
+
+    @Test
     func deadlineDisabled_preservesTodoAllDayFlag() async {
         let deadline = makeDate("2026-04-10T08:30:00Z")
         let store = TestStore(

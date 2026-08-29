@@ -100,6 +100,7 @@ struct AddRoutineSaveRequest: Equatable {
     let urgency: RoutineTaskUrgency
     let pressure: RoutineTaskPressure
     let temporalWeightRule: RoutineTaskTemporalWeightRule?
+    let taskLadderEntryWindow: RoutineTaskLadderEntryWindow
     let thinkingNeeded: RoutineTaskThinkingNeeded
     let imageData: Data?
     let voiceNote: RoutineVoiceNote?
@@ -155,6 +156,7 @@ struct AddRoutineSaveRequest: Equatable {
         urgency: RoutineTaskUrgency,
         pressure: RoutineTaskPressure = .none,
         temporalWeightRule: RoutineTaskTemporalWeightRule? = nil,
+        taskLadderEntryWindow: RoutineTaskLadderEntryWindow = .throughoutCycle,
         thinkingNeeded: RoutineTaskThinkingNeeded = .none,
         imageData: Data? = nil,
         voiceNote: RoutineVoiceNote? = nil,
@@ -241,6 +243,14 @@ struct AddRoutineSaveRequest: Equatable {
             importance: importance,
             urgency: urgency,
             pressure: pressure,
+            maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                for: recurrenceRule
+            )
+        )
+        self.taskLadderEntryWindow = RoutineTaskLadderEntryResolver.sanitizedWindow(
+            taskLadderEntryWindow,
+            scheduleMode: scheduleMode,
+            cadenceEnabled: resolvedCadenceEnabled,
             maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
                 for: recurrenceRule
             )
@@ -399,6 +409,12 @@ struct AddRoutineSaveRequest: Equatable {
             importance: basics.importance,
             urgency: basics.urgency,
             pressure: basics.pressure,
+            maximumBeforeDueDays: recurrenceDraft.maximumTemporalWeightBeforeDueDays
+        )
+        self.taskLadderEntryWindow = RoutineTaskLadderEntryResolver.sanitizedWindow(
+            basics.taskLadderEntryWindow,
+            scheduleMode: schedule.scheduleMode,
+            cadenceEnabled: cadenceEnabled,
             maximumBeforeDueDays: recurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
         self.thinkingNeeded = basics.thinkingNeeded

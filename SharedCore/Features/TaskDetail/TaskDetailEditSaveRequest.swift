@@ -22,6 +22,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var urgency: RoutineTaskUrgency
     var pressure: RoutineTaskPressure
     var temporalWeightRule: RoutineTaskTemporalWeightRule?
+    var taskLadderEntryWindow: RoutineTaskLadderEntryWindow
     var thinkingNeeded: RoutineTaskThinkingNeeded
     var imageData: Data?
     var voiceNote: RoutineVoiceNote?
@@ -184,6 +185,12 @@ struct TaskDetailEditSaveRequestBuilder {
                 pressure: state.editPressure,
                 maximumBeforeDueDays: recurrenceDraft.maximumTemporalWeightBeforeDueDays
             ),
+            taskLadderEntryWindow: RoutineTaskLadderEntryResolver.sanitizedWindow(
+                state.editTaskLadderEntryWindow,
+                scheduleMode: scheduleMode,
+                cadenceEnabled: cadenceEnabled,
+                maximumBeforeDueDays: recurrenceDraft.maximumTemporalWeightBeforeDueDays
+            ),
             thinkingNeeded: state.editThinkingNeeded,
             imageData: state.editImageData,
             voiceNote: state.editVoiceNote,
@@ -327,6 +334,7 @@ extension TaskDetailFeature {
         updatedTask.urgency = request.urgency
         updatedTask.pressure = request.pressure
         updatedTask.temporalWeightRule = request.temporalWeightRule
+        updatedTask.taskLadderEntryWindow = request.taskLadderEntryWindow
         updatedTask.thinkingNeeded = request.thinkingNeeded
         updatedTask.color = request.color
         updatedTask.imageData = request.imageData

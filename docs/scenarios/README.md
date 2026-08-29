@@ -468,7 +468,7 @@ When the person searches from the persistent top field
 Then the result reports its group path and current metric value
 And choosing `Locate` enters the owning scope, reveals and highlights the ranked row, and does not reorder the Ladder
 
-Given a matching task is excluded by lifecycle, Blocked state, a Flag, or an unfinished prerequisite
+Given a matching task is excluded by lifecycle, Blocked state, a Flag, its configured entry window, or an unfinished prerequisite
 Then the task appears separately under `Outside Task Ladder` with the reason
 And an existing global match suppresses creation even when it is outside the active Ladder
 
@@ -642,6 +642,43 @@ And an inherited container group uses its actionable direct children's Now value
 Given a task is Gentle, cadence-free, or one-off
 When Task Ladder resolves its values
 Then no Changes over time rule changes its Base value
+
+### Repeating Due Tasks Enter Task Ladder At Their Chosen Time
+
+Area: Tasks / Task Ladder / Recurrence
+Decision links: [0692](../decisions/0692-control-when-repeating-due-tasks-enter-task-ladder.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0438](../decisions/0438-allow-early-completion-of-untimed-scheduled-routines.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskRankingPresentationTests.swift`
+- `Tests/Shared/AddRoutineFeatureTests.swift`
+- `Tests/Shared/TaskDetailEditSaveTests.swift`
+- `Tests/Shared/TaskFormMacLayoutRegressionTests.swift`
+- `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
+
+Given a repeating Due task keeps the default `Throughout cycle` choice
+When any Task Ladder metric builds its presentation
+Then a future due date alone does not exclude the task
+
+Given a repeating Due task is configured to enter a chosen number of days before due
+When it is one day outside that boundary
+Then every Task Ladder metric and count omits the task
+And explicit Task Ladder search reports when it will enter
+When the next local day reaches the boundary
+Then the cached Ladder presentation includes the task without a manual refresh
+
+Given a repeating Due task is configured to enter `On due date`
+When its due date is still in the future
+Then Task Ladder omits it even when it has the shortest Estimated time
+When the due date arrives or becomes overdue
+Then Task Ladder includes it
+
+Given a task is outside its Task Ladder entry window
+Then Home, Backlog, Planner, Calendar, Timeline, Stats, notifications, and completion behavior remain unchanged
+And an untimed scheduled occurrence can still be completed early
+
+Given an existing task stores the former direct Changes over time JSON
+When the person saves a Task Ladder entry window
+Then both the legacy temporal rule and the new entry choice remain readable and synchronized
 
 ### Mac Task Ladder Header States Each Concept Once
 

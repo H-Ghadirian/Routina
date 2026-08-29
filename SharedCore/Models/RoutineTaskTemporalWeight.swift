@@ -241,6 +241,271 @@ enum RoutineTaskTemporalWeightStorage {
     }
 }
 
+enum RoutineTaskLadderEntryWindowMode: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case throughoutCycle
+    case beforeDue
+    case onDueDate
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .throughoutCycle: return "Throughout cycle"
+        case .beforeDue: return "Before due"
+        case .onDueDate: return "On due date"
+        }
+    }
+}
+
+enum RoutineTaskLadderEntryWindow: Equatable, Hashable, Sendable {
+    case throughoutCycle
+    case beforeDue(days: Int)
+    case onDueDate
+
+    static let defaultBeforeDueDays = 7
+
+    init(storageLeadDays: Int?) {
+        guard let storageLeadDays else {
+            self = .throughoutCycle
+            return
+        }
+        self = storageLeadDays <= 0
+            ? .onDueDate
+            : .beforeDue(days: storageLeadDays)
+    }
+
+    var mode: RoutineTaskLadderEntryWindowMode {
+        switch self {
+        case .throughoutCycle: return .throughoutCycle
+        case .beforeDue: return .beforeDue
+        case .onDueDate: return .onDueDate
+        }
+    }
+
+    var storageLeadDays: Int? {
+        switch self {
+        case .throughoutCycle: return nil
+        case let .beforeDue(days): return max(days, 1)
+        case .onDueDate: return 0
+        }
+    }
+
+    func sanitized(maximumBeforeDueDays: Int? = nil) -> Self {
+        guard case let .beforeDue(days) = self else { return self }
+        let maximum = min(
+            max(maximumBeforeDueDays ?? RoutineTaskTemporalWeightRule.maximumTransitionDays, 1),
+            RoutineTaskTemporalWeightRule.maximumTransitionDays
+        )
+        return .beforeDue(days: min(max(days, 1), maximum))
+    }
+}
+
+/// A compatibility payload stored in the existing version-tolerant Task Ladder
+/// JSON field. Temporal policies keep their former top-level keys so older app
+/// versions can still read them, while newer versions also preserve entry timing.
+struct RoutineTaskLadderConfiguration: Codable, Equatable, Sendable {
+    var temporalWeightRule: RoutineTaskTemporalWeightRule?
+    var entryLeadDays: Int?
+
+    init(
+        temporalWeightRule: RoutineTaskTemporalWeightRule? = nil,
+        entryLeadDays: Int? = nil
+    ) {
+        self.temporalWeightRule = temporalWeightRule?.sanitized
+        self.entryLeadDays = entryLeadDays.map { max($0, 0) }
+    }
+
+    var isEmpty: Bool {
+        temporalWeightRule == nil && entryLeadDays == nil
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case importance
+        case urgency
+        case pressure
+        case entryLeadDays
+        case temporalWeightRule
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let wrappedRule = try container.decodeIfPresent(
+            RoutineTaskTemporalWeightRule.self,
+            forKey: .temporalWeightRule
+        )
+        let directRule = try? RoutineTaskTemporalWeightRule(from: decoder)
+        self.init(
+            temporalWeightRule: wrappedRule ?? directRule?.sanitized,
+            entryLeadDays: try container.decodeIfPresent(Int.self, forKey: .entryLeadDays)
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(temporalWeightRule?.importance, forKey: .importance)
+        try container.encodeIfPresent(temporalWeightRule?.urgency, forKey: .urgency)
+        try container.encodeIfPresent(temporalWeightRule?.pressure, forKey: .pressure)
+        try container.encodeIfPresent(entryLeadDays, forKey: .entryLeadDays)
+    }
+}
+
+enum RoutineTaskLadderConfigurationStorage {
+    private static let encoder = JSONEncoder()
+    private static let decoder = JSONDecoder()
+
+    static func serialize(_ configuration: RoutineTaskLadderConfiguration) -> String {
+        let sanitized = RoutineTaskLadderConfiguration(
+            temporalWeightRule: configuration.temporalWeightRule,
+            entryLeadDays: configuration.entryLeadDays
+        )
+        guard !sanitized.isEmpty,
+              let data = try? encoder.encode(sanitized) else {
+            return ""
+        }
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    static func deserialize(_ storage: String?) -> RoutineTaskLadderConfiguration {
+        guard let storage,
+              !storage.isEmpty,
+              let data = storage.data(using: .utf8) else {
+            return RoutineTaskLadderConfiguration()
+        }
+
+        if let configuration = try? decoder.decode(
+            RoutineTaskLadderConfiguration.self,
+            from: data
+        ), !configuration.isEmpty {
+            return RoutineTaskLadderConfiguration(
+                temporalWeightRule: configuration.temporalWeightRule,
+                entryLeadDays: configuration.entryLeadDays
+            )
+        }
+
+        return RoutineTaskLadderConfiguration(
+            temporalWeightRule: RoutineTaskTemporalWeightStorage.deserialize(storage)
+        )
+    }
+}
+
+enum RoutineTaskLadderEntryResolver {
+    static func supportsEntryWindow(
+        scheduleMode: RoutineScheduleMode,
+        cadenceEnabled: Bool
+    ) -> Bool {
+        RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
+            scheduleMode: scheduleMode,
+            cadenceEnabled: cadenceEnabled
+        )
+    }
+
+    static func supportsEntryWindow(_ task: RoutineTask) -> Bool {
+        supportsEntryWindow(
+            scheduleMode: task.scheduleMode,
+            cadenceEnabled: task.cadenceEnabled
+        )
+    }
+
+    static func sanitizedWindow(
+        _ window: RoutineTaskLadderEntryWindow,
+        scheduleMode: RoutineScheduleMode,
+        cadenceEnabled: Bool,
+        maximumBeforeDueDays: Int? = nil
+    ) -> RoutineTaskLadderEntryWindow {
+        guard supportsEntryWindow(
+            scheduleMode: scheduleMode,
+            cadenceEnabled: cadenceEnabled
+        ) else {
+            return .throughoutCycle
+        }
+        return window.sanitized(maximumBeforeDueDays: maximumBeforeDueDays)
+    }
+
+    static func sanitizedWindow(
+        _ window: RoutineTaskLadderEntryWindow,
+        for task: RoutineTask
+    ) -> RoutineTaskLadderEntryWindow {
+        sanitizedWindow(
+            window,
+            scheduleMode: task.scheduleMode,
+            cadenceEnabled: task.cadenceEnabled,
+            maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                for: task.recurrenceRule
+            )
+        )
+    }
+
+    static func isEligible(
+        _ task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        let window = sanitizedWindow(task.taskLadderEntryWindow, for: task)
+        guard window != .throughoutCycle else { return true }
+        let daysUntilDue = RoutineDateMath.daysUntilDue(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        guard daysUntilDue != Int.max else { return true }
+        switch window {
+        case .throughoutCycle:
+            return true
+        case let .beforeDue(days):
+            return daysUntilDue <= days
+        case .onDueDate:
+            return daysUntilDue <= 0
+        }
+    }
+
+    static func exclusionReason(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> String? {
+        let window = sanitizedWindow(task.taskLadderEntryWindow, for: task)
+        guard window != .throughoutCycle,
+              !isEligible(task, referenceDate: referenceDate, calendar: calendar) else {
+            return nil
+        }
+        let daysUntilDue = RoutineDateMath.daysUntilDue(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        guard daysUntilDue != Int.max else {
+            return "Outside its Task Ladder entry window"
+        }
+        let leadDays = window.storageLeadDays ?? daysUntilDue
+        let daysUntilEntry = max(daysUntilDue - leadDays, 1)
+        return daysUntilEntry == 1
+            ? "Enters Task Ladder tomorrow"
+            : "Enters Task Ladder in \(daysUntilEntry) days"
+    }
+}
+
+enum RoutineTaskLadderEntryPresentation {
+    static func title(for window: RoutineTaskLadderEntryWindow) -> String {
+        switch window {
+        case .throughoutCycle:
+            return "Throughout cycle"
+        case let .beforeDue(days):
+            return "\(days) \(days == 1 ? "day" : "days") before due"
+        case .onDueDate:
+            return "On due date"
+        }
+    }
+
+    static func detailSummary(for task: RoutineTask) -> String? {
+        let window = RoutineTaskLadderEntryResolver.sanitizedWindow(
+            task.taskLadderEntryWindow,
+            for: task
+        )
+        guard window != .throughoutCycle else { return nil }
+        return "Enters Task Ladder \(title(for: window).lowercased())"
+    }
+}
+
 struct RoutineTaskEffectiveWeights: Equatable, Sendable {
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency

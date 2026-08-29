@@ -717,6 +717,10 @@ struct TaskFormPresentationTests {
             #expect(model.visibleCompactSections(isShowingMoreDetails: false).contains(.taskLadderValues))
         }
         #expect(repeatingDue.supportsTemporalWeightValues)
+        #expect(repeatingDue.supportsTaskLadderEntryWindow)
+        #expect(!gentleRoutine.supportsTaskLadderEntryWindow)
+        #expect(!cadenceFreeRoutine.supportsTaskLadderEntryWindow)
+        #expect(!oneOffTask.supportsTaskLadderEntryWindow)
         #expect(repeatingDue.temporalWeightAvailabilityMessage == nil)
         #expect(gentleRoutine.temporalWeightAvailabilityMessage == "Choose Due in Behavior & Schedule.")
         #expect(cadenceFreeRoutine.temporalWeightAvailabilityMessage == "Choose After done or On schedule in Behavior & Schedule.")

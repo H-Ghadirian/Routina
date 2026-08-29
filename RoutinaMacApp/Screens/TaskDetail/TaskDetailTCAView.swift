@@ -403,6 +403,11 @@ struct TaskDetailTCAView: View {
                     referenceDate: referenceDate
                 )
             }
+
+            if RoutineTaskLadderEntryPresentation.detailSummary(for: store.task) != nil {
+                Divider()
+                TaskLadderEntryWindowSummary(task: store.task)
+            }
         }
     }
 

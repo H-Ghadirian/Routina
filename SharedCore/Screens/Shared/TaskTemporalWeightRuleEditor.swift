@@ -1,5 +1,107 @@
 import SwiftUI
 
+struct TaskLadderEntryWindowSummary: View {
+    let task: RoutineTask
+
+    var body: some View {
+        if let summary = RoutineTaskLadderEntryPresentation.detailSummary(for: task) {
+            Label(summary, systemImage: "list.number")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+struct TaskLadderEntryWindowEditor: View {
+    @Binding var window: RoutineTaskLadderEntryWindow
+    let maximumBeforeDueDays: Int?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            TaskTemporalWeightFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                Text("Appears in Task Ladder")
+                    .fontWeight(.medium)
+
+                Picker("Task Ladder entry window", selection: modeBinding) {
+                    ForEach(RoutineTaskLadderEntryWindowMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+
+                if case .beforeDue = window {
+                    Text("starting")
+
+                    Picker("Days before due", selection: daysBinding) {
+                        ForEach(1...maximumDays, id: \.self) { days in
+                            Text("\(days) \(days == 1 ? "day" : "days")").tag(days)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .fixedSize()
+
+                    Text("before due")
+                }
+
+                Text(".")
+            }
+            .font(.subheadline)
+
+            if window != .throughoutCycle {
+                Text("This controls when the task competes in Task Ladder. Search and early completion remain available.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var maximumDays: Int {
+        min(
+            max(maximumBeforeDueDays ?? RoutineTaskTemporalWeightRule.maximumTransitionDays, 1),
+            RoutineTaskTemporalWeightRule.maximumTransitionDays
+        )
+    }
+
+    private var modeBinding: Binding<RoutineTaskLadderEntryWindowMode> {
+        Binding(
+            get: { window.mode },
+            set: { mode in
+                switch mode {
+                case .throughoutCycle:
+                    window = .throughoutCycle
+                case .beforeDue:
+                    window = .beforeDue(
+                        days: min(
+                            RoutineTaskLadderEntryWindow.defaultBeforeDueDays,
+                            maximumDays
+                        )
+                    )
+                case .onDueDate:
+                    window = .onDueDate
+                }
+            }
+        )
+    }
+
+    private var daysBinding: Binding<Int> {
+        Binding(
+            get: {
+                guard case let .beforeDue(days) = window else {
+                    return min(RoutineTaskLadderEntryWindow.defaultBeforeDueDays, maximumDays)
+                }
+                return min(max(days, 1), maximumDays)
+            },
+            set: { window = .beforeDue(days: min(max($0, 1), maximumDays)) }
+        )
+    }
+}
+
 struct TaskTemporalWeightRuleEditor: View {
     @Binding var rule: RoutineTaskTemporalWeightRule?
     @Binding var importance: RoutineTaskImportance

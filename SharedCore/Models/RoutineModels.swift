@@ -337,8 +337,39 @@ final class RoutineTask {
     }
 
     var temporalWeightRule: RoutineTaskTemporalWeightRule? {
-        get { RoutineTaskTemporalWeightStorage.deserialize(temporalWeightRuleStorage) }
-        set { temporalWeightRuleStorage = RoutineTaskTemporalWeightStorage.serialize(newValue) }
+        get {
+            RoutineTaskLadderConfigurationStorage.deserialize(
+                temporalWeightRuleStorage
+            ).temporalWeightRule
+        }
+        set {
+            var configuration = RoutineTaskLadderConfigurationStorage.deserialize(
+                temporalWeightRuleStorage
+            )
+            configuration.temporalWeightRule = newValue
+            temporalWeightRuleStorage = RoutineTaskLadderConfigurationStorage.serialize(
+                configuration
+            )
+        }
+    }
+
+    var taskLadderEntryWindow: RoutineTaskLadderEntryWindow {
+        get {
+            RoutineTaskLadderEntryWindow(
+                storageLeadDays: RoutineTaskLadderConfigurationStorage.deserialize(
+                    temporalWeightRuleStorage
+                ).entryLeadDays
+            )
+        }
+        set {
+            var configuration = RoutineTaskLadderConfigurationStorage.deserialize(
+                temporalWeightRuleStorage
+            )
+            configuration.entryLeadDays = newValue.storageLeadDays
+            temporalWeightRuleStorage = RoutineTaskLadderConfigurationStorage.serialize(
+                configuration
+            )
+        }
     }
 
     func taskRankingOrder(
@@ -503,6 +534,7 @@ final class RoutineTask {
         urgency: RoutineTaskUrgency = .level2,
         pressure: RoutineTaskPressure = .none,
         temporalWeightRule: RoutineTaskTemporalWeightRule? = nil,
+        taskLadderEntryWindow: RoutineTaskLadderEntryWindow = .throughoutCycle,
         pressureUpdatedAt: Date? = nil,
         thinkingNeeded: RoutineTaskThinkingNeeded = .none,
         imageData: Data? = nil,
@@ -656,17 +688,27 @@ final class RoutineTask {
         self.pinnedAt = pinnedAt
         self.manualSectionOrderStorage = ""
         self.taskRankingOrderStorage = ""
-        self.temporalWeightRuleStorage = RoutineTaskTemporalWeightStorage.serialize(
-            RoutineTaskTemporalWeightResolver.sanitizedRule(
-                temporalWeightRule,
-                scheduleMode: resolvedScheduleMode,
-                cadenceEnabled: resolvedCadenceEnabled,
-                importance: importance,
-                urgency: urgency,
-                pressure: pressure,
-                maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
-                    for: resolvedRecurrenceRule
-                )
+        let maximumBeforeDueDays = RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+            for: resolvedRecurrenceRule
+        )
+        let sanitizedEntryWindow = RoutineTaskLadderEntryResolver.sanitizedWindow(
+            taskLadderEntryWindow,
+            scheduleMode: resolvedScheduleMode,
+            cadenceEnabled: resolvedCadenceEnabled,
+            maximumBeforeDueDays: maximumBeforeDueDays
+        )
+        self.temporalWeightRuleStorage = RoutineTaskLadderConfigurationStorage.serialize(
+            RoutineTaskLadderConfiguration(
+                temporalWeightRule: RoutineTaskTemporalWeightResolver.sanitizedRule(
+                    temporalWeightRule,
+                    scheduleMode: resolvedScheduleMode,
+                    cadenceEnabled: resolvedCadenceEnabled,
+                    importance: importance,
+                    urgency: urgency,
+                    pressure: pressure,
+                    maximumBeforeDueDays: maximumBeforeDueDays
+                ),
+                entryLeadDays: sanitizedEntryWindow.storageLeadDays
             )
         )
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))

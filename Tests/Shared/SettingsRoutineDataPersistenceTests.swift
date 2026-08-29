@@ -12,7 +12,7 @@ import Testing
 @MainActor
 struct SettingsRoutineDataPersistenceTests {
     @Test
-    func backupAndRestorePreservesTemporalTaskLadderRule() throws {
+    func backupAndRestorePreservesTaskLadderTimingConfiguration() throws {
         let context = makeInMemoryContext()
         let task = RoutineTask(
             name: "Monthly report",
@@ -32,6 +32,7 @@ struct SettingsRoutineDataPersistenceTests {
             pressureAtDue: .high
         )
         task.temporalWeightRule = rule
+        task.taskLadderEntryWindow = .beforeDue(days: 5)
         context.insert(task)
         try context.save()
 
@@ -46,6 +47,7 @@ struct SettingsRoutineDataPersistenceTests {
         )
 
         #expect(restoredTask.temporalWeightRule == rule)
+        #expect(restoredTask.taskLadderEntryWindow == .beforeDue(days: 5))
     }
 
     @Test

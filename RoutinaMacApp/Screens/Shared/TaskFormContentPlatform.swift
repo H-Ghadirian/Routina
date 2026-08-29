@@ -416,6 +416,14 @@ struct TaskFormContent: View {
                 usesAfterDoneLanguage: model.taskType.wrappedValue == .routine
             )
 
+            if model.supportsTaskLadderEntryWindow {
+                Divider()
+                TaskLadderEntryWindowEditor(
+                    window: model.taskLadderEntryWindow,
+                    maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays
+                )
+            }
+
             if model.taskType.wrappedValue == .routine,
                !model.supportsTemporalWeightValues,
                let message = model.temporalWeightAvailabilityMessage {

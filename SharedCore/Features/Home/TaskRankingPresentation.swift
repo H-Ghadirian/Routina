@@ -427,6 +427,12 @@ struct TaskRankingSearchPresentation: Equatable {
                 RoutineFlag.normalized(flag).map(ladderExclusionFlagIDs.contains) ?? false
             }) {
                 reason = "Hidden from Task Ladder by Flag"
+            } else if let entryReason = RoutineTaskLadderEntryResolver.exclusionReason(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) {
+                reason = entryReason
             } else {
                 reason = "Unavailable while a linked prerequisite is incomplete"
             }
@@ -608,6 +614,11 @@ struct TaskRankingPresentation: Equatable {
                 && task.todoState != .blocked
                 && !relationshipBlockedTaskIDs.contains(task.id)
                 && !isHiddenFromTaskLadder
+                && RoutineTaskLadderEntryResolver.isEligible(
+                    task,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
         }
         let eligibleTasksByID = Dictionary(
             eligibleTasks.map { ($0.id, $0) },

@@ -64,6 +64,7 @@ struct TaskDetailFeature: Reducer {
         var editUrgency: RoutineTaskUrgency = .level2
         var editPressure: RoutineTaskPressure = .none
         var editTemporalWeightRule: RoutineTaskTemporalWeightRule?
+        var editTaskLadderEntryWindow: RoutineTaskLadderEntryWindow = .throughoutCycle
         var editThinkingNeeded: RoutineTaskThinkingNeeded = .none
         var editImageData: Data?
         var editVoiceNote: RoutineVoiceNote?
@@ -416,6 +417,7 @@ struct TaskDetailFeature: Reducer {
         case editUrgencyChanged(RoutineTaskUrgency)
         case editPressureChanged(RoutineTaskPressure)
         case editTemporalWeightRuleChanged(RoutineTaskTemporalWeightRule?)
+        case editTaskLadderEntryWindowChanged(RoutineTaskLadderEntryWindow)
         case editThinkingNeededChanged(RoutineTaskThinkingNeeded)
         case editImagePicked(Data?)
         case editRemoveImageTapped
@@ -614,6 +616,17 @@ struct TaskDetailFeature: Reducer {
             baseImportance: state.editImportance,
             baseUrgency: state.editUrgency,
             basePressure: state.editPressure,
+            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
+        )
+    }
+
+    private func sanitizeEditTaskLadderEntryWindow(_ state: inout State) {
+        state.editTaskLadderEntryWindow = RoutineTaskLadderEntryResolver.sanitizedWindow(
+            state.editTaskLadderEntryWindow,
+            scheduleMode: state.editScheduleMode,
+            cadenceEnabled: state.editScheduleMode.taskType == .todo
+                ? true
+                : state.editCadenceEnabled,
             maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
     }
@@ -1546,6 +1559,11 @@ struct TaskDetailFeature: Reducer {
             sanitizeEditTemporalWeightRule(&state)
             return .none
 
+        case let .editTaskLadderEntryWindowChanged(window):
+            state.editTaskLadderEntryWindow = window
+            sanitizeEditTaskLadderEntryWindow(&state)
+            return .none
+
         case let .editThinkingNeededChanged(thinkingNeeded):
             return basicEditActionHandler().editThinkingNeededChanged(thinkingNeeded, state: &state)
 
@@ -1621,6 +1639,7 @@ struct TaskDetailFeature: Reducer {
         case let .editScheduleModeChanged(mode):
             let effect = recurrenceEditActionHandler().editScheduleModeChanged(mode, state: &state)
             sanitizeEditTemporalWeightRule(&state)
+            sanitizeEditTaskLadderEntryWindow(&state)
             return effect
 
         case let .editStepDraftChanged(value):
@@ -1757,6 +1776,7 @@ struct TaskDetailFeature: Reducer {
                 state.editHidesAssumedDoneCalendarBlock = false
             }
             sanitizeEditTemporalWeightRule(&state)
+            sanitizeEditTaskLadderEntryWindow(&state)
             return .none
 
         case let .editNudgesEnabledChanged(isEnabled):

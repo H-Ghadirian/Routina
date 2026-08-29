@@ -619,6 +619,7 @@ extension TaskDetailFeature {
             urgency: request.urgency,
             pressure: request.pressure,
             temporalWeightRule: request.temporalWeightRule,
+            taskLadderEntryWindow: request.taskLadderEntryWindow,
             thinkingNeeded: request.thinkingNeeded,
             imageData: request.imageData,
             voiceNote: request.voiceNote,
@@ -673,6 +674,7 @@ extension TaskDetailFeature {
         urgency: RoutineTaskUrgency,
         pressure: RoutineTaskPressure,
         temporalWeightRule: RoutineTaskTemporalWeightRule?,
+        taskLadderEntryWindow: RoutineTaskLadderEntryWindow,
         thinkingNeeded: RoutineTaskThinkingNeeded,
         imageData: Data?,
         voiceNote: RoutineVoiceNote?,
@@ -753,6 +755,16 @@ extension TaskDetailFeature {
                     importance: importance,
                     urgency: urgency,
                     pressure: pressure,
+                    maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                        for: recurrenceRule
+                    )
+                )
+                task.taskLadderEntryWindow = RoutineTaskLadderEntryResolver.sanitizedWindow(
+                    taskLadderEntryWindow,
+                    scheduleMode: scheduleMode,
+                    cadenceEnabled: scheduleMode.taskType == .todo
+                        ? true
+                        : cadenceEnabled,
                     maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
                         for: recurrenceRule
                     )

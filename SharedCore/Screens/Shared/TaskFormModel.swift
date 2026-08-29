@@ -55,6 +55,7 @@ struct TaskFormModel {
     var urgency: Binding<RoutineTaskUrgency>
     var pressure: Binding<RoutineTaskPressure>
     var temporalWeightRule: Binding<RoutineTaskTemporalWeightRule?> = .constant(nil)
+    var taskLadderEntryWindow: Binding<RoutineTaskLadderEntryWindow> = .constant(.throughoutCycle)
     var thinkingNeeded: Binding<RoutineTaskThinkingNeeded> = .constant(.none)
 
     // MARK: Effort
@@ -626,6 +627,13 @@ extension TaskFormModel {
         )
     }
 
+    var supportsTaskLadderEntryWindow: Bool {
+        RoutineTaskLadderEntryResolver.supportsEntryWindow(
+            scheduleMode: scheduleMode.wrappedValue,
+            cadenceEnabled: cadenceEnabled.wrappedValue
+        )
+    }
+
     var temporalWeightAvailabilityMessage: String? {
         guard !supportsTemporalWeightValues else { return nil }
         let currentMode = scheduleMode.wrappedValue
@@ -765,7 +773,8 @@ extension TaskFormModel {
             || urgency.wrappedValue != .level2
             || pressure.wrappedValue != .none
             || thinkingNeeded.wrappedValue != .none
-            || temporalWeightRule.wrappedValue != nil {
+            || temporalWeightRule.wrappedValue != nil
+            || taskLadderEntryWindow.wrappedValue != .throughoutCycle {
             sections.insert(.taskLadderValues)
         }
         if estimatedDurationMinutes.wrappedValue != nil

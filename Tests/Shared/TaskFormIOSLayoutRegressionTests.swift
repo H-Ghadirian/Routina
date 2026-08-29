@@ -190,6 +190,8 @@ struct TaskFormIOSLayoutRegressionTests {
         #expect(formValuesSection.contains("urgency: model.urgency"))
         #expect(formValuesSection.contains("pressure: model.pressure"))
         #expect(formValuesSection.contains("TaskTemporalThinkingSentenceEditor("))
+        #expect(formValuesSection.contains("TaskLadderEntryWindowEditor("))
+        #expect(formValuesSection.contains("model.supportsTaskLadderEntryWindow"))
         #expect(formValuesSection.contains("maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays"))
         #expect(formValuesSection.contains("model.temporalWeightAvailabilityMessage"))
         #expect(!formValuesSection.contains("RoutinaGlassSegmentedControl"))

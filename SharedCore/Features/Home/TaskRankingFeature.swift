@@ -464,12 +464,17 @@ struct TaskRankingFeature {
     }
 
     private func scheduleTemporalRefresh(for state: State) -> Effect<Action> {
-        guard state.valueMode == .now,
-              state.metric.supportsTemporalWeight,
-              state.tasks.contains(where: {
+        let needsTemporalWeightRefresh = state.valueMode == .now
+            && state.metric.supportsTemporalWeight
+            && state.tasks.contains(where: {
                   RoutineTaskTemporalWeightResolver.supportsTemporalWeight($0)
                       && $0.temporalWeightRule != nil
-              }),
+              })
+        let needsEntryWindowRefresh = state.tasks.contains(where: {
+            RoutineTaskLadderEntryResolver.supportsEntryWindow($0)
+                && $0.taskLadderEntryWindow != .throughoutCycle
+        })
+        guard needsTemporalWeightRefresh || needsEntryWindowRefresh,
               let nextDay = calendar.date(
                   byAdding: .day,
                   value: 1,

@@ -27,6 +27,7 @@ struct AddRoutineFeature: Reducer {
         case urgencyChanged(RoutineTaskUrgency)
         case pressureChanged(RoutineTaskPressure)
         case temporalWeightRuleChanged(RoutineTaskTemporalWeightRule?)
+        case taskLadderEntryWindowChanged(RoutineTaskLadderEntryWindow)
         case thinkingNeededChanged(RoutineTaskThinkingNeeded)
         case imagePicked(Data?)
         case removeImageTapped
@@ -182,6 +183,17 @@ struct AddRoutineFeature: Reducer {
             baseImportance: state.basics.importance,
             baseUrgency: state.basics.urgency,
             basePressure: state.basics.pressure,
+            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
+        )
+    }
+
+    private func sanitizeTaskLadderEntryWindow(state: inout State) {
+        state.basics.taskLadderEntryWindow = RoutineTaskLadderEntryResolver.sanitizedWindow(
+            state.basics.taskLadderEntryWindow,
+            scheduleMode: state.schedule.scheduleMode,
+            cadenceEnabled: state.schedule.scheduleMode.taskType == .todo
+                ? true
+                : state.basics.cadenceEnabled,
             maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
     }
@@ -416,6 +428,11 @@ struct AddRoutineFeature: Reducer {
             sanitizeTemporalWeightRule(state: &state)
             return .none
 
+        case let .taskLadderEntryWindowChanged(window):
+            state.basics.taskLadderEntryWindow = window
+            sanitizeTaskLadderEntryWindow(state: &state)
+            return .none
+
         case let .thinkingNeededChanged(thinkingNeeded):
             AddRoutineBasicsEditor.setThinkingNeeded(
                 thinkingNeeded,
@@ -464,6 +481,7 @@ struct AddRoutineFeature: Reducer {
                 state.basics.taskLadderGroupEnabled = false
             }
             sanitizeTemporalWeightRule(state: &state)
+            sanitizeTaskLadderEntryWindow(state: &state)
             return .none
 
         case let .taskLadderGroupEnabledChanged(isEnabled):
@@ -588,6 +606,7 @@ struct AddRoutineFeature: Reducer {
             }
             enforcePlanningRules(state: &state)
             sanitizeTemporalWeightRule(state: &state)
+            sanitizeTaskLadderEntryWindow(state: &state)
             return .none
 
         case let .stepDraftChanged(value):
@@ -827,6 +846,7 @@ struct AddRoutineFeature: Reducer {
                 state.schedule.hidesAssumedDoneCalendarBlock = false
             }
             sanitizeTemporalWeightRule(state: &state)
+            sanitizeTaskLadderEntryWindow(state: &state)
             return .none
 
         case let .nudgesEnabledChanged(isEnabled):

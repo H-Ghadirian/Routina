@@ -19,6 +19,7 @@ struct AddRoutineBasicsState: Equatable {
     var urgency: RoutineTaskUrgency = .level2
     var pressure: RoutineTaskPressure = .none
     var temporalWeightRule: RoutineTaskTemporalWeightRule?
+    var taskLadderEntryWindow: RoutineTaskLadderEntryWindow = .throughoutCycle
     var thinkingNeeded: RoutineTaskThinkingNeeded = .none
     var imageData: Data?
     var voiceNote: RoutineVoiceNote?

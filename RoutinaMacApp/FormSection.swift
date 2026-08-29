@@ -159,7 +159,8 @@ extension TaskFormModel {
             || urgency.wrappedValue != .level2
             || pressure.wrappedValue != .none
             || thinkingNeeded.wrappedValue != .none
-            || temporalWeightRule.wrappedValue != nil {
+            || temporalWeightRule.wrappedValue != nil
+            || taskLadderEntryWindow.wrappedValue != .throughoutCycle {
             sections.insert(.taskLadderValues)
         }
         if estimatedDurationMinutes.wrappedValue != nil
@@ -248,7 +249,8 @@ extension AddRoutineFeature.State {
             || basics.urgency != .level2
             || basics.pressure != .none
             || basics.thinkingNeeded != .none
-            || basics.temporalWeightRule != nil {
+            || basics.temporalWeightRule != nil
+            || basics.taskLadderEntryWindow != .throughoutCycle {
             sections.insert(.taskLadderValues)
         }
         if basics.estimatedDurationMinutes != nil || basics.storyPoints != nil || basics.focusModeEnabled {

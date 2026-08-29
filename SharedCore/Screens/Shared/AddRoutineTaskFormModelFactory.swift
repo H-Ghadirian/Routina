@@ -105,6 +105,10 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.basics.temporalWeightRule },
                 send: AddRoutineFeature.Action.temporalWeightRuleChanged
             ),
+            taskLadderEntryWindow: binding(
+                get: { store.basics.taskLadderEntryWindow },
+                send: AddRoutineFeature.Action.taskLadderEntryWindowChanged
+            ),
             thinkingNeeded: binding(
                 get: { store.basics.thinkingNeeded },
                 send: AddRoutineFeature.Action.thinkingNeededChanged

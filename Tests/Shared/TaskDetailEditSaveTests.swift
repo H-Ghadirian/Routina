@@ -61,6 +61,54 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveRequestLoadsPersistsAndCapsTaskLadderEntryWindow() throws {
+        let task = RoutineTask(
+            name: "Rent",
+            taskLadderEntryWindow: .onDueDate,
+            scheduleMode: .fixedInterval,
+            interval: 30,
+            recurrenceRule: .interval(days: 30)
+        )
+        var state = TaskDetailFeature.State(task: task)
+        let feature = TaskDetailFeature()
+
+        withDependencies {
+            setTestDateDependencies(&$0)
+        } operation: {
+            feature.syncEditFormFromTask(&state)
+        }
+        #expect(state.editTaskLadderEntryWindow == RoutineTaskLadderEntryWindow.onDueDate)
+
+        state.editTaskLadderEntryWindow = RoutineTaskLadderEntryWindow.beforeDue(days: 45)
+        let request = try #require(
+            TaskDetailEditSaveRequestBuilder(
+                now: { makeDate("2026-03-20T10:00:00Z") },
+                calendar: makeTestCalendar(),
+                matrixPriority: { importance, urgency in
+                    AddRoutinePriorityMatrix.priority(
+                        importance: importance,
+                        urgency: urgency
+                    )
+                }
+            ).build(state: &state)
+        )
+
+        #expect(
+            request.taskLadderEntryWindow
+                == RoutineTaskLadderEntryWindow.beforeDue(days: 30)
+        )
+        withDependencies {
+            setTestDateDependencies(&$0)
+        } operation: {
+            feature.applyEditSaveRequest(request, to: &state)
+        }
+        #expect(
+            state.task.taskLadderEntryWindow
+                == RoutineTaskLadderEntryWindow.beforeDue(days: 30)
+        )
+    }
+
+    @Test
     func editAllDayChanged_forTodoWithoutDeadlineDoesNotCreateDeadline() async {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
