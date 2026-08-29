@@ -53,32 +53,24 @@ struct TaskDetailToolbarContent: ToolbarContent {
                 }
 
                 if optionalDetailActionCount > 0 {
-                    ControlGroup {
-                        Button {
-                            store.send(.setEditSheet(true))
+                    if showsCollapsedTaskTitle {
+                        Menu {
+                            editTaskButton
+                            addDetailButton
                         } label: {
-                            Image(systemName: "square.and.pencil")
-                                .frame(minWidth: 32, minHeight: 32)
-                                .contentShape(Rectangle())
+                            Label("Edit task details", systemImage: "square.and.pencil")
                         }
-                        .accessibilityLabel("Edit task")
-
-                        Button {
-                            store.send(.setAddDetailChooserPresented(true))
+                        .accessibilityLabel("Edit task details")
+                        .accessibilityIdentifier("taskDetail.collapsedEditMenu")
+                    } else {
+                        ControlGroup {
+                            editTaskButton
+                            addDetailButton
                         } label: {
-                            Image(systemName: "chevron.down")
-                                .font(.caption.weight(.bold))
-                                .frame(minWidth: 44, minHeight: 44)
-                                .contentShape(Rectangle())
+                            Label("Edit task details", systemImage: "square.and.pencil")
                         }
-                        .accessibilityLabel("Add a detail")
-                        .accessibilityValue(
-                            optionalDetailActionCount == 1
-                                ? "1 available option"
-                                : "\(optionalDetailActionCount) available options"
-                        )
+                        .accessibilityElement(children: .contain)
                     }
-                    .accessibilityElement(children: .contain)
                 } else {
                     Button {
                         store.send(.setEditSheet(true))
@@ -124,6 +116,34 @@ struct TaskDetailToolbarContent: ToolbarContent {
         }
     }
 
+    private var editTaskButton: some View {
+        Button {
+            store.send(.setEditSheet(true))
+        } label: {
+            Label("Edit task", systemImage: "square.and.pencil")
+                .frame(minWidth: 32, minHeight: 32)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Edit task")
+    }
+
+    private var addDetailButton: some View {
+        Button {
+            store.send(.setAddDetailChooserPresented(true))
+        } label: {
+            Label("Add a detail", systemImage: "chevron.down")
+                .font(.caption.weight(.bold))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Add a detail")
+        .accessibilityValue(
+            optionalDetailActionCount == 1
+                ? "1 available option"
+                : "\(optionalDetailActionCount) available options"
+        )
+    }
+
     private var collapsedTaskTitleLabel: some View {
         Text(RoutineTask.trimmedName(store.task.name) ?? "Task")
             .font(.subheadline.weight(.semibold))
@@ -133,5 +153,6 @@ struct TaskDetailToolbarContent: ToolbarContent {
             .transition(.opacity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Task: \(RoutineTask.trimmedName(store.task.name) ?? "Untitled task")")
+        .accessibilityIdentifier("taskDetail.collapsedTitle")
     }
 }

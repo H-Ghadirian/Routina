@@ -1121,6 +1121,7 @@ Coverage:
 - `Tests/Shared/TaskDetailDateMetadataPresentationTests.swift`
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
 - `Tests/Shared/TaskDetailPresentationRoutingSupportTests.swift`
+- `Tests/iOSUI/RoutinaUITests.swift`
 
 Given an active todo is open on today's date in iOS Task Details
 Then its header shows Status without a redundant `Selected / Today` badge
@@ -1147,6 +1148,8 @@ When the full header title scrolls above the detail viewport
 Then a text-only task name appears in the navigation principal without an emoji or fixed width cap
 When the person continues scrolling until Calendar and later detail sections reach the top of the viewport
 Then that navigation title remains visible
+And the collapsed-title state replaces the native Edit/Add-detail group with a labeled pencil menu that opens both Edit task and Add a detail
+And that explicit compact trigger never becomes an empty, inert button
 And scrolling the full title back into view hides that navigation title again
 And no scrolling `Add more details` card appears after the visible task content
 And the grouped Edit chevron presents the currently available actions in an `Add a detail` sheet

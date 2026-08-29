@@ -70,6 +70,48 @@ struct RoutinaUITests {
 
     @MainActor
     @Test
+    func taskDetailEditGroupRemainsActionableAfterCollapsedTitleAppears() {
+        let app = makeApp()
+        app.launch()
+        #expect(app.wait(for: .runningForeground, timeout: 10))
+
+        let routineName = "Prepare product screenshots \(UUID().uuidString.prefix(6))"
+        addRoutine(named: String(routineName), in: app)
+
+        let row = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", String(routineName))
+        ).firstMatch
+        row.tap()
+
+        let addDetailButton = app.buttons["Add a detail"]
+        #expect(addDetailButton.waitForExistence(timeout: 10))
+
+        let calendarButton = app.buttons["Calendar"]
+        #expect(calendarButton.waitForExistence(timeout: 5))
+        calendarButton.tap()
+
+        let detailScrollView = app.scrollViews.firstMatch
+        #expect(detailScrollView.waitForExistence(timeout: 5))
+
+        let collapsedTitle = app.descendants(matching: .any)["taskDetail.collapsedTitle"]
+        for _ in 0..<4 where !collapsedTitle.exists {
+            detailScrollView.swipeUp()
+        }
+        #expect(collapsedTitle.waitForExistence(timeout: 5))
+
+        let adaptiveEditGroup = app.descendants(matching: .any)["taskDetail.collapsedEditMenu"]
+        #expect(adaptiveEditGroup.waitForExistence(timeout: 5))
+
+        adaptiveEditGroup.tap()
+        #expect(app.buttons["Edit task"].waitForExistence(timeout: 5))
+        #expect(app.buttons["Add a detail"].waitForExistence(timeout: 5))
+        app.buttons["Add a detail"].tap()
+
+        #expect(app.navigationBars["Add a detail"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    @Test
     func timelineTaskDetailAddDetailChevronOpensChooser() {
         let app = makeApp()
         app.launch()
@@ -174,6 +216,11 @@ struct RoutinaUITests {
         let addRoutineButton = homeAddRoutineButton(in: app)
         #expect(addRoutineButton.waitForExistence(timeout: 10))
         addRoutineButton.tap()
+
+        let createTaskButton = app.buttons["Create Task"].firstMatch
+        if createTaskButton.waitForExistence(timeout: 2) {
+            createTaskButton.tap()
+        }
 
         let fullEditorNameField = app.textFields["Task name"]
         if fullEditorNameField.waitForExistence(timeout: 2) {
