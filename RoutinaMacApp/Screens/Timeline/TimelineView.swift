@@ -127,6 +127,7 @@ struct TimelineView: View {
     private var noteAttachments: [RoutineNoteAttachment] { dataSnapshot.noteAttachments }
     private var focusSessions: [FocusSession] { dataSnapshot.focusSessions }
     private var sprintFocusSessions: [SprintFocusSessionRecord] { dataSnapshot.sprintFocusSessions }
+    private var focusSessionEvents: [FocusSessionActionEvent] { dataSnapshot.focusSessionEvents }
     private var boardSprints: [BoardSprintRecord] { dataSnapshot.boardSprints }
     private var sleepSessions: [SleepSession] { dataSnapshot.sleepSessions }
     private var awaySessions: [AwaySession] { dataSnapshot.awaySessions }
@@ -159,6 +160,7 @@ struct TimelineView: View {
             notes: isNotesEnabled ? notes : [],
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
+            focusSessionEvents: focusSessionEvents,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],

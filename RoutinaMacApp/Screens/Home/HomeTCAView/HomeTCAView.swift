@@ -2,6 +2,11 @@ import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
+private let homeFocusPauseResumeActionPredicate = #Predicate<RoutinaDeviceActionLog> { log in
+    log.entityRawValue == "focusSession"
+        && (log.actionRawValue == "paused" || log.actionRawValue == "resumed")
+}
+
 final class HomeCollapsedTagTaskListSectionIDsCache: ObservableObject {
     private var cachedStorage: String?
     private var cachedIDs: Set<String> = []
@@ -385,6 +390,11 @@ struct HomeTCAView: View {
     @FocusState var isMacTaskSourceListFocused: Bool
     @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
     @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query(
+        filter: homeFocusPauseResumeActionPredicate,
+        sort: \RoutinaDeviceActionLog.timestamp,
+        order: .reverse
+    ) var focusSessionActionLogs: [RoutinaDeviceActionLog]
     @Query(
         filter: #Predicate<FocusSession> { session in
             session.completedAt == nil && session.abandonedAt == nil

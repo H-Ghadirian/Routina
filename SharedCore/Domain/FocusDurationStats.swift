@@ -161,6 +161,7 @@ enum FocusDurationStats {
         for range: DoneChartRange,
         sessions: [FocusSession],
         sprintSessions: [SprintFocusSessionRecord] = [],
+        focusSessionEvents: [FocusSessionActionEvent] = [],
         tasks: [RoutineTask] = [],
         boardSprints: [BoardSprintRecord] = [],
         earliestActivityDate: Date? = nil,
@@ -170,6 +171,9 @@ enum FocusDurationStats {
         let canonicalSessions = FocusStatsSessionCanonicalization.canonicalSessions(
             taskSessions: sessions,
             sprintSessions: sprintSessions
+        )
+        let eventsBySessionID = FocusActivityIntervalResolver.eventsBySessionID(
+            focusSessionEvents
         )
         let effectiveReferenceDate = range.referenceDate(relativeTo: referenceDate)
         let endDate = calendar.startOfDay(for: effectiveReferenceDate)
@@ -197,20 +201,18 @@ enum FocusDurationStats {
         var contributionsByDay: [Date: [String: FocusContributionAccumulator]] = [:]
 
         canonicalSessions.taskSessions.forEach { session in
-            guard let contribution = focusContribution(
+            let intervals = FocusActivityIntervalResolver.intervals(
                 for: session,
-                referenceDate: referenceDate,
-                calendar: calendar
-            ) else {
-                return
-            }
-            let day = contribution.day
-            guard day >= startDate, day <= endDate else { return }
-
-            let seconds = contribution.seconds
-            guard seconds > 0 else { return }
-
-            secondsByDay[day, default: 0] += seconds
+                events: eventsBySessionID[session.id] ?? [],
+                referenceDate: referenceDate
+            )
+            let slicesByDay = Dictionary(
+                grouping: FocusActivityIntervalResolver.daySlices(
+                    for: intervals,
+                    calendar: calendar
+                ),
+                by: \FocusActivityDaySlice.day
+            )
 
             let taskID = session.taskID
             let title: String
@@ -235,37 +237,47 @@ enum FocusDurationStats {
                 contributionTaskID = taskID
             }
 
-            var accumulator = contributionsByDay[day, default: [:]][key]
-                ?? FocusContributionAccumulator(taskID: contributionTaskID, title: title)
-            accumulator.seconds += seconds
-            accumulator.sessionCount += 1
-            contributionsByDay[day, default: [:]][key] = accumulator
+            for (day, slices) in slicesByDay where day >= startDate && day <= endDate {
+                let seconds = slices.reduce(0) { $0 + $1.durationSeconds }
+                guard seconds > 0 else { continue }
+
+                secondsByDay[day, default: 0] += seconds
+                var accumulator = contributionsByDay[day, default: [:]][key]
+                    ?? FocusContributionAccumulator(taskID: contributionTaskID, title: title)
+                accumulator.seconds += seconds
+                accumulator.sessionCount += 1
+                contributionsByDay[day, default: [:]][key] = accumulator
+            }
         }
 
         canonicalSessions.sprintSessions.forEach { session in
-            guard let contribution = focusContribution(
+            let intervals = FocusActivityIntervalResolver.intervals(
                 for: session,
-                referenceDate: referenceDate,
-                calendar: calendar
-            ) else {
-                return
-            }
-            let day = contribution.day
-            guard day >= startDate, day <= endDate else { return }
-
-            let seconds = contribution.seconds
-            guard seconds > 0 else { return }
-
-            secondsByDay[day, default: 0] += seconds
+                events: eventsBySessionID[session.id] ?? [],
+                referenceDate: referenceDate
+            )
+            let slicesByDay = Dictionary(
+                grouping: FocusActivityIntervalResolver.daySlices(
+                    for: intervals,
+                    calendar: calendar
+                ),
+                by: \FocusActivityDaySlice.day
+            )
 
             let title = sprintTitlesByID[session.sprintID].flatMap { $0.isEmpty ? nil : $0 }
                 ?? "Board focus"
             let key = "sprint-\(session.sprintID.uuidString)"
-            var accumulator = contributionsByDay[day, default: [:]][key]
-                ?? FocusContributionAccumulator(taskID: nil, title: title)
-            accumulator.seconds += seconds
-            accumulator.sessionCount += 1
-            contributionsByDay[day, default: [:]][key] = accumulator
+            for (day, slices) in slicesByDay where day >= startDate && day <= endDate {
+                let seconds = slices.reduce(0) { $0 + $1.durationSeconds }
+                guard seconds > 0 else { continue }
+
+                secondsByDay[day, default: 0] += seconds
+                var accumulator = contributionsByDay[day, default: [:]][key]
+                    ?? FocusContributionAccumulator(taskID: nil, title: title)
+                accumulator.seconds += seconds
+                accumulator.sessionCount += 1
+                contributionsByDay[day, default: [:]][key] = accumulator
+            }
         }
 
         return (0..<dayCount).compactMap { dayOffset in
@@ -435,87 +447,6 @@ enum FocusDurationStats {
         default:
             return calendar.startOfDay(for: date)
         }
-    }
-
-    private static func focusContribution(
-        for session: FocusSession,
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> (day: Date, seconds: TimeInterval)? {
-        switch session.state {
-        case .completed:
-            guard let daySource = session.completedAt ?? session.startedAt else {
-                return nil
-            }
-            return (
-                day: calendar.startOfDay(for: daySource),
-                seconds: session.actualDurationSeconds
-            )
-
-        case .active:
-            let day = calendar.startOfDay(for: referenceDate)
-            return (
-                day: day,
-                seconds: activeFocusSecondsOnReferenceDay(
-                    startedAt: session.startedAt,
-                    pausedAt: session.pausedAt,
-                    activeSeconds: session.activeDurationSeconds(at: referenceDate),
-                    referenceDate: referenceDate,
-                    calendar: calendar
-                )
-            )
-
-        case .abandoned:
-            return nil
-        }
-    }
-
-    private static func focusContribution(
-        for session: SprintFocusSessionRecord,
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> (day: Date, seconds: TimeInterval)? {
-        if let stoppedAt = session.stoppedAt {
-            return (
-                day: calendar.startOfDay(for: stoppedAt),
-                seconds: session.activeDurationSeconds(at: referenceDate)
-            )
-        }
-
-        return (
-            day: calendar.startOfDay(for: referenceDate),
-            seconds: activeFocusSecondsOnReferenceDay(
-                startedAt: session.startedAt,
-                pausedAt: session.pausedAt,
-                activeSeconds: session.activeDurationSeconds(at: referenceDate),
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        )
-    }
-
-    private static func activeFocusSecondsOnReferenceDay(
-        startedAt: Date?,
-        pausedAt: Date?,
-        activeSeconds: TimeInterval,
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> TimeInterval {
-        guard let startedAt, startedAt <= referenceDate else {
-            return 0
-        }
-
-        let dayStart = calendar.startOfDay(for: referenceDate)
-        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart),
-              startedAt < dayEnd else {
-            return 0
-        }
-
-        let endedAt = min(pausedAt ?? referenceDate, referenceDate)
-        let dayRangeStart = max(startedAt, dayStart)
-        let dayRangeEnd = min(endedAt, referenceDate)
-        let wallClockSecondsOnDay = max(0, dayRangeEnd.timeIntervalSince(dayRangeStart))
-        return min(max(0, activeSeconds), wallClockSecondsOnDay)
     }
 
     private static func orderedContributions(

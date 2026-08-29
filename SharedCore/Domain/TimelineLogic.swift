@@ -480,6 +480,7 @@ enum TimelineLogic {
         notes: [RoutineNote] = [],
         focusSessions: [FocusSession] = [],
         sprintFocusSessions: [SprintFocusSessionRecord] = [],
+        focusSessionEvents: [FocusSessionActionEvent] = [],
         boardSprints: [BoardSprintRecord] = [],
         sleepSessions: [SleepSession] = [],
         placeCheckInSessions: [PlaceCheckInSession] = [],
@@ -672,16 +673,17 @@ enum TimelineLogic {
             )
         }
 
-        let focusEntries = focusSessions.compactMap { session -> TimelineEntry? in
+        let focusEventsBySessionID = FocusActivityIntervalResolver.eventsBySessionID(
+            focusSessionEvents
+        )
+        let focusEntries = focusSessions.flatMap { session -> [TimelineEntry] in
             guard contentFilterType == .all || contentFilterType == .focus,
                   mediaFilter == .all,
                   session.state != .abandoned,
                   let startedAt = session.startedAt
             else {
-                return nil
+                return []
             }
-
-            if let cutoff, startedAt < cutoff { return nil }
 
             let task = session.isTaskFocus ? lookup[session.taskID] : nil
             let title: String
@@ -719,47 +721,84 @@ enum TimelineLogic {
             }
 
             let currentTaskLadderValues = task.flatMap { currentTaskLadderValuesByTaskID[$0.id] }
-
-            return TimelineEntry(
-                id: session.id,
-                taskID: entryTaskID,
-                timestamp: startedAt,
-                startTimestamp: startedAt,
-                endTimestamp: session.finishedAt,
-                taskName: title,
-                taskEmoji: emoji,
-                tags: tags,
-                flags: task?.flags ?? [],
-                importance: importance,
-                urgency: urgency,
-                currentImportance: currentTaskLadderValues?.importance,
-                currentUrgency: currentTaskLadderValues?.urgency,
-                currentPressure: currentTaskLadderValues?.pressure ?? .none,
-                thinkingNeeded: task?.thinkingNeeded ?? .none,
-                estimatedDurationMinutes: task?.estimatedDurationMinutes,
-                hasTaskLadderValues: task != nil,
-                isOneOff: isOneOff,
-                kind: .completed,
-                entryType: .focus,
-                durationSeconds: session.activeDurationSeconds(at: now),
-                activityTitle: focusActivityTitle(for: session)
+            let intervals = FocusActivityIntervalResolver.intervals(
+                for: session,
+                events: focusEventsBySessionID[session.id] ?? [],
+                referenceDate: now
             )
+            var daySlices = FocusActivityIntervalResolver.daySlices(
+                for: intervals,
+                calendar: calendar
+            )
+            if daySlices.isEmpty,
+               session.state == .active,
+               startedAt <= now {
+                daySlices = [
+                    FocusActivityDaySlice(
+                        sessionID: session.id,
+                        day: calendar.startOfDay(for: startedAt),
+                        startedAt: startedAt,
+                        endedAt: startedAt,
+                        isOngoing: !session.isPaused
+                    )
+                ]
+            }
+            let firstDay = daySlices.first?.day
+            let slicesByDay = Dictionary(grouping: daySlices, by: \FocusActivityDaySlice.day)
+
+            return slicesByDay.keys.sorted().compactMap { day in
+                guard let slices = slicesByDay[day]?.sorted(by: { $0.startedAt < $1.startedAt }),
+                      let firstSlice = slices.first,
+                      let lastSlice = slices.last else {
+                    return nil
+                }
+                if let cutoff, day < cutoff { return nil }
+                let duration = slices.reduce(0) { $0 + $1.durationSeconds }
+                let isOngoing = slices.contains(where: \FocusActivityDaySlice.isOngoing)
+
+                return TimelineEntry(
+                    id: FocusActivityIntervalResolver.timelineEntryID(
+                        sessionID: session.id,
+                        day: day,
+                        usesOriginalSessionID: day == firstDay
+                    ),
+                    taskID: entryTaskID,
+                    timestamp: firstSlice.startedAt,
+                    startTimestamp: firstSlice.startedAt,
+                    endTimestamp: isOngoing ? nil : lastSlice.endedAt,
+                    taskName: title,
+                    taskEmoji: emoji,
+                    tags: tags,
+                    flags: task?.flags ?? [],
+                    importance: importance,
+                    urgency: urgency,
+                    currentImportance: currentTaskLadderValues?.importance,
+                    currentUrgency: currentTaskLadderValues?.urgency,
+                    currentPressure: currentTaskLadderValues?.pressure ?? .none,
+                    thinkingNeeded: task?.thinkingNeeded ?? .none,
+                    estimatedDurationMinutes: task?.estimatedDurationMinutes,
+                    hasTaskLadderValues: task != nil,
+                    isOneOff: isOneOff,
+                    kind: .completed,
+                    entryType: .focus,
+                    durationSeconds: duration,
+                    activityTitle: focusActivityTitle(for: session)
+                )
+            }
         }
 
         let sprintLookup = Dictionary(
             boardSprints.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
-        let sprintFocusEntries = sprintFocusSessions.compactMap { session -> TimelineEntry? in
+        let sprintFocusEntries = sprintFocusSessions.flatMap { session -> [TimelineEntry] in
             guard contentFilterType == .all || contentFilterType == .focus,
                   mediaFilter == .all
             else {
-                return nil
+                return []
             }
 
             let startedAt = session.startedAt
-            if let cutoff, startedAt < cutoff { return nil }
-
             let sprintTitle = sprintLookup[session.sprintID]?.title
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             let title = if let sprintTitle, !sprintTitle.isEmpty {
@@ -768,23 +807,61 @@ enum TimelineLogic {
                 "Board focus"
             }
             let stoppedAt = session.stoppedAt
-            let duration = session.activeDurationSeconds(at: now)
-
-            return TimelineEntry(
-                id: session.id,
-                taskID: nil,
-                timestamp: startedAt,
-                startTimestamp: startedAt,
-                endTimestamp: stoppedAt,
-                taskName: title,
-                taskEmoji: "🎯",
-                tags: [],
-                isOneOff: false,
-                kind: .completed,
-                entryType: .focus,
-                durationSeconds: duration,
-                activityTitle: stoppedAt == nil ? "Active board focus" : "Board focus"
+            let intervals = FocusActivityIntervalResolver.intervals(
+                for: session,
+                events: focusEventsBySessionID[session.id] ?? [],
+                referenceDate: now
             )
+            var daySlices = FocusActivityIntervalResolver.daySlices(
+                for: intervals,
+                calendar: calendar
+            )
+            if daySlices.isEmpty,
+               session.isActive,
+               startedAt <= now {
+                daySlices = [
+                    FocusActivityDaySlice(
+                        sessionID: session.id,
+                        day: calendar.startOfDay(for: startedAt),
+                        startedAt: startedAt,
+                        endedAt: startedAt,
+                        isOngoing: !session.isPaused
+                    )
+                ]
+            }
+            let firstDay = daySlices.first?.day
+            let slicesByDay = Dictionary(grouping: daySlices, by: \FocusActivityDaySlice.day)
+
+            return slicesByDay.keys.sorted().compactMap { day in
+                guard let slices = slicesByDay[day]?.sorted(by: { $0.startedAt < $1.startedAt }),
+                      let firstSlice = slices.first,
+                      let lastSlice = slices.last else {
+                    return nil
+                }
+                if let cutoff, day < cutoff { return nil }
+                let duration = slices.reduce(0) { $0 + $1.durationSeconds }
+                let isOngoing = slices.contains(where: \FocusActivityDaySlice.isOngoing)
+
+                return TimelineEntry(
+                    id: FocusActivityIntervalResolver.timelineEntryID(
+                        sessionID: session.id,
+                        day: day,
+                        usesOriginalSessionID: day == firstDay
+                    ),
+                    taskID: nil,
+                    timestamp: firstSlice.startedAt,
+                    startTimestamp: firstSlice.startedAt,
+                    endTimestamp: isOngoing ? nil : lastSlice.endedAt,
+                    taskName: title,
+                    taskEmoji: "🎯",
+                    tags: [],
+                    isOneOff: false,
+                    kind: .completed,
+                    entryType: .focus,
+                    durationSeconds: duration,
+                    activityTitle: stoppedAt == nil ? "Active board focus" : "Board focus"
+                )
+            }
         }
 
         let sleepEntries = sleepSessions.compactMap { session -> TimelineEntry? in

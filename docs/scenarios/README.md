@@ -89,20 +89,29 @@ And it does not change the todo's task-level Actual time
 And it does not change any routine completion log's Actual time
 And iOS and macOS follow the same rule
 
-### Overnight Focus Appears On Every Occupied Calendar Day
+### Focus Appears On Every Actually Occupied Day
 
-Area: Focus / Planner / Timeline
-Decision links: [0005](../decisions/0005-show-timeline-activity-in-day-planner.md), [0129](../decisions/0129-hide-abandoned-focus-sessions-from-timeline.md)
-Current behavior: [Planner](../current-behavior/planner.md)
+Area: Focus / Planner / Timeline / Stats
+Decision links: [0005](../decisions/0005-show-timeline-activity-in-day-planner.md), [0129](../decisions/0129-hide-abandoned-focus-sessions-from-timeline.md), [0691](../decisions/0691-split-focus-activity-across-local-days.md)
+Current behavior: [Planner](../current-behavior/planner.md), [Stats](../current-behavior/stats.md)
 Coverage:
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/Shared/RoutineCompletionStatsTests.swift`
+- `Tests/Shared/TimelineLogicTests.swift`
 
 Given a task or tag count-up Focus session starts before local midnight
 And the person finishes it after midnight
-When Routina derives or reconciles Planner evidence
-Then Timeline keeps one session with its complete focused duration
+When Routina derives Timeline, Stats, or Planner evidence
+Then Timeline shows one row on every occupied local date
+And each Stats day and Timeline row includes only its intersecting active duration
+And a continuous interval from 23:00 to 03:00 contributes one hour yesterday and three hours today
 And Calendar Schedule shows a day-bounded Focus block on every occupied date
 And an older stored block that stopped at the first midnight gains its missing continuation without duplicate writes on repeated reconciliation
+
+Given a Focus session was paused yesterday and remained paused overnight
+When the person presses Finish today
+Then the active time before yesterday's pause remains on yesterday
+And Timeline and Stats show no Focus today because Finish itself is not active time
 
 ### Mac Task Detail Effort Stays Compact And Reports Focus History
 

@@ -413,6 +413,124 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func focusDurationPoints_splitContinuousOvernightFocusAcrossCalendarDays() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-08-29T12:00:00Z")
+        let session = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: makeDate("2026-08-28T23:00:00Z"),
+            plannedDurationSeconds: 0,
+            completedAt: makeDate("2026-08-29T03:00:00Z")
+        )
+
+        let points = FocusDurationStats.points(
+            for: .week,
+            sessions: [session],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let yesterday = points.first { $0.date == makeDate("2026-08-28T00:00:00Z") }
+        let today = points.first { $0.date == makeDate("2026-08-29T00:00:00Z") }
+        let todayHours = HourlyActivityStats.points(
+            tasks: [],
+            logs: [],
+            focusSessions: [session],
+            selectedRange: .today,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(yesterday?.seconds == TimeInterval(60 * 60))
+        #expect(today?.seconds == TimeInterval(3 * 60 * 60))
+        #expect(FocusDurationStats.totalSeconds(in: points) == TimeInterval(4 * 60 * 60))
+        #expect(yesterday?.contributions.map(\.sessionCount) == [1])
+        #expect(today?.contributions.map(\.sessionCount) == [1])
+        #expect(todayHours[0].focusSeconds == TimeInterval(60 * 60))
+        #expect(todayHours[1].focusSeconds == TimeInterval(60 * 60))
+        #expect(todayHours[2].focusSeconds == TimeInterval(60 * 60))
+        #expect(todayHours.reduce(0) { $0 + $1.focusSeconds } == TimeInterval(3 * 60 * 60))
+    }
+
+    @Test
+    func focusDurationPoints_excludeOvernightPauseAndFinishButtonDay() {
+        let calendar = makeTestCalendar()
+        let startedAt = makeDate("2026-08-28T14:21:00Z")
+        let pausedAt = makeDate("2026-08-28T15:42:00Z")
+        let completedAt = makeDate("2026-08-29T12:44:00Z")
+        let session = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: completedAt,
+            accumulatedPausedSeconds: completedAt.timeIntervalSince(pausedAt),
+            tagName: "HSE"
+        )
+        let events = [
+            FocusSessionActionEvent(
+                sessionID: session.id,
+                action: .paused,
+                timestamp: pausedAt
+            )
+        ]
+
+        let points = FocusDurationStats.points(
+            for: .week,
+            sessions: [session],
+            focusSessionEvents: events,
+            referenceDate: completedAt,
+            calendar: calendar
+        )
+        let yesterday = points.first { $0.date == makeDate("2026-08-28T00:00:00Z") }
+        let today = points.first { $0.date == makeDate("2026-08-29T00:00:00Z") }
+        let hourlyPoints = HourlyActivityStats.points(
+            tasks: [],
+            logs: [],
+            focusSessions: [session],
+            focusSessionEvents: events,
+            selectedRange: .today,
+            referenceDate: completedAt,
+            calendar: calendar
+        )
+
+        #expect(yesterday?.seconds == TimeInterval(81 * 60))
+        #expect(today?.seconds == 0)
+        #expect(hourlyPoints.reduce(0) { $0 + $1.focusSeconds } == 0)
+    }
+
+    @Test
+    func focusDurationPoints_splitMultipleActiveSegmentsByTheirActualDays() {
+        let calendar = makeTestCalendar()
+        let startedAt = makeDate("2026-08-28T23:00:00Z")
+        let pausedAt = makeDate("2026-08-28T23:30:00Z")
+        let resumedAt = makeDate("2026-08-29T00:30:00Z")
+        let completedAt = makeDate("2026-08-29T03:00:00Z")
+        let session = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: completedAt,
+            accumulatedPausedSeconds: resumedAt.timeIntervalSince(pausedAt)
+        )
+        let events = [
+            FocusSessionActionEvent(sessionID: session.id, action: .paused, timestamp: pausedAt),
+            FocusSessionActionEvent(sessionID: session.id, action: .resumed, timestamp: resumedAt)
+        ]
+
+        let points = FocusDurationStats.points(
+            for: .week,
+            sessions: [session],
+            focusSessionEvents: events,
+            referenceDate: completedAt,
+            calendar: calendar
+        )
+        let yesterday = points.first { $0.date == makeDate("2026-08-28T00:00:00Z") }
+        let today = points.first { $0.date == makeDate("2026-08-29T00:00:00Z") }
+
+        #expect(yesterday?.seconds == TimeInterval(30 * 60))
+        #expect(today?.seconds == TimeInterval(150 * 60))
+    }
+
+    @Test
     func focusDurationPoints_includeBoardFocusForReferenceDay() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-03-14T12:00:00Z")

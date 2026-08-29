@@ -579,6 +579,100 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_splitContinuousOvernightFocusIntoDailyRows() {
+        let calendar = makeTestCalendar()
+        let startedAt = makeDate("2026-08-28T23:00:00Z")
+        let completedAt = makeDate("2026-08-29T03:00:00Z")
+        let session = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: completedAt,
+            tagName: "HSE"
+        )
+
+        let entries = TimelineLogic.filteredEntries(
+            logs: [],
+            tasks: [],
+            focusSessions: [session],
+            range: .all,
+            filterType: .focus,
+            now: makeDate("2026-08-29T12:00:00Z"),
+            calendar: calendar
+        ).sorted { $0.timestamp < $1.timestamp }
+        let todayEntries = TimelineLogic.filteredEntries(
+            logs: [],
+            tasks: [],
+            focusSessions: [session],
+            range: .today,
+            filterType: .focus,
+            now: makeDate("2026-08-29T12:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(entries.count == 2)
+        #expect(entries[0].startTimestamp == startedAt)
+        #expect(entries[0].endTimestamp == makeDate("2026-08-29T00:00:00Z"))
+        #expect(entries[0].durationSeconds == TimeInterval(60 * 60))
+        #expect(entries[1].startTimestamp == makeDate("2026-08-29T00:00:00Z"))
+        #expect(entries[1].endTimestamp == completedAt)
+        #expect(entries[1].durationSeconds == TimeInterval(3 * 60 * 60))
+        #expect(entries[0].id != entries[1].id)
+        #expect(todayEntries.count == 1)
+        #expect(todayEntries.first?.durationSeconds == TimeInterval(3 * 60 * 60))
+    }
+
+    @Test
+    func filteredEntries_excludePausedOvernightTimeAndFinishButtonDay() {
+        let calendar = makeTestCalendar()
+        let startedAt = makeDate("2026-08-28T14:21:00Z")
+        let pausedAt = makeDate("2026-08-28T15:42:00Z")
+        let completedAt = makeDate("2026-08-29T12:44:00Z")
+        let session = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: completedAt,
+            accumulatedPausedSeconds: completedAt.timeIntervalSince(pausedAt),
+            tagName: "HSE"
+        )
+        let events = [
+            FocusSessionActionEvent(
+                sessionID: session.id,
+                action: .paused,
+                timestamp: pausedAt
+            )
+        ]
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [],
+            tasks: [],
+            focusSessions: [session],
+            focusSessionEvents: events,
+            range: .all,
+            filterType: .focus,
+            now: completedAt,
+            calendar: calendar
+        )
+        let todayEntries = TimelineLogic.filteredEntries(
+            logs: [],
+            tasks: [],
+            focusSessions: [session],
+            focusSessionEvents: events,
+            range: .today,
+            filterType: .focus,
+            now: completedAt,
+            calendar: calendar
+        )
+
+        #expect(allEntries.count == 1)
+        #expect(allEntries.first?.startTimestamp == startedAt)
+        #expect(allEntries.first?.endTimestamp == pausedAt)
+        #expect(allEntries.first?.durationSeconds == TimeInterval(81 * 60))
+        #expect(todayEntries.isEmpty)
+    }
+
+    @Test
     func filteredEntries_excludesAbandonedTaskFocusSessions() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

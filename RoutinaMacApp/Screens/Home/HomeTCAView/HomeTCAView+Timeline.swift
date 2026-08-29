@@ -56,6 +56,8 @@ struct HomeMacTimelinePresentationSignature: Equatable {
     let flagRules: [RoutineFlagRule]
     let fileAttachmentTaskIDs: Set<UUID>
     let noteAttachmentNoteIDs: Set<UUID>
+    let focusActionLogCount: Int
+    let latestFocusActionLogTimestamp: Date?
     let calendarIdentifier: Calendar.Identifier
     let calendarTimeZoneIdentifier: String
     let calendarFirstWeekday: Int
@@ -146,6 +148,8 @@ extension HomeTCAView {
             flagRules: store.flagRules,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
+            focusActionLogCount: focusSessionActionLogs.count,
+            latestFocusActionLogTimestamp: focusSessionActionLogs.first?.timestamp,
             calendarIdentifier: calendar.identifier,
             calendarTimeZoneIdentifier: calendar.timeZone.identifier,
             calendarFirstWeekday: calendar.firstWeekday,
@@ -165,6 +169,7 @@ extension HomeTCAView {
         let visiblePlaces = isPlacesEnabled ? placeCheckInSessions : []
         let visibleAwaySessions = isAwayEnabled ? awaySessions : []
         let visibleNoteAttachmentIDs = isNotesEnabled ? noteAttachmentNoteIDs : []
+        let focusSessionEvents = FocusSessionActionEvent.events(from: focusSessionActionLogs)
 
         let unfilteredBaseEntries = TimelineLogic.filteredEntries(
             logs: logs,
@@ -174,6 +179,7 @@ extension HomeTCAView {
             notes: visibleNotes,
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
+            focusSessionEvents: focusSessionEvents,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: visiblePlaces,
@@ -225,6 +231,7 @@ extension HomeTCAView {
             notes: visibleNotes,
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
+            focusSessionEvents: focusSessionEvents,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: visiblePlaces,

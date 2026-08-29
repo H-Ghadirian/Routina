@@ -167,6 +167,7 @@ struct AppFeature {
                 let timelineNotes = state.timeline.notes
                 let timelineFocusSessions = state.timeline.focusSessions
                 let timelineSprintFocusSessions = state.timeline.sprintFocusSessions
+                let timelineFocusSessionEvents = state.timeline.focusSessionEvents
                 let timelineBoardSprints = state.timeline.boardSprints
                 let timelineAwaySessions = state.timeline.awaySessions
                 let timelineFileAttachmentTaskIDs = state.timeline.fileAttachmentTaskIDs
@@ -175,6 +176,7 @@ struct AppFeature {
                 let statsLogs = state.stats.logs
                 let statsFocusSessions = state.stats.focusSessions
                 let statsSprintFocusSessions = state.stats.sprintFocusSessions
+                let statsFocusSessionEvents = state.stats.focusSessionEvents
                 let statsBoardSprints = state.stats.boardSprints
                 let statsSleepSessions = state.stats.sleepSessions
                 let statsAwaySessions = state.stats.awaySessions
@@ -195,6 +197,7 @@ struct AppFeature {
                         notes: timelineNotes,
                         focusSessions: timelineFocusSessions,
                         sprintFocusSessions: timelineSprintFocusSessions,
+                        focusSessionEvents: timelineFocusSessionEvents,
                         boardSprints: timelineBoardSprints,
                         awaySessions: timelineAwaySessions,
                         fileAttachmentTaskIDs: timelineFileAttachmentTaskIDs,
@@ -205,6 +208,7 @@ struct AppFeature {
                         logs: statsLogs,
                         focusSessions: statsFocusSessions,
                         sprintFocusSessions: statsSprintFocusSessions,
+                        focusSessionEvents: statsFocusSessionEvents,
                         boardSprints: statsBoardSprints,
                         sleepSessions: statsSleepSessions,
                         awaySessions: statsAwaySessions,
@@ -483,6 +487,7 @@ struct StatsFeature {
         var logs: [RoutineLog] = []
         var focusSessions: [FocusSession] = []
         var sprintFocusSessions: [SprintFocusSessionRecord] = []
+        var focusSessionEvents: [FocusSessionActionEvent] = []
         var boardSprints: [BoardSprintRecord] = []
         var sleepSessions: [SleepSession] = []
         var awaySessions: [AwaySession] = []
@@ -565,6 +570,7 @@ struct StatsFeature {
             logs: [RoutineLog],
             focusSessions: [FocusSession],
             sprintFocusSessions: [SprintFocusSessionRecord] = [],
+            focusSessionEvents: [FocusSessionActionEvent] = [],
             boardSprints: [BoardSprintRecord] = [],
             sleepSessions: [SleepSession] = [],
             awaySessions: [AwaySession] = [],
@@ -616,12 +622,13 @@ struct StatsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions):
+            case let .setData(tasks, logs, focusSessions, sprintFocusSessions, focusSessionEvents, boardSprints, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions):
                 state.hasLoadedDataSnapshot = true
                 state.tasks = tasks
                 state.logs = logs
                 state.focusSessions = focusSessions
                 state.sprintFocusSessions = sprintFocusSessions
+                state.focusSessionEvents = focusSessionEvents
                 state.boardSprints = boardSprints
                 state.sleepSessions = sleepSessions
                 state.awaySessions = awaySessions
@@ -883,6 +890,7 @@ struct StatsFeature {
                 let logs = try context.fetch(FetchDescriptor<RoutineLog>())
                 let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
                 let sprintFocusSessions = try context.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+                let focusSessionEvents = try FocusSessionActionEvent.fetch(from: context)
                 let boardSprints = try context.fetch(FetchDescriptor<BoardSprintRecord>())
                 let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
                 let awaySessions = try context.fetch(FetchDescriptor<AwaySession>())
@@ -899,6 +907,7 @@ struct StatsFeature {
                     logs: logs,
                     focusSessions: focusSessions,
                     sprintFocusSessions: sprintFocusSessions,
+                    focusSessionEvents: focusSessionEvents,
                     boardSprints: boardSprints,
                     sleepSessions: awayEnabled ? sleepSessions : [],
                     awaySessions: awayEnabled ? awaySessions : [],
@@ -1068,6 +1077,7 @@ struct StatsFeature {
             logs: state.logs,
             focusSessions: state.focusSessions,
             sprintFocusSessions: state.sprintFocusSessions,
+            focusSessionEvents: state.focusSessionEvents,
             boardSprints: state.boardSprints,
             sleepSessions: state.sleepSessions,
             awaySessions: state.awaySessions,

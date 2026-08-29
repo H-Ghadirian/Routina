@@ -12,6 +12,7 @@ struct TimelineDataSnapshot {
     var noteAttachments: [RoutineNoteAttachment] = []
     var focusSessions: [FocusSession] = []
     var sprintFocusSessions: [SprintFocusSessionRecord] = []
+    var focusSessionEvents: [FocusSessionActionEvent] = []
     var boardSprints: [BoardSprintRecord] = []
     var sleepSessions: [SleepSession] = []
     var awaySessions: [AwaySession] = []
@@ -48,6 +49,7 @@ struct TimelineDataSnapshot {
             sprintFocusSessions: try context.fetch(FetchDescriptor<SprintFocusSessionRecord>(
                 sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
             )),
+            focusSessionEvents: try FocusSessionActionEvent.fetch(from: context),
             boardSprints: try context.fetch(FetchDescriptor<BoardSprintRecord>(
                 sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
             )),
@@ -107,6 +109,7 @@ struct TimelineFeature {
         var notes: [RoutineNote] = []
         var focusSessions: [FocusSession] = []
         var sprintFocusSessions: [SprintFocusSessionRecord] = []
+        var focusSessionEvents: [FocusSessionActionEvent] = []
         var boardSprints: [BoardSprintRecord] = []
         var fileAttachmentTaskIDs: Set<UUID> = []
         var noteAttachmentNoteIDs: Set<UUID> = []
@@ -179,6 +182,7 @@ struct TimelineFeature {
             notes: [RoutineNote] = [],
             focusSessions: [FocusSession] = [],
             sprintFocusSessions: [SprintFocusSessionRecord] = [],
+            focusSessionEvents: [FocusSessionActionEvent] = [],
             boardSprints: [BoardSprintRecord] = [],
             sleepSessions: [SleepSession] = [],
             placeCheckInSessions: [PlaceCheckInSession] = [],
@@ -213,7 +217,7 @@ struct TimelineFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, events, emotionLogs, notes, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, placeCheckInSessions, awaySessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
+            case let .setData(tasks, logs, events, emotionLogs, notes, focusSessions, sprintFocusSessions, focusSessionEvents, boardSprints, sleepSessions, placeCheckInSessions, awaySessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
                 state.tasks = tasks
                 state.logs = logs
                 state.events = events
@@ -221,6 +225,7 @@ struct TimelineFeature {
                 state.notes = notes
                 state.focusSessions = focusSessions
                 state.sprintFocusSessions = sprintFocusSessions
+                state.focusSessionEvents = focusSessionEvents
                 state.boardSprints = boardSprints
                 state.sleepSessions = sleepSessions
                 state.placeCheckInSessions = placeCheckInSessions
@@ -382,6 +387,7 @@ struct TimelineFeature {
             notes: state.notes,
             focusSessions: state.focusSessions,
             sprintFocusSessions: state.sprintFocusSessions,
+            focusSessionEvents: state.focusSessionEvents,
             boardSprints: state.boardSprints,
             sleepSessions: state.sleepSessions,
             placeCheckInSessions: state.placeCheckInSessions,

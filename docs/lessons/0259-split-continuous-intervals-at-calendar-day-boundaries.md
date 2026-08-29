@@ -37,3 +37,7 @@ day-bounded Calendar evidence on every occupied date.
 `Tests/Shared/DayPlanPlannerStateTests.swift` covers both the normal finish path
 and repair of an older first-day-only block, including idempotent repeated
 reconciliation.
+
+Follow-up: [0264](0264-bucket-focus-by-active-intervals-not-terminal-actions.md)
+extends the day-boundary rule to Timeline and Stats and replaces the earlier
+single-row Timeline presentation with daily active-time portions.
