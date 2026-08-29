@@ -3,6 +3,7 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 import SwiftUI
+import UIKit
 
 extension View {
     func routinaHomeSidebarColumnWidth() -> some View {
@@ -45,12 +46,26 @@ extension HomeTCAView {
         )
     }
 
+    @ViewBuilder
     var platformNavigationContent: some View {
-        NavigationSplitView {
-iosSidebarContent
-        } detail: {
-detailContent
+        if usesHomeSidebarLayout {
+            NavigationSplitView {
+                iosSidebarContent
+            } detail: {
+                detailContent
+            }
+        } else {
+            NavigationStack {
+                iosSidebarContent
+                    .navigationDestination(item: selectedTaskBinding) { taskID in
+                        taskDetailDestination(taskID: taskID)
+                    }
+            }
         }
+    }
+
+    private var usesHomeSidebarLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
     }
 
     func applyPlatformDeleteConfirmation<Content: View>(to view: Content) -> some View {
@@ -397,15 +412,34 @@ detailContent
         store.send(.deleteTasks([taskID]))
     }
 
+    @ViewBuilder
     func platformRoutineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int?,
         includeMarkDone: Bool,
         moveContext: HomeTaskListMoveContext?
     ) -> some View {
-        NavigationLink(value: task.taskID) {
-            routineRow(for: task, rowNumber: rowNumber)
-                .padding(.trailing, routineListRowColorBadgeTrailingSpace(for: task))
+        Group {
+            if usesHomeSidebarLayout {
+                NavigationLink(value: task.taskID) {
+                    routineNavigationRowLabel(for: task, rowNumber: rowNumber)
+                }
+            } else {
+                Button {
+                    platformOpenTask(task.taskID)
+                } label: {
+                    HStack(spacing: 8) {
+                        routineNavigationRowLabel(for: task, rowNumber: rowNumber)
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
         }
         .listRowBackground(routineListRowBackground(for: task))
         .overlay(alignment: .topTrailing) {
@@ -415,6 +449,14 @@ detailContent
         .contextMenu {
             routineContextMenu(for: task, includeMarkDone: includeMarkDone, moveContext: moveContext)
         }
+    }
+
+    private func routineNavigationRowLabel(
+        for task: HomeFeature.RoutineDisplay,
+        rowNumber: Int?
+    ) -> some View {
+        routineRow(for: task, rowNumber: rowNumber)
+            .padding(.trailing, routineListRowColorBadgeTrailingSpace(for: task))
     }
 
     @ViewBuilder

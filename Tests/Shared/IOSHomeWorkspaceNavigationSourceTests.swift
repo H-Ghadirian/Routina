@@ -89,6 +89,28 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         #expect(taskLadderView.contains("!store.scopePath.isEmpty && !isInnerLadderDestination"))
     }
 
+    @Test
+    func compactHomeKeepsTaskLadderAndGroupDetailsOnOneNavigationStack() throws {
+        let homeView = try Self.sourceFile("iOS/Screens/Home/HomeTCAView.swift")
+        let homePlatform = try Self.sourceFile(
+            "iOS/Screens/Home/HomeTCAViewPlatform.swift"
+        )
+        let taskLadderView = try Self.sourceFile(
+            "iOS/Screens/TaskRanking/TaskRankingIOSView.swift"
+        )
+
+        #expect(homeView.contains("@Environment(\\.horizontalSizeClass) var horizontalSizeClass"))
+        #expect(homePlatform.contains("if usesHomeSidebarLayout"))
+        #expect(homePlatform.contains("NavigationStack {"))
+        #expect(homePlatform.contains("NavigationSplitView {"))
+        #expect(homePlatform.contains("UIDevice.current.userInterfaceIdiom == .pad"))
+        #expect(homePlatform.contains("horizontalSizeClass == .regular"))
+        #expect(homePlatform.contains(".navigationDestination(item: selectedTaskBinding)"))
+        #expect(homePlatform.contains("platformOpenTask(task.taskID)"))
+        #expect(taskLadderView.contains("TaskLadderIOSGroupDetailView("))
+        #expect(!taskLadderView.contains("NavigationStack"))
+    }
+
     private static func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

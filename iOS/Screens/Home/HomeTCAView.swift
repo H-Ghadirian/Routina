@@ -22,6 +22,7 @@ struct HomeTCAView: View {
     let externalSearchText: Binding<String>?
     let isActive: Bool
     @Environment(\.calendar) var calendar
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(\.modelContext) private var modelContext
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,

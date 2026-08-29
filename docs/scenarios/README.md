@@ -4234,6 +4234,13 @@ Then the group Ladder is pushed as another level in Home's existing navigation h
 And the native Back button returns to the preceding Task Ladder list
 And only a later Back action can return from the root Task Ladder to Home
 
+Given the person opens Task Ladder from Home on a compact iOS layout
+And a group appears in the current Ladder list
+When they activate the group row to open Group Details
+Then Group Details is pushed above the current Task Ladder list
+And the interactive Back gesture reveals the Task Ladder list underneath
+And completing Back returns to that list rather than Home
+
 Given Mac and iOS each created a logical user-preferences singleton before receiving the other device's CloudKit record
 And the newer synchronized record contains the Mac Backlog section catalog
 When iOS applies the imported preferences

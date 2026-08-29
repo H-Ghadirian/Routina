@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0266 — Keep compact drill-down routes on one navigation stack](0266-keep-compact-drill-down-routes-on-one-navigation-stack.md)
 - [0265 — Observe lazy-list membership at the owner boundary](0265-observe-lazy-list-membership-at-the-owner-boundary.md)
 - [0264 — Bucket Focus by active intervals, not terminal actions](0264-bucket-focus-by-active-intervals-not-terminal-actions.md)
 - [0263 — Refresh lazy row chrome at the owner boundary](0263-refresh-lazy-row-chrome-at-the-owner-boundary.md)
