@@ -708,6 +708,11 @@ struct TaskFormPresentationTests {
             cadenceEnabled: false
         )
         let oneOffTask = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
+        let deadlineTask = taskFormModel(
+            taskType: .todo,
+            scheduleMode: .oneOff,
+            deadlineEnabled: true
+        )
         let alreadyConfigured = taskFormModel(
             scheduleMode: .softInterval,
             temporalWeightRule: RoutineTaskTemporalWeightRule(pressureAtDue: .high)
@@ -721,6 +726,12 @@ struct TaskFormPresentationTests {
         #expect(!gentleRoutine.supportsTaskLadderEntryWindow)
         #expect(!cadenceFreeRoutine.supportsTaskLadderEntryWindow)
         #expect(!oneOffTask.supportsTaskLadderEntryWindow)
+        #expect(deadlineTask.supportsTaskLadderEntryWindow)
+        #expect(deadlineTask.maximumTaskLadderEntryBeforeDueDays == nil)
+        #expect(
+            repeatingDue.maximumTaskLadderEntryBeforeDueDays
+                == repeatingDue.maximumTemporalWeightBeforeDueDays
+        )
         #expect(repeatingDue.temporalWeightAvailabilityMessage == nil)
         #expect(gentleRoutine.temporalWeightAvailabilityMessage == "Choose Due in Behavior & Schedule.")
         #expect(cadenceFreeRoutine.temporalWeightAvailabilityMessage == "Choose After done or On schedule in Behavior & Schedule.")
@@ -815,6 +826,7 @@ struct TaskFormPresentationTests {
         frequencyUnit: TaskFormFrequencyUnit = .day,
         frequencyValue: Int = 1,
         cadenceEnabled: Bool = true,
+        deadlineEnabled: Bool = false,
         taskTypeBinding: Binding<RoutineTaskType>? = nil,
         scheduleModeBinding: Binding<RoutineScheduleMode>? = nil,
         recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind>? = nil,
@@ -838,7 +850,7 @@ struct TaskFormPresentationTests {
             isEmojiPickerPresented: .constant(false),
             notes: .constant(""),
             link: .constant(""),
-            deadlineEnabled: .constant(false),
+            deadlineEnabled: .constant(deadlineEnabled),
             deadline: .constant(Date()),
             routineDurationMode: .constant(routineDurationMode),
             reminderEnabled: .constant(false),

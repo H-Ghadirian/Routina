@@ -38,6 +38,7 @@ struct TaskFormMacLayoutRegressionTests {
         #expect(valuesCard.contains("TaskTemporalThinkingSentenceEditor("))
         #expect(valuesCard.contains("TaskLadderEntryWindowEditor("))
         #expect(valuesCard.contains("model.supportsTaskLadderEntryWindow"))
+        #expect(valuesCard.contains("model.maximumTaskLadderEntryBeforeDueDays"))
         #expect(valuesCard.contains("maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays"))
         #expect(valuesCard.contains("model.temporalWeightAvailabilityMessage"))
         #expect(!valuesCard.contains("RoutinaGlassSegmentedControl"))

@@ -422,6 +422,29 @@ struct AddRoutineFeatureTests {
         let repeatingRequest = try #require(AddRoutineSaveRequest(state: repeatingState))
         #expect(repeatingRequest.taskLadderEntryWindow == .beforeDue(days: 30))
 
+        let deadline = makeDate("2026-10-31T18:00:00Z")
+        let deadlineState = makeState(
+            basics: AddRoutineBasicsState(
+                routineName: "Submit application",
+                deadline: deadline,
+                taskLadderEntryWindow: .beforeDue(days: 45)
+            ),
+            schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+        )
+        let deadlineRequest = try #require(AddRoutineSaveRequest(state: deadlineState))
+        #expect(deadlineRequest.deadline == deadline)
+        #expect(deadlineRequest.taskLadderEntryWindow == .beforeDue(days: 45))
+
+        let undatedState = makeState(
+            basics: AddRoutineBasicsState(
+                routineName: "Read someday",
+                taskLadderEntryWindow: .onDueDate
+            ),
+            schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+        )
+        let undatedRequest = try #require(AddRoutineSaveRequest(state: undatedState))
+        #expect(undatedRequest.taskLadderEntryWindow == .throughoutCycle)
+
         let gentleState = makeState(
             basics: AddRoutineBasicsState(
                 routineName: "Reflect",
@@ -431,6 +454,30 @@ struct AddRoutineFeatureTests {
         )
         let gentleRequest = try #require(AddRoutineSaveRequest(state: gentleState))
         #expect(gentleRequest.taskLadderEntryWindow == .throughoutCycle)
+    }
+
+    @Test
+    func removingOneTimeDeadlineClearsTaskLadderEntryWindow() async {
+        let deadline = makeDate("2026-10-31T18:00:00Z")
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Submit application",
+                    deadline: deadline,
+                    taskLadderEntryWindow: .onDueDate
+                ),
+                schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.deadlineEnabledChanged(false)) {
+            $0.basics.deadline = nil
+            $0.basics.taskLadderEntryWindow = .throughoutCycle
+        }
     }
 
     @Test

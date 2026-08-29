@@ -189,7 +189,10 @@ struct TaskDetailEditSaveRequestBuilder {
                 state.editTaskLadderEntryWindow,
                 scheduleMode: scheduleMode,
                 cadenceEnabled: cadenceEnabled,
-                maximumBeforeDueDays: recurrenceDraft.maximumTemporalWeightBeforeDueDays
+                hasDeadline: scheduleMode.taskType == .todo && state.editDeadline != nil,
+                maximumBeforeDueDays: scheduleMode.taskType == .todo
+                    ? nil
+                    : recurrenceDraft.maximumTemporalWeightBeforeDueDays
             ),
             thinkingNeeded: state.editThinkingNeeded,
             imageData: state.editImageData,

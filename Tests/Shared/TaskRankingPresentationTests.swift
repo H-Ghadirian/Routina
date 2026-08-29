@@ -1378,6 +1378,55 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func oneTimeDeadlineTaskUsesTheSameEntryWindowWithoutRecurrenceCapping() throws {
+        let fourDaysBeforeDeadline = try #require(
+            calendar.date(byAdding: .day, value: 4, to: referenceDate)
+        )
+        let task = RoutineTask(
+            name: "Submit application",
+            deadline: fourDaysBeforeDeadline,
+            taskLadderEntryWindow: .beforeDue(days: 3),
+            scheduleMode: .oneOff,
+            estimatedDurationMinutes: 15
+        )
+
+        let outside = TaskRankingPresentation.make(
+            tasks: [task],
+            flagRules: [],
+            metric: .estimatedTime,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        #expect(outside.taskCount == 0)
+        #expect(
+            RoutineTaskLadderEntryResolver.exclusionReason(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == "Enters Task Ladder tomorrow"
+        )
+
+        task.deadline = calendar.date(byAdding: .day, value: 3, to: referenceDate)
+        let inside = TaskRankingPresentation.make(
+            tasks: [task],
+            flagRules: [],
+            metric: .estimatedTime,
+            isReversed: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        #expect(inside.eligibleTaskIDs == [task.id])
+
+        let undated = RoutineTask(
+            name: "Read someday",
+            taskLadderEntryWindow: .onDueDate,
+            scheduleMode: .oneOff
+        )
+        #expect(undated.taskLadderEntryWindow == .throughoutCycle)
+    }
+
+    @Test
     func taskLadderConfigurationPreservesLegacyTemporalRulesAndCopiesEntryWindow() throws {
         let task = RoutineTask(
             name: "Compatible",

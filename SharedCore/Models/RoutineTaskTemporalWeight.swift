@@ -250,7 +250,7 @@ enum RoutineTaskLadderEntryWindowMode: String, CaseIterable, Equatable, Hashable
 
     var title: String {
         switch self {
-        case .throughoutCycle: return "Throughout cycle"
+        case .throughoutCycle: return "Throughout"
         case .beforeDue: return "Before due"
         case .onDueDate: return "On due date"
         }
@@ -391,9 +391,13 @@ enum RoutineTaskLadderConfigurationStorage {
 enum RoutineTaskLadderEntryResolver {
     static func supportsEntryWindow(
         scheduleMode: RoutineScheduleMode,
-        cadenceEnabled: Bool
+        cadenceEnabled: Bool,
+        hasDeadline: Bool
     ) -> Bool {
-        RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
+        if scheduleMode.taskType == .todo {
+            return hasDeadline
+        }
+        return RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
             scheduleMode: scheduleMode,
             cadenceEnabled: cadenceEnabled
         )
@@ -402,7 +406,8 @@ enum RoutineTaskLadderEntryResolver {
     static func supportsEntryWindow(_ task: RoutineTask) -> Bool {
         supportsEntryWindow(
             scheduleMode: task.scheduleMode,
-            cadenceEnabled: task.cadenceEnabled
+            cadenceEnabled: task.cadenceEnabled,
+            hasDeadline: task.deadline != nil
         )
     }
 
@@ -410,11 +415,13 @@ enum RoutineTaskLadderEntryResolver {
         _ window: RoutineTaskLadderEntryWindow,
         scheduleMode: RoutineScheduleMode,
         cadenceEnabled: Bool,
+        hasDeadline: Bool,
         maximumBeforeDueDays: Int? = nil
     ) -> RoutineTaskLadderEntryWindow {
         guard supportsEntryWindow(
             scheduleMode: scheduleMode,
-            cadenceEnabled: cadenceEnabled
+            cadenceEnabled: cadenceEnabled,
+            hasDeadline: hasDeadline
         ) else {
             return .throughoutCycle
         }
@@ -429,9 +436,12 @@ enum RoutineTaskLadderEntryResolver {
             window,
             scheduleMode: task.scheduleMode,
             cadenceEnabled: task.cadenceEnabled,
-            maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
-                for: task.recurrenceRule
-            )
+            hasDeadline: task.deadline != nil,
+            maximumBeforeDueDays: task.isOneOffTask
+                ? nil
+                : RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                    for: task.recurrenceRule
+                )
         )
     }
 
@@ -488,7 +498,7 @@ enum RoutineTaskLadderEntryPresentation {
     static func title(for window: RoutineTaskLadderEntryWindow) -> String {
         switch window {
         case .throughoutCycle:
-            return "Throughout cycle"
+            return "Throughout"
         case let .beforeDue(days):
             return "\(days) \(days == 1 ? "day" : "days") before due"
         case .onDueDate:

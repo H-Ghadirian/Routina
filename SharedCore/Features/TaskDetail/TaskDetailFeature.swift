@@ -627,7 +627,10 @@ struct TaskDetailFeature: Reducer {
             cadenceEnabled: state.editScheduleMode.taskType == .todo
                 ? true
                 : state.editCadenceEnabled,
-            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
+            hasDeadline: state.editDeadline != nil,
+            maximumBeforeDueDays: state.editScheduleMode.taskType == .todo
+                ? nil
+                : state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
     }
 
@@ -1498,7 +1501,12 @@ struct TaskDetailFeature: Reducer {
             return basicEditActionHandler().editRoutineLinkChanged(link, state: &state)
 
         case let .editDeadlineEnabledChanged(isEnabled):
-            return recurrenceEditActionHandler().editDeadlineEnabledChanged(isEnabled, state: &state)
+            let effect = recurrenceEditActionHandler().editDeadlineEnabledChanged(
+                isEnabled,
+                state: &state
+            )
+            sanitizeEditTaskLadderEntryWindow(&state)
+            return effect
 
         case let .editDeadlineDateChanged(deadline):
             return recurrenceEditActionHandler().editDeadlineDateChanged(deadline, state: &state)

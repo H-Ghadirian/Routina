@@ -251,9 +251,12 @@ struct AddRoutineSaveRequest: Equatable {
             taskLadderEntryWindow,
             scheduleMode: scheduleMode,
             cadenceEnabled: resolvedCadenceEnabled,
-            maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
-                for: recurrenceRule
-            )
+            hasDeadline: scheduleMode.taskType == .todo && deadline != nil,
+            maximumBeforeDueDays: scheduleMode.taskType == .todo
+                ? nil
+                : RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                    for: recurrenceRule
+                )
         )
         self.thinkingNeeded = thinkingNeeded
         self.imageData = imageData
@@ -415,7 +418,10 @@ struct AddRoutineSaveRequest: Equatable {
             basics.taskLadderEntryWindow,
             scheduleMode: schedule.scheduleMode,
             cadenceEnabled: cadenceEnabled,
-            maximumBeforeDueDays: recurrenceDraft.maximumTemporalWeightBeforeDueDays
+            hasDeadline: basics.deadline != nil,
+            maximumBeforeDueDays: schedule.scheduleMode.taskType == .todo
+                ? nil
+                : recurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
         self.thinkingNeeded = basics.thinkingNeeded
         self.imageData = basics.imageData

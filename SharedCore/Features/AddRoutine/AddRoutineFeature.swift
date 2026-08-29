@@ -194,7 +194,10 @@ struct AddRoutineFeature: Reducer {
             cadenceEnabled: state.schedule.scheduleMode.taskType == .todo
                 ? true
                 : state.basics.cadenceEnabled,
-            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
+            hasDeadline: state.basics.deadline != nil,
+            maximumBeforeDueDays: state.schedule.scheduleMode.taskType == .todo
+                ? nil
+                : state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
     }
 
@@ -287,6 +290,7 @@ struct AddRoutineFeature: Reducer {
                 now: now,
                 basics: &state.basics
             )
+            sanitizeTaskLadderEntryWindow(state: &state)
             return .none
 
         case let .deadlineDateChanged(deadline):

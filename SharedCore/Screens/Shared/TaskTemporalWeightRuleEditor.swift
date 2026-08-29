@@ -52,7 +52,7 @@ struct TaskLadderEntryWindowEditor: View {
             .font(.subheadline)
 
             if window != .throughoutCycle {
-                Text("This controls when the task competes in Task Ladder. Search and early completion remain available.")
+                Text("This controls when the task competes in Task Ladder. Search and completion remain available.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

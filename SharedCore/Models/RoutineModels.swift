@@ -695,7 +695,10 @@ final class RoutineTask {
             taskLadderEntryWindow,
             scheduleMode: resolvedScheduleMode,
             cadenceEnabled: resolvedCadenceEnabled,
-            maximumBeforeDueDays: maximumBeforeDueDays
+            hasDeadline: resolvedScheduleMode == .oneOff && deadline != nil,
+            maximumBeforeDueDays: resolvedScheduleMode.taskType == .todo
+                ? nil
+                : maximumBeforeDueDays
         )
         self.temporalWeightRuleStorage = RoutineTaskLadderConfigurationStorage.serialize(
             RoutineTaskLadderConfiguration(

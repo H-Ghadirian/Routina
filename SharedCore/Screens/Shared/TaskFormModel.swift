@@ -516,6 +516,12 @@ extension TaskFormModel {
         recurrenceDraft.wrappedValue.maximumTemporalWeightBeforeDueDays
     }
 
+    var maximumTaskLadderEntryBeforeDueDays: Int? {
+        taskType.wrappedValue == .todo
+            ? nil
+            : maximumTemporalWeightBeforeDueDays
+    }
+
     private var candidateRecurrenceRule: RoutineRecurrenceRule {
         let currentScheduleMode = scheduleMode.wrappedValue
         let usesAvailabilityTiming = !isAllDay.wrappedValue
@@ -630,7 +636,8 @@ extension TaskFormModel {
     var supportsTaskLadderEntryWindow: Bool {
         RoutineTaskLadderEntryResolver.supportsEntryWindow(
             scheduleMode: scheduleMode.wrappedValue,
-            cadenceEnabled: cadenceEnabled.wrappedValue
+            cadenceEnabled: cadenceEnabled.wrappedValue,
+            hasDeadline: deadlineEnabled.wrappedValue
         )
     }
 

@@ -765,9 +765,12 @@ extension TaskDetailFeature {
                     cadenceEnabled: scheduleMode.taskType == .todo
                         ? true
                         : cadenceEnabled,
-                    maximumBeforeDueDays: RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
-                        for: recurrenceRule
-                    )
+                    hasDeadline: scheduleMode.taskType == .todo && deadline != nil,
+                    maximumBeforeDueDays: scheduleMode.taskType == .todo
+                        ? nil
+                        : RoutineTaskTemporalWeightResolver.maximumBeforeDueDays(
+                            for: recurrenceRule
+                        )
                 )
                 task.thinkingNeeded = thinkingNeeded
                 task.color = color

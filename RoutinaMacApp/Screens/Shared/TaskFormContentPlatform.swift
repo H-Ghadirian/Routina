@@ -420,7 +420,7 @@ struct TaskFormContent: View {
                 Divider()
                 TaskLadderEntryWindowEditor(
                     window: model.taskLadderEntryWindow,
-                    maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays
+                    maximumBeforeDueDays: model.maximumTaskLadderEntryBeforeDueDays
                 )
             }
 

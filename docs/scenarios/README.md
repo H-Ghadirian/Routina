@@ -705,10 +705,10 @@ Given a task is Gentle, cadence-free, or one-off
 When Task Ladder resolves its values
 Then no Changes over time rule changes its Base value
 
-### Repeating Due Tasks Enter Task Ladder At Their Chosen Time
+### Due Tasks Enter Task Ladder At Their Chosen Time
 
 Area: Tasks / Task Ladder / Recurrence
-Decision links: [0692](../decisions/0692-control-when-repeating-due-tasks-enter-task-ladder.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0438](../decisions/0438-allow-early-completion-of-untimed-scheduled-routines.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0692](../decisions/0692-control-when-due-tasks-enter-task-ladder.md), [0649](../decisions/0649-give-each-task-ladder-metric-an-independent-time-rule.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0438](../decisions/0438-allow-early-completion-of-untimed-scheduled-routines.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskRankingPresentationTests.swift`
@@ -717,7 +717,7 @@ Coverage:
 - `Tests/Shared/TaskFormMacLayoutRegressionTests.swift`
 - `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
 
-Given a repeating Due task keeps the default `Throughout cycle` choice
+Given a repeating Due task keeps the default `Throughout` choice
 When any Task Ladder metric builds its presentation
 Then a future due date alone does not exclude the task
 
@@ -733,6 +733,14 @@ When its due date is still in the future
 Then Task Ladder omits it even when it has the shortest Estimated time
 When the due date arrives or becomes overdue
 Then Task Ladder includes it
+
+Given a one-time task has a deadline and a before-due entry window
+When its deadline is outside or inside that window
+Then Task Ladder applies the same exclusion or inclusion boundary without capping the window to a recurrence interval
+
+Given a one-time task has no deadline, or a routine is Gentle or cadence-free
+Then Add Task and Edit Task omit the entry-window control
+And saving normalizes any stale entry-window value to `Throughout`
 
 Given a task is outside its Task Ladder entry window
 Then Home, Backlog, Planner, Calendar, Timeline, Stats, notifications, and completion behavior remain unchanged

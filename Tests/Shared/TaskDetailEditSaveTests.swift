@@ -109,6 +109,74 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func oneTimeDeadlineTaskLoadsAndPersistsTaskLadderEntryWindow() throws {
+        let deadline = makeDate("2026-10-31T18:00:00Z")
+        let task = RoutineTask(
+            name: "Submit application",
+            deadline: deadline,
+            taskLadderEntryWindow: .onDueDate,
+            scheduleMode: .oneOff
+        )
+        var state = TaskDetailFeature.State(task: task)
+        let feature = TaskDetailFeature()
+
+        withDependencies {
+            setTestDateDependencies(&$0)
+        } operation: {
+            feature.syncEditFormFromTask(&state)
+        }
+        #expect(state.editTaskLadderEntryWindow == .onDueDate)
+
+        state.editTaskLadderEntryWindow = .beforeDue(days: 45)
+        let request = try #require(
+            TaskDetailEditSaveRequestBuilder(
+                now: { makeDate("2026-03-20T10:00:00Z") },
+                calendar: makeTestCalendar(),
+                matrixPriority: { importance, urgency in
+                    AddRoutinePriorityMatrix.priority(
+                        importance: importance,
+                        urgency: urgency
+                    )
+                }
+            ).build(state: &state)
+        )
+
+        #expect(request.taskLadderEntryWindow == .beforeDue(days: 45))
+        withDependencies {
+            setTestDateDependencies(&$0)
+        } operation: {
+            feature.applyEditSaveRequest(request, to: &state)
+        }
+        #expect(state.task.taskLadderEntryWindow == .beforeDue(days: 45))
+    }
+
+    @Test
+    func removingOneTimeDeadlineClearsEditTaskLadderEntryWindow() async {
+        let task = RoutineTask(
+            name: "Submit application",
+            deadline: makeDate("2026-10-31T18:00:00Z"),
+            taskLadderEntryWindow: .onDueDate,
+            scheduleMode: .oneOff
+        )
+        var state = TaskDetailFeature.State(task: task)
+        withDependencies {
+            setTestDateDependencies(&$0)
+        } operation: {
+            TaskDetailFeature().syncEditFormFromTask(&state)
+        }
+        let store = TestStore(initialState: state) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.editDeadlineEnabledChanged(false)) {
+            $0.editDeadline = nil
+            $0.editTaskLadderEntryWindow = .throughoutCycle
+        }
+    }
+
+    @Test
     func editAllDayChanged_forTodoWithoutDeadlineDoesNotCreateDeadline() async {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
@@ -577,6 +645,55 @@ struct TaskDetailEditSaveTests {
         )
         #expect(persistedTask.deadline == calendar.startOfDay(for: deadline))
         #expect(persistedTask.isAllDay)
+    }
+
+    @Test
+    func editSaveTappedAddsDeadlineAndTaskLadderEntryWindowTogether() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let deadline = makeDate("2026-04-30T18:00:00Z")
+        let task = RoutineTask(name: "Submit application", scheduleMode: .oneOff)
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Submit application",
+                editRoutineEmoji: "📨",
+                editDeadline: deadline,
+                editTaskLadderEntryWindow: .beforeDue(days: 14),
+                editScheduleMode: .oneOff
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.deadline == deadline)
+        #expect(persistedTask.taskLadderEntryWindow == .beforeDue(days: 14))
     }
 
     @Test

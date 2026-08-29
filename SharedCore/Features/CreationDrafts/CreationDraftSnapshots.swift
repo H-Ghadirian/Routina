@@ -382,7 +382,10 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
             cadenceEnabled: state.schedule.scheduleMode.taskType == .todo
                 ? true
                 : state.basics.cadenceEnabled,
-            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
+            hasDeadline: state.basics.deadline != nil,
+            maximumBeforeDueDays: state.schedule.scheduleMode.taskType == .todo
+                ? nil
+                : state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
         )
         state.synchronizeRecurrenceDraftFromLegacy()
         AddRoutineValidationEditor.refreshNameValidation(state: &state)

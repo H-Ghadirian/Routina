@@ -110,7 +110,7 @@ struct TaskFormIOSTaskLadderValuesSection: View {
             if model.supportsTaskLadderEntryWindow {
                 TaskLadderEntryWindowEditor(
                     window: model.taskLadderEntryWindow,
-                    maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays
+                    maximumBeforeDueDays: model.maximumTaskLadderEntryBeforeDueDays
                 )
             }
 
