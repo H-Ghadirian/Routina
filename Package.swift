@@ -25,6 +25,10 @@ let package = Package(
             name: "RoutinaAIMCPServer",
             targets: ["RoutinaAIMCPServer"]
         ),
+        .executable(
+            name: "RoutinaBackupAudit",
+            targets: ["RoutinaBackupAudit"]
+        ),
     ],
     dependencies: [
         .package(
@@ -315,6 +319,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsRoutineDataBackupMapping.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataBackupModels.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataBackupPackageBuilder.swift",
+                "SharedCore/Features/Settings/SettingsRoutineDataBackupAudit.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataImportEntityInserter.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataImportStoreResetter.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataPersistenceSupport.swift",
@@ -570,6 +575,11 @@ let package = Package(
             dependencies: ["RoutinaHelpSupport"],
             path: "Tools/RoutinaAIMCPServer",
             exclude: ["smoke-test.jsonl"]
+        ),
+        .executableTarget(
+            name: "RoutinaBackupAudit",
+            dependencies: ["RoutinaAppSupport"],
+            path: "Tools/RoutinaBackupAudit"
         ),
         .testTarget(
             name: "RoutinaAppSupportTests",

@@ -111,6 +111,28 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         #expect(!taskLadderView.contains("NavigationStack"))
     }
 
+    @Test
+    func homeEmbeddedTimelineUsesDirectTaskDetailLinks() throws {
+        let timeline = try Self.sourceFile("iOS/Screens/Timeline/TimelineView.swift")
+        let taskRouteStart = try #require(
+            timeline.range(of: "if let taskID = entry.taskID {")
+        )
+        let taskRouteEnd = try #require(
+            timeline.range(
+                of: "} else if entry.isEmotion",
+                range: taskRouteStart.upperBound..<timeline.endIndex
+            )
+        )
+        let taskRoute = String(timeline[taskRouteStart.lowerBound..<taskRouteEnd.lowerBound])
+
+        #expect(taskRoute.contains("NavigationLink {"))
+        #expect(taskRoute.contains("timelineDetailDestination(taskID: taskID)"))
+        #expect(taskRoute.contains("} label: {"))
+        #expect(!timeline.contains("TimelineTaskNavigationRoute"))
+        #expect(!timeline.contains(".navigationDestination(for: UUID.self)"))
+        #expect(!timeline.contains("NavigationLink(value: taskID)"))
+    }
+
     private static func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

@@ -7,7 +7,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
     @MainActor
     static func buildPackage(
         from context: ModelContext,
-        exportedAt: Date = Date()
+        exportedAt: Date = Date(),
+        mirrorsUserDefaults: Bool = true
     ) throws -> (manifestData: Data, attachmentFiles: [String: Data]) {
         var files: [String: Data] = [:]
         let manifestData = try buildManifestData(
@@ -15,7 +16,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
             writeAttachment: { fileName, data in
                 files[fileName] = data
             },
-            exportedAt: exportedAt
+            exportedAt: exportedAt,
+            mirrorsUserDefaults: mirrorsUserDefaults
         )
         return (manifestData, files)
     }
@@ -24,14 +26,16 @@ enum SettingsRoutineDataBackupPackageBuilder {
     static func buildManifestData(
         from context: ModelContext,
         attachmentsDirectoryURL: URL,
-        exportedAt: Date
+        exportedAt: Date,
+        mirrorsUserDefaults: Bool = true
     ) throws -> Data {
         try buildManifestData(
             from: context,
             writeAttachment: { fileName, data in
                 try data.write(to: attachmentsDirectoryURL.appendingPathComponent(fileName), options: .atomic)
             },
-            exportedAt: exportedAt
+            exportedAt: exportedAt,
+            mirrorsUserDefaults: mirrorsUserDefaults
         )
     }
 
@@ -39,7 +43,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
     static func buildManifestData(
         from context: ModelContext,
         writeAttachment: (String, Data) throws -> Void,
-        exportedAt: Date
+        exportedAt: Date,
+        mirrorsUserDefaults: Bool = true
     ) throws -> Data {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
@@ -63,7 +68,9 @@ enum SettingsRoutineDataBackupPackageBuilder {
         let sprintFocusAllocations = try context.fetch(FetchDescriptor<SprintFocusAllocationRecord>())
         let deviceSessions = try context.fetch(FetchDescriptor<RoutinaDeviceSession>())
         let deviceActionLogs = try context.fetch(FetchDescriptor<RoutinaDeviceActionLog>())
-        RoutinaUserPreferencesStore.mirrorDefaultsToStore(in: context)
+        if mirrorsUserDefaults {
+            RoutinaUserPreferencesStore.mirrorDefaultsToStore(in: context)
+        }
         let userPreferences = try context.fetch(FetchDescriptor<RoutinaUserPreferences>()).first
 
         var attachmentManifests: [Backup.Attachment] = []

@@ -277,11 +277,13 @@ The last duration selected in that sheet is shown as Last choice and selected by
 
 **Need:** Review one chronological history across relevant activity types.
 
-**Desired experience:** The Timeline presents clear outcomes and context in a stable order, supports filtering and date navigation, opens the source record for detail or correction, and offers only type filters whose features are currently available. Focus that spans local midnight appears as a daily portion on every occupied date, with paused gaps excluded, so each day can be reconstructed without moving the complete session to one arbitrary timestamp. A person can keep activity from behavior-heavy or private tasks out of the default history through a Flag rule, then deliberately reveal matching task activity without losing or changing the underlying record. On Mac this uses the same Shared Include/Exclude Flag rule as Task List and Calendar, with selected Flags visible as removable chips and no duplicate Flag catalog in Timeline; standalone Timeline records remain available because they do not carry task Flags. Clearing a filtered Timeline removes both its own constraints and every Shared constraint affecting its rows in one action, without discarding Task List-only choices.
+**Desired experience:** The Timeline presents clear outcomes and context in a stable order, supports filtering and date navigation, opens the source record for detail or correction, and offers only type filters whose features are currently available. On iOS, activating a task-backed row pushes its details once without an intermediary blank or loading route; when Timeline was opened from Home, Back returns to the Timeline list before it can return to Home. Focus that spans local midnight appears as a daily portion on every occupied date, with paused gaps excluded, so each day can be reconstructed without moving the complete session to one arbitrary timestamp. A person can keep activity from behavior-heavy or private tasks out of the default history through a Flag rule, then deliberately reveal matching task activity without losing or changing the underlying record. On Mac this uses the same Shared Include/Exclude Flag rule as Task List and Calendar, with selected Flags visible as removable chips and no duplicate Flag catalog in Timeline; standalone Timeline records remain available because they do not carry task Flags. Clearing a filtered Timeline removes both its own constraints and every Shared constraint affecting its rows in one action, without discarding Task List-only choices.
 
 **Successful outcome:** The person understands the period without relying on memory or combining several disconnected logs.
 
 **Example:** Review yesterday to see completed work, a canceled routine, focus time, and a contextual note; select a hidden task's Flag when that quieter activity is relevant to the review.
+
+**Evidence:** User report on 2026-08-29 that opening a task-backed row from Home's Timeline first pushed a black screen, then replaced Timeline with Task Details so Back returned directly to Home.
 
 **Availability:** Production, with available record types varying by feature gate.
 
@@ -341,17 +343,19 @@ Settings search should take the person directly to Flags, Tags, Sections, or iCl
 
 ### UC-16 — Back up, recover, or reset personal data safely
 
-**Situation:** The person is changing devices, troubleshooting synchronization, or considering a destructive reset.
+**Situation:** The person is changing devices, troubleshooting synchronization, considering a destructive reset, validating a real production backup before loading it into a development build, or restoring an older backup whose omissions or damage might not become visible until much later.
 
-**Need:** Protect personal history before taking a risky action.
+**Need:** Protect personal history before taking a risky action, gain evidence that a particular backup represents the source data and can be restored, and retain a recovery path when a restore problem is discovered only after the person has continued using the app.
 
-**Desired experience:** Backup and restore are complete and understandable. Destructive operations require a recent backup and device-owner authentication. Diagnostics explain the build and sync state without copying personal content.
+**Desired experience:** Backup and restore are complete and understandable. Every backup is checked against the source snapshot when it is created, restore is validated before replacing live data, and the pre-restore state remains recoverable after the replacement so delayed discovery does not become permanent loss. Destructive operations require a recent verified backup and device-owner authentication. Diagnostics explain the build and sync state without copying personal content. For release or development verification, one project-local command checks the real package, every declared attachment, an isolated restore, and a second semantic round trip without opening production, development, or CloudKit stores; its result states what was verified and what still requires a real app or cloud check.
 
-**Successful outcome:** The person can recover data or proceed with an informed reset without an avoidable loss.
+**Successful outcome:** The person can recover data, proceed with an informed reset, or import production data into development with a verified package and a retained destination snapshot instead of using the only live copy as the first test. If a problem is noticed later, the person can return to an earlier known-good state or selectively recover missing records.
 
-**Example:** Before resetting cloud data, Routina requires a recent export and fresh authentication.
+**Example:** Before deleting Routina from an old device, the person exports a backup; Routina restores that package in isolation, compares it with the still-available source data, and marks it verified only when they match. The new device repeats the integrity and isolated-restore checks before accepting the package, catching damage introduced while copying or storing it. Before resetting cloud data, Routina likewise requires a recent verified export and fresh authentication. Before any restore, Routina preserves the destination state, validates the candidate in isolation, and only then commits the replacement. If the person discovers a missing attachment or history entry weeks later, the retained pre-restore version remains available for recovery. Before loading a production export into Dev, the release owner can also run `script/audit_backup.sh` and receive record counts, attachment size, a semantic fingerprint, and confirmation that two isolated restore rounds agree.
 
-**Availability:** Production.
+**Evidence:** User requests on 2026-08-29 to verify production backup and development restore with real data before relying on the live import, and to prevent permanent loss when a person discovers a broken restore only after the original data is gone.
+
+**Availability:** Backup and restore are production features. The isolated audit is project-local development tooling.
 
 ### UC-17 — Ask what an unfamiliar Routina feature means
 

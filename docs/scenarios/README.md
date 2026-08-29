@@ -29,6 +29,34 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Backup Audit Never Uses A Live Store
+
+Area: Settings / Backup / Developer tooling
+Decision links: [0170](../decisions/0170-treat-backup-reset-as-complete-user-data-operations.md), [0693](../decisions/0693-audit-backups-through-isolated-semantic-round-trips.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/RoutinaBackupAuditTests.swift`
+
+Given a current `.routinabackup` contains records, relationships, generated media, and file attachments
+When the project-local audit runs
+Then it validates every declared attachment and restores through the production mappings into an in-memory local-only store
+And the source semantic snapshot equals the first isolated restore
+And a second isolated restore and export remains semantically identical
+And generated media identifiers and export time do not create false mismatches
+And live CloudKit pull tokens remain unchanged
+
+Given an attachment is missing, duplicated, unsafe, dangling, symbolic, or not a regular file
+When the audit validates the package
+Then it fails before starting the isolated restore and identifies the structural problem without printing personal record content
+
+Given the package uses an older supported schema
+When the audit imports it
+Then the audit labels the operation as migration verification
+And requires the migrated result to remain stable across a second round trip without claiming raw source equality
+
+Given the package uses a future unsupported schema
+Then the audit refuses it before restore and reports the supported schema range
+
 ### Task Effort Fields Stay Independent And Disclosures Stay Honest
 
 Area: Tasks / Focus / iOS and macOS Task Details
@@ -4254,3 +4282,9 @@ Then Routina keeps the newest record, removes the stale duplicate, and exposes t
 Given the person opens Timeline from Home
 Then Timeline uses Home's existing navigation hierarchy
 And it does not install a second compact navigation stack or iPad split hierarchy
+
+Given the person opens Timeline from Home on a compact iOS layout
+When they activate a task-backed Timeline row
+Then exactly one Task Details screen is pushed above Timeline
+And no blank or Home-owned loading destination appears first
+And Back returns to the Timeline list rather than directly to Home

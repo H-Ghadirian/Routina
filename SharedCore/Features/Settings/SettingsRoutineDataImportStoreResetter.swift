@@ -3,8 +3,13 @@ import SwiftData
 
 enum SettingsRoutineDataImportStoreResetter {
     @MainActor
-    static func deleteExistingData(in context: ModelContext) throws {
-        CloudKitDirectPullTokenStore.clearAll()
+    static func deleteExistingData(
+        in context: ModelContext,
+        clearsCloudKitTokens: Bool = true
+    ) throws {
+        if clearsCloudKitTokens {
+            CloudKitDirectPullTokenStore.clearAll()
+        }
         try LocalUserDataResetService.wipeAllUserData(in: context)
     }
 }

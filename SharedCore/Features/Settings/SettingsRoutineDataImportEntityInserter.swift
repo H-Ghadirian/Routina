@@ -10,7 +10,8 @@ enum SettingsRoutineDataImportEntityInserter {
         _ backup: Backup,
         attachmentData: (String) throws -> Data?,
         in context: ModelContext,
-        importDate: Date
+        importDate: Date,
+        appliesUserPreferencesToDefaults: Bool = true
     ) throws -> ImportSummary {
         let places = insertPlaces(from: backup, in: context, importDate: importDate)
         let goals = insertGoals(from: backup, in: context, importDate: importDate)
@@ -123,7 +124,8 @@ enum SettingsRoutineDataImportEntityInserter {
         let userPreferenceCount = insertUserPreferences(
             from: backup,
             in: context,
-            importDate: importDate
+            importDate: importDate,
+            appliesToDefaults: appliesUserPreferencesToDefaults
         )
 
         return ImportSummary(
@@ -1066,7 +1068,8 @@ enum SettingsRoutineDataImportEntityInserter {
     private static func insertUserPreferences(
         from backup: Backup,
         in context: ModelContext,
-        importDate: Date
+        importDate: Date,
+        appliesToDefaults: Bool
     ) -> Int {
         guard let backupPreferences = backup.userPreferences else { return 0 }
 
@@ -1141,7 +1144,9 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.batteryRoutineThresholdPercent = backupPreferences.batteryRoutineThresholdPercent ?? BatteryRoutinePreferences.defaultThresholdPercent
 
         context.insert(preferences)
-        RoutinaUserPreferencesStore.applyToDefaults(from: context)
+        if appliesToDefaults {
+            RoutinaUserPreferencesStore.applyToDefaults(from: context)
+        }
         return 1
     }
 

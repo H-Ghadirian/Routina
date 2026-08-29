@@ -152,9 +152,6 @@ struct TimelineView: View {
                     filterSheetButton
                 }
             }
-            .navigationDestination(for: UUID.self) { taskID in
-                timelineDetailDestination(taskID: taskID)
-            }
     }
 
     private var usesSidebarLayout: Bool {
@@ -1005,7 +1002,9 @@ struct TimelineView: View {
     @ViewBuilder
     private func timelineRow(_ entry: TimelineEntry, rowNumber: Int?) -> some View {
         if let taskID = entry.taskID {
-            NavigationLink(value: taskID) {
+            NavigationLink {
+                timelineDetailDestination(taskID: taskID)
+            } label: {
                 timelineRowContent(entry, rowNumber: rowNumber)
             }
         } else if entry.isEmotion, let emotion = emotionLog(for: entry) {
