@@ -1,5 +1,15 @@
 import Foundation
 
+struct TaskLadderRowSelectionIdentity: Equatable, Hashable, Sendable {
+    let nodeID: TaskLadderNodeID
+    let isSelected: Bool
+
+    init(nodeID: TaskLadderNodeID, selectedNodeID: TaskLadderNodeID?) {
+        self.nodeID = nodeID
+        isSelected = nodeID == selectedNodeID
+    }
+}
+
 enum TaskRankingValueMode: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
     case base
     case now

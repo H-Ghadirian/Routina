@@ -42,6 +42,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 ## Index
 
 - [0264 — Bucket Focus by active intervals, not terminal actions](0264-bucket-focus-by-active-intervals-not-terminal-actions.md)
+- [0263 — Refresh lazy row chrome at the owner boundary](0263-refresh-lazy-row-chrome-at-the-owner-boundary.md)
 - [0262 — Pair nested scope state with navigation presentation](0262-pair-nested-scope-state-with-navigation-presentation.md)
 - [0261 — Prune filtered hierarchy at the presentation boundary](0261-prune-filtered-hierarchy-at-the-presentation-boundary.md)
 - [0260 — Clear synchronized filter state atomically](0260-clear-synchronized-filter-state-atomically.md)

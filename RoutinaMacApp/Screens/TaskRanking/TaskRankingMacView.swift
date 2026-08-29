@@ -28,13 +28,26 @@ struct TaskRankingMacView: View {
     @State private var temporalWeightTaskID: UUID?
 
     var body: some View {
-        VStack(spacing: 0) {
+        // Observe selection at the view-body boundary, before HSplitView and the
+        // LazyVStack retain their child builders. Reading it only inside
+        // `rankingList` can update Task Details without invalidating reused rows.
+        let selectedTaskID = store.selectedTaskID
+        let selectedGroupID = store.selectedGroupID
+        let selectedNodeID: TaskLadderNodeID? = if let selectedGroupID {
+            .group(selectedGroupID)
+        } else if let selectedTaskID {
+            .task(selectedTaskID)
+        } else {
+            nil
+        }
+
+        return VStack(spacing: 0) {
             workspaceControls
 
             Divider()
 
             HSplitView {
-                rankingList
+                rankingList(selectedNodeID: selectedNodeID)
                     .frame(minWidth: 340, idealWidth: 440, maxWidth: 560)
 
                 taskDetail
@@ -224,19 +237,7 @@ struct TaskRankingMacView: View {
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.35))
     }
 
-    private var rankingList: some View {
-        // Capture row chrome state before entering the lazy builder. Store reads made
-        // only while SwiftUI realizes a lazy row do not reliably invalidate sibling
-        // rows, which can leave an old Task Ladder selection tint on reused rows.
-        let selectedTaskID = store.selectedTaskID
-        let selectedGroupID = store.selectedGroupID
-        let selectedNodeID: TaskLadderNodeID? = if let selectedGroupID {
-            .group(selectedGroupID)
-        } else if let selectedTaskID {
-            .task(selectedTaskID)
-        } else {
-            nil
-        }
+    private func rankingList(selectedNodeID: TaskLadderNodeID?) -> some View {
         let currentScopeSearchMatchTaskIDs = store.currentScopeSearchMatchTaskIDs
 
         return VStack(alignment: .leading, spacing: 0) {
@@ -623,7 +624,11 @@ struct TaskRankingMacView: View {
         let childCount = metadata?.childCount ?? 0
         let canOpenInnerLadder = isGroup || isTaskGroup || childCount > 0
         let nodeID: TaskLadderNodeID = isGroup ? .group(task.id) : .task(task.id)
-        let isSelected = selectedNodeID == nodeID
+        let selectionIdentity = TaskLadderRowSelectionIdentity(
+            nodeID: nodeID,
+            selectedNodeID: selectedNodeID
+        )
+        let isSelected = selectionIdentity.isSelected
         return HStack(spacing: 9) {
             Button {
                 if isGroup {
@@ -709,6 +714,9 @@ struct TaskRankingMacView: View {
                     : .clear
         )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        // Keep the lazy item's semantic task ID stable while replacing only the
+        // old and new row chrome subtrees when their selected state flips.
+        .id(selectionIdentity)
         .contextMenu {
             if isGroup {
                 Button("Show Group Details") {

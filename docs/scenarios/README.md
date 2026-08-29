@@ -714,6 +714,12 @@ When the person single-clicks either row in Task Ladder
 Then the right side shows Exercise's normal task details or Company's group details
 And the current ladder scope does not change
 And exactly the clicked row shows the selection tint
+Given `Read about testosterone` and `Tax declaration` are ordinary rows
+And `Read about testosterone` was previously selected
+When the person selects `Tax declaration`
+Then the right side shows `Tax declaration` details
+And `Read about testosterone` loses its selection tint
+And only `Tax declaration` remains tinted
 When the person selects another task or group after scrolling through lazy rows
 Then the previous row loses its tint
 And only the newly selected row remains visibly selected

@@ -907,18 +907,53 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
-    func taskLadderCapturesSelectionBeforeBuildingLazyRows() throws {
+    func taskLadderObservesSelectionAtBodyAndRefreshesOnlyChangedRowChrome() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
 
+        let bodyStart = try #require(source.range(of: "var body: some View"))
+        let bodyEnd = try #require(
+            source.range(
+                of: "private var workspaceControls",
+                range: bodyStart.upperBound..<source.endIndex
+            )
+        )
+        let body = source[bodyStart.lowerBound..<bodyEnd.lowerBound]
+        let selectedTaskRead = try #require(body.range(of: "let selectedTaskID = store.selectedTaskID"))
+        let splitView = try #require(body.range(of: "HSplitView {"))
+        #expect(selectedTaskRead.lowerBound < splitView.lowerBound)
         #expect(source.contains("let selectedTaskID = store.selectedTaskID"))
         #expect(source.contains("let selectedGroupID = store.selectedGroupID"))
         #expect(source.contains("let selectedNodeID: TaskLadderNodeID?"))
-        #expect(source.contains("selectedNodeID: selectedNodeID"))
-        #expect(source.contains("let isSelected = selectedNodeID == nodeID"))
+        #expect(source.contains("rankingList(selectedNodeID: selectedNodeID)"))
+        #expect(source.contains("TaskLadderRowSelectionIdentity("))
+        #expect(source.contains(".id(selectionIdentity)"))
         #expect(source.contains(".accessibilityAddTraits(isSelected ? .isSelected : [])"))
         #expect(!source.contains("? store.selectedGroupID == task.id"))
+    }
+
+    @Test
+    func taskLadderRowSelectionIdentityChangesOnlyForOldAndNewSelection() {
+        let firstID = UUID()
+        let secondID = UUID()
+        let unrelatedID = UUID()
+        let firstNode = TaskLadderNodeID.task(firstID)
+        let secondNode = TaskLadderNodeID.task(secondID)
+        let unrelatedNode = TaskLadderNodeID.task(unrelatedID)
+
+        let before = [firstNode, secondNode, unrelatedNode].map {
+            TaskLadderRowSelectionIdentity(nodeID: $0, selectedNodeID: firstNode)
+        }
+        let after = [firstNode, secondNode, unrelatedNode].map {
+            TaskLadderRowSelectionIdentity(nodeID: $0, selectedNodeID: secondNode)
+        }
+
+        #expect(before[0] != after[0])
+        #expect(before[1] != after[1])
+        #expect(before[2] == after[2])
+        #expect(before.map(\.isSelected) == [true, false, false])
+        #expect(after.map(\.isSelected) == [false, true, false])
     }
 
     @Test
