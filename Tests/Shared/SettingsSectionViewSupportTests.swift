@@ -359,7 +359,7 @@ struct SettingsSectionViewSupportTests {
         )
 
         #expect(state.hasRecentSuccessfulBackup(referenceDate: now))
-        #expect(state.cloudResetBackupRequirementText(referenceDate: now).contains("Recent backup saved"))
+        #expect(state.cloudResetBackupRequirementText(referenceDate: now).contains("Recent verified backup saved"))
 
         state.lastSuccessfulBackupDate = now.addingTimeInterval(-25 * 60 * 60)
 

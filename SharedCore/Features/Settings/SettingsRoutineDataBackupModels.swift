@@ -26,6 +26,7 @@ extension SettingsRoutineDataPersistence {
         var deviceSessions: [DeviceSession]? = nil
         var deviceActionLogs: [DeviceActionLog]? = nil
         var userPreferences: UserPreferences? = nil
+        var verificationReceiptVersion: Int? = nil
 
         struct Place: Codable {
             var id: UUID

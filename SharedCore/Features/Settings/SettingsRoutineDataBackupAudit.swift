@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import SwiftData
 
 @MainActor
 public enum RoutinaBackupAudit {
@@ -15,6 +16,20 @@ public enum RoutinaBackupAudit {
         public var totalRecordCount: Int {
             recordCounts.values.reduce(0, +)
         }
+    }
+
+    public struct ComparisonReport: Equatable, Sendable {
+        public let packageReport: Report
+        public let liveRecordCounts: [String: Int]
+        public let liveSemanticFingerprint: String
+        public let matchesLiveData: Bool
+        public let firstDifferencePath: String?
+    }
+
+    public struct PortableVerificationReport: Equatable, Sendable {
+        public let audit: Report
+        public let sourceReceiptVerified: Bool
+        public let sourceVerifiedAt: Date?
     }
 
     public enum AuditError: LocalizedError, Equatable, Sendable {
@@ -130,6 +145,108 @@ public enum RoutinaBackupAudit {
             semanticFingerprint: firstRestore.semanticFingerprint,
             comparedSourceDirectly: comparesSourceDirectly
         )
+    }
+
+    public static func compare(
+        packageAt sourcePackageURL: URL,
+        withLiveDataIn context: ModelContext
+    ) throws -> ComparisonReport {
+        let packageReport = try audit(packageAt: sourcePackageURL)
+        let packageSnapshot = try PackageSnapshot(packageURL: sourcePackageURL)
+
+        let temporaryRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("RoutinaBackupLiveComparison-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: temporaryRoot,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+
+        let livePackageURL = temporaryRoot
+            .appendingPathComponent("live-source")
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        try SettingsRoutineDataPersistence.writeBackupPackage(
+            to: livePackageURL,
+            from: context,
+            exportedAt: packageSnapshot.backup.exportedAt,
+            mirrorsUserDefaults: false
+        )
+        let liveSnapshot = try PackageSnapshot(packageURL: livePackageURL)
+        let differencePath = firstDifferencePath(
+            packageSnapshot.canonicalObject,
+            liveSnapshot.canonicalObject,
+            path: "$"
+        )
+
+        return ComparisonReport(
+            packageReport: packageReport,
+            liveRecordCounts: liveSnapshot.recordCounts,
+            liveSemanticFingerprint: liveSnapshot.semanticFingerprint,
+            matchesLiveData: differencePath == nil,
+            firstDifferencePath: differencePath
+        )
+    }
+
+    public static func audit(
+        packageAt sourcePackageURL: URL,
+        matchingLiveDataIn context: ModelContext
+    ) throws -> Report {
+        let comparison = try compare(
+            packageAt: sourcePackageURL,
+            withLiveDataIn: context
+        )
+        guard comparison.matchesLiveData else {
+            throw AuditError.semanticMismatch(
+                stage: "live-source-to-backup",
+                path: comparison.firstDifferencePath ?? "$"
+            )
+        }
+        return comparison.packageReport
+    }
+
+    public static func audit(legacyJSONData: Data) throws -> Report {
+        let temporaryRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("RoutinaLegacyBackupAudit-\(UUID().uuidString)", isDirectory: true)
+        let packageURL = temporaryRoot
+            .appendingPathComponent("legacy")
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        let attachmentsURL = packageURL.appendingPathComponent(
+            SettingsRoutineDataPersistence.attachmentsDirectoryName,
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: attachmentsURL,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+
+        try legacyJSONData.write(
+            to: packageURL.appendingPathComponent(SettingsRoutineDataPersistence.manifestFileName),
+            options: .atomic
+        )
+        return try audit(packageAt: packageURL)
+    }
+
+    public static func verifyPortableBackup(
+        packageAt sourcePackageURL: URL
+    ) throws -> PortableVerificationReport {
+        let verification = try SettingsRoutineDataBackupVerification.verifyForRestore(
+            packageAt: sourcePackageURL
+        )
+        switch verification.assurance {
+        case let .sourceVerified(receipt):
+            return PortableVerificationReport(
+                audit: verification.audit,
+                sourceReceiptVerified: true,
+                sourceVerifiedAt: receipt.verifiedAt
+            )
+        case .isolatedRestoreOnly:
+            return PortableVerificationReport(
+                audit: verification.audit,
+                sourceReceiptVerified: false,
+                sourceVerifiedAt: nil
+            )
+        }
     }
 
     private static func compare(

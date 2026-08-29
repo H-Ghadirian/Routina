@@ -1,7 +1,7 @@
 import Foundation
 
 enum SettingsCloudEditor {
-    static let recentBackupRequiredMessage = "Save a backup within the last 24 hours before deleting iCloud data."
+    static let recentBackupRequiredMessage = "Save and verify a backup within the last 24 hours before deleting iCloud data."
 
     static func beginSync(
         state: inout SettingsCloudState

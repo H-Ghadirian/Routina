@@ -171,7 +171,7 @@ extension SettingsDataTransferState {
 
     func backupFreshnessText(referenceDate: Date = Date()) -> String {
         guard let lastSuccessfulBackupDate else {
-            return "No recent backup saved on this device."
+            return "No recent verified backup saved on this device."
         }
 
         let formattedDate = lastSuccessfulBackupDate.formatted(
@@ -179,15 +179,15 @@ extension SettingsDataTransferState {
             time: .shortened
         )
         if hasRecentSuccessfulBackup(referenceDate: referenceDate) {
-            return "Recent backup saved \(formattedDate)."
+            return "Recent verified backup saved \(formattedDate)."
         }
-        return "Last backup was \(formattedDate), more than 24 hours ago."
+        return "Last verified backup was \(formattedDate), more than 24 hours ago."
     }
 
     func cloudResetBackupRequirementText(referenceDate: Date = Date()) -> String {
         if hasRecentSuccessfulBackup(referenceDate: referenceDate) {
             return backupFreshnessText(referenceDate: referenceDate)
         }
-        return "\(backupFreshnessText(referenceDate: referenceDate)) Save a backup within the last 24 hours before deleting iCloud data."
+        return "\(backupFreshnessText(referenceDate: referenceDate)) Save and verify a backup within the last 24 hours before deleting iCloud data."
     }
 }

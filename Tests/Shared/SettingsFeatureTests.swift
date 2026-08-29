@@ -105,7 +105,7 @@ struct SettingsFeatureTests {
         #expect(state.isCloudDataResetConfirmationPresented)
         #expect(!state.isCloudDataResetAuthenticationInProgress)
         #expect(!state.isCloudDataResetInProgress)
-        #expect(state.cloudStatusMessage == "Save a backup within the last 24 hours before deleting iCloud data.")
+        #expect(state.cloudStatusMessage == "Save and verify a backup within the last 24 hours before deleting iCloud data.")
     }
 
     @Test
@@ -1239,7 +1239,7 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.resetCloudDataConfirmed) {
-            $0.cloud.cloudStatusMessage = "Save a backup within the last 24 hours before deleting iCloud data."
+            $0.cloud.cloudStatusMessage = "Save and verify a backup within the last 24 hours before deleting iCloud data."
         }
 
         #expect(authenticateCallCount.value == 0)
@@ -2146,10 +2146,11 @@ struct SettingsFeatureTests {
             $0.dataTransfer.dataTransferStatusMessage = "Saving task data..."
         }
 
-        await store.receive(.routineDataTransferFinished(success: true, message: "Saved to \(packageURL.lastPathComponent).")) {
+        let exportMessage = "Saved and verified 2 records and 0 attachments in \(packageURL.lastPathComponent)."
+        await store.receive(.routineDataTransferFinished(success: true, message: exportMessage)) {
             $0.dataTransfer.isDataTransferInProgress = false
             $0.dataTransfer.activeOperation = nil
-            $0.dataTransfer.dataTransferStatusMessage = "Saved to \(packageURL.lastPathComponent)."
+            $0.dataTransfer.dataTransferStatusMessage = exportMessage
             $0.dataTransfer.lastSuccessfulBackupDate = now
         }
         #expect(persistedBackupDate.value == now)
@@ -2157,6 +2158,11 @@ struct SettingsFeatureTests {
         var isDirectory: ObjCBool = false
         #expect(FileManager.default.fileExists(atPath: packageURL.path, isDirectory: &isDirectory))
         #expect(isDirectory.boolValue)
+        #expect(FileManager.default.fileExists(
+            atPath: packageURL.appendingPathComponent(
+                SettingsRoutineDataBackupVerification.receiptFileName
+            ).path
+        ))
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
@@ -2224,7 +2230,7 @@ struct SettingsFeatureTests {
             .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
         defer { try? FileManager.default.removeItem(at: packageURL) }
 
-        try SettingsRoutineDataPersistence.writeBackupPackage(
+        _ = try SettingsRoutineDataPersistence.writeVerifiedBackupPackage(
             to: packageURL,
             from: exportContext
         )
@@ -2254,7 +2260,9 @@ struct SettingsFeatureTests {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
 
-        let successMessage = "Loaded 1 tasks, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 away sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
+        await store.receive(.recoveryPointsLoaded([]))
+
+        let successMessage = "Verified source receipt and isolated restore. Loaded 1 tasks, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 away sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
         await store.receive(.routineDataTransferFinished(success: true, message: successMessage)) {
             $0.dataTransfer.isDataTransferInProgress = false
             $0.dataTransfer.activeOperation = nil
@@ -2264,6 +2272,63 @@ struct SettingsFeatureTests {
         let restoredTask = try #require(importContext.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(restoredTask.id == task.id)
         #expect(restoredTask.tags == ["Safe"])
+    }
+
+    @Test
+    func verifyRoutineDataSourceSelectedComparesBackupWithCurrentDevice() async throws {
+        let context = makeInMemoryContext()
+        context.insert(RoutineTask(name: "Compare me"))
+        try context.save()
+
+        let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+        _ = try SettingsRoutineDataPersistence.writeVerifiedBackupPackage(
+            to: packageURL,
+            from: context
+        )
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.verifyRoutineDataSourceSelected(packageURL)) {
+            $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.activeOperation = .verify
+            $0.dataTransfer.dataTransferStatusMessage = "Verifying backup..."
+        }
+        let message = "Its source verification receipt is valid, and its 2 records match this device."
+        await store.receive(.routineDataTransferFinished(success: true, message: message)) {
+            $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.activeOperation = nil
+            $0.dataTransfer.dataTransferStatusMessage = message
+        }
+    }
+
+    @Test
+    func recoveryPointRequiresConfirmationBeforeRestore() async {
+        let point = SettingsRoutineDataRecoveryPoint(
+            packageURL: URL(fileURLWithPath: "/tmp/recovery.routinabackup"),
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000),
+            totalRecordCount: 12,
+            attachmentCount: 2,
+            semanticFingerprint: String(repeating: "a", count: 64)
+        )
+        var initialState = SettingsFeature.State()
+        initialState.dataTransfer.recoveryPoints = [point]
+        let store = TestStore(initialState: initialState) {
+            SettingsFeature()
+        }
+
+        await store.send(.restoreRecoveryPointTapped(point.id)) {
+            $0.dataTransfer.recoveryPointPendingRestore = point
+        }
+        await store.send(.setRecoveryPointRestoreConfirmation(false)) {
+            $0.dataTransfer.recoveryPointPendingRestore = nil
+        }
     }
 }
 

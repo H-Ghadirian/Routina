@@ -263,7 +263,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
             sprintFocusAllocations: sprintFocusAllocations.map(SettingsRoutineDataBackupMapping.sprintFocusAllocation),
             deviceSessions: deviceSessions.map(SettingsRoutineDataBackupMapping.deviceSession),
             deviceActionLogs: deviceActionLogs.map(SettingsRoutineDataBackupMapping.deviceActionLog),
-            userPreferences: userPreferences.map(SettingsRoutineDataBackupMapping.userPreferences)
+            userPreferences: userPreferences.map(SettingsRoutineDataBackupMapping.userPreferences),
+            verificationReceiptVersion: SettingsRoutineDataBackupVerification.currentReceiptVersion
         )
 
         return try SettingsRoutineDataBackupCoding.encode(backup)

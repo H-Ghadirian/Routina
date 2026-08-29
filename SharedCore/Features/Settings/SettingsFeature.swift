@@ -114,6 +114,12 @@ struct SettingsFeature {
         case exportRoutineDataDestinationSelected(URL)
         case importRoutineDataTapped
         case importRoutineDataSourceSelected(URL)
+        case verifyRoutineDataTapped
+        case verifyRoutineDataSourceSelected(URL)
+        case recoveryPointsLoaded([SettingsRoutineDataRecoveryPoint])
+        case restoreRecoveryPointTapped(String)
+        case setRecoveryPointRestoreConfirmation(Bool)
+        case restoreRecoveryPointConfirmed
         case appIconSelected(AppIconOption)
         case resetTemporaryViewStateTapped
         case appIconChangeFinished(requestedOption: AppIconOption, errorMessage: String?)
@@ -438,12 +444,17 @@ struct SettingsFeature {
                     ),
                     state: &state
                 )
-                return SettingsRefreshActionExecution.refreshContext(
-                    reconcileNotificationsIfEnabled: false,
-                    modelContext: self.modelContext,
-                    notificationClient: self.notificationClient,
-                    locationClient: self.locationClient,
-                    appSettingsClient: self.appSettingsClient
+                return .merge(
+                    SettingsRefreshActionExecution.refreshContext(
+                        reconcileNotificationsIfEnabled: false,
+                        modelContext: self.modelContext,
+                        notificationClient: self.notificationClient,
+                        locationClient: self.locationClient,
+                        appSettingsClient: self.appSettingsClient
+                    ),
+                    SettingsRoutineDataTransferActionExecution.loadRecoveryPoints(
+                        routineDataTransferClient: self.routineDataTransferClient
+                    )
                 )
 
             case let .gitHubScopeChanged(scope):
@@ -926,6 +937,57 @@ struct SettingsFeature {
                 return SettingsRoutineDataTransferActionExecution.beginImport(
                     from: sourceURL,
                     state: &state.dataTransfer,
+                    routineDataTransferClient: self.routineDataTransferClient,
+                    modelContext: self.modelContext,
+                    appSettingsClient: { self.appSettingsClient },
+                    notificationClient: { self.notificationClient }
+                )
+
+            case .verifyRoutineDataTapped:
+                return SettingsRoutineDataTransferActionExecution.beginVerification(
+                    state: &state.dataTransfer,
+                    routineDataTransferClient: self.routineDataTransferClient,
+                    modelContext: self.modelContext
+                )
+
+            case let .verifyRoutineDataSourceSelected(sourceURL):
+                return SettingsRoutineDataTransferActionExecution.beginVerification(
+                    from: sourceURL,
+                    state: &state.dataTransfer,
+                    modelContext: self.modelContext
+                )
+
+            case let .recoveryPointsLoaded(points):
+                state.dataTransfer.recoveryPoints = points
+                if let pendingID = state.dataTransfer.recoveryPointPendingRestore?.id {
+                    state.dataTransfer.recoveryPointPendingRestore = points.first {
+                        $0.id == pendingID
+                    }
+                }
+                return .none
+
+            case let .restoreRecoveryPointTapped(id):
+                guard !state.dataTransfer.isDataTransferInProgress else { return .none }
+                state.dataTransfer.recoveryPointPendingRestore = state.dataTransfer
+                    .recoveryPoints
+                    .first { $0.id == id }
+                return .none
+
+            case let .setRecoveryPointRestoreConfirmation(isPresented):
+                if !isPresented {
+                    state.dataTransfer.recoveryPointPendingRestore = nil
+                }
+                return .none
+
+            case .restoreRecoveryPointConfirmed:
+                guard let recoveryPoint = state.dataTransfer.recoveryPointPendingRestore else {
+                    return .none
+                }
+                state.dataTransfer.recoveryPointPendingRestore = nil
+                return SettingsRoutineDataTransferActionExecution.beginImport(
+                    from: recoveryPoint.packageURL,
+                    state: &state.dataTransfer,
+                    routineDataTransferClient: self.routineDataTransferClient,
                     modelContext: self.modelContext,
                     appSettingsClient: { self.appSettingsClient },
                     notificationClient: { self.notificationClient }

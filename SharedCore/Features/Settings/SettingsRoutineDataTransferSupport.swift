@@ -3,6 +3,7 @@ import Foundation
 enum SettingsRoutineDataTransferOperation: Equatable, Sendable {
     case export
     case `import`
+    case verify
 
     var inProgressMessage: String {
         switch self {
@@ -10,6 +11,8 @@ enum SettingsRoutineDataTransferOperation: Equatable, Sendable {
             return "Saving task data..."
         case .import:
             return "Loading task data..."
+        case .verify:
+            return "Verifying backup..."
         }
     }
 }

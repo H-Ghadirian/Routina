@@ -84,7 +84,15 @@ SettingsMacDetailShell(
             Button {
                 isBackupExporterPresented = true
             } label: {
-                Label("Save Backup", systemImage: "square.and.arrow.down")
+                Label("Save and Verify", systemImage: "square.and.arrow.down")
+            }
+            .buttonStyle(.bordered)
+            .disabled(store.dataTransfer.isDataTransferInProgress)
+
+            Button {
+                store.send(.verifyRoutineDataTapped)
+            } label: {
+                Label("Verify Backup", systemImage: "checkmark.shield")
             }
             .buttonStyle(.bordered)
             .disabled(store.dataTransfer.isDataTransferInProgress)
@@ -92,7 +100,7 @@ SettingsMacDetailShell(
             Button {
                 store.send(.importRoutineDataTapped)
             } label: {
-                Label("Load Backup", systemImage: "square.and.arrow.up")
+                Label("Restore Backup", systemImage: "square.and.arrow.up")
             }
             .buttonStyle(.bordered)
             .disabled(store.dataTransfer.isDataTransferInProgress)
@@ -114,6 +122,37 @@ SettingsMacDetailShell(
             .foregroundStyle(
                 store.dataTransfer.hasRecentSuccessfulBackup() ? Color.secondary : Color.red
             )
+
+        if !store.dataTransfer.recoveryPoints.isEmpty {
+            Divider()
+
+            Text("Restore Recovery")
+                .font(.headline)
+
+            ForEach(store.dataTransfer.recoveryPoints) { point in
+                Button {
+                    store.send(.restoreRecoveryPointTapped(point.id))
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(point.createdAt.formatted(date: .abbreviated, time: .shortened))
+                            Text("\(point.totalRecordCount) records • \(point.attachmentCount) attachments")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(store.dataTransfer.isDataTransferInProgress)
+            }
+
+            Text("Routina keeps the ten most recent verified snapshots created immediately before a restore. They remain only while Routina is installed.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
     }
 
     SettingsMacDetailCard(title: "Estimated Usage") {
@@ -165,6 +204,21 @@ SettingsMacDetailShell(
             ))
         }
     }
+    .alert(
+        "Restore Recovery Point?",
+        isPresented: recoveryPointRestoreConfirmationBinding
+    ) {
+        Button("Cancel", role: .cancel) {
+            store.send(.setRecoveryPointRestoreConfirmation(false))
+        }
+        Button("Restore", role: .destructive) {
+            store.send(.restoreRecoveryPointConfirmed)
+        }
+    } message: {
+        if let point = store.dataTransfer.recoveryPointPendingRestore {
+            Text("Restore the verified snapshot from \(point.createdAt.formatted(date: .abbreviated, time: .shortened))? Routina will preserve the current data as another recovery point first.")
+        }
+    }
     }
 
     private var actionsDisabled: Bool {
@@ -172,6 +226,13 @@ SettingsMacDetailShell(
         store.cloud.isCloudDataResetAuthenticationInProgress ||
         store.cloud.isCloudDataResetInProgress ||
         !store.cloud.cloudSyncAvailable
+    }
+
+    private var recoveryPointRestoreConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.dataTransfer.recoveryPointPendingRestore != nil },
+            set: { store.send(.setRecoveryPointRestoreConfirmation($0)) }
+        )
     }
 }
 

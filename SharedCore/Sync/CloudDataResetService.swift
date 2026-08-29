@@ -39,7 +39,10 @@ enum CloudDataResetService {
 
 enum LocalUserDataResetService {
     @MainActor
-    static func wipeAllUserData(in context: ModelContext) throws {
+    static func wipeAllUserData(
+        in context: ModelContext,
+        savesChanges: Bool = true
+    ) throws {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         for task in tasks {
             context.delete(task)
@@ -155,7 +158,9 @@ enum LocalUserDataResetService {
             context.delete(assignment)
         }
 
-        try context.save()
+        if savesChanges {
+            try context.save()
+        }
     }
 }
 

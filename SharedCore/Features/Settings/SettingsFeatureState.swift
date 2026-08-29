@@ -117,6 +117,8 @@ struct SettingsDataTransferState: Equatable {
     var activeOperation: SettingsRoutineDataTransferOperation?
     var dataTransferStatusMessage: String = ""
     var lastSuccessfulBackupDate: Date?
+    var recoveryPoints: [SettingsRoutineDataRecoveryPoint] = []
+    var recoveryPointPendingRestore: SettingsRoutineDataRecoveryPoint?
 }
 
 struct SettingsGitHubState: Equatable {

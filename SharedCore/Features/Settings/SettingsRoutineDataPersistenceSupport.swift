@@ -2,9 +2,10 @@ import Foundation
 import SwiftData
 
 enum SettingsRoutineDataPersistence {
-    static let currentSchemaVersion = 40
+    static let currentSchemaVersion = 41
     static let legacyJSONSchemaVersion = 14
     static let externalAttachmentManifestSchemaVersion = 30
+    static let verificationReceiptRequiredSchemaVersion = 41
     static let backupPackageExtension = "routinabackup"
     static let legacyJSONBackupExtension = "json"
     static let manifestFileName = "manifest.json"
@@ -104,6 +105,32 @@ enum SettingsRoutineDataPersistence {
             mirrorsUserDefaults: mirrorsUserDefaults
         )
         try manifestData.write(to: packageURL.appendingPathComponent(manifestFileName), options: .atomic)
+    }
+
+    @MainActor
+    static func writeVerifiedBackupPackage(
+        to packageURL: URL,
+        from context: ModelContext,
+        exportedAt: Date = Date(),
+        verifiedAt: Date = Date(),
+        purpose: SettingsRoutineDataBackupVerification.Purpose = .userExport
+    ) throws -> SettingsRoutineDataBackupVerification.Report {
+        do {
+            try writeBackupPackage(
+                to: packageURL,
+                from: context,
+                exportedAt: exportedAt
+            )
+            return try SettingsRoutineDataBackupVerification.createReceipt(
+                forPackageAt: packageURL,
+                matchingLiveDataIn: context,
+                purpose: purpose,
+                verifiedAt: verifiedAt
+            )
+        } catch {
+            try? FileManager.default.removeItem(at: packageURL)
+            throw error
+        }
     }
 
     @MainActor
@@ -213,7 +240,8 @@ enum SettingsRoutineDataPersistence {
         do {
             try SettingsRoutineDataImportStoreResetter.deleteExistingData(
                 in: context,
-                clearsCloudKitTokens: preparesLiveStore
+                clearsCloudKitTokens: false,
+                savesChanges: false
             )
 
             let summary = try SettingsRoutineDataImportEntityInserter.insertBackup(
@@ -221,10 +249,11 @@ enum SettingsRoutineDataPersistence {
                 attachmentData: attachmentData,
                 in: context,
                 importDate: importDate,
-                appliesUserPreferencesToDefaults: preparesLiveStore
+                appliesUserPreferencesToDefaults: false
             )
             try context.save()
             if preparesLiveStore {
+                CloudKitDirectPullTokenStore.clearAll()
                 RoutinaUserPreferencesStore.applyToDefaults(from: context)
             }
             return summary

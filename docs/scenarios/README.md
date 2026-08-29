@@ -57,6 +57,40 @@ And requires the migrated result to remain stable across a second round trip wit
 Given the package uses a future unsupported schema
 Then the audit refuses it before restore and reports the supported schema range
 
+### Verified Backup And Reversible Restore
+
+Area: Settings / Backup / Restore
+Decision links: [0170](../decisions/0170-treat-backup-reset-as-complete-user-data-operations.md), [0694](../decisions/0694-verify-portable-backups-and-preserve-restore-recovery.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/SettingsRoutineDataBackupSafetyTests.swift`
+- `Tests/Shared/SettingsFeatureTests.swift`
+
+Given Routina exports a current `.routinabackup`
+When the isolated restored snapshot exactly matches the source store
+Then the package receives a portable source receipt containing its semantic fingerprint, manifest digest, record counts, and attachment digests
+And Settings reports the export successful only after that receipt is written
+
+Given a verified package is copied to an empty new device
+When the manifest, an attachment, the receipt, or restored semantics changed in transit
+Then restore rejects it before changing live data
+And an unchanged package can be verified from its receipt without comparing against nonexistent destination data
+
+Given the person selects `Verify Backup` on a device with current local data
+Then Routina also compares the package's canonical contents with that local store
+And reports match or the first difference without changing either source
+
+Given restore has a structurally valid candidate and existing destination data
+When replacement begins
+Then Routina first creates a verified recovery point of the destination
+And stages all deletion and insertion before one save
+And an import failure rolls back to the original saved data without clearing CloudKit pull tokens or applying restored defaults
+
+Given more than ten verified pre-restore recovery points exist
+Then Routina retains the ten newest points
+And a selected recovery point restores through the same preflight, preservation, and transaction flow
+And Settings explains that internal recovery points do not survive app deletion
+
 ### Task Effort Fields Stay Independent And Disclosures Stay Honest
 
 Area: Tasks / Focus / iOS and macOS Task Details

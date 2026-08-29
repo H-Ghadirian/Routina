@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0269 — Keep live restore reversible through commit](0269-keep-live-restore-reversible-through-commit.md)
 - [0268 — Scope lazy-row identity to presentation changes](0268-scope-lazy-row-identity-to-presentation-changes.md)
 - [0267 — Use direct links for local destinations in repeated views](0267-use-direct-links-for-local-destinations-in-repeated-views.md)
 - [0266 — Keep compact drill-down routes on one navigation stack](0266-keep-compact-drill-down-routes-on-one-navigation-stack.md)

@@ -222,6 +222,7 @@ struct SettingsFeatureDependencyTests {
             $0.notifications.scheduledNotifications = scheduledNotifications
             $0.notifications.hasLoadedScheduledNotifications = true
         }
+        await store.receive(.recoveryPointsLoaded([]))
     }
 
     @Test

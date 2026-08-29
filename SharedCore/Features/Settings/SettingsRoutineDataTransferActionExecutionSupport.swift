@@ -52,6 +52,7 @@ enum SettingsRoutineDataTransferActionExecution {
     static func beginImport(
         from sourceURL: URL,
         state: inout SettingsDataTransferState,
+        routineDataTransferClient: RoutineDataTransferClient,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,
         appSettingsClient: @escaping @Sendable () -> AppSettingsClient,
         notificationClient: @escaping @Sendable () -> NotificationClient
@@ -62,10 +63,36 @@ enum SettingsRoutineDataTransferActionExecution {
 
         return importData(
             from: sourceURL,
+            routineDataTransferClient: routineDataTransferClient,
             modelContext: modelContext,
             appSettingsClient: appSettingsClient,
             notificationClient: notificationClient
         )
+    }
+
+    static func beginVerification(
+        state: inout SettingsDataTransferState,
+        routineDataTransferClient: RoutineDataTransferClient,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<SettingsFeature.Action> {
+        guard SettingsRoutineDataTransferEditor.begin(.verify, state: &state) else {
+            return .none
+        }
+        return verifyData(
+            routineDataTransferClient: routineDataTransferClient,
+            modelContext: modelContext
+        )
+    }
+
+    static func beginVerification(
+        from sourceURL: URL,
+        state: inout SettingsDataTransferState,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<SettingsFeature.Action> {
+        guard SettingsRoutineDataTransferEditor.begin(.verify, state: &state) else {
+            return .none
+        }
+        return verifyData(from: sourceURL, modelContext: modelContext)
     }
 
     static func exportData(
@@ -90,7 +117,7 @@ enum SettingsRoutineDataTransferActionExecution {
                 await send(
                     .routineDataTransferFinished(
                         success: true,
-                        message: "Saved to \(result.destinationFileName)."
+                        message: exportSuccessMessage(for: result)
                     )
                 )
             } catch {
@@ -118,7 +145,7 @@ enum SettingsRoutineDataTransferActionExecution {
                 await send(
                     .routineDataTransferFinished(
                         success: true,
-                        message: "Saved to \(result.destinationFileName)."
+                        message: exportSuccessMessage(for: result)
                     )
                 )
             } catch {
@@ -156,11 +183,12 @@ enum SettingsRoutineDataTransferActionExecution {
                 }
 
                 send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
+                send(.recoveryPointsLoaded(result.recoveryPoints))
                 NotificationCenter.default.postRoutineDidUpdate()
                 await send(
                     .routineDataTransferFinished(
                         success: true,
-                        message: importSuccessMessage(for: result.importedSummary)
+                        message: importSuccessMessage(for: result)
                     )
                 )
             } catch {
@@ -176,6 +204,7 @@ enum SettingsRoutineDataTransferActionExecution {
 
     static func importData(
         from sourceURL: URL,
+        routineDataTransferClient: RoutineDataTransferClient,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,
         appSettingsClient: @escaping @Sendable () -> AppSettingsClient,
         notificationClient: @escaping @Sendable () -> NotificationClient
@@ -186,15 +215,17 @@ enum SettingsRoutineDataTransferActionExecution {
                     from: sourceURL,
                     modelContext: modelContext,
                     appSettingsClient: appSettingsClient,
-                    notificationClient: notificationClient
+                    notificationClient: notificationClient,
+                    recoveryDirectoryURL: routineDataTransferClient.recoveryDirectoryURL
                 )
 
                 send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
+                send(.recoveryPointsLoaded(result.recoveryPoints))
                 NotificationCenter.default.postRoutineDidUpdate()
                 await send(
                     .routineDataTransferFinished(
                         success: true,
-                        message: importSuccessMessage(for: result.importedSummary)
+                        message: importSuccessMessage(for: result)
                     )
                 )
             } catch {
@@ -208,7 +239,96 @@ enum SettingsRoutineDataTransferActionExecution {
         }
     }
 
-    private static func importSuccessMessage(for summary: SettingsRoutineDataPersistence.ImportSummary) -> String {
+    static func verifyData(
+        routineDataTransferClient: RoutineDataTransferClient,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<SettingsFeature.Action> {
+        .run { @MainActor send in
+            do {
+                guard let result = try await SettingsRoutineDataTransferExecution.verifyData(
+                    routineDataTransferClient: routineDataTransferClient,
+                    modelContext: modelContext
+                ) else {
+                    await send(.routineDataTransferFinished(
+                        success: false,
+                        message: "Verification canceled."
+                    ))
+                    return
+                }
+                await send(.routineDataTransferFinished(
+                    success: true,
+                    message: verificationMessage(for: result)
+                ))
+            } catch {
+                await send(.routineDataTransferFinished(
+                    success: false,
+                    message: "Verification failed: \(error.localizedDescription)"
+                ))
+            }
+        }
+    }
+
+    static func verifyData(
+        from sourceURL: URL,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<SettingsFeature.Action> {
+        .run { @MainActor send in
+            do {
+                let result = try SettingsRoutineDataTransferExecution.verifyData(
+                    from: sourceURL,
+                    modelContext: modelContext
+                )
+                await send(.routineDataTransferFinished(
+                    success: true,
+                    message: verificationMessage(for: result)
+                ))
+            } catch {
+                await send(.routineDataTransferFinished(
+                    success: false,
+                    message: "Verification failed: \(error.localizedDescription)"
+                ))
+            }
+        }
+    }
+
+    static func loadRecoveryPoints(
+        routineDataTransferClient: RoutineDataTransferClient
+    ) -> Effect<SettingsFeature.Action> {
+        .run { @MainActor send in
+            send(.recoveryPointsLoaded(
+                SettingsRoutineDataTransferExecution.recoveryPoints(
+                    routineDataTransferClient: routineDataTransferClient
+                )
+            ))
+        }
+    }
+
+    private static func exportSuccessMessage(
+        for result: SettingsRoutineDataTransferExportResult
+    ) -> String {
+        guard let verification = result.verification else {
+            return "Saved to \(result.destinationFileName)."
+        }
+        return "Saved and verified \(verification.audit.totalRecordCount) records and \(verification.audit.attachmentCount) attachments in \(result.destinationFileName)."
+    }
+
+    private static func verificationMessage(
+        for result: SettingsRoutineDataTransferVerificationResult
+    ) -> String {
+        let originText = result.verification.assurance.isSourceVerified
+            ? "Its source verification receipt is valid"
+            : "It has no source verification receipt, but its isolated restore passed"
+        if result.comparison.matchesLiveData {
+            return "\(originText), and its \(result.comparison.packageReport.totalRecordCount) records match this device."
+        }
+        let path = result.comparison.firstDifferencePath ?? "$"
+        return "\(originText), but it differs from this device at \(path). No data was changed."
+    }
+
+    private static func importSuccessMessage(
+        for result: SettingsRoutineDataTransferImportResult
+    ) -> String {
+        let summary = result.importedSummary
         var parts = [
             "\(summary.tasks) tasks",
             "\(summary.goals) goals",
@@ -226,7 +346,16 @@ enum SettingsRoutineDataTransferActionExecution {
         }
         parts.append("\(summary.events) events")
         parts.append("\(summary.attachments) attachments")
-        return "Loaded \(formattedList(parts))."
+        let verificationText = result.verification.assurance.isSourceVerified
+            ? "Verified source receipt and isolated restore."
+            : "Isolated restore passed; this older backup has no source verification receipt."
+        let recoveryText = result.recoveryPoint == nil
+            ? ""
+            : " The previous device data was saved as a verified recovery point."
+        let notificationText = result.notificationWarning == nil
+            ? ""
+            : " Data was restored, but notifications could not be refreshed; reopen Settings to retry."
+        return "\(verificationText) Loaded \(formattedList(parts)).\(recoveryText)\(notificationText)"
     }
 
     private static func formattedList(_ parts: [String]) -> String {

@@ -7,6 +7,7 @@ struct SettingsCloudDetailView: View {
     let store: StoreOf<SettingsFeature>
     @State private var isBackupExporterPresented = false
     @State private var isBackupImporterPresented = false
+    @State private var isBackupVerifierPresented = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
@@ -74,16 +75,47 @@ List {
         Button {
             isBackupExporterPresented = true
         } label: {
-            Label("Export Task Data", systemImage: "square.and.arrow.down")
+            Label("Export and Verify Backup", systemImage: "square.and.arrow.down")
+        }
+        .disabled(store.dataTransfer.isDataTransferInProgress)
+
+        Button {
+            isBackupVerifierPresented = true
+        } label: {
+            Label("Verify Backup", systemImage: "checkmark.shield")
         }
         .disabled(store.dataTransfer.isDataTransferInProgress)
 
         Button {
             isBackupImporterPresented = true
         } label: {
-            Label("Import Task Data", systemImage: "square.and.arrow.up")
+            Label("Restore Backup", systemImage: "square.and.arrow.up")
         }
         .disabled(store.dataTransfer.isDataTransferInProgress)
+    }
+
+    if !store.dataTransfer.recoveryPoints.isEmpty {
+        Section("Restore Recovery") {
+            ForEach(store.dataTransfer.recoveryPoints) { point in
+                Button {
+                    store.send(.restoreRecoveryPointTapped(point.id))
+                } label: {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(point.createdAt.formatted(date: .abbreviated, time: .shortened))
+                        Text("\(point.totalRecordCount) records • \(point.attachmentCount) attachments")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .disabled(store.dataTransfer.isDataTransferInProgress)
+            }
+
+            Text("Routina keeps the ten most recent verified snapshots created immediately before a restore. They remain only while Routina is installed.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     Section("Backup Status") {
@@ -182,6 +214,40 @@ List {
             ))
         }
     }
+    .fileImporter(
+        isPresented: $isBackupVerifierPresented,
+        allowedContentTypes: [.routinaBackupPackage, .folder]
+    ) { result in
+        switch result {
+        case let .success(sourceURL):
+            store.send(.verifyRoutineDataSourceSelected(sourceURL))
+
+        case let .failure(error):
+            store.send(.routineDataTransferFinished(
+                success: false,
+                message: dataTransferFailureMessage(
+                    prefix: "Verification",
+                    canceledMessage: "Verification canceled.",
+                    error: error
+                )
+            ))
+        }
+    }
+    .alert(
+        "Restore Recovery Point?",
+        isPresented: recoveryPointRestoreConfirmationBinding
+    ) {
+        Button("Cancel", role: .cancel) {
+            store.send(.setRecoveryPointRestoreConfirmation(false))
+        }
+        Button("Restore", role: .destructive) {
+            store.send(.restoreRecoveryPointConfirmed)
+        }
+    } message: {
+        if let point = store.dataTransfer.recoveryPointPendingRestore {
+            Text("Restore the verified snapshot from \(point.createdAt.formatted(date: .abbreviated, time: .shortened))? Routina will preserve the current data as another recovery point first.")
+        }
+    }
     }
 
     private var actionsDisabled: Bool {
@@ -195,6 +261,13 @@ List {
         Binding(
             get: { store.cloud.isCloudDataResetConfirmationPresented },
             set: { store.send(.setCloudDataResetConfirmation($0)) }
+        )
+    }
+
+    private var recoveryPointRestoreConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.dataTransfer.recoveryPointPendingRestore != nil },
+            set: { store.send(.setRecoveryPointRestoreConfirmation($0)) }
         )
     }
 
@@ -221,13 +294,13 @@ private struct SettingsCloudDataResetConfirmationSheet: View {
 NavigationStack {
     Form {
         Section("Back Up First") {
-            Text("Save a Routina backup before deleting iCloud data so you have a recovery point.")
+            Text("Save and verify a Routina backup before deleting iCloud data so you have a tested recovery point.")
                 .foregroundStyle(.secondary)
 
             Button {
                 isBackupExporterPresented = true
             } label: {
-                Label("Save Backup First", systemImage: "square.and.arrow.down")
+                Label("Save and Verify Backup First", systemImage: "square.and.arrow.down")
             }
             .disabled(store.dataTransfer.isDataTransferInProgress)
 

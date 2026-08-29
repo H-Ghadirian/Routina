@@ -42,7 +42,7 @@ VStack(alignment: .leading, spacing: 18) {
         Text("Back Up First")
             .font(.headline)
 
-        Text("Save a Routina backup before deleting iCloud data so you have a recovery point.")
+        Text("Save and verify a Routina backup before deleting iCloud data so you have a tested recovery point.")
             .font(.footnote)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -51,7 +51,7 @@ VStack(alignment: .leading, spacing: 18) {
             Button {
                 isBackupExporterPresented = true
             } label: {
-                Label("Save Backup First", systemImage: "square.and.arrow.down")
+                Label("Save and Verify Backup First", systemImage: "square.and.arrow.down")
             }
             .disabled(store.dataTransfer.isDataTransferInProgress)
 

@@ -18,10 +18,10 @@ struct RoutinaBackupAuditCommand {
 
         let packageURL = URL(fileURLWithPath: arguments[0]).standardizedFileURL
         do {
-            let report = try await MainActor.run {
-                try RoutinaBackupAudit.audit(packageAt: packageURL)
+            let portableReport = try await MainActor.run {
+                try RoutinaBackupAudit.verifyPortableBackup(packageAt: packageURL)
             }
-            printReport(report, packageURL: packageURL)
+            printReport(portableReport, packageURL: packageURL)
         } catch {
             write("Backup audit failed: \(error.localizedDescription)\n", to: .standardError)
             exit(EXIT_FAILURE)
@@ -29,9 +29,10 @@ struct RoutinaBackupAuditCommand {
     }
 
     private static func printReport(
-        _ report: RoutinaBackupAudit.Report,
+        _ portableReport: RoutinaBackupAudit.PortableVerificationReport,
         packageURL: URL
     ) {
+        let report = portableReport.audit
         let byteFormatter = ByteCountFormatter()
         byteFormatter.countStyle = .file
 
@@ -47,6 +48,11 @@ struct RoutinaBackupAuditCommand {
             "Attachments: \(report.attachmentCount) (\(byteFormatter.string(fromByteCount: Int64(report.attachmentBytes))))"
         )
         print("Semantic fingerprint: \(report.semanticFingerprint)")
+        if let verifiedAt = portableReport.sourceVerifiedAt {
+            print("Source receipt: verified at \(verifiedAt.ISO8601Format())")
+        } else {
+            print("Source receipt: unavailable (isolated restore checks only)")
+        }
         if report.comparedSourceDirectly {
             print("Verified: source package equals its isolated restore and a second round-trip")
         } else {
