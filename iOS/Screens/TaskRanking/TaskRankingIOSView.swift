@@ -3,6 +3,9 @@ import SwiftUI
 
 struct TaskRankingIOSView: View {
     let store: StoreOf<TaskRankingFeature>
+    private let isInnerLadderDestination: Bool
+
+    @State private var innerLadderNodeID: UUID?
 
     @AppStorage(
         UserDefaultStringValueKey.appSettingMacTaskRankingReversedMetrics.rawValue,
@@ -16,6 +19,14 @@ struct TaskRankingIOSView: View {
         UserDefaultStringValueKey.appSettingMacTaskLadderOrganization.rawValue,
         store: SharedDefaults.app
     ) private var taskLadderOrganizationRawValue = ""
+
+    init(
+        store: StoreOf<TaskRankingFeature>,
+        isInnerLadderDestination: Bool = false
+    ) {
+        self.store = store
+        self.isInnerLadderDestination = isInnerLadderDestination
+    }
 
     var body: some View {
         List {
@@ -68,6 +79,12 @@ struct TaskRankingIOSView: View {
         .navigationTitle(store.scopeParentName ?? "Task Ladder")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: searchTextBinding, prompt: "Search Task Ladder")
+        .navigationDestination(item: $innerLadderNodeID) { _ in
+            TaskRankingIOSView(
+                store: store,
+                isInnerLadderDestination: true
+            )
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
@@ -104,6 +121,11 @@ struct TaskRankingIOSView: View {
         }
         .onChange(of: taskLadderOrganizationRawValue) { _, _ in
             store.send(.organizationChanged)
+        }
+        .onChange(of: innerLadderNodeID) { previousNodeID, nodeID in
+            if previousNodeID != nil, nodeID == nil {
+                store.send(.scopeBackTapped)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             store.send(.routineDataChanged)
@@ -148,7 +170,7 @@ struct TaskRankingIOSView: View {
                 .pickerStyle(.segmented)
             }
 
-            if !store.scopePath.isEmpty {
+            if !store.scopePath.isEmpty && !isInnerLadderDestination {
                 Button {
                     store.send(.scopeBackTapped)
                 } label: {
@@ -287,7 +309,7 @@ struct TaskRankingIOSView: View {
 
             if canOpenInnerLadder {
                 Button {
-                    store.send(.childLadderOpened(task.id))
+                    openInnerLadder(task.id)
                 } label: {
                     Image(systemName: "square.stack.3d.up")
                         .frame(width: 36, height: 36)
@@ -300,7 +322,7 @@ struct TaskRankingIOSView: View {
         .contextMenu {
             if canOpenInnerLadder {
                 Button("Open Inner Task Ladder") {
-                    store.send(.childLadderOpened(task.id))
+                    openInnerLadder(task.id)
                 }
             }
 
@@ -314,6 +336,11 @@ struct TaskRankingIOSView: View {
                 }
             }
         }
+    }
+
+    private func openInnerLadder(_ nodeID: UUID) {
+        store.send(.childLadderOpened(nodeID))
+        innerLadderNodeID = nodeID
     }
 
     @ViewBuilder

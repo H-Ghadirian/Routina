@@ -68,8 +68,25 @@ struct IOSHomeWorkspaceNavigationSourceTests {
 
         #expect(taskLadderView.contains("ForEach(store.presentation.sections)"))
         #expect(taskLadderView.contains("ForEach(TaskRankingMetric.allCases)"))
-        #expect(taskLadderView.contains("store.send(.childLadderOpened(task.id))"))
+        #expect(taskLadderView.contains("openInnerLadder(task.id)"))
         #expect(taskLadderFeature.contains("TaskRankingPresentation.make("))
+    }
+
+    @Test
+    func taskLadderInnerGroupsPushAndBackReturnsToThePreviousLadder() throws {
+        let taskLadderView = try Self.sourceFile(
+            "iOS/Screens/TaskRanking/TaskRankingIOSView.swift"
+        )
+
+        #expect(taskLadderView.contains("@State private var innerLadderNodeID: UUID?"))
+        #expect(taskLadderView.contains(".navigationDestination(item: $innerLadderNodeID)"))
+        #expect(taskLadderView.contains("isInnerLadderDestination: true"))
+        #expect(taskLadderView.contains("private func openInnerLadder(_ nodeID: UUID)"))
+        #expect(taskLadderView.contains("store.send(.childLadderOpened(nodeID))"))
+        #expect(taskLadderView.contains("innerLadderNodeID = nodeID"))
+        #expect(taskLadderView.contains("previousNodeID != nil, nodeID == nil"))
+        #expect(taskLadderView.contains("store.send(.scopeBackTapped)"))
+        #expect(taskLadderView.contains("!store.scopePath.isEmpty && !isInnerLadderDestination"))
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

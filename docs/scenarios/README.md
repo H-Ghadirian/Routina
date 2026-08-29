@@ -4167,6 +4167,13 @@ When either workspace presents an unbounded task catalog
 Then its reducer-owned cached snapshot feeds the scrolling list
 And Home's list body does not derive that workspace presentation
 
+Given the person opens Task Ladder from Home
+And a group appears in the current Ladder list
+When they use the group's explicit inner-ladder control
+Then the group Ladder is pushed as another level in Home's existing navigation hierarchy
+And the native Back button returns to the preceding Task Ladder list
+And only a later Back action can return from the root Task Ladder to Home
+
 Given Mac and iOS each created a logical user-preferences singleton before receiving the other device's CloudKit record
 And the newer synchronized record contains the Mac Backlog section catalog
 When iOS applies the imported preferences
