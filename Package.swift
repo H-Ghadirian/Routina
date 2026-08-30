@@ -33,19 +33,19 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            from: "1.25.5"
+            from: "1.26.2"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-dependencies",
-            from: "1.12.0"
+            from: "1.17.1"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-case-paths",
-            from: "1.7.3"
+            from: "1.9.3"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-concurrency-extras",
-            from: "1.3.2"
+            from: "1.4.1"
         ),
     ],
     targets: [

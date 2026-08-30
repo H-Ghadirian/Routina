@@ -1701,7 +1701,7 @@
 			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.25.5;
+				minimumVersion = 1.26.2;
 			};
 		};
 		2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
@@ -1709,7 +1709,7 @@
 			repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.12.0;
+				minimumVersion = 1.17.1;
 			};
 		};
 		2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */ = {
@@ -1717,7 +1717,7 @@
 			repositoryURL = "https://github.com/pointfreeco/swift-case-paths";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.7.3;
+				minimumVersion = 1.9.3;
 			};
 		};
 		2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */ = {
@@ -1725,7 +1725,7 @@
 			repositoryURL = "https://github.com/pointfreeco/swift-concurrency-extras";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.3.2;
+				minimumVersion = 1.4.1;
 			};
 		};
 		C10002012F50000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */ = {
@@ -1733,7 +1733,7 @@
 			repositoryURL = "https://github.com/pointfreeco/swift-perception";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.6.0;
+				minimumVersion = 2.0.11;
 			};
 		};
 		C10002022F50000100000001 /* XCRemoteSwiftPackageReference "swift-navigation" */ = {
@@ -1741,7 +1741,7 @@
 			repositoryURL = "https://github.com/pointfreeco/swift-navigation";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.8.0;
+				minimumVersion = 2.11.1;
 			};
 		};
 		F10001012FA0000100000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
@@ -1749,7 +1749,7 @@
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 12.17.0;
+				minimumVersion = 12.18.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
