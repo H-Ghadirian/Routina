@@ -147,6 +147,21 @@ enum RoutineFlag {
     static func deserialize(_ value: String) -> [String] {
         RoutineTag.deserialize(value)
     }
+
+    /// Keeps Mac-only behavior markers out of iOS presentation without
+    /// deleting assignments that may have synchronized from a Mac.
+    static func iOSVisible(_ flags: [String]) -> [String] {
+        flags.filter { flag in
+            !contains(
+                RoutineFlagRuleKind.hideFromCalendarList.builtInFlagName,
+                in: [flag]
+            )
+        }
+    }
+
+    static func iOSVisible(_ flags: Set<String>) -> Set<String> {
+        Set(iOSVisible(Array(flags)))
+    }
 }
 
 /// A typed behavior attached to a task flag. A flag can carry one rule of each
@@ -225,6 +240,12 @@ enum RoutineFlagRuleKind: String, Codable, CaseIterable, Identifiable, Sendable 
 
     static var builtInFlags: [String] {
         allCases.map(\.builtInFlagName)
+    }
+
+    /// Rules whose behavior can be understood and observed entirely on iOS.
+    /// The complete built-in catalog remains persisted for Mac and sync.
+    static var iOSVisibleCases: [Self] {
+        allCases.filter { $0 != .hideFromCalendarList }
     }
 
     static var builtInRules: [RoutineFlagRule] {

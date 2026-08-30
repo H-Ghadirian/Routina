@@ -168,7 +168,11 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .tags:
             return ["labels", "colors", "related tags"]
         case .flags:
+            #if os(macOS)
             return ["task behavior", "hide", "calendar list", "timeline", "task ladder", "auto assume done"]
+            #else
+            return ["task behavior", "hide", "timeline", "task ladder", "auto assume done"]
+            #endif
         case .sections:
             return ["task list", "backlog", "super section", "subsection"]
         case .appearance:
@@ -182,7 +186,11 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .quickAdd:
             return ["smart add", "parser", "dates"]
         case .shortcuts:
+            #if os(macOS)
             return ["keyboard", "hotkeys", "commands"]
+            #else
+            return ["siri", "apple shortcuts", "automation"]
+            #endif
         case .aiConnections:
             return ["mcp", "local ai", "automation", "read only"]
         case .support:
@@ -205,12 +213,17 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .blocking:
             return ["Focus mode", "App blocking", "Website blocking"]
         case .calendar:
+            #if os(macOS)
             return ["Calendar import", "Planner calendar", "Calendar list", "Automatic timeline activity", "Persian dates"]
+            #else
+            return ["Review Calendar Tasks", "Persian dates"]
+            #endif
         case .places:
             return ["Places", "Maps", "Check in"]
         case .tags:
             return ["Saved tags", "Tag colors", "Related tags"]
         case .flags:
+            #if os(macOS)
             return [
                 "Hide from Task Lists",
                 "Hide from Calendar List",
@@ -218,10 +231,18 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 "Hide from Task Ladder",
                 "Auto Assume Done"
             ]
+            #else
+            return [
+                "Hide from Task Lists",
+                "Hide from Timeline",
+                "Hide from Task Ladder",
+                "Auto Assume Done"
+            ]
+            #endif
         case .sections:
             return ["Main task list", "Backlog", "Super sections", "Subsections"]
         case .appearance:
-            return ["Theme", "App icon", "Task row", "Timeline row", "Persian dates"]
+            return ["Theme", "App icon", "Task row", "Timeline row"]
         case .iCloud:
             return ["Sync", "Export", "Import", "Cloud reset", "Backup"]
         case .git:
@@ -231,7 +252,11 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .quickAdd:
             return ["Smart Add", "Dates", "Times", "Links", "Recurrence"]
         case .shortcuts:
+            #if os(macOS)
             return ["Keyboard", "Siri", "Apple Shortcuts"]
+            #else
+            return ["Siri", "Apple Shortcuts"]
+            #endif
         case .aiConnections:
             return ["MCP", "Local AI", "Read-only task access"]
         case .support:
@@ -298,7 +323,12 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .git:           return "arrow.triangle.branch"
         case .backup:        return "externaldrive.fill"
         case .quickAdd:      return "text.badge.plus"
-        case .shortcuts:     return "keyboard.fill"
+        case .shortcuts:
+            #if os(macOS)
+            return "keyboard.fill"
+            #else
+            return "square.grid.2x2.fill"
+            #endif
         case .aiConnections: return "sparkles"
         case .support:       return "envelope.fill"
         case .about:         return "info.circle.fill"
@@ -393,7 +423,11 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             return SettingsSectionRowPresentation(subtitle: "Supported syntax and examples")
 
         case .shortcuts:
+            #if os(macOS)
             return SettingsSectionRowPresentation(subtitle: "Keyboard, Siri, and Apple Shortcuts")
+            #else
+            return SettingsSectionRowPresentation(subtitle: "Siri and Apple Shortcuts")
+            #endif
 
         case .aiConnections:
             let isEnabled = SharedDefaults.app[.appSettingMacLocalAIAccessEnabled]
@@ -615,6 +649,7 @@ extension SettingsAppearanceState {
     }
 
     var calendarOverviewSubtitle: String {
+        #if os(macOS)
         let plannerText = showsTimelineTasksInDayPlanner
             ? "Automatic timeline activity"
             : "Timeline badges"
@@ -624,6 +659,13 @@ extension SettingsAppearanceState {
         }
 
         return plannerText
+        #else
+        let calendarTaskText = "Review events before adding tasks"
+        if showPersianDates {
+            return "\(calendarTaskText) • Persian dates"
+        }
+        return calendarTaskText
+        #endif
     }
 
     var appLockDetailText: String {

@@ -206,6 +206,10 @@ struct SettingsGeneralDetailView: View {
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var isHomeTaskListModeTabsVisible = false
+    @AppStorage(
+        IOSFirstTaskExperience.completionDefaultsKey,
+        store: SharedDefaults.app
+    ) private var hasCompletedFirstTaskExperience = true
 
     var body: some View {
 List {
@@ -224,20 +228,23 @@ List {
     Section("Battery Repeating Tasks") {
         Toggle("Create charge repeating tasks", isOn: batteryRoutineMonitoringBinding)
 
-        Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
-            Text("Low battery threshold \(batteryRoutineThresholdPercent)%")
+        if batteryRoutineMonitoringEnabled {
+            Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
+                Text("Low battery threshold \(batteryRoutineThresholdPercent)%")
+            }
         }
-        .disabled(!batteryRoutineMonitoringEnabled)
 
         Text("When enabled, Routina creates one charge repeating task for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
             .foregroundStyle(.secondary)
     }
 
-    Section("Navigation") {
-        Toggle("Show Home task-type tabs", isOn: $isHomeTaskListModeTabsVisible)
+    if hasCompletedFirstTaskExperience {
+        Section("Home") {
+            Toggle("Show Home task-type control", isOn: $isHomeTaskListModeTabsVisible)
 
-        Text("Show All / Repeating / One-time tabs in the Home toolbar. Turn off to switch task type from Filters instead.")
-            .foregroundStyle(.secondary)
+            Text("Show an expandable All / Repeating / One-time control in the Home toolbar. Turn off to switch task type from Filters instead.")
+                .foregroundStyle(.secondary)
+        }
     }
 
     Section("Reset Settings") {

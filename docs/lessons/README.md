@@ -41,6 +41,11 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0276 — Gate settings by platform and effective capability](0276-gate-settings-by-platform-and-effective-capability.md)
+- [0275 — Hide dependent settings without a subject](0275-hide-dependent-settings-without-a-subject.md)
+- [0274 — Remove retired migration copy with the migration](0274-remove-retired-migration-copy-with-the-migration.md)
+- [0273 — Derive each toolbar control from its capability](0273-derive-each-toolbar-control-from-its-capability.md)
+- [0272 — Gate empty-state guidance with feature availability](0272-gate-empty-state-guidance-with-feature-availability.md)
 - [0271 — Gate preserved data at every feature presentation boundary](0271-gate-preserved-data-at-every-feature-presentation-boundary.md)
 - [0270 — Use an explicit menu for compacted toolbar actions](0270-use-an-explicit-menu-for-compacted-toolbar-actions.md)
 - [0269 — Keep live restore reversible through commit](0269-keep-live-restore-reversible-through-commit.md)

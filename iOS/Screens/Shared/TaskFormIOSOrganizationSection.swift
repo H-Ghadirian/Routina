@@ -242,9 +242,9 @@ struct TaskFormIOSOrganizationSection: View {
 
     private var flagEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !model.routineFlags.isEmpty {
+            if !visibleRoutineFlags.isEmpty {
                 HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-                    ForEach(model.routineFlags, id: \.self) { flag in
+                    ForEach(visibleRoutineFlags, id: \.self) { flag in
                         Button { model.onRemoveFlag(flag) } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "flag.fill")
@@ -283,8 +283,13 @@ struct TaskFormIOSOrganizationSection: View {
         }
     }
 
+    private var visibleRoutineFlags: [String] {
+        RoutineFlag.iOSVisible(model.routineFlags)
+    }
+
     private var unselectedAvailableFlags: [String] {
-        model.availableFlags.filter { !RoutineFlag.contains($0, in: model.routineFlags) }
+        RoutineFlag.iOSVisible(model.availableFlags)
+            .filter { !RoutineFlag.contains($0, in: model.routineFlags) }
     }
 
     private var visibleAvailableFlags: [String] {

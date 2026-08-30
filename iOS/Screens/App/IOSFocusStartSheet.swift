@@ -54,13 +54,18 @@ struct IOSFocusStartSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     let presentation: IOSFocusStartPresentation
+    let onCreateTask: () -> Void
     @State private var searchText = ""
     @State private var selectedDuration: TimeInterval
     @State private var selectedTag: String?
     @State private var errorMessage: String?
 
-    init(presentation: IOSFocusStartPresentation) {
+    init(
+        presentation: IOSFocusStartPresentation,
+        onCreateTask: @escaping () -> Void
+    ) {
         self.presentation = presentation
+        self.onCreateTask = onCreateTask
         _selectedDuration = State(initialValue: presentation.defaults.duration)
         _selectedTag = State(initialValue: presentation.defaults.tagName)
     }
@@ -150,7 +155,9 @@ struct IOSFocusStartSheet: View {
     @ViewBuilder
     private var taskSection: some View {
         Section("Task") {
-            if filteredTasks.isEmpty {
+            if presentation.tasks.isEmpty {
+                createTaskButton
+            } else if filteredTasks.isEmpty {
                 Text(emptyTaskMessage)
                     .foregroundStyle(.secondary)
             } else {
@@ -193,6 +200,37 @@ struct IOSFocusStartSheet: View {
         }
     }
 
+    private var createTaskButton: some View {
+        Button(action: onCreateTask) {
+            HStack(spacing: 12) {
+                Image(systemName: "checklist")
+                    .font(.headline)
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Create Task")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+
+                    Text("Create an active task before starting Focus.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens task creation")
+    }
+
     private var filteredTasks: [IOSFocusStartTask] {
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return presentation.tasks.filter { task in
@@ -205,9 +243,6 @@ struct IOSFocusStartSheet: View {
     }
 
     private var emptyTaskMessage: String {
-        if presentation.tasks.isEmpty {
-            return "Create an active task before starting task Focus."
-        }
         if selectedTag != nil {
             return "No active tasks use this tag."
         }

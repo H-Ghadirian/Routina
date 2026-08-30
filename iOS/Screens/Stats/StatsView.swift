@@ -115,6 +115,18 @@ struct StatsView: View {
         store.availableTags
     }
 
+    private var visibleAvailableFlags: [String] {
+        RoutineFlag.iOSVisible(store.availableFlags)
+    }
+
+    private var visibleSelectedFlags: Set<String> {
+        RoutineFlag.iOSVisible(store.selectedFlags)
+    }
+
+    private var visibleExcludedFlags: Set<String> {
+        RoutineFlag.iOSVisible(store.excludedFlags)
+    }
+
     private var filterPresentation: StatsFilterPresentation {
         StatsFilterPresentation(
             taskTypeFilter: selectedTaskTypeFilter,
@@ -123,9 +135,9 @@ struct StatsView: View {
             includeTagMatchMode: store.includeTagMatchMode,
             excludedTags: store.excludedTags,
             excludeTagMatchMode: store.excludeTagMatchMode,
-            selectedFlags: store.selectedFlags,
+            selectedFlags: visibleSelectedFlags,
             includeFlagMatchMode: store.includeFlagMatchMode,
-            excludedFlags: store.excludedFlags,
+            excludedFlags: visibleExcludedFlags,
             excludeFlagMatchMode: store.excludeFlagMatchMode,
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             availableTags: availableTags,
@@ -300,6 +312,15 @@ struct StatsView: View {
         orderedAvailableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
     }
 
+    private var dashboardToolbarAvailability: StatsDashboardToolbarAvailability {
+        StatsDashboardToolbarAvailability.make(
+            hasReportableDashboardItems: !availableDashboardItems.isEmpty,
+            hasVisibleSummaryItems: scopedVisibleOrderedDashboardItems.contains(where: \.isSummaryCard),
+            hasFilterableTasks: !tasks.isEmpty,
+            hasActiveSheetFilters: hasActiveSheetFilters
+        )
+    }
+
     private var availableDashboardScopes: [StatsDashboardScope] {
         StatsDashboardScope.allCases.filter { scope in
             (scope != .wins || isStatsWinsEnabled)
@@ -354,7 +375,10 @@ struct StatsView: View {
             .sheet(isPresented: $isAddDashboardItemSheetPresented) {
                 addDashboardItemSheet
             }
-            .task { store.send(.onAppear) }
+            .task {
+                pruneMacOnlyFlagSelections()
+                store.send(.onAppear)
+            }
             .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
                 store.send(.dataRefreshRequested)
             }
@@ -366,6 +390,11 @@ struct StatsView: View {
             }
             .onChange(of: isAwayEnabled) { _, _ in
                 store.send(.dataRefreshRequested)
+            }
+            .onChange(of: dashboardToolbarAvailability.showsEditor) { _, showsEditor in
+                guard !showsEditor else { return }
+                isEditingDashboard = false
+                isAddDashboardItemSheetPresented = false
             }
     }
 
@@ -417,6 +446,7 @@ struct StatsView: View {
                 if blocks.isEmpty {
                     StatsEmptyDashboardStateView(
                         hasActiveFilters: hasActiveFilters,
+                        isSleepEnabled: isAwayEnabled && isStatsSleepTabEnabled,
                         colorScheme: colorScheme
                     )
                 } else {
@@ -429,10 +459,18 @@ struct StatsView: View {
         .navigationTitle("Stats")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                summaryDisplayModeMenu
-                dashboardEditButton
-                filterSheetButton
+            if dashboardToolbarAvailability.showsAnyControl {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    if dashboardToolbarAvailability.showsSummaryDisplayMode {
+                        summaryDisplayModeMenu
+                    }
+                    if dashboardToolbarAvailability.showsEditor {
+                        dashboardEditButton
+                    }
+                    if dashboardToolbarAvailability.showsFilters {
+                        filterSheetButton
+                    }
+                }
             }
         }
     }
@@ -456,10 +494,18 @@ struct StatsView: View {
             onRefreshGitHubStats: { store.send(.gitHubStatsRefreshRequested) }
         )
         .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                summaryDisplayModeMenu
-                dashboardEditButton
-                filterSheetButton
+            if dashboardToolbarAvailability.showsAnyControl {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    if dashboardToolbarAvailability.showsSummaryDisplayMode {
+                        summaryDisplayModeMenu
+                    }
+                    if dashboardToolbarAvailability.showsEditor {
+                        dashboardEditButton
+                    }
+                    if dashboardToolbarAvailability.showsFilters {
+                        filterSheetButton
+                    }
+                }
             }
         }
     }
@@ -538,8 +584,8 @@ struct StatsView: View {
             selectedTags: store.effectiveSelectedTags,
             selectedImportanceUrgencyFilterLabel: selectedImportanceUrgencyFilterLabel,
             excludedTags: store.excludedTags,
-            selectedFlags: store.selectedFlags,
-            excludedFlags: store.excludedFlags,
+            selectedFlags: visibleSelectedFlags,
+            excludedFlags: visibleExcludedFlags,
             onClearAll: { store.send(.clearFilters) },
             onClearTaskType: { store.send(.taskTypeFilterChanged(.all)) },
             onClearAdvancedQuery: { store.send(.advancedQueryChanged("")) },
@@ -694,7 +740,7 @@ struct StatsView: View {
                 set: { store.send(.excludedTagsChanged($0)) }
             ),
             selectedFlags: Binding(
-                get: { store.selectedFlags },
+                get: { visibleSelectedFlags },
                 set: { store.send(.selectedFlagsChanged($0)) }
             ),
             includeFlagMatchMode: Binding(
@@ -702,7 +748,7 @@ struct StatsView: View {
                 set: { store.send(.includeFlagMatchModeChanged($0)) }
             ),
             excludedFlags: Binding(
-                get: { store.excludedFlags },
+                get: { visibleExcludedFlags },
                 set: { store.send(.excludedFlagsChanged($0)) }
             ),
             excludeFlagMatchMode: Binding(
@@ -710,7 +756,7 @@ struct StatsView: View {
                 set: { store.send(.excludeFlagMatchModeChanged($0)) }
             ),
             availableTags: availableTags,
-            availableFlags: store.availableFlags,
+            availableFlags: visibleAvailableFlags,
             tagPicker: {
                 HomeTagFilterPickerSheet(
                     data: tagRuleData,
@@ -1239,6 +1285,15 @@ struct StatsView: View {
             } else {
                 content()
             }
+        }
+    }
+
+    private func pruneMacOnlyFlagSelections() {
+        if visibleSelectedFlags != store.selectedFlags {
+            store.send(.selectedFlagsChanged(visibleSelectedFlags))
+        }
+        if visibleExcludedFlags != store.excludedFlags {
+            store.send(.excludedFlagsChanged(visibleExcludedFlags))
         }
     }
 }

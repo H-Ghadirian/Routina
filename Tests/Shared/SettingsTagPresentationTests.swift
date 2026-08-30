@@ -3,6 +3,21 @@ import Testing
 
 struct SettingsTagPresentationTests {
     @Test
+    func tagCounterSettingsAreHiddenUntilATagExists() throws {
+        let sourcePaths = [
+            "iOS/Screens/Settings/SettingsTagsDetailView.swift",
+            "RoutinaMacApp/Screens/Settings/SettingsMacTagsDetailView.swift"
+        ]
+
+        for sourcePath in sourcePaths {
+            let source = try Self.sourceFile(sourcePath)
+
+            #expect(source.contains("if !store.tags.savedTags.isEmpty {"))
+            #expect(source.contains("Tag Counters"))
+        }
+    }
+
+    @Test
     func savedTagOptionsAreRevealedOnlyForTheSelectedTag() throws {
         let source = try Self.sourceFile("iOS/Screens/Settings/SettingsTagsDetailView.swift")
 

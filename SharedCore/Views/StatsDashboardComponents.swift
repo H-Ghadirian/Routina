@@ -57,6 +57,29 @@ enum StatsSummaryDisplayMode: String, CaseIterable, Identifiable {
     }
 }
 
+struct StatsDashboardToolbarAvailability: Equatable {
+    let showsSummaryDisplayMode: Bool
+    let showsEditor: Bool
+    let showsFilters: Bool
+
+    var showsAnyControl: Bool {
+        showsSummaryDisplayMode || showsEditor || showsFilters
+    }
+
+    static func make(
+        hasReportableDashboardItems: Bool,
+        hasVisibleSummaryItems: Bool,
+        hasFilterableTasks: Bool,
+        hasActiveSheetFilters: Bool
+    ) -> Self {
+        Self(
+            showsSummaryDisplayMode: hasVisibleSummaryItems,
+            showsEditor: hasReportableDashboardItems,
+            showsFilters: hasFilterableTasks || hasActiveSheetFilters
+        )
+    }
+}
+
 enum StatsDashboardScope: String, CaseIterable, Identifiable {
     case all
     case focus
@@ -536,14 +559,14 @@ struct StatsEmptyChartStateView: View {
 
 struct StatsEmptyDashboardStateView: View {
     let hasActiveFilters: Bool
+    let isSleepEnabled: Bool
     let colorScheme: ColorScheme
 
     private var message: String {
-        if hasActiveFilters {
-            return "No reports match this time range and filters yet. Try a wider range or clear filters to see more activity."
-        }
-
-        return "Reports appear after you complete tasks, focus, sleep, or log activity in this period."
+        StatsEmptyDashboardMessage.text(
+            hasActiveFilters: hasActiveFilters,
+            isSleepEnabled: isSleepEnabled
+        )
     }
 
     var body: some View {
@@ -573,6 +596,20 @@ struct StatsEmptyDashboardStateView: View {
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
+    }
+}
+
+enum StatsEmptyDashboardMessage {
+    static func text(hasActiveFilters: Bool, isSleepEnabled: Bool) -> String {
+        if hasActiveFilters {
+            return "No reports match this time range and filters yet. Try a wider range or clear filters to see more activity."
+        }
+
+        if isSleepEnabled {
+            return "Reports appear after you complete tasks, focus, sleep, or log activity in this period."
+        }
+
+        return "Reports appear after you complete tasks, focus, or log activity in this period."
     }
 }
 

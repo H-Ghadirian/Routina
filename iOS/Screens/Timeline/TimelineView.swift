@@ -62,6 +62,7 @@ struct TimelineView: View {
         timelineRootWithSheets
             .task(id: isActive) {
                 guard isActive else { return }
+                pruneMacOnlyFlagSelection()
                 await timelineTask()
             }
             .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
@@ -386,7 +387,11 @@ struct TimelineView: View {
     }
 
     private var availableFlags: [String] {
-        store.availableFlags
+        RoutineFlag.iOSVisible(store.availableFlags)
+    }
+
+    private var visibleSelectedFlags: Set<String> {
+        RoutineFlag.iOSVisible(store.selectedFlags)
     }
 
     private var filterPresentation: TimelineFilterPresentation {
@@ -472,7 +477,7 @@ struct TimelineView: View {
             || effectiveFilterType != .all
             || !store.effectiveSelectedTags.isEmpty
             || !store.excludedTags.isEmpty
-            || !store.selectedFlags.isEmpty
+            || !visibleSelectedFlags.isEmpty
             || store.selectedImportanceUrgencyFilter != nil
             || store.mediaFilter != .all
     }
@@ -507,6 +512,7 @@ struct TimelineView: View {
             || (effectiveFilterType != .all && !effectiveFilterType.isTimelinePigmentCase)
             || !store.effectiveSelectedTags.isEmpty
             || !store.excludedTags.isEmpty
+            || !visibleSelectedFlags.isEmpty
             || store.selectedImportanceUrgencyFilter != nil
             || store.mediaFilter != .all
     }
@@ -587,7 +593,7 @@ struct TimelineView: View {
                     }
                 }
 
-                ForEach(store.selectedFlags.sorted(), id: \.self) { flag in
+                ForEach(visibleSelectedFlags.sorted(), id: \.self) { flag in
                     compactFilterChip(title: "flag: \(flag)", tintColor: .orange) {
                         store.send(.selectedFlagsChanged(
                             HomeFlagFilterMutationSupport.toggled(flag, in: store.selectedFlags)
@@ -818,7 +824,7 @@ struct TimelineView: View {
                     onPresent: presentTimelineFilterDetail
                 )
 
-                if !availableFlags.isEmpty || !store.selectedFlags.isEmpty {
+                if !availableFlags.isEmpty || !visibleSelectedFlags.isEmpty {
                     HomeFiltersDetailEntry(
                         title: "Filter flags",
                         systemImage: "flag",
@@ -938,7 +944,7 @@ struct TimelineView: View {
         case .flags:
             TimelineFlagFilterPickerSheet(
                 selectedFlags: Binding(
-                    get: { store.selectedFlags },
+                    get: { visibleSelectedFlags },
                     set: { store.send(.selectedFlagsChanged($0)) }
                 ),
                 includeFlagMatchMode: Binding(
@@ -955,7 +961,7 @@ struct TimelineView: View {
     }
 
     private var timelineFlagSelectionSummary: String {
-        let flags = store.selectedFlags.sorted {
+        let flags = visibleSelectedFlags.sorted {
             $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
         }
         guard let firstFlag = flags.first else { return "All flags" }
@@ -976,6 +982,12 @@ struct TimelineView: View {
 
     private var includesSleepTimelineFilters: Bool {
         isAwayEnabled && isStatsSleepTabEnabled
+    }
+
+    private func pruneMacOnlyFlagSelection() {
+        let visibleFlags = RoutineFlag.iOSVisible(store.selectedFlags)
+        guard visibleFlags != store.selectedFlags else { return }
+        store.send(.selectedFlagsChanged(visibleFlags))
     }
 
     private var visibleTimelineFilterTypes: [TimelineFilterType] {

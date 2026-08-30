@@ -584,19 +584,52 @@ Then the task does not appear or contribute to the ladder count
 And the task remains unchanged in Home, Backlog, Planner, Timeline, and Stats
 And a Flag that only hides tasks from normal task lists does not hide them from Task Ladder
 
+### Tag Counters Require a Saved Tag
+
+Area: Settings / Tags
+Decision links: [0702](../decisions/0702-hide-tag-counter-settings-without-tags.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/SettingsTagPresentationTests.swift`
+
+Given the saved-tag catalog is empty
+When Tags Settings loads on iOS or macOS
+Then Tag Counters is absent
+And the empty Saved Tags or All Tags guidance remains visible
+
+Given the first saved Tag becomes available
+When Tags Settings refreshes
+Then Tag Counters appears with the stored display preference
+
+Given the final saved Tag is removed
+When Tags Settings refreshes
+Then Tag Counters disappears without resetting that preference
+
 ### Built-In Flags Replace Configurable Rules
 
 Area: Settings / Flags
-Decision links: [0636](../decisions/0636-replace-configurable-flags-with-built-in-behaviors.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md)
+Decision links: [0703](../decisions/0703-keep-ios-settings-platform-relevant-and-adaptive.md), [0701](../decisions/0701-retire-pre-release-flag-migration-guidance.md), [0636](../decisions/0636-replace-configurable-flags-with-built-in-behaviors.md), [0497](../decisions/0497-use-flags-for-task-behavior-rules.md)
 Current behavior: [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/Shared/SettingsFlagRulePresentationTests.swift`
+- `Tests/Shared/SettingsIOSRelevanceTests.swift`
 
-Given Settings is opened on iOS or macOS
+Given Settings is opened on macOS
 When the Flags destination loads
 Then it shows exactly the five canonical built-in behavior Flags
 And one of them is Hide from Calendar List
 And it does not offer custom Flag creation or custom rule editing
+And it does not show migration guidance or status for configurable pre-release Flags
+
+Given Settings, Add/Edit Task, Task Details, or a Flag filter is opened on iOS
+When Flag choices or assignments are presented
+Then Hide from Calendar List is absent
+And the other four built-in behavior Flags remain available
+
+Given a task received Hide from Calendar List through Mac synchronization
+When that task is edited and saved on iOS
+Then the hidden Mac-only assignment remains stored
+And it returns unchanged when the task is viewed again on Mac
 
 Given the persisted settings catalog is empty or contains non-canonical entries
 When the app launches
@@ -633,7 +666,7 @@ And selecting an overlapping Shared exclusion hides them because Exclude wins
 ### Settings Search Opens a Matching Destination
 
 Area: Settings / Navigation
-Decision links: [0637](../decisions/0637-search-settings-by-destination.md)
+Decision links: [0703](../decisions/0703-keep-ios-settings-platform-relevant-and-adaptive.md), [0637](../decisions/0637-search-settings-by-destination.md)
 Current behavior: [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/Shared/SettingsSectionViewSupportTests.swift`
@@ -644,11 +677,53 @@ Then Sections or iCloud & Backup remains in the visible destination list
 And selecting the result opens the existing Settings detail form
 And task content is not searched
 
-Given Settings is open on iOS or macOS
+Given Settings is open on macOS
 When the person searches for `hide`
 Then Flags remains in the visible destination list
 And its result explains the matching inner behaviors: Hide from Task Lists, Hide from Calendar List, Hide from Timeline, and Hide from Task Ladder
 And selecting the result opens Flags without changing its controls
+
+Given Settings is open on iOS
+When the person searches for `hide`
+Then Flags remains in the visible destination list
+And its result explains Hide from Task Lists, Hide from Timeline, and Hide from Task Ladder
+And it does not advertise Hide from Calendar List
+
+Given Settings is open on iOS
+When the person searches for Planner Calendar, Calendar List, or keyboard shortcuts
+Then those Mac-only concepts do not create a false Settings result
+
+### iOS Settings Follows Platform And First-Task Availability
+
+Area: Settings / iOS / First Task
+Decision links: [0703](../decisions/0703-keep-ios-settings-platform-relevant-and-adaptive.md), [0698](../decisions/0698-focus-first-ios-home-on-the-first-task.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/SettingsIOSRelevanceTests.swift`
+- `Tests/Shared/SettingsSectionViewSupportTests.swift`
+
+Given iOS Settings Calendar is open
+Then Calendar task review/import and Persian-date display remain available
+And the Mac Planner Calendar section is absent
+
+Given a new iOS installation has not yet observed a task
+When General or Shortcuts Settings opens
+Then Home task-type configuration and Mark Done are absent
+And Quick Add, Start Focus, Today, Calendar task import, and other task-creation or global controls remain available
+
+Given the installation later observes a task through creation, import, restore, or synchronization
+Then Home task-type configuration and Mark Done appear
+And deleting every task later does not hide them again
+
+Given Away or Sleep is disabled
+When iOS Shortcuts Settings opens
+Then Shake to start sleep mode, Sleep, and Wake Up are absent
+And they return only when both parent features are available
+
+Given charge repeating tasks are disabled
+When General Settings opens
+Then the disabled low-battery threshold is absent
+And enabling charge repeating tasks reveals the threshold control
 
 ### Mac Task Ladder Rows Show Task Identity Metadata
 
@@ -3657,6 +3732,57 @@ Coverage:
 Given a dashboard report has no backing data
 When Stats summary items are derived
 Then the report is hidden while saved order and hidden-item preferences remain preserved
+
+### Empty Stats Guidance Follows Sleep Availability
+
+Area: Stats / Settings / UI
+Decision links: [0221](../decisions/0221-hide-stats-sleep-tab-behind-beta-toggle.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/StatsEmptyDashboardMessageTests.swift`
+
+Given Stats has no visible reports and no active filters
+And either `Show Away` or `Show Sleep tab` is off
+When Stats presents its empty-state guidance
+Then the guidance does not mention Sleep
+And it still explains that tasks, Focus, or other logged activity can produce reports
+
+Given both `Show Away` and `Show Sleep tab` are on
+When Stats presents the same unfiltered empty state
+Then the guidance can include Sleep
+
+Given active filters produce an empty dashboard
+When Sleep availability changes
+Then the range-and-filter recovery guidance remains unchanged
+
+### iOS Stats Hides Inert Toolbar Controls
+
+Area: Stats / iOS UI
+Decision links: [0700](../decisions/0700-hide-inert-ios-stats-toolbar-controls.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/StatsDashboardToolbarAvailabilityTests.swift`
+
+Given iOS Stats has no reportable dashboard item, task data, or active sheet filter
+When the dashboard presents its empty state
+Then Cards/Compact, Edit, and Filter are absent
+
+Given at least one reportable dashboard item is hidden
+When no report is currently visible
+Then Edit remains available so the hidden item can be restored
+
+Given an active sheet filter leaves no reportable result
+When the dashboard becomes empty
+Then Filter remains available so the filter can be cleared
+And Edit and Cards/Compact remain absent until they can affect report content
+
+Given the selected scope has a visible report but no visible summary item
+When the toolbar is derived
+Then Cards/Compact is absent while applicable Edit and Filter controls remain
+
+Given reportable items disappear while dashboard editing or Add is open
+When toolbar availability refreshes
+Then Stats exits edit mode and dismisses Add
 
 ### Semantic Focus Copies Count Once In Stats
 

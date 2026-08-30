@@ -148,8 +148,13 @@ struct SettingsSectionViewSupportTests {
         #expect(SettingsSectionID.filteredSections(sections, matching: "flags") == [.flags])
         #expect(SettingsSectionID.filteredSections(sections, matching: "no such setting").isEmpty)
         #expect(SettingsSectionID.filteredSections(sections, matching: "   ") == sections)
+        #if os(macOS)
         #expect(SettingsSectionID.flags.searchResultSubtitle(for: "hide") ==
             "Matches: Hide from Task Lists • Hide from Calendar List • Hide from Timeline • Hide from Task Ladder")
+        #else
+        #expect(SettingsSectionID.flags.searchResultSubtitle(for: "hide") ==
+            "Matches: Hide from Task Lists • Hide from Timeline • Hide from Task Ladder")
+        #endif
         #expect(SettingsSectionID.flags.searchResultSubtitle(for: "flags") == nil)
     }
 
@@ -254,8 +259,13 @@ struct SettingsSectionViewSupportTests {
 
         #expect(compactSections.contains(.shortcuts))
         #expect(SettingsSectionID.shortcuts.title == "Shortcuts")
+        #if os(macOS)
+        let expectedSubtitle = "Keyboard, Siri, and Apple Shortcuts"
+        #else
+        let expectedSubtitle = "Siri and Apple Shortcuts"
+        #endif
         #expect(SettingsSectionID.shortcuts.rowPresentation(in: SettingsFeatureState()) == SettingsSectionRowPresentation(
-            subtitle: "Keyboard, Siri, and Apple Shortcuts"
+            subtitle: expectedSubtitle
         ))
     }
 
@@ -303,8 +313,27 @@ struct SettingsSectionViewSupportTests {
 
         let presentation = SettingsSectionID.calendar.rowPresentation(in: state)
 
+        #if os(macOS)
         #expect(presentation.subtitle == "Timeline badges • Persian dates")
+        #else
+        #expect(presentation.subtitle == "Review events before adding tasks • Persian dates")
+        #endif
         #expect(presentation.value == "Persian")
+    }
+
+    @Test
+    func settingsSearchUsesOnlyControlsAvailableOnTheCurrentPlatform() {
+        #if os(macOS)
+        #expect(SettingsSectionID.calendar.matchesSearch("Planner calendar"))
+        #expect(SettingsSectionID.flags.matchesSearch("Calendar list"))
+        #expect(SettingsSectionID.shortcuts.matchesSearch("keyboard"))
+        #else
+        #expect(!SettingsSectionID.calendar.matchesSearch("Planner calendar"))
+        #expect(!SettingsSectionID.flags.matchesSearch("Calendar list"))
+        #expect(!SettingsSectionID.shortcuts.matchesSearch("keyboard"))
+        #expect(SettingsSectionID.calendar.matchesSearch("Review Calendar Tasks"))
+        #expect(SettingsSectionID.shortcuts.matchesSearch("Siri"))
+        #endif
     }
 
     @Test

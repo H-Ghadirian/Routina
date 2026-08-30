@@ -8,19 +8,21 @@ struct SettingsMacTagsDetailView: View {
 SettingsMacDetailShell(
     title: "Tags"
 ) {
-    SettingsMacDetailCard(title: "Tag Counters") {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Tag counter display",
-            options: TagCounterDisplayMode.allCases,
-            selection: tagCounterDisplayModeBinding,
-            minimumSegmentWidth: 104
-        ) { mode in
-            Text(mode.summaryText)
-        }
+    if !store.tags.savedTags.isEmpty {
+        SettingsMacDetailCard(title: "Tag Counters") {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Tag counter display",
+                options: TagCounterDisplayMode.allCases,
+                selection: tagCounterDisplayModeBinding,
+                minimumSegmentWidth: 104
+            ) { mode in
+                Text(mode.summaryText)
+            }
 
-        Text(store.appearance.tagCounterDisplayMode.subtitle)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
+            Text(store.appearance.tagCounterDisplayMode.subtitle)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
     }
 
     SettingsMacDetailCard(title: "All Tags") {
@@ -130,12 +132,6 @@ struct SettingsMacFlagsDetailView: View {
                         }
                     }
                 }
-            }
-
-            SettingsMacDetailCard(title: "About Flags") {
-                Text("Your existing configurable Flags are migrated once: rules become the matching built-in flags, overlapping rules are combined, and flags without rules become Tags.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
         }
     }

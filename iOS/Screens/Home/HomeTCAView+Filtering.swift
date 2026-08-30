@@ -33,7 +33,7 @@ extension HomeTCAView {
             createdDateFilter: store.createdDateFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
-            selectedFlags: store.selectedFlags,
+            selectedFlags: RoutineFlag.iOSVisible(store.selectedFlags),
             includeFlagMatchMode: store.includeFlagMatchMode,
             excludedTags: store.excludedTags,
             excludeTagMatchMode: store.excludeTagMatchMode,

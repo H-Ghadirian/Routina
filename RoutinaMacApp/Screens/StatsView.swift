@@ -295,6 +295,7 @@ struct StatsView: View {
                     if blocks.isEmpty {
                         StatsEmptyDashboardStateView(
                             hasActiveFilters: store.hasActiveFilters,
+                            isSleepEnabled: isAwayEnabled && isStatsSleepTabEnabled,
                             colorScheme: colorScheme
                         )
                     } else {

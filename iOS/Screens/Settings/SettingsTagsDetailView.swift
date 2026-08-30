@@ -15,16 +15,18 @@ struct SettingsTagsDetailView: View {
 
     var body: some View {
         List {
-            Section("Tag Counters") {
-                Picker("Display", selection: tagCounterDisplayModeBinding) {
-                    ForEach(TagCounterDisplayMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
+            if !store.tags.savedTags.isEmpty {
+                Section("Tag Counters") {
+                    Picker("Display", selection: tagCounterDisplayModeBinding) {
+                        ForEach(TagCounterDisplayMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
                     }
-                }
-                .pickerStyle(.menu)
+                    .pickerStyle(.menu)
 
-                Text(store.appearance.tagCounterDisplayMode.subtitle)
-                    .foregroundStyle(.secondary)
+                    Text(store.appearance.tagCounterDisplayMode.subtitle)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section("Saved Tags") {
@@ -122,7 +124,7 @@ struct SettingsFlagsDetailView: View {
             }
 
             Section("Built-in Flags") {
-                ForEach(RoutineFlagRuleKind.allCases) { kind in
+                ForEach(RoutineFlagRuleKind.iOSVisibleCases) { kind in
                     HStack(alignment: .top, spacing: 12) {
                         Image(systemName: kind.systemImage)
                             .foregroundStyle(.tint)
@@ -138,11 +140,6 @@ struct SettingsFlagsDetailView: View {
                         }
                     }
                 }
-            }
-
-            Section("About Flags") {
-                Text("Your existing configurable Flags are migrated once: rules become the matching built-in flags, overlapping rules are combined, and flags without rules become Tags.")
-                    .foregroundStyle(.secondary)
             }
         }
         .listStyle(.insetGrouped)

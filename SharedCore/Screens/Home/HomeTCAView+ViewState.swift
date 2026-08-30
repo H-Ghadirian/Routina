@@ -12,7 +12,7 @@ extension HomeTCAView {
             createdDateFilter: store.createdDateFilter,
             advancedQuery: store.advancedQuery,
             selectedTags: store.selectedTags,
-            selectedFlags: store.selectedFlags,
+            selectedFlags: platformVisibleSelectedFlags,
             excludedTags: store.excludedTags,
             selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             selectedImportanceUrgencyFilterLabel: homeFilterPresentation.selectedImportanceUrgencyFilterLabel,
@@ -86,7 +86,7 @@ extension HomeTCAView {
             selectedTodoStateFilter: store.selectedTodoStateFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
-            selectedFlags: store.selectedFlags,
+            selectedFlags: platformVisibleSelectedFlags,
             includeFlagMatchMode: store.includeFlagMatchMode,
             excludedTags: store.excludedTags,
             selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
@@ -326,10 +326,28 @@ extension HomeTCAView {
 
     var homeFlagFilterData: HomeFlagFilterData {
         HomeFlagFilterData(
-            selectedFlags: store.selectedFlags,
-            flagOptions: store.flagFilterOptions,
+            selectedFlags: platformVisibleSelectedFlags,
+            flagOptions: platformVisibleFlagOptions,
             taskListKind: store.taskListMode.filterTaskListKind
         )
+    }
+
+    private var platformVisibleSelectedFlags: Set<String> {
+        #if os(iOS)
+        RoutineFlag.iOSVisible(store.selectedFlags)
+        #else
+        store.selectedFlags
+        #endif
+    }
+
+    private var platformVisibleFlagOptions: [HomeFlagFilterOption] {
+        #if os(iOS)
+        store.flagFilterOptions.filter {
+            !RoutineFlag.iOSVisible([$0.name]).isEmpty
+        }
+        #else
+        store.flagFilterOptions
+        #endif
     }
 
     var homeFlagFilterActions: HomeFlagFilterActions {

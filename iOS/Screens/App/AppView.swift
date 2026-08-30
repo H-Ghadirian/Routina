@@ -18,6 +18,7 @@ struct AppView: View {
     @State private var isNewActionListPresented = false
     @State private var pendingNewTabAction: NewTabAction?
     @State private var focusStartPresentation: IOSFocusStartPresentation?
+    @State private var shouldCreateTaskAfterFocusDismissal = false
     @State private var activeFocusControlPresentation: ActiveFocusControlPresentation?
     @State private var newFocusErrorMessage: String?
     @State private var timelinePresentationID = UUID()
@@ -103,8 +104,11 @@ Group {
     .presentationDetents([.height(200)])
     .presentationDragIndicator(.visible)
 }
-.sheet(item: $focusStartPresentation) { presentation in
-    IOSFocusStartSheet(presentation: presentation)
+.sheet(item: $focusStartPresentation, onDismiss: performPendingFocusTaskCreation) { presentation in
+    IOSFocusStartSheet(
+        presentation: presentation,
+        onCreateTask: queueFocusTaskCreation
+    )
 }
 .sheet(item: $activeFocusControlPresentation) { presentation in
     ActiveFocusControlSheet(
@@ -257,6 +261,19 @@ Group {
     private func openNewTask() {
         store.send(.tabSelected(.home))
         store.send(.home(.setSmartAddTaskSheet(true)))
+    }
+
+    @MainActor
+    private func queueFocusTaskCreation() {
+        shouldCreateTaskAfterFocusDismissal = true
+        focusStartPresentation = nil
+    }
+
+    @MainActor
+    private func performPendingFocusTaskCreation() {
+        guard shouldCreateTaskAfterFocusDismissal else { return }
+        shouldCreateTaskAfterFocusDismissal = false
+        openNewTask()
     }
 
     @MainActor

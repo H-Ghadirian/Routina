@@ -62,7 +62,23 @@ struct IOSNewTabActionAvailabilityTests {
         #expect(picker.contains("FocusSessionStartDefaults.durationOptions"))
         #expect(picker.contains("FocusSessionSupport.startTaskFocus("))
         #expect(picker.contains("FocusSessionSupport.startTagFocus("))
+        #expect(picker.contains("Button(action: onCreateTask)"))
+        #expect(picker.contains("Text(\"Create Task\")"))
         #expect(picker.contains(".contentShape(Rectangle())"))
+    }
+
+    @Test
+    func emptyFocusPickerDismissesBeforeOpeningTaskCreation() throws {
+        let app = try Self.sourceFile("iOS/Screens/App/AppView.swift")
+
+        #expect(app.contains(
+            ".sheet(item: $focusStartPresentation, onDismiss: performPendingFocusTaskCreation)"
+        ))
+        #expect(app.contains("onCreateTask: queueFocusTaskCreation"))
+        #expect(app.contains("shouldCreateTaskAfterFocusDismissal = true"))
+        #expect(app.contains("focusStartPresentation = nil"))
+        #expect(app.contains("private func performPendingFocusTaskCreation()"))
+        #expect(app.contains("openNewTask()"))
     }
 
     @Test

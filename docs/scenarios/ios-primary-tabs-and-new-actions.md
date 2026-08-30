@@ -23,6 +23,11 @@ Given no Focus or sprint timer is active
 When the person chooses Focus
 Then one picker offers task or tag attribution plus count-up and fixed-duration choices
 
+Given that picker has no eligible active tasks
+When the person presses the full-row Create Task action in its Task section
+Then Focus dismisses before the existing Smart Add task flow opens
+And search- or tag-filtered no-result states do not offer duplicate task creation
+
 Given a task, tag, unassigned, or sprint timer is already active
 When the person chooses Focus
 Then Routina opens that timer's controls instead of starting a conflicting timer

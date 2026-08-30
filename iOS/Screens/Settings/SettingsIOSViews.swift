@@ -222,14 +222,28 @@ private struct SettingsIOSShortcutsDetailView: View {
         UserDefaultBoolValueKey.appSettingShakeToStartSleepEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isShakeToStartSleepEnabled = true
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isSleepEnabled = false
+    @AppStorage(
+        IOSFirstTaskExperience.completionDefaultsKey,
+        store: SharedDefaults.app
+    ) private var hasCompletedFirstTaskExperience = true
 
     var body: some View {
         List {
-            Section("Sleep Shortcut") {
-                Toggle("Shake to start sleep mode", isOn: $isShakeToStartSleepEnabled)
+            if showsSleepShortcuts {
+                Section("Sleep Shortcut") {
+                    Toggle("Shake to start sleep mode", isOn: $isShakeToStartSleepEnabled)
 
-                Text("Shake always asks for confirmation before sleep mode starts.")
-                    .foregroundStyle(.secondary)
+                    Text("Shake always asks for confirmation before sleep mode starts.")
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section("Apple Shortcuts & Siri") {
@@ -239,30 +253,34 @@ private struct SettingsIOSShortcutsDetailView: View {
                     title: "Quick Add",
                     subtitle: "Quick add in Routina"
                 )
-                SettingsNavigationRow(
-                    icon: "checkmark.circle",
-                    tint: .green,
-                    title: "Mark Done",
-                    subtitle: "Mark task done in Routina"
-                )
+                if hasCompletedFirstTaskExperience {
+                    SettingsNavigationRow(
+                        icon: "checkmark.circle",
+                        tint: .green,
+                        title: "Mark Done",
+                        subtitle: "Mark task done in Routina"
+                    )
+                }
                 SettingsNavigationRow(
                     icon: "timer",
                     tint: .orange,
                     title: "Start Focus",
                     subtitle: "Start focus in Routina"
                 )
-                SettingsNavigationRow(
-                    icon: "bed.double.fill",
-                    tint: .indigo,
-                    title: "Sleep",
-                    subtitle: "I am going to sleep in Routina"
-                )
-                SettingsNavigationRow(
-                    icon: "alarm.fill",
-                    tint: .orange,
-                    title: "Wake Up",
-                    subtitle: "I woke up in Routina"
-                )
+                if showsSleepShortcuts {
+                    SettingsNavigationRow(
+                        icon: "bed.double.fill",
+                        tint: .indigo,
+                        title: "Sleep",
+                        subtitle: "I am going to sleep in Routina"
+                    )
+                    SettingsNavigationRow(
+                        icon: "alarm.fill",
+                        tint: .orange,
+                        title: "Wake Up",
+                        subtitle: "I woke up in Routina"
+                    )
+                }
                 SettingsNavigationRow(
                     icon: "calendar",
                     tint: .blue,
@@ -272,6 +290,10 @@ private struct SettingsIOSShortcutsDetailView: View {
             }
         }
         .navigationTitle("Shortcuts")
+    }
+
+    private var showsSleepShortcuts: Bool {
+        isAwayEnabled && isSleepEnabled
     }
 }
 
@@ -346,13 +368,6 @@ List {
             .foregroundStyle(.secondary)
     }
 
-    Section("Planner Calendar") {
-        Toggle("Show timeline tasks automatically in planner", isOn: showTimelineTasksInDayPlannerBinding)
-
-        Text("When off, planner dates show a timeline badge that opens the activity list instead.")
-            .foregroundStyle(.secondary)
-    }
-
     Section("Date Display") {
         Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
 
@@ -377,13 +392,6 @@ List {
         Binding(
             get: { store.appearance.showPersianDates },
             set: { store.send(.showPersianDatesToggled($0)) }
-        )
-    }
-
-    private var showTimelineTasksInDayPlannerBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.showsTimelineTasksInDayPlanner },
-            set: { store.send(.showTimelineTasksInDayPlannerToggled($0)) }
         )
     }
 

@@ -43,20 +43,45 @@ struct SettingsFlagRulePresentationTests {
     }
 
     @Test
+    func iOSPresentationOmitsTheMacOnlyCalendarListRuleWithoutChangingTheCatalog() {
+        #expect(RoutineFlagRuleKind.iOSVisibleCases == [
+            .hideFromTaskLists,
+            .hideFromTimeline,
+            .hideFromTaskLadder,
+            .autoAssumeDone
+        ])
+        #expect(RoutineFlag.iOSVisible(RoutineFlagRuleKind.builtInFlags) == [
+            "Hide from Task Lists",
+            "Hide from Timeline",
+            "Hide from Task Ladder",
+            "Auto Assume Done"
+        ])
+        #expect(RoutineFlagRuleKind.builtInFlags.contains("Hide from Calendar List"))
+    }
+
+    @Test
     func flagSettingsRenderBuiltInRulesWithoutCustomRuleEditors() throws {
         let sourcePaths = [
-            "RoutinaMacApp/Screens/Settings/SettingsMacTagsDetailView.swift",
-            "iOS/Screens/Settings/SettingsTagsDetailView.swift"
+            (
+                path: "RoutinaMacApp/Screens/Settings/SettingsMacTagsDetailView.swift",
+                casesExpression: "ForEach(RoutineFlagRuleKind.allCases)"
+            ),
+            (
+                path: "iOS/Screens/Settings/SettingsTagsDetailView.swift",
+                casesExpression: "ForEach(RoutineFlagRuleKind.iOSVisibleCases)"
+            )
         ]
 
         for sourcePath in sourcePaths {
-            let source = try Self.sourceFile(sourcePath)
+            let source = try Self.sourceFile(sourcePath.path)
 
-            #expect(source.contains("ForEach(RoutineFlagRuleKind.allCases)"))
+            #expect(source.contains(sourcePath.casesExpression))
             #expect(source.contains("builtInFlagName"))
             #expect(source.contains("ordinary labels belong in Tags"))
             #expect(!source.contains("Create a Flag"))
             #expect(!source.contains("Add Rule"))
+            #expect(!source.contains("About Flags"))
+            #expect(!source.lowercased().contains("migrat"))
         }
     }
 
