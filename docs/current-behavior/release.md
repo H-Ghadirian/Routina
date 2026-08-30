@@ -18,7 +18,7 @@ documentation behavior. Decision records explain why these rules exist.
   version-aligned even when a platform is not part of the current distribution.
 - Every applicable platform keeps independent release notes so its shipped
   features, fixes, limitations, and distribution status are explicit.
-- The current release candidate is public version `1.4.0`, build `11`, for the
+- The current release candidate is public version `1.4.0`, build `12`, for the
   universal iPhone/iPad app and macOS app. Its platform notes remain `In
   development` until the corresponding App Store versions ship. The earlier
   `1.3.1` draft was superseded before release and is not a shipment claim.
