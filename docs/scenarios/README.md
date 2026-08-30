@@ -2326,24 +2326,33 @@ Then the native field keeps accepting text without scheduling a first-responder 
 And the global task and timeline presentation catches up after a short idle debounce
 And Return still checks the current query before it creates a task
 
-### Mac Development Screenshot Preparation Is Safe
+### Development Screenshot Preparation Is Safe and Cross-Platform
 
-Area: Settings / Home / Planner / Timeline / Stats
+Area: Settings / Home / Backlog / Task Ladder / Planner / Timeline / Stats
 
-Decision links: [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md)
+Decision links: [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md), [0705](../decisions/0705-refresh-cross-platform-development-screenshot-fixtures.md)
 
 Automated coverage:
 
 - `Tests/Shared/RoutinaScreenshotDataSeederTests.swift`
+- `Tests/Shared/AppEnvironmentTests.swift`
 - `Tests/Shared/SettingsFeatureTests.swift`
+
+Given either development app is launched with the screenshot-data request
+When Routina prepares its local development store
+Then it inserts or refreshes one coherent date-relative release fixture
+And the fixture represents repeating and one-time behavior, Home and Backlog hierarchy, Task Ladder timing, relationships, Flags, destinations, Planner, Focus, Timeline, and Stats activity
+And rerunning preparation refreshes only Routina-owned deterministic records and sections without duplicating them or deleting unrelated development data
 
 Given the Mac development app is running
 When the user opens Settings -> Appearance
 Then `Show development badge` is available and defaults on
 And turning it off hides only the orange Home toolbar development badge
-And `Generate Screenshot Data` adds representative date-relative content without deleting unrelated data
-And generating the data again does not duplicate seeded records
-But the production app does not expose or honor these screenshot preparation controls
+And `Generate Screenshot Data` prepares the same managed fixture
+
+Given a production app is launched with the screenshot-data request
+Then it rejects the request
+And production does not expose a screenshot-data preparation control
 
 ### Mac Toolbar Search Expands as One Visible Pill
 

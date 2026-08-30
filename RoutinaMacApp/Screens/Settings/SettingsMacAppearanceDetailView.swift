@@ -173,12 +173,9 @@ SettingsMacDetailShell(
 
         do {
             let result = try RoutinaScreenshotDataSeeder.seed(in: modelContext)
-            if result.totalInsertedCount == 0 {
-                screenshotDataStatusMessage = "Screenshot data is already available."
-            } else {
-                screenshotDataStatusMessage = "Added \(result.taskCount) tasks and \(result.totalInsertedCount - result.taskCount) supporting activity records."
-                NotificationCenter.default.postRoutineDidUpdate()
-            }
+            _ = RoutinaUserPreferencesStore.applyToDefaults(from: modelContext)
+            screenshotDataStatusMessage = "Prepared \(result.managedTaskCount) tasks, \(result.managedSectionCount) sections, and \(result.managedSupportingRecordCount) activity records."
+            NotificationCenter.default.postRoutineDidUpdate()
         } catch {
             screenshotDataStatusMessage = "Could not generate screenshot data: \(error.localizedDescription)"
         }

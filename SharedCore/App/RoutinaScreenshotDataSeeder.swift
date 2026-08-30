@@ -3,6 +3,7 @@ import SwiftData
 
 struct RoutinaScreenshotDataSeedResult: Equatable, Sendable {
     var taskCount = 0
+    var sectionCount = 0
     var logCount = 0
     var plannerBlockCount = 0
     var focusSessionCount = 0
@@ -12,9 +13,14 @@ struct RoutinaScreenshotDataSeedResult: Equatable, Sendable {
     var emotionCount = 0
     var sleepSessionCount = 0
     var awaySessionCount = 0
+    var refreshedRecordCount = 0
+    var managedTaskCount = 0
+    var managedSectionCount = 0
+    var managedSupportingRecordCount = 0
 
     var totalInsertedCount: Int {
         taskCount
+            + sectionCount
             + logCount
             + plannerBlockCount
             + focusSessionCount
@@ -25,10 +31,14 @@ struct RoutinaScreenshotDataSeedResult: Equatable, Sendable {
             + sleepSessionCount
             + awaySessionCount
     }
+
+    var totalChangedCount: Int {
+        totalInsertedCount + refreshedRecordCount
+    }
 }
 
 enum RoutinaScreenshotDataSeeder {
-    static let taskCount = 10
+    static let taskCount = 16
 
     @MainActor
     static func seedIfRequested(in context: ModelContext) {
@@ -36,8 +46,9 @@ enum RoutinaScreenshotDataSeeder {
 
         do {
             let result = try seed(in: context)
+            _ = RoutinaUserPreferencesStore.applyToDefaults(from: context)
             NSLog(
-                "Routina screenshot data seed finished with \(result.totalInsertedCount) new records."
+                "Routina screenshot data seed finished with \(result.totalInsertedCount) inserted and \(result.refreshedRecordCount) refreshed records."
             )
             if AppEnvironment.exitsAfterScreenshotDataSeed {
                 Foundation.exit(EXIT_SUCCESS)
@@ -57,8 +68,9 @@ enum RoutinaScreenshotDataSeeder {
         calendar: Calendar = .current
     ) throws -> RoutinaScreenshotDataSeedResult {
         let dates = SeedDates(referenceDate: referenceDate, calendar: calendar)
+        let customSections = makeCustomSections(dates: dates)
         let goals = makeGoals(dates: dates)
-        let tasks = makeTasks(dates: dates, goals: goals)
+        let tasks = makeTasks(dates: dates, goals: goals, customSections: customSections)
         let logs = makeLogs(dates: dates, tasks: tasks)
         let plannerBlocks = makePlannerBlocks(dates: dates, tasks: tasks)
         let focusSessions = makeFocusSessions(dates: dates, tasks: tasks)
@@ -74,77 +86,178 @@ enum RoutinaScreenshotDataSeeder {
             sleepSessions: sleepSessions
         )
 
-        var result = RoutinaScreenshotDataSeedResult()
-
-        let existingGoalIDs = Set(try context.fetch(FetchDescriptor<RoutineGoal>()).map(\.id))
-        for goal in goals where !existingGoalIDs.contains(goal.id) {
-            context.insert(goal)
-            result.goalCount += 1
-        }
-
-        let existingTaskIDs = Set(try context.fetch(FetchDescriptor<RoutineTask>()).map(\.id))
-        for task in tasks where !existingTaskIDs.contains(task.id) {
-            context.insert(task)
-            result.taskCount += 1
-        }
-
-        let existingLogIDs = Set(try context.fetch(FetchDescriptor<RoutineLog>()).map(\.id))
-        for log in logs where !existingLogIDs.contains(log.id) {
-            context.insert(log)
-            result.logCount += 1
-        }
-
-        let existingPlannerBlockIDs = Set(
-            try context.fetch(FetchDescriptor<DayPlanBlockRecord>()).map(\.id)
+        var result = RoutinaScreenshotDataSeedResult(
+            managedTaskCount: tasks.count,
+            managedSectionCount: customSections.count,
+            managedSupportingRecordCount: logs.count
+                + plannerBlocks.count
+                + focusSessions.count
+                + goals.count
+                + notes.count
+                + events.count
+                + emotions.count
+                + sleepSessions.count
+                + awaySessions.count
         )
-        for block in plannerBlocks where !existingPlannerBlockIDs.contains(block.id) {
-            context.insert(block)
-            result.plannerBlockCount += 1
-        }
 
-        let existingFocusSessionIDs = Set(
-            try context.fetch(FetchDescriptor<FocusSession>()).map(\.id)
+        let preferences = try RoutinaUserPreferencesStore.fetchOrCreate(in: context)
+        let existingSections = HomeCustomTaskSectionStorage.decoded(
+            from: preferences.customTaskSections
         )
-        for session in focusSessions where !existingFocusSessionIDs.contains(session.id) {
-            context.insert(session)
-            result.focusSessionCount += 1
+        var mergedSections = existingSections
+        for section in customSections {
+            if let index = mergedSections.firstIndex(where: { $0.id == section.id }) {
+                mergedSections[index] = section
+                result.refreshedRecordCount += 1
+            } else {
+                mergedSections.append(section)
+                result.sectionCount += 1
+            }
         }
+        preferences.customTaskSections = HomeCustomTaskSectionStorage.encoded(mergedSections)
+        preferences.updatedAt = referenceDate
 
-        let existingNoteIDs = Set(try context.fetch(FetchDescriptor<RoutineNote>()).map(\.id))
-        for note in notes where !existingNoteIDs.contains(note.id) {
-            context.insert(note)
-            result.noteCount += 1
-        }
-
-        let existingEventIDs = Set(try context.fetch(FetchDescriptor<RoutineEvent>()).map(\.id))
-        for event in events where !existingEventIDs.contains(event.id) {
-            context.insert(event)
-            result.eventCount += 1
-        }
-
-        let existingSleepSessionIDs = Set(
-            try context.fetch(FetchDescriptor<SleepSession>()).map(\.id)
+        let existingGoals = Dictionary(
+            try context.fetch(FetchDescriptor<RoutineGoal>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
         )
-        for session in sleepSessions where !existingSleepSessionIDs.contains(session.id) {
-            context.insert(session)
-            result.sleepSessionCount += 1
+        for goal in goals {
+            if let existing = existingGoals[goal.id] {
+                refresh(existing, from: goal)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(goal)
+                result.goalCount += 1
+            }
         }
 
-        let existingAwaySessionIDs = Set(
-            try context.fetch(FetchDescriptor<AwaySession>()).map(\.id)
+        let existingTasks = Dictionary(
+            try context.fetch(FetchDescriptor<RoutineTask>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
         )
-        for session in awaySessions where !existingAwaySessionIDs.contains(session.id) {
-            context.insert(session)
-            result.awaySessionCount += 1
+        for task in tasks {
+            if let existing = existingTasks[task.id] {
+                refresh(existing, from: task)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(task)
+                result.taskCount += 1
+            }
         }
 
-        let existingEmotionIDs = Set(try context.fetch(FetchDescriptor<EmotionLog>()).map(\.id))
-        for emotion in emotions where !existingEmotionIDs.contains(emotion.id) {
-            context.insert(emotion)
-            result.emotionCount += 1
+        let existingLogs = Dictionary(
+            try context.fetch(FetchDescriptor<RoutineLog>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for log in logs {
+            if let existing = existingLogs[log.id] {
+                refresh(existing, from: log)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(log)
+                result.logCount += 1
+            }
         }
 
-        if result.totalInsertedCount > 0 {
+        let existingPlannerBlocks = Dictionary(
+            try context.fetch(FetchDescriptor<DayPlanBlockRecord>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for block in plannerBlocks {
+            if let existing = existingPlannerBlocks[block.id] {
+                existing.apply(block.detachedBlock)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(block)
+                result.plannerBlockCount += 1
+            }
+        }
+
+        let existingFocusSessions = Dictionary(
+            try context.fetch(FetchDescriptor<FocusSession>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for session in focusSessions {
+            if let existing = existingFocusSessions[session.id] {
+                refresh(existing, from: session)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(session)
+                result.focusSessionCount += 1
+            }
+        }
+
+        let existingNotes = Dictionary(
+            try context.fetch(FetchDescriptor<RoutineNote>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for note in notes {
+            if let existing = existingNotes[note.id] {
+                refresh(existing, from: note)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(note)
+                result.noteCount += 1
+            }
+        }
+
+        let existingEvents = Dictionary(
+            try context.fetch(FetchDescriptor<RoutineEvent>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for event in events {
+            if let existing = existingEvents[event.id] {
+                refresh(existing, from: event)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(event)
+                result.eventCount += 1
+            }
+        }
+
+        let existingSleepSessions = Dictionary(
+            try context.fetch(FetchDescriptor<SleepSession>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for session in sleepSessions {
+            if let existing = existingSleepSessions[session.id] {
+                refresh(existing, from: session)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(session)
+                result.sleepSessionCount += 1
+            }
+        }
+
+        let existingAwaySessions = Dictionary(
+            try context.fetch(FetchDescriptor<AwaySession>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for session in awaySessions {
+            if let existing = existingAwaySessions[session.id] {
+                refresh(existing, from: session)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(session)
+                result.awaySessionCount += 1
+            }
+        }
+
+        let existingEmotions = Dictionary(
+            try context.fetch(FetchDescriptor<EmotionLog>()).map { ($0.id, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for emotion in emotions {
+            if let existing = existingEmotions[emotion.id] {
+                refresh(existing, from: emotion)
+                result.refreshedRecordCount += 1
+            } else {
+                context.insert(emotion)
+                result.emotionCount += 1
+            }
+        }
+
+        if result.totalChangedCount > 0 {
             try context.save()
         }
         return result
@@ -175,6 +288,168 @@ private extension RoutinaScreenshotDataSeeder {
     static func seedID(_ value: Int) -> UUID {
         let suffix = String(format: "%012X", value)
         return UUID(uuidString: "A11CE000-5EED-4000-8000-\(suffix)")!
+    }
+
+    @MainActor
+    static func refresh(_ existing: RoutineTask, from template: RoutineTask) {
+        CloudSharingService.SharedTaskPayload(task: template).apply(to: existing)
+        existing.customTaskSectionID = template.customTaskSectionID
+        existing.completedChecklistItemIDsStorage = template.completedChecklistItemIDsStorage
+        existing.completedChecklistProgressStartedAt = template.completedChecklistProgressStartedAt
+        existing.manualSectionOrderStorage = template.manualSectionOrderStorage
+        existing.taskChoiceTieBreakScore = template.taskChoiceTieBreakScore
+        existing.taskChoiceComparisonCount = template.taskChoiceComparisonCount
+        existing.showsTaskDetailHeatmap = template.showsTaskDetailHeatmap
+        existing.showsTaskDetailHistory = template.showsTaskDetailHistory
+        existing.isTaskDetailCalendarExpanded = template.isTaskDetailCalendarExpanded
+        existing.changeLogStorage = template.changeLogStorage
+    }
+
+    static func refresh(_ existing: RoutineGoal, from template: RoutineGoal) {
+        existing.title = template.title
+        existing.emoji = template.emoji
+        existing.notes = template.notes
+        existing.targetDate = template.targetDate
+        existing.tags = template.tags
+        existing.status = template.status
+        existing.color = template.color
+        existing.parentGoalID = template.parentGoalID
+        existing.rejectedTaskSuggestionIDs = template.rejectedTaskSuggestionIDs
+        existing.createdAt = template.createdAt
+        existing.sortOrder = template.sortOrder
+    }
+
+    static func refresh(_ existing: RoutineLog, from template: RoutineLog) {
+        existing.timestamp = template.timestamp
+        existing.scheduledOccurrenceAt = template.scheduledOccurrenceAt
+        existing.taskID = template.taskID
+        existing.kind = template.kind
+        existing.actualDurationMinutes = template.actualDurationMinutes
+        existing.hasSpecificWorkTime = template.hasSpecificWorkTime
+        existing.sourceTaskID = template.sourceTaskID
+        existing.isConfirmedAssumedDone = template.isConfirmedAssumedDone
+    }
+
+    static func refresh(_ existing: FocusSession, from template: FocusSession) {
+        existing.taskID = template.taskID
+        existing.startedAt = template.startedAt
+        existing.plannedDurationSeconds = template.plannedDurationSeconds
+        existing.completedAt = template.completedAt
+        existing.abandonedAt = template.abandonedAt
+        existing.pausedAt = template.pausedAt
+        existing.accumulatedPausedSeconds = template.accumulatedPausedSeconds
+        existing.tagName = template.tagName
+    }
+
+    static func refresh(_ existing: RoutineNote, from template: RoutineNote) {
+        existing.title = template.title
+        existing.body = template.body
+        existing.tags = template.tags
+        existing.imageData = template.imageData
+        existing.voiceNoteData = template.voiceNoteData
+        existing.voiceNoteDurationSeconds = template.voiceNoteDurationSeconds
+        existing.voiceNoteCreatedAt = template.voiceNoteCreatedAt
+        existing.createdAt = template.createdAt
+        existing.updatedAt = template.updatedAt
+    }
+
+    static func refresh(_ existing: RoutineEvent, from template: RoutineEvent) {
+        existing.title = template.title
+        existing.notes = template.notes
+        existing.emoji = template.emoji
+        existing.tags = template.tags
+        existing.isAllDay = template.isAllDay
+        existing.startedAt = template.startedAt
+        existing.endedAt = template.endedAt
+        existing.reminderAt = template.reminderAt
+        existing.createdAt = template.createdAt
+        existing.updatedAt = template.updatedAt
+    }
+
+    static func refresh(_ existing: SleepSession, from template: SleepSession) {
+        existing.startedAt = template.startedAt
+        existing.endedAt = template.endedAt
+        existing.targetDurationMinutes = template.targetDurationMinutes
+        existing.createdAt = template.createdAt
+        existing.updatedAt = template.updatedAt
+    }
+
+    static func refresh(_ existing: AwaySession, from template: AwaySession) {
+        existing.presetRawValue = template.presetRawValue
+        existing.title = template.title
+        existing.linkedTaskID = template.linkedTaskID
+        existing.startedAt = template.startedAt
+        existing.plannedDurationSeconds = template.plannedDurationSeconds
+        existing.completedAt = template.completedAt
+        existing.endedEarlyAt = template.endedEarlyAt
+        existing.extensionCount = template.extensionCount
+        existing.createdAt = template.createdAt
+        existing.updatedAt = template.updatedAt
+    }
+
+    static func refresh(_ existing: EmotionLog, from template: EmotionLog) {
+        existing.families = template.families
+        existing.labels = template.labels
+        existing.valence = template.valence
+        existing.arousal = template.arousal
+        existing.intensity = template.intensity
+        existing.bodyAreas = template.bodyAreas
+        existing.reflection = template.reflection
+        existing.linkedNoteID = template.linkedNoteID
+        existing.linkedGoalID = template.linkedGoalID
+        existing.linkedTaskID = template.linkedTaskID
+        existing.linkedPlaceID = template.linkedPlaceID
+        existing.linkedSleepSessionID = template.linkedSleepSessionID
+        existing.createdAt = template.createdAt
+        existing.updatedAt = template.updatedAt
+    }
+
+    static func makeCustomSections(dates: SeedDates) -> [HomeCustomTaskSection] {
+        let launchID = seedID(20_000)
+        let laterID = seedID(20_003)
+        return [
+            HomeCustomTaskSection(
+                id: launchID,
+                surface: .radar,
+                title: "Launch",
+                createdAt: dates.at(dayOffset: -60, hour: 9),
+                rules: HomeCustomTaskSectionRules(tagNames: ["Routina", "Work"]),
+                colorHex: "#5856D6"
+            ),
+            HomeCustomTaskSection(
+                id: seedID(20_001),
+                parentSectionID: launchID,
+                surface: .radar,
+                title: "App Store",
+                createdAt: dates.at(dayOffset: -45, hour: 9),
+                rules: HomeCustomTaskSectionRules(tagNames: ["Release"]),
+                colorHex: "#AF52DE"
+            ),
+            HomeCustomTaskSection(
+                id: seedID(20_002),
+                surface: .radar,
+                title: "Personal",
+                createdAt: dates.at(dayOffset: -55, hour: 9),
+                rules: HomeCustomTaskSectionRules(tagNames: ["Personal", "Health"]),
+                colorHex: "#34C759"
+            ),
+            HomeCustomTaskSection(
+                id: laterID,
+                surface: .backlog,
+                title: "Later",
+                createdAt: dates.at(dayOffset: -42, hour: 9),
+                colorHex: "#FF9F0A"
+            ),
+            HomeCustomTaskSection(
+                id: seedID(20_004),
+                parentSectionID: laterID,
+                surface: .backlog,
+                title: "Research",
+                createdAt: dates.at(dayOffset: -36, hour: 9),
+                rules: HomeCustomTaskSectionRules(tagNames: ["Research"]),
+                colorHex: "#64D2FF"
+            )
+        ]
     }
 
     static func makeGoals(dates: SeedDates) -> [RoutineGoal] {
@@ -215,42 +490,68 @@ private extension RoutinaScreenshotDataSeeder {
         ]
     }
 
-    static func makeTasks(dates: SeedDates, goals: [RoutineGoal]) -> [RoutineTask] {
+    static func makeTasks(
+        dates: SeedDates,
+        goals: [RoutineGoal],
+        customSections: [HomeCustomTaskSection]
+    ) -> [RoutineTask] {
         let wellbeingGoalID = goals[0].id
         let releaseGoalID = goals[1].id
         let deepWorkGoalID = goals[2].id
+        let launchSectionID = customSections[0].id
+        let appStoreSectionID = customSections[1].id
+        let personalSectionID = customSections[2].id
+        let laterSectionID = customSections[3].id
+        let researchSectionID = customSections[4].id
+        let releaseSubmissionID = seedID(11)
+        let verifyBackupID = seedID(12)
+        let currentWeekday = dates.calendar.component(.weekday, from: dates.today)
 
-        return [
+        let tasks = [
             RoutineTask(
                 id: seedID(1),
                 name: "Morning stretch",
                 emoji: "🧘",
+                taskDescription: "A short scheduled routine that starts the day with movement.",
                 notes: "A gentle ten-minute mobility reset before the day begins.",
+                customTaskSectionID: personalSectionID,
                 priority: .medium,
                 importance: .level2,
                 urgency: .level2,
+                thinkingNeeded: .low,
                 tags: ["Morning", "Health"],
+                flags: [RoutineFlagRuleKind.autoAssumeDone.builtInFlagName],
                 goalIDs: [wellbeingGoalID],
                 scheduleMode: .softInterval,
                 interval: 1,
-                recurrenceRule: .interval(days: 1, at: RoutineTimeOfDay(hour: 7, minute: 30)),
+                recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 7, minute: 30)),
                 lastDone: dates.at(dayOffset: 0, hour: 7, minute: 35),
                 pinnedAt: dates.at(dayOffset: -30, hour: 8),
                 color: .green,
                 createdAt: dates.at(dayOffset: -45, hour: 8),
+                autoAssumeDailyDone: true,
+                autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 0),
                 estimatedDurationMinutes: 10,
                 showsTaskDetailHeatmap: true,
-                showsTaskDetailHistory: true
+                showsTaskDetailHistory: true,
+                isTaskDetailCalendarExpanded: true,
+                hasExplicitImportance: true,
+                hasExplicitUrgency: true
             ),
             RoutineTask(
                 id: seedID(2),
                 name: "Deep work session",
                 emoji: "🧠",
+                taskDescription: "Protect one uninterrupted block for the release's hardest creative work.",
                 notes: "One quiet block for the most important creative work.",
                 plannedDate: dates.at(dayOffset: 0, hour: 9, minute: 30),
+                customTaskSectionID: launchSectionID,
                 priority: .high,
                 importance: .level4,
                 urgency: .level3,
+                pressure: .medium,
+                pressureUpdatedAt: dates.at(dayOffset: -1, hour: 9),
+                thinkingNeeded: .high,
                 tags: ["Focus", "Creative"],
                 goalIDs: [deepWorkGoalID, releaseGoalID],
                 scheduleMode: .fixedInterval,
@@ -261,20 +562,27 @@ private extension RoutinaScreenshotDataSeeder {
                 color: .blue,
                 createdAt: dates.at(dayOffset: -42, hour: 9),
                 estimatedDurationMinutes: 90,
+                actualDurationMinutes: 80,
                 storyPoints: 5,
                 focusModeEnabled: true,
                 showsTaskDetailHeatmap: true,
-                showsTaskDetailHistory: true
+                showsTaskDetailHistory: true,
+                hasExplicitImportance: true,
+                hasExplicitUrgency: true
             ),
             RoutineTask(
                 id: seedID(3),
                 name: "Walk outside",
                 emoji: "🚶",
+                taskDescription: "A flexible daylight break that stays visible without becoming overdue.",
                 notes: "Leave the desk, get daylight, and let the mind reset.",
+                customTaskSectionID: personalSectionID,
                 priority: .low,
                 importance: .level2,
                 urgency: .level1,
+                thinkingNeeded: .low,
                 tags: ["Health", "Outside"],
+                flags: [RoutineFlagRuleKind.hideFromCalendarList.builtInFlagName],
                 goalIDs: [wellbeingGoalID],
                 scheduleMode: .softInterval,
                 interval: 1,
@@ -288,27 +596,54 @@ private extension RoutinaScreenshotDataSeeder {
                 id: seedID(4),
                 name: "Read 20 pages",
                 emoji: "📚",
+                taskDescription: "A when-needed reading habit without a fixed recurrence.",
                 notes: "Read slowly and capture one useful idea.",
+                customTaskSectionID: personalSectionID,
                 priority: .medium,
                 importance: .level3,
                 urgency: .level1,
+                thinkingNeeded: .medium,
                 tags: ["Learning", "Evening"],
+                flags: [RoutineFlagRuleKind.hideFromTaskLadder.builtInFlagName],
                 scheduleMode: .softInterval,
                 interval: 2,
-                lastDone: dates.at(dayOffset: -2, hour: 21),
                 color: .purple,
                 createdAt: dates.at(dayOffset: -35, hour: 9),
                 estimatedDurationMinutes: 25,
+                cadenceEnabled: false,
+                autoPauseAfterCompletion: true,
+                nudgesEnabled: false,
                 showsTaskDetailHistory: true
             ),
             RoutineTask(
                 id: seedID(5),
                 name: "Weekly review",
                 emoji: "🗓️",
+                taskDescription: "A scheduled review whose Task Ladder values rise as its due time approaches.",
                 notes: "Review wins, open loops, and next week's three priorities.",
+                customTaskSectionID: launchSectionID,
                 priority: .high,
                 importance: .level3,
                 urgency: .level3,
+                pressure: .low,
+                temporalWeightRule: RoutineTaskTemporalWeightRule(
+                    importance: RoutineTaskTemporalWeightPolicy(
+                        target: .level4,
+                        timing: .gradualBeforeDue,
+                        days: 3
+                    ),
+                    urgency: RoutineTaskTemporalWeightPolicy(
+                        target: .level4,
+                        timing: .onDueDate
+                    ),
+                    pressure: RoutineTaskTemporalWeightPolicy(
+                        target: .high,
+                        timing: .gradualWhileOverdue,
+                        days: 2
+                    )
+                ),
+                taskLadderEntryWindow: .beforeDue(days: 3),
+                thinkingNeeded: .high,
                 tags: ["Planning", "Weekly"],
                 goalIDs: [wellbeingGoalID, releaseGoalID],
                 steps: [
@@ -318,6 +653,10 @@ private extension RoutinaScreenshotDataSeeder {
                 ],
                 scheduleMode: .fixedInterval,
                 interval: 7,
+                recurrenceRule: .weekly(
+                    on: currentWeekday,
+                    at: RoutineTimeOfDay(hour: 17, minute: 0)
+                ),
                 lastDone: dates.at(dayOffset: -8, hour: 17),
                 color: .orange,
                 createdAt: dates.at(dayOffset: -50, hour: 9),
@@ -328,10 +667,13 @@ private extension RoutinaScreenshotDataSeeder {
                 id: seedID(6),
                 name: "Grocery restock",
                 emoji: "🛒",
+                taskDescription: "A runout checklist where each item becomes due on its own rhythm.",
                 notes: "Pick up only the items that are due for restocking.",
+                customTaskSectionID: personalSectionID,
                 priority: .medium,
                 importance: .level2,
                 urgency: .level3,
+                thinkingNeeded: .low,
                 tags: ["Home", "Errands"],
                 checklistItems: [
                     RoutineChecklistItem(
@@ -365,24 +707,33 @@ private extension RoutinaScreenshotDataSeeder {
             ),
             RoutineTask(
                 id: seedID(7),
-                name: "Prepare product screenshots",
+                name: "Prepare App Store screenshots",
                 emoji: "🖼️",
-                notes: "Capture clean Home, Planner, Timeline, and Stats views.",
+                taskDescription: "Prepare the accurate product views used to introduce Routina on both platforms.",
+                notes: "Capture clean Home, Planner, Backlog, Task Ladder, Task Details, Timeline, and Stats views.",
                 links: ["https://developer.apple.com/app-store/product-page/"],
                 deadline: dates.at(dayOffset: 0, hour: 18),
                 plannedDate: dates.at(dayOffset: 0, hour: 14),
+                customTaskSectionID: appStoreSectionID,
                 priority: .urgent,
                 importance: .level4,
                 urgency: .level4,
                 pressure: .medium,
                 pressureUpdatedAt: dates.at(dayOffset: -1, hour: 10),
-                tags: ["Routina", "Creative"],
+                thinkingNeeded: .high,
+                tags: ["Routina", "Creative", "Release"],
                 goalIDs: [releaseGoalID],
+                relationships: [
+                    RoutineTaskRelationship(
+                        targetTaskID: releaseSubmissionID,
+                        kind: .blocks
+                    )
+                ],
                 steps: [
                     RoutineStep(title: "Prepare realistic sample data"),
-                    RoutineStep(title: "Capture main window"),
-                    RoutineStep(title: "Capture planner and stats"),
-                    RoutineStep(title: "Review at App Store size")
+                    RoutineStep(title: "Capture iPhone release screens"),
+                    RoutineStep(title: "Capture Mac release screens"),
+                    RoutineStep(title: "Review every image at App Store size")
                 ],
                 scheduleMode: .oneOff,
                 pinnedAt: dates.at(dayOffset: -2, hour: 9),
@@ -392,10 +743,12 @@ private extension RoutinaScreenshotDataSeeder {
                 estimatedDurationMinutes: 90,
                 storyPoints: 5,
                 focusModeEnabled: true,
+                hasExplicitImportance: true,
+                hasExplicitUrgency: true,
                 comments: [
                     RoutineTaskComment(
                         id: seedID(71),
-                        body: "Use the light theme for the first set.",
+                        body: "Use one coherent dataset across both platforms.",
                         createdAt: dates.at(dayOffset: -1, hour: 16)
                     )
                 ]
@@ -404,9 +757,11 @@ private extension RoutinaScreenshotDataSeeder {
                 id: seedID(8),
                 name: "Send project update",
                 emoji: "✉️",
+                taskDescription: "Summarize progress without burying the next concrete action.",
                 notes: "Share progress, current risks, and the next milestone.",
                 deadline: dates.at(dayOffset: 1, hour: 16),
                 plannedDate: dates.at(dayOffset: 0, hour: 16),
+                customTaskSectionID: launchSectionID,
                 priority: .high,
                 importance: .level3,
                 urgency: .level3,
@@ -423,8 +778,11 @@ private extension RoutinaScreenshotDataSeeder {
                 id: seedID(9),
                 name: "Book dentist appointment",
                 emoji: "🦷",
+                taskDescription: "A short personal task with a deadline and reminder.",
                 notes: "Call the nearby clinic and choose a morning appointment.",
                 deadline: dates.at(dayOffset: 5, hour: 17),
+                customTaskSectionID: personalSectionID,
+                reminderAt: dates.at(dayOffset: 3, hour: 10),
                 priority: .medium,
                 importance: .level3,
                 urgency: .level2,
@@ -440,8 +798,10 @@ private extension RoutinaScreenshotDataSeeder {
                 id: seedID(10),
                 name: "Renew design software",
                 emoji: "💳",
+                taskDescription: "Resolve an overdue renewal before it interrupts release work.",
                 notes: "Compare annual pricing before the trial ends.",
                 deadline: dates.at(dayOffset: -1, hour: 17),
+                customTaskSectionID: launchSectionID,
                 priority: .high,
                 importance: .level3,
                 urgency: .level4,
@@ -455,8 +815,163 @@ private extension RoutinaScreenshotDataSeeder {
                 todoStateRawValue: TodoState.blocked.rawValue,
                 estimatedDurationMinutes: 20,
                 storyPoints: 1
+            ),
+            RoutineTask(
+                id: releaseSubmissionID,
+                name: "Submit the release candidate",
+                emoji: "🚀",
+                taskDescription: "The final submission remains blocked until its release evidence is ready.",
+                notes: "Upload both platforms only after screenshots and backup verification are complete.",
+                deadline: dates.at(dayOffset: 2, hour: 16),
+                customTaskSectionID: appStoreSectionID,
+                priority: .urgent,
+                importance: .level4,
+                urgency: .level4,
+                pressure: .high,
+                pressureUpdatedAt: dates.at(dayOffset: -1, hour: 11),
+                thinkingNeeded: .high,
+                tags: ["Routina", "Release"],
+                goalIDs: [releaseGoalID],
+                relationships: [
+                    RoutineTaskRelationship(targetTaskID: seedID(7), kind: .blockedBy),
+                    RoutineTaskRelationship(targetTaskID: verifyBackupID, kind: .blockedBy)
+                ],
+                scheduleMode: .oneOff,
+                color: .red,
+                createdAt: dates.at(dayOffset: -5, hour: 9),
+                todoStateRawValue: TodoState.blocked.rawValue,
+                estimatedDurationMinutes: 60,
+                storyPoints: 3,
+                hasExplicitImportance: true,
+                hasExplicitUrgency: true
+            ),
+            RoutineTask(
+                id: verifyBackupID,
+                name: "Verify the release backup",
+                emoji: "🛟",
+                taskDescription: "Audit a portable backup before treating it as a recovery path.",
+                notes: "Check the receipt, attachments, isolated restore, and semantic round trip.",
+                deadline: dates.at(dayOffset: 0, hour: 15),
+                plannedDate: dates.at(dayOffset: 0, hour: 13),
+                customTaskSectionID: appStoreSectionID,
+                priority: .high,
+                importance: .level4,
+                urgency: .level3,
+                pressure: .medium,
+                pressureUpdatedAt: dates.at(dayOffset: -1, hour: 12),
+                thinkingNeeded: .high,
+                tags: ["Routina", "Release", "Backup"],
+                goalIDs: [releaseGoalID],
+                relationships: [
+                    RoutineTaskRelationship(targetTaskID: releaseSubmissionID, kind: .blocks)
+                ],
+                steps: [
+                    RoutineStep(title: "Export verified package"),
+                    RoutineStep(title: "Run isolated restore audit"),
+                    RoutineStep(title: "Confirm recovery receipt")
+                ],
+                scheduleMode: .oneOff,
+                color: .teal,
+                createdAt: dates.at(dayOffset: -4, hour: 9),
+                todoStateRawValue: TodoState.inProgress.rawValue,
+                estimatedDurationMinutes: 40,
+                storyPoints: 3
+            ),
+            RoutineTask(
+                id: seedID(13),
+                name: "Plan an autumn weekend",
+                emoji: "🍂",
+                taskDescription: "A later idea with a broad availability window instead of a false deadline.",
+                notes: "Choose a quiet destination once the release is finished.",
+                customTaskSectionID: laterSectionID,
+                availabilityStartDate: dates.at(dayOffset: 30, hour: 0),
+                availabilityEndDate: dates.at(dayOffset: 45, hour: 23, minute: 59),
+                priority: .low,
+                importance: .level2,
+                urgency: .level1,
+                thinkingNeeded: .medium,
+                tags: ["Personal", "Travel"],
+                scheduleMode: .oneOff,
+                color: .orange,
+                createdAt: dates.at(dayOffset: -10, hour: 17),
+                todoStateRawValue: TodoState.ready.rawValue,
+                estimatedDurationMinutes: 30
+            ),
+            RoutineTask(
+                id: seedID(14),
+                name: "Compare ergonomic standing desks for a calmer workspace",
+                emoji: "🪑",
+                taskDescription: "Research kept out of the daily list until it is deliberately promoted.",
+                notes: "Compare stability, usable depth, warranty, and delivery instead of price alone.",
+                customTaskSectionID: researchSectionID,
+                priority: .low,
+                importance: .level2,
+                urgency: .level1,
+                thinkingNeeded: .high,
+                tags: ["Research", "Workspace"],
+                scheduleMode: .oneOff,
+                color: .blue,
+                createdAt: dates.at(dayOffset: -9, hour: 14),
+                todoStateRawValue: TodoState.ready.rawValue,
+                estimatedDurationMinutes: 45,
+                storyPoints: 2
+            ),
+            RoutineTask(
+                id: seedID(15),
+                name: "Call family",
+                emoji: "☎️",
+                taskDescription: "A gentle weekly rhythm measured from the last completed call.",
+                notes: "Make time for an unhurried conversation.",
+                customTaskSectionID: personalSectionID,
+                priority: .medium,
+                importance: .level4,
+                urgency: .level2,
+                thinkingNeeded: .low,
+                tags: ["Personal", "Family"],
+                scheduleMode: .softInterval,
+                interval: 7,
+                recurrenceRule: .interval(
+                    days: 7,
+                    at: RoutineTimeOfDay(hour: 19, minute: 0)
+                ),
+                lastDone: dates.at(dayOffset: -6, hour: 19),
+                color: .pink,
+                createdAt: dates.at(dayOffset: -50, hour: 12),
+                estimatedDurationMinutes: 30,
+                showsTaskDetailHistory: true
+            ),
+            RoutineTask(
+                id: seedID(16),
+                name: "Meet a friend at Brandenburg Gate",
+                emoji: "☕️",
+                taskDescription: "A one-time plan with a real destination and a visible reminder.",
+                notes: "Meet by the east side before walking to a nearby café.",
+                deadline: dates.at(dayOffset: 2, hour: 20),
+                plannedDate: dates.at(dayOffset: 2, hour: 18),
+                customTaskSectionID: personalSectionID,
+                reminderAt: dates.at(dayOffset: 2, hour: 16),
+                importance: .level3,
+                urgency: .level2,
+                thinkingNeeded: .low,
+                destinationAddress: "Brandenburg Gate, Pariser Platz, 10117 Berlin",
+                destinationLatitude: 52.5162746,
+                destinationLongitude: 13.3777041,
+                tags: ["Personal", "Friends"],
+                scheduleMode: .oneOff,
+                color: .teal,
+                createdAt: dates.at(dayOffset: -2, hour: 12),
+                todoStateRawValue: TodoState.ready.rawValue,
+                estimatedDurationMinutes: 90
             )
         ]
+
+        tasks[6].linkItems = [
+            RoutineTaskLink(
+                title: "App Store product-page guidance",
+                url: "https://developer.apple.com/app-store/product-page/"
+            )
+        ]
+        return tasks
     }
 
     static func makeLogs(dates: SeedDates, tasks: [RoutineTask]) -> [RoutineLog] {

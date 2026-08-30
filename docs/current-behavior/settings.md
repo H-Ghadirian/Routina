@@ -55,6 +55,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0694](../decisions/0694-verify-portable-backups-and-preserve-restore-recovery.md)
 - [0695](../decisions/0695-promote-stats-and-settings-in-ios-navigation.md)
 - [0702](../decisions/0702-hide-tag-counter-settings-without-tags.md)
+- [0705](../decisions/0705-refresh-cross-platform-development-screenshot-fixtures.md)
 
 ## Current Contract
 
@@ -109,4 +110,4 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.
 - The embedded macOS MCP helper inherits Routina's App Sandbox and is signed with only the App Sandbox and inheritance entitlements required for a Mac App Store helper executable.
 - Mac Settings -> AI Connections explains what the local connection does, provides copyable product-help and personal-task questions, states its read-only limits and privacy boundary, and gives setup and stale-data recovery steps. The embedded helper can search and return bundled user-facing help for Task Ladder, Planner day counts, task time meanings, Assumed done, Flags and Tags, Backlog, Focus, and repeating tasks without opening the exported task snapshot; these help tools remain usable while `Allow read-only task access` is off. Enabling that device-local setting additionally exports the existing personal task snapshot for read-only task search, overdue listing, and task-detail lookup. No MCP tool creates, edits, completes, archives, or deletes Routina data.
-- The Mac development app exposes screenshot preparation in Settings -> Appearance. Its development badge remains visible by default but can be hidden with `Show development badge`; `Generate Screenshot Data` adds an idempotent, non-destructive set of representative tasks, history, planner blocks, focus, goals, notes, events, emotions, sleep, and Away records. Production hides these controls and ignores the screenshot seed launch trigger.
+- Both development apps honor the one-shot screenshot-data launch request and refresh Routina-owned, deterministic, date-relative fixture records without deleting unrelated development data. The fixture covers current repeating and one-time behavior, Task Ladder timing, custom Home and Backlog hierarchy, relationships, built-in Flags, links, a destination and reminder, Planner, Focus, Timeline history, and Stats-supporting activity. Mac Settings -> Appearance additionally exposes `Generate Screenshot Data`; its development badge remains visible by default but can be hidden with `Show development badge`. iOS has no in-app preparation control, and production apps reject the launch trigger and hide the Mac controls.

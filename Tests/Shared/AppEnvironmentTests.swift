@@ -10,6 +10,30 @@ import Testing
 
 struct AppEnvironmentTests {
     @Test
+    func screenshotSeedTriggerIsLimitedToDevelopmentApps() {
+        let requestedEnvironment = ["ROUTINA_SCREENSHOT_DATA_SEED": "1"]
+
+        #expect(
+            AppEnvironment.screenshotDataSeedRequested(
+                isDevelopmentAppVariant: true,
+                processEnvironment: requestedEnvironment
+            )
+        )
+        #expect(
+            !AppEnvironment.screenshotDataSeedRequested(
+                isDevelopmentAppVariant: false,
+                processEnvironment: requestedEnvironment
+            )
+        )
+        #expect(
+            !AppEnvironment.screenshotDataSeedRequested(
+                isDevelopmentAppVariant: true,
+                processEnvironment: [:]
+            )
+        )
+    }
+
+    @Test
     func signedCloudKitEnvironmentDescriptionUsesTheEntitlementValue() {
         #expect(AppEnvironment.cloudKitEnvironmentDescription(from: "development") == "Development")
         #expect(AppEnvironment.cloudKitEnvironmentDescription(from: "Production") == "Production")

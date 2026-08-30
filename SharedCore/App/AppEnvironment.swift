@@ -53,13 +53,19 @@ enum AppEnvironment {
     }()
 
     static let isScreenshotDataSeedRequested: Bool = {
-#if os(macOS)
+        screenshotDataSeedRequested(
+            isDevelopmentAppVariant: isDevelopmentAppVariant,
+            processEnvironment: processEnvironment
+        )
+    }()
+
+    static func screenshotDataSeedRequested(
+        isDevelopmentAppVariant: Bool,
+        processEnvironment: [String: String]
+    ) -> Bool {
         guard isDevelopmentAppVariant else { return false }
         return boolValue(from: processEnvironment["ROUTINA_SCREENSHOT_DATA_SEED"]) ?? false
-#else
-        return false
-#endif
-    }()
+    }
 
     static let exitsAfterScreenshotDataSeed: Bool = {
         guard isScreenshotDataSeedRequested else { return false }

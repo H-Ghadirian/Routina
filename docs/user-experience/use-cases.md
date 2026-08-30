@@ -395,6 +395,22 @@ Settings search should take the person directly to platform-relevant destination
 
 **Availability:** Production on macOS through the local MCP connection and its AI Connections guide. The initial help catalog is curated rather than exhaustive.
 
+### UC-18 — Prepare truthful release screenshots without personal data
+
+**Situation:** The release owner is preparing updated Mac screenshots and the first iOS screenshots after Routina's features and terminology have evolved beyond an older sample dataset.
+
+**Need:** Show a coherent, meaningful version of the real product on both platforms without borrowing personal or production data, manually rebuilding many related records, or presenting stale dates and obsolete feature coverage.
+
+**Desired experience:** One explicit development-only preparation path creates the same plausible release story in each app's isolated development store. The content stays relative to the preparation date and represents current production concepts across Home, Backlog, Task Ladder, Task Details, Planner, Timeline, Focus, and Stats. Rerunning preparation updates the fixture records Routina owns, adds newly required fixture content, preserves unrelated development work, and never creates duplicates. Production cannot honor the trigger. Mac can temporarily hide its visible development badge for clean presentation; preparing data never captures the screen or bypasses the separate screenshot-permission requirement.
+
+**Successful outcome:** The release owner can open either development app and compose accurate App Store screenshots from representative content, while trusting that production data was not used and existing unrelated Dev work was not erased.
+
+**Example:** A release story can show scheduled and after-completion routines, a when-needed routine, one-time work with deadlines and availability, a nested Backlog, independent Task Ladder timing, a blocked release task, built-in Flags, a titled reference link, a real destination, today's Planner blocks, recent Focus sessions, and enough historical outcomes for Timeline and Stats. Running preparation again tomorrow advances the fixture's dates instead of leaving yesterday's deterministic rows stale.
+
+**Evidence:** User request on 2026-08-30 to revise the outdated Mac screenshot seed for expanded feature coverage and seed the iOS development app for its first release screenshots.
+
+**Availability:** Project-local development tooling on iOS and macOS. Mac additionally provides the in-app Settings action; neither production app exposes preparation.
+
 ## Coverage Gaps to Validate
 
 The catalog reflects the current product direction, but these questions still need direct user evidence:
