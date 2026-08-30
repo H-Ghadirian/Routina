@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0704](0704-maintain-versioned-app-store-metadata.md) refines [0519](0519-maintain-platform-versioned-release-notes.md):** each platform preserves its exact App Store Description, What's New, and any other used public metadata in one versioned companion document without rewriting older copy or inventing missing historical fields.
 - **[0703](0703-keep-ios-settings-platform-relevant-and-adaptive.md) revises [0006](0006-make-planner-timeline-activity-configurable.md), [0637](0637-search-settings-by-destination.md), and [0674](0674-hide-flagged-tasks-from-calendar-list.md), and refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0279](0279-hide-sleep-stats-and-blocking-with-away-toggle.md), and [0698](0698-focus-first-ios-home-on-the-first-task.md):** iOS Settings and Flag presentation omit Mac-only concepts, task- and feature-dependent controls follow their real availability, and hidden Mac Flag assignments survive iOS edits.
 - **[0702](0702-hide-tag-counter-settings-without-tags.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** iOS and macOS show Tag Counters only when at least one saved Tag exists, keep the empty-tag guidance visible, and preserve the stored counter preference while the catalog is empty.
 - **[0701](0701-retire-pre-release-flag-migration-guidance.md) revises [0636](0636-replace-configurable-flags-with-built-in-behaviors.md) and refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md):** configurable Flags are a discarded pre-release model, so iOS and macOS Settings explain only the five current built-in Flags and do not imply that a migration exists or is pending.
@@ -825,6 +826,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0704](0704-maintain-versioned-app-store-metadata.md) | Maintain Versioned App Store Metadata | Accepted | 2026-08-30 |
 | [0702](0702-hide-tag-counter-settings-without-tags.md) | Hide Tag Counter Settings Without Tags | Accepted | 2026-08-30 |
 | [0701](0701-retire-pre-release-flag-migration-guidance.md) | Retire Pre-Release Flag Migration Guidance | Accepted | 2026-08-30 |
 | [0700](0700-hide-inert-ios-stats-toolbar-controls.md) | Hide Inert iOS Stats Toolbar Controls | Accepted | 2026-08-30 |

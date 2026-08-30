@@ -2,7 +2,7 @@
 
 This directory is Routina's release-history source of truth. It records what shipped, or is currently planned to ship, for each public version and each Apple platform.
 
-Routina aligns its public semantic version and Apple build number across its iOS, iPadOS, watchOS, macOS, and bundled extension targets, including targets retained for a later distribution phase. The release notes remain separate because the available UI, features, changes, fixes, distribution status, and known issues can differ by platform. See [Decision 0416](../decisions/0416-use-semantic-release-versions.md) for version numbering, [Decision 0519](../decisions/0519-maintain-platform-versioned-release-notes.md) for this documentation convention, and [Decision 0568](../decisions/0568-defer-watch-companion-from-first-production-release.md) for the phase-one Watch deferral.
+Routina aligns its public semantic version and Apple build number across its iOS, iPadOS, watchOS, macOS, and bundled extension targets, including targets retained for a later distribution phase. The release notes remain separate because the available UI, features, changes, fixes, distribution status, and known issues can differ by platform. Versioned App Store metadata separately preserves the exact public listing copy. See [Decision 0416](../decisions/0416-use-semantic-release-versions.md) for version numbering, [Decision 0519](../decisions/0519-maintain-platform-versioned-release-notes.md) for platform release notes, [Decision 0704](../decisions/0704-maintain-versioned-app-store-metadata.md) for App Store copy, and [Decision 0568](../decisions/0568-defer-watch-companion-from-first-production-release.md) for the phase-one Watch deferral.
 
 ## Platform histories
 
@@ -29,6 +29,14 @@ Each entry must contain:
 Use concise, user-facing language. Internal refactors, generated files, and release mechanics do not need standalone bullets unless they affect users, privacy, reliability, distribution, or compatibility. Shared changes belong in each affected platform's document; a reader should not have to infer whether a change applies to their device.
 
 Do not silently rewrite shipped notes. Correct material inaccuracies in place with a dated correction, and place a later fix in the later version where it shipped.
+
+Store App Store listing copy in a companion
+`docs/releases/<platform>/<MAJOR.MINOR.PATCH>-app-store.md` document. Preserve
+the exact Description and What's New text for that version, plus Promotional
+Text or other public fields when used. Draft copy follows its platform release
+note; submitted copy becomes historical and is not overwritten for a later
+release. Record missing historical fields as unverified instead of recreating
+them from source history.
 
 The combined iOS, iPadOS, and macOS submission work for the current candidate is
 tracked in the [1.4.0 App Store submission checklist](1.4.0-app-store-submission.md).

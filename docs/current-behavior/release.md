@@ -10,6 +10,7 @@ documentation behavior. Decision records explain why these rules exist.
 - [0556](../decisions/0556-use-crashlytics-for-production-crash-stacks.md)
 - [0568](../decisions/0568-defer-watch-companion-from-first-production-release.md)
 - [0697](../decisions/0697-omit-apple-health-from-the-first-release.md)
+- [0704](../decisions/0704-maintain-versioned-app-store-metadata.md)
 
 ## Current Contract
 
@@ -18,6 +19,10 @@ documentation behavior. Decision records explain why these rules exist.
   version-aligned even when a platform is not part of the current distribution.
 - Every applicable platform keeps independent release notes so its shipped
   features, fixes, limitations, and distribution status are explicit.
+- Every platform version with prepared or verified App Store copy keeps one
+  `MAJOR.MINOR.PATCH-app-store.md` companion document. It preserves the exact
+  Description, What's New, and any other used public metadata without treating
+  that copy as a substitute for verified release scope.
 - The current release candidate is public version `1.4.0`, build `12`, for the
   universal iPhone/iPad app and macOS app. Its platform notes remain `In
   development` until the corresponding App Store versions ship. The earlier
