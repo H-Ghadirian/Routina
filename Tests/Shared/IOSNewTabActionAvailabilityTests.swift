@@ -130,6 +130,11 @@ struct IOSNewTabActionAvailabilityTests {
             endingAt: "@ViewBuilder\n    private func timelineRow",
             in: source
         )
+        let emotionLogs = try Self.functionSource(
+            named: "private var emotionLogs",
+            endingAt: "private var notes",
+            in: source
+        )
 
         #expect(source.contains("appSettingMacEventEmotionActionsEnabled.rawValue"))
         #expect(source.contains("appSettingStatsSleepTabEnabled.rawValue"))
@@ -142,6 +147,10 @@ struct IOSNewTabActionAvailabilityTests {
         #expect(source.contains("includesEventEmotion: areEventEmotionActionsEnabled"))
         #expect(source.contains("includesSleep: includesSleepTimelineFilters"))
         #expect(source.contains(".onChange(of: areEventEmotionActionsEnabled)"))
+        #expect(source.contains(
+            "areEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []"
+        ))
+        #expect(emotionLogs.contains("areEventEmotionActionsEnabled"))
         #expect(source.contains(".onChange(of: isStatsSleepTabEnabled)"))
     }
 

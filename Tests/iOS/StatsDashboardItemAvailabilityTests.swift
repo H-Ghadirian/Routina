@@ -128,4 +128,26 @@ struct StatsDashboardItemAvailabilityTests {
         ))
     }
 
+    @Test
+    func emotionReports_requireEventEmotionBetaExperiment() {
+        for item in [StatsDashboardItem.emotions, .emotionTrend] {
+            #expect(!item.isAvailable(
+                selectedRange: .week,
+                isGitFeaturesEnabled: true,
+                isGoalsTabEnabled: true,
+                isStatsWinsEnabled: true,
+                isStatsAchievementsEnabled: true,
+                areEventEmotionActionsEnabled: false
+            ))
+            #expect(item.isAvailable(
+                selectedRange: .week,
+                isGitFeaturesEnabled: false,
+                isGoalsTabEnabled: false,
+                isStatsWinsEnabled: false,
+                isStatsAchievementsEnabled: false,
+                areEventEmotionActionsEnabled: true
+            ))
+        }
+    }
+
 }

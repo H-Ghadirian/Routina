@@ -42,6 +42,10 @@ struct StatsView: View {
     private var isNotesEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue, store: SharedDefaults.app)
     private var isAwayEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -74,6 +78,8 @@ struct StatsView: View {
                 isPlacesEnabled
             case .notes:
                 isNotesEnabled
+            case .emotions:
+                areEventEmotionActionsEnabled
             case .sleep, .away:
                 isAwayEnabled
             default:
@@ -287,7 +293,8 @@ struct StatsView: View {
                     isGitFeaturesEnabled: store.isGitFeaturesEnabled,
                     isGoalsTabEnabled: isGoalsTabEnabled,
                     isStatsWinsEnabled: isStatsWinsEnabled,
-                    isStatsAchievementsEnabled: isStatsAchievementsEnabled
+                    isStatsAchievementsEnabled: isStatsAchievementsEnabled,
+                    areEventEmotionActionsEnabled: areEventEmotionActionsEnabled
                 )
                 && item.isReportable(metrics: metrics)
         }

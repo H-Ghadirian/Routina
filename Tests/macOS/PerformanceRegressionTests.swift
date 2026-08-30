@@ -207,6 +207,26 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testDisabledEmotionFeatureExcludesEmotionRowsFromMacTimelines() throws {
+        let standaloneSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Timeline/TimelineView.swift"
+        )
+        let integratedSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
+        )
+
+        XCTAssertTrue(standaloneSource.contains(
+            "areMacEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []"
+        ))
+        XCTAssertTrue(integratedSource.contains(
+            "let visibleEmotionLogs = areMacEventEmotionActionsEnabled ? emotionLogs : []"
+        ))
+        XCTAssertEqual(
+            integratedSource.components(separatedBy: "emotionLogs: visibleEmotionLogs").count - 1,
+            2
+        )
+    }
+
     func testPlannerAdaptiveTimeAxisUsesVisibleSnapshotsWithoutPersistenceWork() throws {
         let axisSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanSupport.swift"

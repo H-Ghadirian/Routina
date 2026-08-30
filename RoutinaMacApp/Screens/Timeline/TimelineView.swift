@@ -103,6 +103,7 @@ struct TimelineView: View {
             }
         }
         .onChange(of: areMacEventEmotionActionsEnabled) { _, _ in
+            syncTimelineData()
             validateTimelineFilterVisibility()
         }
         .onChange(of: store.filterType) { _, _ in
@@ -122,7 +123,9 @@ struct TimelineView: View {
     private var logs: [RoutineLog] { dataSnapshot.logs }
     private var fileAttachments: [RoutineAttachment] { dataSnapshot.fileAttachments }
     private var events: [RoutineEvent] { dataSnapshot.events }
-    private var emotionLogs: [EmotionLog] { dataSnapshot.emotionLogs }
+    private var emotionLogs: [EmotionLog] {
+        areMacEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []
+    }
     private var notes: [RoutineNote] { dataSnapshot.notes }
     private var noteAttachments: [RoutineNoteAttachment] { dataSnapshot.noteAttachments }
     private var focusSessions: [FocusSession] { dataSnapshot.focusSessions }

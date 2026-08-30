@@ -353,7 +353,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
         isGitFeaturesEnabled: Bool,
         isGoalsTabEnabled: Bool,
         isStatsWinsEnabled: Bool,
-        isStatsAchievementsEnabled: Bool
+        isStatsAchievementsEnabled: Bool,
+        areEventEmotionActionsEnabled: Bool = false
     ) -> Bool {
         switch self {
         case .unassignedFocus, .focusWorkChart, .estimateActual:
@@ -368,6 +369,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return isStatsWinsEnabled
         case .focusAchievements:
             return isStatsAchievementsEnabled
+        case .emotions, .emotionTrend:
+            return areEventEmotionActionsEnabled
         default:
             return true
         }

@@ -168,6 +168,7 @@ extension HomeTCAView {
         let visibleNotes = isNotesEnabled ? notes : []
         let visiblePlaces = isPlacesEnabled ? placeCheckInSessions : []
         let visibleAwaySessions = isAwayEnabled ? awaySessions : []
+        let visibleEmotionLogs = areMacEventEmotionActionsEnabled ? emotionLogs : []
         let visibleNoteAttachmentIDs = isNotesEnabled ? noteAttachmentNoteIDs : []
         let focusSessionEvents = FocusSessionActionEvent.events(from: focusSessionActionLogs)
 
@@ -175,7 +176,7 @@ extension HomeTCAView {
             logs: logs,
             tasks: tasks,
             events: events,
-            emotionLogs: emotionLogs,
+            emotionLogs: visibleEmotionLogs,
             notes: visibleNotes,
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
@@ -227,7 +228,7 @@ extension HomeTCAView {
             logs: logs,
             tasks: tasks,
             events: events,
-            emotionLogs: emotionLogs,
+            emotionLogs: visibleEmotionLogs,
             notes: visibleNotes,
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,

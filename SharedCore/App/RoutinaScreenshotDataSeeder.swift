@@ -10,10 +10,10 @@ struct RoutinaScreenshotDataSeedResult: Equatable, Sendable {
     var goalCount = 0
     var noteCount = 0
     var eventCount = 0
-    var emotionCount = 0
     var sleepSessionCount = 0
     var awaySessionCount = 0
     var refreshedRecordCount = 0
+    var removedRecordCount = 0
     var managedTaskCount = 0
     var managedSectionCount = 0
     var managedSupportingRecordCount = 0
@@ -27,18 +27,18 @@ struct RoutinaScreenshotDataSeedResult: Equatable, Sendable {
             + goalCount
             + noteCount
             + eventCount
-            + emotionCount
             + sleepSessionCount
             + awaySessionCount
     }
 
     var totalChangedCount: Int {
-        totalInsertedCount + refreshedRecordCount
+        totalInsertedCount + refreshedRecordCount + removedRecordCount
     }
 }
 
 enum RoutinaScreenshotDataSeeder {
     static let taskCount = 16
+    static let retiredEmotionIDs = Set((0..<10).map { seedID(9_000 + $0) })
 
     @MainActor
     static func seedIfRequested(in context: ModelContext) {
@@ -48,7 +48,7 @@ enum RoutinaScreenshotDataSeeder {
             let result = try seed(in: context)
             _ = RoutinaUserPreferencesStore.applyToDefaults(from: context)
             NSLog(
-                "Routina screenshot data seed finished with \(result.totalInsertedCount) inserted and \(result.refreshedRecordCount) refreshed records."
+                "Routina screenshot data seed finished with \(result.totalInsertedCount) inserted, \(result.refreshedRecordCount) refreshed, and \(result.removedRecordCount) removed records."
             )
             if AppEnvironment.exitsAfterScreenshotDataSeed {
                 Foundation.exit(EXIT_SUCCESS)
@@ -78,13 +78,6 @@ enum RoutinaScreenshotDataSeeder {
         let events = makeEvents(dates: dates)
         let sleepSessions = makeSleepSessions(dates: dates)
         let awaySessions = makeAwaySessions(dates: dates, tasks: tasks)
-        let emotions = makeEmotions(
-            dates: dates,
-            tasks: tasks,
-            goals: goals,
-            notes: notes,
-            sleepSessions: sleepSessions
-        )
 
         var result = RoutinaScreenshotDataSeedResult(
             managedTaskCount: tasks.count,
@@ -95,7 +88,6 @@ enum RoutinaScreenshotDataSeeder {
                 + goals.count
                 + notes.count
                 + events.count
-                + emotions.count
                 + sleepSessions.count
                 + awaySessions.count
         )
@@ -243,18 +235,10 @@ enum RoutinaScreenshotDataSeeder {
             }
         }
 
-        let existingEmotions = Dictionary(
-            try context.fetch(FetchDescriptor<EmotionLog>()).map { ($0.id, $0) },
-            uniquingKeysWith: { existing, _ in existing }
-        )
-        for emotion in emotions {
-            if let existing = existingEmotions[emotion.id] {
-                refresh(existing, from: emotion)
-                result.refreshedRecordCount += 1
-            } else {
-                context.insert(emotion)
-                result.emotionCount += 1
-            }
+        let existingEmotions = try context.fetch(FetchDescriptor<EmotionLog>())
+        for emotion in existingEmotions where retiredEmotionIDs.contains(emotion.id) {
+            context.delete(emotion)
+            result.removedRecordCount += 1
         }
 
         if result.totalChangedCount > 0 {
@@ -383,23 +367,6 @@ private extension RoutinaScreenshotDataSeeder {
         existing.completedAt = template.completedAt
         existing.endedEarlyAt = template.endedEarlyAt
         existing.extensionCount = template.extensionCount
-        existing.createdAt = template.createdAt
-        existing.updatedAt = template.updatedAt
-    }
-
-    static func refresh(_ existing: EmotionLog, from template: EmotionLog) {
-        existing.families = template.families
-        existing.labels = template.labels
-        existing.valence = template.valence
-        existing.arousal = template.arousal
-        existing.intensity = template.intensity
-        existing.bodyAreas = template.bodyAreas
-        existing.reflection = template.reflection
-        existing.linkedNoteID = template.linkedNoteID
-        existing.linkedGoalID = template.linkedGoalID
-        existing.linkedTaskID = template.linkedTaskID
-        existing.linkedPlaceID = template.linkedPlaceID
-        existing.linkedSleepSessionID = template.linkedSleepSessionID
         existing.createdAt = template.createdAt
         existing.updatedAt = template.updatedAt
     }
@@ -1201,38 +1168,4 @@ private extension RoutinaScreenshotDataSeeder {
         }
     }
 
-    static func makeEmotions(
-        dates: SeedDates,
-        tasks: [RoutineTask],
-        goals: [RoutineGoal],
-        notes: [RoutineNote],
-        sleepSessions: [SleepSession]
-    ) -> [EmotionLog] {
-        let families: [EmotionFamily] = [
-            .calm, .joy, .surpriseCuriosity, .calm, .joy,
-            .fear, .calm, .joy, .surpriseCuriosity, .calm
-        ]
-        return families.enumerated().map { index, family in
-            let valence = family == .fear ? -0.35 : 0.35 + Double(index % 3) * 0.15
-            let arousal = family == .calm ? -0.35 : 0.25
-            return EmotionLog(
-                id: seedID(9_000 + index),
-                family: family,
-                label: family.defaultLabel,
-                valence: valence,
-                arousal: arousal,
-                intensity: 2 + (index % 3),
-                bodyAreas: family == .calm ? [.shoulders, .energy] : [.chest, .energy],
-                reflection: index == 5
-                    ? "A little deadline pressure, but the plan feels manageable."
-                    : "The day felt balanced after a focused start.",
-                linkedNoteID: index == 1 ? notes[1].id : nil,
-                linkedGoalID: index == 2 ? goals[0].id : nil,
-                linkedTaskID: index.isMultiple(of: 3) ? tasks[1].id : nil,
-                linkedSleepSessionID: index < sleepSessions.count ? sleepSessions[index].id : nil,
-                createdAt: dates.at(dayOffset: -index, hour: 18),
-                updatedAt: dates.at(dayOffset: -index, hour: 18)
-            )
-        }
-    }
 }

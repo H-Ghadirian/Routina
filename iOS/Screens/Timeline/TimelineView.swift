@@ -103,6 +103,7 @@ struct TimelineView: View {
             }
             .onChange(of: areEventEmotionActionsEnabled) { _, _ in
                 guard isActive else { return }
+                syncTimelineData()
                 validateTimelineFilterVisibility()
             }
             .onChange(of: isStatsSleepTabEnabled) { _, _ in
@@ -163,7 +164,9 @@ struct TimelineView: View {
     private var logs: [RoutineLog] { dataSnapshot.logs }
     private var fileAttachments: [RoutineAttachment] { dataSnapshot.fileAttachments }
     private var events: [RoutineEvent] { dataSnapshot.events }
-    private var emotionLogs: [EmotionLog] { dataSnapshot.emotionLogs }
+    private var emotionLogs: [EmotionLog] {
+        areEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []
+    }
     private var notes: [RoutineNote] { dataSnapshot.notes }
     private var noteAttachments: [RoutineNoteAttachment] { dataSnapshot.noteAttachments }
     private var focusSessions: [FocusSession] { dataSnapshot.focusSessions }

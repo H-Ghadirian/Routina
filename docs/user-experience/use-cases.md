@@ -271,7 +271,7 @@ The last duration selected in that sheet is shown as Last choice and selected by
 
 **Need:** Record relevant context such as sleep, time away, a note, an event, an emotion, or a place visit without pretending it is a task.
 
-**Desired experience:** Each record keeps its own meaning and appears in a coherent personal history. Optional context features do not complicate the core task experience when unavailable or disabled, including by leaving unavailable choices in creation or history filters. On iOS, disabling Sleep or its shake shortcut means a physical shake cannot open or complete a Sleep-mode start.
+**Desired experience:** Each record keeps its own meaning and appears in a coherent personal history. Optional context features do not complicate the core task experience when unavailable or disabled, including by leaving unavailable choices in creation, history filters, Timeline rows, or Stats reports. Preserved records remain stored for later re-enablement without advertising a feature that is absent from production. On iOS, disabling Sleep or its shake shortcut means a physical shake cannot open or complete a Sleep-mode start.
 
 **Successful outcome:** Later review explains the day more accurately.
 
@@ -401,13 +401,13 @@ Settings search should take the person directly to platform-relevant destination
 
 **Need:** Show a coherent, meaningful version of the real product on both platforms without borrowing personal or production data, manually rebuilding many related records, or presenting stale dates and obsolete feature coverage.
 
-**Desired experience:** One explicit development-only preparation path creates the same plausible release story in each app's isolated development store. The content stays relative to the preparation date and represents current production concepts across Home, Backlog, Task Ladder, Task Details, Planner, Timeline, Focus, and Stats. Rerunning preparation updates the fixture records Routina owns, adds newly required fixture content, preserves unrelated development work, and never creates duplicates. Production cannot honor the trigger. Mac can temporarily hide its visible development badge for clean presentation; preparing data never captures the screen or bypasses the separate screenshot-permission requirement.
+**Desired experience:** One explicit development-only preparation path creates the same plausible release story in each app's isolated development store. The content stays relative to the preparation date and represents current production concepts across Home, Backlog, Task Ladder, Task Details, Planner, Timeline, Focus, and Stats without manufacturing records or visible reports for features disabled in production. Rerunning preparation updates the fixture records Routina owns, adds newly required fixture content, retires only obsolete fixture-owned content, preserves unrelated development work, and never creates duplicates. Production cannot honor the trigger. Mac can temporarily hide its visible development badge for clean presentation; preparing data never captures the screen or bypasses the separate screenshot-permission requirement.
 
 **Successful outcome:** The release owner can open either development app and compose accurate App Store screenshots from representative content, while trusting that production data was not used and existing unrelated Dev work was not erased.
 
 **Example:** A release story can show scheduled and after-completion routines, a when-needed routine, one-time work with deadlines and availability, a nested Backlog, independent Task Ladder timing, a blocked release task, built-in Flags, a titled reference link, a real destination, today's Planner blocks, recent Focus sessions, and enough historical outcomes for Timeline and Stats. Running preparation again tomorrow advances the fixture's dates instead of leaving yesterday's deterministic rows stale.
 
-**Evidence:** User request on 2026-08-30 to revise the outdated Mac screenshot seed for expanded feature coverage and seed the iOS development app for its first release screenshots.
+**Evidence:** User request on 2026-08-30 to revise the outdated Mac screenshot seed for expanded feature coverage and seed the iOS development app for its first release screenshots. Follow-up user-provided iOS Stats and Timeline images on 2026-08-30 established that the fixture must not expose Emotion data because production cannot log Emotions.
 
 **Availability:** Project-local development tooling on iOS and macOS. Mac additionally provides the in-app Settings action; neither production app exposes preparation.
 

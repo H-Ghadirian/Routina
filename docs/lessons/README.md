@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0277 — Align release fixtures with feature presentation gates](0277-align-release-fixtures-with-feature-presentation-gates.md)
 - [0276 — Gate settings by platform and effective capability](0276-gate-settings-by-platform-and-effective-capability.md)
 - [0275 — Hide dependent settings without a subject](0275-hide-dependent-settings-without-a-subject.md)
 - [0274 — Remove retired migration copy with the migration](0274-remove-retired-migration-copy-with-the-migration.md)

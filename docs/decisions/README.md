@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0706](0706-gate-disabled-emotions-at-release-presentation-boundaries.md) revises [0705](0705-refresh-cross-platform-development-screenshot-fixtures.md) and refines [0220](0220-nest-sleep-and-gate-mac-event-emotion-actions.md) and [0470](0470-keep-beta-experiments-out-of-production.md):** disabled Emotion data remains preserved but is excluded from Stats and Timeline, while release fixtures create no Emotion records and retire only their own older Emotion rows.
 - **[0705](0705-refresh-cross-platform-development-screenshot-fixtures.md) revises [0465](0465-prepare-mac-development-app-for-screenshots.md):** iOS and macOS development apps can prepare the same current, date-relative release fixture; reruns refresh only reserved records and sections while preserving unrelated development data, and production continues to reject the trigger.
 - **[0704](0704-maintain-versioned-app-store-metadata.md) refines [0519](0519-maintain-platform-versioned-release-notes.md):** each platform preserves its exact App Store Description, What's New, and any other used public metadata in one versioned companion document without rewriting older copy or inventing missing historical fields.
 - **[0703](0703-keep-ios-settings-platform-relevant-and-adaptive.md) revises [0006](0006-make-planner-timeline-activity-configurable.md), [0637](0637-search-settings-by-destination.md), and [0674](0674-hide-flagged-tasks-from-calendar-list.md), and refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0279](0279-hide-sleep-stats-and-blocking-with-away-toggle.md), and [0698](0698-focus-first-ios-home-on-the-first-task.md):** iOS Settings and Flag presentation omit Mac-only concepts, task- and feature-dependent controls follow their real availability, and hidden Mac Flag assignments survive iOS edits.
@@ -827,6 +828,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0706](0706-gate-disabled-emotions-at-release-presentation-boundaries.md) | Gate Disabled Emotions at Release Presentation Boundaries | Accepted | 2026-08-30 |
 | [0705](0705-refresh-cross-platform-development-screenshot-fixtures.md) | Refresh Cross-Platform Development Screenshot Fixtures | Accepted | 2026-08-30 |
 | [0704](0704-maintain-versioned-app-store-metadata.md) | Maintain Versioned App Store Metadata | Accepted | 2026-08-30 |
 | [0702](0702-hide-tag-counter-settings-without-tags.md) | Hide Tag Counter Settings Without Tags | Accepted | 2026-08-30 |

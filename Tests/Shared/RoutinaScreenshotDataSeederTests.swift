@@ -55,7 +55,7 @@ struct RoutinaScreenshotDataSeederTests {
         #expect(goals.count == 3)
         #expect(notes.count == 3)
         #expect(events.count == 2)
-        #expect(emotions.count == 10)
+        #expect(emotions.isEmpty)
         #expect(sleepSessions.count == 10)
         #expect(awaySessions.count == 4)
         #expect(focusSessions.allSatisfy { $0.state == .completed })
@@ -146,5 +146,40 @@ struct RoutinaScreenshotDataSeederTests {
         )
         #expect(refreshedSections.count == 6)
         #expect(refreshedSections.contains { $0.id == userSection.id })
+    }
+
+    @Test
+    func seedRetiresOnlyFixtureOwnedEmotionLogs() throws {
+        let context = makeInMemoryContext()
+        let retiredID = try #require(RoutinaScreenshotDataSeeder.retiredEmotionIDs.first)
+        let retiredEmotion = EmotionLog(
+            id: retiredID,
+            family: .calm,
+            label: "calm",
+            valence: 0.4,
+            arousal: -0.3,
+            intensity: 2
+        )
+        let userEmotion = EmotionLog(
+            family: .joy,
+            label: "grateful",
+            valence: 0.7,
+            arousal: 0.2,
+            intensity: 4
+        )
+        context.insert(retiredEmotion)
+        context.insert(userEmotion)
+        try context.save()
+
+        let result = try RoutinaScreenshotDataSeeder.seed(
+            in: context,
+            referenceDate: makeDate("2026-07-29T10:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+
+        let remainingEmotions = try context.fetch(FetchDescriptor<EmotionLog>())
+        #expect(result.removedRecordCount == 1)
+        #expect(!remainingEmotions.contains { $0.id == retiredID })
+        #expect(remainingEmotions.contains { $0.id == userEmotion.id })
     }
 }
