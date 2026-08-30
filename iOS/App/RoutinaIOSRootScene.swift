@@ -10,6 +10,9 @@ struct RoutinaIOSRootScene: Scene {
     @MainActor
     init() {
         let persistence = RoutinaAppSceneBootstrap.preparePersistence()
+        IOSFirstTaskExperience.prepareForLaunch(
+            hasExistingInstallation: DeviceActivityRecorder.hasExistingInstallationID()
+        )
         self.persistence = persistence
         self.store = RoutinaAppBootstrap.makeStore(
             using: persistence,

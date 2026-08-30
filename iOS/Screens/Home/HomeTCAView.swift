@@ -56,6 +56,10 @@ struct HomeTCAView: View {
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
     ) private var taskRowHiddenFieldsRawValue = ""
+    @AppStorage(
+        IOSFirstTaskExperience.completionDefaultsKey,
+        store: SharedDefaults.app
+    ) var hasCompletedFirstTaskExperience = true
     @State private var localSearchText = ""
     @State var isManualCloudRefreshInProgress = false
     @State var manualCloudRefreshStatusText = ""
@@ -133,6 +137,15 @@ homeContent
                 .task(id: taskListPresentationRefreshToken) {
                     guard isActive else { return }
                     await refreshTaskListPresentation()
+                }
+                .onChange(of: store.routineTasks.isEmpty, initial: true) { _, isEmpty in
+                    guard IOSFirstTaskExperience.shouldComplete(
+                        taskCount: isEmpty ? 0 : store.routineTasks.count,
+                        hasCompleted: hasCompletedFirstTaskExperience
+                    ) else {
+                        return
+                    }
+                    hasCompletedFirstTaskExperience = true
                 }
         )
     }

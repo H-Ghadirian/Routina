@@ -3892,14 +3892,23 @@ And its task-review destination cannot be presented
 ### iOS Home Empty States Offer Task Creation
 
 Area: Home / UI
-Decision links: [0539](../decisions/0539-offer-ios-task-creation-from-home-empty-states.md)
-Current behavior: [UI](../current-behavior/ui.md)
+Decision links: [0539](../decisions/0539-offer-ios-task-creation-from-home-empty-states.md), [0698](../decisions/0698-focus-first-ios-home-on-the-first-task.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/HomeIOSCreationEmptyStateTests.swift`
+- `Tests/Shared/IOSFirstTaskExperienceTests.swift`
 
-Given iOS Home has finished loading and contains no tasks
-When the person opens Home
-Then the empty state shows an `Add New Task` button that opens Smart Add
+Given a genuinely new iOS installation has finished loading an empty task snapshot
+When the person opens Home before this installation has observed a task
+Then Home asks what they would like to get done
+And `Create Your First Task` opens Smart Add
+And task-type actions, Filters, Backlog, Timeline, and Task Ladder are absent
+And the standard bottom tabs remain available
+
+Given an existing installation is empty, or this installation previously observed a task
+When the person opens an empty Home
+Then the established state shows an `Add New Task` button that opens Smart Add
+And deleting every task does not replay first-use guidance
 
 Given the person searches Home with a non-empty query that matches no known task
 When the search results are empty
@@ -4303,9 +4312,13 @@ Then Backlog, Timeline, and Task Ladder appear in that order
 And each full visible row opens its workspace through Home navigation
 And the bottom tab bar remains unchanged
 
-Given Home has no tasks
+Given an established Home has no tasks
 Then Add New Task remains available
 And the same three workspace rows remain below the empty state
+
+Given a new installation has not yet observed its first task
+When Home finishes loading an empty task snapshot
+Then Backlog, Timeline, and Task Ladder remain hidden until a task is created, imported, restored, or synchronized
 
 Given the person uses the dedicated Search tab
 Then the workspace rows do not appear among task-search results

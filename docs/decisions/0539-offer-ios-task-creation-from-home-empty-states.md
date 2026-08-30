@@ -25,6 +25,11 @@ recover their filtered result.
 A fully loaded iOS Home list with no tasks shows `Add New Task`, opening the
 shared Smart Add flow.
 
+[0698](0698-focus-first-ios-home-on-the-first-task.md) later distinguishes a
+genuinely new installation from this established empty-list state. Before that
+installation has observed its first task, Home uses a focused first-task
+experience instead; established empty lists retain the behavior defined here.
+
 When a non-empty Home search produces no known task match, its no-results state
 also shows `Create Task`. It opens the same Smart Add flow and pre-fills the
 input with the trimmed search text. A known matching task, including one hidden

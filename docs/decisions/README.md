@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0698](0698-focus-first-ios-home-on-the-first-task.md) revises [0539](0539-offer-ios-task-creation-from-home-empty-states.md) and [0664](0664-open-ios-workspaces-from-the-home-list.md), and refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0264](0264-match-button-hit-areas-to-visual-surfaces.md), and [0543](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md):** a genuinely new iOS installation focuses Home on creating the first task and temporarily omits advanced workspace and filter chrome; observing any task permanently restores the normal Home experience, while existing installations and later empty catalogs keep their established behavior.
 - **[0697](0697-omit-apple-health-from-the-first-release.md) supersedes [0096](superseded/0096-show-healthkit-movement-stats.md) and [0550](superseded/0550-make-apple-health-stats-prompt-dismissible.md):** the first iOS and iPadOS release omits Apple Health UI, movement metrics, HealthKit implementation and capability declarations, and does not add a replacement health library.
 - **[0696](0696-use-grouped-rows-for-ios-home-filter-choices.md) refines [0089](0089-prefer-native-apple-platform-patterns.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0537](0537-keep-all-ios-home-filter-options-in-persistent-sheets.md), and [0581](0581-separate-ios-priority-filter-controls.md):** iOS Home Task Type, One-time State, Importance, Urgency, Pressure, and Thinking needed detail sheets use native grouped-row pickers with explicit threshold and `All` / `None` semantics.
 - **[0694](0694-verify-portable-backups-and-preserve-restore-recovery.md) refines [0170](0170-treat-backup-reset-as-complete-user-data-operations.md) and [0693](0693-audit-backups-through-isolated-semantic-round-trips.md):** new backups carry portable source-matching receipts, restore preflights before a one-save replacement, and Routina retains ten verified pre-restore recovery points while keeping live-data comparison separate from CloudKit inventory.
@@ -818,6 +819,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0698](0698-focus-first-ios-home-on-the-first-task.md) | Focus First iOS Home on the First Task | Accepted | 2026-08-30 |
 | [0696](0696-use-grouped-rows-for-ios-home-filter-choices.md) | Use Grouped Rows for iOS Home Filter Choices | Accepted | 2026-08-29 |
 | [0694](0694-verify-portable-backups-and-preserve-restore-recovery.md) | Verify Portable Backups and Preserve Restore Recovery | Accepted | 2026-08-29 |
 | [0693](0693-audit-backups-through-isolated-semantic-round-trips.md) | Audit Backups Through Isolated Semantic Round Trips | Accepted | 2026-08-29 |

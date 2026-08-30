@@ -38,6 +38,9 @@ The iOS Home task list ends with three native navigation rows in this order:
 Backlog, Timeline, and Task Ladder. The rows appear only in Home, not in the
 dedicated Search tab, and remain reachable beneath the task-creation empty state
 when Home has no tasks. This decision does not change the iOS tab bar.
+[0698](0698-focus-first-ios-home-on-the-first-task.md) later hides all three
+rows only during a new installation's focused first-task experience; an
+established empty Home continues to show them.
 
 Each row opens its destination through Home's existing navigation hierarchy.
 The Home-launched Timeline reuses the Timeline surface without installing its
@@ -64,7 +67,7 @@ full Backlog or Task Ladder from Home's `List` body.
   workspaces without displacing Search, New, Timeline, or More in this step.
 - Backlog and Task Ladder data, eligibility, ranking, and group semantics stay
   consistent across iOS and macOS.
-- The three rows remain useful on an empty Home rather than disappearing with
-  task content.
+- The three rows remain useful on an established empty Home rather than
+  disappearing with task content; first-task guidance temporarily omits them.
 - Search results stay focused on tasks and do not repeat workspace navigation.
 - Future tab-bar changes remain a separate product decision.

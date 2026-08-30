@@ -10,6 +10,13 @@ import AppKit
 enum DeviceActivityRecorder {
     private static let installationIDDefaultsKey = "routina.device.installationID.v1"
 
+    static func hasExistingInstallationID(defaults: UserDefaults = SharedDefaults.app) -> Bool {
+        guard let existing = defaults.string(forKey: installationIDDefaultsKey) else {
+            return false
+        }
+        return !existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     @MainActor
     static func currentInstallationID(defaults: UserDefaults = SharedDefaults.app) -> String {
         if let existing = defaults.string(forKey: installationIDDefaultsKey),

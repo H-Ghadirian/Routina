@@ -28,7 +28,8 @@ extension HomeTCAView {
         HomeIOSHomeToolbarContent(
             taskListMode: store.taskListMode,
             areTaskListModeActionsExpanded: areTaskListModeActionsExpanded,
-            showTaskListModeActions: areHomeTaskListModeTabsVisible,
+            showTaskListModeActions: areHomeTaskListModeTabsVisible && !isFirstTaskExperiencePending,
+            showFilters: !isFirstTaskExperiencePending,
             hasActiveOptionalFilters: hasActiveOptionalFilters,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
@@ -491,7 +492,7 @@ extension HomeTCAView {
     private var iosSidebarContent: some View {
         HomeIOSSidebarContent(
             isEmpty: showsLoadedEmptyTaskList,
-            navigationTitle: homeNavigationTitle
+            navigationTitle: isFirstTaskExperiencePending ? "Home" : homeNavigationTitle
         ) {
             emptyHomeContent
         } taskListContent: {
@@ -516,7 +517,15 @@ extension HomeTCAView {
 
     @ViewBuilder
     private var emptyHomeContent: some View {
-        if showsHomeWorkspaceNavigation,
+        if showsFirstTaskExperience {
+            emptyStateView(
+                title: "What would you like to get done?",
+                message: "Add your first task now. You can organize and schedule it later.",
+                systemImage: "checklist",
+                actionTitle: "Create Your First Task",
+                action: openAddTask
+            )
+        } else if showsHomeWorkspaceNavigation,
            timelineStore != nil,
            backlogStore != nil,
            taskRankingStore != nil {
@@ -547,6 +556,19 @@ extension HomeTCAView {
 
     private var showsHomeWorkspaceNavigation: Bool {
         externalSearchText == nil
+    }
+
+    private var showsFirstTaskExperience: Bool {
+        externalSearchText == nil
+            && IOSFirstTaskExperience.shouldPresent(
+                hasLoadedTaskSnapshot: store.hasLoadedTaskSnapshot,
+                taskCount: store.routineTasks.count,
+                hasCompleted: hasCompletedFirstTaskExperience
+            )
+    }
+
+    private var isFirstTaskExperiencePending: Bool {
+        externalSearchText == nil && !hasCompletedFirstTaskExperience
     }
 
     @ViewBuilder

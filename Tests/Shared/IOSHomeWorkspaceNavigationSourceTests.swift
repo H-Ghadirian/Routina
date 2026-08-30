@@ -32,6 +32,8 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         #expect(homePlatform.contains("externalSearchText == nil"))
         #expect(homePlatform.contains("homeWorkspaceNavigationSection"))
         #expect(homePlatform.contains("title: \"No tasks yet\""))
+        #expect(homePlatform.contains("if showsFirstTaskExperience"))
+        #expect(homePlatform.contains("&& !hasCompletedFirstTaskExperience"))
 
         #expect(appView.contains("SwiftUI.Tab(Tab.timeline.rawValue"))
         #expect(appView.contains("SwiftUI.Tab(Tab.more.rawValue"))

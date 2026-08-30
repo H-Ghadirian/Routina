@@ -4,6 +4,7 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
     let taskListMode: HomeFeature.TaskListMode
     let areTaskListModeActionsExpanded: Bool
     let showTaskListModeActions: Bool
+    let showFilters: Bool
     let hasActiveOptionalFilters: Bool
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
     let onToggleTaskListModeActions: () -> Void
@@ -28,15 +29,17 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
-            topActionButton(
-                title: "Filters",
-                systemImage: hasActiveOptionalFilters
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease.circle",
-                tint: hasActiveOptionalFilters ? .accentColor : .secondary,
-                isHighlighted: hasActiveOptionalFilters,
-                action: onShowFilters
-            )
+            if showFilters {
+                topActionButton(
+                    title: "Filters",
+                    systemImage: hasActiveOptionalFilters
+                        ? "line.3.horizontal.decrease.circle.fill"
+                        : "line.3.horizontal.decrease.circle",
+                    tint: hasActiveOptionalFilters ? .accentColor : .secondary,
+                    isHighlighted: hasActiveOptionalFilters,
+                    action: onShowFilters
+                )
+            }
         }
     }
 
