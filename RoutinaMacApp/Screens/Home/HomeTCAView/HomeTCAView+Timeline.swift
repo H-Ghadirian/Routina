@@ -168,6 +168,7 @@ extension HomeTCAView {
         let visibleNotes = isNotesEnabled ? notes : []
         let visiblePlaces = isPlacesEnabled ? placeCheckInSessions : []
         let visibleAwaySessions = isAwayEnabled ? awaySessions : []
+        let visibleSleepSessions = includesMacSleepTimelineFilters ? sleepSessions : []
         let visibleEmotionLogs = areMacEventEmotionActionsEnabled ? emotionLogs : []
         let visibleNoteAttachmentIDs = isNotesEnabled ? noteAttachmentNoteIDs : []
         let focusSessionEvents = FocusSessionActionEvent.events(from: focusSessionActionLogs)
@@ -182,7 +183,7 @@ extension HomeTCAView {
             sprintFocusSessions: sprintFocusSessions,
             focusSessionEvents: focusSessionEvents,
             boardSprints: boardSprints,
-            sleepSessions: sleepSessions,
+            sleepSessions: visibleSleepSessions,
             placeCheckInSessions: visiblePlaces,
             awaySessions: visibleAwaySessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
@@ -234,7 +235,7 @@ extension HomeTCAView {
             sprintFocusSessions: sprintFocusSessions,
             focusSessionEvents: focusSessionEvents,
             boardSprints: boardSprints,
-            sleepSessions: sleepSessions,
+            sleepSessions: visibleSleepSessions,
             placeCheckInSessions: visiblePlaces,
             awaySessions: visibleAwaySessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
@@ -862,7 +863,7 @@ extension HomeTCAView {
             }
 
             HomeMacTimelineSidebarView(
-                timelineEntryCount: timelineSourceLogs.count + events.count + emotionLogs.count + (isNotesEnabled ? notes.count : 0) + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + (isAwayEnabled ? awaySessions.count : 0) + (isPlacesEnabled ? placeCheckInSessions.count : 0),
+                timelineEntryCount: timelineSourceLogs.count + events.count + emotionLogs.count + (isNotesEnabled ? notes.count : 0) + focusSessions.count + sprintFocusSessions.count + (includesMacSleepTimelineFilters ? sleepSessions.count : 0) + (isAwayEnabled ? awaySessions.count : 0) + (isPlacesEnabled ? placeCheckInSessions.count : 0),
                 groupedEntries: groupedTimelineEntries,
                 rowNumbersByEntryID: macTimelinePresentation.rowNumbersByEntryID,
                 presentationID: macTimelineSidebarPresentationID,

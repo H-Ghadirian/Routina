@@ -108,6 +108,7 @@ struct TimelineView: View {
             }
             .onChange(of: isStatsSleepTabEnabled) { _, _ in
                 guard isActive else { return }
+                syncTimelineData()
                 validateTimelineFilterVisibility()
             }
             .onChange(of: store.filterType) { _, _ in
@@ -177,7 +178,9 @@ struct TimelineView: View {
         dataSnapshot.focusSessionEvents
     }
     private var boardSprints: [BoardSprintRecord] { dataSnapshot.boardSprints }
-    private var sleepSessions: [SleepSession] { dataSnapshot.sleepSessions }
+    private var sleepSessions: [SleepSession] {
+        includesSleepTimelineFilters ? dataSnapshot.sleepSessions : []
+    }
     private var awaySessions: [AwaySession] { dataSnapshot.awaySessions }
     private var placeCheckInSessions: [PlaceCheckInSession] {
         dataSnapshot.placeCheckInSessions

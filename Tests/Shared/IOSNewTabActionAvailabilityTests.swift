@@ -135,6 +135,11 @@ struct IOSNewTabActionAvailabilityTests {
             endingAt: "private var notes",
             in: source
         )
+        let sleepSessions = try Self.functionSource(
+            named: "private var sleepSessions",
+            endingAt: "private var awaySessions",
+            in: source
+        )
 
         #expect(source.contains("appSettingMacEventEmotionActionsEnabled.rawValue"))
         #expect(source.contains("appSettingStatsSleepTabEnabled.rawValue"))
@@ -151,7 +156,12 @@ struct IOSNewTabActionAvailabilityTests {
             "areEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []"
         ))
         #expect(emotionLogs.contains("areEventEmotionActionsEnabled"))
-        #expect(source.contains(".onChange(of: isStatsSleepTabEnabled)"))
+        #expect(sleepSessions.contains(
+            "includesSleepTimelineFilters ? dataSnapshot.sleepSessions : []"
+        ))
+        #expect(source.contains(
+            ".onChange(of: isStatsSleepTabEnabled) { _, _ in\n                guard isActive else { return }\n                syncTimelineData()"
+        ))
     }
 
     private static func functionSource(

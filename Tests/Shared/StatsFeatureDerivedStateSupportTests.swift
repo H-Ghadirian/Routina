@@ -996,6 +996,42 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func cumulativeFocusChartFitsItsWholeTrendInTheViewport() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                .appendingPathComponent("SharedCore/Views/StatsFocusChartSection.swift"),
+            encoding: .utf8
+        )
+        let start = try #require(source.range(of: "private struct StatsFocusCumulativeChart"))
+        let end = try #require(
+            source.range(
+                of: "private struct StatsFocusCumulativePointPanel",
+                range: start.upperBound..<source.endIndex
+            )
+        )
+        let cumulativeChart = source[start.lowerBound..<end.lowerBound]
+
+        #expect(cumulativeChart.contains("usesHorizontalScroll: false"))
+        #expect(cumulativeChart.contains("focusCumulativeXAxisDates"))
+        #expect(cumulativeChart.contains("if let lastPoint = points.last"))
+        #expect(cumulativeChart.contains(".frame(height: 190)"))
+    }
+
+    @Test
+    func hourlyActivityFactsUseAReadableSummaryPanel() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                .appendingPathComponent("SharedCore/Views/StatsHourlyActivitySection.swift"),
+            encoding: .utf8
+        )
+
+        #expect(source.contains("StatsHourlyActivitySummaryPanel("))
+        #expect(source.contains("Label(\"Period\", systemImage: \"calendar\")"))
+        #expect(source.contains("title: \"Strongest hour\""))
+        #expect(!source.contains("StatsChartInsightRow("))
+    }
+
+    @Test
     func achievementSnapshotDomainFilteringPreservesEnabledContentOnly() {
         let sleepAchievement = StatsAchievementProgress(
             id: "sleep",

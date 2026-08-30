@@ -635,7 +635,7 @@ private struct StatsFocusCumulativeChart: View {
     }
 
     private var xAxisDates: [Date] {
-        chartPresentation.focusDayXAxisDates(from: points.map(\.date))
+        chartPresentation.focusCumulativeXAxisDates(from: points.map(\.date))
     }
 
     var body: some View {
@@ -656,8 +656,8 @@ private struct StatsFocusCumulativeChart: View {
             }
 
             StatsFocusChartContainer(
-                usesHorizontalScroll: chartPresentation.usesHorizontalChartScroll,
-                minWidth: chartPresentation.chartMinWidth,
+                usesHorizontalScroll: false,
+                minWidth: 0,
                 minHeight: 190
             ) {
                 Chart {
@@ -680,6 +680,15 @@ private struct StatsFocusCumulativeChart: View {
                         .accessibilityValue(accessibilityValue(for: point))
                     }
 
+                    if let lastPoint = points.last {
+                        PointMark(
+                            x: .value("Latest day", lastPoint.date, unit: .day),
+                            y: .value("Cumulative minutes", lastPoint.cumulativeMinutes)
+                        )
+                        .symbolSize(34)
+                        .foregroundStyle(Color.teal)
+                    }
+
                     if let selectedPoint {
                         RuleMark(x: .value("Selected day", selectedPoint.date, unit: .day))
                             .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
@@ -696,7 +705,7 @@ private struct StatsFocusCumulativeChart: View {
                 .chartYScale(domain: 0...axisUpperBound)
                 .chartYAxis {
                     AxisMarks(
-                        position: chartPresentation.usesHorizontalChartScroll ? .trailing : .leading,
+                        position: .leading,
                         values: StatsChartTimeAxis.values(upperBound: axisUpperBound)
                     ) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
@@ -767,6 +776,7 @@ private struct StatsFocusCumulativeChart: View {
                         #endif
                     }
                 }
+                .frame(height: 190)
             }
 
             if let detailPoint = selectedPoint ?? points.last,

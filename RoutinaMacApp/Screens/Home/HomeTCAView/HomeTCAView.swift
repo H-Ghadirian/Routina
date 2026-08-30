@@ -553,6 +553,9 @@ homeContent
                         closeAwayStart()
                     }
                 }
+                .onChange(of: isStatsSleepTabEnabled) { _, _ in
+                    validateMacTimelineFilterVisibility()
+                }
                 .onChange(of: store.selectedTimelineFilterType) { _, _ in
                     validateMacTimelineFilterVisibility()
                 }

@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0279 — Fit cumulative trends before adding horizontal detail](0279-fit-cumulative-trends-before-adding-horizontal-detail.md)
+- [0278 — Gate Timeline membership with the Sleep capability](0278-gate-timeline-membership-with-the-sleep-capability.md)
 - [0277 — Align release fixtures with feature presentation gates](0277-align-release-fixtures-with-feature-presentation-gates.md)
 - [0276 — Gate settings by platform and effective capability](0276-gate-settings-by-platform-and-effective-capability.md)
 - [0275 — Hide dependent settings without a subject](0275-hide-dependent-settings-without-a-subject.md)

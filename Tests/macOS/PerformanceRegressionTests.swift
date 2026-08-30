@@ -227,6 +227,35 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testDisabledSleepFeatureExcludesSleepRowsFromMacTimelines() throws {
+        let standaloneSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Timeline/TimelineView.swift"
+        )
+        let integratedSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
+        )
+        let integratedOwnerSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift"
+        )
+
+        XCTAssertTrue(standaloneSource.contains(
+            "includesSleepTimelineFilters ? dataSnapshot.sleepSessions : []"
+        ))
+        XCTAssertTrue(standaloneSource.contains(
+            ".onChange(of: isStatsSleepTabEnabled)"
+        ))
+        XCTAssertTrue(integratedSource.contains(
+            "let visibleSleepSessions = includesMacSleepTimelineFilters ? sleepSessions : []"
+        ))
+        XCTAssertEqual(
+            integratedSource.components(separatedBy: "sleepSessions: visibleSleepSessions").count - 1,
+            2
+        )
+        XCTAssertTrue(integratedOwnerSource.contains(
+            ".onChange(of: isStatsSleepTabEnabled)"
+        ))
+    }
+
     func testPlannerAdaptiveTimeAxisUsesVisibleSnapshotsWithoutPersistenceWork() throws {
         let axisSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanSupport.swift"

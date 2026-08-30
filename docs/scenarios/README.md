@@ -3813,7 +3813,7 @@ And Stats does not delete the persisted rows while canonicalizing its evidence
 ### Focus Charts Keep Their Date Axes Readable
 
 Area: Stats / UI
-Decision links: [0119](../decisions/0119-show-cumulative-focus-chart.md), [0147](../decisions/0147-use-adaptive-stats-dashboard-width.md)
+Decision links: [0119](../decisions/0119-show-cumulative-focus-chart.md), [0147](../decisions/0147-use-adaptive-stats-dashboard-width.md), [0708](../decisions/0708-fit-overview-charts-and-structure-compact-stats-facts.md)
 Current behavior: [Stats](../current-behavior/stats.md)
 Coverage:
 - `Tests/Shared/StatsFeatureDerivedStateSupportTests.swift`
@@ -3822,7 +3822,26 @@ Given Focus Stats covers more daily points than can carry a complete label at ev
 When the focus distribution or cumulative-focus chart is shown on iOS or macOS
 Then the axis keeps the first and last date and samples a compact set of complete intermediate labels
 And a custom range shows month context at its first visible label and whenever the visible labels cross a month boundary
-And a horizontally scrollable plot fills the available viewport before becoming wider than it
+And a horizontally scrollable distribution plot fills the available viewport before becoming wider than it
+
+Given cumulative Focus has a nonzero total anywhere in the selected period
+When the cumulative overview is shown
+Then the entire selected-period trend fits the visible plot
+And its latest point is visible without horizontal scrolling
+
+### Compact Hourly Stats Facts Stay Readable
+
+Area: Stats / UI
+Decision links: [0708](../decisions/0708-fit-overview-charts-and-structure-compact-stats-facts.md)
+Current behavior: [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/StatsFeatureDerivedStateSupportTests.swift`
+
+Given the 24-hour rhythm is shown on a compact iPhone
+When Period, the selected metric total, and Strongest hour are presented
+Then Period uses one full-width row
+And Total and Strongest hour use two readable metric columns
+And the three facts are not forced into equal narrow pills
 
 ### Mac Stats Round Trip Preserves Task Detail
 
@@ -3980,7 +3999,7 @@ Then task creation opens directly without presenting a one-row chooser
 ### iOS Timeline Type Filters Follow Feature Availability
 
 Area: Timeline / Settings / UI
-Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0221](../decisions/0221-hide-stats-sleep-tab-behind-beta-toggle.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md), [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md), [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md)
+Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0221](../decisions/0221-hide-stats-sleep-tab-behind-beta-toggle.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md), [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md), [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md), [0707](../decisions/0707-gate-disabled-sleep-at-timeline-presentation-boundaries.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/IOSNewTabActionAvailabilityTests.swift`
@@ -3999,6 +4018,11 @@ earlier enabled session
 When iOS Timeline becomes active or the corresponding feature gate changes
 Then the hidden filter normalizes to `All`
 And it does not remain counted or presented as an active filter
+
+Given persisted Sleep sessions exist and either `Show Away` or `Show Sleep tab` is off
+When the person opens Timeline on iOS or macOS
+Then Timeline presents no Sleep rows under `All` or another available filter
+And the stored Sleep sessions remain available for later development re-enablement
 
 ### Disabled Emotions Stay Out of Stats and Timeline
 

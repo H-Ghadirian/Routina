@@ -152,8 +152,15 @@ struct StatsHourlyActivitySection: View {
                 )
             }
 
-            StatsChartInsightRow(
-                insights: insights,
+            StatsHourlyActivitySummaryPanel(
+                period: selectedRange.periodDescription,
+                metricSystemImage: selectedMetric.systemImage,
+                metricTitle: selectedMetric.totalLabel,
+                metricValue: selectedMetric.formattedValue(
+                    totalValue,
+                    chartPresentation: chartPresentation
+                ),
+                strongestHour: positivePeakPoint.map { hourLabel(for: $0.hour) } ?? "None yet",
                 colorScheme: colorScheme
             )
         }
@@ -208,28 +215,6 @@ struct StatsHourlyActivitySection: View {
 
     private var maxSelectedValue: Double {
         points.map(selectedValue(for:)).max() ?? 0
-    }
-
-    private var insights: [StatsChartInsight] {
-        [
-            StatsChartInsight(
-                systemImage: "clock",
-                text: selectedRange.periodDescription
-            ),
-            StatsChartInsight(
-                systemImage: selectedMetric.systemImage,
-                text: "\(selectedMetric.totalLabel): \(selectedMetric.formattedValue(totalValue, chartPresentation: chartPresentation))"
-            ),
-            positivePeakPoint.map {
-                StatsChartInsight(
-                    systemImage: "sparkles",
-                    text: "Strongest hour: \(hourLabel(for: $0.hour))"
-                )
-            } ?? StatsChartInsight(
-                systemImage: "clock.badge.questionmark",
-                text: "Waiting for hourly activity"
-            )
-        ]
     }
 
     private func selectedPoint(in points: [HourlyActivityChartPoint]) -> HourlyActivityChartPoint? {
@@ -308,6 +293,75 @@ struct StatsHourlyActivitySection: View {
         points.min { lhs, rhs in
             abs(Double(lhs.hour) - hour) < abs(Double(rhs.hour) - hour)
         }
+    }
+}
+
+private struct StatsHourlyActivitySummaryPanel: View {
+    let period: String
+    let metricSystemImage: String
+    let metricTitle: String
+    let metricValue: String
+    let strongestHour: String
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(spacing: 10) {
+                Label("Period", systemImage: "calendar")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 8)
+
+                Text(period)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.trailing)
+            }
+
+            Divider()
+                .overlay(Color.secondary.opacity(0.18))
+
+            HStack(alignment: .top, spacing: 14) {
+                metric(
+                    systemImage: metricSystemImage,
+                    title: metricTitle,
+                    value: metricValue
+                )
+
+                Divider()
+                    .overlay(Color.secondary.opacity(0.18))
+
+                metric(
+                    systemImage: "sparkles",
+                    title: "Strongest hour",
+                    value: strongestHour
+                )
+            }
+        }
+        .padding(14)
+        .routinaGlassCard(
+            cornerRadius: 20,
+            tint: .secondary,
+            tintOpacity: colorScheme == .dark ? 0.14 : 0.06
+        )
+        .accessibilityElement(children: .combine)
+    }
+
+    private func metric(systemImage: String, title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(title, systemImage: systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Text(value)
+                .font(.system(.headline, design: .rounded, weight: .bold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

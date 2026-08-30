@@ -254,6 +254,17 @@ struct StatsChartPresentation {
         }
     }
 
+    func focusCumulativeXAxisDates(from dates: [Date]) -> [Date] {
+        let targetCount = isCompact ? 5 : 10
+        guard dates.count > targetCount, targetCount > 1 else { return dates }
+
+        let step = Double(dates.count - 1) / Double(targetCount - 1)
+        return (0..<targetCount).map { index in
+            let dateIndex = min(Int((Double(index) * step).rounded()), dates.count - 1)
+            return dates[dateIndex]
+        }
+    }
+
     func focusDayXAxisLabel(
         for date: Date,
         in labeledDates: [Date],
