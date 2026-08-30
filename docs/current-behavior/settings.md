@@ -36,6 +36,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0518](../decisions/0518-scope-signed-cloudkit-diagnostics-to-macos.md)
 - [0525](../decisions/0525-gate-testflight-archives-on-cloudkit-schema-deployment.md)
 - [0526](../decisions/0526-identify-exact-builds-in-support.md)
+- [0556](../decisions/0556-use-crashlytics-for-production-crash-stacks.md)
 - [0523](../decisions/0523-report-manual-icloud-refresh-honestly.md)
 - [0590](../decisions/0590-use-progress-aware-incremental-manual-refresh.md)
 - [0569](../decisions/0569-suppress-no-op-preference-sync-refresh-loops.md)
@@ -68,6 +69,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Task creation has no purchase entitlement or Settings override. Support & About continues to expose the general Privacy Policy and Terms of Use links. The legacy synchronized unlimited-task preference remains inert only for data-model and backup compatibility.
 - Calendar task import always supports Apple Calendar. Outlook appears only when the app bundle has a nonempty Microsoft Graph client ID, so unconfigured release builds do not advertise a nonfunctional sign-in path.
 - The iOS and macOS production bundles declare `ITSAppUsesNonExemptEncryption` as false so App Store Connect can reuse Routina's current exempt-encryption answer. The declaration must be reassessed before shipping custom cryptography, encrypted communications or VPN functionality, or a cryptography-providing dependency.
+- When the matching Firebase configuration is present, iOS and macOS configure Crashlytics automatically for production crash stacks. Routina sends standard crash and device/OS diagnostics, platform and app variant, plus a throttled closed set of general interaction categories. It does not link Google Analytics, set a Crashlytics user ID, or intentionally add task content, search text, record identifiers, account details, locations, or attachments. The public Privacy Policy and the App Store Connect privacy answers must describe this collection before distribution.
 - Beta Experiments are available only in development app variants. Production does not render the Beta Experiments panel after the hidden diagnostics gesture, resolves every experimental preference to disabled, and forces attempted experimental writes off, including values restored from older releases.
 - The Mac production entitlement set omits location, audio input, and Apple Events automation because their Places, voice-note, and browser-automation entry points are experimental. The iOS production build likewise omits its location purpose string and compiles a no-op location client. Development builds retain those capabilities. Apple Calendar access remains a production feature and retains its calendar entitlement and purpose strings.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.

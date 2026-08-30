@@ -30,6 +30,16 @@ Use concise, user-facing language. Internal refactors, generated files, and rele
 
 Do not silently rewrite shipped notes. Correct material inaccuracies in place with a dated correction, and place a later fix in the later version where it shipped.
 
+The combined iOS, iPadOS, and macOS submission work for the current candidate is
+tracked in the [1.4.0 App Store submission checklist](1.4.0-app-store-submission.md).
+
 ## Current baseline
 
-Formal platform release notes begin with the 1.3.1 / build 8 snapshot recorded on 2026-08-09. The Watch companion is explicitly deferred from this first production phase rather than marked as shipping. Older public versions are not backfilled here yet because the repository does not preserve verified release cutoffs and release-note scope for them. They should be backfilled only from a verified App Store, TestFlight, release branch, or release-manager source rather than guessing from development commits.
+The current release candidate is 1.4.0 / build 11. Its notes supersede the
+unreleased 1.3.1 / build 8 draft and retain the verified 1.2.0 source boundary.
+The Watch companion is explicitly deferred from this first production phase
+rather than marked as shipping. Older public versions are not backfilled here
+yet because the repository does not preserve verified release cutoffs and
+release-note scope for them. They should be backfilled only from a verified App
+Store, TestFlight, release branch, or release-manager source rather than guessing
+from development commits.

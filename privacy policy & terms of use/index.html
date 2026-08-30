@@ -205,7 +205,7 @@
         Information about support, data handling, permissions, and
         the terms that apply when you use Routina on Apple platforms.
       </p>
-      <p class="meta"><strong>Last updated:</strong> July 31, 2026</p>
+      <p class="meta"><strong>Last updated:</strong> August 30, 2026</p>
       <nav aria-label="Page sections">
         <a href="#support">Support</a>
         <a href="#privacy">Privacy Policy</a>
@@ -234,11 +234,13 @@
       <h2>Privacy Policy</h2>
       <div class="summary">
         <p>
-          <strong>Summary:</strong> Routina has no advertising SDK, third-party
-          analytics SDK, or external generative-AI service. Routina does not
-          operate a developer-owned account or content server. Your Routina data
-          is stored on your device and, when available, in your private iCloud
-          account.
+          <strong>Summary:</strong> Routina has no advertising SDK, analytics
+          SDK, or developer-operated generative-AI service. Routina does not
+          operate a developer-owned account or content server. Your Routina
+          content is stored on your device and, when available, in your private
+          iCloud account. When configured in a distributed build, limited crash
+          diagnostics are sent to Google Firebase Crashlytics so the developer
+          can diagnose failures and improve reliability.
         </p>
       </div>
 
@@ -247,8 +249,10 @@
         Routina can store information you choose to enter, including todos,
         routines, schedules, tags, priorities, checklists, comments, notes,
         goals, events, focus history, completion history, saved places, sleep or
-        away records, links, images, files, and voice notes. This content is used
-        only to provide the features you request inside the app.
+        away records, links, images, files, and voice notes. Some categories are
+        experimental or unavailable in the current production apps but can
+        remain in synchronized data and backups for compatibility. This content
+        is used only to provide the features you request inside the app.
       </p>
 
       <h3>Local storage and iCloud</h3>
@@ -260,8 +264,36 @@
         separate server that receives a copy of your task database.
       </p>
 
+      <h3>Crash reporting</h3>
+      <p>
+        When Firebase Crashlytics is configured in the distributed iOS or macOS
+        app, crash reporting is automatic. A report can include the crash stack,
+        relevant application state, app version, device model, operating-system
+        information, and installation identifiers used by Firebase to process
+        and group reports. Routina adds only the platform, the app variant, and a
+        bounded trail of general interaction categories such as navigation,
+        scrolling, filtering, or task actions.
+      </p>
+      <p>
+        Routina does not set a Crashlytics user ID and does not intentionally add
+        task titles, descriptions, search text, record identifiers, account
+        details, locations, attachments, or other user content to crash reports.
+        Google Analytics is not included, and crash diagnostics are not used for
+        advertising or tracking. Google processes and retains this diagnostic
+        information under its
+        <a
+          href="https://firebase.google.com/support/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Firebase privacy and security practices</a>.
+      </p>
+
       <h3>Permissions and device capabilities</h3>
-      <p>Routina requests access only when you use a related feature:</p>
+      <p>
+        Available permissions vary by platform and app version. Current
+        production apps request access only when you use a related released
+        feature:
+      </p>
       <ul>
         <li>
           <strong>Notifications:</strong> used to deliver reminders you enable
@@ -272,28 +304,21 @@
           Calendar events before importing selected events as Routina tasks.
         </li>
         <li>
-          <strong>Microphone:</strong> used only when you choose to record a
-          voice note. The recording is stored with your Routina data.
-        </li>
-        <li>
-          <strong>Location:</strong> used only when you enable and use
-          place-based features, such as saved places or place check-ins.
-        </li>
-        <li>
           <strong>Photos and files:</strong> used only for items you explicitly
           select and attach to Routina content.
-        </li>
-        <li>
-          <strong>Automation:</strong> on macOS, Apple Events permission may be
-          requested when you enable website blocking so Routina can inspect or
-          redirect supported browser tabs during an active protected mode.
-          Routina does not send browsing history to the developer.
         </li>
         <li>
           <strong>App Lock:</strong> authentication is performed by the
           operating system. Routina does not receive or store biometric data.
         </li>
       </ul>
+      <p>
+        Development builds can contain experimental microphone access for voice
+        notes, location access for Places, and macOS automation for browser-level
+        blocking. Those features and their permission declarations are omitted
+        from the current production iOS and macOS apps. If one is promoted to a
+        production feature later, this policy will be updated before distribution.
+      </p>
       <p>
         You can review or revoke these permissions at any time in System
         Settings. Disabling a permission prevents the related feature from
@@ -316,6 +341,24 @@
           and you choose to connect it, Microsoft authentication and Microsoft
           Graph are used to review calendar events before importing selected
           events as tasks.
+        </li>
+        <li>
+          <strong>Mac AI connections:</strong> Routina's local, read-only helper
+          can answer product-help questions without personal task access. If you
+          separately enable read-only task access, Routina writes a private local
+          snapshot that can include task names, schedules, dates, tags,
+          descriptions, notes, links, goals, places, and progress. The helper can
+          return relevant details to your chosen AI client, and that client may
+          send them to its own AI provider. Routina does not proxy those requests
+          through a developer-operated AI service. Turning task access off deletes
+          the local snapshot; removing the connection from the AI client is a
+          separate action.
+        </li>
+        <li>
+          <strong>Public link titles:</strong> on macOS, pasting a public web URL
+          into Quick Add can contact that website directly from your device to
+          retrieve page metadata for an editable task title. Routina avoids this
+          automatic request for obviously local or credential-bearing URLs.
         </li>
       </ul>
       <p>
@@ -342,6 +385,11 @@
         <li>
           Settings &gt; iCloud &amp; Backup provides controls to export a backup
           and delete Routina data from the device and iCloud.
+        </li>
+        <li>
+          Crash diagnostics are retained and deleted under Google Firebase's
+          published retention practices. They are not part of Routina's local or
+          iCloud data-deletion control.
         </li>
         <li>
           Removing the app deletes its local app container, but synchronized
@@ -401,18 +449,44 @@
         app or related Apple services.
       </p>
 
+      <h3>Your content and external content</h3>
+      <p>
+        You retain responsibility for task text, attachments, links, calendar
+        events, and other content you add or import. You must have the right to
+        use that content. Routina can display or retrieve information from links
+        and services you select, but the developer does not endorse, control, or
+        guarantee third-party content, websites, accounts, or availability.
+      </p>
+
       <h3>Availability</h3>
       <p>
         Routina does not limit task creation based on the number of tasks a
         person already has.
       </p>
 
-      <h3>External services</h3>
+      <h3>External services and AI connections</h3>
       <p>
-        Optional iCloud, calendar, GitHub, GitLab, Microsoft, or other Apple
-        platform features may depend on third-party or Apple services. Their
-        availability, authentication, and service operation are controlled by
-        their respective providers and may change independently of Routina.
+        iCloud, calendar, GitHub, GitLab, Microsoft, Firebase crash reporting,
+        public website metadata, a user-selected AI client or provider, and
+        other Apple platform features may depend on external services. Their
+        availability, authentication, data handling, and service operation are
+        controlled by their respective providers and may change independently
+        of Routina.
+      </p>
+      <p>
+        You are responsible for the third-party accounts and credentials you
+        choose to connect and for complying with those providers' terms. When
+        you enable Mac read-only task access and ask a connected AI client about
+        your tasks, you authorize Routina's local helper to return the requested
+        task details to that client. The client or its AI provider may process
+        those details under its own terms and privacy policy.
+      </p>
+      <p>
+        AI-generated answers can be incomplete, outdated, or incorrect and must
+        be reviewed before you rely on them. Routina's current AI helper is
+        read-only: it does not create, edit, complete, archive, or delete Routina
+        data. Product-help answers remain available without enabling personal
+        task access.
       </p>
 
       <h3>Availability and warranties</h3>
