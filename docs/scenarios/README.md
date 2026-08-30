@@ -1161,7 +1161,7 @@ And the grouped pencil remains a direct Edit action
 And its adjacent chevron opens the `Add a detail` sheet instead of adding that command to the maintenance menu
 And the vertical-dot trigger has a bold, comfortably legible size beside Edit
 
-Given Task Details is hosted from Home or Timeline on iPhone or iPad
+Given Task Details is hosted from Home or Timeline on iPhone or the retained iPad development path
 When the person taps the visible Add-a-detail chevron surface
 Then the task-detail presentation route opens the `Add a detail` sheet
 And SwiftUI toolbar rehosting cannot detach the control from its sheet state
@@ -4104,7 +4104,21 @@ Then Focus vs completed work and Estimated vs Actual time are unavailable
 And neither report appears in the dashboard or its Add controls
 And the macOS availability policy remains unchanged
 
-### Initial iOS Release Omits Apple Health
+### Current iOS Release Supports Only iPhone
+
+Area: Release / iOS configuration
+Decision links: [0709](../decisions/0709-defer-ipad-support-until-it-is-ready.md)
+Current behavior: [Release](../current-behavior/release.md)
+Coverage:
+- `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
+
+Given the current iOS app, test bundles, and widget are built
+When Xcode resolves their targeted device families
+Then every iOS-side target declares iPhone only
+And neither app Info.plist declares iPad-specific orientations
+And the retained adaptive iPad source is not treated as a supported release surface
+
+### Initial iPhone Release Omits Apple Health
 
 Area: Stats / UI
 Decision links: [0697](../decisions/0697-omit-apple-health-from-the-first-release.md)
@@ -4112,7 +4126,7 @@ Current behavior: [Stats](../current-behavior/stats.md)
 Coverage:
 - `Tests/Shared/AppStoreComplianceConfigurationTests.swift`
 
-Given the first-release iOS or iPadOS app is built
+Given the first-release iPhone app is built
 When the person opens or edits Stats
 Then no Apple Health connection prompt or movement card is available
 And the app does not declare HealthKit entitlements or Health privacy-purpose strings
@@ -4502,7 +4516,7 @@ Then Routina keeps the newest record, removes the stale duplicate, and exposes t
 
 Given the person opens Timeline from Home
 Then Timeline uses Home's existing navigation hierarchy
-And it does not install a second compact navigation stack or iPad split hierarchy
+And it does not install a second compact navigation stack or, in the retained iPad development path, a second split hierarchy
 
 Given the person opens Timeline from Home on a compact iOS layout
 When they activate a task-backed Timeline row

@@ -91,9 +91,9 @@ That person may have one-off tasks, repeating responsibilities, flexible routine
 
 **Successful outcome:** Routina is explicit about permissions, backup, synchronization, destructive actions, and diagnostics. Sensitive content is not included in support data without clear intent.
 
-### N-12 — Move between devices without relearning the product
+### N-12 — Move between supported devices without relearning the product
 
-**Need:** I need capture, planning, and review to feel coherent across iPhone, iPad, and Mac while respecting what each platform is good at.
+**Need:** I need capture, planning, and review to feel coherent across iPhone and Mac while respecting what each platform is good at.
 
 **Successful outcome:** Concepts and outcomes stay consistent, navigation follows platform conventions, and device-specific differences feel purposeful rather than arbitrary.
 
@@ -106,3 +106,7 @@ That person may have one-off tasks, repeating responsibilities, flexible routine
 ## Product Boundary
 
 Routina should help a person remember, choose, plan, act, and learn. It should not make automatic judgments about the person's worth, present estimates as facts, or disguise inferred activity as confirmed history.
+
+The current supported release surfaces are iPhone and Mac. iPad support is
+deferred because its experience is not ready to meet the product's reliability
+standard; retained adaptive source does not create a promise of availability.

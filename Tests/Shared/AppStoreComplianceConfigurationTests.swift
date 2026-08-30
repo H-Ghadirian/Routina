@@ -152,6 +152,23 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
+    func iOSReleaseTargetsOnlyIPhone() throws {
+        let project = try Self.sourceFile("RoutinaiOS.xcodeproj/project.pbxproj")
+
+        #expect(!project.contains("TARGETED_DEVICE_FAMILY = \"1,2\";"))
+        #expect(project.components(separatedBy: "TARGETED_DEVICE_FAMILY = 1;").count == 13)
+        #expect(project.components(separatedBy: "TARGETED_DEVICE_FAMILY = 4;").count == 5)
+
+        for relativePath in [
+            "Config/iOS/RoutinaiOSProd-Info.plist",
+            "Config/iOS/RoutinaiOSDev-Info.plist",
+        ] {
+            let info = try Self.propertyListDictionary(relativePath)
+            #expect(info["UISupportedInterfaceOrientations~ipad"] == nil)
+        }
+    }
+
+    @Test
     func iOSProductionDefersFamilyControlsUntilDistributionApproval() throws {
         let productionEntitlements = try Self.propertyListDictionary(
             "Config/iOS/RoutinaiOS.entitlements"

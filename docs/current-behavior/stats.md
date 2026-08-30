@@ -80,5 +80,5 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
 - Stats summary cards show assumed-done daily Gentle-routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
 - Stats task-type filtering offers only `All`, `Repeating`, and `One-time`. The underlying filter raw values remain `Routines` and `Todos` for persisted-state compatibility, and no additional task-kind count, time card, filter, or dashboard item exists.
-- The first iOS and iPadOS release contains no Apple Health connection prompt, movement cards, HealthKit implementation, or HealthKit capability declarations.
+- The first iPhone release contains no Apple Health connection prompt, movement cards, HealthKit implementation, or HealthKit capability declarations. iPad support is deferred from this release.
 - Adventure derives progression from existing activity history and shares the Mac Stats sidebar tab behind a `Stats / Adventure` segment when enabled.
