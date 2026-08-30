@@ -16,7 +16,7 @@ Accepted
 
 ## Refines
 
-- [0033: Use an App-Owned iOS More Tab](0033-use-app-owned-ios-more-tab.md)
+- [0033: Use an App-Owned iOS More Tab](superseded/0033-use-app-owned-ios-more-tab.md)
 - [0418: Keep Whole-History Work Out of Scrolling Render Paths](0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 - [0543: Defer iOS Sync Refresh Work Until Its Tab Is Active](0543-defer-ios-sync-refresh-work-until-its-tab-is-active.md)
 
@@ -37,10 +37,11 @@ presentations or introduce a second navigation stack inside Home.
 The iOS Home task list ends with three native navigation rows in this order:
 Backlog, Timeline, and Task Ladder. The rows appear only in Home, not in the
 dedicated Search tab, and remain reachable beneath the task-creation empty state
-when Home has no tasks. This decision does not change the iOS tab bar.
-[0698](0698-focus-first-ios-home-on-the-first-task.md) later hides all three
-rows only during a new installation's focused first-task experience; an
-established empty Home continues to show them.
+when Home has no tasks. This decision did not change the iOS tab bar at the time;
+[0695](0695-promote-stats-and-settings-in-ios-navigation.md) later removed the
+separate Timeline tab while preserving this Home row. [0698](0698-focus-first-ios-home-on-the-first-task.md)
+later hides all three rows only during a new installation's focused first-task
+experience; an established empty Home continues to show them.
 
 Each row opens its destination through Home's existing navigation hierarchy.
 The Home-launched Timeline reuses the Timeline surface without installing its

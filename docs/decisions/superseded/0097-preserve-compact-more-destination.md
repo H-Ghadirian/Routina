@@ -1,6 +1,6 @@
 # 0097: Preserve Compact More Destination Across Tab Switches
 
-- Status: Accepted
+- Status: Superseded by [0695](../0695-promote-stats-and-settings-in-ios-navigation.md)
 - Date: 2026-05-28
 
 ## Context

@@ -581,6 +581,7 @@ enum RoutinaPerformanceInteraction: String, CaseIterable, Sendable {
     case taskPlanned = "task.planned"
     case newActionMenuOpened = "new-action-menu.opened"
     case newTaskRequested = "new.task.requested"
+    case newFocusRequested = "new.focus.requested"
     case newGoalRequested = "new.goal.requested"
     case newEventRequested = "new.event.requested"
     case newEmotionRequested = "new.emotion.requested"

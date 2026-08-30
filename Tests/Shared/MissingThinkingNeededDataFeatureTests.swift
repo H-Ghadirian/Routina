@@ -166,7 +166,6 @@ struct MissingThinkingNeededDataFeatureTests {
     func iOSProcedureViewUsesTheSharedNoneValuedMetadataReducer() throws {
         let featureSource = try Self.sourceFile("SharedCore/Features/MissingData/MissingPressureDataFeature.swift")
         let viewSource = try Self.sourceFile("iOS/Screens/More/MissingPressureDataView.swift")
-        let appViewSource = try Self.sourceFile("iOS/Screens/App/AppView.swift")
 
         #expect(featureSource.contains("case .thinkingNeeded"))
         #expect(featureSource.contains("task.thinkingNeededRawValue == missingRawValue"))
@@ -178,10 +177,6 @@ struct MissingThinkingNeededDataFeatureTests {
         #expect(!viewSource.contains("@Environment(\\.modelContext)"))
         #expect(!viewSource.contains("modelContext.save()"))
         #expect(!viewSource.contains("ScrollView"))
-        #expect(appViewSource.contains("case taskReview"))
-        #expect(appViewSource.contains("Section(\"Add missing task details\")"))
-        #expect(appViewSource.contains("Add missing Thinking needed data"))
-        #expect(appViewSource.contains("MissingTaskDataView(store: missingThinkingNeededDataStore)"))
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

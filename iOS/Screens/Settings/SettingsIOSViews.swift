@@ -219,21 +219,16 @@ private struct SettingsAIConnectionsUnavailableView: View {
 
 private struct SettingsIOSShortcutsDetailView: View {
     @AppStorage(
-        UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isSleepNewSheetEnabled = true
-    @AppStorage(
         UserDefaultBoolValueKey.appSettingShakeToStartSleepEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isShakeToStartSleepEnabled = true
 
     var body: some View {
         List {
-            Section("Sleep Shortcuts") {
-                Toggle("Show Going to sleep in New sheet", isOn: $isSleepNewSheetEnabled)
+            Section("Sleep Shortcut") {
                 Toggle("Shake to start sleep mode", isOn: $isShakeToStartSleepEnabled)
 
-                Text("Tap the New tab to open the New action sheet. Shake always asks for confirmation before sleep mode starts.")
+                Text("Shake always asks for confirmation before sleep mode starts.")
                     .foregroundStyle(.secondary)
             }
 

@@ -3,36 +3,38 @@ import Testing
 
 struct IOSNewTabActionAvailabilityTests {
     @Test
-    func newSheetFiltersEveryExperimentBackedAction() throws {
+    func newSheetAlwaysOrdersCreateTaskBeforeFocus() throws {
         let source = try Self.sourceFile("iOS/Screens/App/AppView.swift")
-        let availability = try Self.functionSource(
-            named: "private var availableNewTabActions",
-            endingAt: "private var newActionListSheetHeight",
+        let actions = try Self.functionSource(
+            named: "private enum NewTabAction",
+            endingAt: "private extension AppColorScheme",
             in: source
         )
 
-        #expect(availability.contains("action != .event || areEventEmotionActionsEnabled"))
-        #expect(availability.contains("action != .emotion || areEventEmotionActionsEnabled"))
-        #expect(availability.contains("action != .goal || isGoalsTabEnabled"))
-        #expect(availability.contains("action != .sleep || isNewSheetSleepActionEnabled"))
+        #expect(actions.contains("static let orderedActions: [NewTabAction] = [.createTask, .focus]"))
+        #expect(actions.contains("return \"Create Task\""))
+        #expect(actions.contains("return \"Focus\""))
+        #expect(!actions.contains("case event"))
+        #expect(!actions.contains("case sleep"))
     }
 
     @Test
-    func directActionRoutingRepeatsExperimentGuards() throws {
+    func newSheetRoutesOnlyCreateTaskAndFocus() throws {
         let source = try Self.sourceFile("iOS/Screens/App/AppView.swift")
         let routing = try Self.functionSource(
             named: "private func performNewTabAction",
-            endingAt: "private func openNewTask",
+            endingAt: "private func performanceInteraction",
             in: source
         )
 
-        #expect(routing.contains("guard areEventEmotionActionsEnabled else { return }"))
-        #expect(routing.contains("guard isGoalsTabEnabled else { return }"))
-        #expect(routing.contains("guard isNewSheetSleepActionEnabled else { return }"))
+        #expect(routing.contains("case .createTask:"))
+        #expect(routing.contains("openNewTask()"))
+        #expect(routing.contains("case .focus:"))
+        #expect(routing.contains("openFocus()"))
     }
 
     @Test
-    func singleAvailableActionRoutesDirectlyWithoutPresentingChooser() throws {
+    func selectingNewAlwaysPresentsTheTwoActionChooser() throws {
         let source = try Self.sourceFile("iOS/Screens/App/AppView.swift")
         let routing = try Self.functionSource(
             named: "private func openNewTabActionDestination",
@@ -40,25 +42,27 @@ struct IOSNewTabActionAvailabilityTests {
             in: source
         )
 
-        #expect(routing.contains("let actions = availableNewTabActions"))
-        #expect(routing.contains("guard let action = actions.first else { return }"))
-        #expect(routing.contains("guard actions.count > 1 else"))
-        #expect(routing.contains("performNewTabAction(action)"))
         #expect(routing.contains("isNewActionListPresented = true"))
+        #expect(source.contains("actions: NewTabAction.orderedActions"))
     }
 
     @Test
-    func sleepRequiresBetaAvailabilityAndNewSheetPreference() throws {
-        let source = try Self.sourceFile("iOS/Screens/App/AppView.swift")
-        let sleepAvailability = try Self.functionSource(
-            named: "private var isNewSheetSleepActionEnabled",
-            endingAt: "private var availableNewTabActions",
-            in: source
+    func focusOpensActiveControlsOrBuildsAStartPickerDeliberately() throws {
+        let app = try Self.sourceFile("iOS/Screens/App/AppView.swift")
+        let focus = try Self.functionSource(
+            named: "private func openFocus",
+            endingAt: "private func activeSessionKind",
+            in: app
         )
+        let picker = try Self.sourceFile("iOS/Screens/App/IOSFocusStartSheet.swift")
 
-        #expect(sleepAvailability.contains("isAwayEnabled"))
-        #expect(sleepAvailability.contains("isSleepExperimentEnabled"))
-        #expect(sleepAvailability.contains("isSleepNewSheetEnabled"))
+        #expect(focus.contains("modelContext.fetch(FetchDescriptor<FocusSession>())"))
+        #expect(focus.contains("activeFocusControlPresentation = ActiveFocusControlPresentation("))
+        #expect(focus.contains("IOSFocusStartPresentation.make("))
+        #expect(picker.contains("FocusSessionStartDefaults.durationOptions"))
+        #expect(picker.contains("FocusSessionSupport.startTaskFocus("))
+        #expect(picker.contains("FocusSessionSupport.startTagFocus("))
+        #expect(picker.contains(".contentShape(Rectangle())"))
     }
 
     @Test
@@ -93,7 +97,7 @@ struct IOSNewTabActionAvailabilityTests {
         )
 
         #expect(source.contains(
-            "Toggle(\"Show Event and Emotion actions\", isOn: $areEventEmotionActionsEnabled)"
+            "Toggle(\"Show Event and Emotion features\", isOn: $areEventEmotionActionsEnabled)"
         ))
     }
 

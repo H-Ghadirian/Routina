@@ -8,7 +8,7 @@ Accepted
 
 2026-06-08
 
-Refines [0173](0173-use-ios-new-tab-sheet.md), [0174](0174-do-not-restore-mac-add-task-composer.md), [0076](0076-select-saved-home-items-after-creation.md), and [0078](0078-present-mac-emotion-creation-inline.md) for creation continuity.
+Refines [0173](superseded/0173-use-ios-new-tab-sheet.md), [0174](0174-do-not-restore-mac-add-task-composer.md), [0076](0076-select-saved-home-items-after-creation.md), and [0078](0078-present-mac-emotion-creation-inline.md) for creation continuity.
 
 ## Context
 

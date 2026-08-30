@@ -203,14 +203,14 @@ private struct SettingsBetaExperimentsSection: View {
             Text("Show advanced query controls in Home and Stats filters.")
                 .foregroundStyle(.secondary)
 
-            Toggle("Show Event and Emotion actions", isOn: $areEventEmotionActionsEnabled)
+            Toggle("Show Event and Emotion features", isOn: $areEventEmotionActionsEnabled)
 
-            Text("Show Event and Emotion in the New sheet.")
+            Text("Show Event and Emotion Timeline, filter, and reporting surfaces.")
                 .foregroundStyle(.secondary)
 
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
-            Text("Show Goal navigation, New action, controls, and Stats reports.")
+            Text("Show Goal navigation, controls, and Stats reports.")
                 .foregroundStyle(.secondary)
 
             Toggle("Show Adventure map", isOn: $isAdventureMapEnabled)

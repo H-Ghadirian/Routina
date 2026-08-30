@@ -212,7 +212,6 @@ struct MissingEstimatedDurationDataFeatureTests {
     func durationProcedureUsesDirectTwoRowPresetsAndReducerOwnedPersistence() throws {
         let featureSource = try Self.sourceFile("SharedCore/Features/MissingData/MissingPressureDataFeature.swift")
         let viewSource = try Self.sourceFile("iOS/Screens/More/MissingPressureDataView.swift")
-        let appViewSource = try Self.sourceFile("iOS/Screens/App/AppView.swift")
 
         #expect(featureSource.contains("case estimatedDuration"))
         #expect(featureSource.contains("hasMissingValue = task.estimatedDurationMinutes == nil"))
@@ -229,10 +228,6 @@ struct MissingEstimatedDurationDataFeatureTests {
         #expect(!viewSource.contains("@Environment(\\.modelContext)"))
         #expect(!viewSource.contains("modelContext.save()"))
         #expect(!viewSource.contains("ScrollView"))
-        #expect(appViewSource.contains("case taskReview"))
-        #expect(appViewSource.contains("Section(\"Add missing task details\")"))
-        #expect(appViewSource.contains("Add missing time estimates"))
-        #expect(appViewSource.contains("MissingTaskDataView(store: missingEstimatedDurationDataStore)"))
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

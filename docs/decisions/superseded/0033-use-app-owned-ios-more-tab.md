@@ -1,6 +1,6 @@
 # 0033: Use an App-Owned iOS More Tab
 
-- Status: Accepted
+- Status: Superseded by [0695](../0695-promote-stats-and-settings-in-ios-navigation.md)
 - Date: 2026-05-13
 
 ## Context

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0695](../0695-promote-stats-and-settings-in-ios-navigation.md)
 
 ## Date
 

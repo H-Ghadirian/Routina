@@ -3,7 +3,7 @@ import Testing
 
 struct IOSHomeWorkspaceNavigationSourceTests {
     @Test
-    func homeEndsWithBacklogTimelineAndTaskLadderWithoutChangingTabs() throws {
+    func homeEndsWithBacklogTimelineAndTaskLadderAfterTimelineLeavesTheTabBar() throws {
         let appFeature = try Self.sourceFile("iOS/Features/App/AppFeature.swift")
         let appView = try Self.sourceFile("iOS/Screens/App/AppView.swift")
         let appPlatform = try Self.sourceFile("iOS/Screens/App/AppViewPlatform.swift")
@@ -35,8 +35,11 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         #expect(homePlatform.contains("if showsFirstTaskExperience"))
         #expect(homePlatform.contains("&& !hasCompletedFirstTaskExperience"))
 
-        #expect(appView.contains("SwiftUI.Tab(Tab.timeline.rawValue"))
-        #expect(appView.contains("SwiftUI.Tab(Tab.more.rawValue"))
+        #expect(!appView.contains("SwiftUI.Tab(Tab.timeline.rawValue"))
+        #expect(!appView.contains("SwiftUI.Tab(Tab.more.rawValue"))
+        #expect(appView.contains("SwiftUI.Tab(Tab.stats.rawValue"))
+        #expect(appView.contains("SwiftUI.Tab(Tab.settings.rawValue"))
+        #expect(appView.contains("timelineRouteBinding"))
     }
 
     @Test

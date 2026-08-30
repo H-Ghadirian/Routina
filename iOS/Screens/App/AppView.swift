@@ -11,40 +11,20 @@ struct AppView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Query(
-        filter: #Predicate<SleepSession> { session in
-            session.endedAt == nil
-        },
-        sort: \SleepSession.startedAt,
-        order: .reverse
-    ) private var activeSleepSessions: [SleepSession]
     @State private var searchText = ""
     @State private var appliedSearchText = ""
     @State private var searchPresentationUpdateTask: Task<Void, Never>?
-    @State private var moreDestination: AppMoreDestination?
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
     @State private var isNewActionListPresented = false
     @State private var pendingNewTabAction: NewTabAction?
-    @State private var presentedNewActionSheet: NewActionSheet?
-    @State private var isNewSheetSleepConfirmationPresented = false
-    @State private var newSheetSleepWarningMessage: String?
+    @State private var focusStartPresentation: IOSFocusStartPresentation?
+    @State private var activeFocusControlPresentation: ActiveFocusControlPresentation?
+    @State private var newFocusErrorMessage: String?
     @State private var timelinePresentationID = UUID()
     @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
-    @AppStorage(UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue, store: SharedDefaults.app)
-    private var isSleepNewSheetEnabled = true
-    @AppStorage(UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue, store: SharedDefaults.app)
-    private var isSleepExperimentEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue, store: SharedDefaults.app)
     private var isGoalsTabEnabled = false
-    @AppStorage(UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue, store: SharedDefaults.app)
-    private var areEventEmotionActionsEnabled = false
-    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
-    private var isPlacesEnabled = false
-    @AppStorage(UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue, store: SharedDefaults.app)
-    private var isNotesEnabled = false
-    @AppStorage(UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue, store: SharedDefaults.app)
-    private var isAwayEnabled = false
 
     var body: some View {
 let tabView = TabView(
@@ -62,7 +42,7 @@ let tabView = TabView(
             }
     }
 
-    if !usesCompactMoreTab && isGoalsTabEnabled {
+    if !usesCompactLayout && isGoalsTabEnabled {
         SwiftUI.Tab(Tab.goals.rawValue, systemImage: "target", value: AppTabBarItem.goals) {
             GoalsTCAView(
                 store: store.scope(state: \.goals, action: \.goals)
@@ -74,60 +54,16 @@ let tabView = TabView(
         Color.clear
     }
 
-    SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: AppTabBarItem.timeline) {
-        TimelineView(
-            store: store.scope(state: \.timeline, action: \.timeline),
-            presentationID: timelinePresentationID,
-            isActive: store.selectedTab == .timeline
+    SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: AppTabBarItem.stats) {
+        StatsViewWrapper(
+            store: store.scope(state: \.stats, action: \.stats)
         )
     }
 
-    if usesCompactMoreTab {
-        SwiftUI.Tab(Tab.more.rawValue, systemImage: "ellipsis.circle", value: AppTabBarItem.more) {
-            AppMoreNavigationView(
-                destination: $moreDestination,
-                selectedTab: store.selectedTab,
-                goalsStore: store.scope(state: \.goals, action: \.goals),
-                statsStore: store.scope(state: \.stats, action: \.stats),
-                settingsStore: store.scope(state: \.settings, action: \.settings),
-                taskChoiceStore: store.scope(state: \.taskChoice, action: \.taskChoice),
-                missingPressureDataStore: store.scope(
-                    state: \.missingPressureData,
-                    action: \.missingPressureData
-                ),
-                missingThinkingNeededDataStore: store.scope(
-                    state: \.missingThinkingNeededData,
-                    action: \.missingThinkingNeededData
-                ),
-                missingEstimatedDurationDataStore: store.scope(
-                    state: \.missingEstimatedDurationData,
-                    action: \.missingEstimatedDurationData
-                ),
-                missingImportanceDataStore: store.scope(
-                    state: \.missingImportanceData,
-                    action: \.missingImportanceData
-                ),
-                missingUrgencyDataStore: store.scope(
-                    state: \.missingUrgencyData,
-                    action: \.missingUrgencyData
-                ),
-                showGoalsTab: isGoalsTabEnabled,
-                showPlaces: isPlacesEnabled,
-                onSelectTab: { store.send(.tabSelected($0)) }
-            )
-        }
-    } else {
-        SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: AppTabBarItem.stats) {
-            StatsViewWrapper(
-                store: store.scope(state: \.stats, action: \.stats)
-            )
-        }
-
-        SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: AppTabBarItem.settings) {
-            SettingsTCAView(
-                store: store.scope(state: \.settings, action: \.settings)
-            )
-        }
+    SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: AppTabBarItem.settings) {
+        SettingsTCAView(
+            store: store.scope(state: \.settings, action: \.settings)
+        )
     }
 }
 Group {
@@ -140,6 +76,7 @@ Group {
             }
             .task {
                 store.send(.onAppear)
+                normalizeRetiredTabSelectionIfNeeded()
                 handlePendingDeepLink()
             }
     }
@@ -160,22 +97,39 @@ Group {
 }
 .sheet(isPresented: $isNewActionListPresented, onDismiss: performPendingNewTabAction) {
     NewActionListSheet(
-        actions: availableNewTabActions,
+        actions: NewTabAction.orderedActions,
         onSelect: queueNewTabAction
     )
-    .presentationDetents([.height(newActionListSheetHeight)])
+    .presentationDetents([.height(200)])
     .presentationDragIndicator(.visible)
 }
-.sheet(item: $presentedNewActionSheet) { sheet in
-    newActionSheetContent(for: sheet)
+.sheet(item: $focusStartPresentation) { presentation in
+    IOSFocusStartSheet(presentation: presentation)
 }
-.alert("Stop focus timer?", isPresented: $isNewSheetSleepConfirmationPresented) {
-    Button("Start Sleep", role: .destructive) {
-        startSleepFromNewSheet()
+.sheet(item: $activeFocusControlPresentation) { presentation in
+    ActiveFocusControlSheet(
+        presentation: presentation,
+        onOpenTask: openFocusTask
+    )
+}
+.sheet(isPresented: timelineRouteBinding) {
+    TimelineView(
+        store: store.scope(state: \.timeline, action: \.timeline),
+        presentationID: timelinePresentationID,
+        isActive: store.selectedTab == .timeline
+    )
+}
+.sheet(isPresented: compactGoalsRouteBinding) {
+    GoalsTCAView(
+        store: store.scope(state: \.goals, action: \.goals)
+    )
+}
+.alert("Couldn’t Open Focus", isPresented: newFocusErrorBinding) {
+    Button("OK", role: .cancel) {
+        newFocusErrorMessage = nil
     }
-    Button("Cancel", role: .cancel) {}
 } message: {
-    Text(newSheetSleepWarningMessage ?? "Starting sleep mode will stop the current focus timer.")
+    Text(newFocusErrorMessage ?? "Focus is temporarily unavailable.")
 }
 .awayModeGate()
 .sleepModeGate()
@@ -219,48 +173,30 @@ Group {
     }
 
     private var selectedTabForCurrentLayout: AppTabBarItem {
-        if usesCompactMoreTab,
-           store.selectedTab == .goals || store.selectedTab == .stats || store.selectedTab == .settings {
-            return .more
-        }
-
-        if !usesCompactMoreTab,
-           store.selectedTab == .goals && !isGoalsTabEnabled {
+        if store.selectedTab == .timeline {
             return .home
         }
 
-        if !usesCompactMoreTab, store.selectedTab == .more {
+        if store.selectedTab == .more {
             return .settings
+        }
+
+        if store.selectedTab == .goals,
+           usesCompactLayout || !isGoalsTabEnabled {
+            return .home
         }
 
         return AppTabBarItem(tab: store.selectedTab)
     }
 
-    private var usesCompactMoreTab: Bool {
+    private var usesCompactLayout: Bool {
         horizontalSizeClass == .compact || verticalSizeClass == .compact
     }
 
-    private var isNewSheetSleepActionEnabled: Bool {
-        isAwayEnabled
-            && isSleepExperimentEnabled
-            && isSleepNewSheetEnabled
-            && activeSleepSessions.isEmpty
-    }
-
-    private var availableNewTabActions: [NewTabAction] {
-        (NewTabAction.creationActions + NewTabAction.sessionActions).filter { action in
-            guard action != .event || areEventEmotionActionsEnabled else { return false }
-            guard action != .emotion || areEventEmotionActionsEnabled else { return false }
-            guard action != .note || isNotesEnabled else { return false }
-            guard action != .goal || isGoalsTabEnabled else { return false }
-            guard action != .checkIn || isPlacesEnabled else { return false }
-            guard action != .away || isAwayEnabled else { return false }
-            return action != .sleep || isNewSheetSleepActionEnabled
+    private func normalizeRetiredTabSelectionIfNeeded() {
+        if store.selectedTab == .more {
+            store.send(.tabSelected(.settings))
         }
-    }
-
-    private var newActionListSheetHeight: CGFloat {
-        min(CGFloat(availableNewTabActions.count) * 54 + 92, 520)
     }
 
     @MainActor
@@ -268,10 +204,6 @@ Group {
         if tab == .addTask {
             openNewTabActionDestination()
             return
-        }
-
-        if usesCompactMoreTab, tab == .more, selectedTabForCurrentLayout == .more {
-            moreDestination = nil
         }
 
         guard let appTab = tab.appTab else { return }
@@ -283,12 +215,6 @@ Group {
 
     @MainActor
     private func openNewTabActionDestination() {
-        let actions = availableNewTabActions
-        guard let action = actions.first else { return }
-        guard actions.count > 1 else {
-            performNewTabAction(action)
-            return
-        }
         RoutinaPerformanceProfiler.shared.recordInteraction(.newActionMenuOpened)
         isNewActionListPresented = true
     }
@@ -312,29 +238,10 @@ Group {
         )
 
         switch action {
-        case .event:
-            guard areEventEmotionActionsEnabled else { return }
-            presentedNewActionSheet = .event
-        case .emotion:
-            guard areEventEmotionActionsEnabled else { return }
-            presentedNewActionSheet = .emotion
-        case .note:
-            guard isNotesEnabled else { return }
-            presentedNewActionSheet = .note
-        case .goal:
-            guard isGoalsTabEnabled else { return }
-            openNewGoal()
-        case .task:
+        case .createTask:
             openNewTask()
-        case .checkIn:
-            guard isPlacesEnabled else { return }
-            presentedNewActionSheet = .checkIn
-        case .away:
-            guard isAwayEnabled else { return }
-            presentedNewActionSheet = .away
-        case .sleep:
-            guard isNewSheetSleepActionEnabled else { return }
-            requestSleepFromNewSheet()
+        case .focus:
+            openFocus()
         }
     }
 
@@ -342,89 +249,106 @@ Group {
         for action: NewTabAction
     ) -> RoutinaPerformanceInteraction {
         switch action {
-        case .event: return .newEventRequested
-        case .emotion: return .newEmotionRequested
-        case .note: return .newNoteRequested
-        case .goal: return .newGoalRequested
-        case .task: return .newTaskRequested
-        case .checkIn: return .newCheckInRequested
-        case .away: return .newAwayRequested
-        case .sleep: return .newSleepRequested
+        case .createTask: return .newTaskRequested
+        case .focus: return .newFocusRequested
         }
     }
 
     private func openNewTask() {
-        presentedNewActionSheet = nil
-        moreDestination = nil
         store.send(.tabSelected(.home))
         store.send(.home(.setSmartAddTaskSheet(true)))
     }
 
-    private func openNewGoal() {
-        presentedNewActionSheet = nil
-        if usesCompactMoreTab {
-            moreDestination = .goals
-        } else {
-            moreDestination = nil
-        }
-        store.send(.tabSelected(.goals))
-        store.send(.goals(.addGoalTapped))
-    }
-
-    @ViewBuilder
-    private func newActionSheetContent(for sheet: NewActionSheet) -> some View {
-        switch sheet {
-        case .event:
-            if areEventEmotionActionsEnabled {
-                RoutineEventEditorView()
-            }
-        case .emotion:
-            if areEventEmotionActionsEnabled {
-                EmotionLogEditorView()
-            }
-        case .note:
-            if isNotesEnabled {
-                RoutineNoteEditorView()
-            }
-        case .checkIn:
-            if isPlacesEnabled {
-                PlaceCheckInMapSheet()
-            }
-        case .away:
-            if isAwayEnabled {
-                AwaySessionStartSheet()
-            }
-        }
-    }
-
     @MainActor
-    private func requestSleepFromNewSheet() {
-        guard isNewSheetSleepActionEnabled else { return }
-
+    private func openFocus() {
         do {
-            if let warningMessage = try SleepSessionSupport.activeFocusTimerWarningMessage(in: modelContext) {
-                newSheetSleepWarningMessage = warningMessage
-                isNewSheetSleepConfirmationPresented = true
+            let focusSessions = try modelContext.fetch(FetchDescriptor<FocusSession>())
+            if let activeSession = focusSessions
+                .filter({ $0.state == .active })
+                .sorted(by: { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) })
+                .first {
+                activeFocusControlPresentation = ActiveFocusControlPresentation(
+                    id: activeSession.id,
+                    kind: activeSessionKind(activeSession)
+                )
                 return
             }
 
-            startSleepFromNewSheet()
+            let sprintFocusSessions = try modelContext.fetch(
+                FetchDescriptor<SprintFocusSessionRecord>()
+            )
+            if let activeSprint = sprintFocusSessions
+                .filter({ $0.stoppedAt == nil })
+                .sorted(by: { $0.startedAt > $1.startedAt })
+                .first {
+                activeFocusControlPresentation = ActiveFocusControlPresentation(
+                    id: activeSprint.id,
+                    kind: .sprint
+                )
+                return
+            }
+
+            let referenceDate = Date()
+            let tasks = try modelContext.fetch(FetchDescriptor<RoutineTask>())
+                .filter { task in
+                    !task.isArchived(referenceDate: referenceDate, calendar: .current)
+                        && !task.isCompletedOneOff
+                        && !task.isCanceledOneOff
+                }
+            focusStartPresentation = IOSFocusStartPresentation.make(
+                tasks: tasks,
+                focusSessions: focusSessions
+            )
         } catch {
-            NSLog("Failed to check active focus before New sheet sleep start: \(error.localizedDescription)")
+            newFocusErrorMessage = error.localizedDescription
         }
     }
 
-    @MainActor
-    private func startSleepFromNewSheet() {
-        guard isNewSheetSleepActionEnabled else { return }
-
-        do {
-            _ = try SleepSessionSupport.startSleep(in: modelContext)
-            newSheetSleepWarningMessage = nil
-            isNewSheetSleepConfirmationPresented = false
-        } catch {
-            NSLog("Failed to start sleep session from New sheet: \(error.localizedDescription)")
+    private func activeSessionKind(_ session: FocusSession) -> FocusSessionKind {
+        if session.isTagFocus {
+            return .tag
         }
+        if session.isUnassigned {
+            return .unassigned
+        }
+        return .task
+    }
+
+    private func openFocusTask(_ taskID: UUID) {
+        store.send(.openDeepLink(.task(taskID)))
+    }
+
+    private var timelineRouteBinding: Binding<Bool> {
+        Binding(
+            get: { store.selectedTab == .timeline },
+            set: { isPresented in
+                if !isPresented, store.selectedTab == .timeline {
+                    store.send(.tabSelected(.home))
+                }
+            }
+        )
+    }
+
+    private var compactGoalsRouteBinding: Binding<Bool> {
+        Binding(
+            get: { usesCompactLayout && isGoalsTabEnabled && store.selectedTab == .goals },
+            set: { isPresented in
+                if !isPresented, store.selectedTab == .goals {
+                    store.send(.tabSelected(.home))
+                }
+            }
+        )
+    }
+
+    private var newFocusErrorBinding: Binding<Bool> {
+        Binding(
+            get: { newFocusErrorMessage != nil },
+            set: { isPresented in
+                if !isPresented {
+                    newFocusErrorMessage = nil
+                }
+            }
+        )
     }
 
     private func handleOpenURL(_ url: URL) {
@@ -588,10 +512,8 @@ private enum AppTabBarItem: Hashable {
     case search
     case goals
     case addTask
-    case timeline
     case stats
     case settings
-    case more
 
     init(tab: Tab) {
         switch tab {
@@ -602,13 +524,13 @@ private enum AppTabBarItem: Hashable {
         case .goals:
             self = .goals
         case .timeline:
-            self = .timeline
+            self = .home
         case .stats:
             self = .stats
         case .settings:
             self = .settings
         case .more:
-            self = .more
+            self = .settings
         }
     }
 
@@ -622,14 +544,10 @@ private enum AppTabBarItem: Hashable {
             return .goals
         case .addTask:
             return nil
-        case .timeline:
-            return .timeline
         case .stats:
             return .stats
         case .settings:
             return .settings
-        case .more:
-            return .more
         }
     }
 }
@@ -643,70 +561,29 @@ private struct SprintFocusDeepLinkPresentation: Identifiable, Equatable {
     let id: UUID
 }
 
-private enum NewActionSheet: String, Identifiable {
-    case event
-    case emotion
-    case note
-    case checkIn
-    case away
-
-    var id: String { rawValue }
-}
-
 private enum NewTabAction: CaseIterable, Equatable, Hashable, Identifiable {
-    case event
-    case emotion
-    case note
-    case goal
-    case task
-    case checkIn
-    case away
-    case sleep
+    case createTask
+    case focus
 
-    static let creationActions: [NewTabAction] = [.event, .emotion, .note, .goal, .task]
-    static let sessionActions: [NewTabAction] = [.checkIn, .away, .sleep]
+    static let orderedActions: [NewTabAction] = [.createTask, .focus]
 
     var id: Self { self }
 
     var title: String {
         switch self {
-        case .event:
-            return "Event"
-        case .emotion:
-            return "Emotion"
-        case .note:
-            return "Note"
-        case .goal:
-            return "Goal"
-        case .task:
-            return "Task"
-        case .checkIn:
-            return "Check In"
-        case .away:
-            return "Away"
-        case .sleep:
-            return "Going to sleep"
+        case .createTask:
+            return "Create Task"
+        case .focus:
+            return "Focus"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .event:
-            return "calendar.badge.plus"
-        case .emotion:
-            return "face.smiling"
-        case .note:
-            return "note.text"
-        case .goal:
-            return "target"
-        case .task:
+        case .createTask:
             return "checklist"
-        case .checkIn:
-            return "mappin.and.ellipse"
-        case .away:
-            return "lock.shield.fill"
-        case .sleep:
-            return "bed.double.fill"
+        case .focus:
+            return "timer"
         }
     }
 }
@@ -720,311 +597,6 @@ private extension AppColorScheme {
             return .light
         case .dark:
             return .dark
-        }
-    }
-}
-
-private enum AppMoreDestination: Hashable {
-    case goals
-    case stats
-    case settings
-    case taskReview
-}
-
-private struct AppMoreNavigationView: View {
-    @Binding var destination: AppMoreDestination?
-    let selectedTab: Tab
-    let goalsStore: StoreOf<GoalsFeature>
-    let statsStore: StoreOf<StatsFeature>
-    let settingsStore: StoreOf<SettingsFeature>
-    let taskChoiceStore: StoreOf<TaskChoiceFeature>
-    let missingPressureDataStore: StoreOf<MissingTaskDataFeature>
-    let missingThinkingNeededDataStore: StoreOf<MissingTaskDataFeature>
-    let missingEstimatedDurationDataStore: StoreOf<MissingTaskDataFeature>
-    let missingImportanceDataStore: StoreOf<MissingTaskMetadataFeature>
-    let missingUrgencyDataStore: StoreOf<MissingTaskMetadataFeature>
-    let showGoalsTab: Bool
-    let showPlaces: Bool
-    let onSelectTab: (Tab) -> Void
-
-    var body: some View {
-        NavigationStack {
-            moreList
-                .navigationDestination(isPresented: isDestinationPresented(.goals)) {
-                    destinationView(for: .goals)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.stats)) {
-                    destinationView(for: .stats)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.settings)) {
-                    destinationView(for: .settings)
-                }
-                .navigationDestination(isPresented: isDestinationPresented(.taskReview)) {
-                    destinationView(for: .taskReview)
-                }
-        }
-        .onAppear {
-            restoreSelectedMoreDestinationIfNeeded()
-        }
-        .onChange(of: selectedTab) { _, tab in
-            restoreSelectedMoreDestinationIfNeeded(for: tab)
-        }
-        .onChange(of: destination) { _, destination in
-            if destination == nil,
-               (showGoalsTab && selectedTab == .goals) || selectedTab == .stats || selectedTab == .settings {
-                onSelectTab(.more)
-            }
-        }
-    }
-
-    private var moreList: some View {
-        List {
-            if AppEnvironment.isDevelopmentAppVariant {
-                Section {
-                    moreButton(destination: .taskReview) {
-                        SettingsNavigationRow(
-                            icon: "checklist",
-                            tint: .blue,
-                            title: "Review tasks",
-                            subtitle: "Choose what to do next or complete task details"
-                        )
-                    }
-                }
-            }
-
-            Section {
-                if showGoalsTab {
-                    moreButton(destination: .goals) {
-                        SettingsNavigationRow(
-                            icon: "target",
-                            tint: .blue,
-                            title: Tab.goals.rawValue,
-                            subtitle: "Outcomes, sub-goals, and linked tasks"
-                        )
-                    }
-                }
-
-                moreButton(destination: .stats) {
-                    SettingsNavigationRow(
-                        icon: "chart.bar.xaxis",
-                        tint: .indigo,
-                        title: Tab.stats.rawValue,
-                        subtitle: "Completion, focus, tags, and trends"
-                    )
-                }
-
-                moreButton(destination: .settings) {
-                    SettingsNavigationRow(
-                        icon: "gear",
-                        tint: .gray,
-                        title: Tab.settings.rawValue,
-                        subtitle: settingsSubtitle
-                    )
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .navigationTitle(Tab.more.rawValue)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var taskReviewList: some View {
-        List {
-            Section {
-                NavigationLink {
-                    TaskChoiceView(store: taskChoiceStore)
-                } label: {
-                    SettingsNavigationRow(
-                        icon: "sparkles",
-                        tint: .blue,
-                        title: "Help me choose",
-                        subtitle: "Learn the priority ties for your conditions"
-                    )
-                }
-            }
-
-            Section("Add missing task details") {
-                NavigationLink {
-                    MissingTaskDataView(store: missingPressureDataStore)
-                } label: {
-                    SettingsNavigationRow(
-                        icon: "exclamationmark.circle",
-                        tint: .orange,
-                        title: "Add missing Pressure data",
-                        subtitle: "Fill in pressure for tasks"
-                    )
-                }
-
-                NavigationLink {
-                    MissingTaskDataView(store: missingThinkingNeededDataStore)
-                } label: {
-                    SettingsNavigationRow(
-                        icon: "lightbulb",
-                        tint: .yellow,
-                        title: "Add missing Thinking needed data",
-                        subtitle: "Fill in thinking needed for tasks"
-                    )
-                }
-
-                NavigationLink {
-                    MissingTaskDataView(store: missingEstimatedDurationDataStore)
-                } label: {
-                    SettingsNavigationRow(
-                        icon: "clock",
-                        tint: .teal,
-                        title: "Add missing time estimates",
-                        subtitle: "Estimate how long tasks will take"
-                    )
-                }
-
-                NavigationLink {
-                    MissingTaskMetadataView(store: missingImportanceDataStore)
-                } label: {
-                    SettingsNavigationRow(
-                        icon: "arrow.up.circle",
-                        tint: .purple,
-                        title: "Review Importance",
-                        subtitle: "Set importance for tasks"
-                    )
-                }
-
-                NavigationLink {
-                    MissingTaskMetadataView(store: missingUrgencyDataStore)
-                } label: {
-                    SettingsNavigationRow(
-                        icon: "arrow.right.circle",
-                        tint: .pink,
-                        title: "Review Urgency",
-                        subtitle: "Set urgency for tasks"
-                    )
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .navigationTitle("Review tasks")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 6) {
-                    Text("Review tasks")
-                        .font(.headline)
-
-                    Text("DEV")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.orange)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.orange.opacity(0.12), in: Capsule())
-                }
-                .accessibilityElement(children: .combine)
-            }
-        }
-    }
-
-    private var settingsSubtitle: String {
-        showPlaces
-            ? "Preferences, data, tags, places, and support"
-            : "Preferences, data, tags, and support"
-    }
-
-    private func moreButton<Label: View>(
-        destination: AppMoreDestination,
-        @ViewBuilder label: () -> Label
-    ) -> some View {
-        Button {
-            RoutinaPerformanceProfiler.shared.recordInteraction(
-                performanceInteraction(for: destination)
-            )
-            self.destination = destination
-        } label: {
-            HStack(spacing: 8) {
-                label()
-
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func performanceInteraction(
-        for destination: AppMoreDestination
-    ) -> RoutinaPerformanceInteraction {
-        switch destination {
-        case .goals: return .navigationGoals
-        case .stats: return .navigationStats
-        case .settings: return .navigationSettings
-        case .taskReview: return .navigationTaskReview
-        }
-    }
-
-    @ViewBuilder
-    private func destinationView(for destination: AppMoreDestination) -> some View {
-        switch destination {
-        case .goals:
-            GoalsTCAView(store: goalsStore)
-                .onAppear {
-                    selectTabAfterNavigationGesture(.goals)
-                }
-        case .stats:
-            StatsView(
-                store: statsStore,
-                ownsCompactNavigationStack: false
-            )
-            .onAppear {
-                selectTabAfterNavigationGesture(.stats)
-            }
-        case .settings:
-            SettingsTCAView(
-                store: settingsStore,
-                ownsCompactNavigationStack: false
-            )
-                .onAppear {
-                    selectTabAfterNavigationGesture(.settings)
-                }
-        case .taskReview:
-            if AppEnvironment.isDevelopmentAppVariant {
-                taskReviewList
-            }
-        }
-    }
-
-    private func restoreSelectedMoreDestinationIfNeeded(for tab: Tab? = nil) {
-        guard destination == nil else { return }
-
-        switch tab ?? selectedTab {
-        case .goals where showGoalsTab:
-            destination = .goals
-        case .stats:
-            destination = .stats
-        case .settings:
-            destination = .settings
-        default:
-            break
-        }
-    }
-
-    private func isDestinationPresented(_ candidate: AppMoreDestination) -> Binding<Bool> {
-        Binding(
-            get: {
-                destination == candidate
-            },
-            set: { isPresented in
-                if isPresented {
-                    destination = candidate
-                } else if destination == candidate {
-                    destination = nil
-                }
-            }
-        )
-    }
-
-    private func selectTabAfterNavigationGesture(_ tab: Tab) {
-        DispatchQueue.main.async {
-            onSelectTab(tab)
         }
     }
 }

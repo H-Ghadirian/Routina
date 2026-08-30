@@ -8,7 +8,7 @@ Accepted
 
 2026-05-26
 
-Updates [0033](0033-use-app-owned-ios-more-tab.md), [0054](superseded/0054-open-ios-home-top-actions-vertically.md), and [0055](0055-move-ios-home-place-and-sleep-into-action-rail.md).
+Updates [0033](superseded/0033-use-app-owned-ios-more-tab.md), [0054](superseded/0054-open-ios-home-top-actions-vertically.md), and [0055](0055-move-ios-home-place-and-sleep-into-action-rail.md). Its tab-bar layout is revised by [0695](0695-promote-stats-and-settings-in-ios-navigation.md).
 
 ## Context
 

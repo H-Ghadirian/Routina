@@ -435,7 +435,6 @@ struct TaskChoiceFeatureTests {
     func iOSViewKeepsQueriesOutOfTheRenderPath() throws {
         let featureSource = try Self.sourceFile("SharedCore/Features/TaskChoice/TaskChoiceFeature.swift")
         let viewSource = try Self.sourceFile("iOS/Screens/More/TaskChoiceView.swift")
-        let appSource = try Self.sourceFile("iOS/Screens/App/AppView.swift")
 
         #expect(featureSource.contains("TaskChoiceCandidateRanking.nextComparisonPair"))
         #expect(featureSource.contains("TaskChoiceCandidateRanking.missingData"))
@@ -448,9 +447,6 @@ struct TaskChoiceFeatureTests {
         #expect(!viewSource.contains("@Query"))
         #expect(!viewSource.contains("@Environment(\\.modelContext)"))
         #expect(!viewSource.contains("modelContext.save()"))
-        #expect(appSource.contains("title: \"Help me choose\""))
-        #expect(appSource.contains("TaskChoiceView(store: taskChoiceStore)"))
-        #expect(!appSource.contains("Tag preferences"))
     }
 
     private func makeReadyTask(name: String, tags: [String] = []) -> RoutineTask {
