@@ -369,7 +369,7 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return isStatsWinsEnabled
         case .focusAchievements:
             return isStatsAchievementsEnabled
-        case .emotions, .emotionTrend:
+        case .events, .emotions, .emotionTrend:
             return areEventEmotionActionsEnabled
         default:
             return true

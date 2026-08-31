@@ -38,6 +38,7 @@ struct RoutinaScreenshotDataSeedResult: Equatable, Sendable {
 
 enum RoutinaScreenshotDataSeeder {
     static let taskCount = 16
+    static let retiredEventIDs = Set((0..<2).map { seedID(8_000 + $0) })
     static let retiredEmotionIDs = Set((0..<10).map { seedID(9_000 + $0) })
 
     @MainActor
@@ -75,7 +76,7 @@ enum RoutinaScreenshotDataSeeder {
         let plannerBlocks = makePlannerBlocks(dates: dates, tasks: tasks)
         let focusSessions = makeFocusSessions(dates: dates, tasks: tasks)
         let notes = makeNotes(dates: dates)
-        let events = makeEvents(dates: dates)
+        let events: [RoutineEvent] = []
         let sleepSessions = makeSleepSessions(dates: dates)
         let awaySessions = makeAwaySessions(dates: dates, tasks: tasks)
 
@@ -238,6 +239,11 @@ enum RoutinaScreenshotDataSeeder {
         let existingEmotions = try context.fetch(FetchDescriptor<EmotionLog>())
         for emotion in existingEmotions where retiredEmotionIDs.contains(emotion.id) {
             context.delete(emotion)
+            result.removedRecordCount += 1
+        }
+
+        for event in existingEvents.values where retiredEventIDs.contains(event.id) {
+            context.delete(event)
             result.removedRecordCount += 1
         }
 
@@ -1095,35 +1101,6 @@ private extension RoutinaScreenshotDataSeeder {
                 tags: ["Status", "Routina"],
                 createdAt: dates.at(dayOffset: -1, hour: 17),
                 updatedAt: dates.at(dayOffset: -1, hour: 17)
-            )
-        ]
-    }
-
-    static func makeEvents(dates: SeedDates) -> [RoutineEvent] {
-        [
-            RoutineEvent(
-                id: seedID(8_000),
-                title: "Design review",
-                notes: "Review final screens and App Store assets.",
-                emoji: "🎨",
-                tags: ["Routina", "Creative"],
-                isAllDay: false,
-                startedAt: dates.at(dayOffset: 0, hour: 11, minute: 30),
-                endedAt: dates.at(dayOffset: 0, hour: 12, minute: 15),
-                createdAt: dates.at(dayOffset: -4, hour: 10),
-                updatedAt: dates.at(dayOffset: -2, hour: 9)
-            ),
-            RoutineEvent(
-                id: seedID(8_001),
-                title: "Release checkpoint",
-                notes: "Confirm copy, screenshots, and build readiness.",
-                emoji: "🚀",
-                tags: ["Routina", "Planning"],
-                isAllDay: false,
-                startedAt: dates.at(dayOffset: 2, hour: 15),
-                endedAt: dates.at(dayOffset: 2, hour: 16),
-                createdAt: dates.at(dayOffset: -3, hour: 10),
-                updatedAt: dates.at(dayOffset: -3, hour: 10)
             )
         ]
     }

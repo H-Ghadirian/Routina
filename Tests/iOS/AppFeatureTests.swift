@@ -393,6 +393,8 @@ struct AppFeatureTests {
             )
         ) {
             AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.eventEmotionActionsEnabled = { true }
         }
 
         await store.send(.openDeepLink(.event(eventID))) {
@@ -410,6 +412,19 @@ struct AppFeatureTests {
             $0.timeline.isFilterSheetPresented = false
             $0.timeline.deepLinkedEventID = eventID
         }
+    }
+
+    @Test
+    func openDeepLink_eventIsIgnoredWhenEventFeatureIsUnavailable() async {
+        let store = TestStore(
+            initialState: AppFeature.State(selectedTab: .home)
+        ) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.eventEmotionActionsEnabled = { false }
+        }
+
+        await store.send(.openDeepLink(.event(UUID())))
     }
 
     @Test

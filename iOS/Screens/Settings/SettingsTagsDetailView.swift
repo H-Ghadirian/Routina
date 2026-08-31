@@ -12,6 +12,10 @@ struct SettingsTagsDetailView: View {
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
 
     var body: some View {
         List {
@@ -80,9 +84,12 @@ struct SettingsTagsDetailView: View {
     }
 
     private var emptyTagsText: String {
-        isNotesEnabled
-            ? "No tags yet. Tags you add to tasks, goals, notes, or events will appear here."
-            : "No tags yet. Tags you add to tasks, goals, or events will appear here."
+        let sources = SettingsTagSourcePresentation.pluralSourceList(
+            includesNotes: isNotesEnabled,
+            includesEvents: areEventEmotionActionsEnabled,
+            conjunction: "or"
+        )
+        return "No tags yet. Tags you add to \(sources) will appear here."
     }
 
     private var tagCounterDisplayModeBinding: Binding<TagCounterDisplayMode> {

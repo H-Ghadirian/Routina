@@ -129,8 +129,8 @@ struct StatsDashboardItemAvailabilityTests {
     }
 
     @Test
-    func emotionReports_requireEventEmotionBetaExperiment() {
-        for item in [StatsDashboardItem.emotions, .emotionTrend] {
+    func eventAndEmotionReports_requireEventEmotionBetaExperiment() {
+        for item in [StatsDashboardItem.events, .emotions, .emotionTrend] {
             #expect(!item.isAvailable(
                 selectedRange: .week,
                 isGitFeaturesEnabled: true,

@@ -36,6 +36,10 @@ struct TaskFormContent: View {
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
 
     init(model: TaskFormModel) {
         self.model = model
@@ -203,6 +207,8 @@ struct TaskFormContent: View {
                 return isNotesEnabled
             case .goals:
                 return isGoalsTabEnabled
+            case .events:
+                return areEventEmotionActionsEnabled
             default:
                 return true
             }

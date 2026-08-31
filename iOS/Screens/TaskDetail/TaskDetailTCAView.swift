@@ -106,6 +106,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -252,6 +256,14 @@ detailBody
 }
 .onChange(of: availableEventCandidates) { _, _ in
     syncAvailableEvents()
+}
+.onChange(of: areEventEmotionActionsEnabled) { _, isEnabled in
+    guard !isEnabled else { return }
+    selectedLinkedEventPresentation = nil
+    if requestedEditSection == .events {
+        requestedEditSection = nil
+    }
+    pendingOptionalDetailAction = nil
 }
 .onChange(of: store.task.id) { _, _ in
     referenceDate = Date()
@@ -527,8 +539,13 @@ detailBody
             })
         }
 
-        if !shouldShowLinkedEventsSection {
+        if TaskDetailEventActionVisibility.shouldShowAddEventsAction(
+            hasLinkedEvents: !store.taskEventCandidates.isEmpty,
+            areEventActionsEnabled: areEventEmotionActionsEnabled
+        ) {
             actions.append(TaskDetailOptionalAction(title: "Events", systemImage: "calendar.badge.plus") {
+                guard areEventEmotionActionsEnabled else { return }
+                requestedEditSection = .events
                 store.send(.setEditSheet(true))
             })
         }
@@ -626,7 +643,7 @@ detailBody
     }
 
     private var shouldShowLinkedEventsSection: Bool {
-        !store.taskEventCandidates.isEmpty
+        areEventEmotionActionsEnabled && !store.taskEventCandidates.isEmpty
     }
 
     private var shouldShowTimeControl: Bool {
@@ -1207,12 +1224,13 @@ detailBody
 
     @ViewBuilder
     private func linkedEventDetailSheet(eventID: UUID) -> some View {
-        if let event = events.first(where: { $0.id == eventID }) {
+        if areEventEmotionActionsEnabled,
+           let event = events.first(where: { $0.id == eventID }) {
             NavigationStack {
                 RoutineEventDetailView(event: event)
             }
         } else {
-            Text("Event not found")
+            Text("Content unavailable")
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .padding()

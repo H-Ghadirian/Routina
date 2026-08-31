@@ -408,6 +408,10 @@ List {
 
 private struct SettingsNotificationsDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areEventEmotionActionsEnabled = false
 
     var body: some View {
 List {
@@ -434,11 +438,11 @@ List {
                 Text("Loading scheduled notifications…")
                     .foregroundStyle(.secondary)
             }
-        } else if store.notifications.scheduledNotifications.isEmpty {
+        } else if visibleScheduledNotifications.isEmpty {
             Text(scheduledNotificationsEmptyText)
                 .foregroundStyle(.secondary)
         } else {
-            ForEach(store.notifications.scheduledNotificationGroups) { group in
+            ForEach(visibleScheduledNotificationGroups) { group in
                 SettingsIOSScheduledNotificationGroup(
                     group: group,
                     store: store
@@ -448,7 +452,7 @@ List {
     } header: {
         Text(scheduledNotificationsTitle)
     } footer: {
-        Text("Notifications are grouped by task or event. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this device.")
+        Text(scheduledNotificationsFooterText)
     }
 
     if store.notifications.systemSettingsNotificationsEnabled == false {
@@ -480,8 +484,23 @@ List {
     }
 
     private var scheduledNotificationsTitle: String {
-        let count = store.notifications.scheduledNotifications.count
+        let count = visibleScheduledNotifications.count
         return count == 0 ? "Scheduled Notifications" : "Scheduled Notifications (\(count))"
+    }
+
+    private var visibleScheduledNotifications: [ScheduledNotificationSummary] {
+        store.notifications.scheduledNotifications.filter {
+            areEventEmotionActionsEnabled || $0.sourceKind != .event
+        }
+    }
+
+    private var visibleScheduledNotificationGroups: [ScheduledNotificationGroup] {
+        ScheduledNotificationGroup.groups(from: visibleScheduledNotifications)
+    }
+
+    private var scheduledNotificationsFooterText: String {
+        let sources = areEventEmotionActionsEnabled ? "task or event" : "task"
+        return "Notifications are grouped by \(sources). Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this device."
     }
 
     private var scheduledNotificationsEmptyText: String {
@@ -567,6 +586,7 @@ private struct SettingsIOSScheduledNotificationRow: View {
             SettingsIOSCustomNotificationPauseSheet(
                 pauseDate: $customPauseDate,
                 minimumDate: customPauseMinimumDate,
+                sourceKind: notification.sourceKind,
                 onCancel: { isCustomPausePresented = false },
                 onPause: {
                     pause(until: customPauseDate)
@@ -646,6 +666,7 @@ private struct SettingsIOSScheduledNotificationRow: View {
 private struct SettingsIOSCustomNotificationPauseSheet: View {
     @Binding var pauseDate: Date
     let minimumDate: Date
+    let sourceKind: ScheduledNotificationSourceKind
     let onCancel: () -> Void
     let onPause: () -> Void
 
@@ -660,7 +681,7 @@ private struct SettingsIOSCustomNotificationPauseSheet: View {
                         displayedComponents: [.date, .hourAndMinute]
                     )
                 } footer: {
-                    Text("This changes only the selected notification occurrence, not the task or event schedule.")
+                    Text("This changes only the selected notification occurrence, not the \(sourceName) schedule.")
                 }
             }
             .navigationTitle("Pause Notification")
@@ -674,5 +695,9 @@ private struct SettingsIOSCustomNotificationPauseSheet: View {
                 }
             }
         }
+    }
+
+    private var sourceName: String {
+        sourceKind == .event ? "event" : "task"
     }
 }

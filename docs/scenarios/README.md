@@ -2330,7 +2330,7 @@ And Return still checks the current query before it creates a task
 
 Area: Settings / Home / Backlog / Task Ladder / Planner / Timeline / Stats
 
-Decision links: [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md), [0705](../decisions/0705-refresh-cross-platform-development-screenshot-fixtures.md), [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md)
+Decision links: [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md), [0705](../decisions/0705-refresh-cross-platform-development-screenshot-fixtures.md), [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md), [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
 
 Automated coverage:
 
@@ -2343,8 +2343,8 @@ When Routina prepares its local development store
 Then it inserts or refreshes one coherent date-relative release fixture
 And the fixture represents repeating and one-time behavior, Home and Backlog hierarchy, Task Ladder timing, relationships, Flags, destinations, Planner, Focus, Timeline, and Stats activity
 And rerunning preparation refreshes only Routina-owned deterministic records and sections without duplicating them or deleting unrelated development data
-And the fixture contains no Emotion records
-And rerunning preparation removes only its retired reserved Emotion rows while preserving unrelated Emotion history
+And the fixture contains no standalone Event or Emotion records
+And rerunning preparation removes only its two retired reserved Event rows and ten retired reserved Emotion rows while preserving unrelated Event and Emotion history
 
 Given the Mac development app is running
 When the user opens Settings -> Appearance
@@ -3999,7 +3999,7 @@ Then task creation opens directly without presenting a one-row chooser
 ### iOS Timeline Type Filters Follow Feature Availability
 
 Area: Timeline / Settings / UI
-Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0221](../decisions/0221-hide-stats-sleep-tab-behind-beta-toggle.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md), [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md), [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md), [0707](../decisions/0707-gate-disabled-sleep-at-timeline-presentation-boundaries.md)
+Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0221](../decisions/0221-hide-stats-sleep-tab-behind-beta-toggle.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md), [0458](../decisions/0458-align-ios-new-actions-with-beta-gates.md), [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md), [0707](../decisions/0707-gate-disabled-sleep-at-timeline-presentation-boundaries.md), [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/IOSNewTabActionAvailabilityTests.swift`
@@ -4023,6 +4023,40 @@ Given persisted Sleep sessions exist and either `Show Away` or `Show Sleep tab` 
 When the person opens Timeline on iOS or macOS
 Then Timeline presents no Sleep rows under `All` or another available filter
 And the stored Sleep sessions remain available for later development re-enablement
+
+Given persisted Event records exist and `Show Event and Emotion actions` is off
+When the person opens Timeline on iOS
+Then Timeline presents no Event rows under `All` or another available filter
+And the stored Event records remain available for later development re-enablement
+
+### Unavailable Standalone Events Stay Out of iOS Release Surfaces
+
+Area: Timeline / Stats / Tasks / Settings / Notifications / Deep Links
+Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
+Current behavior: [UI](../current-behavior/ui.md), [Stats](../current-behavior/stats.md), [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/iOS/AppFeatureTests.swift`
+- `Tests/iOS/StatsDashboardItemAvailabilityTests.swift`
+- `Tests/Shared/IOSNewTabActionAvailabilityTests.swift`
+- `Tests/Shared/SettingsIOSRelevanceTests.swift`
+- `Tests/Shared/RoutinaScreenshotDataSeederTests.swift`
+
+Given standalone Event data, task links, deep links, or pending notification requests exist
+And `Show Event and Emotion actions` is off
+When the person uses the iOS app
+Then Timeline shows no Event rows
+And Stats offers no Event report
+And Add/Edit Task and Task Details show no Event relationships or detail route
+And an Event deep link does not open Event UI
+And Tags and Notifications omit Event-only rows, counts, and explanatory copy
+And tag rename or deletion does not mutate hidden Event tags
+And Event notification reconciliation schedules no Event alerts
+And the stored Event records and task link IDs remain intact for later development re-enablement, synchronization, backup, restore, and reset
+
+Given Apple Calendar access is available while standalone Events are disabled
+When the person reviews calendar entries on iOS
+Then Routina can still import external calendar entries as tasks
+And that Calendar workflow does not expose standalone Event creation or records
 
 ### Disabled Emotions Stay Out of Stats and Timeline
 

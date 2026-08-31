@@ -44,6 +44,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0691](../decisions/0691-split-focus-activity-across-local-days.md)
 - [0695](../decisions/0695-promote-stats-and-settings-in-ios-navigation.md)
 - [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md)
+- [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
 
 ## Current Contract
 
@@ -67,7 +68,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Sleep time and Sleep sessions sit beside comparable summary reports when available and when the Away experiment is enabled.
 - Goal reports follow the Goals beta setting.
 - Place reports and place achievements follow the Places beta setting.
-- Emotion summaries, trends, and achievement presentation follow the Event/Emotion beta setting on iOS and macOS. When that feature is unavailable, persisted Emotion history remains stored but does not produce a Stats section or achievement domain. Mac Event reports follow the same setting.
+- Event reports plus Emotion summaries, trends, and achievement presentation follow the Event/Emotion beta setting on iOS. When that feature is unavailable, persisted Event and Emotion history remains stored but produces no corresponding iOS Stats item or achievement domain. On macOS, Emotion presentation and Event reports follow the same setting.
 - iOS does not offer Focus vs completed work or Estimated vs Actual time reports. macOS keeps both reports addable but hidden by default.
 - iOS Focus 2048 shows earned and next tiles with next-tile progress, without a largest-tile callout, tile-count label, or supplemental insight pills. macOS keeps those supplementary details.
 - macOS Summary view and Edit toolbar controls are unavailable in production. Development builds can enable them through Support & About -> Beta Experiments -> `Show Stats dashboard controls`; saved dashboard customization state remains intact while the controls are hidden.

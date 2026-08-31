@@ -101,8 +101,17 @@ struct TimelineView: View {
                     editingAwaySession = nil
                 }
             }
-            .onChange(of: areEventEmotionActionsEnabled) { _, _ in
+            .onChange(of: areEventEmotionActionsEnabled) { _, isEnabled in
                 guard isActive else { return }
+                if !isEnabled {
+                    if let selectedTimelineEntryID,
+                       dataSnapshot.eventsByID[selectedTimelineEntryID] != nil {
+                        self.selectedTimelineEntryID = nil
+                    }
+                    if let eventID = store.deepLinkedEventID {
+                        store.send(.eventDeepLinkPresentationDismissed(eventID))
+                    }
+                }
                 syncTimelineData()
                 validateTimelineFilterVisibility()
             }
@@ -164,7 +173,9 @@ struct TimelineView: View {
     private var tasks: [RoutineTask] { dataSnapshot.tasks }
     private var logs: [RoutineLog] { dataSnapshot.logs }
     private var fileAttachments: [RoutineAttachment] { dataSnapshot.fileAttachments }
-    private var events: [RoutineEvent] { dataSnapshot.events }
+    private var events: [RoutineEvent] {
+        areEventEmotionActionsEnabled ? dataSnapshot.events : []
+    }
     private var emotionLogs: [EmotionLog] {
         areEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []
     }
@@ -262,7 +273,9 @@ struct TimelineView: View {
     private var deepLinkedEventPresentationBinding: Binding<TimelineEventDeepLinkPresentation?> {
         Binding(
             get: {
-                guard !usesSidebarLayout, let eventID = store.deepLinkedEventID else { return nil }
+                guard areEventEmotionActionsEnabled,
+                      !usesSidebarLayout,
+                      let eventID = store.deepLinkedEventID else { return nil }
                 return TimelineEventDeepLinkPresentation(id: eventID)
             },
             set: { presentation in
@@ -332,6 +345,10 @@ struct TimelineView: View {
 
     private func routePendingDeepLinkedEvent() {
         guard usesSidebarLayout, let eventID = store.deepLinkedEventID else { return }
+        guard areEventEmotionActionsEnabled else {
+            store.send(.eventDeepLinkPresentationDismissed(eventID))
+            return
+        }
         guard store.visibleEntryIDSet.contains(eventID) else { return }
         selectedTimelineEntryID = eventID
         store.send(.eventDeepLinkPresentationDismissed(eventID))
@@ -1232,7 +1249,7 @@ struct TimelineView: View {
     }
 
     private func event(for entry: TimelineEntry) -> RoutineEvent? {
-        dataSnapshot.eventsByID[entry.id]
+        events.first { $0.id == entry.id }
     }
 
     private func emotionLog(for entry: TimelineEntry) -> EmotionLog? {
@@ -1272,7 +1289,7 @@ struct TimelineView: View {
 
     @ViewBuilder
     private func deepLinkedEventDetail(eventID: UUID) -> some View {
-        if let event = dataSnapshot.eventsByID[eventID] {
+        if let event = events.first(where: { $0.id == eventID }) {
             RoutineEventDetailView(event: event)
         } else {
             ContentUnavailableView(

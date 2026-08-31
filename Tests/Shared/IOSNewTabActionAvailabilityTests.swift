@@ -130,6 +130,11 @@ struct IOSNewTabActionAvailabilityTests {
             endingAt: "@ViewBuilder\n    private func timelineRow",
             in: source
         )
+        let events = try Self.functionSource(
+            named: "private var events",
+            endingAt: "private var emotionLogs",
+            in: source
+        )
         let emotionLogs = try Self.functionSource(
             named: "private var emotionLogs",
             endingAt: "private var notes",
@@ -154,6 +159,9 @@ struct IOSNewTabActionAvailabilityTests {
         #expect(source.contains(".onChange(of: areEventEmotionActionsEnabled)"))
         #expect(source.contains(
             "areEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []"
+        ))
+        #expect(events.contains(
+            "areEventEmotionActionsEnabled ? dataSnapshot.events : []"
         ))
         #expect(emotionLogs.contains("areEventEmotionActionsEnabled"))
         #expect(sleepSessions.contains(

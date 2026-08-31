@@ -428,6 +428,10 @@ struct AppFeature {
     }
 
     private func handleDeepLink(_ deepLink: RoutinaDeepLink, state: inout State) -> Effect<Action> {
+        if case .event = deepLink,
+           !appSettingsClient.eventEmotionActionsEnabled() {
+            return .none
+        }
         state.hasRestoredTemporaryViewState = true
 
         switch deepLink {

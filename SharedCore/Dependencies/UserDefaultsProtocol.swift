@@ -342,6 +342,7 @@ struct AppSettingsClient: Sendable {
     var setNotesEnabled: @Sendable (Bool) -> Void = { _ in }
     var awayEnabled: @Sendable () -> Bool = { false }
     var setAwayEnabled: @Sendable (Bool) -> Void = { _ in }
+    var eventEmotionActionsEnabled: @Sendable () -> Bool = { false }
     var filterQuerySectionsEnabled: @Sendable () -> Bool = { false }
     var setFilterQuerySectionsEnabled: @Sendable (Bool) -> Void = { _ in }
     var showPersianDates: @Sendable () -> Bool
@@ -634,6 +635,9 @@ extension AppSettingsClient {
         setAwayEnabled: { isEnabled in
             SharedDefaults.app[.appSettingAwayEnabled] = isEnabled
             AppSettingsPersistenceMirror.schedule()
+        },
+        eventEmotionActionsEnabled: {
+            SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]
         },
         filterQuerySectionsEnabled: {
             SharedDefaults.app[.appSettingFilterQuerySectionsEnabled]
@@ -934,6 +938,7 @@ extension AppSettingsClient {
         setNotesEnabled: { _ in },
         awayEnabled: { false },
         setAwayEnabled: { _ in },
+        eventEmotionActionsEnabled: { false },
         filterQuerySectionsEnabled: { false },
         setFilterQuerySectionsEnabled: { _ in },
         showPersianDates: { false },

@@ -54,7 +54,7 @@ struct RoutinaScreenshotDataSeederTests {
         #expect(focusSessions.count == 14)
         #expect(goals.count == 3)
         #expect(notes.count == 3)
-        #expect(events.count == 2)
+        #expect(events.isEmpty)
         #expect(emotions.isEmpty)
         #expect(sleepSessions.count == 10)
         #expect(awaySessions.count == 4)
@@ -181,5 +181,27 @@ struct RoutinaScreenshotDataSeederTests {
         #expect(result.removedRecordCount == 1)
         #expect(!remainingEmotions.contains { $0.id == retiredID })
         #expect(remainingEmotions.contains { $0.id == userEmotion.id })
+    }
+
+    @Test
+    func seedRetiresOnlyFixtureOwnedEvents() throws {
+        let context = makeInMemoryContext()
+        let retiredID = try #require(RoutinaScreenshotDataSeeder.retiredEventIDs.first)
+        let retiredEvent = RoutineEvent(id: retiredID, title: "Retired fixture event")
+        let userEvent = RoutineEvent(title: "My development event")
+        context.insert(retiredEvent)
+        context.insert(userEvent)
+        try context.save()
+
+        let result = try RoutinaScreenshotDataSeeder.seed(
+            in: context,
+            referenceDate: makeDate("2026-07-29T10:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+
+        let remainingEvents = try context.fetch(FetchDescriptor<RoutineEvent>())
+        #expect(result.removedRecordCount == 1)
+        #expect(!remainingEvents.contains { $0.id == retiredID })
+        #expect(remainingEvents.contains { $0.id == userEvent.id })
     }
 }

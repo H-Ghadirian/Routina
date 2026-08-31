@@ -11,6 +11,14 @@ struct SettingsTagPersistenceResult {
 }
 
 enum SettingsTagPersistence {
+    private static var shouldMutateEvents: Bool {
+        #if os(iOS)
+        return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]
+        #else
+        return true
+        #endif
+    }
+
     @MainActor
     static func rename(
         _ request: SettingsTagRenameRequest,
@@ -21,7 +29,9 @@ enum SettingsTagPersistence {
         let notes = SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []
-        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        let events = shouldMutateEvents
+            ? try context.fetch(FetchDescriptor<RoutineEvent>())
+            : []
         var updatedRoutineCount = 0
         var updatedGoalCount = 0
         var updatedNoteCount = 0
@@ -106,7 +116,9 @@ enum SettingsTagPersistence {
         let notes = SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []
-        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        let events = shouldMutateEvents
+            ? try context.fetch(FetchDescriptor<RoutineEvent>())
+            : []
         var updatedRoutineCount = 0
         var updatedGoalCount = 0
         var updatedNoteCount = 0

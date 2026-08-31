@@ -2,6 +2,14 @@ import Foundation
 import SwiftData
 
 enum SettingsDataQueries {
+    private static var shouldIncludeEvents: Bool {
+        #if os(iOS)
+        return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]
+        #else
+        return true
+        #endif
+    }
+
     @MainActor
     static func fetchDeviceSessionSummaries(in context: ModelContext) throws -> [RoutinaDeviceSessionSummary] {
         let currentInstallationID = DeviceActivityRecorder.currentInstallationID()
@@ -35,7 +43,9 @@ enum SettingsDataQueries {
         let notes = SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []
-        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        let events = shouldIncludeEvents
+            ? try context.fetch(FetchDescriptor<RoutineEvent>())
+            : []
         return RoutineTag.summaries(from: tasks, goals: goals, notes: notes, events: events)
     }
 
@@ -46,7 +56,9 @@ enum SettingsDataQueries {
         let notes = SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []
-        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        let events = shouldIncludeEvents
+            ? try context.fetch(FetchDescriptor<RoutineEvent>())
+            : []
         return tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags) + events.map(\.tags)
     }
 

@@ -825,13 +825,79 @@ extension SettingsDiagnosticsState {
     }
 }
 
+enum SettingsTagSourcePresentation {
+    static var eventsAreAvailableOnCurrentPlatform: Bool {
+        #if os(iOS)
+        return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]
+        #else
+        return true
+        #endif
+    }
+
+    static func pluralSourceList(
+        includesNotes: Bool,
+        includesEvents: Bool,
+        conjunction: String
+    ) -> String {
+        sourceList(
+            task: "tasks",
+            goal: "goals",
+            note: "notes",
+            event: "events",
+            includesNotes: includesNotes,
+            includesEvents: includesEvents,
+            conjunction: conjunction
+        )
+    }
+
+    static func singularSourceList(
+        includesNotes: Bool,
+        includesEvents: Bool,
+        conjunction: String
+    ) -> String {
+        sourceList(
+            task: "task",
+            goal: "goal",
+            note: "note",
+            event: "event",
+            includesNotes: includesNotes,
+            includesEvents: includesEvents,
+            conjunction: conjunction
+        )
+    }
+
+    private static func sourceList(
+        task: String,
+        goal: String,
+        note: String,
+        event: String,
+        includesNotes: Bool,
+        includesEvents: Bool,
+        conjunction: String
+    ) -> String {
+        var sources = [task, goal]
+        if includesNotes {
+            sources.append(note)
+        }
+        if includesEvents {
+            sources.append(event)
+        }
+        guard sources.count > 2 else {
+            return sources.joined(separator: " \(conjunction) ")
+        }
+        return "\(sources.dropLast().joined(separator: ", ")), \(conjunction) \(sources.last ?? "")"
+    }
+}
+
 extension SettingsTagsState {
     var overviewSubtitle: String {
         switch savedTags.count {
         case 0:
-            let sources = SharedDefaults.app[.appSettingNotesEnabled]
-                ? "tasks, goals, notes, and events"
-                : "tasks, goals, and events"
+            let sources = SettingsTagSourcePresentation.pluralSourceList(
+                includesNotes: SharedDefaults.app[.appSettingNotesEnabled],
+                includesEvents: SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
+                conjunction: "and"
+            )
             return "Review and manage tags across \(sources)"
         case 1:
             return "1 saved tag"
@@ -842,9 +908,12 @@ extension SettingsTagsState {
 
     var deleteConfirmationMessage: String {
         guard let tag = tagPendingDeletion else {
-            return SharedDefaults.app[.appSettingNotesEnabled]
-                ? "This will remove the tag from every task, goal, note, or event that uses it."
-                : "This will remove the tag from every task, goal, or event that uses it."
+            let sources = SettingsTagSourcePresentation.singularSourceList(
+                includesNotes: SharedDefaults.app[.appSettingNotesEnabled],
+                includesEvents: SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
+                conjunction: "or"
+            )
+            return "This will remove the tag from every \(sources) that uses it."
         }
 
         let affectedParts = tag.settingsAffectedDeletionParts
@@ -884,7 +953,8 @@ extension RoutineTagSummary {
         if SharedDefaults.app[.appSettingNotesEnabled], linkedNoteCount > 0 {
             parts.append(linkedNoteCount == 1 ? "1 note" : "\(linkedNoteCount) notes")
         }
-        if linkedEventCount > 0 {
+        if SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
+           linkedEventCount > 0 {
             parts.append(linkedEventCount == 1 ? "1 event" : "\(linkedEventCount) events")
         }
         if doneCount > 0 {
@@ -909,7 +979,8 @@ extension RoutineTagSummary {
         if SharedDefaults.app[.appSettingNotesEnabled], linkedNoteCount > 0 {
             parts.append(linkedNoteCount == 1 ? "1 note" : "\(linkedNoteCount) notes")
         }
-        if linkedEventCount > 0 {
+        if SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
+           linkedEventCount > 0 {
             parts.append(linkedEventCount == 1 ? "1 event" : "\(linkedEventCount) events")
         }
         return parts
