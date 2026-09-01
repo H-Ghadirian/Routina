@@ -233,6 +233,7 @@ RoutineTask.autoAssumeDoneTimeOfDayMinute:Int?
 RoutineTask.autoPauseAfterCompletion:Bool
 RoutineTask.availabilityEndDate:Date?
 RoutineTask.availabilityStartDate:Date?
+RoutineTask.cadenceEnabled:Bool
 RoutineTask.canceledAt:Date?
 RoutineTask.changeLogStorage:String
 RoutineTask.checklistItemsStorage:String
@@ -269,6 +270,7 @@ RoutineTask.linksStorage:String
 RoutineTask.manualSectionOrderStorage:String
 RoutineTask.name:String?
 RoutineTask.notes:String?
+RoutineTask.nudgesEnabled:Bool
 RoutineTask.ongoingSince:Date?
 RoutineTask.pauseUntil:Date?
 RoutineTask.pausedAt:Date?
@@ -310,8 +312,6 @@ RoutineTask.taskRankingOrderStorage:String
 RoutineTask.temporalWeightRuleStorage:String
 RoutineTask.thinkingNeededRawValue:String
 RoutineTask.todoStateRawValue:String?
-RoutineTask.cadenceEnabled:Bool
-RoutineTask.nudgesEnabled:Bool
 RoutineTask.urgencyRawValue:String
 RoutineTask.voiceNoteCreatedAt:Date?
 RoutineTask.voiceNoteData:Data?

@@ -15,8 +15,10 @@ Create three Apple apps in one Firebase project and download each app's
 
 Place the files in this directory. They are intentionally ignored by Git. A
 build phase validates each plist's bundle ID and copies it into the matching app
-bundle as `GoogleService-Info.plist`. Builds that produce dSYMs upload them
-through Firebase's supported Crashlytics script.
+bundle as `GoogleService-Info.plist`. The copy phase removes any quarantine
+attribute inherited from a browser-downloaded configuration before the app is
+signed. Builds that produce dSYMs upload them through Firebase's supported
+Crashlytics script.
 
 Each app target declares its exact variant plist as an Xcode script input. This
 is required because the user-script sandbox does not grant child-file access

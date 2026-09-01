@@ -35,6 +35,10 @@ documentation behavior. Decision records explain why these rules exist.
   SDK declarations are Crash Data and Other Diagnostic Data for App
   Functionality, not linked to identity and not used for tracking; the final
   archive privacy report remains the release-time source of truth.
+- The shared Firebase configuration copy phase validates the selected bundle ID
+  and strips `com.apple.quarantine` from the bundled plist before signing, so a
+  browser-downloaded deployment input cannot make an iOS or macOS archive
+  invalid for App Store distribution.
 - The first production iOS phase ships the iPhone app and its production
   widget, but neither an iPad app nor the Apple Watch companion. Every iOS app,
   test-bundle, and widget configuration targets device family `1`, and the app

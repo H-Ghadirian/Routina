@@ -64,5 +64,9 @@ fi
 
 mkdir -p "$destination_directory"
 cp "$configuration_path" "$destination_path"
+# Finder and browsers can quarantine downloaded Firebase configuration files.
+# A plain copy propagates that attribute into the signed app and App Store
+# validation rejects the resulting bundle.
+xattr -d com.apple.quarantine "$destination_path" 2>/dev/null || true
 chmod 0644 "$destination_path"
 echo "Routina Crashlytics configuration: ${firebase_platform} ${firebase_variant}"

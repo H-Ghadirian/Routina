@@ -35,6 +35,14 @@ struct CrashlyticsConfigurationTests {
     }
 
     @Test
+    func configurationCopyRemovesQuarantineFromBundledPlist() throws {
+        let script = try Self.sourceFile("script/copy_firebase_configuration.sh")
+        #expect(script.contains(
+            "xattr -d com.apple.quarantine \"$destination_path\" 2>/dev/null || true"
+        ))
+    }
+
+    @Test
     func configurationCopyDeclaresExactInputsForXcodeScriptSandboxing() throws {
         let iOSProject = try Self.sourceFile("RoutinaiOS.xcodeproj/project.pbxproj")
         #expect(iOSProject.contains(
