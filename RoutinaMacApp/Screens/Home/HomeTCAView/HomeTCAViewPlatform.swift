@@ -311,7 +311,7 @@ extension HomeTCAView {
                         onCancel: closeAddEmotion,
                         onSaved: openSavedEmotion
                     )
-                } else if isEventEditorPresented {
+                } else if areMacEventEmotionActionsEnabled && isEventEditorPresented {
                     RoutineEventEditorView(
                         onCancel: closeAddEvent,
                         onSaved: openSavedEvent

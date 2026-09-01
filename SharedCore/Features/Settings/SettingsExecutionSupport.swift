@@ -41,9 +41,7 @@ enum SettingsExecutionSupport {
             await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
         }
 
-        #if os(iOS)
         guard appSettingsClient.eventEmotionActionsEnabled() else { return }
-        #endif
 
         let events = try context.fetch(FetchDescriptor<RoutineEvent>())
         for event in events {

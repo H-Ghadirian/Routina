@@ -126,7 +126,9 @@ struct TimelineView: View {
     private var tasks: [RoutineTask] { dataSnapshot.tasks }
     private var logs: [RoutineLog] { dataSnapshot.logs }
     private var fileAttachments: [RoutineAttachment] { dataSnapshot.fileAttachments }
-    private var events: [RoutineEvent] { dataSnapshot.events }
+    private var events: [RoutineEvent] {
+        areMacEventEmotionActionsEnabled ? dataSnapshot.events : []
+    }
     private var emotionLogs: [EmotionLog] {
         areMacEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []
     }

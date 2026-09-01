@@ -153,6 +153,10 @@ SettingsMacDetailView(
 
 private struct SettingsMacNotificationsDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
 
     var body: some View {
 SettingsMacDetailShell(
@@ -183,25 +187,27 @@ SettingsMacDetailShell(
                 Text("Loading scheduled notifications…")
                     .foregroundStyle(.secondary)
             }
-        } else if store.notifications.scheduledNotifications.isEmpty {
+        } else if visibleScheduledNotifications.isEmpty {
             Text(scheduledNotificationsEmptyText)
                 .foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                ForEach(store.notifications.scheduledNotificationGroups) { group in
+                ForEach(visibleScheduledNotificationGroups) { group in
                     SettingsMacScheduledNotificationGroup(
                         group: group,
                         store: store
                     )
 
-                    if group.id != store.notifications.scheduledNotificationGroups.last?.id {
+                    if group.id != visibleScheduledNotificationGroups.last?.id {
                         Divider()
                     }
                 }
             }
         }
 
-        Text("Notifications are grouped by task or event. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this Mac.")
+        Text(areMacEventEmotionActionsEnabled
+            ? "Notifications are grouped by task or event. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this Mac."
+            : "Notifications are grouped by task. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this Mac.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }
@@ -236,8 +242,18 @@ SettingsMacDetailShell(
     }
 
     private var scheduledNotificationsTitle: String {
-        let count = store.notifications.scheduledNotifications.count
+        let count = visibleScheduledNotifications.count
         return count == 0 ? "Scheduled Notifications" : "Scheduled Notifications (\(count))"
+    }
+
+    private var visibleScheduledNotifications: [ScheduledNotificationSummary] {
+        store.notifications.scheduledNotifications.filter {
+            areMacEventEmotionActionsEnabled || $0.sourceKind != .event
+        }
+    }
+
+    private var visibleScheduledNotificationGroups: [ScheduledNotificationGroup] {
+        ScheduledNotificationGroup.groups(from: visibleScheduledNotifications)
     }
 
     private var scheduledNotificationsEmptyText: String {

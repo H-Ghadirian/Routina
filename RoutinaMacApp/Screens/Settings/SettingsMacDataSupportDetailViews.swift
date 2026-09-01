@@ -837,6 +837,9 @@ private struct SettingsMacBetaExperimentsCard: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+        .onChange(of: isGoalsTabEnabled) { _, _ in
+            store.send(.onAppear)
+        }
     }
 
     private var gitFeaturesBinding: Binding<Bool> {

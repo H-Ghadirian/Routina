@@ -321,6 +321,8 @@ struct AppFeatureTests {
             )
         ) {
             AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.goalsEnabled = { true }
         }
 
         await store.send(.openDeepLink(.goal(goalID))) {
@@ -332,6 +334,19 @@ struct AppFeatureTests {
             $0.goals.selectedGoalID = goalID
             $0.goals.deepLinkedGoalNavigationID = goalID
         }
+    }
+
+    @Test
+    func openDeepLink_goalIsIgnoredWhenGoalFeatureIsUnavailable() async {
+        let initialState = AppFeature.State(selectedTab: .home)
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.goalsEnabled = { false }
+        }
+
+        await store.send(.openDeepLink(.goal(UUID())))
+        #expect(store.state == initialState)
     }
 
     @Test

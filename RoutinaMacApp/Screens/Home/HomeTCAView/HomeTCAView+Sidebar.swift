@@ -1010,6 +1010,7 @@ extension HomeTCAView {
     }
 
     func openAddEvent() {
+        guard areMacEventEmotionActionsEnabled else { return }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -1027,6 +1028,7 @@ extension HomeTCAView {
     }
 
     func openSavedEvent(_ eventID: UUID) {
+        guard areMacEventEmotionActionsEnabled else { return }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false

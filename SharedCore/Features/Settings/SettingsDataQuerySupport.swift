@@ -2,12 +2,12 @@ import Foundation
 import SwiftData
 
 enum SettingsDataQueries {
+    private static var shouldIncludeGoals: Bool {
+        return SharedDefaults.app[.appSettingGoalsTabEnabled]
+    }
+
     private static var shouldIncludeEvents: Bool {
-        #if os(iOS)
         return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]
-        #else
-        return true
-        #endif
     }
 
     @MainActor
@@ -39,7 +39,9 @@ enum SettingsDataQueries {
     @MainActor
     static func fetchTagSummaries(in context: ModelContext) throws -> [RoutineTagSummary] {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let goals = shouldIncludeGoals
+            ? try context.fetch(FetchDescriptor<RoutineGoal>())
+            : []
         let notes = SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []
@@ -52,7 +54,9 @@ enum SettingsDataQueries {
     @MainActor
     static func fetchTaskTagCollections(in context: ModelContext) throws -> [[String]] {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let goals = shouldIncludeGoals
+            ? try context.fetch(FetchDescriptor<RoutineGoal>())
+            : []
         let notes = SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []

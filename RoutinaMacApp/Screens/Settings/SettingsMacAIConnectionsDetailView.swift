@@ -8,6 +8,10 @@ struct SettingsMacAIConnectionsDetailView: View {
         UserDefaultBoolValueKey.appSettingMacLocalAIAccessEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isLocalAIAccessEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
     @State private var lastUpdatedAt: Date?
     @State private var statusMessage: String?
 
@@ -20,7 +24,7 @@ struct SettingsMacAIConnectionsDetailView: View {
                 Toggle("Allow read-only task access", isOn: localAIAccessBinding)
                     .toggleStyle(.switch)
 
-                Text("The connection can explain Routina features without reading your task data. When this setting is enabled, it can also use a private, read-only snapshot containing task names, schedules, dates, tags, descriptions, notes, links, goals, places, and progress.")
+                Text(localAIAccessDescription)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
@@ -118,6 +122,11 @@ struct SettingsMacAIConnectionsDetailView: View {
             }
         }
         .onAppear(perform: loadStatus)
+    }
+
+    private var localAIAccessDescription: String {
+        let goalSource = isGoalsTabEnabled ? ", goals" : ""
+        return "The connection can explain Routina features without reading your task data. When this setting is enabled, it can also use a private, read-only snapshot containing task names, schedules, dates, tags, descriptions, notes, links\(goalSource), places, and progress."
     }
 
     private var localAIAccessBinding: Binding<Bool> {

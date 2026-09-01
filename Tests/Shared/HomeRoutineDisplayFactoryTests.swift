@@ -10,6 +10,35 @@ import Testing
 
 struct HomeRoutineDisplayFactoryTests {
     @Test
+    func disabledGoalsAreAbsentFromRowsAndSearchIndex() {
+        let goalID = UUID()
+        let goal = RoutineGoal(id: goalID, title: "Protect deep work")
+        let task = RoutineTask(name: "Write outline", goalIDs: [goalID])
+
+        let display = HomeRoutineDisplayFactory(
+            now: makeDate("2026-06-09T08:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+        .makeCore(
+            for: task,
+            placesByID: [:],
+            goalsByID: [goalID: goal],
+            locationSnapshot: LocationSnapshot(
+                authorizationStatus: .authorizedWhenInUse,
+                coordinate: nil,
+                horizontalAccuracy: nil,
+                timestamp: nil
+            ),
+            doneStats: HomeDoneStats(),
+            showsGoals: false
+        )
+
+        #expect(display.goalIDs.isEmpty)
+        #expect(display.goalTitles.isEmpty)
+        #expect(!display.indexedSearchText.contains("protect deep work"))
+    }
+
+    @Test
     func locationAvailabilityUsesAnySelectedPlace() {
         let homeID = UUID()
         let gymID = UUID()

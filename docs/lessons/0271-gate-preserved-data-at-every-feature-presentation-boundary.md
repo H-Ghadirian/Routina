@@ -35,4 +35,4 @@ The iOS Goal-gate scenario requires Home rows and Task Details to hide persisted
 Goal links while the feature is off. `TaskFormIOSLayoutRegressionTests` verifies
 that both presentation paths consume the Goals availability setting.
 
-Related decision: [0538 — Gate iOS Goals and Places Appearance Controls](../decisions/0538-gate-ios-goals-and-places-appearance-controls.md).
+Related decision: [0538 — Gate Add Task Goals with the Feature Setting](../decisions/0538-gate-add-task-goals-with-feature-setting.md).

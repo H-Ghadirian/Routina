@@ -525,8 +525,19 @@ homeContent
                     validateMacEventEmotionFilterVisibility()
                     handlePendingSleepPlannerDeepLink(store.pendingSleepPlannerSessionID)
                 }
-                .onChange(of: areMacEventEmotionActionsEnabled) { _, _ in
+                .onChange(of: areMacEventEmotionActionsEnabled) { _, isEnabled in
                     validateMacTimelineFilterVisibility()
+                    guard !isEnabled else { return }
+                    isEventEditorPresented = false
+                    if case let .timelineEntry(entryID) = store.macSidebarSelection,
+                       events.contains(where: { $0.id == entryID }) {
+                        store.send(.macSidebarSelectionChanged(nil))
+                    }
+                }
+                .onChange(of: isGoalsTabEnabled) { _, isEnabled in
+                    store.send(.onAppear)
+                    guard !isEnabled else { return }
+                    goalsStore.send(.dismissEditor)
                 }
                 .onChange(of: isPlacesEnabled) { _, _ in
                     validateMacTimelineFilterVisibility()

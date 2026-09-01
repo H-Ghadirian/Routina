@@ -826,15 +826,16 @@ extension SettingsDiagnosticsState {
 }
 
 enum SettingsTagSourcePresentation {
+    static var goalsAreAvailableOnCurrentPlatform: Bool {
+        return SharedDefaults.app[.appSettingGoalsTabEnabled]
+    }
+
     static var eventsAreAvailableOnCurrentPlatform: Bool {
-        #if os(iOS)
         return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]
-        #else
-        return true
-        #endif
     }
 
     static func pluralSourceList(
+        includesGoals: Bool,
         includesNotes: Bool,
         includesEvents: Bool,
         conjunction: String
@@ -844,6 +845,7 @@ enum SettingsTagSourcePresentation {
             goal: "goals",
             note: "notes",
             event: "events",
+            includesGoals: includesGoals,
             includesNotes: includesNotes,
             includesEvents: includesEvents,
             conjunction: conjunction
@@ -851,6 +853,7 @@ enum SettingsTagSourcePresentation {
     }
 
     static func singularSourceList(
+        includesGoals: Bool,
         includesNotes: Bool,
         includesEvents: Bool,
         conjunction: String
@@ -860,6 +863,7 @@ enum SettingsTagSourcePresentation {
             goal: "goal",
             note: "note",
             event: "event",
+            includesGoals: includesGoals,
             includesNotes: includesNotes,
             includesEvents: includesEvents,
             conjunction: conjunction
@@ -871,11 +875,15 @@ enum SettingsTagSourcePresentation {
         goal: String,
         note: String,
         event: String,
+        includesGoals: Bool,
         includesNotes: Bool,
         includesEvents: Bool,
         conjunction: String
     ) -> String {
-        var sources = [task, goal]
+        var sources = [task]
+        if includesGoals {
+            sources.append(goal)
+        }
         if includesNotes {
             sources.append(note)
         }
@@ -894,6 +902,7 @@ extension SettingsTagsState {
         switch savedTags.count {
         case 0:
             let sources = SettingsTagSourcePresentation.pluralSourceList(
+                includesGoals: SettingsTagSourcePresentation.goalsAreAvailableOnCurrentPlatform,
                 includesNotes: SharedDefaults.app[.appSettingNotesEnabled],
                 includesEvents: SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
                 conjunction: "and"
@@ -909,6 +918,7 @@ extension SettingsTagsState {
     var deleteConfirmationMessage: String {
         guard let tag = tagPendingDeletion else {
             let sources = SettingsTagSourcePresentation.singularSourceList(
+                includesGoals: SettingsTagSourcePresentation.goalsAreAvailableOnCurrentPlatform,
                 includesNotes: SharedDefaults.app[.appSettingNotesEnabled],
                 includesEvents: SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
                 conjunction: "or"

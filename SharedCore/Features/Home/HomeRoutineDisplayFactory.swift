@@ -11,7 +11,8 @@ struct HomeRoutineDisplayFactory {
         locationSnapshot: LocationSnapshot,
         doneStats: HomeDoneStats,
         fileAttachmentTaskIDs: Set<UUID> = [],
-        showsPlaces: Bool = true
+        showsPlaces: Bool = true,
+        showsGoals: Bool = true
     ) -> HomeRoutineDisplayCore {
         // Completion logs can arrive before the task's legacy `lastDone` summary catches up.
         // Home presentation follows recorded history, while `task.lastDone` remains the
@@ -96,7 +97,9 @@ struct HomeRoutineDisplayFactory {
         let taskEmoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
         let taskDescription = task.taskDescription
         let taskNotes = CalendarTaskImportSupport.displayNotes(from: task.notes)
-        let goalTitles = task.goalIDs.compactMap { goalsByID[$0]?.displayTitle }
+        let goalTitles = showsGoals
+            ? task.goalIDs.compactMap { goalsByID[$0]?.displayTitle }
+            : []
         let currentTaskLadderValues = RoutineTaskTemporalWeightResolver.effectiveWeights(
             for: task,
             referenceDate: now,
@@ -118,7 +121,7 @@ struct HomeRoutineDisplayFactory {
             tags: taskTags,
             flags: task.flags,
             taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(for: taskTags),
-            goalIDs: task.goalIDs,
+            goalIDs: showsGoals ? task.goalIDs : [],
             goalTitles: goalTitles,
             indexedSearchText: HomeTaskSearchIndex.make(
                 name: taskName,

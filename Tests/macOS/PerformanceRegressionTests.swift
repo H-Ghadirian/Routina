@@ -227,6 +227,46 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testDisabledEventFeatureExcludesEventRowsFromMacTimelineAndPlannerSnapshots() throws {
+        let standaloneSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Timeline/TimelineView.swift"
+        )
+        let integratedSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
+        )
+        let plannerSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let homeSidebarSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift"
+        )
+        let homePlatformSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
+        )
+
+        XCTAssertTrue(standaloneSource.contains(
+            "areMacEventEmotionActionsEnabled ? dataSnapshot.events : []"
+        ))
+        XCTAssertTrue(integratedSource.contains(
+            "let visibleEvents = areMacEventEmotionActionsEnabled ? events : []"
+        ))
+        XCTAssertEqual(
+            integratedSource.components(separatedBy: "events: visibleEvents").count - 1,
+            2
+        )
+        XCTAssertTrue(plannerSource.contains("let visibleEvents = includesEvents ? events : []"))
+        XCTAssertTrue(plannerSource.contains("var includesEvents: Bool"))
+        XCTAssertTrue(plannerSource.contains("from: visibleEvents"))
+        XCTAssertTrue(plannerSource.contains("events: visibleEvents"))
+        XCTAssertTrue(plannerSource.contains(
+            "guard includesEvents, calendarFilterState.showsEvents else { return [] }"
+        ))
+        XCTAssertTrue(homeSidebarSource.contains(
+            "func openAddEvent() {\n        guard areMacEventEmotionActionsEnabled else { return }"
+        ))
+        XCTAssertTrue(homePlatformSource.contains(
+            "areMacEventEmotionActionsEnabled && isEventEditorPresented"
+        ))
+    }
+
     func testDisabledSleepFeatureExcludesSleepRowsFromMacTimelines() throws {
         let standaloneSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Timeline/TimelineView.swift"

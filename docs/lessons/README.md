@@ -41,6 +41,8 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0285 — Gate related records at every feature boundary](0285-gate-related-records-at-every-feature-boundary.md)
+- [0284 — Gate cached feature data before presentation derivation](0284-gate-cached-feature-data-before-presentation-derivation.md)
 - [0283 — Distinguish authentication prompts from genuine app departures](0283-distinguish-authentication-prompts-from-genuine-app-departures.md)
 - [0282 — Treat sandbox read failures as build failures](0282-treat-sandbox-read-failures-as-build-failures.md)
 - [0281 — Sanitize downloaded deployment inputs after copying](0281-sanitize-downloaded-deployment-inputs-after-copying.md)

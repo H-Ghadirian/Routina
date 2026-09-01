@@ -102,7 +102,7 @@ SettingsMacDetailShell(
             }
             .buttonStyle(.borderedProminent)
 
-            Text("Adds realistic repeating tasks, one-time tasks, history, planner blocks, focus sessions, goals, notes, events, and wellness activity. Existing data is preserved.")
+            Text("Adds realistic repeating tasks, one-time tasks, history, planner blocks, focus sessions, notes, and wellness activity. Existing data is preserved.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 

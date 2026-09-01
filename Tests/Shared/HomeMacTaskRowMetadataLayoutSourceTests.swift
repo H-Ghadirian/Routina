@@ -25,7 +25,9 @@ struct HomeMacTaskRowMetadataLayoutSourceTests {
         #expect(secondaryRow.lowerBound < metadata.lowerBound)
         #expect(functionSource.contains("HomeStatusBadgeView(style: statusBadgeStyle)"))
         #expect(functionSource.contains("showsFlags: rowVisibility.shows(.flags)"))
-        #expect(functionSource.contains("showsGoals: rowVisibility.shows(.goals)"))
+        #expect(functionSource.contains(
+            "showsGoals: isGoalsTabEnabled && rowVisibility.shows(.goals)"
+        ))
         #expect(functionSource.contains(".lineLimit(rowVisibility.allowsMultilineTitles ? nil : 1)"))
         #expect(functionSource.contains("vertical: rowVisibility.allowsMultilineTitles"))
     }

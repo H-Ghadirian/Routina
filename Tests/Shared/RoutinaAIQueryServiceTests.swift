@@ -12,6 +12,41 @@ import Testing
 @MainActor
 struct RoutinaAIQueryServiceTests {
     @Test
+    func snapshotOmitsGoalMetadataWhenGoalsAreUnavailable() throws {
+        let goalsKey = UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue
+        let previousGoalsValue = SharedDefaults.app.object(forKey: goalsKey)
+        defer {
+            if let previousGoalsValue {
+                SharedDefaults.app.set(previousGoalsValue, forKey: goalsKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: goalsKey)
+            }
+        }
+        SharedDefaults.app[.appSettingGoalsTabEnabled] = false
+
+        let context = makeInMemoryContext()
+        let goal = RoutineGoal(title: "Protect deep work")
+        context.insert(goal)
+        let task = makeTask(
+            in: context,
+            name: "Write outline",
+            interval: 1,
+            lastDone: nil,
+            emoji: "✍️"
+        )
+        task.goalIDs = [goal.id]
+        try context.save()
+
+        let snapshot = try RoutinaAIQueryService.snapshot(
+            in: context,
+            now: makeDate("2026-04-23T09:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+
+        #expect(snapshot.tasks.first?.goals.isEmpty == true)
+    }
+
+    @Test
     func snapshotFiltersBySearchTextAndCountsMatchingTasks() throws {
         let placesKey = UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue
         let previousPlacesValue = SharedDefaults.app.object(forKey: placesKey)

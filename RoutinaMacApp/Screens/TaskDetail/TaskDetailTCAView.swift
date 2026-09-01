@@ -238,6 +238,15 @@ struct TaskDetailTCAView: View {
             .onChange(of: availableEventCandidates) { _, _ in
                 syncAvailableEvents()
             }
+            .onChange(of: areMacEventEmotionActionsEnabled) { _, isEnabled in
+                guard !isEnabled else { return }
+                selectedLinkedEventPresentation = nil
+                inlineEditSections.removeAll { $0 == .events }
+            }
+            .onChange(of: isGoalsTabEnabled) { _, isEnabled in
+                guard !isEnabled else { return }
+                inlineEditSections.removeAll { $0 == .goals }
+            }
             .onChange(of: store.task.id) { _, _ in
                 referenceDate = Date()
                 activeBlockingTask = nil
@@ -352,7 +361,7 @@ struct TaskDetailTCAView: View {
     private func headerSupplementaryContent(dueDate: Date?) -> some View {
         TaskDetailMacHeaderSupplementaryContent(
             task: store.task,
-            goals: store.taskGoalSummaries,
+            goals: isGoalsTabEnabled ? store.taskGoalSummaries : [],
             selectedDate: store.resolvedSelectedDate,
             showPersianDates: showPersianDates,
             isCalendarExpanded: $isCalendarExpanded,
@@ -855,7 +864,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowLinkedEventsSection: Bool {
-        !store.taskEventCandidates.isEmpty
+        areMacEventEmotionActionsEnabled && !store.taskEventCandidates.isEmpty
     }
 
     private var hasTaskExtras: Bool {
@@ -1271,6 +1280,7 @@ struct TaskDetailTCAView: View {
     }
 
     private func openLinkedEvent(_ eventID: UUID) {
+        guard areMacEventEmotionActionsEnabled else { return }
         if let onOpenEventDetails {
             selectedLinkedEventPresentation = nil
             onOpenEventDetails(eventID)
@@ -1479,7 +1489,8 @@ struct TaskDetailTCAView: View {
 
     @ViewBuilder
     private func linkedEventDetailSheet(eventID: UUID) -> some View {
-        if let event = events.first(where: { $0.id == eventID }) {
+        if areMacEventEmotionActionsEnabled,
+           let event = events.first(where: { $0.id == eventID }) {
             NavigationStack {
                 RoutineEventDetailView(event: event)
             }

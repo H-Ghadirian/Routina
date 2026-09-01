@@ -1529,6 +1529,7 @@ struct HomeFeature {
                 return macNavigationRouter().openNoteDeepLink(noteID, state: &state)
 
             case let .openEventDeepLink(eventID):
+                guard appSettingsClient.eventEmotionActionsEnabled() else { return .none }
                 return macNavigationRouter().openEventDeepLink(eventID, state: &state)
 
             case let .openSprintDeepLink(sprintID):

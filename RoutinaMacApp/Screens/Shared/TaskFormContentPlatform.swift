@@ -44,6 +44,10 @@ struct TaskFormContent: View {
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
 
     init(
         model: TaskFormModel,
@@ -130,7 +134,7 @@ struct TaskFormContent: View {
 
     private func embeddedSectionsContent(_ sections: [FormSection]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(sections, id: \.self) { section in
+            ForEach(sections.filter(shouldDisplayFormSection), id: \.self) { section in
                 formSectionView(for: section)
             }
 
@@ -210,6 +214,9 @@ struct TaskFormContent: View {
         }
         if section == .notes || section == .voiceNote {
             return isNotesEnabled
+        }
+        if section == .events {
+            return areMacEventEmotionActionsEnabled
         }
         return section != .goals || isGoalsTabEnabled
     }

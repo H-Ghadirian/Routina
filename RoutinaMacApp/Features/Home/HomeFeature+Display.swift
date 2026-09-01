@@ -11,7 +11,8 @@ extension HomeFeature {
         doneStats: DoneStats,
         sprintBoardData: SprintBoardData,
         fileAttachmentTaskIDs: Set<UUID> = [],
-        showsPlaces: Bool = true
+        showsPlaces: Bool = true,
+        showsGoals: Bool = true
     ) -> RoutineDisplay {
         let core = HomeRoutineDisplayFactory(now: now, calendar: calendar).makeCore(
             for: task,
@@ -20,7 +21,8 @@ extension HomeFeature {
             locationSnapshot: locationSnapshot,
             doneStats: doneStats,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
-            showsPlaces: showsPlaces
+            showsPlaces: showsPlaces,
+            showsGoals: showsGoals
         )
         let assignedSprint = sprintBoardData.sprint(for: task.id)
         let assignedBacklog = sprintBoardData.backlog(for: task.id)
@@ -30,10 +32,13 @@ extension HomeFeature {
 
     func refreshDisplays(_ state: inout State) {
         let showsPlaces = appSettingsClient.placesEnabled()
+        let showsGoals = appSettingsClient.goalsEnabled()
         let placesByID = showsPlaces
             ? Dictionary(state.routinePlaces.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             : [:]
-        let goalsByID = Dictionary(state.routineGoals.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let goalsByID = showsGoals
+            ? Dictionary(state.routineGoals.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            : [:]
         var active: [RoutineDisplay] = []
         var away: [RoutineDisplay] = []
         var archived: [RoutineDisplay] = []
@@ -54,7 +59,8 @@ extension HomeFeature {
                 doneStats: state.doneStats,
                 sprintBoardData: state.sprintBoardData,
                 fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
-                showsPlaces: showsPlaces
+                showsPlaces: showsPlaces,
+                showsGoals: showsGoals
             )
             display.hasActiveRelationshipBlocker = relationshipBlockedTaskIDs.contains(task.id)
 

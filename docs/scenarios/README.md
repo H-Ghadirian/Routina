@@ -1520,21 +1520,30 @@ And Exclude is evaluated last and wins overlaps
 And Stats keeps its independent Flag filters
 And Calendar keeps its separate Assumed done layer toggle
 
-### iOS Goal Gate Hides Goal Surfaces
+### Unavailable Goals Stay Out of Release Surfaces
 
-Area: Tasks / UI
-Decision links: [0212](../decisions/0212-hide-goals-tab-by-default.md), [0227](../decisions/0227-gate-stats-goal-event-reports.md), [0538](../decisions/0538-gate-ios-goals-and-places-appearance-controls.md)
-Current behavior: [Settings](../current-behavior/settings.md), [Tasks](../current-behavior/tasks.md)
+Area: Tasks / UI / Settings / Stats / Deep Links
+Decision links: [0212](../decisions/0212-hide-goals-tab-by-default.md), [0213](../decisions/0213-hide-goals-ui-by-default-on-macos.md), [0227](../decisions/0227-gate-stats-goal-event-reports.md), [0538](../decisions/0538-gate-add-task-goals-with-feature-setting.md), [0712](../decisions/0712-gate-disabled-goals-across-release-surfaces.md)
+Current behavior: [Settings](../current-behavior/settings.md), [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md), [Stats](../current-behavior/stats.md)
 Coverage:
+- `Tests/iOS/AppFeatureTests.swift`
+- `Tests/macOS/AppFeatureTests.swift`
+- `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
+- `Tests/Shared/RoutinaAIQueryServiceTests.swift`
+- `Tests/Shared/RoutinaScreenshotDataSeederTests.swift`
+- `Tests/Shared/SettingsIOSRelevanceTests.swift`
 - `Tests/Shared/TaskFormIOSLayoutRegressionTests.swift`
 
 Given a task retains one or more linked Goals
 And the saved Task Row Appearance choice includes Goals
-And `Show Goals tab` is off in iOS Settings
-When the person opens Home Filters, views the task on Home, or opens Task Details
-Then the Goal filter, row labels, and detail summary are absent
+And `Show Goals tab` is off
+When the person uses iOS or Mac
+Then Goal navigation, creation, editing, filters, Stats reports, and deep links are unavailable
+And task rows, task search metadata, and Task Details omit Goal labels and summaries
+And Settings omits Goal-specific appearance controls, iCloud usage, Tag sources and counts, import-summary copy, and optional AI task metadata
+And Tag rename or deletion does not mutate hidden Goal tags
 And the linked Goal data and saved Task Row Appearance choice remain unchanged
-And enabling the setting restores the Goal filter and linked Goal presentation
+And development re-enablement restores the Goal filter and linked Goal presentation
 
 ### iOS Task Form Tags Preserve Full Labels
 
@@ -2330,7 +2339,7 @@ And Return still checks the current query before it creates a task
 
 Area: Settings / Home / Backlog / Task Ladder / Planner / Timeline / Stats
 
-Decision links: [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md), [0705](../decisions/0705-refresh-cross-platform-development-screenshot-fixtures.md), [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md), [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
+Decision links: [0465](../decisions/0465-prepare-mac-development-app-for-screenshots.md), [0705](../decisions/0705-refresh-cross-platform-development-screenshot-fixtures.md), [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md), [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md), [0712](../decisions/0712-gate-disabled-goals-across-release-surfaces.md)
 
 Automated coverage:
 
@@ -2343,8 +2352,8 @@ When Routina prepares its local development store
 Then it inserts or refreshes one coherent date-relative release fixture
 And the fixture represents repeating and one-time behavior, Home and Backlog hierarchy, Task Ladder timing, relationships, Flags, destinations, Planner, Focus, Timeline, and Stats activity
 And rerunning preparation refreshes only Routina-owned deterministic records and sections without duplicating them or deleting unrelated development data
-And the fixture contains no standalone Event or Emotion records
-And rerunning preparation removes only its two retired reserved Event rows and ten retired reserved Emotion rows while preserving unrelated Event and Emotion history
+And the fixture contains no Goal, standalone Event, or Emotion records or task-to-Goal links
+And rerunning preparation removes only its three retired reserved Goal rows, two retired reserved Event rows, and ten retired reserved Emotion rows while preserving unrelated Goal, Event, and Emotion history
 
 Given the Mac development app is running
 When the user opens Settings -> Appearance
@@ -3533,10 +3542,11 @@ Then it does not show a single-option `Task` tab, keeps the draft block visible 
 ### Planner Calendar Filters Respect Beta Toggles
 
 Area: Planner
-Decision links: [0291](../decisions/0291-gate-planner-calendar-filter-options-by-beta-toggles.md), [0289](../decisions/0289-filter-planner-calendar-layers.md), [0319](../decisions/0319-open-planner-filters-in-home-filter-pane.md), [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md), [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md)
+Decision links: [0291](../decisions/0291-gate-planner-calendar-filter-options-by-beta-toggles.md), [0289](../decisions/0289-filter-planner-calendar-layers.md), [0319](../decisions/0319-open-planner-filters-in-home-filter-pane.md), [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md), [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0711](../decisions/0711-gate-disabled-events-across-mac-release-surfaces.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanCalendarFilterStateTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given Support & About -> Beta Experiments -> `Show Away` is off
 When the user opens the companion filter pane's `Calendar` tab
@@ -3545,22 +3555,28 @@ Then the panel does not expose Away or Sleep filter options
 Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is off
 When the user opens the companion filter pane's `Calendar` tab
 Then the panel does not expose an Events filter option
+And persisted Events do not produce timed or all-day Planner blocks
+And Planner does not reuse a cached render snapshot that included Events
+And the stored Event records remain intact for later development re-enablement
 
 Given stale hidden filter state exists for Events, Away, or Sleep from a previous beta-enabled session
 When the relevant beta toggle is off
 Then those unavailable beta layers do not count as active hidden filters or stay hidden without a visible control
 
-### Mac Task Details Hide Event Add Action When Event Actions Are Off
+### Mac Task Surfaces Hide Event Relationships When Event Actions Are Off
 
 Area: Tasks
-Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0195](../decisions/0195-support-task-event-links.md)
+Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0195](../decisions/0195-support-task-event-links.md), [0711](../decisions/0711-gate-disabled-events-across-mac-release-surfaces.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is off
-When the user opens full Mac Task Details for a task with no linked events
+When the user opens Mac Add Task, Edit Task, or full Task Details
 Then the `Add a detail` popover does not expose an Events action
+And the form and details do not expose Event relationships or Event details
+And existing linked Event IDs remain stored
 
 Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is on
 When the user opens full Mac Task Details for a task with no linked events
@@ -3922,6 +3938,11 @@ When the user opens Settings -> Appearance -> Task Row
 Then the matching Goals or Places option is absent, including from the preview and shown-fields count
 And enabling the feature restores the option without changing its stored visibility choice
 
+Given `Show Goals tab` is off on Mac
+When the user opens Task List -> Appearance or views a main task row
+Then the Task Row card does not expose a `Goals` option or count it in the shown-fields summary
+And task rows do not display linked Goal labels even if the saved visibility choice and task links remain stored
+
 ### Mac Main Task Titles Can Wrap Without Mixing Metadata
 
 Area: Tasks, Settings
@@ -4042,28 +4063,32 @@ Then Timeline presents no Sleep rows under `All` or another available filter
 And the stored Sleep sessions remain available for later development re-enablement
 
 Given persisted Event records exist and `Show Event and Emotion actions` is off
-When the person opens Timeline on iOS
+When the person opens Timeline on iOS or macOS
 Then Timeline presents no Event rows under `All` or another available filter
 And the stored Event records remain available for later development re-enablement
 
-### Unavailable Standalone Events Stay Out of iOS Release Surfaces
+### Unavailable Standalone Events Stay Out of Release Surfaces
 
-Area: Timeline / Stats / Tasks / Settings / Notifications / Deep Links
-Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
-Current behavior: [UI](../current-behavior/ui.md), [Stats](../current-behavior/stats.md), [Settings](../current-behavior/settings.md)
+Area: Planner / Timeline / Stats / Tasks / Settings / Notifications / Deep Links
+Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0470](../decisions/0470-keep-beta-experiments-out-of-production.md), [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md), [0711](../decisions/0711-gate-disabled-events-across-mac-release-surfaces.md)
+Current behavior: [Planner](../current-behavior/planner.md), [UI](../current-behavior/ui.md), [Stats](../current-behavior/stats.md), [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/iOS/AppFeatureTests.swift`
 - `Tests/iOS/StatsDashboardItemAvailabilityTests.swift`
 - `Tests/Shared/IOSNewTabActionAvailabilityTests.swift`
 - `Tests/Shared/SettingsIOSRelevanceTests.swift`
 - `Tests/Shared/RoutinaScreenshotDataSeederTests.swift`
+- `Tests/macOS/AppFeatureTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given standalone Event data, task links, deep links, or pending notification requests exist
 And `Show Event and Emotion actions` is off
-When the person uses the iOS app
+When the person uses the iOS or Mac app
 Then Timeline shows no Event rows
+And Mac Planner shows no timed or all-day Event blocks
 And Stats offers no Event report
 And Add/Edit Task and Task Details show no Event relationships or detail route
+And Mac exposes no Event creation or editor route
 And an Event deep link does not open Event UI
 And Tags and Notifications omit Event-only rows, counts, and explanatory copy
 And tag rename or deletion does not mutate hidden Event tags

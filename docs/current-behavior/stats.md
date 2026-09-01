@@ -45,6 +45,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0695](../decisions/0695-promote-stats-and-settings-in-ios-navigation.md)
 - [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md)
 - [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
+- [0711](../decisions/0711-gate-disabled-events-across-mac-release-surfaces.md)
 
 ## Current Contract
 

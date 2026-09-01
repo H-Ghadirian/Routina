@@ -2021,6 +2021,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
         sleepSessions: [SleepSession],
         awaySessions: [AwaySession],
         events: [RoutineEvent],
+        includesEvents: Bool,
         sprintFocusSessions: [SprintFocusSessionRecord],
         sprintFocusAllocations: [SprintFocusAllocationRecord],
         boardSprints: [BoardSprintRecord],
@@ -2047,6 +2048,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             referenceDate: referenceDate,
             calendar: calendar
         ) || tasks.contains { RoutineAssumedCompletion.isEligible($0) }
+        let visibleEvents = includesEvents ? events : []
         let key = DayPlanTimelineRenderSnapshotKey(
             dataSnapshotID: dataSnapshotID,
             visibleDates: visibleDates,
@@ -2057,6 +2059,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             referenceDate: referenceDate,
             refreshesEveryMinute: refreshesEveryMinute,
             calendar: calendar,
+            includesEvents: includesEvents,
             showsTimelineTasksInDayPlanner: showsTimelineTasksInDayPlanner,
             hiddenTimelineActivityStorage: hiddenTimelineActivityStorage
         )
@@ -2118,7 +2121,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
         )
         let eventBlocksByDayKey = DayPlanEventBlocks.blocksByDayKey(
             on: visibleDates,
-            from: events,
+            from: visibleEvents,
             calendar: calendar
         )
         let automaticOccupiedBlocksByDayKey = mergePlannerBlocks(
@@ -2185,7 +2188,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             on: visibleDates,
             from: tasks,
             logs: logs,
-            events: events,
+            events: visibleEvents,
             calendar: calendar
         )
         let selectedDayKey = DayPlanStorage.dayKey(for: planner.selectedDate, calendar: calendar)
@@ -2198,7 +2201,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             logs: logs,
             sleepSessions: sleepSessions,
             awaySessions: awaySessions,
-            events: events,
+            events: visibleEvents,
             sprintFocusSessions: sprintFocusSessions,
             sprintFocusAllocations: sprintFocusAllocations,
             boardSprints: boardSprints,
@@ -2394,6 +2397,7 @@ private struct DayPlanTimelineRenderSnapshotKey: Equatable {
     var selectedDayKey: String
     var focusedUnplannedCompletedDayKey: String?
     var referenceMinute: ReferenceMinute?
+    var includesEvents: Bool
     var showsTimelineTasksInDayPlanner: Bool
     var hiddenTimelineActivityStorage: String
     var plannerBlocks: [DayPlanBlock]
@@ -2409,6 +2413,7 @@ private struct DayPlanTimelineRenderSnapshotKey: Equatable {
         referenceDate: Date,
         refreshesEveryMinute: Bool,
         calendar: Calendar,
+        includesEvents: Bool,
         showsTimelineTasksInDayPlanner: Bool,
         hiddenTimelineActivityStorage: String
     ) {
@@ -2427,6 +2432,7 @@ private struct DayPlanTimelineRenderSnapshotKey: Equatable {
         referenceMinute = refreshesEveryMinute
             ? ReferenceMinute(referenceDate: referenceDate, calendar: calendar)
             : nil
+        self.includesEvents = includesEvents
         self.showsTimelineTasksInDayPlanner = showsTimelineTasksInDayPlanner
         self.hiddenTimelineActivityStorage = hiddenTimelineActivityStorage
         self.plannerBlocks = plannerBlocks
@@ -2510,6 +2516,7 @@ private struct DayPlanTimelinePanelContentView: View {
             sleepSessions: sleepSessions,
             awaySessions: awaySessions,
             events: events,
+            includesEvents: includesEvents,
             sprintFocusSessions: sprintFocusSessions,
             sprintFocusAllocations: sprintFocusAllocations,
             boardSprints: boardSprints,
@@ -2713,7 +2720,7 @@ private struct DayPlanTimelinePanelContentView: View {
                     )
                 },
                 eventBlocksForDate: { date in
-                    guard calendarFilterState.showsEvents else { return [] }
+                    guard includesEvents, calendarFilterState.showsEvents else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return eventBlocksByDayKey[dayKey] ?? []
                 },
@@ -2841,6 +2848,7 @@ private struct DayPlanTimelinePanelContentView: View {
                     onOpenTaskDetails?(taskID)
                 },
                 onOpenEventDetails: { eventID in
+                    guard includesEvents else { return }
                     if let onOpenEventDetails {
                         selectedEventID = nil
                         onOpenEventDetails(eventID)
@@ -3185,7 +3193,7 @@ private struct DayPlanTimelinePanelContentView: View {
     ) -> [DayPlanAllDayBlock] {
         blocks.filter { block in
             if block.isEvent {
-                return filters.showsEvents
+                return includesEvents && filters.showsEvents
             }
             return filters.showsAllDayTasks
                 && matchesCalendarSearch(
@@ -3486,7 +3494,8 @@ private struct DayPlanTimelinePanelContentView: View {
     private var selectedEventPresentationBinding: Binding<DayPlanEventPresentation?> {
         Binding(
             get: {
-                selectedEventID.map(DayPlanEventPresentation.init(id:))
+                guard includesEvents else { return nil }
+                return selectedEventID.map(DayPlanEventPresentation.init(id:))
             },
             set: { presentation in
                 selectedEventID = presentation?.id

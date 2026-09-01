@@ -330,12 +330,16 @@ enum SettingsRoutineDataTransferActionExecution {
     ) -> String {
         let summary = result.importedSummary
         var parts = [
-            "\(summary.tasks) tasks",
-            "\(summary.goals) goals",
+            "\(summary.tasks) tasks"
+        ]
+        if SharedDefaults.app[.appSettingGoalsTabEnabled] {
+            parts.append("\(summary.goals) goals")
+        }
+        parts.append(contentsOf: [
             "\(summary.places) places",
             "\(summary.logs) logs",
             "\(summary.sleepSessions) sleep sessions"
-        ]
+        ])
         if SharedDefaults.app[.appSettingAwayEnabled] {
             parts.append("\(summary.awaySessions) away sessions")
         }

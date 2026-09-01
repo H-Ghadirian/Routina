@@ -195,6 +195,8 @@ struct AppFeatureTests {
             )
         ) {
             AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.goalsEnabled = { true }
         }
 
         await store.send(.openDeepLink(.goal(goalID))) {
@@ -210,6 +212,22 @@ struct AppFeatureTests {
             $0.goals.selectedGoalID = goalID
             $0.goals.deepLinkedGoalNavigationID = goalID
         }
+    }
+
+    @Test
+    func openDeepLink_goalIsIgnoredWhenGoalFeatureIsUnavailable() async {
+        let initialState = AppFeature.State(
+            selectedTab: .stats,
+            home: HomeFeature.State(macSidebarMode: .settings)
+        )
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.goalsEnabled = { false }
+        }
+
+        await store.send(.openDeepLink(.goal(UUID())))
+        #expect(store.state == initialState)
     }
 
     @Test
@@ -267,6 +285,8 @@ struct AppFeatureTests {
             )
         ) {
             AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.eventEmotionActionsEnabled = { true }
         }
 
         await store.send(.openDeepLink(.event(eventID))) {
@@ -284,6 +304,22 @@ struct AppFeatureTests {
             $0.home.selectedTimelineExcludedTags = []
             $0.home.selectedTimelineMediaFilter = .all
         }
+    }
+
+    @Test
+    func openDeepLink_eventIsIgnoredWhenEventFeatureIsUnavailable() async {
+        let initialState = AppFeature.State(
+            selectedTab: .stats,
+            home: HomeFeature.State(macSidebarMode: .settings)
+        )
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.eventEmotionActionsEnabled = { false }
+        }
+
+        await store.send(.openDeepLink(.event(UUID())))
+        #expect(store.state == initialState)
     }
 
     @Test

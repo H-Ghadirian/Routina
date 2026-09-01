@@ -52,7 +52,7 @@ struct RoutinaScreenshotDataSeederTests {
         #expect(logs.count >= 80)
         #expect(blocks.count == 5)
         #expect(focusSessions.count == 14)
-        #expect(goals.count == 3)
+        #expect(goals.isEmpty)
         #expect(notes.count == 3)
         #expect(events.isEmpty)
         #expect(emotions.isEmpty)
@@ -71,6 +71,7 @@ struct RoutinaScreenshotDataSeederTests {
         #expect(tasks.contains { !$0.flags.isEmpty })
         #expect(tasks.contains { $0.hasDestination })
         #expect(tasks.contains { $0.linkItems.contains { $0.title != nil } })
+        #expect(tasks.allSatisfy { $0.goalIDs.isEmpty })
         #expect(
             tasks.contains { task in
                 guard let sectionID = task.customTaskSectionID else { return false }
@@ -203,5 +204,31 @@ struct RoutinaScreenshotDataSeederTests {
         #expect(result.removedRecordCount == 1)
         #expect(!remainingEvents.contains { $0.id == retiredID })
         #expect(remainingEvents.contains { $0.id == userEvent.id })
+    }
+
+    @Test
+    func seedRetiresOnlyFixtureOwnedGoalsAndClearsFixtureTaskLinks() throws {
+        let context = makeInMemoryContext()
+        let retiredID = try #require(RoutinaScreenshotDataSeeder.retiredGoalIDs.first)
+        let retiredGoal = RoutineGoal(id: retiredID, title: "Retired fixture goal")
+        let userGoal = RoutineGoal(title: "My development goal")
+        context.insert(retiredGoal)
+        context.insert(userGoal)
+        try context.save()
+
+        let result = try RoutinaScreenshotDataSeeder.seed(
+            in: context,
+            referenceDate: makeDate("2026-07-29T10:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+
+        let remainingGoals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let seededTasks = try context.fetch(FetchDescriptor<RoutineTask>()).filter {
+            $0.id.uuidString.hasPrefix("A11CE000-5EED-4000-8000-")
+        }
+        #expect(result.removedRecordCount == 1)
+        #expect(!remainingGoals.contains { $0.id == retiredID })
+        #expect(remainingGoals.contains { $0.id == userGoal.id })
+        #expect(seededTasks.allSatisfy { $0.goalIDs.isEmpty })
     }
 }

@@ -13,6 +13,10 @@ struct SettingsTagsDetailView: View {
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areEventEmotionActionsEnabled = false
@@ -85,6 +89,7 @@ struct SettingsTagsDetailView: View {
 
     private var emptyTagsText: String {
         let sources = SettingsTagSourcePresentation.pluralSourceList(
+            includesGoals: isGoalsTabEnabled,
             includesNotes: isNotesEnabled,
             includesEvents: areEventEmotionActionsEnabled,
             conjunction: "or"

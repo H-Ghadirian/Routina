@@ -11,12 +11,12 @@ struct SettingsTagPersistenceResult {
 }
 
 enum SettingsTagPersistence {
+    private static var shouldMutateGoals: Bool {
+        return SharedDefaults.app[.appSettingGoalsTabEnabled]
+    }
+
     private static var shouldMutateEvents: Bool {
-        #if os(iOS)
         return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]
-        #else
-        return true
-        #endif
     }
 
     @MainActor
@@ -25,7 +25,9 @@ enum SettingsTagPersistence {
         in context: ModelContext
     ) throws -> SettingsTagPersistenceResult {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let goals = shouldMutateGoals
+            ? try context.fetch(FetchDescriptor<RoutineGoal>())
+            : []
         let notes = SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []
@@ -112,7 +114,9 @@ enum SettingsTagPersistence {
         in context: ModelContext
     ) throws -> SettingsTagPersistenceResult {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let goals = shouldMutateGoals
+            ? try context.fetch(FetchDescriptor<RoutineGoal>())
+            : []
         let notes = SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []

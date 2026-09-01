@@ -10,7 +10,8 @@ extension HomeFeature {
         locationSnapshot: LocationSnapshot,
         doneStats: DoneStats,
         fileAttachmentTaskIDs: Set<UUID> = [],
-        showsPlaces: Bool = true
+        showsPlaces: Bool = true,
+        showsGoals: Bool = true
     ) -> RoutineDisplay {
         let core = HomeRoutineDisplayFactory(now: now, calendar: calendar).makeCore(
             for: task,
@@ -19,17 +20,21 @@ extension HomeFeature {
             locationSnapshot: locationSnapshot,
             doneStats: doneStats,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
-            showsPlaces: showsPlaces
+            showsPlaces: showsPlaces,
+            showsGoals: showsGoals
         )
         return RoutineDisplay(core: core)
     }
 
     func refreshDisplays(_ state: inout State) {
         let showsPlaces = appSettingsClient.placesEnabled()
+        let showsGoals = appSettingsClient.goalsEnabled()
         let placesByID = showsPlaces
             ? Dictionary(state.routinePlaces.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             : [:]
-        let goalsByID = Dictionary(state.routineGoals.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let goalsByID = showsGoals
+            ? Dictionary(state.routineGoals.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            : [:]
         var active: [RoutineDisplay] = []
         var away: [RoutineDisplay] = []
         var archived: [RoutineDisplay] = []
@@ -48,7 +53,8 @@ extension HomeFeature {
                 locationSnapshot: state.locationSnapshot,
                 doneStats: state.doneStats,
                 fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
-                showsPlaces: showsPlaces
+                showsPlaces: showsPlaces,
+                showsGoals: showsGoals
             )
             display.hasActiveRelationshipBlocker = relationshipBlockedTaskIDs.contains(task.id)
 

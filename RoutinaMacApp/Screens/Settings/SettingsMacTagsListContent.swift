@@ -11,6 +11,14 @@ struct SettingsMacTagsListContent: View {
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
 
     var body: some View {
 if store.tags.savedTags.isEmpty {
@@ -26,9 +34,13 @@ if store.tags.savedTags.isEmpty {
     }
 
     private var emptyTagsText: String {
-        isNotesEnabled
-            ? "No tags yet. Tags you add to tasks, goals, notes, or events will appear here."
-            : "No tags yet. Tags you add to tasks, goals, or events will appear here."
+        let sources = SettingsTagSourcePresentation.pluralSourceList(
+            includesGoals: isGoalsTabEnabled,
+            includesNotes: isNotesEnabled,
+            includesEvents: areMacEventEmotionActionsEnabled,
+            conjunction: "or"
+        )
+        return "No tags yet. Tags you add to \(sources) will appear here."
     }
 
     @ViewBuilder

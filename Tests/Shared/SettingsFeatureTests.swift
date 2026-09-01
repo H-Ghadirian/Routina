@@ -1714,15 +1714,23 @@ struct SettingsFeatureTests {
     func saveTagRenameTapped_updatesAllMatchingRoutines() async throws {
         let context = makeInMemoryContext()
         let notesKey = UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue
+        let goalsKey = UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue
         let previousNotesValue = SharedDefaults.app.object(forKey: notesKey)
+        let previousGoalsValue = SharedDefaults.app.object(forKey: goalsKey)
         defer {
             if let previousNotesValue {
                 SharedDefaults.app.set(previousNotesValue, forKey: notesKey)
             } else {
                 SharedDefaults.app.removeObject(forKey: notesKey)
             }
+            if let previousGoalsValue {
+                SharedDefaults.app.set(previousGoalsValue, forKey: goalsKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: goalsKey)
+            }
         }
         SharedDefaults.app[.appSettingNotesEnabled] = true
+        SharedDefaults.app[.appSettingGoalsTabEnabled] = true
         let fitness = makeTask(in: context, name: "Workout", interval: 1, lastDone: nil, emoji: "💪", tags: ["Fitness", "Morning"])
         let stretch = makeTask(in: context, name: "Stretch", interval: 2, lastDone: nil, emoji: "🧘", tags: ["fitness"])
         _ = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚", tags: ["Morning"])
@@ -1831,15 +1839,23 @@ struct SettingsFeatureTests {
     func deleteTagConfirmed_removesTagFromAllMatchingRoutines() async throws {
         let context = makeInMemoryContext()
         let notesKey = UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue
+        let goalsKey = UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue
         let previousNotesValue = SharedDefaults.app.object(forKey: notesKey)
+        let previousGoalsValue = SharedDefaults.app.object(forKey: goalsKey)
         defer {
             if let previousNotesValue {
                 SharedDefaults.app.set(previousNotesValue, forKey: notesKey)
             } else {
                 SharedDefaults.app.removeObject(forKey: notesKey)
             }
+            if let previousGoalsValue {
+                SharedDefaults.app.set(previousGoalsValue, forKey: goalsKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: goalsKey)
+            }
         }
         SharedDefaults.app[.appSettingNotesEnabled] = true
+        SharedDefaults.app[.appSettingGoalsTabEnabled] = true
         _ = makeTask(in: context, name: "Workout", interval: 1, lastDone: nil, emoji: "💪", tags: ["Health", "Morning"])
         let read = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚", tags: ["Morning"])
         let plan = makeTask(in: context, name: "Plan", interval: 4, lastDone: nil, emoji: "📝", tags: ["Evening", "Morning"])
@@ -1917,6 +1933,41 @@ struct SettingsFeatureTests {
         #expect(persistedTasks.allSatisfy { !RoutineTag.contains("Morning", in: $0.tags) })
         #expect(try context.fetch(FetchDescriptor<RoutineGoal>()).first { $0.id == goal.id }?.tags.isEmpty == true)
         #expect(try context.fetch(FetchDescriptor<RoutineNote>()).first { $0.id == note.id }?.tags.isEmpty == true)
+    }
+
+    @Test
+    func tagRenameWhileGoalsAreUnavailablePreservesHiddenGoalTags() throws {
+        let goalsKey = UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue
+        let previousGoalsValue = SharedDefaults.app.object(forKey: goalsKey)
+        defer {
+            if let previousGoalsValue {
+                SharedDefaults.app.set(previousGoalsValue, forKey: goalsKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: goalsKey)
+            }
+        }
+        SharedDefaults.app[.appSettingGoalsTabEnabled] = false
+
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Workout", tags: ["Fitness"])
+        let goal = RoutineGoal(title: "Get stronger", tags: ["Fitness"])
+        context.insert(task)
+        context.insert(goal)
+        try context.save()
+
+        let result = try SettingsTagPersistence.rename(
+            SettingsTagRenameRequest(
+                originalTagName: "Fitness",
+                cleanedName: "Health"
+            ),
+            in: context
+        )
+
+        #expect(result.updatedRoutineCount == 1)
+        #expect(result.updatedGoalCount == 0)
+        #expect(task.tags == ["Health"])
+        #expect(goal.tags == ["Fitness"])
+        #expect(result.tagSummaries.allSatisfy { $0.linkedGoalCount == 0 })
     }
 
     @Test
@@ -2203,8 +2254,10 @@ struct SettingsFeatureTests {
     func importRoutineDataSourceSelected_loadsSelectedBackupPackage() async throws {
         let notesKey = UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue
         let awayKey = UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue
+        let goalsKey = UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue
         let previousNotesValue = SharedDefaults.app.object(forKey: notesKey)
         let previousAwayValue = SharedDefaults.app.object(forKey: awayKey)
+        let previousGoalsValue = SharedDefaults.app.object(forKey: goalsKey)
         defer {
             if let previousNotesValue {
                 SharedDefaults.app.set(previousNotesValue, forKey: notesKey)
@@ -2216,9 +2269,15 @@ struct SettingsFeatureTests {
             } else {
                 SharedDefaults.app.removeObject(forKey: awayKey)
             }
+            if let previousGoalsValue {
+                SharedDefaults.app.set(previousGoalsValue, forKey: goalsKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: goalsKey)
+            }
         }
         SharedDefaults.app[.appSettingNotesEnabled] = true
         SharedDefaults.app[.appSettingAwayEnabled] = true
+        SharedDefaults.app[.appSettingGoalsTabEnabled] = false
 
         let exportContext = makeInMemoryContext()
         let task = RoutineTask(name: "Restore me", tags: ["Safe"])
@@ -2262,7 +2321,7 @@ struct SettingsFeatureTests {
 
         await store.receive(.recoveryPointsLoaded([]))
 
-        let successMessage = "Verified source receipt and isolated restore. Loaded 1 tasks, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 away sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
+        let successMessage = "Verified source receipt and isolated restore. Loaded 1 tasks, 0 places, 0 logs, 0 sleep sessions, 0 away sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
         await store.receive(.routineDataTransferFinished(success: true, message: successMessage)) {
             $0.dataTransfer.isDataTransferInProgress = false
             $0.dataTransfer.activeOperation = nil

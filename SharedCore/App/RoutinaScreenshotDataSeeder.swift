@@ -38,6 +38,7 @@ struct RoutinaScreenshotDataSeedResult: Equatable, Sendable {
 
 enum RoutinaScreenshotDataSeeder {
     static let taskCount = 16
+    static let retiredGoalIDs = Set((101..<104).map(seedID))
     static let retiredEventIDs = Set((0..<2).map { seedID(8_000 + $0) })
     static let retiredEmotionIDs = Set((0..<10).map { seedID(9_000 + $0) })
 
@@ -70,8 +71,8 @@ enum RoutinaScreenshotDataSeeder {
     ) throws -> RoutinaScreenshotDataSeedResult {
         let dates = SeedDates(referenceDate: referenceDate, calendar: calendar)
         let customSections = makeCustomSections(dates: dates)
-        let goals = makeGoals(dates: dates)
-        let tasks = makeTasks(dates: dates, goals: goals, customSections: customSections)
+        let goals: [RoutineGoal] = []
+        let tasks = makeTasks(dates: dates, customSections: customSections)
         let logs = makeLogs(dates: dates, tasks: tasks)
         let plannerBlocks = makePlannerBlocks(dates: dates, tasks: tasks)
         let focusSessions = makeFocusSessions(dates: dates, tasks: tasks)
@@ -244,6 +245,11 @@ enum RoutinaScreenshotDataSeeder {
 
         for event in existingEvents.values where retiredEventIDs.contains(event.id) {
             context.delete(event)
+            result.removedRecordCount += 1
+        }
+
+        for goal in existingGoals.values where retiredGoalIDs.contains(goal.id) {
+            context.delete(goal)
             result.removedRecordCount += 1
         }
 
@@ -425,52 +431,10 @@ private extension RoutinaScreenshotDataSeeder {
         ]
     }
 
-    static func makeGoals(dates: SeedDates) -> [RoutineGoal] {
-        let wellbeingID = seedID(101)
-        return [
-            RoutineGoal(
-                id: wellbeingID,
-                title: "Build a calmer workday",
-                emoji: "🌿",
-                notes: "Create a steady rhythm for focus, movement, and recovery.",
-                targetDate: dates.at(dayOffset: 45, hour: 18),
-                tags: ["Wellbeing", "Focus"],
-                color: .green,
-                createdAt: dates.at(dayOffset: -40, hour: 9),
-                sortOrder: 0
-            ),
-            RoutineGoal(
-                id: seedID(102),
-                title: "Ship the next Routina release",
-                emoji: "🚀",
-                notes: "Polish the experience, prepare visuals, and publish the release.",
-                targetDate: dates.at(dayOffset: 21, hour: 17),
-                tags: ["Routina", "Creative"],
-                color: .indigo,
-                createdAt: dates.at(dayOffset: -32, hour: 10),
-                sortOrder: 1
-            ),
-            RoutineGoal(
-                id: seedID(103),
-                title: "Protect deep work time",
-                emoji: "🧠",
-                tags: ["Focus"],
-                color: .blue,
-                parentGoalID: wellbeingID,
-                createdAt: dates.at(dayOffset: -28, hour: 10),
-                sortOrder: 0
-            )
-        ]
-    }
-
     static func makeTasks(
         dates: SeedDates,
-        goals: [RoutineGoal],
         customSections: [HomeCustomTaskSection]
     ) -> [RoutineTask] {
-        let wellbeingGoalID = goals[0].id
-        let releaseGoalID = goals[1].id
-        let deepWorkGoalID = goals[2].id
         let launchSectionID = customSections[0].id
         let appStoreSectionID = customSections[1].id
         let personalSectionID = customSections[2].id
@@ -494,7 +458,7 @@ private extension RoutinaScreenshotDataSeeder {
                 thinkingNeeded: .low,
                 tags: ["Morning", "Health"],
                 flags: [RoutineFlagRuleKind.autoAssumeDone.builtInFlagName],
-                goalIDs: [wellbeingGoalID],
+                goalIDs: [],
                 scheduleMode: .softInterval,
                 interval: 1,
                 recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 7, minute: 30)),
@@ -526,7 +490,7 @@ private extension RoutinaScreenshotDataSeeder {
                 pressureUpdatedAt: dates.at(dayOffset: -1, hour: 9),
                 thinkingNeeded: .high,
                 tags: ["Focus", "Creative"],
-                goalIDs: [deepWorkGoalID, releaseGoalID],
+                goalIDs: [],
                 scheduleMode: .fixedInterval,
                 interval: 1,
                 recurrenceRule: .interval(days: 1, at: RoutineTimeOfDay(hour: 9, minute: 30)),
@@ -556,7 +520,7 @@ private extension RoutinaScreenshotDataSeeder {
                 thinkingNeeded: .low,
                 tags: ["Health", "Outside"],
                 flags: [RoutineFlagRuleKind.hideFromCalendarList.builtInFlagName],
-                goalIDs: [wellbeingGoalID],
+                goalIDs: [],
                 scheduleMode: .softInterval,
                 interval: 1,
                 lastDone: dates.at(dayOffset: -1, hour: 16),
@@ -618,7 +582,7 @@ private extension RoutinaScreenshotDataSeeder {
                 taskLadderEntryWindow: .beforeDue(days: 3),
                 thinkingNeeded: .high,
                 tags: ["Planning", "Weekly"],
-                goalIDs: [wellbeingGoalID, releaseGoalID],
+                goalIDs: [],
                 steps: [
                     RoutineStep(title: "Review completed work"),
                     RoutineStep(title: "Clear open loops"),
@@ -695,7 +659,7 @@ private extension RoutinaScreenshotDataSeeder {
                 pressureUpdatedAt: dates.at(dayOffset: -1, hour: 10),
                 thinkingNeeded: .high,
                 tags: ["Routina", "Creative", "Release"],
-                goalIDs: [releaseGoalID],
+                goalIDs: [],
                 relationships: [
                     RoutineTaskRelationship(
                         targetTaskID: releaseSubmissionID,
@@ -739,7 +703,7 @@ private extension RoutinaScreenshotDataSeeder {
                 importance: .level3,
                 urgency: .level3,
                 tags: ["Work", "Communication"],
-                goalIDs: [releaseGoalID],
+                goalIDs: [],
                 scheduleMode: .oneOff,
                 color: .blue,
                 createdAt: dates.at(dayOffset: -4, hour: 11),
@@ -781,7 +745,7 @@ private extension RoutinaScreenshotDataSeeder {
                 pressure: .high,
                 pressureUpdatedAt: dates.at(dayOffset: -2, hour: 9),
                 tags: ["Admin", "Routina"],
-                goalIDs: [releaseGoalID],
+                goalIDs: [],
                 scheduleMode: .oneOff,
                 color: .red,
                 createdAt: dates.at(dayOffset: -7, hour: 9),
@@ -804,7 +768,7 @@ private extension RoutinaScreenshotDataSeeder {
                 pressureUpdatedAt: dates.at(dayOffset: -1, hour: 11),
                 thinkingNeeded: .high,
                 tags: ["Routina", "Release"],
-                goalIDs: [releaseGoalID],
+                goalIDs: [],
                 relationships: [
                     RoutineTaskRelationship(targetTaskID: seedID(7), kind: .blockedBy),
                     RoutineTaskRelationship(targetTaskID: verifyBackupID, kind: .blockedBy)
@@ -834,7 +798,7 @@ private extension RoutinaScreenshotDataSeeder {
                 pressureUpdatedAt: dates.at(dayOffset: -1, hour: 12),
                 thinkingNeeded: .high,
                 tags: ["Routina", "Release", "Backup"],
-                goalIDs: [releaseGoalID],
+                goalIDs: [],
                 relationships: [
                     RoutineTaskRelationship(targetTaskID: releaseSubmissionID, kind: .blocks)
                 ],

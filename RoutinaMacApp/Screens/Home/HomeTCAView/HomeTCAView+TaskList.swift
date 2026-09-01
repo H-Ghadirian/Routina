@@ -223,7 +223,7 @@ extension HomeTCAView {
             || showsPlannedTodayLabel
             || rowVisibility.shows(.tags) && !task.tags.isEmpty
             || rowVisibility.shows(.flags) && !task.flags.isEmpty
-            || rowVisibility.shows(.goals) && !task.goalTitles.isEmpty
+            || isGoalsTabEnabled && rowVisibility.shows(.goals) && !task.goalTitles.isEmpty
 
         return HStack(alignment: .top, spacing: 10) {
             if rowVisibility.shows(.icon) || rowVisibility.shows(.rowNumber) {
@@ -267,7 +267,7 @@ extension HomeTCAView {
                             for: task,
                             showsTags: rowVisibility.shows(.tags),
                             showsFlags: rowVisibility.shows(.flags),
-                            showsGoals: rowVisibility.shows(.goals),
+                            showsGoals: isGoalsTabEnabled && rowVisibility.shows(.goals),
                             showsPlannedTodayLabel: showsPlannedTodayLabel
                         )
 
