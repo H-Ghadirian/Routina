@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0282 — Treat sandbox read failures as build failures](0282-treat-sandbox-read-failures-as-build-failures.md)
 - [0281 — Sanitize downloaded deployment inputs after copying](0281-sanitize-downloaded-deployment-inputs-after-copying.md)
 - [0280 — Gate optional records beyond filter controls](0280-gate-optional-records-beyond-filter-controls.md)
 - [0279 — Fit cumulative trends before adding horizontal detail](0279-fit-cumulative-trends-before-adding-horizontal-detail.md)

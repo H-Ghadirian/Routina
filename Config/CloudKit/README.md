@@ -11,6 +11,12 @@ Every iOS and macOS production archive runs
 type has changed since the manifest was last acknowledged, the archive fails
 before it can be uploaded to TestFlight.
 
+Xcode's user-script sandbox receives the manifest as an exact input and every
+Swift source under `SharedCore/Models` through
+`production-schema-model-inputs.xcfilelist`. When a model source is added,
+removed, or renamed, update that file list in the same change; the shared test
+suite verifies that it exactly matches the directory.
+
 When the guard fails:
 
 1. Open CloudKit Dashboard and select `iCloud.ir.hamedgh.Routinam.prod` in the

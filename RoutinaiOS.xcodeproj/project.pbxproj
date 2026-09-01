@@ -748,10 +748,11 @@
 			files = (
 			);
 			inputFileListPaths = (
+				"$(SRCROOT)/Config/CloudKit/production-schema-model-inputs.xcfilelist",
 			);
 			inputPaths = (
 				"$(SRCROOT)/script/cloudkit_schema_guard.sh",
-				"$(SRCROOT)/Config/CloudKit",
+				"$(SRCROOT)/Config/CloudKit/production-schema.manifest",
 				"$(SRCROOT)/SharedCore/Models",
 			);
 			name = "Verify CloudKit Production Schema";
@@ -796,6 +797,9 @@
 			inputPaths = (
 				"$(SRCROOT)/script/upload_crashlytics_symbols.sh",
 				"$(BUILD_DIR)/../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run",
+				"$(BUILD_DIR)/../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols",
+				"$(BUILD_DIR)/../../../../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run",
+				"$(BUILD_DIR)/../../../../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols",
 				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)",
 				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(PRODUCT_NAME)",
 				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(PRODUCT_NAME).debug.dylib",
@@ -845,6 +849,9 @@
 			inputPaths = (
 				"$(SRCROOT)/script/upload_crashlytics_symbols.sh",
 				"$(BUILD_DIR)/../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run",
+				"$(BUILD_DIR)/../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols",
+				"$(BUILD_DIR)/../../../../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run",
+				"$(BUILD_DIR)/../../../../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols",
 				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)",
 				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(PRODUCT_NAME)",
 				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(PRODUCT_NAME).debug.dylib",

@@ -25,6 +25,12 @@ is required because the user-script sandbox does not grant child-file access
 when only this containing directory is declared. A missing declared plist still
 follows the script's intentional no-configuration path.
 
+The symbol-upload phase also declares Firebase's `run` and `upload-symbols`
+executables at both normal-build and archive-relative package paths. Archive
+places `BUILD_DIR` five levels below DerivedData instead of the normal two, and
+the sandbox must grant the exact path that the wrapper resolves before either
+executable can run.
+
 Google Analytics is not linked. Routina sends Crashlytics' standard crash data,
 the app variant and platform, and a throttled trail of fixed interaction
 categories. It does not set a Crashlytics user ID or add task titles, search

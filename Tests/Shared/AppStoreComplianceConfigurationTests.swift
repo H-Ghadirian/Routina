@@ -55,6 +55,49 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
+    func productionArchivesDeclareExactCloudKitInputsForXcodeScriptSandboxing() throws {
+        let declaredInputs = Set(
+            try Self.sourceFile("Config/CloudKit/production-schema-model-inputs.xcfilelist")
+                .split(whereSeparator: \.isNewline)
+                .map(String.init)
+        )
+        let modelDirectory = Self.projectRoot.appendingPathComponent("SharedCore/Models")
+        let modelSources = try FileManager.default.subpathsOfDirectory(
+            atPath: modelDirectory.path
+        )
+        let expectedInputs = Set(
+            modelSources
+                .filter { $0.hasSuffix(".swift") }
+                .map { "$(SRCROOT)/SharedCore/Models/\($0)" }
+        )
+
+        #expect(declaredInputs == expectedInputs)
+
+        for projectPath in [
+            "RoutinaMacOS.xcodeproj/project.pbxproj",
+            "RoutinaiOS.xcodeproj/project.pbxproj",
+        ] {
+            let project = try Self.sourceFile(projectPath)
+            #expect(project.contains(
+                "$(SRCROOT)/Config/CloudKit/production-schema-model-inputs.xcfilelist"
+            ))
+            #expect(project.contains(
+                "$(SRCROOT)/Config/CloudKit/production-schema.manifest"
+            ))
+            #expect(!project.contains("\"$(SRCROOT)/Config/CloudKit\","))
+        }
+    }
+
+    @Test
+    func productionSchemaGuardStopsAfterSandboxReadFailures() throws {
+        let guardScript = try Self.sourceFile("script/cloudkit_schema_guard.sh")
+        #expect(guardScript.contains("Unable to read SwiftData model source"))
+        #expect(guardScript.contains("Unable to read CloudKit Production schema manifest"))
+        #expect(guardScript.contains("check the build phase's sandbox inputs"))
+        #expect(!guardScript.contains("grep -cv"))
+    }
+
+    @Test
     func productionMacBundleUsesOnlyReleaseVisibleSensitiveCapabilities() throws {
         let prohibitedEntitlements = [
             "com.apple.security.automation.apple-events",

@@ -64,6 +64,31 @@ struct CrashlyticsConfigurationTests {
     }
 
     @Test
+    func symbolUploadDeclaresNormalAndArchivePackageExecutablesForSandboxing() throws {
+        let requiredInputs = [
+            "$(BUILD_DIR)/../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run",
+            "$(BUILD_DIR)/../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols",
+            "$(BUILD_DIR)/../../../../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run",
+            "$(BUILD_DIR)/../../../../../SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols",
+        ]
+
+        for projectPath in [
+            "RoutinaiOS.xcodeproj/project.pbxproj",
+            "RoutinaMacOS.xcodeproj/project.pbxproj",
+        ] {
+            let project = try Self.sourceFile(projectPath)
+            for input in requiredInputs {
+                #expect(project.components(separatedBy: "\"\(input)\",").count == 3)
+            }
+        }
+
+        let uploadScript = try Self.sourceFile("script/upload_crashlytics_symbols.sh")
+        #expect(uploadScript.contains(
+            "firebase_checkout=\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk\""
+        ))
+    }
+
+    @Test
     func crashContextCannotAcceptUserOwnedStrings() throws {
         let reporter = try Self.sourceFile("SharedCore/Services/RoutinaCrashReporter.swift")
         #expect(reporter.contains(

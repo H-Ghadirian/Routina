@@ -30,10 +30,20 @@ EOF
 }
 
 generate_current_schema() {
-    find "$model_directory" -type f -name '*.swift' -print \
-        | LC_ALL=C sort \
-        | while IFS= read -r source_file; do
-            awk '
+    if ! model_files=$(find "$model_directory" -type f -name '*.swift' -print); then
+        echo "error: Unable to enumerate SwiftData model sources: $model_directory" >&2
+        return 1
+    fi
+    if [ -z "$model_files" ]; then
+        echo "error: No SwiftData model sources found in: $model_directory" >&2
+        return 1
+    fi
+
+    model_files=$(printf '%s\n' "$model_files" | LC_ALL=C sort)
+    schema_lines=""
+
+    while IFS= read -r source_file; do
+        if ! model_schema=$(awk '
                 /^@Model[[:space:]]*$/ {
                     awaiting_model_class = 1
                     next
@@ -81,9 +91,24 @@ generate_current_schema() {
                         model_name = ""
                     }
                 }
-            ' "$source_file"
-        done \
-        | LC_ALL=C sort -u
+            ' "$source_file"); then
+            echo "error: Unable to read SwiftData model source: $source_file" >&2
+            return 1
+        fi
+
+        if [ -n "$model_schema" ]; then
+            if [ -n "$schema_lines" ]; then
+                schema_lines="$schema_lines
+$model_schema"
+            else
+                schema_lines="$model_schema"
+            fi
+        fi
+    done <<EOF
+$model_files
+EOF
+
+    printf '%s\n' "$schema_lines" | LC_ALL=C sort -u
 }
 
 check_schema() {
@@ -95,14 +120,33 @@ check_schema() {
 
     current_schema=$(mktemp "${TMPDIR:-/tmp}/routina-cloudkit-schema.XXXXXX")
     trap 'rm -f "$current_schema"' EXIT HUP INT TERM
-    generate_current_schema > "$current_schema"
+    if ! generate_current_schema > "$current_schema"; then
+        echo "error: CloudKit schema generation failed; check the build phase's sandbox inputs." >&2
+        exit 1
+    fi
 
     if cmp -s "$manifest_path" "$current_schema"; then
         echo "CloudKit Production schema acknowledgement is current."
         return
+    else
+        comparison_status=$?
+        if [ "$comparison_status" -gt 1 ]; then
+            echo "error: Unable to read CloudKit Production schema manifest: $manifest_path" >&2
+            echo "Check the build phase's sandbox inputs." >&2
+            exit 1
+        fi
     fi
 
-    deployed_field_count=$(grep -cv '^[[:space:]]*\(#\|$\)' "$manifest_path" || true)
+    if ! deployed_field_count=$(awk '
+        /^[[:space:]]*#/ { next }
+        /^[[:space:]]*$/ { next }
+        { count += 1 }
+        END { print count + 0 }
+    ' "$manifest_path"); then
+        echo "error: Unable to read CloudKit Production schema manifest: $manifest_path" >&2
+        echo "Check the build phase's sandbox inputs." >&2
+        exit 1
+    fi
 
     echo "error: CloudKit Production schema acknowledgement is stale." >&2
     if [ "$deployed_field_count" -eq 0 ]; then
