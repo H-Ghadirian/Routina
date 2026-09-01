@@ -3857,6 +3857,23 @@ When the user opens Stats and then selects Tasks in the top toolbar
 Then the same task row and task detail are restored
 And the existing task-list type selection and filters remain active
 
+### App Lock Authentication Does Not Re-trigger Itself
+
+Area: Settings / App Lock / iOS and macOS
+Decision links: [0166](../decisions/0166-use-app-lock-for-cloud-data-reset.md), [0235](../decisions/0235-require-authentication-to-disable-app-lock.md)
+Current behavior: [Settings](../current-behavior/settings.md)
+Coverage:
+- `Tests/Shared/AppLockSceneTransitionPolicyTests.swift`
+
+Given App Lock starts device-owner authentication
+When the system authentication prompt makes Routina inactive and then active again
+Then Routina treats those transitions as part of the current attempt
+And a successful unlock does not immediately start another authentication attempt
+
+Given Routina enters the background while device-owner authentication is active
+When the person later returns to Routina
+Then Routina remains protected and requires authentication again
+
 ### App Lock Protects Sensitive Reset Actions
 
 Area: Settings

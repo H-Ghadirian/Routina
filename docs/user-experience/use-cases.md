@@ -369,6 +369,22 @@ Settings search should take the person directly to platform-relevant destination
 
 **Availability:** Local use is production; cross-device continuity requires iCloud to be configured and an Apple Account to be available. The signed-out and account-transition safeguards described above are intended behavior but are not fully implemented or device-verified yet.
 
+### UC-15A — Open private tasks with one reliable unlock
+
+**Situation:** A person has enabled App Lock and opens or returns to Routina on an iPhone that uses Face ID, Touch ID, or a device passcode.
+
+**Need:** Protect personal tasks without trapping the person in repeated authentication prompts caused by the unlock prompt itself.
+
+**Desired experience:** A genuine app open or return starts one device-owner authentication attempt. The system prompt's own temporary move away from Routina is treated as part of that attempt, so a successful unlock reveals the app without immediately asking again. Canceling or failing leaves Routina locked and offers another deliberate Unlock action. Actually leaving the app during authentication keeps it protected and requires authentication on return.
+
+**Successful outcome:** One successful authentication opens Routina once, while a canceled, failed, or interrupted attempt never exposes personal content.
+
+**Example:** The person reopens Routina, Face ID succeeds, and Home appears instead of Face ID reopening in an endless cycle.
+
+**Evidence:** User-reported iOS Face ID unlock loop on 2026-09-01.
+
+**Availability:** Production on iOS and macOS wherever device-owner authentication is available.
+
 ### UC-16 — Back up, recover, or reset personal data safely
 
 **Situation:** The person is changing devices, troubleshooting synchronization, considering a destructive reset, validating a real production backup before loading it into a development build, or restoring an older backup whose omissions or damage might not become visible until much later.

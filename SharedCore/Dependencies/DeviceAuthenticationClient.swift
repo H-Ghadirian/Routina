@@ -23,6 +23,30 @@ struct DeviceAuthenticationClient: Sendable {
     var authenticate: @Sendable (_ reason: String) async -> DeviceAuthenticationResult
 }
 
+struct AppLockSceneTransitionPolicy: Equatable, Sendable {
+    private(set) var authenticationPromptInactiveSceneCount = 0
+
+    mutating func shouldLockWhenSceneBecomesInactive(isAuthenticating: Bool) -> Bool {
+        guard isAuthenticating else {
+            authenticationPromptInactiveSceneCount = 0
+            return true
+        }
+
+        authenticationPromptInactiveSceneCount += 1
+        return false
+    }
+
+    mutating func sceneEnteredBackground() {
+        authenticationPromptInactiveSceneCount = 0
+    }
+
+    mutating func shouldAuthenticateWhenSceneBecomesActive() -> Bool {
+        guard authenticationPromptInactiveSceneCount > 0 else { return true }
+        authenticationPromptInactiveSceneCount -= 1
+        return false
+    }
+}
+
 extension DeviceAuthenticationClient {
     static let live = DeviceAuthenticationClient(
         status: {

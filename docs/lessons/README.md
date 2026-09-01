@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0283 — Distinguish authentication prompts from genuine app departures](0283-distinguish-authentication-prompts-from-genuine-app-departures.md)
 - [0282 — Treat sandbox read failures as build failures](0282-treat-sandbox-read-failures-as-build-failures.md)
 - [0281 — Sanitize downloaded deployment inputs after copying](0281-sanitize-downloaded-deployment-inputs-after-copying.md)
 - [0280 — Gate optional records beyond filter controls](0280-gate-optional-records-beyond-filter-controls.md)

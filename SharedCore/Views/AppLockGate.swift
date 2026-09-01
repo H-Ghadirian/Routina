@@ -9,6 +9,7 @@ final class AppLockCoordinator: ObservableObject {
     @Published private(set) var isAuthenticating = false
     @Published private(set) var statusMessage = ""
     @Published private(set) var authenticationStatus = DeviceAuthenticationStatus.unavailable
+    private var sceneTransitionPolicy = AppLockSceneTransitionPolicy()
 
     func synchronize(
         settings: AppSettingsClient,
@@ -38,6 +39,42 @@ final class AppLockCoordinator: ObservableObject {
         authenticationStatus = deviceAuthentication.status()
         isLocked = true
         statusMessage = ""
+    }
+
+    func sceneBecameActive(
+        settings: AppSettingsClient,
+        deviceAuthentication: DeviceAuthenticationClient
+    ) async {
+        guard sceneTransitionPolicy.shouldAuthenticateWhenSceneBecomesActive() else { return }
+        await synchronize(
+            settings: settings,
+            deviceAuthentication: deviceAuthentication,
+            authenticateIfNeeded: true
+        )
+    }
+
+    func sceneBecameInactive(
+        settings: AppSettingsClient,
+        deviceAuthentication: DeviceAuthenticationClient
+    ) {
+        guard sceneTransitionPolicy.shouldLockWhenSceneBecomesInactive(
+            isAuthenticating: isAuthenticating
+        ) else { return }
+        lockIfNeeded(
+            settings: settings,
+            deviceAuthentication: deviceAuthentication
+        )
+    }
+
+    func sceneEnteredBackground(
+        settings: AppSettingsClient,
+        deviceAuthentication: DeviceAuthenticationClient
+    ) {
+        sceneTransitionPolicy.sceneEnteredBackground()
+        lockIfNeeded(
+            settings: settings,
+            deviceAuthentication: deviceAuthentication
+        )
     }
 
     func attemptUnlock(
@@ -110,13 +147,17 @@ struct AppLockGate<Content: View>: View {
             Task { @MainActor in
                 switch newPhase {
                 case .active:
-                    await coordinator.synchronize(
+                    await coordinator.sceneBecameActive(
                         settings: appSettingsClient,
-                        deviceAuthentication: deviceAuthenticationClient,
-                        authenticateIfNeeded: true
+                        deviceAuthentication: deviceAuthenticationClient
                     )
-                case .inactive, .background:
-                    coordinator.lockIfNeeded(
+                case .inactive:
+                    coordinator.sceneBecameInactive(
+                        settings: appSettingsClient,
+                        deviceAuthentication: deviceAuthenticationClient
+                    )
+                case .background:
+                    coordinator.sceneEnteredBackground(
                         settings: appSettingsClient,
                         deviceAuthentication: deviceAuthenticationClient
                     )
