@@ -4,6 +4,7 @@
 # Xcode local build artifacts
 /build/
 /build/XCBuildData/
+/.build/
 *.xcresult/
 .xcresulttmp/
 .codex/IOSBuildPackageCache/

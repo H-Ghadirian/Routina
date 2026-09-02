@@ -3,8 +3,8 @@
 ## User Permission Preferences
 
 - Always ask the user before taking screenshots, screen captures, or recording the screen. Never capture the screen without explicit permission in the current conversation.
-- Project-local generated build cleanup is pre-approved for verification artifacts, including `DerivedData` and other macOS build files generated under the project-local `.codex/` folder. Treat cleanup commands like `rm -rf .codex/DerivedDataTaskDetailTodayIOS`, `rm -rf .codex/DerivedDataTaskDetailTodayMac`, or any other `rm -rf .codex/DerivedData*` command as already approved by the user when they remove generated build output. Do not ask the user again before running those project-local cleanup commands.
-- Completion cleanup is mandatory after every build or verification session. After confirming the required app launch, stop verification app processes launched by the current task, remove every project-local `.codex/DerivedData*` directory—including generated directories that predate the current task—and verify both that no matching directory remains and that `git status` does not list generated DerivedData. Do not treat pre-existing `.codex/DerivedData*` as user-owned source work. If a matching directory is demonstrably in active use by a process not launched by the current task, preserve it and report that specific exception. Tell the user exactly what was removed.
+- Routine Xcode builds use persistent, target-specific Derived Data directories under `.build/xcode-derived-data/`. These caches are ignored by Git and should be reused between verification sessions; do not delete them during normal completion cleanup.
+- After build verification, stop app processes launched by the current task and preserve normal build caches. Delete only the exact target cache when the user requests a clean build or when a demonstrated cache failure requires a targeted rebuild; never clear unrelated platform caches as a routine troubleshooting step, and report any cache removed.
 - After every profiling session, remove all project-local profiling artifacts before finishing, including CPU samples, traces, temporary profiling helpers and binaries, profiling logs, and profiling-specific `.codex/DerivedData*` directories. Verify that none remain and report exactly what was removed.
 
 ## Project Decision Log
@@ -55,14 +55,16 @@
 
 - Completion gate: never mark a task that changes application code, tests, project configuration, or build behavior as finished until the relevant automated tests have passed and the affected app has been built and launched successfully from that final change. Do not rely on results from before the final edit.
 - For macOS or shared-code work, this means running `swift test -q`, building `RoutinaMacOSDev`, and launching the newly built macOS app. Treat a failed launch as an unfinished task: diagnose or clearly report the blocker instead of claiming completion.
-- For iOS-only work, run the relevant tests, build the iOS development target, and launch the newly built app on its target simulator or device before finishing.
+- For iOS-only work, run the relevant tests, build the iOS development target, and launch the newly built app on its target simulator or device before finishing. A simulator build and launch are sufficient for routine verification; do not also build for a generic physical device unless device signing, capabilities, or device-only behavior are in scope.
 - Swift package tests:
   `swift test -q`
-- iOS CLI build:
-  `xcodebuild build -quiet -project /Users/ghadirianh/Routina/RoutinaiOS.xcodeproj -scheme RoutinaiOSDev -destination 'generic/platform=iOS'`
+- iOS Simulator CLI build:
+  `xcodebuild build -quiet -project /Users/ghadirianh/Routina/RoutinaiOS.xcodeproj -scheme RoutinaiOSDev -destination 'platform=iOS Simulator,id=<simulator-udid>' -derivedDataPath /Users/ghadirianh/Routina/.build/xcode-derived-data/ios-simulator-dev`
+- iOS physical-device compatibility build, when required:
+  `xcodebuild build -quiet -project /Users/ghadirianh/Routina/RoutinaiOS.xcodeproj -scheme RoutinaiOSDev -destination 'generic/platform=iOS' -derivedDataPath /Users/ghadirianh/Routina/.build/xcode-derived-data/ios-device-dev`
 - macOS CLI build:
-  `xcodebuild build -quiet -project /Users/ghadirianh/Routina/RoutinaMacOS.xcodeproj -scheme RoutinaMacOSDev -destination 'generic/platform=macOS'`
+  `xcodebuild build -quiet -project /Users/ghadirianh/Routina/RoutinaMacOS.xcodeproj -scheme RoutinaMacOSDev -destination 'generic/platform=macOS' -derivedDataPath /Users/ghadirianh/Routina/.build/xcode-derived-data/macos-dev`
 - If the macOS CLI build fails with a provisioning profile error like `profile doesn't include signing certificate`, retry once with `-allowProvisioningUpdates`:
-  `xcodebuild build -quiet -allowProvisioningUpdates -project /Users/ghadirianh/Routina/RoutinaMacOS.xcodeproj -scheme RoutinaMacOSDev -destination 'generic/platform=macOS'`
+  `xcodebuild build -quiet -allowProvisioningUpdates -project /Users/ghadirianh/Routina/RoutinaMacOS.xcodeproj -scheme RoutinaMacOSDev -destination 'generic/platform=macOS' -derivedDataPath /Users/ghadirianh/Routina/.build/xcode-derived-data/macos-dev`
 - After a successful `-allowProvisioningUpdates` build, run the normal macOS build again to confirm the refreshed Xcode managed profiles are now valid without the extra flag.
 - Prefer the quiet build and test commands for routine verification. Verbose Xcode 26.4 Swift builds can print internal `DecodingError.dataCorrupted` / `Corrupted JSON` messages while the build still succeeds; quiet commands keep real compiler errors visible without that noisy parseable-output decoder issue.
