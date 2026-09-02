@@ -44,7 +44,7 @@ tracked in the [1.4.0 App Store submission checklist](1.4.0-app-store-submission
 
 ## Current baseline
 
-The current release candidate is 1.4.0 / build 12. Its notes supersede the
+The current release candidate is 1.4.0 / build 13. Its notes supersede the
 unreleased 1.3.1 / build 8 draft and retain the verified 1.2.0 source boundary.
 The iPad app and Watch companion are explicitly deferred from this first
 production phase rather than marked as shipping. Older public versions are not backfilled here

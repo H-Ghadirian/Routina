@@ -24,7 +24,7 @@ documentation behavior. Decision records explain why these rules exist.
   `MAJOR.MINOR.PATCH-app-store.md` companion document. It preserves the exact
   Description, What's New, and any other used public metadata without treating
   that copy as a substitute for verified release scope.
-- The current release candidate is public version `1.4.0`, build `12`, for the
+- The current release candidate is public version `1.4.0`, build `13`, for the
   iPhone app and macOS app. Their platform notes remain `In development` until
   the corresponding App Store versions ship. The prepared iPadOS candidate is
   `Deferred before release`; adaptive iPad source remains in the repository but
