@@ -1098,11 +1098,18 @@ detailBody
             useLargePrimaryControl: useLargePrimaryControl,
             contentPadding: contentPadding,
             cardBackground: cardBackground,
-            cardStroke: cardStroke
+            cardStroke: cardStroke,
+            missedOccurrenceReview: store.missedOccurrenceReviewPresentation
         ) {
             timeSpentActionButton
         } onComplete: {
             store.send(store.completionButtonAction)
+        } onResolveMissedAsDone: {
+            store.send(.markOccurrenceDone($0))
+        } onResolveMissedAsMissed: {
+            store.send(.markOccurrenceMissed($0))
+        } onResolveMissedAsCanceled: {
+            store.send(.markOccurrenceCanceled($0))
         } onPauseResume: {
             store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
         } onNotToday: {

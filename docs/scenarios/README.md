@@ -1636,7 +1636,7 @@ And every copyable example-question surface is clickable across its full visible
 ### Settings Groups and Controls Every Actually Pending Notification
 
 Area: Settings / Notifications
-Decision links: [0615](../decisions/0615-group-and-control-pending-notification-occurrences.md), [0611](../decisions/0611-list-actual-pending-notifications-in-settings.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
+Decision links: [0615](../decisions/0615-group-and-control-pending-notification-occurrences.md), [0611](../decisions/0611-list-actual-pending-notifications-in-settings.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md), [0714](../decisions/0714-treat-single-time-structured-routines-as-occurrences.md)
 Current behavior: [Settings](../current-behavior/settings.md)
 Coverage:
 - `Tests/Shared/NotificationCoordinatorTests.swift`
@@ -1650,13 +1650,18 @@ And a routine with several rolling Advanced occurrences appears as several rows 
 And the count represents queued occurrences rather than distinct tasks
 
 Given a task group has several queued occurrences
+When the group is collapsed
+Then its task uses a notification icon rather than a completion icon
+And its summary names the next alert and how many alerts are queued later
+
+Given a task group has several queued occurrences
 When the person removes one occurrence
 Then only that system request disappears on this device
 And later notification reconciliation does not recreate it
 And the task, recurrence, sibling occurrences, and other devices are unchanged
 
 Given a queued occurrence has not fired
-When the person pauses it with a preset or chosen later time
+When the person snoozes it with a preset or chosen later time
 Then only that request moves to the later time and shows its original time
 And later notification reconciliation preserves the replacement time
 And the task or event schedule is unchanged
@@ -1665,6 +1670,13 @@ Given no pending request exists
 When the list finishes loading
 Then Settings explains whether notifications are off in Routina, disabled in system settings, or simply have nothing scheduled
 And Planner entries, delivered alerts, and future occurrences not registered with the system are not invented as list rows
+
+Given `Sprint planning` repeats every two weeks on Tuesday at 09:45
+And the 1 September 2026 occurrence was left unresolved
+When notification reconciliation runs on 3 September 2026
+Then the 1 September alert is not queued again or moved one minute into the future
+And the first queued alert is the next occurrence on 15 September at 09:45
+And every later queued row represents a distinct future occurrence
 
 ### Support Diagnostics Report the Signed CloudKit Environment
 
@@ -2858,7 +2870,7 @@ Then June 25 can remain overdue, June 26 shows done, and June 27 through June 29
 ### Selected Timed Occurrence Can Be Resolved After Prior Occurrence
 
 Area: Tasks
-Decision links: [0003](../decisions/0003-resolve-exact-time-missed-assumptions.md), [0009](../decisions/0009-support-routine-time-ranges.md), [0447](../decisions/0447-resolve-selected-timed-occurrences-in-task-detail.md)
+Decision links: [0003](../decisions/0003-resolve-exact-time-missed-assumptions.md), [0009](../decisions/0009-support-routine-time-ranges.md), [0447](../decisions/0447-resolve-selected-timed-occurrences-in-task-detail.md), [0714](../decisions/0714-treat-single-time-structured-routines-as-occurrences.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
@@ -2876,6 +2888,13 @@ Given today's single scheduled time window has ended without a recorded outcome
 When the user selects today in Mac Task Detail
 Then the top primary action remains an enabled Done action for today's scheduled occurrence
 And the calendar card shows eligible Missed and Canceled actions for that same occurrence
+
+Given a fixed structured routine has one occurrence every two weeks at 09:45 without an outer range
+And that occurrence remains unresolved after its local day
+When the person opens Task Details on a later day
+Then status reads `Needs review` instead of overdue
+And the primary review card identifies the missed occurrence, shows the next occurrence, and offers `It happened`, `Missed`, and `Canceled`
+And choosing an outcome resolves that scheduled occurrence without requiring the person to navigate the calendar first
 
 ### Editing Calendar Routines Preserves All Selected Days
 

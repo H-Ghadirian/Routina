@@ -5,8 +5,8 @@ enum RoutineDateMath {
         let recurrenceRule = task.recurrenceRule
         let supportsExactOccurrences: Bool
         if let advanced = recurrenceRule.advanced {
-            supportsExactOccurrences = recurrenceRule.timeRange != nil
-                && advanced.frequency != .hourly
+            supportsExactOccurrences = advanced.frequency != .hourly
+                && (recurrenceRule.timeRange != nil || !advanced.occursMoreThanOncePerDay)
         } else {
             supportsExactOccurrences = true
         }
@@ -304,13 +304,16 @@ enum RoutineDateMath {
     }
 
     static func supportsEarlyScheduledCompletion(for task: RoutineTask) -> Bool {
-        task.usesEffectiveRoutineCadence
+        let supportsStructuredSingleTimeEarlyCompletion = task.recurrenceRule.advanced != nil
+            && task.recurrenceRule.timeRange == nil
+            && !task.recurrenceRule.occursMoreThanOncePerDay
+        return task.usesEffectiveRoutineCadence
             && task.recurrenceRule.isFixedCalendar
             && !task.isChecklistDriven
             && !task.isChecklistCompletionRoutine
             && !task.isMultiDayRoutine
             && !task.recurrenceRule.occursMoreThanOncePerDay
-            && !usesExactTimedOccurrences(for: task)
+            && (!usesExactTimedOccurrences(for: task) || supportsStructuredSingleTimeEarlyCompletion)
     }
 
     static func canCompleteScheduledOccurrenceEarly(

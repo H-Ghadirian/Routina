@@ -1,5 +1,11 @@
 import Foundation
 
+struct TaskDetailMissedOccurrenceReviewPresentation {
+    let occurrence: Date
+    let nextOccurrence: Date?
+    let timeRange: RoutineTimeRange?
+}
+
 struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
     enum Status: Equatable {
         case done
@@ -306,6 +312,39 @@ extension TaskDetailFeature.State {
             for: task,
             referenceDate: Date(),
             logs: logs
+        )
+    }
+
+    var missedOccurrenceReviewPresentation: TaskDetailMissedOccurrenceReviewPresentation? {
+        missedOccurrenceReviewPresentation(referenceDate: Date())
+    }
+
+    func missedOccurrenceReviewPresentation(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> TaskDetailMissedOccurrenceReviewPresentation? {
+        guard !task.isChecklistDriven,
+              !task.hasSequentialSteps,
+              !task.isMultiDayRoutine else {
+            return nil
+        }
+        guard let occurrence = RoutineDateMath.unresolvedMissedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        ) else {
+            return nil
+        }
+        let upcomingOccurrence = RoutineDateMath.upcomingDueDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        return TaskDetailMissedOccurrenceReviewPresentation(
+            occurrence: occurrence,
+            nextOccurrence: upcomingOccurrence == .distantFuture ? nil : upcomingOccurrence,
+            timeRange: task.recurrenceRule.timeRange
         )
     }
 
@@ -916,6 +955,9 @@ extension TaskDetailFeature.State {
         }
         if isAssumedDoneToday {
             return "Assumed done today"
+        }
+        if missedOccurrenceReviewPresentation != nil {
+            return "Needs review"
         }
         if overdueDays > 0 {
             return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"

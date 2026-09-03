@@ -265,13 +265,14 @@ enum NotificationCoordinator {
     @MainActor
     static func handleResponse(
         actionIdentifier: String,
-        requestIdentifier: String
+        requestIdentifier: String,
+        occurrenceDate: Date? = nil
     ) async {
         guard let taskID = taskID(fromNotificationIdentifier: requestIdentifier) else { return }
 
         switch actionIdentifier {
         case doneActionIdentifier:
-            await markTaskDone(taskID: taskID)
+            await markTaskDone(taskID: taskID, occurrenceDate: occurrenceDate)
         case snoozeActionIdentifier:
             await snoozeTask(taskID: taskID)
         case UNNotificationDefaultActionIdentifier:
@@ -283,7 +284,7 @@ enum NotificationCoordinator {
     }
 
     @MainActor
-    private static func markTaskDone(taskID: UUID) async {
+    private static func markTaskDone(taskID: UUID, occurrenceDate: Date?) async {
         let context = PersistenceController.shared.container.mainContext
 
         do {
@@ -311,7 +312,17 @@ enum NotificationCoordinator {
             }
 
             let completionDate: Date
-            if let exactTimedTarget = RoutineDateMath.completionTargetDate(
+            let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+            if let occurrenceDate,
+               RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
+                   for: task,
+                   completionDate: occurrenceDate,
+                   referenceDate: now,
+                   logs: logs,
+                   calendar: .current
+               ) {
+                completionDate = occurrenceDate
+            } else if let exactTimedTarget = RoutineDateMath.completionTargetDate(
                 for: task,
                 selectedDay: now,
                 referenceDate: now,
@@ -396,14 +407,14 @@ enum NotificationCoordinator {
     static func createNotificationTrigger(
         for payload: NotificationPayload,
         now: Date = Date()
-    ) -> UNCalendarNotificationTrigger {
-        createNotificationTrigger(at: resolvedNotificationDate(for: payload, now: now))
+    ) -> UNCalendarNotificationTrigger? {
+        resolvedNotificationDate(for: payload, now: now).map(createNotificationTrigger(at:))
     }
 
     static func resolvedNotificationDate(
         for payload: NotificationPayload,
         now: Date = Date()
-    ) -> Date {
+    ) -> Date? {
         let calendar = Calendar.current
 
         let targetDate: Date
@@ -425,7 +436,7 @@ enum NotificationCoordinator {
         if targetDate > now {
             safeDate = targetDate
         } else if payload.usesExactTime {
-            safeDate = now.addingTimeInterval(60)
+            return nil
         } else {
             safeDate = NotificationPreferences.nextReminderDate(after: now, calendar: calendar)
         }
@@ -567,7 +578,12 @@ enum NotificationCoordinator {
                 .prefix(advancedOccurrenceNotificationLimit)
                 .enumerated() {
                 let occurrencePayload = payload.forRecurrenceOccurrence(occurrence)
-                let originalScheduledAt = resolvedNotificationDate(for: occurrencePayload, now: now)
+                guard let originalScheduledAt = resolvedNotificationDate(
+                    for: occurrencePayload,
+                    now: now
+                ) else {
+                    continue
+                }
                 guard let scheduledAt = await effectiveScheduledDate(
                     sourceIdentifier: payload.identifier,
                     originalScheduledAt: originalScheduledAt,
@@ -587,7 +603,9 @@ enum NotificationCoordinator {
             }
             return
         }
-        let originalScheduledAt = resolvedNotificationDate(for: payload, now: now)
+        guard let originalScheduledAt = resolvedNotificationDate(for: payload, now: now) else {
+            return
+        }
         guard let scheduledAt = await effectiveScheduledDate(
             sourceIdentifier: payload.identifier,
             originalScheduledAt: originalScheduledAt,
@@ -702,7 +720,7 @@ enum NotificationCoordinator {
     ) -> [Date] {
         guard task.recurrenceRule.advanced != nil else { return [] }
         var dates: [Date] = []
-        if let dueDate, dueDate != .distantFuture {
+        if let dueDate, dueDate != .distantFuture, dueDate > referenceDate {
             dates.append(dueDate)
         }
         var occurrenceThreshold: Date? = referenceDate
@@ -721,6 +739,17 @@ enum NotificationCoordinator {
             occurrenceThreshold = date
         }
         return dates.sorted()
+    }
+
+    static func notificationOccurrenceDate(from userInfo: [AnyHashable: Any]) -> Date? {
+        let value = userInfo[NotificationRequestMetadata.originalScheduledAtKey]
+        if let number = value as? NSNumber {
+            return Date(timeIntervalSince1970: number.doubleValue)
+        }
+        if let interval = value as? Double {
+            return Date(timeIntervalSince1970: interval)
+        }
+        return nil
     }
 
     private static func advancedOccurrenceIdentifier(base: String, index: Int) -> String {

@@ -1345,16 +1345,43 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .markOccurrenceDone(occurrence):
-            guard state.isScheduledOccurrenceOnSelectedDay(occurrence) else {
+            guard RoutineDateMath.scheduledOccurrences(
+                for: state.task,
+                on: occurrence,
+                calendar: calendar
+            ).contains(where: {
+                RoutineOccurrenceIdentity.matches(
+                    $0,
+                    occurrence,
+                    for: state.task,
+                    calendar: calendar
+                )
+            }) else {
                 return .none
             }
+            state.selectedDate = calendar.startOfDay(for: occurrence)
             state.selectedOccurrenceDate = occurrence
             return reduce(into: &state, action: .markAsDone)
 
         case let .markOccurrenceMissed(occurrence):
-            guard state.occurrencePresentation(for: occurrence)?.canMarkMissed == true else {
+            guard TaskDetailOccurrencePresentation.allItems(
+                for: state.task,
+                on: occurrence,
+                selectedOccurrence: occurrence,
+                referenceDate: now,
+                logs: state.logs,
+                calendar: calendar
+            ).first(where: {
+                RoutineOccurrenceIdentity.matches(
+                    $0.occurrence,
+                    occurrence,
+                    for: state.task,
+                    calendar: calendar
+                )
+            })?.canMarkMissed == true else {
                 return .none
             }
+            state.selectedDate = calendar.startOfDay(for: occurrence)
             state.selectedOccurrenceDate = occurrence
             replaceLocalOccurrenceResolution(
                 at: occurrence,
@@ -1369,9 +1396,24 @@ struct TaskDetailFeature: Reducer {
             )
 
         case let .markOccurrenceCanceled(occurrence):
-            guard state.occurrencePresentation(for: occurrence)?.canCancel == true else {
+            guard TaskDetailOccurrencePresentation.allItems(
+                for: state.task,
+                on: occurrence,
+                selectedOccurrence: occurrence,
+                referenceDate: now,
+                logs: state.logs,
+                calendar: calendar
+            ).first(where: {
+                RoutineOccurrenceIdentity.matches(
+                    $0.occurrence,
+                    occurrence,
+                    for: state.task,
+                    calendar: calendar
+                )
+            })?.canCancel == true else {
                 return .none
             }
+            state.selectedDate = calendar.startOfDay(for: occurrence)
             state.selectedOccurrenceDate = occurrence
             replaceLocalOccurrenceResolution(
                 at: occurrence,

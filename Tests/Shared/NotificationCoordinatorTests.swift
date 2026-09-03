@@ -142,6 +142,8 @@ struct NotificationCoordinatorTests {
         #expect(groups.count == 1)
         #expect(groups.first?.title == "🪴 Water plants")
         #expect(groups.first?.notifications.count == 2)
+        #expect(groups.first?.queueSummary.hasPrefix("Next alert ") == true)
+        #expect(groups.first?.queueSummary.hasSuffix(" · 1 later") == true)
     }
 
     @Test
@@ -468,10 +470,48 @@ struct NotificationCoordinatorTests {
         )
 
         #expect(payload.recurrenceOccurrenceDates.prefix(4) == [
-            makeDate("2026-07-21T07:00:00Z"),
             makeDate("2026-07-21T13:00:00Z"),
             makeDate("2026-07-21T19:00:00Z"),
-            makeDate("2026-07-22T07:00:00Z")
+            makeDate("2026-07-22T07:00:00Z"),
+            makeDate("2026-07-22T13:00:00Z")
+        ])
+    }
+
+    @Test
+    func notificationPayload_skipsMissedStructuredSingleTimeOccurrence() {
+        var calendar = makeTestCalendar()
+        calendar.firstWeekday = 2
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: makeDate("2026-07-21T09:45:00Z"),
+            weekdays: [3],
+            timesOfDay: [RoutineTimeOfDay(hour: 9, minute: 45)],
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            name: "Sprint planning",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced),
+            lastDone: makeDate("2026-08-18T09:45:00Z"),
+            scheduleAnchor: advanced.startDate,
+            createdAt: advanced.startDate
+        )
+        let referenceDate = makeDate("2026-09-03T10:41:00Z")
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(payload.dueDate == makeDate("2026-09-15T09:45:00Z"))
+        #expect(payload.triggerDate == makeDate("2026-09-15T09:45:00Z"))
+        #expect(payload.recurrenceOccurrenceDates.prefix(3) == [
+            makeDate("2026-09-15T09:45:00Z"),
+            makeDate("2026-09-29T09:45:00Z"),
+            makeDate("2026-10-13T09:45:00Z")
         ])
     }
 
@@ -558,7 +598,7 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
-    func notificationPayload_forMissedExactTimeRoutineUsesNextOccurrence() {
+    func notificationPayload_forMissedExactTimeRoutineUsesNextOccurrence() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         let referenceDate = makeDate("2026-04-24T10:00:00Z")
@@ -586,7 +626,9 @@ struct NotificationCoordinatorTests {
             referenceDate: referenceDate,
             calendar: calendar
         )
-        let trigger = NotificationCoordinator.createNotificationTrigger(for: payload, now: referenceDate)
+        let trigger = try #require(
+            NotificationCoordinator.createNotificationTrigger(for: payload, now: referenceDate)
+        )
         let expectedComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: nextThursday)
 
         #expect(payload.triggerDate == nextThursday)
@@ -698,7 +740,7 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
-    func notificationTrigger_movesPastNonExactTriggerToNextReminderTime() {
+    func notificationTrigger_movesPastNonExactTriggerToNextReminderTime() throws {
         let now = makeDate("2026-04-25T12:00:00Z")
         let payload = NotificationPayload(
             identifier: UUID().uuidString,
@@ -717,7 +759,9 @@ struct NotificationCoordinatorTests {
             nextDueChecklistItemTitle: nil
         )
 
-        let trigger = NotificationCoordinator.createNotificationTrigger(for: payload, now: now)
+        let trigger = try #require(
+            NotificationCoordinator.createNotificationTrigger(for: payload, now: now)
+        )
         let expectedDate = NotificationPreferences.nextReminderDate(after: now)
         let expectedComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: expectedDate)
 
@@ -726,6 +770,41 @@ struct NotificationCoordinatorTests {
         #expect(trigger.dateComponents.day == expectedComponents.day)
         #expect(trigger.dateComponents.hour == expectedComponents.hour)
         #expect(trigger.dateComponents.minute == expectedComponents.minute)
+    }
+
+    @Test
+    func notificationTrigger_dropsPastExactTriggerInsteadOfRetryingInOneMinute() {
+        let now = makeDate("2026-09-03T10:41:00Z")
+        let payload = NotificationPayload(
+            identifier: UUID().uuidString,
+            name: "Sprint planning",
+            emoji: nil,
+            interval: 14,
+            lastDone: nil,
+            dueDate: makeDate("2026-09-01T09:45:00Z"),
+            triggerDate: makeDate("2026-09-01T09:45:00Z"),
+            isOneOffTask: false,
+            isCustomReminder: false,
+            isArchived: false,
+            usesExactTime: true,
+            isChecklistDriven: false,
+            isChecklistCompletionRoutine: false,
+            nextDueChecklistItemTitle: nil
+        )
+
+        #expect(NotificationCoordinator.resolvedNotificationDate(for: payload, now: now) == nil)
+        #expect(NotificationCoordinator.createNotificationTrigger(for: payload, now: now) == nil)
+    }
+
+    @Test
+    func notificationOccurrenceDate_readsOriginalOccurrenceMetadata() {
+        let occurrence = makeDate("2026-09-01T09:45:00Z")
+
+        #expect(
+            NotificationCoordinator.notificationOccurrenceDate(from: [
+                NotificationRequestMetadata.originalScheduledAtKey: occurrence.timeIntervalSince1970
+            ]) == occurrence
+        )
     }
 
     @Test

@@ -115,6 +115,52 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func singleTimeStructuredMissExposesReviewAndNextOccurrence() throws {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        calendar.firstWeekday = 2
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: makeDate("2026-07-21T09:45:00Z"),
+            weekdays: [3],
+            timesOfDay: [RoutineTimeOfDay(hour: 9, minute: 45)],
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            name: "Sprint planning",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced),
+            lastDone: makeDate("2026-08-18T09:45:00Z"),
+            scheduleAnchor: advanced.startDate,
+            createdAt: advanced.startDate
+        )
+        let completedOccurrences = [
+            makeDate("2026-07-21T09:45:00Z"),
+            makeDate("2026-08-04T09:45:00Z"),
+            makeDate("2026-08-18T09:45:00Z")
+        ]
+        let state = TaskDetailFeature.State(
+            task: task,
+            logs: completedOccurrences.map {
+                RoutineLog(timestamp: $0, taskID: task.id, kind: .completed)
+            }
+        )
+
+        let review = try #require(
+            state.missedOccurrenceReviewPresentation(
+                referenceDate: makeDate("2026-09-03T10:41:00Z"),
+                calendar: calendar
+            )
+        )
+
+        #expect(review.occurrence == makeDate("2026-09-01T09:45:00Z"))
+        #expect(review.nextOccurrence == makeDate("2026-09-15T09:45:00Z"))
+        #expect(review.timeRange == nil)
+    }
+
+    @Test
     func selectedOccurrenceOverridesDayLevelCompletionTarget() {
         let calendar = Calendar.current
         let selectedDay = calendar.date(

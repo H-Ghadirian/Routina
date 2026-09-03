@@ -69,11 +69,13 @@ See [Current Behavior](../current-behavior/README.md) for the exact active contr
 
 **Need:** Describe the cadence and completion meaning without forcing every routine into a strict daily streak.
 
-**Desired experience:** The person chooses how the routine repeats, when it is available, whether it should feel due or gently ready, and what counts as completion. For work whose next use is unknown, `When needed` pauses it after completion and the person can use `Resume` whenever it is needed again; ordinary `No schedule` remains available immediately. The app previews the result in understandable language.
+**Desired experience:** The person chooses how the routine repeats, when it is available, whether it should feel due or gently ready, and what counts as completion. A fixed meeting with one clock time is treated as one occurrence: leaving it unresolved does not keep the old meeting overdue or cause repeated alerts, and the next meeting remains correctly scheduled. A Time block can express a meaningful end time when the occurrence should close before the end of its day. For work whose next use is unknown, `When needed` pauses it after completion and the person can use `Resume` whenever it is needed again; ordinary `No schedule` remains available immediately. The app previews the result in understandable language.
 
 **Successful outcome:** The routine returns at the expected time, preserves its history, and can be changed without starting over.
 
-**Example:** “Water plants” becomes available every seven days after completion and gives a gentle nudge rather than becoming overdue. “Replace the filter” uses `When needed`, disappears from active work after it is completed, and returns when the person resumes it before the next replacement.
+**Example:** “Water plants” becomes available every seven days after completion and gives a gentle nudge rather than becoming overdue. “Sprint planning” occurs every two weeks on Tuesday at 09:45; if the person forgets to record the 1 September meeting, Routina asks what happened and still schedules the next alert for 15 September. “Replace the filter” uses `When needed`, disappears from active work after it is completed, and returns when the person resumes it before the next replacement.
+
+**Evidence:** User-provided Task Detail and Notification Settings images on 2026-09-03 showed a biweekly 09:45 meeting left overdue for two days while its stale alert moved forward one minute at a time; the user requested a calm missed-meeting recovery without repeated notifications.
 
 **Availability:** Production, with some advanced combinations varying by platform.
 
@@ -257,13 +259,13 @@ The last duration selected in that sheet is shown as Last choice and selected by
 
 **Need:** Keep an honest record without rewriting the original plan.
 
-**Desired experience:** Outcomes are distinct, the relevant occurrence is clear, and late entry or correction is possible where the meaning remains unambiguous. An assumption never looks identical to a confirmed completion. On Mac, a completed tag Focus block can be corrected in context from Calendar `Schedule`, with its Focus history and calendar evidence staying aligned. If Focus continues across midnight, Timeline and Stats show the actual focused portion on each date. Paused gaps and a later press of Finish never look like focused work.
+**Desired experience:** Outcomes are distinct, the relevant occurrence is clear, and late entry or correction is possible where the meaning remains unambiguous. An unresolved scheduled occurrence is presented as `Needs review`, not ordinary overdue pressure, with direct choices for `It happened`, `Missed`, and `Canceled` and a visible next occurrence. A notification action resolves the occurrence that produced the alert rather than whichever recurrence is current later. An assumption never looks identical to a confirmed completion. On Mac, a completed tag Focus block can be corrected in context from Calendar `Schedule`, with its Focus history and calendar evidence staying aligned. If Focus continues across midnight, Timeline and Stats show the actual focused portion on each date. Paused gaps and a later press of Finish never look like focused work.
 
 **Successful outcome:** Timeline, Planner, and Stats tell a consistent story.
 
 **Example:** A 09:00 routine is completed at 10:15 and logged against the 09:00 occurrence; yesterday's missed occurrence remains separately resolvable. A recorded `#Admin` Focus block that began at the wrong time can be opened from the Mac calendar and corrected without turning it into task activity. A Focus timer active from 23:00 until 03:00 remains one persisted session while Timeline and Stats show one hour yesterday and three hours today. If it was instead paused yesterday and only finished today, today receives no Focus time.
 
-**Evidence:** User report with supplied Timeline evidence on 2026-08-28 showed a complete overnight Focus session while Calendar retained only the pre-midnight portion. Follow-up screenshots and feedback on 2026-08-29 showed Timeline and Stats assigning different days when Finish was pressed after an overnight pause, and explicitly required active time to be split across each occupied day in both views.
+**Evidence:** User report with supplied Timeline evidence on 2026-08-28 showed a complete overnight Focus session while Calendar retained only the pre-midnight portion. Follow-up screenshots and feedback on 2026-08-29 showed Timeline and Stats assigning different days when Finish was pressed after an overnight pause, and explicitly required active time to be split across each occupied day in both views. User-provided recurring-meeting and notification images on 2026-09-03 established that forgotten occurrence resolution must not turn into stale repeated alerts or make the next meeting ambiguous.
 
 **Availability:** Production.
 

@@ -168,13 +168,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         DatePicker(
-            "Reminder time",
+            "Default time for untimed repeating tasks",
             selection: reminderTimeBinding,
             displayedComponents: .hourAndMinute
         )
         .disabled(store.notifications.notificationsEnabled == false)
 
-        Text("Notifications include quick actions for Done and Snooze.")
+        Text("Timed repeating tasks alert at their scheduled time. Notifications include quick actions for Done and Snooze.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }
@@ -289,12 +289,12 @@ private struct SettingsMacScheduledNotificationGroup: View {
             .padding(.leading, 4)
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: group.sourceKind == .event ? "calendar" : "checkmark.circle")
+                Image(systemName: group.sourceKind == .event ? "calendar" : "bell")
                     .foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(group.title)
                         .font(.body.weight(.medium))
-                    Text(notificationCountText)
+                    Text(group.queueSummary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -305,10 +305,6 @@ private struct SettingsMacScheduledNotificationGroup: View {
         }
     }
 
-    private var notificationCountText: String {
-        let count = group.notifications.count
-        return count == 1 ? "1 scheduled notification" : "\(count) scheduled notifications"
-    }
 }
 
 private struct SettingsMacScheduledNotificationRow: View {
@@ -364,7 +360,7 @@ private struct SettingsMacScheduledNotificationRow: View {
 
     private var notificationActionsMenu: some View {
         Menu {
-            Menu("Pause") {
+            Menu("Snooze") {
                 Button("15 Minutes") {
                     pause(by: 15 * 60)
                 }
@@ -382,7 +378,7 @@ private struct SettingsMacScheduledNotificationRow: View {
 
             Divider()
 
-            Button("Remove", role: .destructive) {
+            Button("Remove This Alert", role: .destructive) {
                 store.send(.removeScheduledNotificationTapped(notification))
             }
         } label: {
@@ -432,14 +428,14 @@ private struct SettingsMacCustomNotificationPauseSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Pause Notification")
+            Text("Snooze Notification")
                 .font(.title2.weight(.semibold))
 
             Text("Choose a later time for this occurrence. The task or event schedule will not change.")
                 .foregroundStyle(.secondary)
 
             DatePicker(
-                "Pause until",
+                "Snooze until",
                 selection: $pauseDate,
                 in: minimumDate...,
                 displayedComponents: [.date, .hourAndMinute]
@@ -449,7 +445,7 @@ private struct SettingsMacCustomNotificationPauseSheet: View {
                 Spacer()
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.cancelAction)
-                Button("Pause", action: onPause)
+                Button("Snooze", action: onPause)
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }

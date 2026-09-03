@@ -42,6 +42,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 ## Index
 
 - [0287 — Commit edits to the source behind a persisted projection](0287-commit-edits-to-the-source-behind-a-persisted-projection.md)
+- [0286 — Never retry stale exact notifications](0286-never-retry-stale-exact-notifications.md)
 - [0285 — Gate related records at every feature boundary](0285-gate-related-records-at-every-feature-boundary.md)
 - [0284 — Gate cached feature data before presentation derivation](0284-gate-cached-feature-data-before-presentation-derivation.md)
 - [0283 — Distinguish authentication prompts from genuine app departures](0283-distinguish-authentication-prompts-from-genuine-app-departures.md)

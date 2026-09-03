@@ -820,6 +820,50 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func structuredSingleTimeBiweeklyOccurrenceBecomesMissedAndAdvances() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        calendar.firstWeekday = 2
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: makeDate("2026-07-21T09:45:00Z"),
+            weekdays: [3],
+            timesOfDay: [RoutineTimeOfDay(hour: 9, minute: 45)],
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            name: "Sprint planning",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced),
+            lastDone: makeDate("2026-08-18T09:45:00Z"),
+            scheduleAnchor: advanced.startDate,
+            createdAt: advanced.startDate
+        )
+        let referenceDate = makeDate("2026-09-03T10:41:00Z")
+        let missedOccurrence = makeDate("2026-09-01T09:45:00Z")
+        let nextOccurrence = makeDate("2026-09-15T09:45:00Z")
+
+        #expect(RoutineDateMath.usesExactTimedOccurrences(for: task))
+        #expect(
+            RoutineDateMath.missedExactTimedOccurrenceDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == missedOccurrence
+        )
+        #expect(
+            RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == nextOccurrence
+        )
+        #expect(RoutineDateMath.overdueDays(for: task, referenceDate: referenceDate, calendar: calendar) == 0)
+    }
+
+    @Test
     func structuredBiweeklyWindowControlsDueActionabilityAndMissedOccurrences() throws {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

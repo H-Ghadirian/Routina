@@ -164,6 +164,18 @@ struct ScheduledNotificationGroup: Equatable, Identifiable, Sendable {
     let title: String
     let notifications: [ScheduledNotificationSummary]
 
+    var queueSummary: String {
+        guard let nextDate = notifications.compactMap(\.scheduledAt).min() else {
+            let count = notifications.count
+            return count == 1 ? "1 queued alert" : "\(count) queued alerts"
+        }
+        let laterCount = max(notifications.count - 1, 0)
+        let nextText = nextDate.formatted(date: .abbreviated, time: .shortened)
+        return laterCount == 0
+            ? "Next alert \(nextText)"
+            : "Next alert \(nextText) · \(laterCount) later"
+    }
+
     var id: String { sourceIdentifier }
 
     static func groups(

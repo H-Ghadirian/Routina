@@ -261,8 +261,12 @@ struct TaskDetailStatusSectionView<TimeSpentButton: View>: View {
     let contentPadding: CGFloat
     let cardBackground: Color?
     let cardStroke: Color?
+    let missedOccurrenceReview: TaskDetailMissedOccurrenceReviewPresentation?
     let timeSpentButton: () -> TimeSpentButton
     let onComplete: () -> Void
+    let onResolveMissedAsDone: (Date) -> Void
+    let onResolveMissedAsMissed: (Date) -> Void
+    let onResolveMissedAsCanceled: (Date) -> Void
     let onPauseResume: () -> Void
     let onNotToday: () -> Void
     let onConfirmAssumedPastDays: () -> Void
@@ -316,7 +320,8 @@ struct TaskDetailStatusSectionView<TimeSpentButton: View>: View {
                 bulkConfirmAssumedDaysTitle: bulkConfirmAssumedDaysTitle,
                 hasBlockingRelationships: hasBlockingRelationships,
                 blockerSummaryText: blockerSummaryText,
-                useLargePrimaryControl: useLargePrimaryControl
+                useLargePrimaryControl: useLargePrimaryControl,
+                missedOccurrenceReview: missedOccurrenceReview
             ) {
                 TaskDetailCompletionButtonLabel(
                     title: completionButtonTitle,
@@ -326,6 +331,12 @@ struct TaskDetailStatusSectionView<TimeSpentButton: View>: View {
                 timeSpentButton()
             } onComplete: {
                 onComplete()
+            } onResolveMissedAsDone: {
+                onResolveMissedAsDone($0)
+            } onResolveMissedAsMissed: {
+                onResolveMissedAsMissed($0)
+            } onResolveMissedAsCanceled: {
+                onResolveMissedAsCanceled($0)
             } onPauseResume: {
                 onPauseResume()
             } onNotToday: {
@@ -351,9 +362,13 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
     let hasBlockingRelationships: Bool
     let blockerSummaryText: String
     let useLargePrimaryControl: Bool
+    let missedOccurrenceReview: TaskDetailMissedOccurrenceReviewPresentation?
     let completionLabel: () -> CompletionLabel
     let timeSpentButton: () -> TimeSpentButton
     let onComplete: () -> Void
+    let onResolveMissedAsDone: (Date) -> Void
+    let onResolveMissedAsMissed: (Date) -> Void
+    let onResolveMissedAsCanceled: (Date) -> Void
     let onPauseResume: () -> Void
     let onNotToday: () -> Void
     let onConfirmAssumedPastDays: () -> Void
@@ -372,9 +387,13 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
         hasBlockingRelationships: Bool,
         blockerSummaryText: String,
         useLargePrimaryControl: Bool = false,
+        missedOccurrenceReview: TaskDetailMissedOccurrenceReviewPresentation? = nil,
         @ViewBuilder completionLabel: @escaping () -> CompletionLabel,
         @ViewBuilder timeSpentButton: @escaping () -> TimeSpentButton,
         onComplete: @escaping () -> Void,
+        onResolveMissedAsDone: @escaping (Date) -> Void = { _ in },
+        onResolveMissedAsMissed: @escaping (Date) -> Void = { _ in },
+        onResolveMissedAsCanceled: @escaping (Date) -> Void = { _ in },
         onPauseResume: @escaping () -> Void,
         onNotToday: @escaping () -> Void,
         onConfirmAssumedPastDays: @escaping () -> Void
@@ -392,9 +411,13 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
         self.hasBlockingRelationships = hasBlockingRelationships
         self.blockerSummaryText = blockerSummaryText
         self.useLargePrimaryControl = useLargePrimaryControl
+        self.missedOccurrenceReview = missedOccurrenceReview
         self.completionLabel = completionLabel
         self.timeSpentButton = timeSpentButton
         self.onComplete = onComplete
+        self.onResolveMissedAsDone = onResolveMissedAsDone
+        self.onResolveMissedAsMissed = onResolveMissedAsMissed
+        self.onResolveMissedAsCanceled = onResolveMissedAsCanceled
         self.onPauseResume = onPauseResume
         self.onNotToday = onNotToday
         self.onConfirmAssumedPastDays = onConfirmAssumedPastDays
@@ -402,14 +425,23 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Button(action: onComplete) {
-                completionLabel()
-                    .routinaPlatformPrimaryActionLabelLayout()
+            if let missedOccurrenceReview {
+                TaskDetailMissedOccurrenceReviewView(
+                    presentation: missedOccurrenceReview,
+                    onDone: { onResolveMissedAsDone(missedOccurrenceReview.occurrence) },
+                    onMissed: { onResolveMissedAsMissed(missedOccurrenceReview.occurrence) },
+                    onCanceled: { onResolveMissedAsCanceled(missedOccurrenceReview.occurrence) }
+                )
+            } else {
+                Button(action: onComplete) {
+                    completionLabel()
+                        .routinaPlatformPrimaryActionLabelLayout()
+                }
+                .buttonStyle(.borderedProminent)
+                .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
+                .routinaPlatformPrimaryActionButtonLayout(alignment: .leading)
+                .disabled(isCompletionButtonDisabled)
             }
-            .buttonStyle(.borderedProminent)
-            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
-            .routinaPlatformPrimaryActionButtonLayout(alignment: .leading)
-            .disabled(isCompletionButtonDisabled)
 
             timeSpentButton()
 
@@ -470,5 +502,63 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
             .font(.caption)
             .foregroundColor(.secondary)
             .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+private struct TaskDetailMissedOccurrenceReviewView: View {
+    let presentation: TaskDetailMissedOccurrenceReviewPresentation
+    let onDone: () -> Void
+    let onMissed: () -> Void
+    let onCanceled: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(occurrenceText, systemImage: "clock.badge.exclamationmark")
+                .font(.subheadline.weight(.semibold))
+
+            Text("What happened?")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                resolutionButton("It happened", tint: .green, action: onDone)
+                resolutionButton("Missed", tint: .orange, action: onMissed)
+                resolutionButton("Canceled", tint: .secondary, action: onCanceled)
+            }
+
+            if let nextOccurrence = presentation.nextOccurrence {
+                Text("Next: \(nextOccurrence.formatted(date: .abbreviated, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(.orange.opacity(0.35), lineWidth: 1)
+        }
+    }
+
+    private var occurrenceText: String {
+        let start = presentation.occurrence.formatted(date: .abbreviated, time: .shortened)
+        guard let timeRange = presentation.timeRange else { return start }
+        let end = timeRange.endDate(on: presentation.occurrence).formatted(date: .omitted, time: .shortened)
+        return "\(start)–\(end)"
+    }
+
+    private func resolutionButton(
+        _ title: String,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.bordered)
+        .tint(tint)
     }
 }

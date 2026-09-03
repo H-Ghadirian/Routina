@@ -98,9 +98,13 @@ extension RemoteNotificationIOSDelegate: UNUserNotificationCenterDelegate {
             return
         }
 
+        let occurrenceDate = NotificationCoordinator.notificationOccurrenceDate(
+            from: response.notification.request.content.userInfo
+        )
         await NotificationCoordinator.handleResponse(
             actionIdentifier: response.actionIdentifier,
-            requestIdentifier: response.notification.request.identifier
+            requestIdentifier: response.notification.request.identifier,
+            occurrenceDate: occurrenceDate
         )
     }
 }
