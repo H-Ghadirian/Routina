@@ -654,18 +654,14 @@ struct FocusSessionCard: View {
     }
 
     private func saveEdits(to session: FocusSession) {
-        let durationSeconds = TimeInterval(editDurationMinutes * 60)
-        session.startedAt = editStartedAt
-        session.completedAt = editStartedAt.addingTimeInterval(durationSeconds)
-        session.abandonedAt = nil
-        session.plannedDurationSeconds = durationSeconds
-        session.clearPauseTracking()
-        DeviceActivityRecorder.recordAction(
-            .updated,
-            entity: .focusSession,
-            entityID: session.id,
-            entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-            in: modelContext
+        _ = DayPlanFocusSessionPlannerSync.updateCompletedFocusSession(
+            session,
+            startedAt: editStartedAt,
+            durationMinutes: editDurationMinutes,
+            titleSnapshot: DayPlanTaskSorting.title(for: task),
+            emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+            calendar: calendar,
+            context: modelContext
         )
         saveContext()
         syncFocusShieldForCurrentContext()

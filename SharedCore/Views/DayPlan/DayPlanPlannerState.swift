@@ -212,11 +212,41 @@ private struct DayPlanPlannerUndoSnapshot: Equatable {
     var blocks: [DayPlanBlock]
 }
 
+private struct DayPlanFocusSessionUndoSnapshot: Equatable {
+    var id: UUID
+    var startedAt: Date?
+    var plannedDurationSeconds: TimeInterval
+    var completedAt: Date?
+    var abandonedAt: Date?
+    var pausedAt: Date?
+    var accumulatedPausedSeconds: TimeInterval
+
+    init(session: FocusSession) {
+        id = session.id
+        startedAt = session.startedAt
+        plannedDurationSeconds = session.plannedDurationSeconds
+        completedAt = session.completedAt
+        abandonedAt = session.abandonedAt
+        pausedAt = session.pausedAt
+        accumulatedPausedSeconds = session.accumulatedPausedSeconds
+    }
+
+    func apply(to session: FocusSession) {
+        session.startedAt = startedAt
+        session.plannedDurationSeconds = plannedDurationSeconds
+        session.completedAt = completedAt
+        session.abandonedAt = abandonedAt
+        session.pausedAt = pausedAt
+        session.accumulatedPausedSeconds = accumulatedPausedSeconds
+    }
+}
+
 private struct DayPlanPlannerUndoSide: Equatable {
     var snapshots: [DayPlanPlannerUndoSnapshot]
     var focusedBlockID: UUID
     var focusedDate: Date
     var focusedStartMinute: Int
+    var focusSession: DayPlanFocusSessionUndoSnapshot? = nil
 }
 
 private struct DayPlanPlannerUndoChange: Equatable {
@@ -964,16 +994,32 @@ final class DayPlanPlannerState: ObservableObject {
         _ block: DayPlanBlock,
         on date: Date,
         calendar: Calendar,
-        context: ModelContext
+        context: ModelContext,
+        focusSessions: [FocusSession] = []
     ) {
         clearPlannerUndoHighlight()
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        let focusSession = DayPlanFocusSessionPlannerSync.completedFocusSession(
+            matching: block,
+            in: focusSessions
+        )
+        let affectedDayKeys = orderedUniqueDayKeys(
+            [dayKey] + (focusSession.map {
+                DayPlanFocusSessionPlannerSync.persistedFocusBlocks(
+                    for: $0,
+                    context: context
+                )
+                .map(\.dayKey)
+            } ?? [])
+        )
+        let beforeSnapshots = snapshots(forDayKeys: affectedDayKeys, context: context)
         guard let beforeSide = focusSide(
-            snapshots: snapshots(forDayKeys: [dayKey], context: context),
+            snapshots: beforeSnapshots,
             blockID: block.id,
             fallbackDate: date,
             fallbackStartMinute: block.startMinute,
-            calendar: calendar
+            calendar: calendar,
+            focusSession: focusSession.map(DayPlanFocusSessionUndoSnapshot.init(session:))
         ) else { return }
         pendingResizeUndo = DayPlanPendingResizeUndo(blockID: block.id, beforeSide: beforeSide)
     }
@@ -990,14 +1036,57 @@ final class DayPlanPlannerState: ObservableObject {
             return
         }
 
+        var focusedBlockID = pendingResizeUndo.blockID
+        var focusedDate = pendingResizeUndo.beforeSide.focusedDate
+        var focusedStartMinute = pendingResizeUndo.beforeSide.focusedStartMinute
+        var updatedFocusSessionSnapshot: DayPlanFocusSessionUndoSnapshot?
+        var didUpdateFocusSession = false
+        if let originalFocusSession = pendingResizeUndo.beforeSide.focusSession,
+           let session = focusSession(withID: originalFocusSession.id, context: context),
+           let resizedBlock = locatedBlock(pendingResizeUndo.blockID, calendar: calendar)?.block,
+           let resizedDate = dateForDayKey(resizedBlock.dayKey, calendar: calendar),
+           let resizedStart = calendar.date(
+               byAdding: .minute,
+               value: resizedBlock.startMinute,
+               to: calendar.startOfDay(for: resizedDate)
+           ),
+           let updatedBlock = DayPlanFocusSessionPlannerSync.updateCompletedFocusSession(
+               session,
+               startedAt: resizedStart,
+               durationMinutes: resizedBlock.durationMinutes,
+               titleSnapshot: resizedBlock.titleSnapshot,
+               emojiSnapshot: resizedBlock.emojiSnapshot,
+               calendar: calendar,
+               context: context
+           ) {
+            focusedBlockID = updatedBlock.id
+            focusedDate = resizedDate
+            focusedStartMinute = updatedBlock.startMinute
+            updatedFocusSessionSnapshot = DayPlanFocusSessionUndoSnapshot(session: session)
+
+            for snapshot in pendingResizeUndo.beforeSide.snapshots {
+                weekBlocksByDayKey[snapshot.dayKey] = DayPlanStorage.loadBlocks(
+                    forDayKey: snapshot.dayKey,
+                    context: context
+                )
+            }
+            syncSelectedDayBlocks(calendar: calendar, context: context)
+            selectedBlockID = updatedBlock.id
+            selectedTaskID = updatedBlock.taskID
+            startMinute = updatedBlock.startMinute
+            durationMinutes = updatedBlock.durationMinutes
+            didUpdateFocusSession = true
+        }
+
         let dayKeys = pendingResizeUndo.beforeSide.snapshots.map(\.dayKey)
         let afterSnapshots = snapshots(forDayKeys: dayKeys, context: context)
         let afterSide = focusSide(
             snapshots: afterSnapshots,
-            blockID: pendingResizeUndo.blockID,
-            fallbackDate: pendingResizeUndo.beforeSide.focusedDate,
-            fallbackStartMinute: pendingResizeUndo.beforeSide.focusedStartMinute,
-            calendar: calendar
+            blockID: focusedBlockID,
+            fallbackDate: focusedDate,
+            fallbackStartMinute: focusedStartMinute,
+            calendar: calendar,
+            focusSession: updatedFocusSessionSnapshot
         )
 
         self.pendingResizeUndo = nil
@@ -1012,6 +1101,9 @@ final class DayPlanPlannerState: ObservableObject {
             calendar: calendar,
             context: context
         )
+        if didUpdateFocusSession {
+            NotificationCenter.default.postRoutineDidUpdate()
+        }
     }
 
     func clearPlannerUndo() {
@@ -1116,6 +1208,11 @@ final class DayPlanPlannerState: ObservableObject {
         calendar: Calendar,
         context: ModelContext
     ) {
+        if let focusSessionSnapshot = side.focusSession,
+           let session = focusSession(withID: focusSessionSnapshot.id, context: context) {
+            focusSessionSnapshot.apply(to: session)
+        }
+
         for snapshot in side.snapshots {
             DayPlanStorage.saveBlocks(snapshot.blocks, forDayKey: snapshot.dayKey, context: context)
             weekBlocksByDayKey[snapshot.dayKey] = snapshot.blocks
@@ -1163,7 +1260,8 @@ final class DayPlanPlannerState: ObservableObject {
         blockID: UUID,
         fallbackDate: Date,
         fallbackStartMinute: Int,
-        calendar: Calendar
+        calendar: Calendar,
+        focusSession: DayPlanFocusSessionUndoSnapshot? = nil
     ) -> DayPlanPlannerUndoSide? {
         let focusedSnapshot = snapshots.first { snapshot in
             snapshot.blocks.contains { $0.id == blockID }
@@ -1177,8 +1275,18 @@ final class DayPlanPlannerState: ObservableObject {
             snapshots: snapshots,
             focusedBlockID: blockID,
             focusedDate: focusedDate,
-            focusedStartMinute: focusedBlock?.startMinute ?? fallbackStartMinute
+            focusedStartMinute: focusedBlock?.startMinute ?? fallbackStartMinute,
+            focusSession: focusSession
         )
+    }
+
+    private func focusSession(withID id: UUID, context: ModelContext) -> FocusSession? {
+        do {
+            return try context.fetch(FetchDescriptor<FocusSession>()).first { $0.id == id }
+        } catch {
+            NSLog("Failed to load Focus session for Planner resize: \(error.localizedDescription)")
+            return nil
+        }
     }
 
     private func orderedUniqueDayKeys(_ dayKeys: [String]) -> [String] {

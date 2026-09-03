@@ -992,6 +992,93 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func resizingCompletedTaskFocusUpdatesItsSourceAndSurvivesPlannerRecreation() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T00:00:00Z"))
+        let originalCompletedAt = try #require(date("2026-05-07T10:00:00Z"))
+        let task = RoutineTask(
+            name: "Write release notes",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        task.actualDurationMinutes = 75
+        let session = FocusSession(
+            taskID: task.id,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: originalCompletedAt
+        )
+        context.insert(task)
+        context.insert(session)
+        let originalBlock = try #require(
+            DayPlanFocusSessionPlannerSync.saveCompletedFocusBlock(
+                for: task,
+                session: session,
+                calendar: calendar,
+                context: context
+            )
+        )
+        let planner = DayPlanPlannerState(selectedDate: startedAt)
+        planner.loadBlocks(calendar: calendar, context: context)
+
+        planner.beginResizeBlock(
+            originalBlock,
+            on: startedAt,
+            calendar: calendar,
+            context: context,
+            focusSessions: [session]
+        )
+        let didResize = planner.resizeBlock(
+            originalBlock.id,
+            on: startedAt,
+            startMinute: 0,
+            durationMinutes: 120,
+            calendar: calendar,
+            context: context
+        )
+        planner.endResizeBlock(originalBlock.id, calendar: calendar, context: context)
+
+        #expect(didResize)
+        #expect(session.startedAt == startedAt)
+        #expect(session.completedAt == startedAt.addingTimeInterval(120 * 60))
+        #expect(session.plannedDurationSeconds == 120 * 60)
+        #expect(session.actualDurationSeconds == 120 * 60)
+        #expect(task.actualDurationMinutes == 75)
+        #expect(planner.selectedBlock?.durationMinutes == 120)
+        #expect(
+            FocusSessionCardSnapshot(taskID: task.id, sessions: [session]).totalCompletedSeconds
+                == 120 * 60
+        )
+
+        let reconciledDayCount = DayPlanFocusSessionPlannerSync.reconcileCountUpFocusSegments(
+            for: [session],
+            tasks: [task],
+            calendar: calendar,
+            context: context
+        )
+        let recreatedPlanner = DayPlanPlannerState(selectedDate: startedAt)
+        recreatedPlanner.loadBlocks(calendar: calendar, context: context)
+
+        #expect(reconciledDayCount == 0)
+        #expect(recreatedPlanner.selectedDate == startedAt)
+        #expect(recreatedPlanner.blocks.first?.durationMinutes == 120)
+
+        #expect(planner.performPlannerUndo(calendar: calendar, context: context))
+        #expect(session.plannedDurationSeconds == 0)
+        #expect(session.completedAt == originalCompletedAt)
+        #expect(session.actualDurationSeconds == 10 * 60 * 60)
+        #expect(task.actualDurationMinutes == 75)
+        #expect(planner.selectedBlock?.durationMinutes == 10 * 60)
+
+        #expect(planner.performPlannerRedo(calendar: calendar, context: context))
+        #expect(session.plannedDurationSeconds == 120 * 60)
+        #expect(session.actualDurationSeconds == 120 * 60)
+        #expect(task.actualDurationMinutes == 75)
+        #expect(planner.selectedBlock?.durationMinutes == 120)
+    }
+
+    @Test
     func resizingPlannerBlockKeepsHandlesOutsideChangingCardContent() throws {
         let projectRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

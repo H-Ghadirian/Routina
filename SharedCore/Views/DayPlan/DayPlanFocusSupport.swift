@@ -466,23 +466,101 @@ enum DayPlanFocusSessionBlocks {
 }
 
 enum DayPlanFocusSessionPlannerSync {
-    static func completedTagFocusSession(
+    static func completedFocusSession(
         matching block: DayPlanBlock,
         in sessions: [FocusSession]
     ) -> FocusSession? {
-        guard block.taskID == FocusSession.unassignedTaskID else {
-            return nil
-        }
-
-        return sessions.first { session in
-            guard session.isTagFocus,
+        sessions.first { session in
+            guard (session.isTaskFocus || session.isTagFocus),
                   session.completedAt != nil,
-                  session.abandonedAt == nil else {
+                  session.abandonedAt == nil,
+                  block.taskID == session.taskID else {
                 return false
             }
 
             return block.id == session.id || isFocusSegmentBlock(block, for: session)
         }
+    }
+
+    static func completedTagFocusSession(
+        matching block: DayPlanBlock,
+        in sessions: [FocusSession]
+    ) -> FocusSession? {
+        completedFocusSession(matching: block, in: sessions).flatMap { session in
+            session.isTagFocus ? session : nil
+        }
+    }
+
+    static func persistedFocusBlocks(
+        for session: FocusSession,
+        context: ModelContext
+    ) -> [DayPlanBlock] {
+        do {
+            return try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+                .map(\.detachedBlock)
+                .filter { block in
+                    block.id == session.id || isFocusSegmentBlock(block, for: session)
+                }
+                .sorted { lhs, rhs in
+                    if lhs.dayKey != rhs.dayKey {
+                        return lhs.dayKey < rhs.dayKey
+                    }
+                    return lhs.startMinute < rhs.startMinute
+                }
+        } catch {
+            NSLog("Failed to load Focus Planner blocks for \(session.id): \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    @MainActor
+    @discardableResult
+    static func updateCompletedFocusSession(
+        _ session: FocusSession,
+        startedAt: Date,
+        durationMinutes: Int,
+        titleSnapshot: String,
+        emojiSnapshot: String?,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        guard (session.isTaskFocus || session.isTagFocus),
+              session.completedAt != nil,
+              session.abandonedAt == nil else {
+            return nil
+        }
+
+        let clampedDurationMinutes = min(max(durationMinutes, 1), DayPlanBlock.minutesPerDay)
+        _ = removeFocusBlock(for: session, context: context)
+
+        let durationSeconds = TimeInterval(clampedDurationMinutes * 60)
+        session.startedAt = startedAt
+        session.completedAt = startedAt.addingTimeInterval(durationSeconds)
+        session.abandonedAt = nil
+        session.plannedDurationSeconds = durationSeconds
+        session.clearPauseTracking()
+        let title = session.focusTagTitle ?? titleSnapshot
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: title,
+            details: "Updated recorded focus time",
+            in: context
+        )
+
+        let blocks = focusSegmentBlocks(
+            session: session,
+            taskID: session.taskID,
+            title: title,
+            emoji: session.isTagFocus ? nil : emojiSnapshot,
+            segmentStartedAt: startedAt,
+            durationSeconds: durationSeconds,
+            calendar: calendar,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        _ = upsertBlocks(blocks, context: context)
+        return blocks.first
     }
 
     @MainActor
@@ -501,29 +579,12 @@ enum DayPlanFocusSessionPlannerSync {
             return nil
         }
 
-        let clampedDurationMinutes = min(max(durationMinutes, 1), DayPlanBlock.minutesPerDay)
-        _ = removeFocusBlock(for: session, context: context)
-
-        let durationSeconds = TimeInterval(clampedDurationMinutes * 60)
-        session.startedAt = startedAt
-        session.completedAt = startedAt.addingTimeInterval(durationSeconds)
-        session.abandonedAt = nil
-        session.plannedDurationSeconds = durationSeconds
-        session.clearPauseTracking()
-        DeviceActivityRecorder.recordAction(
-            .updated,
-            entity: .focusSession,
-            entityID: session.id,
-            entityTitle: session.focusTagTitle ?? "#Tag",
-            details: "Updated recorded tag focus time",
-            in: context
-        )
-
-        return saveStartedTagFocusBlock(
-            tagName: tagName,
-            session: session,
+        return updateCompletedFocusSession(
+            session,
             startedAt: startedAt,
-            durationSeconds: durationSeconds,
+            durationMinutes: durationMinutes,
+            titleSnapshot: RoutineTag.cleaned(tagName).map { "#\($0)" } ?? "#Tag",
+            emojiSnapshot: nil,
             calendar: calendar,
             context: context
         )
@@ -605,8 +666,7 @@ enum DayPlanFocusSessionPlannerSync {
         _ block: DayPlanBlock,
         for session: FocusSession
     ) -> Bool {
-        guard session.plannedDurationSeconds <= 0,
-              (session.isTaskFocus || session.isTagFocus),
+        guard (session.isTaskFocus || session.isTagFocus),
               let startedAt = session.startedAt,
               block.taskID == session.taskID else {
             return false

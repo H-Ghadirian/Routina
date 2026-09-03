@@ -2938,7 +2938,13 @@ private struct DayPlanTimelinePanelContentView: View {
                 },
                 onBeginResizeBlock: { block, date in
                     activatePlannerUndoManager()
-                    planner.beginResizeBlock(block, on: date, calendar: calendar, context: modelContext)
+                    planner.beginResizeBlock(
+                        block,
+                        on: date,
+                        calendar: calendar,
+                        context: modelContext,
+                        focusSessions: currentFocusSessions
+                    )
                 },
                 onResizeBlock: { blockID, date, startMinute, durationMinutes in
                     activatePlannerUndoManager()
