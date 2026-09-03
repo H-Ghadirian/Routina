@@ -192,7 +192,7 @@ extension HomeTCAView {
 
     private var homeToolbarFilterIsActive: Bool {
         if isMacBacklogMode {
-            return backlogStore.filters.hasActiveFilters
+            return backlogStore.filters.hasNonDefaultOptions
         }
         guard isMacRoutinesMode else { return false }
         return HomeMacFilterDetailScope.allCases.contains(where: macFilterScopeIsActive)

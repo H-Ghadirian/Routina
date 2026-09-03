@@ -1,6 +1,28 @@
 import Foundation
 
+enum BacklogSortOrder: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case defaultOrder = "Default"
+    case dueSoonestFirst = "Due Soonest"
+    case dueLatestFirst = "Due Latest"
+
+    var id: Self { self }
+
+    var title: String { rawValue }
+
+    var systemImage: String {
+        switch self {
+        case .defaultOrder:
+            return "list.bullet"
+        case .dueSoonestFirst:
+            return "calendar.badge.clock"
+        case .dueLatestFirst:
+            return "calendar"
+        }
+    }
+}
+
 struct BacklogFilterState: Equatable {
+    var sortOrder: BacklogSortOrder = .defaultOrder
     var taskListMode: HomeTaskListMode = .all
     var selectedTodoState: TodoState?
     var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -33,6 +55,10 @@ struct BacklogFilterState: Equatable {
             || !excludedTags.isEmpty
             || !selectedFlags.isEmpty
             || !excludedFlags.isEmpty
+    }
+
+    var hasNonDefaultOptions: Bool {
+        hasActiveFilters || sortOrder != .defaultOrder
     }
 
     func matches(
@@ -307,14 +333,24 @@ struct BacklogTaskListPresentation: Equatable {
         let shouldPruneEmptyHierarchy = normalizedSearchQuery != nil || filters.hasActiveFilters
 
         let presentationSections = topLevelSections.compactMap { section -> Section? in
-            let directTasks = sorted(tasksBySectionID[section.id] ?? [])
+            let directTasks = sorted(
+                tasksBySectionID[section.id] ?? [],
+                order: filters.sortOrder,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
             let allSubsections = HomeCustomTaskSectionStorage.subsections(
                 of: section.id,
                 in: backlogSections
             ).map { subsection in
                 Subsection(
                     section: subsection,
-                    tasks: sorted(tasksBySectionID[subsection.id] ?? [])
+                    tasks: sorted(
+                        tasksBySectionID[subsection.id] ?? [],
+                        order: filters.sortOrder,
+                        referenceDate: referenceDate,
+                        calendar: calendar
+                    )
                 )
             }
             let subsections = shouldPruneEmptyHierarchy
@@ -329,21 +365,26 @@ struct BacklogTaskListPresentation: Equatable {
             return Section(section: section, tasks: directTasks, subsections: subsections)
         }
 
-        let hiddenByFlagTasks = sorted(unassignedHiddenByFlagTasks.filter { task in
-            filters.matches(
-                task,
-                fileAttachmentTaskIDs: fileAttachmentTaskIDs,
-                referenceDate: referenceDate,
-                calendar: calendar
-            ) && matchesSearch(task, normalizedQuery: normalizedSearchQuery)
-        })
+        let hiddenByFlagTasks = sorted(
+            unassignedHiddenByFlagTasks.filter { task in
+                filters.matches(
+                    task,
+                    fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                ) && matchesSearch(task, normalizedQuery: normalizedSearchQuery)
+            },
+            order: filters.sortOrder,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
 
         let radarSections = sections.filter { $0.surface == .radar }
         let outsideBacklogResults: [OutsideBacklogResult]
         if normalizedSearchQuery == nil {
             outsideBacklogResults = []
         } else {
-            outsideBacklogResults = sorted(tasks.filter { task in
+            outsideBacklogResults = defaultSorted(tasks.filter { task in
                 !allBacklogTaskIDs.contains(task.id)
                     && matchesSearch(
                         task,
@@ -457,27 +498,82 @@ struct BacklogTaskListPresentation: Equatable {
         return task.isDailyRoutineForTaskList ? "Main task list › Today" : "Main task list › Future"
     }
 
-    private static func sorted(_ tasks: [RoutineTask]) -> [RoutineTask] {
-        tasks.sorted { lhs, rhs in
-            if lhs.isPinned != rhs.isPinned {
-                return lhs.isPinned && !rhs.isPinned
+    private static func sorted(
+        _ tasks: [RoutineTask],
+        order: BacklogSortOrder,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [RoutineTask] {
+        switch order {
+        case .defaultOrder:
+            return defaultSorted(tasks)
+        case .dueSoonestFirst, .dueLatestFirst:
+            let dueDatesByTaskID = Dictionary(uniqueKeysWithValues: tasks.map { task in
+                (
+                    task.id,
+                    sortableDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+                )
+            })
+            return tasks.sorted { lhs, rhs in
+                let lhsDueDate = dueDatesByTaskID[lhs.id] ?? nil
+                let rhsDueDate = dueDatesByTaskID[rhs.id] ?? nil
+                switch (lhsDueDate, rhsDueDate) {
+                case let (lhsDate?, rhsDate?) where lhsDate != rhsDate:
+                    return order == .dueSoonestFirst ? lhsDate < rhsDate : lhsDate > rhsDate
+                case (_?, nil):
+                    return true
+                case (nil, _?):
+                    return false
+                default:
+                    return defaultSort(lhs, rhs)
+                }
             }
-
-            let lhsDeadline = lhs.deadline ?? .distantFuture
-            let rhsDeadline = rhs.deadline ?? .distantFuture
-            if lhsDeadline != rhsDeadline {
-                return lhsDeadline < rhsDeadline
-            }
-
-            let lhsCreatedAt = lhs.createdAt ?? .distantPast
-            let rhsCreatedAt = rhs.createdAt ?? .distantPast
-            if lhsCreatedAt != rhsCreatedAt {
-                return lhsCreatedAt > rhsCreatedAt
-            }
-
-            let lhsName = lhs.name ?? ""
-            let rhsName = rhs.name ?? ""
-            return lhsName.localizedCaseInsensitiveCompare(rhsName) == .orderedAscending
         }
+    }
+
+    private static func sortableDueDate(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Date? {
+        if task.isOneOffTask {
+            return task.deadline
+        }
+        guard task.usesEffectiveRoutineCadence,
+              !task.isSoftIntervalRoutine else {
+            return nil
+        }
+        let dueDate = RoutineDateMath.upcomingDueDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        return dueDate == .distantFuture ? nil : dueDate
+    }
+
+    private static func defaultSorted(_ tasks: [RoutineTask]) -> [RoutineTask] {
+        tasks.sorted(by: defaultSort)
+    }
+
+    private static func defaultSort(_ lhs: RoutineTask, _ rhs: RoutineTask) -> Bool {
+        if lhs.isPinned != rhs.isPinned {
+            return lhs.isPinned && !rhs.isPinned
+        }
+
+        let lhsDeadline = lhs.deadline ?? .distantFuture
+        let rhsDeadline = rhs.deadline ?? .distantFuture
+        if lhsDeadline != rhsDeadline {
+            return lhsDeadline < rhsDeadline
+        }
+
+        let lhsCreatedAt = lhs.createdAt ?? .distantPast
+        let rhsCreatedAt = rhs.createdAt ?? .distantPast
+        if lhsCreatedAt != rhsCreatedAt {
+            return lhsCreatedAt > rhsCreatedAt
+        }
+
+        let lhsName = lhs.name ?? ""
+        let rhsName = rhs.name ?? ""
+        return lhsName.localizedCaseInsensitiveCompare(rhsName) == .orderedAscending
     }
 }

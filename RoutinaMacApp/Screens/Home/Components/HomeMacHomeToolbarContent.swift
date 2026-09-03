@@ -139,6 +139,7 @@ struct HomeMacTopToolbarChrome: View {
                     isPresented: isFilterPresented,
                     isActive: isFilterActive,
                     workspaceTitle: selectedSidebarMode.workspaceTitle,
+                    presentsSort: selectedSidebarMode == .backlog,
                     onToggle: onToggleFilters
                 )
             }
@@ -204,6 +205,7 @@ private struct HomeMacToolbarFilterButton: View {
     let isPresented: Bool
     let isActive: Bool
     let workspaceTitle: String
+    let presentsSort: Bool
     let onToggle: () -> Void
 
     var body: some View {
@@ -223,9 +225,21 @@ private struct HomeMacToolbarFilterButton: View {
             .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(workspaceTitle) filters")
-        .accessibilityValue(isActive ? "Filters active" : "No active filters")
-        .help("\(workspaceTitle) filters")
+        .accessibilityLabel(actionTitle)
+        .accessibilityValue(isActive ? activeValue : inactiveValue)
+        .help(actionTitle)
+    }
+
+    private var actionTitle: String {
+        presentsSort ? "\(workspaceTitle) filter and sort" : "\(workspaceTitle) filters"
+    }
+
+    private var activeValue: String {
+        presentsSort ? "Filter or sort active" : "Filters active"
+    }
+
+    private var inactiveValue: String {
+        presentsSort ? "Default filters and sort" : "No active filters"
     }
 }
 

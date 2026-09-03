@@ -144,7 +144,7 @@ struct BacklogMacView<FilterView: View>: View {
 
     private func filterHeader(showsFullscreenAction: Bool) -> some View {
         HStack(spacing: 10) {
-            Label("Filters", systemImage: "line.3.horizontal.decrease.circle")
+            Label("Filter and Sort", systemImage: "line.3.horizontal.decrease.circle")
                 .font(.headline)
                 .lineLimit(1)
 
@@ -706,7 +706,7 @@ struct BacklogMacFiltersDetailView: View {
 
     var body: some View {
         HomeMacFilterDetailContainerView(
-            title: "Backlog Filters",
+            title: "Backlog Filter and Sort",
             showsTitle: false
         ) {
             header
@@ -723,23 +723,35 @@ struct BacklogMacFiltersDetailView: View {
                 Text("Backlog")
                     .font(.title2.weight(.semibold))
 
-                Text("These filters affect Backlog only.")
+                Text("Filtering and sorting affect Backlog only.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 8)
 
-            Button("Clear Filters") {
+            Button("Reset") {
                 store.send(.clearFilters)
             }
-            .disabled(!store.filters.hasActiveFilters)
+            .disabled(!store.filters.hasNonDefaultOptions)
         }
     }
 
     private var coreFilters: some View {
-        HomeMacSidebarSectionCard(title: "Filters") {
+        HomeMacSidebarSectionCard(title: "Filter and Sort") {
             VStack(alignment: .leading, spacing: 18) {
+                HomeMacAdaptiveFilterControlRow("Sort") {
+                    HomeMacAdaptiveFilterChoiceControl(
+                        accessibilityLabel: "Backlog sort order",
+                        options: BacklogSortOrder.allCases,
+                        selection: filterBinding(\.sortOrder),
+                        minimumSegmentWidth: 126,
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                    ) { order in
+                        Label(order.title, systemImage: order.systemImage)
+                    }
+                }
+
                 HomeMacAdaptiveFilterControlRow("Task type") {
                     HomeMacAdaptiveFilterChoiceControl(
                         accessibilityLabel: "Backlog task type",

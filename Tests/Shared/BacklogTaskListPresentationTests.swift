@@ -190,7 +190,7 @@ struct BacklogTaskListPresentationTests {
     }
 
     @Test
-    func keepsEmptyBacklogSuperSectionsAndSubsectionsReachable() throws {
+    func keepsEmptyBacklogSuperSectionsAndSubsectionsReachableWhenOnlySorting() throws {
         let somedayID = UUID()
         let researchID = UUID()
         let sections = [
@@ -209,10 +209,13 @@ struct BacklogTaskListPresentationTests {
             )
         ]
 
+        var filters = BacklogFilterState.default
+        filters.sortOrder = .dueSoonestFirst
         let presentation = BacklogTaskListPresentation.make(
             tasks: [],
             customSections: sections,
             flagRules: [],
+            filters: filters,
             referenceDate: Date(timeIntervalSince1970: 1_000),
             calendar: Calendar(identifier: .gregorian)
         )
@@ -446,6 +449,82 @@ struct BacklogTaskListPresentationTests {
         #expect(result.task.id == completedTask.id)
         #expect(result.locationTitle == "Completed")
         #expect(result.revealDestination == .timeline)
+    }
+
+    @Test
+    func sortsBacklogTasksByTrueDueDateInEitherDirectionAndLeavesUndatedTasksLast() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let referenceDate = Date(timeIntervalSince1970: 1_000_000)
+        let sectionID = UUID()
+        let repeatingDueSoonest = RoutineTask(
+            name: "Repeat tomorrow",
+            customTaskSectionID: sectionID,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            scheduleAnchor: referenceDate
+        )
+        let oneOffDueSoon = RoutineTask(
+            name: "Due soon",
+            deadline: calendar.date(byAdding: .day, value: 2, to: referenceDate),
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let pinnedOneOffDueLater = RoutineTask(
+            name: "Due later",
+            deadline: calendar.date(byAdding: .day, value: 5, to: referenceDate),
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff,
+            pinnedAt: referenceDate
+        )
+        let undated = RoutineTask(
+            name: "No due date",
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let section = HomeCustomTaskSection(
+            id: sectionID,
+            surface: .backlog,
+            title: "Someday",
+            createdAt: nil
+        )
+
+        var filters = BacklogFilterState.default
+        filters.sortOrder = .dueSoonestFirst
+        let soonestFirst = BacklogTaskListPresentation.make(
+            tasks: [undated, pinnedOneOffDueLater, oneOffDueSoon, repeatingDueSoonest],
+            customSections: [section],
+            flagRules: [],
+            filters: filters,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(soonestFirst.sections.first?.tasks.map(\.id) == [
+            repeatingDueSoonest.id,
+            oneOffDueSoon.id,
+            pinnedOneOffDueLater.id,
+            undated.id
+        ])
+        #expect(!filters.hasActiveFilters)
+        #expect(filters.hasNonDefaultOptions)
+
+        filters.sortOrder = .dueLatestFirst
+        let latestFirst = BacklogTaskListPresentation.make(
+            tasks: [undated, repeatingDueSoonest, oneOffDueSoon, pinnedOneOffDueLater],
+            customSections: [section],
+            flagRules: [],
+            filters: filters,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(latestFirst.sections.first?.tasks.map(\.id) == [
+            pinnedOneOffDueLater.id,
+            oneOffDueSoon.id,
+            repeatingDueSoonest.id,
+            undated.id
+        ])
     }
 
     @Test

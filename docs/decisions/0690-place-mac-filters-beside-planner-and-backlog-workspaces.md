@@ -8,6 +8,10 @@ Accepted
 
 2026-08-28
 
+## Revised By
+
+- [0716: Sort Mac Backlog by Due Date](0716-sort-mac-backlog-by-due-date.md) adds Backlog-owned due-date ordering and renames that workspace's pane to `Filter and Sort` while preserving its independent, cached presentation boundary.
+
 ## Revises
 
 - [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)

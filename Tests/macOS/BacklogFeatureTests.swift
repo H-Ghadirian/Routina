@@ -181,6 +181,7 @@ struct BacklogFeatureTests {
         }
         var filters = BacklogFilterState.default
         filters.taskListMode = .todos
+        filters.sortOrder = .dueSoonestFirst
 
         await store.send(.filtersChanged(filters)) {
             $0.filters = filters

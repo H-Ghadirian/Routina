@@ -159,7 +159,7 @@ struct BacklogFeature {
                 return .none
 
             case .clearFilters:
-                guard state.filters.hasActiveFilters else { return .none }
+                guard state.filters.hasNonDefaultOptions else { return .none }
                 state.filters = .default
                 rebuildPresentation(&state)
                 return .none
