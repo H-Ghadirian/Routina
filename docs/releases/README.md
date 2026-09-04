@@ -40,15 +40,15 @@ them from source history.
 
 The combined iPhone and macOS submission work, including the recorded iPad
 deferral, for the current candidate is
-tracked in the [1.4.0 App Store submission checklist](1.4.0-app-store-submission.md).
+tracked in the [1.5.0 App Store submission checklist](1.5.0-app-store-submission.md).
 
 ## Current baseline
 
-The current release candidate is 1.4.0 / build 13. Its notes supersede the
-unreleased 1.3.1 / build 8 draft and retain the verified 1.2.0 source boundary.
-The iPad app and Watch companion are explicitly deferred from this first
-production phase rather than marked as shipping. Older public versions are not backfilled here
-yet because the repository does not preserve verified release cutoffs and
-release-note scope for them. They should be backfilled only from a verified App
-Store, TestFlight, release branch, or release-manager source rather than guessing
-from development commits.
+The current release candidate is 1.5.0 / build 14. Its notes supersede the
+unreleased 1.4.0 / build 13 and 1.3.1 / build 8 drafts while retaining the
+verified 1.2.0 source boundary. The iPad app and Watch companion are explicitly
+deferred from this first production phase rather than marked as shipping. Older
+public versions are not backfilled here yet because the repository does not
+preserve verified release cutoffs and release-note scope for them. They should
+be backfilled only from a verified App Store, TestFlight, release branch, or
+release-manager source rather than guessing from development commits.

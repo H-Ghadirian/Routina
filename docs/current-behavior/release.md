@@ -24,12 +24,13 @@ documentation behavior. Decision records explain why these rules exist.
   `MAJOR.MINOR.PATCH-app-store.md` companion document. It preserves the exact
   Description, What's New, and any other used public metadata without treating
   that copy as a substitute for verified release scope.
-- The current release candidate is public version `1.4.0`, build `13`, for the
+- The current release candidate is public version `1.5.0`, build `14`, for the
   iPhone app and macOS app. Their platform notes remain `In development` until
-  the corresponding App Store versions ship. The prepared iPadOS candidate is
-  `Deferred before release`; adaptive iPad source remains in the repository but
-  is not a supported or release-ready surface. The earlier `1.3.1` draft was
-  superseded before release and is not a shipment claim.
+  the corresponding App Store versions ship. The prepared iPadOS `1.4.0`
+  candidate is `Deferred before release`; adaptive iPad source remains in the
+  repository but is not a supported or release-ready surface. The earlier
+  `1.4.0` and `1.3.1` drafts were superseded before release and are not shipment
+  claims.
 - Before either production app is distributed, the published policy and App
   Store Connect privacy answers must describe Firebase Crashlytics. The expected
   SDK declarations are Crash Data and Other Diagnostic Data for App
