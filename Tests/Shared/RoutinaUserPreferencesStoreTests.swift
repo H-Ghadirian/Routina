@@ -47,17 +47,25 @@ struct RoutinaUserPreferencesStoreTests {
         #expect(preferences.updatedAt == initialUpdatedAt)
 
         defaults[.appSettingTagColors] = "{\"Focus\":\"#112233\"}"
+        defaults[.appSettingBacklogTaskRowHiddenFields] = "icon,tags"
+        defaults[.appSettingTaskLadderTaskRowHiddenFields] = "statusBadge,flags"
         #expect(RoutinaUserPreferencesStore.mirrorDefaultsToStore(in: context, defaults: defaults))
         #expect(preferences.tagColors == "{\"Focus\":\"#112233\"}")
+        #expect(preferences.backlogTaskRowHiddenFields == "icon,tags")
+        #expect(preferences.taskLadderTaskRowHiddenFields == "statusBadge,flags")
         let changedUpdatedAt = preferences.updatedAt
 
         #expect(!RoutinaUserPreferencesStore.mirrorDefaultsToStore(in: context, defaults: defaults))
         #expect(preferences.updatedAt == changedUpdatedAt)
 
         preferences.tagColors = "{\"Focus\":\"#445566\"}"
+        preferences.backlogTaskRowHiddenFields = "rowColor,rowNumber"
+        preferences.taskLadderTaskRowHiddenFields = "schedule,pressure"
         try context.save()
         #expect(RoutinaUserPreferencesStore.applyToDefaults(from: context, defaults: defaults))
         #expect(defaults[.appSettingTagColors] == "{\"Focus\":\"#445566\"}")
+        #expect(defaults[.appSettingBacklogTaskRowHiddenFields] == "rowColor,rowNumber")
+        #expect(defaults[.appSettingTaskLadderTaskRowHiddenFields] == "schedule,pressure")
         #expect(!RoutinaUserPreferencesStore.applyToDefaults(from: context, defaults: defaults))
     }
 

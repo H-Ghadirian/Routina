@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0722: Move Mac Task Ladder Controls to the Right Sidebar](../0722-move-mac-task-ladder-controls-to-the-right-sidebar.md)
 
 ## Date
 
@@ -10,12 +10,12 @@ Accepted
 
 ## Refines
 
-- [0188: Prefer self-explanatory UI over instructional copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md)
-- [0561: Add a separate Mac task-ranking ladder](0561-add-separate-mac-task-ranking-ladder.md)
-- [0565: Collapse macOS Task Ladder value sections](0565-collapse-mac-task-ladder-value-sections.md)
-- [0576: Offer direct repeating-task Ladder activation](0576-offer-direct-repeating-task-ladder-grouping.md)
-- [0632: Integrate Mac workspaces in the main window](0632-integrate-mac-workspaces-in-the-main-window.md)
-- [0634: Unify Mac workspace search and creation](0634-unify-mac-workspace-search-and-creation.md)
+- [0188: Prefer self-explanatory UI over instructional copy](../0188-prefer-self-explanatory-ui-over-instructional-copy.md)
+- [0561: Add a separate Mac task-ranking ladder](../0561-add-separate-mac-task-ranking-ladder.md)
+- [0565: Collapse macOS Task Ladder value sections](../0565-collapse-mac-task-ladder-value-sections.md)
+- [0576: Offer direct repeating-task Ladder activation](../0576-offer-direct-repeating-task-ladder-grouping.md)
+- [0632: Integrate Mac workspaces in the main window](../0632-integrate-mac-workspaces-in-the-main-window.md)
+- [0634: Unify Mac workspace search and creation](../0634-unify-mac-workspace-search-and-creation.md)
 
 ## Context
 

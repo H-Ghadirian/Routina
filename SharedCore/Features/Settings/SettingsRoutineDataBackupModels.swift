@@ -368,6 +368,8 @@ extension SettingsRoutineDataPersistence {
             var macTaskRankingReversedMetrics: String?
             var macTaskLadderOrganization: String?
             var homeTaskRowHiddenFields: String?
+            var backlogTaskRowHiddenFields: String?
+            var taskLadderTaskRowHiddenFields: String?
             var dayPlanCalendarListRowHiddenFields: String?
             var relatedTagRules: String?
             var tagRules: String?

@@ -178,6 +178,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) private var timelineRowHiddenFieldsRawValue = ""
     @AppStorage(
+        UserDefaultStringValueKey.appSettingTaskLadderTaskRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) var taskLadderTaskRowHiddenFieldsRawValue = HomeTaskRowVisibility.taskLadderDefaultStorageRawValue
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) var isGoalsTabEnabled = false

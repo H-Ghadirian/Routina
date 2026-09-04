@@ -414,7 +414,7 @@ And the manual Refresh Backlog control remains immediately available when no ref
 ### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
 
 Area: Tasks / Mac Backlog
-Decision links: [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
@@ -477,11 +477,23 @@ When the person opens the top-toolbar filter beside the Backlog workspace menu a
 Then only matching Backlog-owned rows remain in the cached hierarchy
 And subsections with no matching rows are omitted
 And super sections with neither a direct match nor a matching subsection are omitted
-And Planner layers, Timeline outcomes, main-task-list visibility and appearance, grouping, and sorting are absent
+And Planner layers, Timeline outcomes, Main Task List visibility, and grouping are absent
 And the unfiltered Backlog-owned catalog remains available for Tag and Flag selection
 And changing filters never moves tasks or rewrites their Backlog paths
 When the person clears the filters
 Then deliberately empty Backlog sections and subsections return
+
+Given Mac Backlog's right-side controls are open
+When the person moves among `Filter`, `Sort`, and `Appearance`
+Then each concern appears in its own tab instead of one mixed form
+And `Appearance` offers multiline titles and the Backlog-relevant Icon, color, number, type, status, schedule, pressure, progress, step, Place, Tag, and Flag fields
+And unavailable Places or Goals are not offered
+When the person changes Backlog row appearance
+Then only Backlog-owned rows change and the Main Task List appearance remains unchanged
+And Backlog path plus pinned state remain visible structural context
+And the row choice persists through relaunch, synchronization, backup, and restore
+And Reset changes only transient Backlog filters and sorting
+And scrolling consumes cached row metadata and row numbers instead of deriving them in row builders
 
 Given an active Backlog filter hides a task that matches the current search query
 When Routina evaluates search creation and outside-Backlog results
@@ -825,27 +837,41 @@ Given an existing task stores the former direct Changes over time JSON
 When the person saves a Task Ladder entry window
 Then both the legacy temporal rule and the new entry choice remain readable and synchronized
 
-### Mac Task Ladder Header States Each Concept Once
+### Mac Task Ladder Moves Workspace Controls to the Right Sidebar
 
 Area: Tasks / Mac Task Ladder / UI
-Decision links: [0666](../decisions/0666-keep-mac-task-ladder-chrome-context-specific.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0632](../decisions/0632-integrate-mac-workspaces-in-the-main-window.md), [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md)
+Decision links: [0722](../decisions/0722-move-mac-task-ladder-controls-to-the-right-sidebar.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0632](../decisions/0632-integrate-mac-workspaces-in-the-main-window.md), [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/TaskRankingPresentationTests.swift`
+- `Tests/Shared/TaskRankingRowPresentationTests.swift`
+- `Tests/Shared/MacWorkspaceNavigationSourceTests.swift`
 
 Given the person opens the root Mac Task Ladder
 Then the global workspace menu is its only visible `Task Ladder` title
-And the compact Ladder control bar shows metric, direction, item count, `Add Group`, and refresh
-And the root list starts with value sections instead of another title and sort-description block
+And the root list starts with value sections instead of a dedicated control bar or another title block
 And read-only section meaning remains available to accessibility without visible `Read only` or `Separate` captions
 
+When the person opens Task Ladder controls from the shared top-toolbar entry
+Then `View`, `Sort`, and `Appearance` open in the established right companion pane
+And the surface can expand fullscreen, minimize, and close
+And View owns metric, optional Base/Now, `Add Group`, and refresh
+And Sort owns the selected metric's direction
+And the header shows the current item or search-match count
+
 Given Estimated time is selected
-Then the sort control states `Shortest first` or `Longest first` once
+Then Sort offers `Shortest first` or `Longest first`
 And its value sections are named `Has estimate` and `No estimate`
 
 Given the person enters a nested group
 Then one local back-and-group-title row identifies that scope
-And the global controls continue to own direction and count
+And the right-side controls continue to own view, direction, actions, and count
+
+Given the person changes Task Ladder Appearance
+Then multiline titles and each available row field change Task Ladder only
+And Main Task List and Backlog appearance remain unchanged
+And group kind, inherited value, temporal timing, child count, inner navigation, and move controls remain visible structural context
+And the durable preference participates in synchronization, backup, and restore
 
 Given a container group's details are visible
 Then its subtitle states only its actionable task count
@@ -3215,7 +3241,7 @@ Then the planning section and ordinary section each contain one stable row for t
 ### Planner and Backlog Filter Button Uses a Companion Pane
 
 Area: UI
-Decision links: [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md), [0316](../decisions/0316-present-mac-home-filters-as-companion-pane.md), [0319](../decisions/0319-open-planner-filters-in-home-filter-pane.md)
+Decision links: [0722](../decisions/0722-move-mac-task-ladder-controls-to-the-right-sidebar.md), [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md), [0316](../decisions/0316-present-mac-home-filters-as-companion-pane.md), [0319](../decisions/0319-open-planner-filters-in-home-filter-pane.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
@@ -3236,8 +3262,13 @@ Then the filter surface returns to the right-side companion pane
 Given Mac Home is showing Backlog
 When the same top-toolbar filter button is pressed
 Then Backlog's independent filter surface opens with the same companion, fullscreen, minimize, and close behavior
+And its content is separated into `Filter`, `Sort`, and `Appearance` tabs
 
-Given Mac Home is showing Task Ladder, Stats, Settings, Details, or another non-Planner/non-Backlog workspace
+Given Mac Home is showing Task Ladder
+When the same top-toolbar workspace-control button is pressed
+Then Task Ladder opens its independent `View`, `Sort`, and `Appearance` surface with the same companion and fullscreen behavior
+
+Given Mac Home is showing Stats, Settings, Details, or another non-Planner/non-Backlog/non-Task-Ladder workspace
 Then the top-toolbar filter button is absent
 
 ### Timeline Filters Do Not Auto-Open Row Details

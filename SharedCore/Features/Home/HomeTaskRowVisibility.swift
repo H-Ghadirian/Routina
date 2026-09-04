@@ -113,10 +113,38 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
                 && (showsFlags || field != .flags)
         }
     }
+
+    static func backlogAppearanceFields(showsPlaces: Bool) -> [Self] {
+        availableAppearanceFields(
+            showsTaskTypeBadge: true,
+            showsGoals: false,
+            showsPlaces: showsPlaces,
+            showsFlags: true
+        )
+    }
+
+    static func taskLadderAppearanceFields(showsPlaces: Bool) -> [Self] {
+        availableAppearanceFields(
+            showsTaskTypeBadge: true,
+            showsGoals: false,
+            showsPlaces: showsPlaces,
+            showsFlags: true
+        )
+    }
 }
 
 struct HomeTaskRowVisibility: Equatable, Sendable {
     static let defaultValue = HomeTaskRowVisibility()
+    static let backlogDefaultValue = HomeTaskRowVisibility(
+        hiddenFields: Set(HomeTaskRowField.allCases).subtracting([.icon]),
+        allowsMultilineTitles: true
+    )
+    static let backlogDefaultStorageRawValue = backlogDefaultValue.storageRawValue ?? ""
+    static let taskLadderDefaultValue = HomeTaskRowVisibility(
+        hiddenFields: Set(HomeTaskRowField.allCases).subtracting([.icon, .taskTypeBadge, .tags]),
+        allowsMultilineTitles: true
+    )
+    static let taskLadderDefaultStorageRawValue = taskLadderDefaultValue.storageRawValue ?? ""
     private static let multilineTitlesStorageValue = "multilineTitles"
 
     var hiddenFields: Set<HomeTaskRowField>

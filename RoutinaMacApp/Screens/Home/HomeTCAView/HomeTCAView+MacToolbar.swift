@@ -104,12 +104,21 @@ extension HomeTCAView {
         if isMacBacklogMode {
             return backlogStore.filters.hasNonDefaultOptions
         }
+        if isMacTaskLadderMode {
+            let rowVisibility = HomeTaskRowVisibility(
+                storageRawValue: taskLadderTaskRowHiddenFieldsRawValue
+            )
+            return taskRankingStore.metric != .pressure
+                || taskRankingStore.valueMode != .base
+                || !taskRankingStore.reversedMetrics.isEmpty
+                || rowVisibility != .taskLadderDefaultValue
+        }
         guard isMacRoutinesMode else { return false }
         return HomeMacFilterDetailScope.allCases.contains(where: macFilterScopeIsActive)
     }
 
     func toggleHomeToolbarFilters() {
-        if isMacBacklogMode {
+        if isMacBacklogMode || isMacTaskLadderMode {
             if store.isMacFilterDetailPresented {
                 closeMacFilterDetailPane()
             } else {
@@ -200,7 +209,14 @@ extension HomeTCAView {
                         BacklogMacFiltersDetailView(store: backlogStore)
                     }
                 } else if isMacTaskLadderMode {
-                    TaskRankingMacView(store: taskRankingStore)
+                    TaskRankingMacView(
+                        store: taskRankingStore,
+                        isControlsPresented: store.isMacFilterDetailPresented,
+                        isControlsFullscreen: isMacFilterDetailFullscreen,
+                        onExpandControls: expandMacFilterDetailPane,
+                        onMinimizeControls: minimizeFullscreenMacFilterDetail,
+                        onCloseControls: closeMacFilterDetailPane
+                    )
                 } else {
                     HomeMacNavigationContent(
                         isBoardMode: isMacBoardMode,

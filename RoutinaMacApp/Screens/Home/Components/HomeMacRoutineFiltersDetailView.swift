@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, FlagContent: View>: View {
-    @State private var selectedTab: HomeMacRoutineFilterDetailTab = .filter
+    @State private var selectedTab: HomeMacFilterDetailTab = .filter
     @Environment(\.homeMacFilterDetailLayout) private var filterLayout
     @AppStorage(
         UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
@@ -58,8 +58,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     }
 
     private var tabPicker: some View {
-        HomeMacRoutineFilterDetailTabStrip(selection: $selectedTab)
-            .frame(maxWidth: .infinity, alignment: .center)
+        HomeMacFilterDetailTabStrip(
+            selection: $selectedTab,
+            accessibilityLabel: "Task list tabs"
+        )
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var filterTabContent: some View {
@@ -403,14 +406,26 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     }
 }
 
-private struct HomeMacRoutineFilterDetailTabStrip: View {
-    @Binding var selection: HomeMacRoutineFilterDetailTab
+struct HomeMacFilterDetailTabStrip: View {
+    @Binding var selection: HomeMacFilterDetailTab
+    let accessibilityLabel: String
+    let title: (HomeMacFilterDetailTab) -> String
     @Namespace private var glassNamespace
+
+    init(
+        selection: Binding<HomeMacFilterDetailTab>,
+        accessibilityLabel: String,
+        title: @escaping (HomeMacFilterDetailTab) -> String = { $0.title }
+    ) {
+        _selection = selection
+        self.accessibilityLabel = accessibilityLabel
+        self.title = title
+    }
 
     var body: some View {
         GlassEffectContainer(spacing: 5) {
             HStack(spacing: 5) {
-                ForEach(HomeMacRoutineFilterDetailTab.allCases) { tab in
+                ForEach(HomeMacFilterDetailTab.allCases) { tab in
                     segmentButton(for: tab)
                 }
             }
@@ -420,10 +435,10 @@ private struct HomeMacRoutineFilterDetailTabStrip: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Task list tabs")
+        .accessibilityLabel(accessibilityLabel)
     }
 
-    private func segmentButton(for tab: HomeMacRoutineFilterDetailTab) -> some View {
+    private func segmentButton(for tab: HomeMacFilterDetailTab) -> some View {
         let isSelected = selection == tab
 
         return Button {
@@ -431,7 +446,7 @@ private struct HomeMacRoutineFilterDetailTabStrip: View {
                 selection = tab
             }
         } label: {
-            Text(tab.title)
+            Text(title(tab))
                 .font(.system(size: 15, weight: isSelected ? .semibold : .medium))
                 .foregroundStyle(isSelected ? .primary : .secondary)
                 .frame(maxWidth: .infinity)
@@ -446,15 +461,15 @@ private struct HomeMacRoutineFilterDetailTabStrip: View {
                         .regular.tint(Color.accentColor.opacity(0.34)).interactive(),
                         in: .rect(cornerRadius: 11)
                     )
-                    .glassEffectID("HomeMacRoutineFilterDetailTabSelection", in: glassNamespace)
+                    .glassEffectID("HomeMacFilterDetailTabSelection", in: glassNamespace)
             }
         }
-        .accessibilityLabel(tab.title)
+        .accessibilityLabel(title(tab))
         .accessibilityValue(isSelected ? "Selected" : "")
     }
 }
 
-private enum HomeMacRoutineFilterDetailTab: String, CaseIterable, Identifiable {
+enum HomeMacFilterDetailTab: String, CaseIterable, Identifiable {
     case filter
     case sort
     case appearance

@@ -1,13 +1,35 @@
 import ComposableArchitecture
 import SwiftUI
 
-private struct TaskLadderGroupEditorPresentation: Identifiable {
+struct TaskLadderGroupEditorPresentation: Identifiable {
     let id = UUID()
     let group: TaskLadderGroup?
 }
 
 struct TaskRankingMacView: View {
     let store: StoreOf<TaskRankingFeature>
+    let isControlsPresented: Bool
+    let isControlsFullscreen: Bool
+    let onExpandControls: () -> Void
+    let onMinimizeControls: () -> Void
+    let onCloseControls: () -> Void
+
+    init(
+        store: StoreOf<TaskRankingFeature>,
+        isControlsPresented: Bool = false,
+        isControlsFullscreen: Bool = false,
+        onExpandControls: @escaping () -> Void = {},
+        onMinimizeControls: @escaping () -> Void = {},
+        onCloseControls: @escaping () -> Void = {}
+    ) {
+        self.store = store
+        self.isControlsPresented = isControlsPresented
+        self.isControlsFullscreen = isControlsFullscreen
+        self.onExpandControls = onExpandControls
+        self.onMinimizeControls = onMinimizeControls
+        self.onCloseControls = onCloseControls
+    }
+
     @AppStorage(
         UserDefaultStringValueKey.appSettingMacTaskRankingReversedMetrics.rawValue,
         store: SharedDefaults.app
@@ -20,11 +42,19 @@ struct TaskRankingMacView: View {
         UserDefaultStringValueKey.appSettingMacTaskLadderOrganization.rawValue,
         store: SharedDefaults.app
     ) private var taskLadderOrganizationRawValue = ""
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingTaskLadderTaskRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) private var taskRowHiddenFieldsRawValue = HomeTaskRowVisibility.taskLadderDefaultStorageRawValue
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
     @State private var collapsedSectionIDs = Set<String>()
-    @State private var groupEditorPresentation: TaskLadderGroupEditorPresentation?
+    @State var groupEditorPresentation: TaskLadderGroupEditorPresentation?
     @State private var placementTaskID: UUID?
-    @State private var isRepeatingTaskGroupEditorPresented = false
-    @State private var repeatingTaskGroupParentID: UUID?
+    @State var isRepeatingTaskGroupEditorPresented = false
+    @State var repeatingTaskGroupParentID: UUID?
     @State private var temporalWeightTaskID: UUID?
 
     var body: some View {
@@ -47,15 +77,7 @@ struct TaskRankingMacView: View {
             nil
         }
 
-        return VStack(spacing: 0) {
-            workspaceControls(
-                presentation: presentation,
-                searchPresentation: searchPresentation,
-                isSearching: isSearching
-            )
-
-            Divider()
-
+        return taskRankingControlsPresentation {
             HSplitView {
                 rankingList(
                     presentation: presentation,
@@ -173,95 +195,6 @@ struct TaskRankingMacView: View {
         }
     }
 
-    private func workspaceControls(
-        presentation: TaskRankingPresentation,
-        searchPresentation: TaskRankingSearchPresentation,
-        isSearching: Bool
-    ) -> some View {
-        HStack(spacing: 10) {
-            Picker("Rank by", selection: Binding(
-                get: { store.metric },
-                set: { store.send(.metricChanged($0)) }
-            )) {
-                ForEach(TaskRankingMetric.allCases) { metric in
-                    Text(metric.title).tag(metric)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 170)
-
-            if store.metric.supportsTemporalWeight {
-                Picker("Values", selection: Binding(
-                    get: { store.valueMode },
-                    set: { store.send(.valueModeChanged($0)) }
-                )) {
-                    ForEach(TaskRankingValueMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 120)
-                .help("Base shows saved values; Now applies each repeating task’s due-date rule")
-            }
-
-            Button {
-                store.send(.directionToggled)
-            } label: {
-                Label(
-                    store.metric.directionTitle(isReversed: store.isReversed),
-                    systemImage: "arrow.up.arrow.down"
-                )
-            }
-            .help("Reverse order: \(store.metric.directionTitle(isReversed: !store.isReversed))")
-
-            Spacer(minLength: 12)
-
-            Text(taskCountLabel(
-                presentation: presentation,
-                searchPresentation: searchPresentation,
-                isSearching: isSearching
-            ))
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Menu {
-                Button("New Container Group…") {
-                    groupEditorPresentation = TaskLadderGroupEditorPresentation(group: nil)
-                }
-
-                Button("Use Repeating Task as Group…") {
-                    repeatingTaskGroupParentID = nil
-                    isRepeatingTaskGroupEditorPresented = true
-                }
-                .disabled(!store.tasks.contains {
-                    !$0.isOneOffTask
-                        && presentation.eligibleTaskIDs.contains($0.id)
-                })
-            } label: {
-                Label("Add Group", systemImage: "folder.badge.plus")
-                    .frame(minWidth: 24, minHeight: 24)
-                    .contentShape(Rectangle())
-            }
-            .menuStyle(.borderlessButton)
-            .help("Create a container group or use a repeating task as a group")
-
-            Button {
-                store.send(.refresh)
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.borderless)
-            .help("Refresh task ranking")
-            .disabled(store.isLoading)
-        }
-        .padding(.horizontal, 14)
-        .frame(height: 52)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.35))
-    }
-
     private func rankingList(
         presentation: TaskRankingPresentation,
         searchPresentation: TaskRankingSearchPresentation,
@@ -373,6 +306,7 @@ struct TaskRankingMacView: View {
                                                     task,
                                                     in: section,
                                                     metadata: metadata,
+                                                    rowNumber: presentation.rowNumbersByTaskID[task.id],
                                                     isSelected: rowIdentity.isSelected,
                                                     isSearchMatch: currentScopeSearchMatchTaskIDs.contains(task.id)
                                                 )
@@ -668,205 +602,46 @@ struct TaskRankingMacView: View {
         }
     }
 
+    @ViewBuilder
     private func rankingRow(
         _ task: RoutineTask,
         in section: TaskRankingPresentation.Section,
         metadata: TaskRankingPresentation.RowMetadata?,
+        rowNumber: Int?,
         isSelected: Bool,
         isSearchMatch: Bool
     ) -> some View {
-        let isGroup = metadata?.isGroup == true
-        let isTaskGroup = metadata?.isTaskGroup == true
-        let childCount = metadata?.childCount ?? 0
-        let canOpenInnerLadder = isGroup || isTaskGroup || childCount > 0
-        return HStack(spacing: 9) {
-            Button {
-                if isGroup {
-                    store.send(.groupSelected(task.id))
-                } else {
-                    store.send(.taskSelected(task.id))
-                }
-            } label: {
-                HStack(spacing: 9) {
-                    Text(task.emoji ?? "✨")
-                        .font(.body)
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(task.name ?? "Untitled task")
-                            .font(.subheadline.weight(isSelected ? .semibold : .regular))
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-
-                        if let metadata {
-                            rowMetadata(metadata)
-                        }
+        if let metadata {
+            TaskRankingMacRow(
+                task: task,
+                metadata: metadata,
+                rowNumber: rowNumber,
+                supportsManualOrdering: section.supportsManualOrdering,
+                isSelected: isSelected,
+                isSearchMatch: isSearchMatch,
+                visibility: HomeTaskRowVisibility(storageRawValue: taskRowHiddenFieldsRawValue),
+                showsPlaces: isPlacesEnabled,
+                onSelect: {
+                    if metadata.isGroup {
+                        store.send(.groupSelected(task.id))
+                    } else {
+                        store.send(.taskSelected(task.id))
                     }
-
-                    Spacer(minLength: 2)
-
-                    if canOpenInnerLadder {
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(.vertical, 9)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help(
-                canOpenInnerLadder
-                    ? "Click to show details; double-click to open the inner Task Ladder"
-                    : "Click to show details"
-            )
-            .accessibilityHint(
-                canOpenInnerLadder
-                    ? "Double-click to open the inner Task Ladder"
-                    : "Shows task details"
-            )
-            .onMacDoubleClick(enabled: canOpenInnerLadder) {
-                store.send(.childLadderOpened(task.id))
-            }
-
-            if section.supportsManualOrdering {
-                VStack(spacing: 2) {
-                    Button {
-                        store.send(.moveTask(task.id, .up))
-                    } label: {
-                        Image(systemName: "chevron.up")
-                            .frame(width: 22, height: 18)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Move up")
-
-                    Button {
-                        store.send(.moveTask(task.id, .down))
-                    } label: {
-                        Image(systemName: "chevron.down")
-                            .frame(width: 22, height: 18)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Move down")
-                }
-                .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.leading, 12)
-        .padding(.trailing, 8)
-        .background(
-            isSelected
-                ? Color.accentColor.opacity(0.14)
-                : isSearchMatch
-                    ? Color.yellow.opacity(0.12)
-                    : .clear
-        )
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .contextMenu {
-            if isGroup {
-                Button("Show Group Details") {
-                    store.send(.groupSelected(task.id))
-                }
-                Button("Open Inner Task Ladder") {
-                    store.send(.childLadderOpened(task.id))
-                }
-                Button("Edit Group…") {
+                },
+                onOpenInnerLadder: { store.send(.childLadderOpened(task.id)) },
+                onEditGroup: {
                     guard let group = store.organization.group(id: task.id) else { return }
                     groupEditorPresentation = TaskLadderGroupEditorPresentation(group: group)
-                }
-            } else {
-                Button("Open Task") {
-                    store.send(.taskSelected(task.id))
-                }
-                Button("Organize in Task Ladder…") {
-                    placementTaskID = task.id
-                }
-                if !task.isOneOffTask {
-                    if RoutineTaskTemporalWeightResolver.supportsTemporalWeight(task) {
-                        Button("Changes over Time…") {
-                            temporalWeightTaskID = task.id
-                        }
-                    }
-                    Button(
-                        isTaskGroup || childCount > 0
-                            ? "Add Task to This Group…"
-                            : "Use as Task Ladder Group…"
-                    ) {
-                        repeatingTaskGroupParentID = task.id
-                        isRepeatingTaskGroupEditorPresented = true
-                    }
-                }
-                if isTaskGroup || childCount > 0 {
-                    Button("Open Inner Task Ladder") {
-                        store.send(.childLadderOpened(task.id))
-                    }
-                }
-            }
-            if section.supportsManualOrdering {
-                Divider()
-                Button("Move Up") { store.send(.moveTask(task.id, .up)) }
-                Button("Move Down") { store.send(.moveTask(task.id, .down)) }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func rowMetadata(_ metadata: TaskRankingPresentation.RowMetadata) -> some View {
-        if metadata.isGroup || metadata.isTaskGroup || metadata.inheritsMetricValue || !metadata.tagLabels.isEmpty || metadata.isRepeating || metadata.childCount > 0 || metadata.temporalTimingLabel != nil {
-            HStack(spacing: 6) {
-                if metadata.isGroup {
-                    Label("Group", systemImage: "folder")
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                }
-
-                if metadata.inheritsMetricValue {
-                    Label("Inherited", systemImage: "arrow.triangle.branch")
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .accessibilityLabel("Value inherited from tasks")
-                }
-
-                if metadata.isTaskGroup {
-                    Label("Task group", systemImage: "square.stack.3d.up")
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                }
-
-                if !metadata.tagLabels.isEmpty {
-                    Text(metadata.tagLabels.joined(separator: " • "))
-                        .lineLimit(1)
-                }
-
-                if metadata.isRepeating {
-                    Label("Repeating", systemImage: "repeat")
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .accessibilityLabel("Repeating task")
-                }
-
-                if let temporalTimingLabel = metadata.temporalTimingLabel {
-                    Label(temporalTimingLabel, systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90")
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .accessibilityLabel("Changed value timing: \(temporalTimingLabel)")
-                }
-
-                if metadata.childCount > 0 {
-                    Label(
-                        metadata.childCount == 1
-                            ? "1 task"
-                            : "\(metadata.childCount) tasks",
-                        systemImage: "square.stack.3d.up"
-                    )
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                }
-            }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+                },
+                onOrganize: { placementTaskID = task.id },
+                onEditTemporalWeight: { temporalWeightTaskID = task.id },
+                onUseAsGroup: {
+                    repeatingTaskGroupParentID = task.id
+                    isRepeatingTaskGroupEditorPresented = true
+                },
+                onMoveUp: { store.send(.moveTask(task.id, .up)) },
+                onMoveDown: { store.send(.moveTask(task.id, .down)) }
+            )
         }
     }
 
@@ -896,19 +671,6 @@ struct TaskRankingMacView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-
-    private func taskCountLabel(
-        presentation: TaskRankingPresentation,
-        searchPresentation: TaskRankingSearchPresentation,
-        isSearching: Bool
-    ) -> String {
-        if isSearching {
-            let count = searchPresentation.matches.count
-            return count == 1 ? "1 match" : "\(count) matches"
-        }
-        let count = presentation.taskCount
-        return count == 1 ? "1 item" : "\(count) items"
     }
 
     private var emptyStateTitle: String {

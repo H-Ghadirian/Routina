@@ -8,6 +8,10 @@ Accepted
 
 2026-09-03
 
+## Revised By
+
+- [0721: Customize Mac Backlog Row Appearance](0721-customize-mac-backlog-row-appearance.md) separates Backlog filtering and sorting into tabs and adds independent row appearance in the same companion surface.
+
 ## Revises
 
 - [0690: Place Mac Filters Beside Planner and Backlog Workspaces](0690-place-mac-filters-beside-planner-and-backlog-workspaces.md)

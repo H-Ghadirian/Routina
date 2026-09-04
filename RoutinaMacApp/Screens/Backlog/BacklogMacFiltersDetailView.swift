@@ -1,0 +1,290 @@
+import ComposableArchitecture
+import SwiftUI
+
+struct BacklogMacFiltersDetailView: View {
+    @State private var selectedTab: HomeMacFilterDetailTab = .filter
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingBacklogTaskRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) private var backlogTaskRowHiddenFieldsRawValue = HomeTaskRowVisibility.backlogDefaultStorageRawValue
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
+
+    let store: StoreOf<BacklogFeature>
+
+    var body: some View {
+        HomeMacFilterDetailContainerView(
+            title: "Backlog Controls",
+            showsTitle: false
+        ) {
+            header
+            HomeMacFilterDetailTabStrip(
+                selection: $selectedTab,
+                accessibilityLabel: "Backlog tabs"
+            )
+
+            switch selectedTab {
+            case .filter:
+                filterTabContent
+            case .sort:
+                sortTabContent
+            case .appearance:
+                appearanceTabContent
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Backlog")
+                    .font(.title2.weight(.semibold))
+
+                Text("Filtering, sorting, and appearance affect Backlog only.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Button("Reset") {
+                store.send(.clearFilters)
+            }
+            .disabled(!store.filters.hasNonDefaultOptions)
+        }
+    }
+
+    private var filterTabContent: some View {
+        Group {
+            coreFilters
+            taskLadderFilters
+            tagFilters
+            flagFilters
+        }
+    }
+
+    private var coreFilters: some View {
+        HomeMacSidebarSectionCard(title: "Filters") {
+            VStack(alignment: .leading, spacing: 18) {
+                HomeMacAdaptiveFilterControlRow("Task type") {
+                    HomeMacAdaptiveFilterChoiceControl(
+                        accessibilityLabel: "Backlog task type",
+                        options: HomeTaskListMode.allCases,
+                        selection: filterBinding(\.taskListMode),
+                        minimumSegmentWidth: 112,
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                    ) { mode in
+                        Label(mode.title, systemImage: mode.systemImage)
+                    }
+                }
+
+                HomeMacAdaptiveFilterControlRow("Created") {
+                    HomeMacAdaptiveFilterChoiceControl(
+                        accessibilityLabel: "Backlog created date",
+                        options: HomeTaskCreatedDateFilter.allCases,
+                        selection: filterBinding(\.createdDateFilter),
+                        minimumSegmentWidth: 126,
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                    ) { filter in
+                        Label(filter.title, systemImage: filter.systemImage)
+                    }
+                }
+
+                if store.filters.taskListMode != .routines {
+                    HomeMacAdaptiveFilterControlRow("Status") {
+                        HomeMacAdaptiveFilterChoiceControl(
+                            accessibilityLabel: "Backlog one-time status",
+                            options: todoStateOptions,
+                            selection: filterBinding(\.selectedTodoState),
+                            minimumSegmentWidth: 92,
+                            compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                        ) { state in
+                            if let state {
+                                Label(state.displayTitle, systemImage: state.systemImage)
+                            } else {
+                                Label("All", systemImage: "circle.grid.2x2")
+                            }
+                        }
+                    }
+                }
+
+                HomeMacAdaptiveFilterControlRow("Media") {
+                    HomeMacAdaptiveFilterChoiceControl(
+                        accessibilityLabel: "Backlog media",
+                        options: TaskMediaFilter.allCases,
+                        selection: filterBinding(\.selectedMediaFilter),
+                        minimumSegmentWidth: 104,
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                    ) { filter in
+                        Label(filter.title, systemImage: filter.systemImage)
+                    }
+                }
+            }
+        }
+    }
+
+    private var sortTabContent: some View {
+        HomeMacSidebarSectionCard(title: "Sorting") {
+            HomeMacAdaptiveFilterControlRow("Sort") {
+                HomeMacAdaptiveFilterChoiceControl(
+                    accessibilityLabel: "Backlog sort order",
+                    options: BacklogSortOrder.allCases,
+                    selection: filterBinding(\.sortOrder),
+                    minimumSegmentWidth: 126,
+                    compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                ) { order in
+                    Label(order.title, systemImage: order.systemImage)
+                }
+            }
+        }
+    }
+
+    private var appearanceTabContent: some View {
+        HomeMacSidebarSectionCard(title: "Backlog Row") {
+            HomeMacFilterAppearanceToggleRow(
+                "Multiline Titles",
+                subtitle: "Wrap long task titles onto additional lines.",
+                isOn: taskRowMultilineTitlesBinding
+            )
+
+            ForEach(backlogTaskRowFields) { field in
+                HomeMacFilterAppearanceToggleRow(
+                    field.title,
+                    subtitle: field.subtitle,
+                    isOn: taskRowFieldVisibilityBinding(field)
+                )
+            }
+
+            Text("Shown: \(backlogTaskRowSummaryText)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var taskLadderFilters: some View {
+        HomeMacTaskLadderFiltersSection(
+            selectedImportanceUrgencyFilter: filterBinding(\.selectedImportanceUrgencyFilter),
+            selectedPressureFilter: filterBinding(\.selectedPressureFilter),
+            selectedThinkingNeededFilter: filterBinding(\.selectedThinkingNeededFilter),
+            selectedEstimationFilter: filterBinding(\.selectedEstimationFilter)
+        )
+    }
+
+    private var tagFilters: some View {
+        HomeMacTimelineTagFiltersView(
+            availableTags: store.presentation.filterCatalog.tags,
+            suggestedRelatedTags: [],
+            availableExcludeTags: store.presentation.filterCatalog.tags,
+            selectedTags: store.filters.selectedTags,
+            includeTagMatchMode: store.filters.includeTagMatchMode,
+            excludeTagMatchMode: store.filters.excludeTagMatchMode,
+            selectedExcludedTags: store.filters.excludedTags,
+            tagCount: { tag in
+                store.presentation.filterCatalog.tagCounts[RoutineTag.normalized(tag) ?? tag, default: 0]
+            },
+            tagColor: { tag in
+                guard let hex = store.tagColors[RoutineTag.normalized(tag) ?? tag] else { return nil }
+                return Color(hex: hex)
+            },
+            onSelectTags: { updateFilter(\.selectedTags, to: $0) },
+            onIncludeTagMatchModeChange: { updateFilter(\.includeTagMatchMode, to: $0) },
+            onSelectSuggestedTag: { tag in
+                var tags = store.filters.selectedTags
+                tags.insert(tag)
+                updateFilter(\.selectedTags, to: tags)
+            },
+            onExcludeTagMatchModeChange: { updateFilter(\.excludeTagMatchMode, to: $0) },
+            onToggleExcludedTag: toggleExcludedTag,
+            presentation: .compactActions
+        )
+    }
+
+    private var flagFilters: some View {
+        HomeMacSharedFlagFiltersView(
+            availableFlags: store.presentation.filterCatalog.flags,
+            selectedFlags: store.filters.selectedFlags,
+            excludedFlags: store.filters.excludedFlags,
+            includeFlagMatchMode: store.filters.includeFlagMatchMode,
+            excludeFlagMatchMode: store.filters.excludeFlagMatchMode,
+            onSelectIncludedFlags: { updateFilter(\.selectedFlags, to: $0) },
+            onIncludeFlagMatchModeChange: { updateFilter(\.includeFlagMatchMode, to: $0) },
+            onSelectExcludedFlags: { updateFilter(\.excludedFlags, to: $0) },
+            onExcludeFlagMatchModeChange: { updateFilter(\.excludeFlagMatchMode, to: $0) }
+        )
+    }
+
+    private var taskRowVisibility: HomeTaskRowVisibility {
+        HomeTaskRowVisibility(storageRawValue: backlogTaskRowHiddenFieldsRawValue)
+    }
+
+    private var backlogTaskRowFields: [HomeTaskRowField] {
+        HomeTaskRowField.backlogAppearanceFields(showsPlaces: isPlacesEnabled)
+    }
+
+    private var backlogTaskRowSummaryText: String {
+        let visibleCount = backlogTaskRowFields.lazy.filter {
+            taskRowVisibility.shows($0)
+        }.count
+        return visibleCount == backlogTaskRowFields.count
+            ? "All fields"
+            : "\(visibleCount) of \(backlogTaskRowFields.count) fields"
+    }
+
+    private var taskRowMultilineTitlesBinding: Binding<Bool> {
+        Binding(
+            get: { taskRowVisibility.allowsMultilineTitles },
+            set: { isEnabled in
+                persistTaskRowVisibility(taskRowVisibility.settingMultilineTitles(isEnabled))
+            }
+        )
+    }
+
+    private func taskRowFieldVisibilityBinding(_ field: HomeTaskRowField) -> Binding<Bool> {
+        Binding(
+            get: { taskRowVisibility.shows(field) },
+            set: { isVisible in
+                persistTaskRowVisibility(taskRowVisibility.setting(field, visible: isVisible))
+            }
+        )
+    }
+
+    private func persistTaskRowVisibility(_ visibility: HomeTaskRowVisibility) {
+        backlogTaskRowHiddenFieldsRawValue = visibility.storageRawValue ?? ""
+        AppSettingsPersistenceMirror.schedule()
+    }
+
+    private var todoStateOptions: [TodoState?] {
+        [nil] + TodoState.filterableCases.map(Optional.some)
+    }
+
+    private func filterBinding<Value: Equatable>(
+        _ keyPath: WritableKeyPath<BacklogFilterState, Value>
+    ) -> Binding<Value> {
+        Binding(
+            get: { store.filters[keyPath: keyPath] },
+            set: { updateFilter(keyPath, to: $0) }
+        )
+    }
+
+    private func updateFilter<Value: Equatable>(
+        _ keyPath: WritableKeyPath<BacklogFilterState, Value>,
+        to value: Value
+    ) {
+        guard store.filters[keyPath: keyPath] != value else { return }
+        var filters = store.filters
+        filters[keyPath: keyPath] = value
+        store.send(.filtersChanged(filters))
+    }
+
+    private func toggleExcludedTag(_ tag: String) {
+        var tags = store.filters.excludedTags
+        if let existing = tags.first(where: { RoutineTag.contains($0, in: [tag]) }) {
+            tags.remove(existing)
+        } else {
+            tags.insert(tag)
+        }
+        updateFilter(\.excludedTags, to: tags)
+    }
+}

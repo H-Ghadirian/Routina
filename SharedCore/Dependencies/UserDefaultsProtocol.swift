@@ -111,7 +111,6 @@ enum AppSettingsDefaults {
         .appSettingMacFutureTasksSectionCollapsed: true,
         .appSettingArchivedRoutinesSectionCollapsed: false
     ]
-
     static let stringValues: [String: String] = [
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
         UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue: "",
@@ -119,6 +118,8 @@ enum AppSettingsDefaults {
         UserDefaultStringValueKey.appSettingMacHomeTaskListSectionOrder.rawValue: "",
         UserDefaultStringValueKey.appSettingMacTaskRankingReversedMetrics.rawValue: "",
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
+        UserDefaultStringValueKey.appSettingBacklogTaskRowHiddenFields.rawValue: HomeTaskRowVisibility.backlogDefaultStorageRawValue,
+        UserDefaultStringValueKey.appSettingTaskLadderTaskRowHiddenFields.rawValue: HomeTaskRowVisibility.taskLadderDefaultStorageRawValue,
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue: "",
         UserDefaultStringValueKey.appSettingDayPlanCalendarListRowHiddenFields.rawValue: "",
         UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue: ProtectionBlockingMode.encodedSet(
@@ -126,7 +127,6 @@ enum AppSettingsDefaults {
         ),
         UserDefaultStringValueKey.macQuickAddShortcut.rawValue: "optionCommandN"
     ]
-
     static let intValues: [String: Int] = [
         BatteryRoutinePreferences.thresholdPercentDefaultsKey: BatteryRoutinePreferences.defaultThresholdPercent,
         NotificationPreferences.reminderHourDefaultsKey: NotificationPreferences.defaultReminderHour,
@@ -156,6 +156,7 @@ enum AppSettingsDefaults {
         .appSettingMacHomeTaskListSectionOrder,
         .appSettingMacTaskRankingReversedMetrics,
         .appSettingMacTaskLadderOrganization,
+        .appSettingTaskLadderTaskRowHiddenFields,
         .appSettingBlockingWebsiteDomains,
         .appSettingFocusShieldSelection,
         .appSettingMacFocusBlockedApps,
@@ -291,6 +292,8 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingMacTaskLadderOrganization
     case appSettingTagCounterDisplayMode
     case appSettingHomeTaskRowHiddenFields
+    case appSettingBacklogTaskRowHiddenFields
+    case appSettingTaskLadderTaskRowHiddenFields
     case appSettingHomeTimelineRowHiddenFields
     case appSettingDayPlanCalendarListRowHiddenFields
     case appSettingRelatedTagRules

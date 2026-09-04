@@ -1086,6 +1086,8 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.macTaskRankingReversedMetrics = backupPreferences.macTaskRankingReversedMetrics
         preferences.macTaskLadderOrganization = backupPreferences.macTaskLadderOrganization
         preferences.homeTaskRowHiddenFields = backupPreferences.homeTaskRowHiddenFields
+        preferences.backlogTaskRowHiddenFields = backupPreferences.backlogTaskRowHiddenFields
+        preferences.taskLadderTaskRowHiddenFields = backupPreferences.taskLadderTaskRowHiddenFields
         preferences.dayPlanCalendarListRowHiddenFields =
             backupPreferences.dayPlanCalendarListRowHiddenFields
         preferences.relatedTagRules = backupPreferences.relatedTagRules
@@ -1135,8 +1137,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.separateDailyRoutinesInTaskList = backupPreferences.separateDailyRoutinesInTaskList ?? false
         preferences.showTomorrowInTaskList = backupPreferences.showTomorrowInTaskList ?? false
         preferences.macShowDoneCountInToolbar = backupPreferences.macShowDoneCountInToolbar ?? false
-        preferences.separateTodosAndRoutinesInTagTaskListSections = backupPreferences
-            .separateTodosAndRoutinesInTagTaskListSections ?? false
+        preferences.separateTodosAndRoutinesInTagTaskListSections = backupPreferences.separateTodosAndRoutinesInTagTaskListSections ?? false
         preferences.separateDeadlineStatusInTagTaskListSections = backupPreferences
             .separateDeadlineStatusInTagTaskListSections ?? false
         preferences.notificationReminderHour = backupPreferences.notificationReminderHour ?? NotificationPreferences.defaultReminderHour

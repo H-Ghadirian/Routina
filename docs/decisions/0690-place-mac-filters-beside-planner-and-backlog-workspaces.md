@@ -10,6 +10,8 @@ Accepted
 
 ## Revised By
 
+- [0722: Move Mac Task Ladder Controls to the Right Sidebar](0722-move-mac-task-ladder-controls-to-the-right-sidebar.md) adds Task Ladder to the workspace-level control entry with View, Sort, Appearance, group, refresh, and count controls.
+- [0721: Customize Mac Backlog Row Appearance](0721-customize-mac-backlog-row-appearance.md) separates Backlog Filter, Sort, and Appearance controls and adds independent durable row customization.
 - [0716: Sort Mac Backlog by Due Date](0716-sort-mac-backlog-by-due-date.md) adds Backlog-owned due-date ordering and renames that workspace's pane to `Filter and Sort` while preserving its independent, cached presentation boundary.
 
 ## Revises

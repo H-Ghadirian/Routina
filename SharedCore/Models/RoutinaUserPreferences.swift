@@ -15,6 +15,8 @@ final class RoutinaUserPreferences {
     var macTaskRankingReversedMetrics: String?
     var macTaskLadderOrganization: String?
     var homeTaskRowHiddenFields: String?
+    var backlogTaskRowHiddenFields: String?
+    var taskLadderTaskRowHiddenFields: String?
     var homeTimelineRowHiddenFields: String?
     var dayPlanCalendarListRowHiddenFields: String?
     var relatedTagRules: String?
@@ -79,7 +81,6 @@ final class RoutinaUserPreferences {
         self.updatedAt = updatedAt
     }
 }
-
 @MainActor
 enum RoutinaUserPreferencesStore {
     private static let migratedDefaultsKey = "routina.userPreferences.defaultsMigrated.v1"
@@ -243,9 +244,10 @@ enum RoutinaUserPreferencesStore {
         store(defaults[.appSettingMacTaskRankingReversedMetrics], at: \.macTaskRankingReversedMetrics)
         store(defaults[.appSettingMacTaskLadderOrganization], at: \.macTaskLadderOrganization)
         store(defaults[.appSettingHomeTaskRowHiddenFields], at: \.homeTaskRowHiddenFields)
+        store(defaults[.appSettingBacklogTaskRowHiddenFields], at: \.backlogTaskRowHiddenFields)
+        store(defaults[.appSettingTaskLadderTaskRowHiddenFields], at: \.taskLadderTaskRowHiddenFields)
         store(defaults[.appSettingHomeTimelineRowHiddenFields], at: \.homeTimelineRowHiddenFields)
-        store(
-            defaults[.appSettingDayPlanCalendarListRowHiddenFields],
+        store(defaults[.appSettingDayPlanCalendarListRowHiddenFields],
             at: \.dayPlanCalendarListRowHiddenFields
         )
         store(defaults[.appSettingRelatedTagRules], at: \.relatedTagRules)
@@ -376,9 +378,10 @@ enum RoutinaUserPreferencesStore {
         store(preferences.macTaskRankingReversedMetrics, at: .appSettingMacTaskRankingReversedMetrics)
         store(preferences.macTaskLadderOrganization, at: .appSettingMacTaskLadderOrganization)
         store(preferences.homeTaskRowHiddenFields, at: .appSettingHomeTaskRowHiddenFields)
+        store(preferences.backlogTaskRowHiddenFields, at: .appSettingBacklogTaskRowHiddenFields)
+        store(preferences.taskLadderTaskRowHiddenFields, at: .appSettingTaskLadderTaskRowHiddenFields)
         store(preferences.homeTimelineRowHiddenFields, at: .appSettingHomeTimelineRowHiddenFields)
-        store(
-            preferences.dayPlanCalendarListRowHiddenFields,
+        store(preferences.dayPlanCalendarListRowHiddenFields,
             at: .appSettingDayPlanCalendarListRowHiddenFields
         )
         store(preferences.relatedTagRules, at: .appSettingRelatedTagRules)

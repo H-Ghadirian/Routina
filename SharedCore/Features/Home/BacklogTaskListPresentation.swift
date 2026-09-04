@@ -230,25 +230,25 @@ struct BacklogTaskListPresentation: Equatable {
     /// suppresses the matching row from the visible hierarchy.
     let hasAnySearchResult: Bool
     let filterCatalog: FilterCatalog
-
+    let rowPresentationsByTaskID: [UUID: BacklogTaskRowPresentation]
+    let rowNumbersByTaskID: [UUID: Int]
     var taskCount: Int {
         sections.reduce(0) { $0 + $1.taskCount } + hiddenByFlagTasks.count
     }
-
     var isEmpty: Bool {
         sections.isEmpty && hiddenByFlagTasks.isEmpty
     }
-
     static var empty: Self {
         Self(
             sections: [],
             hiddenByFlagTasks: [],
             outsideBacklogResults: [],
             hasAnySearchResult: false,
-            filterCatalog: .empty
+            filterCatalog: .empty,
+            rowPresentationsByTaskID: [:],
+            rowNumbersByTaskID: [:]
         )
     }
-
     static func make(
         tasks: [RoutineTask],
         customSections: [HomeCustomTaskSection],
@@ -312,8 +312,7 @@ struct BacklogTaskListPresentation: Equatable {
             .union(unassignedHiddenByFlagTasks.map(\.id))
         let allBacklogTasks = tasks.filter { allBacklogTaskIDs.contains($0.id) }
         let filterCatalog = makeFilterCatalog(
-            tasks: allBacklogTasks,
-            availableFlags: availableFlags
+            tasks: allBacklogTasks, availableFlags: availableFlags
         )
         let tasksBySectionID: [UUID: [RoutineTask]] = Dictionary(grouping: tasks.filter { task in
             guard let sectionID = backlogSectionIDByTaskID[task.id] else {
@@ -417,12 +416,13 @@ struct BacklogTaskListPresentation: Equatable {
             }
         } ?? false
 
-        return Self(
+        return BacklogTaskRowPresentationCache.makeList(
             sections: presentationSections,
             hiddenByFlagTasks: hiddenByFlagTasks,
             outsideBacklogResults: outsideBacklogResults,
             hasAnySearchResult: hasFilteredBacklogSearchResult || !outsideBacklogResults.isEmpty,
-            filterCatalog: filterCatalog
+            filterCatalog: filterCatalog,
+            context: BacklogTaskRowPresentationContext(flagRules: flagRules, referenceDate: referenceDate, calendar: calendar)
         )
     }
 
@@ -531,7 +531,7 @@ struct BacklogTaskListPresentation: Equatable {
         }
     }
 
-    private static func sortableDueDate(
+    static func sortableDueDate(
         for task: RoutineTask,
         referenceDate: Date,
         calendar: Calendar

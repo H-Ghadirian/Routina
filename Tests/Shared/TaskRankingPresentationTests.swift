@@ -761,15 +761,15 @@ struct TaskRankingPresentationTests {
     @Test
     func taskLadderRowsRenderRepeatingLabelWithoutMetricFallbacks() throws {
         let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacRow.swift"
         )
 
-        #expect(source.contains("metadata.tagLabels.joined(separator: \" • \")"))
-        #expect(source.contains("Label(\"Repeating\", systemImage: \"repeat\")"))
+        #expect(source.contains("ForEach(metadata.appearance.tags"))
+        #expect(source.contains("badge(\"Repeating\", systemImage: \"repeat\""))
         #expect(source.contains("Open Inner Task Ladder"))
         #expect(source.contains("metadata.childCount"))
         #expect(source.contains("metadata.inheritsMetricValue"))
-        #expect(source.contains("Label(\"Inherited\", systemImage: \"arrow.triangle.branch\")"))
+        #expect(source.contains("badge(\"Inherited\", systemImage: \"arrow.triangle.branch\""))
         #expect(!source.contains("private func metadataLabels"))
         #expect(!source.contains("No pressure value"))
     }
@@ -865,8 +865,14 @@ struct TaskRankingPresentationTests {
 
     @Test
     func taskLadderOffersBaseNowAndTemporalRuleEditing() throws {
-        let viewSource = try Self.sourceFile(
+        let rankingSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+        )
+        let controlsSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacControlsDetailView.swift"
+        )
+        let rowSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacRow.swift"
         )
         let featureSource = try Self.sourceFile(
             "SharedCore/Features/Home/TaskRankingFeature.swift"
@@ -875,9 +881,9 @@ struct TaskRankingPresentationTests {
             "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
         )
 
-        #expect(viewSource.contains("ForEach(TaskRankingValueMode.allCases)"))
-        #expect(viewSource.contains("Button(\"Changes over Time…\")"))
-        #expect(viewSource.contains("TaskTemporalWeightRuleSheet("))
+        #expect(controlsSource.contains("options: TaskRankingValueMode.allCases"))
+        #expect(rowSource.contains("Button(\"Changes over Time…\""))
+        #expect(rankingSource.contains("TaskTemporalWeightRuleSheet("))
         #expect(sharedEditorSource.contains("Define the value after completion and the independent due-date behavior"))
         #expect(sharedEditorSource.contains("TaskTemporalWeightSummaryCard"))
         #expect(sharedEditorSource.contains("TaskLadderEntryWindowEditor"))
@@ -929,13 +935,19 @@ struct TaskRankingPresentationTests {
         let rankingSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
+        let controlsSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacControlsDetailView.swift"
+        )
+        let rowSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacRow.swift"
+        )
         let organizationSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
         )
 
-        #expect(rankingSource.contains("Use Repeating Task as Group…"))
-        #expect(rankingSource.contains("Add Task to This Group…"))
-        #expect(rankingSource.contains("if !task.isOneOffTask"))
+        #expect(controlsSource.contains("Use Repeating Task as Group…"))
+        #expect(rowSource.contains("Add Task to This Group…"))
+        #expect(rowSource.contains("if !task.isOneOffTask"))
         #expect(rankingSource.contains(".taskPlacementSaved("))
         #expect(rankingSource.contains(".task(parentTaskID)"))
         #expect(rankingSource.contains(".childLadderOpened(parentTaskID)"))
@@ -964,16 +976,19 @@ struct TaskRankingPresentationTests {
         let viewSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
+        let rowSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacRow.swift"
+        )
         let featureSource = try Self.sourceFile(
             "SharedCore/Features/Home/TaskRankingFeature.swift"
         )
 
         #expect(viewSource.contains("store.send(.groupSelected(task.id))"))
-        #expect(viewSource.contains(".onMacDoubleClick(enabled: canOpenInnerLadder)"))
+        #expect(rowSource.contains(".onMacDoubleClick(enabled: canOpenInnerLadder"))
         #expect(viewSource.contains("store.send(.childLadderOpened(task.id))"))
-        #expect(viewSource.contains("Click to show details; double-click to open the inner Task Ladder"))
-        #expect(viewSource.contains("Button(\"Show Group Details\")"))
-        #expect(viewSource.contains("Button(\"Open Inner Task Ladder\")"))
+        #expect(rowSource.contains("Click to show details; double-click to open the inner Task Ladder"))
+        #expect(rowSource.contains("Button(\"Show Group Details\""))
+        #expect(rowSource.contains("Button(\"Open Inner Task Ladder\""))
         #expect(viewSource.contains("store.detailGroup"))
         #expect(featureSource.contains("var selectedGroupID: UUID?"))
         #expect(featureSource.contains("case groupSelected(UUID)"))
@@ -986,11 +1001,14 @@ struct TaskRankingPresentationTests {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
+        let rowSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacRow.swift"
+        )
 
         let bodyStart = try #require(source.range(of: "var body: some View"))
         let bodyEnd = try #require(
             source.range(
-                of: "private func workspaceControls(",
+                of: "private func rankingList(",
                 range: bodyStart.upperBound..<source.endIndex
             )
         )
@@ -1007,7 +1025,7 @@ struct TaskRankingPresentationTests {
         #expect(source.contains(".id(rowIdentity)"))
         #expect(source.contains(".id(task.id)"))
         #expect(!source.contains(".id(selectionIdentity)"))
-        #expect(source.contains(".accessibilityAddTraits(isSelected ? .isSelected : [])"))
+        #expect(rowSource.contains(".accessibilityAddTraits(isSelected ? .isSelected : [])"))
         #expect(!source.contains("? store.selectedGroupID == task.id"))
     }
 
@@ -1020,7 +1038,7 @@ struct TaskRankingPresentationTests {
         let bodyStart = try #require(source.range(of: "var body: some View"))
         let bodyEnd = try #require(
             source.range(
-                of: "private func workspaceControls(",
+                of: "private func rankingList(",
                 range: bodyStart.upperBound..<source.endIndex
             )
         )
@@ -1029,10 +1047,10 @@ struct TaskRankingPresentationTests {
         let splitView = try #require(body.range(of: "HSplitView {"))
 
         #expect(presentationRead.lowerBound < splitView.lowerBound)
-        #expect(body.contains("workspaceControls(\n                presentation: presentation"))
+        #expect(body.contains("taskRankingControlsPresentation"))
         #expect(body.contains("rankingList(\n                    presentation: presentation"))
         #expect(source.contains("ForEach(presentation.sections)"))
-        #expect(source.contains("Text(taskCountLabel(\n                presentation: presentation"))
+        #expect(source.contains("presentation.rowNumbersByTaskID[task.id]"))
         #expect(!source.contains("ForEach(store.presentation.sections)"))
     }
 
@@ -1087,12 +1105,20 @@ struct TaskRankingPresentationTests {
         let rankingSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
+        let controlsSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacControlsDetailView.swift"
+        )
+        let controlsPresentationSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView+ControlsPresentation.swift"
+        )
         let groupDetailSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
         )
 
-        #expect(rankingSource.contains("Label(\"Add Group\", systemImage: \"folder.badge.plus\")"))
-        #expect(rankingSource.contains("Text(taskCountLabel("))
+        #expect(controlsSource.contains("actionLabel(\"Add Group\", systemImage: \"folder.badge.plus\")"))
+        #expect(controlsSource.contains("Text(itemCountLabel)"))
+        #expect(controlsPresentationSource.contains("\"View, Sort, and Appearance\""))
+        #expect(!rankingSource.contains("private func workspaceControls("))
         #expect(rankingSource.contains("if !store.scopePath.isEmpty"))
         #expect(rankingSource.contains("Text(store.scopeParentName ?? \"Nested tasks\")"))
         #expect(!rankingSource.contains("Text(store.scopeParentName ?? \"Task Ladder\")"))

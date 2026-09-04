@@ -137,8 +137,7 @@ struct HomeMacTopToolbarChrome: View {
                 HomeMacToolbarFilterButton(
                     isPresented: isFilterPresented,
                     isActive: isFilterActive,
-                    workspaceTitle: selectedSidebarMode.workspaceTitle,
-                    presentsSort: selectedSidebarMode == .backlog,
+                    workspace: selectedSidebarMode,
                     onToggle: onToggleFilters
                 )
             }
@@ -196,15 +195,14 @@ struct HomeMacTopToolbarChrome: View {
 
 enum HomeMacToolbarFilterPresentation {
     static func isVisible(for mode: HomeFeature.MacSidebarMode) -> Bool {
-        mode == .routines || mode == .backlog
+        mode == .routines || mode == .backlog || mode == .taskLadder
     }
 }
 
 private struct HomeMacToolbarFilterButton: View {
     let isPresented: Bool
     let isActive: Bool
-    let workspaceTitle: String
-    let presentsSort: Bool
+    let workspace: HomeFeature.MacSidebarMode
     let onToggle: () -> Void
 
     var body: some View {
@@ -230,15 +228,30 @@ private struct HomeMacToolbarFilterButton: View {
     }
 
     private var actionTitle: String {
-        presentsSort ? "\(workspaceTitle) filter and sort" : "\(workspaceTitle) filters"
+        switch workspace {
+        case .backlog:
+            return "Backlog filter, sort, and appearance"
+        case .taskLadder:
+            return "Task Ladder view, sort, and appearance"
+        default:
+            return "\(workspace.workspaceTitle) filters"
+        }
     }
 
     private var activeValue: String {
-        presentsSort ? "Filter or sort active" : "Filters active"
+        switch workspace {
+        case .backlog: return "Filter or sort active"
+        case .taskLadder: return "Custom Task Ladder controls active"
+        default: return "Filters active"
+        }
     }
 
     private var inactiveValue: String {
-        presentsSort ? "Default filters and sort" : "No active filters"
+        switch workspace {
+        case .backlog: return "Default filters and sort"
+        case .taskLadder: return "Default Task Ladder controls"
+        default: return "No active filters"
+        }
     }
 }
 

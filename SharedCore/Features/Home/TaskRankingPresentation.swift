@@ -494,6 +494,7 @@ struct TaskRankingPresentation: Equatable {
     }
 
     struct RowMetadata: Equatable, Sendable {
+        let appearance: TaskRankingRowPresentation
         let tagLabels: [String]
         let isRepeating: Bool
         let childCount: Int
@@ -508,9 +509,17 @@ struct TaskRankingPresentation: Equatable {
             isTaskGroup: Bool = false,
             metric: TaskRankingMetric,
             valueMode: TaskRankingValueMode,
+            flagRules: [RoutineFlagRule],
             referenceDate: Date,
             calendar: Calendar
         ) {
+            appearance = TaskRankingRowPresentation.make(
+                task: task,
+                isContainerGroup: false,
+                flagRules: flagRules,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
             tagLabels = task.tags.map { "#\($0)" }
             isRepeating = !task.isOneOffTask
             self.childCount = childCount
@@ -533,7 +542,21 @@ struct TaskRankingPresentation: Equatable {
                 : nil
         }
 
-        init(group: TaskLadderGroup, childCount: Int, metric: TaskRankingMetric) {
+        init(
+            group: TaskLadderGroup,
+            task: RoutineTask,
+            childCount: Int,
+            metric: TaskRankingMetric,
+            referenceDate: Date,
+            calendar: Calendar
+        ) {
+            appearance = TaskRankingRowPresentation.make(
+                task: task,
+                isContainerGroup: true,
+                flagRules: [],
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
             tagLabels = []
             isRepeating = false
             self.childCount = childCount
@@ -560,6 +583,7 @@ struct TaskRankingPresentation: Equatable {
     let scopePath: [UUID]
     let sections: [Section]
     let rowMetadataByTaskID: [UUID: RowMetadata]
+    let rowNumbersByTaskID: [UUID: Int]
     let eligibleTaskIDs: Set<UUID>
     let linkedTaskChildSuggestions: [LinkedTaskChildSuggestion]
 
@@ -587,6 +611,7 @@ struct TaskRankingPresentation: Equatable {
             scopePath: [],
             sections: [],
             rowMetadataByTaskID: [:],
+            rowNumbersByTaskID: [:],
             eligibleTaskIDs: [],
             linkedTaskChildSuggestions: []
         )
@@ -685,8 +710,11 @@ struct TaskRankingPresentation: Equatable {
                         task.id,
                         RowMetadata(
                             group: group,
+                            task: task,
                             childCount: childCount,
-                            metric: metric
+                            metric: metric,
+                            referenceDate: referenceDate,
+                            calendar: calendar
                         )
                     )
                 }
@@ -698,6 +726,7 @@ struct TaskRankingPresentation: Equatable {
                         isTaskGroup: organization.isTaskGroup(taskID: task.id),
                         metric: metric,
                         valueMode: valueMode,
+                        flagRules: flagRules,
                         referenceDate: referenceDate,
                         calendar: calendar
                     )
@@ -801,6 +830,7 @@ struct TaskRankingPresentation: Equatable {
             scopePath: scopePath,
             sections: sections + missingSection,
             rowMetadataByTaskID: rowMetadataByTaskID,
+            rowNumbersByTaskID: rowNumbers(for: sections + missingSection),
             eligibleTaskIDs: eligibleTaskIDs,
             linkedTaskChildSuggestions: linkedTaskChildSuggestions
         )
@@ -894,6 +924,7 @@ struct TaskRankingPresentation: Equatable {
             scopePath: scopePath,
             sections: sections,
             rowMetadataByTaskID: rowMetadataByTaskID,
+            rowNumbersByTaskID: rowNumbers(for: sections),
             eligibleTaskIDs: eligibleTaskIDs,
             linkedTaskChildSuggestions: linkedTaskChildSuggestions
         )
@@ -959,6 +990,15 @@ struct TaskRankingPresentation: Equatable {
                 ? lhs.taskID.uuidString < rhs.taskID.uuidString
                 : comparison == .orderedAscending
         }
+    }
+
+    private static func rowNumbers(for sections: [Section]) -> [UUID: Int] {
+        Dictionary(
+            uniqueKeysWithValues: sections
+                .flatMap(\.tasks)
+                .enumerated()
+                .map { offset, task in (task.id, offset + 1) }
+        )
     }
 
     private static func sortedLadderTasks(
