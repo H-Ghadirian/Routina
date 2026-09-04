@@ -4350,7 +4350,7 @@ And Help me choose excludes the task before metadata readiness, comparison, and 
 ### Mac Task Detail Keeps Secondary Lifecycle Actions Together
 
 Area: Tasks / macOS UI
-Decision links: [0527](../decisions/0527-keep-mac-task-detail-overflow-compact-and-stateful.md), [0521](../decisions/0521-group-secondary-mac-task-detail-actions.md), [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0335](../decisions/0335-move-mac-task-detail-actions-into-detail-content.md), [0625](../decisions/0625-group-task-detail-add-detail-with-edit.md), [0626](../decisions/0626-join-mac-task-detail-completion-and-overflow.md)
+Decision links: [0527](../decisions/0527-keep-mac-task-detail-overflow-compact-and-stateful.md), [0521](../decisions/0521-group-secondary-mac-task-detail-actions.md), [0487](../decisions/0487-allow-archiving-one-off-tasks.md), [0335](../decisions/0335-move-mac-task-detail-actions-into-detail-content.md), [0625](../decisions/0625-group-task-detail-add-detail-with-edit.md), [0626](../decisions/0626-join-mac-task-detail-completion-and-overflow.md), [0725](../decisions/0725-resolve-selected-assumed-days-from-mac-task-details.md), [0726](../decisions/0726-keep-selected-assumed-day-confirmation-primary.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
@@ -4365,6 +4365,19 @@ And Delete is a separated destructive menu item that still requires confirmation
 And Done remains the only visible task lifecycle action
 And only the `⋮` segment receives a restrained accent treatment while its compact native menu is open
 And `Add a detail` is absent from that maintenance menu
+
+Given the selected calendar date is an unresolved assumed day
+Then the prominent confirmation action targets only that selected date
+And selecting Today shows `Confirm done`, never `Confirm N assumed days`
+When the person opens the adjacent `⋮` menu and chooses `Missed`
+Then Routina records that selected date as missed without creating a completion
+And every other assumed date remains unresolved
+And `Missed` disappears when the selected date is no longer assumed done
+
+Given older unresolved assumed dates also exist and bulk confirmation is eligible
+When the person opens the adjacent `⋮` menu
+Then the menu shows the counted `Confirm N assumed days` action after `Missed`
+And bulk confirmation remains a deliberate secondary action
 
 When optional detail actions remain
 Then Edit is a split header control whose pencil opens full Edit Task directly

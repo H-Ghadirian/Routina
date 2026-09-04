@@ -190,6 +190,36 @@ struct TaskDetailActionClusterView: View {
 
     private var taskLifecycleActionsMenuElements: [TaskDetailOverflowMenuElement] {
         var elements: [TaskDetailOverflowMenuElement] = []
+        let hasAssumedDayActions =
+            store.isSelectedDateAssumedDone || store.shouldShowBulkConfirmAssumedDays
+
+        if store.isSelectedDateAssumedDone {
+            elements.append(
+                .action(
+                    TaskDetailOverflowMenuAction(
+                        title: "Missed",
+                        systemImage: "xmark.circle",
+                        action: { store.send(.markSelectedAssumedDayMissed) }
+                    )
+                )
+            )
+        }
+
+        if store.shouldShowBulkConfirmAssumedDays {
+            elements.append(
+                .action(
+                    TaskDetailOverflowMenuAction(
+                        title: store.bulkConfirmAssumedDaysTitle,
+                        systemImage: "checkmark.circle.dashed",
+                        action: { store.send(.confirmAssumedPastDays) }
+                    )
+                )
+            )
+        }
+
+        if hasAssumedDayActions {
+            elements.append(.separator)
+        }
 
         if showsPauseResumeButton {
             if store.task.isArchived() {

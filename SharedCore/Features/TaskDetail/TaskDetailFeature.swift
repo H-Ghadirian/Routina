@@ -1170,6 +1170,23 @@ struct TaskDetailFeature: Reducer {
         case .confirmAssumedPastDays:
             return completionLogActionHandler().confirmAssumedPastDays(state: &state)
 
+        case .markSelectedAssumedDayMissed:
+            guard state.isSelectedDateAssumedDone else { return .none }
+            let selectedDay = state.resolvedSelectedDate
+            let missedAt = RoutineAssumedCompletion.completionTimestamp(
+                for: state.task,
+                on: selectedDay,
+                referenceDate: now,
+                calendar: calendar
+            )
+            upsertLocalLog(at: missedAt, kind: .missed, in: &state)
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleMarkAssumedCompletionMissed(
+                taskID: state.task.id,
+                day: selectedDay
+            )
+
         case let .setDeleteConfirmation(isPresented):
             return dialogLifecycleActionHandler().setDeleteConfirmation(isPresented, state: &state)
 

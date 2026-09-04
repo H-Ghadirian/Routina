@@ -1811,6 +1811,75 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func markSelectedAssumedDayMissed_recordsOnlyTheSelectedDay() async throws {
+        let context = makeInMemoryContext()
+        let calendar = Calendar.current
+        let now = makeDate("2026-09-04T18:00:00Z")
+        let selectedDay = makeDate("2026-09-02T12:00:00Z")
+        let task = RoutineTask(
+            name: "Eat fruits",
+            scheduleMode: .softInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 12, minute: 0)),
+            createdAt: makeDate("2026-09-01T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                logs: [],
+                selectedDate: selectedDay
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        #expect(store.state.isSelectedDateAssumedDone)
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markSelectedAssumedDayMissed)
+            await store.receive { action in
+                guard case let .logsLoaded(logs) = action else { return false }
+                return logs.contains {
+                    $0.kind == .missed
+                        && $0.timestamp.map { calendar.isDate($0, inSameDayAs: selectedDay) } == true
+                }
+            }
+        }
+
+        let persistedLogs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
+        let missedLog = try #require(persistedLogs.first(where: { $0.kind == .missed }))
+        #expect(calendar.isDate(try #require(missedLog.timestamp), inSameDayAs: selectedDay))
+        #expect(!store.state.isSelectedDateAssumedDone)
+        #expect(
+            RoutineAssumedCompletion.isAssumedDone(
+                for: task,
+                on: makeDate("2026-09-01T12:00:00Z"),
+                referenceDate: now,
+                logs: persistedLogs,
+                calendar: calendar
+            )
+        )
+        #expect(
+            RoutineAssumedCompletion.isAssumedDone(
+                for: task,
+                on: makeDate("2026-09-03T12:00:00Z"),
+                referenceDate: now,
+                logs: persistedLogs,
+                calendar: calendar
+            )
+        )
+        #expect(!persistedLogs.contains { $0.kind.resolvesDoneDate })
+    }
+
+    @Test
     func markAsDone_confirmsAssumedChecklistRoutineCompletion() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
@@ -1994,10 +2063,35 @@ struct TaskDetailFeatureCompletionTests {
 
         #expect(state.isSelectedDateAssumedDone)
         #expect(!state.pastAssumedDates.isEmpty)
-        #expect(!state.shouldUseBulkConfirmAsPrimaryAction)
         #expect(state.completionButtonAction == .markAsDone)
         #expect(state.completionButtonTitle == "Confirm done")
         #expect(!state.shouldShowBulkConfirmAssumedDays)
+    }
+
+    @Test
+    func completionButtonForTodayStaysScopedToTodayWhenBulkConfirmationIsAvailable() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let threeDaysAgo = calendar.date(byAdding: .day, value: -3, to: today) ?? today
+        let task = RoutineTask(
+            name: "Watch Cowen youtube videos",
+            scheduleMode: .softInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
+            createdAt: threeDaysAgo,
+            autoAssumeDailyDone: true
+        )
+        let state = TaskDetailFeature.State(
+            task: task,
+            logs: [],
+            selectedDate: today
+        )
+
+        #expect(state.isSelectedDateAssumedDone)
+        #expect(!state.pastAssumedDates.isEmpty)
+        #expect(state.completionButtonAction == .markAsDone)
+        #expect(state.completionButtonTitle == "Confirm done")
+        #expect(state.shouldShowBulkConfirmAssumedDays)
+        #expect(state.bulkConfirmAssumedDaysTitle.contains("assumed days"))
     }
 
     @Test

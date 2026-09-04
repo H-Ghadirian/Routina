@@ -422,19 +422,10 @@ extension TaskDetailFeature.State {
         RoutineAssumedCompletion.assumedDates(for: task, logs: logs)
     }
 
-    var shouldUseBulkConfirmAsPrimaryAction: Bool {
-        !RoutineAssumedCompletion.requiresIndividualAssumedCompletionConfirmation(for: task)
-            && !task.isArchived()
-            && Calendar.current.isDateInToday(resolvedSelectedDate)
-            && isSelectedDateAssumedDone
-            && !pastAssumedDates.isEmpty
-    }
-
     var shouldShowBulkConfirmAssumedDays: Bool {
         !RoutineAssumedCompletion.requiresIndividualAssumedCompletionConfirmation(for: task)
             && !task.isArchived()
             && !pastAssumedDates.isEmpty
-            && !shouldUseBulkConfirmAsPrimaryAction
     }
 
     var bulkConfirmAssumedDaysTitle: String {
@@ -629,9 +620,6 @@ extension TaskDetailFeature.State {
         }
         if task.isMultiDayRoutine {
             return .startOngoingTapped
-        }
-        if shouldUseBulkConfirmAsPrimaryAction {
-            return .confirmAssumedPastDays
         }
         return .markAsDone
     }
@@ -982,8 +970,6 @@ extension TaskDetailFeature.State {
             selectedDate: resolvedSelectedDate,
             isSelectedDateTerminal: isSelectedDateTerminal,
             isSelectedDateInFuture: isSelectedDateInFuture,
-            shouldUseBulkConfirmAsPrimaryAction: shouldUseBulkConfirmAsPrimaryAction,
-            bulkConfirmAssumedDaysTitle: bulkConfirmAssumedDaysTitle,
             isSelectedDateAssumedDone: isSelectedDateAssumedDone,
             completionTargetDate: completionTargetDate,
             isChecklistDriven: isChecklistDrivenFromStoredItems,

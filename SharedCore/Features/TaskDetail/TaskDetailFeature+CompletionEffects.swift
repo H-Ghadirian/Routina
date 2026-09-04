@@ -143,6 +143,38 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleMarkAssumedCompletionMissed(
+        taskID: UUID,
+        day: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                guard
+                    let updatedTask = try RoutineLogHistory.markAssumedCompletionMissed(
+                        taskID: taskID,
+                        on: day,
+                        context: context,
+                        referenceDate: now,
+                        calendar: calendar
+                    )
+                else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await refreshNotificationAfterOccurrenceResolution(
+                    for: updatedTask,
+                    taskID: taskID
+                )
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                RoutinaLog.error("Error marking assumed task day missed: \(error)")
+            }
+        }
+    }
+
     func handleMarkOccurrenceCanceled(
         taskID: UUID,
         canceledAt: Date

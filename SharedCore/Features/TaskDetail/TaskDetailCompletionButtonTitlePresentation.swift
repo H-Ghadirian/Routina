@@ -5,8 +5,6 @@ struct TaskDetailCompletionButtonTitlePresentation {
     let selectedDate: Date
     let isSelectedDateTerminal: Bool
     let isSelectedDateInFuture: Bool
-    let shouldUseBulkConfirmAsPrimaryAction: Bool
-    let bulkConfirmAssumedDaysTitle: String
     let isSelectedDateAssumedDone: Bool
     let completionTargetDate: Date?
     let isChecklistDriven: Bool
@@ -42,9 +40,6 @@ struct TaskDetailCompletionButtonTitlePresentation {
         }
         if task.isMultiDayRoutine {
             return "Start"
-        }
-        if shouldUseBulkConfirmAsPrimaryAction {
-            return bulkConfirmAssumedDaysTitle
         }
         if isSelectedDateAssumedDone {
             if calendar.isDateInToday(selectedDate) {

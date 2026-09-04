@@ -37,6 +37,7 @@ extension TaskDetailFeature {
         case markOccurrenceDone(Date)
         case markOccurrenceMissed(Date)
         case markOccurrenceCanceled(Date)
+        case markSelectedAssumedDayMissed
         case setEditSheet(Bool)
         case setAddDetailChooserPresented(Bool)
         case prepareInlineEdit

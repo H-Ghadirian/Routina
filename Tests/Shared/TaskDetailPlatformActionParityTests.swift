@@ -181,6 +181,13 @@ struct TaskDetailPlatformActionParityTests {
         #expect(overflowMenu.contains("taskLifecycleActionsMenuRequestID &+= 1"))
         #expect(overflowMenu.contains("store.send(.resumeTapped)"))
         #expect(overflowMenu.contains("store.send(.pauseTapped)"))
+        #expect(overflowMenu.contains("if store.isSelectedDateAssumedDone"))
+        #expect(overflowMenu.contains("title: \"Missed\""))
+        #expect(overflowMenu.contains("systemImage: \"xmark.circle\""))
+        #expect(overflowMenu.contains("store.send(.markSelectedAssumedDayMissed)"))
+        #expect(overflowMenu.contains("store.shouldShowBulkConfirmAssumedDays"))
+        #expect(overflowMenu.contains("title: store.bulkConfirmAssumedDaysTitle"))
+        #expect(overflowMenu.contains("store.send(.confirmAssumedPastDays)"))
         #expect(overflowMenu.contains("isPauseUntilPresented = true"))
         #expect(overflowMenu.contains("systemImage: \"clock.arrow.circlepath\""))
         #expect(overflowMenu.contains("store.send(.cancelTodo)"))
@@ -195,6 +202,13 @@ struct TaskDetailPlatformActionParityTests {
         #expect(!overflowMenu.contains("Circle()"))
         #expect(source.contains("menu.popUp("))
         #expect(source.contains("NSColor.systemRed"))
+
+        let missed = try #require(overflowMenu.range(of: "store.send(.markSelectedAssumedDayMissed)"))
+        let bulkConfirm = try #require(overflowMenu.range(of: "store.send(.confirmAssumedPastDays)"))
+        let pause = try #require(overflowMenu.range(of: "store.send(.pauseTapped)"))
+        #expect(missed.lowerBound < bulkConfirm.lowerBound)
+        #expect(bulkConfirm.lowerBound < pause.lowerBound)
+        #expect(missed.lowerBound < pause.lowerBound)
     }
 
     @Test
