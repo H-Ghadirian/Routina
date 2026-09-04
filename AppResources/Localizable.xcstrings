@@ -1,0 +1,4965 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    " " : {
+
+    },
+    "\"%@\" will be deleted and all its tasks will be moved to the backlog." : {
+
+    },
+    "\"%@\" will be deleted." : {
+
+    },
+    "#%@" : {
+
+    },
+    "#%@ is used by %lld item%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "#%1$@ is used by %2$lld item%3$@"
+          }
+        }
+      }
+    },
+    "#%@ → #%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "#%1$@ → #%2$@"
+          }
+        }
+      }
+    },
+    "%@" : {
+
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ / %@ XP" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ / %2$@ XP"
+          }
+        }
+      }
+    },
+    "%@ / %@ XP to Rank %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ / %2$@ XP to Rank %3$lld"
+          }
+        }
+      }
+    },
+    "%@ Open Routina to start sleep mode." : {
+
+    },
+    "%@ after done" : {
+
+    },
+    "%@ at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ at %2$@"
+          }
+        }
+      }
+    },
+    "%@ coins" : {
+
+    },
+    "%@ event %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ event %2$@"
+          }
+        }
+      }
+    },
+    "%@ filled" : {
+
+    },
+    "%@ from the timeline not planned for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ from the timeline not planned for %2$@"
+          }
+        }
+      }
+    },
+    "%@ goal %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ goal %2$@"
+          }
+        }
+      }
+    },
+    "%@ goal progress" : {
+
+    },
+    "%@ importance • %@ urgency" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ importance • %2$@ urgency"
+          }
+        }
+      }
+    },
+    "%@ importance, %@ urgency" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ importance, %2$@ urgency"
+          }
+        }
+      }
+    },
+    "%@ last recorded" : {
+
+    },
+    "%@ of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "%@ on %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ on %2$@"
+          }
+        }
+      }
+    },
+    "%@ open + %@ completed + %@ canceled = %@ one-time tasks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ open + %2$@ completed + %3$@ canceled = %4$@ one-time tasks"
+          }
+        }
+      }
+    },
+    "%@ ready to allocate" : {
+
+    },
+    "%@ recorded" : {
+
+    },
+    "%@ recorded. Assign minutes to tasks in this sprint." : {
+
+    },
+    "%@ so far = %@ coins" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ so far = %2$@ coins"
+          }
+        }
+      }
+    },
+    "%@ spendable" : {
+
+    },
+    "%@ tag %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ tag %2$@"
+          }
+        }
+      }
+    },
+    "%@ target" : {
+
+    },
+    "%@ when a task has" : {
+
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ • %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ • %2$@"
+          }
+        }
+      }
+    },
+    "%@+" : {
+
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %lld tasks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld tasks"
+          }
+        }
+      }
+    },
+    "%@, read only" : {
+
+    },
+    "%@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@"
+          }
+        }
+      }
+    },
+    "%@. %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@. %3$@"
+          }
+        }
+      }
+    },
+    "%@/%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@/%2$@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%@: %lld task%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$lld task%3$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld %2$@"
+          }
+        }
+      }
+    },
+    "%lld %@ waiting for a task or board." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld %2$@ waiting for a task or board."
+          }
+        }
+      }
+    },
+    "%lld actionable tasks" : {
+
+    },
+    "%lld active filters" : {
+
+    },
+    "%lld activities" : {
+
+    },
+    "%lld available options" : {
+
+    },
+    "%lld backlog rows selected" : {
+
+    },
+    "%lld canceled" : {
+
+    },
+    "%lld done" : {
+
+    },
+    "%lld done, %@ focused" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld done, %2$@ focused"
+          }
+        }
+      }
+    },
+    "%lld hidden" : {
+
+    },
+    "%lld m" : {
+
+    },
+    "%lld missed" : {
+
+    },
+    "%lld occurrences" : {
+
+    },
+    "%lld one-time" : {
+
+    },
+    "%lld open" : {
+
+    },
+    "%lld open, %lld linked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld open, %2$lld linked"
+          }
+        }
+      }
+    },
+    "%lld open, %lld sub-goals" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld open, %2$lld sub-goals"
+          }
+        }
+      }
+    },
+    "%lld planned" : {
+
+    },
+    "%lld records • %lld attachments" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld records • %2$lld attachments"
+          }
+        }
+      }
+    },
+    "%lld repeating" : {
+
+    },
+    "%lld sub-goals" : {
+
+    },
+    "%lld tasks" : {
+
+    },
+    "%lld total done" : {
+
+    },
+    "%lld." : {
+
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld/3 stars" : {
+
+    },
+    "%lld/5" : {
+
+    },
+    "%lldm" : {
+
+    },
+    "+ %lld more" : {
+
+    },
+    "+%@" : {
+
+    },
+    "+%lld" : {
+
+    },
+    "+00:00:00" : {
+
+    },
+    "." : {
+
+    },
+    "0" : {
+
+    },
+    "1" : {
+
+    },
+    "1 Hour" : {
+
+    },
+    "1 actionable task" : {
+
+    },
+    "1 activity" : {
+
+    },
+    "1 available option" : {
+
+    },
+    "1 task" : {
+
+    },
+    "15 Minutes" : {
+
+    },
+    "29–31 use the month's last valid day when needed." : {
+
+    },
+    "3" : {
+
+    },
+    "AI Connections" : {
+
+    },
+    "Abandon" : {
+
+    },
+    "Accept" : {
+
+    },
+    "Accept All" : {
+
+    },
+    "Accept a linked task to place it in this group. Rejecting only hides the suggestion; either choice keeps the task link and its completion behavior unchanged." : {
+
+    },
+    "Accept all task suggestions" : {
+
+    },
+    "Accept task suggestion" : {
+
+    },
+    "Across %lld ready tasks" : {
+
+    },
+    "Actions for scheduled notification" : {
+
+    },
+    "Active" : {
+
+    },
+    "Active Devices" : {
+
+    },
+    "Active items" : {
+
+    },
+    "Activity" : {
+
+    },
+    "Actual Time" : {
+
+    },
+    "Adaptive month days. Days 29 through 31 use the month's last valid day when needed." : {
+
+    },
+    "Add" : {
+
+    },
+    "Add %@" : {
+
+    },
+    "Add %@ as a related tag" : {
+
+    },
+    "Add %@ to flag filters" : {
+
+    },
+    "Add File" : {
+
+    },
+    "Add Group" : {
+
+    },
+    "Add Item" : {
+
+    },
+    "Add Link" : {
+
+    },
+    "Add Linked Task" : {
+
+    },
+    "Add Place" : {
+
+    },
+    "Add Relationship" : {
+
+    },
+    "Add Section" : {
+
+    },
+    "Add Tags" : {
+
+    },
+    "Add Task" : {
+
+    },
+    "Add Task to This Group…" : {
+
+    },
+    "Add Time Spent" : {
+
+    },
+    "Add Website" : {
+
+    },
+    "Add a Microsoft Graph app client ID to RoutinaMicrosoftGraphClientID, then register %@://auth/microsoft as the redirect URI." : {
+
+    },
+    "Add a detail" : {
+
+    },
+    "Add a note" : {
+
+    },
+    "Add a repeating or one-time task to see its details here." : {
+
+    },
+    "Add a task to get started" : {
+
+    },
+    "Add actual time" : {
+
+    },
+    "Add another time" : {
+
+    },
+    "Add automatic tag" : {
+
+    },
+    "Add checklist item" : {
+
+    },
+    "Add comment" : {
+
+    },
+    "Add context" : {
+
+    },
+    "Add details" : {
+
+    },
+    "Add existing tag" : {
+
+    },
+    "Add flag %@" : {
+
+    },
+    "Add linked task" : {
+
+    },
+    "Add more" : {
+
+    },
+    "Add one above to create a new section in this area." : {
+
+    },
+    "Add related tag" : {
+
+    },
+    "Add stats item" : {
+
+    },
+    "Add status to timeline" : {
+
+    },
+    "Add subsection" : {
+
+    },
+    "Add suggested related tag %@" : {
+
+    },
+    "Add tag" : {
+
+    },
+    "Add tag %@" : {
+
+    },
+    "Add tags to exclude…" : {
+
+    },
+    "Add tags to hide" : {
+
+    },
+    "Add tags…" : {
+
+    },
+    "Add task details first" : {
+
+    },
+    "Add this duration to the recorded total." : {
+
+    },
+    "Add time" : {
+
+    },
+    "Add to Stats" : {
+
+    },
+    "Add to timeline" : {
+
+    },
+    "Added %@." : {
+
+    },
+    "Address" : {
+
+    },
+    "Adds realistic repeating tasks, one-time tasks, history, planner blocks, focus sessions, notes, and wellness activity. Existing data is preserved." : {
+
+    },
+    "Adjust by 5 minutes" : {
+
+    },
+    "Adjust the radius below. The highlighted circle shows when the place becomes active." : {
+
+    },
+    "Adjust the recorded start time and duration." : {
+
+    },
+    "Adjust when this Focus started and how long it lasted." : {
+
+    },
+    "Adventure" : {
+
+    },
+    "Adventure Map" : {
+
+    },
+    "Adventure progress is not currently available for this view." : {
+
+    },
+    "Adventure unavailable" : {
+
+    },
+    "After completion, the next occurrence resets each changing metric to its After done value." : {
+
+    },
+    "After done importance" : {
+
+    },
+    "After done importance: %@" : {
+
+    },
+    "After done pressure" : {
+
+    },
+    "After done pressure: %@" : {
+
+    },
+    "After done urgency" : {
+
+    },
+    "After done urgency: %@" : {
+
+    },
+    "After done," : {
+
+    },
+    "All" : {
+
+    },
+    "All Day" : {
+
+    },
+    "All Flags" : {
+
+    },
+    "All checklist items are done" : {
+
+    },
+    "All does not filter by pressure. None shows tasks without a recorded pressure value." : {
+
+    },
+    "All does not filter by thinking needed. None shows tasks without a recorded thinking-needed value." : {
+
+    },
+    "All flags included" : {
+
+    },
+    "All includes every importance level. Other choices set the minimum importance a task must have." : {
+
+    },
+    "All includes every urgency level. Other choices set the minimum urgency a task must have." : {
+
+    },
+    "All items are visible" : {
+
+    },
+    "All levels selected" : {
+
+    },
+    "All matching priority ties are resolved for %@." : {
+
+    },
+    "All set" : {
+
+    },
+    "All tasks are already linked." : {
+
+    },
+    "All-day event" : {
+
+    },
+    "All-day task" : {
+
+    },
+    "Allocate" : {
+
+    },
+    "Allocate Plan Focus" : {
+
+    },
+    "Allocate Sprint Focus" : {
+
+    },
+    "Allocated" : {
+
+    },
+    "Allow Notifications in System Settings" : {
+
+    },
+    "Allow calendar access in Settings to review events before adding tasks." : {
+
+    },
+    "Allow in System Settings" : {
+
+    },
+    "Allow read-only task access" : {
+
+    },
+    "Also complete %@" : {
+
+    },
+    "Also complete linked task?" : {
+
+    },
+    "Another timer is running" : {
+
+    },
+    "Any" : {
+
+    },
+    "Any state" : {
+
+    },
+    "Anywhere" : {
+
+    },
+    "App" : {
+
+    },
+    "App Icon" : {
+
+    },
+    "App Lock" : {
+
+    },
+    "App Lock is on" : {
+
+    },
+    "App Theme" : {
+
+    },
+    "Appearance" : {
+
+    },
+    "Appears in Task Ladder" : {
+
+    },
+    "Apple Shortcuts & Siri" : {
+
+    },
+    "Applies During" : {
+
+    },
+    "Apply" : {
+
+    },
+    "Apply detected details with Tab" : {
+
+    },
+    "Apps & Websites" : {
+
+    },
+    "Archive" : {
+
+    },
+    "Archived" : {
+
+    },
+    "Are you sure you want to delete \"%@\"? Tasks in this section will move back to their default sections." : {
+
+    },
+    "Ask what a feature means, why something appears, or how two Routina concepts differ. Select a question to copy it." : {
+
+    },
+    "Assign" : {
+
+    },
+    "Assign to %@" : {
+
+    },
+    "Assign to Active Sprint" : {
+
+    },
+    "Assign to Sprint" : {
+
+    },
+    "Assumed Done" : {
+
+    },
+    "Assumed done" : {
+
+    },
+    "At" : {
+
+    },
+    "Attach any file up to 20 MB (PDF, document, spreadsheet, etc.)." : {
+
+    },
+    "Attach any file up to 20 MB. You can also drag a file from Finder onto this area." : {
+
+    },
+    "Auto" : {
+
+    },
+    "Auto check in at saved places" : {
+
+    },
+    "Automatic" : {
+
+    },
+    "Automatic tag matching" : {
+
+    },
+    "Automatic tags" : {
+
+    },
+    "Availability" : {
+
+    },
+    "Available" : {
+
+    },
+    "Average" : {
+
+    },
+    "Average by weekday" : {
+
+    },
+    "Average done" : {
+
+    },
+    "Average focus" : {
+
+    },
+    "Average minutes" : {
+
+    },
+    "Avg %@" : {
+
+    },
+    "Avg focus" : {
+
+    },
+    "Away time is active — end it before starting Focus." : {
+
+    },
+    "Away time is blocked" : {
+
+    },
+    "Back" : {
+
+    },
+    "Back Up First" : {
+
+    },
+    "Back to previous ladder" : {
+
+    },
+    "Backlog" : {
+
+    },
+    "Backlog is clear" : {
+
+    },
+    "Backup Status" : {
+
+    },
+    "Base shows saved values; Now applies each repeating task’s due-date rule" : {
+
+    },
+    "Battery Repeating Tasks" : {
+
+    },
+    "Beta Experiments" : {
+
+    },
+    "Block selected Mac apps" : {
+
+    },
+    "Block selected apps and websites" : {
+
+    },
+    "Blocked Task" : {
+
+    },
+    "Blocking" : {
+
+    },
+    "Board" : {
+
+    },
+    "Bread" : {
+
+    },
+    "Browse" : {
+
+    },
+    "Browse Another File" : {
+
+    },
+    "Browse all tags" : {
+
+    },
+    "Browse in Finder" : {
+
+    },
+    "Build Number" : {
+
+    },
+    "Built-in Flags" : {
+
+    },
+    "Built-in behavior flags keep task behavior predictable. Assign any combination while editing a task; ordinary labels belong in Tags." : {
+
+    },
+    "CALENDAR" : {
+
+    },
+    "Calculated from the items matching the current Stats filters." : {
+
+    },
+    "Calendar" : {
+
+    },
+    "Calendar Filters" : {
+
+    },
+    "Calendar Pattern" : {
+
+    },
+    "Calendar Tasks" : {
+
+    },
+    "Calendar access is off" : {
+
+    },
+    "Calendar access is restricted" : {
+
+    },
+    "Calendar tabs" : {
+
+    },
+    "Calendar task view" : {
+
+    },
+    "Can complete %@ — ask me" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Canceled" : {
+
+    },
+    "Center: %@" : {
+
+    },
+    "Change color" : {
+
+    },
+    "Change conditions" : {
+
+    },
+    "Change summary card density" : {
+
+    },
+    "Changed value timing: %@" : {
+
+    },
+    "Changes how much thinking the task needs" : {
+
+    },
+    "Changes over Time…" : {
+
+    },
+    "Changes over time" : {
+
+    },
+    "Changes the Dock and app switcher icon immediately. Finder keeps the bundled app icon." : {
+
+    },
+    "Changes the task importance" : {
+
+    },
+    "Changes the task pressure" : {
+
+    },
+    "Changes the task urgency" : {
+
+    },
+    "Check In" : {
+
+    },
+    "Check again" : {
+
+    },
+    "Check in at %@" : {
+
+    },
+    "Check task details" : {
+
+    },
+    "Check-In" : {
+
+    },
+    "Check-in actions" : {
+
+    },
+    "Checking calendars" : {
+
+    },
+    "Checklist Items" : {
+
+    },
+    "Checklist item" : {
+
+    },
+    "Choose" : {
+
+    },
+    "Choose %@" : {
+
+    },
+    "Choose Apps" : {
+
+    },
+    "Choose Date & Time…" : {
+
+    },
+    "Choose Date..." : {
+
+    },
+    "Choose Emoji" : {
+
+    },
+    "Choose Place" : {
+
+    },
+    "Choose Task" : {
+
+    },
+    "Choose World" : {
+
+    },
+    "Choose a Backlog section, or add the task to your main task list." : {
+
+    },
+    "Choose a later time for this occurrence. The task or event schedule will not change." : {
+
+    },
+    "Choose a repeating or one-time task from the sidebar to see its details." : {
+
+    },
+    "Choose a repeating or one-time task from the sidebar to see its schedule, logs, and actions." : {
+
+    },
+    "Choose a repeating task" : {
+
+    },
+    "Choose a saved place from the list and filter the current sidebar by that location." : {
+
+    },
+    "Choose a scheduled time to view or update that occurrence." : {
+
+    },
+    "Choose a sidebar path, or use Automatic" : {
+
+    },
+    "Choose a task" : {
+
+    },
+    "Choose an item from the sidebar to see its detail." : {
+
+    },
+    "Choose emoji" : {
+
+    },
+    "Choose from existing goals" : {
+
+    },
+    "Choose from existing tags" : {
+
+    },
+    "Choose tags to show or hide" : {
+
+    },
+    "Choose task emoji" : {
+
+    },
+    "Choose the right next task" : {
+
+    },
+    "Choose this" : {
+
+    },
+    "Choose where the task appears, or let Routina place it automatically" : {
+
+    },
+    "Choose whether this completion should also satisfy a linked repeating task." : {
+
+    },
+    "Choose with different conditions" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Clear %@ filter" : {
+
+    },
+    "Clear All" : {
+
+    },
+    "Clear All Filters" : {
+
+    },
+    "Clear Filters" : {
+
+    },
+    "Clear Plan" : {
+
+    },
+    "Clear Selection" : {
+
+    },
+    "Clear Time Spent" : {
+
+    },
+    "Clear all" : {
+
+    },
+    "Clear search" : {
+
+    },
+    "Clear status" : {
+
+    },
+    "Clear timeline filters" : {
+
+    },
+    "Click to show details" : {
+
+    },
+    "Click to show details; double-click to open the inner Task Ladder" : {
+
+    },
+    "Close" : {
+
+    },
+    "Close map check-in" : {
+
+    },
+    "Coin Sources" : {
+
+    },
+    "Collapse Task List Modes" : {
+
+    },
+    "Collapse state" : {
+
+    },
+    "Collapse state details" : {
+
+    },
+    "Collapsed" : {
+
+    },
+    "Collapses the task calendar" : {
+
+    },
+    "Color" : {
+
+    },
+    "Comment actions" : {
+
+    },
+    "Compact cards" : {
+
+    },
+    "Comparisons keep a separate learned tie-break. They never change Importance, Urgency, Pressure, Thinking needed, or your time estimate." : {
+
+    },
+    "Completable parents" : {
+
+    },
+    "Complete all linked tasks" : {
+
+    },
+    "Complete checklist items below to finish this repeating task." : {
+
+    },
+    "Complete tag %@" : {
+
+    },
+    "Complete the matching review procedures in More, then come back here." : {
+
+    },
+    "Completed" : {
+
+    },
+    "Completed Sessions" : {
+
+    },
+    "Completed checklist item" : {
+
+    },
+    "Completes %@ automatically" : {
+
+    },
+    "Completion" : {
+
+    },
+    "Completion behavior" : {
+
+    },
+    "Conference day" : {
+
+    },
+    "Confirm" : {
+
+    },
+    "Confirm Auto Check-In" : {
+
+    },
+    "Confirm in Planner" : {
+
+    },
+    "Confirm missed" : {
+
+    },
+    "Confirming App Lock..." : {
+
+    },
+    "Connect Outlook" : {
+
+    },
+    "Contact" : {
+
+    },
+    "Content unavailable" : {
+
+    },
+    "Context" : {
+
+    },
+    "Copied Link" : {
+
+    },
+    "Copies the complete diagnostic report for sharing with support" : {
+
+    },
+    "Copy" : {
+
+    },
+    "Copy Diagnostics" : {
+
+    },
+    "Copy Link" : {
+
+    },
+    "Copy question" : {
+
+    },
+    "Copy setup command" : {
+
+    },
+    "Could Not Create Task" : {
+
+    },
+    "Could Not Delete Note" : {
+
+    },
+    "Could Not Load Sprint" : {
+
+    },
+    "Could not load events" : {
+
+    },
+    "Couldn't Refresh from iCloud" : {
+
+    },
+    "Couldn’t Open Focus" : {
+
+    },
+    "Couldn’t Start Focus" : {
+
+    },
+    "Couldn’t Update Focus" : {
+
+    },
+    "Couldn’t find tasks" : {
+
+    },
+    "Couldn’t load tasks" : {
+
+    },
+    "Count up" : {
+
+    },
+    "Create" : {
+
+    },
+    "Create Task" : {
+
+    },
+    "Create a Routina task from natural language." : {
+
+    },
+    "Create a backlog or sprint in the sidebar, add a one-time task, or adjust filters." : {
+
+    },
+    "Create a container group or use a repeating task as a group" : {
+
+    },
+    "Create a goal to group repeating and one-time tasks by outcome." : {
+
+    },
+    "Create a repeating task before using one as a Task Ladder group." : {
+
+    },
+    "Create a sprint to start planning work beyond the backlog." : {
+
+    },
+    "Create an active task before starting Focus." : {
+
+    },
+    "Create another task first to add a relationship." : {
+
+    },
+    "Create backlog" : {
+
+    },
+    "Create charge repeating tasks" : {
+
+    },
+    "Create sprint" : {
+
+    },
+    "Created" : {
+
+    },
+    "Created %@" : {
+
+    },
+    "Created tasks" : {
+
+    },
+    "Creature %lld" : {
+
+    },
+    "Creature unlocked" : {
+
+    },
+    "Cumulative focus" : {
+
+    },
+    "Cumulative minutes" : {
+
+    },
+    "Current task" : {
+
+    },
+    "Current-location check-ins still work, and named places can be added in Settings." : {
+
+    },
+    "Current: %@" : {
+
+    },
+    "Custom" : {
+
+    },
+    "Custom color" : {
+
+    },
+    "Custom reminder" : {
+
+    },
+    "Custom time" : {
+
+    },
+    "Custom…" : {
+
+    },
+    "Daily average" : {
+
+    },
+    "Data Backup" : {
+
+    },
+    "Date" : {
+
+    },
+    "Date Display" : {
+
+    },
+    "Dates" : {
+
+    },
+    "Day %lld" : {
+
+    },
+    "Day Tasks" : {
+
+    },
+    "Day of Month" : {
+
+    },
+    "Day type" : {
+
+    },
+    "Day: %@" : {
+
+    },
+    "Days before due" : {
+
+    },
+    "Deadline" : {
+
+    },
+    "Default" : {
+
+    },
+    "Default time for untimed repeating tasks" : {
+
+    },
+    "Define the value after completion and the independent due-date behavior for each metric." : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %@?" : {
+
+    },
+    "Delete App & iCloud Data" : {
+
+    },
+    "Delete Check-In" : {
+
+    },
+    "Delete Check-In?" : {
+
+    },
+    "Delete Goal" : {
+
+    },
+    "Delete Group" : {
+
+    },
+    "Delete Note" : {
+
+    },
+    "Delete Place" : {
+
+    },
+    "Delete Place?" : {
+
+    },
+    "Delete Section?" : {
+
+    },
+    "Delete Section…" : {
+
+    },
+    "Delete Session" : {
+
+    },
+    "Delete Sprint" : {
+
+    },
+    "Delete Subsection…" : {
+
+    },
+    "Delete Tag?" : {
+
+    },
+    "Delete Task" : {
+
+    },
+    "Delete iCloud Data" : {
+
+    },
+    "Delete repeating task?" : {
+
+    },
+    "Delete sprint focus session" : {
+
+    },
+    "Description" : {
+
+    },
+    "Deselect %@" : {
+
+    },
+    "Details" : {
+
+    },
+    "Detected" : {
+
+    },
+    "Detected from title" : {
+
+    },
+    "Development version" : {
+
+    },
+    "Devices" : {
+
+    },
+    "Diagnostics" : {
+
+    },
+    "Diagnostics Copied" : {
+
+    },
+    "Discard name change" : {
+
+    },
+    "Display" : {
+
+    },
+    "Does not complete %@" : {
+
+    },
+    "Done" : {
+
+    },
+    "Done heatmap" : {
+
+    },
+    "Done on selected day" : {
+
+    },
+    "Done one-time" : {
+
+    },
+    "Done this day" : {
+
+    },
+    "Double-click to open the inner Task Ladder" : {
+
+    },
+    "Drag to move" : {
+
+    },
+    "Drag to place this task on the planner" : {
+
+    },
+    "Due" : {
+
+    },
+    "Due Style" : {
+
+    },
+    "Duration" : {
+
+    },
+    "Duration Minutes" : {
+
+    },
+    "Duration estimate" : {
+
+    },
+    "Duration: %@" : {
+
+    },
+    "Duration: %lldm" : {
+
+    },
+    "EFFORT" : {
+
+    },
+    "Each %@ gives %@ coins." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Each %1$@ gives %2$@ coins."
+          }
+        }
+      }
+    },
+    "Earn coins from real repeating-task progress, then choose which companions and artifacts to unlock." : {
+
+    },
+    "Earned tiles" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit %@" : {
+
+    },
+    "Edit Away" : {
+
+    },
+    "Edit Away Session" : {
+
+    },
+    "Edit Check-In" : {
+
+    },
+    "Edit Event" : {
+
+    },
+    "Edit Focus" : {
+
+    },
+    "Edit Goal" : {
+
+    },
+    "Edit Group" : {
+
+    },
+    "Edit Group…" : {
+
+    },
+    "Edit Note" : {
+
+    },
+    "Edit Place" : {
+
+    },
+    "Edit Task" : {
+
+    },
+    "Edit Task Ladder Group" : {
+
+    },
+    "Edit Time Spent" : {
+
+    },
+    "Edit away" : {
+
+    },
+    "Edit block" : {
+
+    },
+    "Edit flag filters…" : {
+
+    },
+    "Edit focus session" : {
+
+    },
+    "Edit stats dashboard" : {
+
+    },
+    "Edit tag filters…" : {
+
+    },
+    "Edit task" : {
+
+    },
+    "Edit task details" : {
+
+    },
+    "Edit total" : {
+
+    },
+    "Edit total time spent" : {
+
+    },
+    "Email" : {
+
+    },
+    "Email Support" : {
+
+    },
+    "Emoji" : {
+
+    },
+    "Emotion" : {
+
+    },
+    "Enable Git features" : {
+
+    },
+    "Enable notifications" : {
+
+    },
+    "Enable task sharing" : {
+
+    },
+    "Enabled by a Flag" : {
+
+    },
+    "Enabled modes: %@." : {
+
+    },
+    "End" : {
+
+    },
+    "End active check-in" : {
+
+    },
+    "End away" : {
+
+    },
+    "End date" : {
+
+    },
+    "End early" : {
+
+    },
+    "End the active Routina sleep session." : {
+
+    },
+    "Ended" : {
+
+    },
+    "Ends" : {
+
+    },
+    "Ends %@" : {
+
+    },
+    "Energy" : {
+
+    },
+    "Entered Websites" : {
+
+    },
+    "Entered websites are enforced on iPhone and iPad through Screen Time web content filtering." : {
+
+    },
+    "Esc" : {
+
+    },
+    "Estimate: %lld min" : {
+
+    },
+    "Estimated Usage" : {
+
+    },
+    "Event" : {
+
+    },
+    "Event not found" : {
+
+    },
+    "Event: %@" : {
+
+    },
+    "Events" : {
+
+    },
+    "Events are fetched from Outlook and nothing is added automatically." : {
+
+    },
+    "Every valid task is already inside %@, or no task matches the search." : {
+
+    },
+    "Examples" : {
+
+    },
+    "Exclude every task with any selected Flag, or only tasks that have all selected Flags." : {
+
+    },
+    "Exclude tags" : {
+
+    },
+    "Existing tags" : {
+
+    },
+    "Expand Task List Modes" : {
+
+    },
+    "Expand state" : {
+
+    },
+    "Expand state details" : {
+
+    },
+    "Expanded" : {
+
+    },
+    "Expands the task calendar" : {
+
+    },
+    "Explain Routina features and interface concepts" : {
+
+    },
+    "Export and Verify Backup" : {
+
+    },
+    "Extend" : {
+
+    },
+    "Extend 5 min" : {
+
+    },
+    "FLAGS" : {
+
+    },
+    "Fetch" : {
+
+    },
+    "Fetching the link title" : {
+
+    },
+    "File Attachment" : {
+
+    },
+    "Files" : {
+
+    },
+    "Files up to 20 MB are saved with the note." : {
+
+    },
+    "Filter Flags" : {
+
+    },
+    "Filter Stats" : {
+
+    },
+    "Filter and Sort" : {
+
+    },
+    "Filter task list by #%@" : {
+
+    },
+    "Filter task list by %@ tag" : {
+
+    },
+    "Filtering and sorting affect Backlog only." : {
+
+    },
+    "Filters" : {
+
+    },
+    "Filters active" : {
+
+    },
+    "Find on map" : {
+
+    },
+    "Find or create task" : {
+
+    },
+    "Find the right task" : {
+
+    },
+    "Find this address on the task form to show a map and navigation buttons." : {
+
+    },
+    "Finding relevant tasks…" : {
+
+    },
+    "Finding…" : {
+
+    },
+    "Fine tune: %lldm" : {
+
+    },
+    "Finish" : {
+
+    },
+    "Finish %@" : {
+
+    },
+    "Finish Sprint" : {
+
+    },
+    "Finish an active sprint" : {
+
+    },
+    "Finish editing stats dashboard" : {
+
+    },
+    "Finish or abandon that session before starting a task focus session." : {
+
+    },
+    "Finish saves the focused time in history. Abandon ends the timer without keeping it as completed Focus history." : {
+
+    },
+    "Finished Sprints" : {
+
+    },
+    "Fixed schedule" : {
+
+    },
+    "Flag %@" : {
+
+    },
+    "Flag filters" : {
+
+    },
+    "Flags" : {
+
+    },
+    "Focus" : {
+
+    },
+    "Focus Ended" : {
+
+    },
+    "Focus allocated" : {
+
+    },
+    "Focus history" : {
+
+    },
+    "Focus minutes" : {
+
+    },
+    "Focus record" : {
+
+    },
+    "Focus time" : {
+
+    },
+    "Focus time stays separate from Actual time." : {
+
+    },
+    "Focus timer in progress" : {
+
+    },
+    "Focus unavailable" : {
+
+    },
+    "Focuses the Home toolbar search field. Press Return with a new query to create a task." : {
+
+    },
+    "Focusing on %@" : {
+
+    },
+    "Forward" : {
+
+    },
+    "Found in Task Ladder" : {
+
+    },
+    "Found outside Backlog" : {
+
+    },
+    "Frequency" : {
+
+    },
+    "From" : {
+
+    },
+    "GOALS" : {
+
+    },
+    "General" : {
+
+    },
+    "Generate Screenshot Data" : {
+
+    },
+    "Git" : {
+
+    },
+    "GitHub" : {
+
+    },
+    "GitHub activity" : {
+
+    },
+    "GitHub – Access Token" : {
+
+    },
+    "GitHub – Actions" : {
+
+    },
+    "GitHub – Info" : {
+
+    },
+    "GitHub – Mode" : {
+
+    },
+    "GitHub – Profile" : {
+
+    },
+    "GitHub – Repository" : {
+
+    },
+    "GitHub – Status" : {
+
+    },
+    "GitLab" : {
+
+    },
+    "GitLab – Access Token" : {
+
+    },
+    "GitLab – Actions" : {
+
+    },
+    "GitLab – Info" : {
+
+    },
+    "GitLab – Profile" : {
+
+    },
+    "GitLab – Status" : {
+
+    },
+    "Go to date" : {
+
+    },
+    "Goal unavailable" : {
+
+    },
+    "Goals" : {
+
+    },
+    "Going to Sleep" : {
+
+    },
+    "Group" : {
+
+    },
+    "Group Details" : {
+
+    },
+    "Group rows" : {
+
+    },
+    "Groups" : {
+
+    },
+    "Guided review progress" : {
+
+    },
+    "Help me choose" : {
+
+    },
+    "Hidden by flag" : {
+
+    },
+    "Hidden comment" : {
+
+    },
+    "Hidden items" : {
+
+    },
+    "Hide" : {
+
+    },
+    "Hide add checklist item" : {
+
+    },
+    "Hide assumed-done blocks from Calendar" : {
+
+    },
+    "Hide assumed-done tasks" : {
+
+    },
+    "Hide board details" : {
+
+    },
+    "Hide details" : {
+
+    },
+    "Hide done" : {
+
+    },
+    "Hide from Planner" : {
+
+    },
+    "Hide items with" : {
+
+    },
+    "Hide options" : {
+
+    },
+    "Hide stats with" : {
+
+    },
+    "Hide stats with %@" : {
+
+    },
+    "Hide tag options" : {
+
+    },
+    "Hide tasks with" : {
+
+    },
+    "Hide this child suggestion without removing the task link" : {
+
+    },
+    "Hide unavailable" : {
+
+    },
+    "Hide unavailable %@" : {
+
+    },
+    "High energy" : {
+
+    },
+    "History actions" : {
+
+    },
+    "Home" : {
+
+    },
+    "Hour" : {
+
+    },
+    "How %@ changes" : {
+
+    },
+    "How to earn coins" : {
+
+    },
+    "I'm Awake" : {
+
+    },
+    "I'm awake" : {
+
+    },
+    "Image" : {
+
+    },
+    "Images are resized and compressed before saving to keep iCloud usage low." : {
+
+    },
+    "Images are resized and compressed before saving to reduce storage use." : {
+
+    },
+    "Images are resized and compressed before saving." : {
+
+    },
+    "Implement handling for tickets" : {
+
+    },
+    "Importance" : {
+
+    },
+    "Importance, Urgency, and Pressure show their After done values. Now follows each due-date rule, while Thinking stays fixed. Use Edit Task to change these values or their Changes over time rule." : {
+
+    },
+    "Importance, Urgency, and Pressure use each task's current Now value." : {
+
+    },
+    "Importance: %@" : {
+
+    },
+    "In %@" : {
+
+    },
+    "Include tags" : {
+
+    },
+    "Incomplete checklist item" : {
+
+    },
+    "Info" : {
+
+    },
+    "Inherit (highest task value)" : {
+
+    },
+    "Inherit uses the highest value set on the group's actionable tasks. If none has a value, the group appears under No value." : {
+
+    },
+    "Inherited" : {
+
+    },
+    "Inherited value" : {
+
+    },
+    "Intensity" : {
+
+    },
+    "Intensity %lld/5" : {
+
+    },
+    "It will remain a real repeating task while also containing its own nested Task Ladder." : {
+
+    },
+    "Items" : {
+
+    },
+    "Its tasks will return to the general Task Ladder. No tasks or history will be deleted." : {
+
+    },
+    "Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates." : {
+
+    },
+    "Last CloudKit Event: %@" : {
+
+    },
+    "Last choice: %@" : {
+
+    },
+    "Latest day" : {
+
+    },
+    "Legal" : {
+
+    },
+    "Less stress at work" : {
+
+    },
+    "Link" : {
+
+    },
+    "Link %@" : {
+
+    },
+    "Link Task" : {
+
+    },
+    "Link all suggested tasks to this goal" : {
+
+    },
+    "Link another task to “%@”" : {
+
+    },
+    "Link task to goal" : {
+
+    },
+    "Link this task to another task as related work or a blocker." : {
+
+    },
+    "Linked Goals" : {
+
+    },
+    "Linked Tasks" : {
+
+    },
+    "Linked task" : {
+
+    },
+    "Linked task suggestions" : {
+
+    },
+    "Links" : {
+
+    },
+    "List" : {
+
+    },
+    "Live" : {
+
+    },
+    "Loading Backlog…" : {
+
+    },
+    "Loading GitHub stats..." : {
+
+    },
+    "Loading active tasks…" : {
+
+    },
+    "Loading scheduled notifications…" : {
+
+    },
+    "Loading tasks…" : {
+
+    },
+    "Local AI connections are available in Routina for Mac." : {
+
+    },
+    "Locate" : {
+
+    },
+    "Location" : {
+
+    },
+    "Locked" : {
+
+    },
+    "Log actual time" : {
+
+    },
+    "Log time" : {
+
+    },
+    "Low battery threshold %lld%%" : {
+
+    },
+    "Low energy" : {
+
+    },
+    "Main task list" : {
+
+    },
+    "Manage" : {
+
+    },
+    "Manage Tags" : {
+
+    },
+    "Manage tags" : {
+
+    },
+    "Map Check-In" : {
+
+    },
+    "Map check-in" : {
+
+    },
+    "Map for task destination" : {
+
+    },
+    "Map is centered near %@." : {
+
+    },
+    "Map location set" : {
+
+    },
+    "Map showing check-in location" : {
+
+    },
+    "Mark Done" : {
+
+    },
+    "Mark Done Anyway" : {
+
+    },
+    "Mark End of Reproduction" : {
+
+    },
+    "Mark Task Done" : {
+
+    },
+    "Mark the best matching Routina task as done." : {
+
+    },
+    "Match" : {
+
+    },
+    "Media" : {
+
+    },
+    "Merge similar tags?" : {
+
+    },
+    "Merge tags" : {
+
+    },
+    "Merge…" : {
+
+    },
+    "Metric" : {
+
+    },
+    "Minimum importance" : {
+
+    },
+    "Minimum urgency" : {
+
+    },
+    "Minutes" : {
+
+    },
+    "Missed" : {
+
+    },
+    "Month" : {
+
+    },
+    "Mood map" : {
+
+    },
+    "More" : {
+
+    },
+    "More actions" : {
+
+    },
+    "More actions for %@" : {
+
+    },
+    "More durations" : {
+
+    },
+    "More focus durations" : {
+
+    },
+    "More plan focus actions" : {
+
+    },
+    "More repeating-task actions" : {
+
+    },
+    "More schedule options" : {
+
+    },
+    "More task actions" : {
+
+    },
+    "More workspaces" : {
+
+    },
+    "Move %@" : {
+
+    },
+    "Move Down" : {
+
+    },
+    "Move Up" : {
+
+    },
+    "Move a task here from the main task list, or create a Backlog section in Settings." : {
+
+    },
+    "Move categorical tasks up or down to set their place in this metric’s ladder." : {
+
+    },
+    "Move down" : {
+
+    },
+    "Move to Backlog" : {
+
+    },
+    "Move to Backlog…" : {
+
+    },
+    "Move to Blocked" : {
+
+    },
+    "Move to Home" : {
+
+    },
+    "Move to In Progress" : {
+
+    },
+    "Move to Main Task List" : {
+
+    },
+    "Move to Ready" : {
+
+    },
+    "Move up" : {
+
+    },
+    "Moves from its current Ladder location" : {
+
+    },
+    "Name" : {
+
+    },
+    "Needs Time" : {
+
+    },
+    "Neutral" : {
+
+    },
+    "New" : {
+
+    },
+    "New Backlog Super Section" : {
+
+    },
+    "New Backlog Super Section…" : {
+
+    },
+    "New Block" : {
+
+    },
+    "New Container Group…" : {
+
+    },
+    "New Goal" : {
+
+    },
+    "New Place" : {
+
+    },
+    "New Task" : {
+
+    },
+    "New Task Ladder Group" : {
+
+    },
+    "New block, %@" : {
+
+    },
+    "New subsection" : {
+
+    },
+    "New subsection name" : {
+
+    },
+    "Newly shown Planned tasks, Assumed done, Confirmed assumed done, and Done sections use this state. You can still open or collapse each section for a day directly in Calendar List." : {
+
+    },
+    "Next Due" : {
+
+    },
+    "Next month" : {
+
+    },
+    "Next: %@" : {
+
+    },
+    "No %@ available" : {
+
+    },
+    "No %@ found" : {
+
+    },
+    "No %@ sections" : {
+
+    },
+    "No Emoji Found" : {
+
+    },
+    "No Mac apps selected." : {
+
+    },
+    "No Matching Settings" : {
+
+    },
+    "No Parent" : {
+
+    },
+    "No Tasks" : {
+
+    },
+    "No Tasks Found" : {
+
+    },
+    "No active filters" : {
+
+    },
+    "No active sleep session." : {
+
+    },
+    "No active sprint timer" : {
+
+    },
+    "No active sprint." : {
+
+    },
+    "No calendars are available." : {
+
+    },
+    "No center selected yet." : {
+
+    },
+    "No check-ins" : {
+
+    },
+    "No checklist items yet" : {
+
+    },
+    "No comments yet" : {
+
+    },
+    "No day tasks" : {
+
+    },
+    "No entered websites." : {
+
+    },
+    "No events found" : {
+
+    },
+    "No events yet" : {
+
+    },
+    "No excluded tags" : {
+
+    },
+    "No files attached" : {
+
+    },
+    "No flags excluded" : {
+
+    },
+    "No focus logged" : {
+
+    },
+    "No goals yet" : {
+
+    },
+    "No hidden tags" : {
+
+    },
+    "No history yet" : {
+
+    },
+    "No image selected" : {
+
+    },
+    "No linked task" : {
+
+    },
+    "No linked tasks" : {
+
+    },
+    "No linked tasks yet" : {
+
+    },
+    "No matches" : {
+
+    },
+    "No matches in Backlog" : {
+
+    },
+    "No matching tasks" : {
+
+    },
+    "No matching tasks." : {
+
+    },
+    "No matching timeline entries" : {
+
+    },
+    "No notification will fire" : {
+
+    },
+    "No planned tasks" : {
+
+    },
+    "No planned, assumed done, or done tasks for this day." : {
+
+    },
+    "No recent wins yet" : {
+
+    },
+    "No related tags" : {
+
+    },
+    "No repeating tasks" : {
+
+    },
+    "No saved coordinate for this check-in." : {
+
+    },
+    "No saved places yet" : {
+
+    },
+    "No selected goals yet" : {
+
+    },
+    "No selected tags yet" : {
+
+    },
+    "No specific time" : {
+
+    },
+    "No specific time · %@ total" : {
+
+    },
+    "No stats to show yet" : {
+
+    },
+    "No steps yet" : {
+
+    },
+    "No subsections" : {
+
+    },
+    "No tag filter" : {
+
+    },
+    "No tags match “%@”." : {
+
+    },
+    "No tags selected" : {
+
+    },
+    "No tags yet" : {
+
+    },
+    "No task detail" : {
+
+    },
+    "No tasks" : {
+
+    },
+    "No tasks in %@." : {
+
+    },
+    "No tasks or focus sources match the current Stats filters and date range." : {
+
+    },
+    "No tasks to add" : {
+
+    },
+    "No tasks to compare" : {
+
+    },
+    "No timeline entries yet" : {
+
+    },
+    "No value" : {
+
+    },
+    "No voice note recorded" : {
+
+    },
+    "No websites entered." : {
+
+    },
+    "Not completed" : {
+
+    },
+    "Not done on selected day" : {
+
+    },
+    "Not now" : {
+
+    },
+    "Not selected" : {
+
+    },
+    "Not today" : {
+
+    },
+    "Not today — hide until tomorrow" : {
+
+    },
+    "Not today, pause, pause until, or resume this repeating task" : {
+
+    },
+    "Note" : {
+
+    },
+    "Note not found" : {
+
+    },
+    "Note unavailable" : {
+
+    },
+    "Notes" : {
+
+    },
+    "Nothing is added until you confirm an individual suggestion." : {
+
+    },
+    "Nothing on this board yet" : {
+
+    },
+    "Notification" : {
+
+    },
+    "Notifications" : {
+
+    },
+    "Notifications are disabled in system settings." : {
+
+    },
+    "Notifications are grouped by task or event. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this Mac." : {
+
+    },
+    "Notifications are grouped by task. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this Mac." : {
+
+    },
+    "Now" : {
+
+    },
+    "Nudges" : {
+
+    },
+    "OK" : {
+
+    },
+    "Occurrences" : {
+
+    },
+    "Off" : {
+
+    },
+    "On" : {
+
+    },
+    "On the due date, %@ is still %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On the due date, %1$@ is still %2$@."
+          }
+        }
+      }
+    },
+    "One-time" : {
+
+    },
+    "One-time breakdown" : {
+
+    },
+    "One-time state" : {
+
+    },
+    "Only %@" : {
+
+    },
+    "Only task activity with every selected Flag or any selected Flag is included." : {
+
+    },
+    "Open" : {
+
+    },
+    "Open %@" : {
+
+    },
+    "Open %@ task details" : {
+
+    },
+    "Open %@ timer for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Open %1$@ timer for %2$@"
+          }
+        }
+      }
+    },
+    "Open Inner Task Ladder" : {
+
+    },
+    "Open Items" : {
+
+    },
+    "Open Location Settings" : {
+
+    },
+    "Open Task" : {
+
+    },
+    "Open a task to review its details or edit it without bringing it back to the main sidebar." : {
+
+    },
+    "Open details" : {
+
+    },
+    "Open image in another app" : {
+
+    },
+    "Open inner Task Ladder" : {
+
+    },
+    "Open linked %@" : {
+
+    },
+    "Open picker" : {
+
+    },
+    "Open with..." : {
+
+    },
+    "Open-ended" : {
+
+    },
+    "Opening task…" : {
+
+    },
+    "Opens task creation" : {
+
+    },
+    "Optional note" : {
+
+    },
+    "Or enter a custom time" : {
+
+    },
+    "Order" : {
+
+    },
+    "Organization" : {
+
+    },
+    "Organize in Task Ladder…" : {
+
+    },
+    "Originally %@" : {
+
+    },
+    "Other matches" : {
+
+    },
+    "Outcome" : {
+
+    },
+    "Outlook sign in is not configured" : {
+
+    },
+    "Outside Task Ladder" : {
+
+    },
+    "Overlaps %@" : {
+
+    },
+    "Overview" : {
+
+    },
+    "Owned" : {
+
+    },
+    "Owner" : {
+
+    },
+    "POINTS" : {
+
+    },
+    "Parent Goal" : {
+
+    },
+    "Path" : {
+
+    },
+    "Pause" : {
+
+    },
+    "Pause voice note" : {
+
+    },
+    "Paused" : {
+
+    },
+    "Paused sprint focus" : {
+
+    },
+    "Performance Profile" : {
+
+    },
+    "Performs this history correction" : {
+
+    },
+    "Period" : {
+
+    },
+    "Personal access token" : {
+
+    },
+    "Pick a color" : {
+
+    },
+    "Pinned" : {
+
+    },
+    "Place" : {
+
+    },
+    "Place %@" : {
+
+    },
+    "Place Filter" : {
+
+    },
+    "Place Filtering" : {
+
+    },
+    "Place actions" : {
+
+    },
+    "Place check-in map" : {
+
+    },
+    "Place check-in not found" : {
+
+    },
+    "Place name" : {
+
+    },
+    "Place this linked task inside the group" : {
+
+    },
+    "Places" : {
+
+    },
+    "Plan" : {
+
+    },
+    "Plan Focus" : {
+
+    },
+    "Plan date" : {
+
+    },
+    "Plan to do" : {
+
+    },
+    "Plan to do today" : {
+
+    },
+    "Planned for today" : {
+
+    },
+    "Planned today" : {
+
+    },
+    "Planner" : {
+
+    },
+    "Planner range" : {
+
+    },
+    "Planner view" : {
+
+    },
+    "Planning" : {
+
+    },
+    "Play voice note" : {
+
+    },
+    "Pleasant" : {
+
+    },
+    "Pleasantness" : {
+
+    },
+    "Position" : {
+
+    },
+    "Preset" : {
+
+    },
+    "Press Tab to complete #%@" : {
+
+    },
+    "Press Tab to select #%@" : {
+
+    },
+    "Pressure" : {
+
+    },
+    "Pressure: %@" : {
+
+    },
+    "Preview" : {
+
+    },
+    "Previous Task Ladder" : {
+
+    },
+    "Previous month" : {
+
+    },
+    "Priority" : {
+
+    },
+    "Priority tie-break %lld" : {
+
+    },
+    "Privacy Policy" : {
+
+    },
+    "Quick Add" : {
+
+    },
+    "Quick Add Task" : {
+
+    },
+    "Quick add ${text}" : {
+
+    },
+    "Quick picks" : {
+
+    },
+    "Radius" : {
+
+    },
+    "Range" : {
+
+    },
+    "Rank by" : {
+
+    },
+    "Ready" : {
+
+    },
+    "Ready Item" : {
+
+    },
+    "Ready Items" : {
+
+    },
+    "Receiving iCloud data" : {
+
+    },
+    "Recent focus" : {
+
+    },
+    "Recent sessions" : {
+
+    },
+    "Record time without changing Focus history." : {
+
+    },
+    "Recorded" : {
+
+    },
+    "Recorded focus session" : {
+
+    },
+    "Recording" : {
+
+    },
+    "Recurrence" : {
+
+    },
+    "Recurrence summary" : {
+
+    },
+    "Redo" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Refresh Activity" : {
+
+    },
+    "Refresh Backlog" : {
+
+    },
+    "Refresh Task Ladder" : {
+
+    },
+    "Refresh shared data now" : {
+
+    },
+    "Refresh task ranking" : {
+
+    },
+    "Reject" : {
+
+    },
+    "Reject All" : {
+
+    },
+    "Reject all task suggestions" : {
+
+    },
+    "Reject suggestion" : {
+
+    },
+    "Reject task suggestion" : {
+
+    },
+    "Related" : {
+
+    },
+    "Related tags" : {
+
+    },
+    "Related tags appear as suggestions across filters and task forms." : {
+
+    },
+    "Relationship" : {
+
+    },
+    "Relationships" : {
+
+    },
+    "Reminder" : {
+
+    },
+    "Reminder?" : {
+
+    },
+    "Reminders" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove %@" : {
+
+    },
+    "Remove %@ from Timeline filters" : {
+
+    },
+    "Remove %@ from flag filters" : {
+
+    },
+    "Remove Connection" : {
+
+    },
+    "Remove This Alert" : {
+
+    },
+    "Remove a stats item to add it back here." : {
+
+    },
+    "Remove automatic tag %@" : {
+
+    },
+    "Remove file" : {
+
+    },
+    "Remove flag %@" : {
+
+    },
+    "Remove from Sprint" : {
+
+    },
+    "Remove goal %@" : {
+
+    },
+    "Remove link" : {
+
+    },
+    "Remove relationship to %@" : {
+
+    },
+    "Remove routing tag %@" : {
+
+    },
+    "Remove tag %@" : {
+
+    },
+    "Remove time %lld" : {
+
+    },
+    "Rename" : {
+
+    },
+    "Rename Section" : {
+
+    },
+    "Rename Tag" : {
+
+    },
+    "Rename…" : {
+
+    },
+    "Repeat" : {
+
+    },
+    "Repeat Type" : {
+
+    },
+    "Repeating" : {
+
+    },
+    "Repeating task" : {
+
+    },
+    "Repository" : {
+
+    },
+    "Reproduction Marked" : {
+
+    },
+    "Require unlock when opening Routina" : {
+
+    },
+    "Required" : {
+
+    },
+    "Reset" : {
+
+    },
+    "Reset Settings" : {
+
+    },
+    "Reset Settings to Defaults" : {
+
+    },
+    "Reset color" : {
+
+    },
+    "Reset stats dashboard" : {
+
+    },
+    "Rest well" : {
+
+    },
+    "Restore" : {
+
+    },
+    "Restore Backup" : {
+
+    },
+    "Restore Recovery" : {
+
+    },
+    "Restore Recovery Point?" : {
+
+    },
+    "Restore the verified snapshot from %@? Routina will preserve the current data as another recovery point first." : {
+
+    },
+    "Resume" : {
+
+    },
+    "Resume date and time" : {
+
+    },
+    "Return" : {
+
+    },
+    "Reverse order: %@" : {
+
+    },
+    "Revert" : {
+
+    },
+    "Review" : {
+
+    },
+    "Review Calendar Tasks" : {
+
+    },
+    "Review calendar events one by one before adding them as tasks." : {
+
+    },
+    "Review one by one" : {
+
+    },
+    "Route tags..." : {
+
+    },
+    "Routina" : {
+
+    },
+    "Routina can suggest a task only after every active task has the details needed for a fair comparison." : {
+
+    },
+    "Routina found tag names that may be the same word, such as #clean and #Cleaning. Nothing changes until you confirm each merge." : {
+
+    },
+    "Routina is holding this window for you." : {
+
+    },
+    "Routina is staying quiet while you sleep." : {
+
+    },
+    "Routina keeps the ten most recent verified snapshots created immediately before a restore. They remain only while Routina is installed." : {
+
+    },
+    "Routina will ask for %@ before deleting iCloud data." : {
+
+    },
+    "Routinam Settings" : {
+
+    },
+    "Running sprint focus" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save %@ & next" : {
+
+    },
+    "Save & next" : {
+
+    },
+    "Save Away" : {
+
+    },
+    "Save Changes" : {
+
+    },
+    "Save Duration" : {
+
+    },
+    "Save Time & Duration" : {
+
+    },
+    "Save a backup first, then use App Lock to confirm deletion if you still want to continue." : {
+
+    },
+    "Save and Verify" : {
+
+    },
+    "Save and Verify Backup First" : {
+
+    },
+    "Save and verify a Routina backup before deleting iCloud data so you have a tested recovery point." : {
+
+    },
+    "Save as Place" : {
+
+    },
+    "Save places in Settings to filter repeating tasks with a map-based view here." : {
+
+    },
+    "Save related tags" : {
+
+    },
+    "Save to Files" : {
+
+    },
+    "Saved Tags" : {
+
+    },
+    "Saving replaces its paused segments with one continuous interval." : {
+
+    },
+    "Saving task" : {
+
+    },
+    "Saving your choice…" : {
+
+    },
+    "Saving…" : {
+
+    },
+    "Schedule" : {
+
+    },
+    "Schedule details" : {
+
+    },
+    "Score" : {
+
+    },
+    "Search %@" : {
+
+    },
+    "Search Backlog" : {
+
+    },
+    "Search Settings" : {
+
+    },
+    "Search Task Ladder" : {
+
+    },
+    "Search and select saved tags" : {
+
+    },
+    "Search and summarize your tasks when read-only access is enabled" : {
+
+    },
+    "Search emoji" : {
+
+    },
+    "Search events" : {
+
+    },
+    "Search flags" : {
+
+    },
+    "Search goals" : {
+
+    },
+    "Search groups and tasks" : {
+
+    },
+    "Search or Create" : {
+
+    },
+    "Search repeating and one-time tasks" : {
+
+    },
+    "Search tags" : {
+
+    },
+    "Search tasks" : {
+
+    },
+    "Search tasks to add" : {
+
+    },
+    "Search time zones" : {
+
+    },
+    "Section actions" : {
+
+    },
+    "Section color" : {
+
+    },
+    "Section destination" : {
+
+    },
+    "Section name" : {
+
+    },
+    "Sections" : {
+
+    },
+    "Select %@" : {
+
+    },
+    "Select a backlog task" : {
+
+    },
+    "Select a goal" : {
+
+    },
+    "Select a task" : {
+
+    },
+    "Select a task or group" : {
+
+    },
+    "Select a timeline entry" : {
+
+    },
+    "Select a timeline entry or filters" : {
+
+    },
+    "Select all backlog rows" : {
+
+    },
+    "Select flags to include in the Home task list." : {
+
+    },
+    "Select tag %@" : {
+
+    },
+    "Select tags to" : {
+
+    },
+    "Select today" : {
+
+    },
+    "Selected" : {
+
+    },
+    "Selected %@" : {
+
+    },
+    "Selected Flags" : {
+
+    },
+    "Selected Place" : {
+
+    },
+    "Selected day" : {
+
+    },
+    "Selected flags" : {
+
+    },
+    "Selected hour" : {
+
+    },
+    "Selected occurrence" : {
+
+    },
+    "Selected: %@" : {
+
+    },
+    "Selecting a Flag reveals matching task activity, including activity hidden by that Flag's Timeline rule." : {
+
+    },
+    "Separate daily repeating tasks in task list" : {
+
+    },
+    "Separate one-time and repeating tasks" : {
+
+    },
+    "Separate related tags with commas." : {
+
+    },
+    "Session" : {
+
+    },
+    "Set Importance" : {
+
+    },
+    "Set Pressure" : {
+
+    },
+    "Set State" : {
+
+    },
+    "Set Thinking Needed" : {
+
+    },
+    "Set Urgency" : {
+
+    },
+    "Set as Active" : {
+
+    },
+    "Set deadline" : {
+
+    },
+    "Set notification" : {
+
+    },
+    "Set reminder" : {
+
+    },
+    "Set the total time spent, with an optional specific start time." : {
+
+    },
+    "Set your current condition. Routina first checks that active tasks have enough detail, then learns only the priority ties you need to resolve." : {
+
+    },
+    "Sets a tint on the task row and detail screen background." : {
+
+    },
+    "Settings" : {
+
+    },
+    "Settings…" : {
+
+    },
+    "Shake always asks for confirmation before sleep mode starts." : {
+
+    },
+    "Shake to start sleep mode" : {
+
+    },
+    "Share" : {
+
+    },
+    "Share Link" : {
+
+    },
+    "Share Performance Profile" : {
+
+    },
+    "Share Previous Run Profile" : {
+
+    },
+    "Share link to %@" : {
+
+    },
+    "Shares the current Debug performance profile JSON file" : {
+
+    },
+    "Shares the profile preserved before this Debug run started" : {
+
+    },
+    "Ship portfolio, improve health" : {
+
+    },
+    "Shortcut" : {
+
+    },
+    "Shortcuts" : {
+
+    },
+    "Show" : {
+
+    },
+    "Show %@" : {
+
+    },
+    "Show %@ evidence" : {
+
+    },
+    "Show %@ on map" : {
+
+    },
+    "Show %lld older changes" : {
+
+    },
+    "Show %lld older entries" : {
+
+    },
+    "Show Achievements" : {
+
+    },
+    "Show Adventure map" : {
+
+    },
+    "Show All" : {
+
+    },
+    "Show All, One-time, and Repeating tabs in the Home sidebar." : {
+
+    },
+    "Show Away" : {
+
+    },
+    "Show Away mode controls and history, plus Sleep creation, stats, and blocking surfaces." : {
+
+    },
+    "Show Away mode controls, Away planner blocks, Away timeline items, Away stats, and Sleep stats/blocking surfaces." : {
+
+    },
+    "Show Board screen" : {
+
+    },
+    "Show Devices section" : {
+
+    },
+    "Show Done count in toolbar" : {
+
+    },
+    "Show Event and Emotion Timeline, filter, and reporting surfaces." : {
+
+    },
+    "Show Event and Emotion actions" : {
+
+    },
+    "Show Event and Emotion features" : {
+
+    },
+    "Show Event and Emotion in the Mac Add menu, Task Details event actions, Timeline type filters, Planner calendar filters, and Stats reports." : {
+
+    },
+    "Show Focus Timer actions on Home sidebar section and group titles." : {
+
+    },
+    "Show Goal navigation, controls, and Stats reports." : {
+
+    },
+    "Show Goals tab" : {
+
+    },
+    "Show Going to sleep in New and the Sleep-specific dashboard scope in Stats." : {
+
+    },
+    "Show Group Details" : {
+
+    },
+    "Show Home section focus timers" : {
+
+    },
+    "Show Home task type tabs" : {
+
+    },
+    "Show Home task-type control" : {
+
+    },
+    "Show Mac website blocking" : {
+
+    },
+    "Show Notes" : {
+
+    },
+    "Show Persian date beside dates" : {
+
+    },
+    "Show Places" : {
+
+    },
+    "Show Recent Wins in Stats." : {
+
+    },
+    "Show Sleep tab" : {
+
+    },
+    "Show Stats dashboard controls" : {
+
+    },
+    "Show Stats wins" : {
+
+    },
+    "Show Status note section" : {
+
+    },
+    "Show Summary view and Edit controls in the Mac Stats toolbar." : {
+
+    },
+    "Show Task in List" : {
+
+    },
+    "Show Timeline activity with %@" : {
+
+    },
+    "Show Timeline quick filters" : {
+
+    },
+    "Show Tomorrow section" : {
+
+    },
+    "Show achievement badges and progress in Stats." : {
+
+    },
+    "Show active items calculation" : {
+
+    },
+    "Show activity with" : {
+
+    },
+    "Show advanced query controls in Home and Stats filters." : {
+
+    },
+    "Show all %lld sessions" : {
+
+    },
+    "Show all (%lld)" : {
+
+    },
+    "Show all activity" : {
+
+    },
+    "Show all changes" : {
+
+    },
+    "Show all flags" : {
+
+    },
+    "Show all focus sessions" : {
+
+    },
+    "Show all levels" : {
+
+    },
+    "Show all options" : {
+
+    },
+    "Show all tags" : {
+
+    },
+    "Show an expandable All / Repeating / One-time control in the Home toolbar. Turn off to switch task type from Filters instead." : {
+
+    },
+    "Show archived list" : {
+
+    },
+    "Show blocked tasks" : {
+
+    },
+    "Show board details" : {
+
+    },
+    "Show default Timeline" : {
+
+    },
+    "Show details" : {
+
+    },
+    "Show development badge" : {
+
+    },
+    "Show done" : {
+
+    },
+    "Show fewer activity entries" : {
+
+    },
+    "Show fewer changes" : {
+
+    },
+    "Show fewer flags" : {
+
+    },
+    "Show fewer focus sessions" : {
+
+    },
+    "Show fewer tags" : {
+
+    },
+    "Show filter query sections" : {
+
+    },
+    "Show in Planner" : {
+
+    },
+    "Show in Timeline" : {
+
+    },
+    "Show items with" : {
+
+    },
+    "Show less" : {
+
+    },
+    "Show linked task visualizer" : {
+
+    },
+    "Show more" : {
+
+    },
+    "Show note creation, note fields, note timeline items, and note stats." : {
+
+    },
+    "Show overdue and due soon separately" : {
+
+    },
+    "Show place management, check-ins, filters, task fields, and place stats." : {
+
+    },
+    "Show recent activity" : {
+
+    },
+    "Show recent changes" : {
+
+    },
+    "Show related tags options" : {
+
+    },
+    "Show selected month" : {
+
+    },
+    "Show stats with" : {
+
+    },
+    "Show stats with %@" : {
+
+    },
+    "Show tag options" : {
+
+    },
+    "Show tag-related rules controls in Settings > Tags." : {
+
+    },
+    "Show task in sidebar" : {
+
+    },
+    "Show task sharing in task details." : {
+
+    },
+    "Show tasks with" : {
+
+    },
+    "Show the Adventure map in Home." : {
+
+    },
+    "Show the All, Repeating, One-time, Notes, and other quick filters in Timeline." : {
+
+    },
+    "Show the All, Repeating, One-time, and other quick filters in Timeline." : {
+
+    },
+    "Show the Board screen in Home." : {
+
+    },
+    "Show the Sleep tab for Sleep-specific dashboard scope in Stats." : {
+
+    },
+    "Show the Visualize button for linked tasks in task details." : {
+
+    },
+    "Show the bottom sidebar composer for adding Status notes from Home." : {
+
+    },
+    "Show the website blocking controls in Blocking settings." : {
+
+    },
+    "Show this task in the left sidebar" : {
+
+    },
+    "Show timeline tasks automatically in planner" : {
+
+    },
+    "Show timeline tasks not planned for %@" : {
+
+    },
+    "Show today" : {
+
+    },
+    "Show when the shared task data was last refreshed" : {
+
+    },
+    "Shown: %@" : {
+
+    },
+    "Shows %lld older activity entries" : {
+
+    },
+    "Shows %lld older changes" : {
+
+    },
+    "Shows %lld older comments" : {
+
+    },
+    "Shows Focus controls" : {
+
+    },
+    "Shows GitHub and GitLab contribution activity in Stats." : {
+
+    },
+    "Shows a denser board for longer columns." : {
+
+    },
+    "Shows fuller cards with a little more breathing room." : {
+
+    },
+    "Shows only recent activity" : {
+
+    },
+    "Shows only recent changes" : {
+
+    },
+    "Shows task details" : {
+
+    },
+    "Shows the tasks and sources behind this statistic" : {
+
+    },
+    "Sign in to Microsoft to fetch calendar events for one-by-one review." : {
+
+    },
+    "Sign in with Microsoft" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Sleep" : {
+
+    },
+    "Sleep Shortcut" : {
+
+    },
+    "Sleep detail is not available yet." : {
+
+    },
+    "Sleep mode is active" : {
+
+    },
+    "Sleep mode started at %@." : {
+
+    },
+    "Sleep record" : {
+
+    },
+    "Sleep time is blocked" : {
+
+    },
+    "Snooze" : {
+
+    },
+    "Snooze Notification" : {
+
+    },
+    "Snooze until" : {
+
+    },
+    "Specific time" : {
+
+    },
+    "Sprint" : {
+
+    },
+    "Sprint Not Found" : {
+
+    },
+    "Sprint name..." : {
+
+    },
+    "Stage %lld: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Stage %1$lld: %2$@"
+          }
+        }
+      }
+    },
+    "Start" : {
+
+    },
+    "Start Focus" : {
+
+    },
+    "Start Focus Timer" : {
+
+    },
+    "Start Focus on #%@" : {
+
+    },
+    "Start Focus on %@" : {
+
+    },
+    "Start Routina sleep mode." : {
+
+    },
+    "Start Sleep" : {
+
+    },
+    "Start a focus session for a Routina task." : {
+
+    },
+    "Start count up" : {
+
+    },
+    "Start focus" : {
+
+    },
+    "Start now and stop it when you return." : {
+
+    },
+    "Start over" : {
+
+    },
+    "Start sprint focus" : {
+
+    },
+    "Start with this" : {
+
+    },
+    "Started" : {
+
+    },
+    "Started %lld minute focus for %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Started %1$lld minute focus for %2$@."
+          }
+        }
+      }
+    },
+    "Starts" : {
+
+    },
+    "Starts at %@ · Ends %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Starts at %1$@ · Ends %2$@"
+          }
+        }
+      }
+    },
+    "State Timing" : {
+
+    },
+    "Stats" : {
+
+    },
+    "Stats scope" : {
+
+    },
+    "Stats task type" : {
+
+    },
+    "Stats time range" : {
+
+    },
+    "Stats unavailable" : {
+
+    },
+    "Status" : {
+
+    },
+    "Step-based repeating tasks can only be progressed for today." : {
+
+    },
+    "Steps" : {
+
+    },
+    "Stop" : {
+
+    },
+    "Stop hiding %@" : {
+
+    },
+    "Stop showing %@" : {
+
+    },
+    "Stop that focus timer before starting a task focus session." : {
+
+    },
+    "Stop that focus timer before starting sprint focus." : {
+
+    },
+    "Street address or place" : {
+
+    },
+    "Sub-goals" : {
+
+    },
+    "Sub-goals appear on the parent goal detail." : {
+
+    },
+    "Subsection actions" : {
+
+    },
+    "Subsection name" : {
+
+    },
+    "Subsections" : {
+
+    },
+    "Suggested" : {
+
+    },
+    "Suggested Related Tags" : {
+
+    },
+    "Suggested Tasks" : {
+
+    },
+    "Suggested related tags" : {
+
+    },
+    "Summarize what is due today in Routina." : {
+
+    },
+    "Summary card view" : {
+
+    },
+    "Summary view" : {
+
+    },
+    "Support & About" : {
+
+    },
+    "Switch workspace or choose an action" : {
+
+    },
+    "Sync Now" : {
+
+    },
+    "System Settings" : {
+
+    },
+    "TAGS" : {
+
+    },
+    "TASK LADDER VALUES" : {
+
+    },
+    "TIME SPENT" : {
+
+    },
+    "Tab" : {
+
+    },
+    "Tag" : {
+
+    },
+    "Tag Counters" : {
+
+    },
+    "Tag Focus" : {
+
+    },
+    "Tag Rules" : {
+
+    },
+    "Tag color" : {
+
+    },
+    "Tag filters" : {
+
+    },
+    "Tag matching" : {
+
+    },
+    "Tag name" : {
+
+    },
+    "Tag usage bubble chart" : {
+
+    },
+    "Tagged new one-time tasks land here automatically." : {
+
+    },
+    "Tags" : {
+
+    },
+    "Tags: %@" : {
+
+    },
+    "Tap anywhere to move the center" : {
+
+    },
+    "Tap the map to place the center point." : {
+
+    },
+    "Tap to choose a location" : {
+
+    },
+    "Target Date" : {
+
+    },
+    "Task" : {
+
+    },
+    "Task %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Task %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Task Ladder" : {
+
+    },
+    "Task Ladder entry window" : {
+
+    },
+    "Task Ladder group" : {
+
+    },
+    "Task Ladder values" : {
+
+    },
+    "Task Name" : {
+
+    },
+    "Task Ranking" : {
+
+    },
+    "Task Relationships" : {
+
+    },
+    "Task Row" : {
+
+    },
+    "Task Type" : {
+
+    },
+    "Task created" : {
+
+    },
+    "Task group" : {
+
+    },
+    "Task list preview" : {
+
+    },
+    "Task list sections are managed on Mac." : {
+
+    },
+    "Task list tabs" : {
+
+    },
+    "Task name" : {
+
+    },
+    "Task not found" : {
+
+    },
+    "Task order" : {
+
+    },
+    "Task path" : {
+
+    },
+    "Task path: %@" : {
+
+    },
+    "Task sections default" : {
+
+    },
+    "Task title" : {
+
+    },
+    "Task type" : {
+
+    },
+    "Task: %@" : {
+
+    },
+    "Tasks inside this group are completed independently." : {
+
+    },
+    "Tasks kept off your main task list" : {
+
+    },
+    "Tasks linked to this goal keep the task, and sub-goals become top-level goals." : {
+
+    },
+    "Temporary View State" : {
+
+    },
+    "Terms of Use" : {
+
+    },
+    "The MCP helper is not included in this build of Routina." : {
+
+    },
+    "The note being edited is no longer available." : {
+
+    },
+    "The repeating task keeps its schedule, completion action, and history. Choose a task to compare inside it, then decide separately whether that task can complete the repeating task." : {
+
+    },
+    "The selected event is no longer available." : {
+
+    },
+    "The selected note is no longer available." : {
+
+    },
+    "The selected place check-in is no longer available." : {
+
+    },
+    "The selected task is no longer available." : {
+
+    },
+    "The stats store is not currently connected for this view." : {
+
+    },
+    "The task stays out of Calendar scheduling until this time, then becomes active automatically." : {
+
+    },
+    "The timer may have ended or the sprint is no longer available on this iPhone." : {
+
+    },
+    "There are no active tasks that can be recommended right now." : {
+
+    },
+    "There are no other tasks available to link." : {
+
+    },
+    "These tasks are equally relevant for the condition you chose. Tap the one you would rather do next." : {
+
+    },
+    "Thinking after done" : {
+
+    },
+    "Thinking is" : {
+
+    },
+    "Thinking needed" : {
+
+    },
+    "Thinking: %@" : {
+
+    },
+    "This Debug run is recording CPU, memory, lifecycle events, interaction categories, and main-thread stalls. It never includes task names, search text, or account data." : {
+
+    },
+    "This Device" : {
+
+    },
+    "This Focus session is no longer available." : {
+
+    },
+    "This action cannot be undone." : {
+
+    },
+    "This changes only the selected notification occurrence, not the %@ schedule." : {
+
+    },
+    "This controls when the task competes in Task Ladder. Search and completion remain available." : {
+
+    },
+    "This day is provisional until you confirm it" : {
+
+    },
+    "This device does not allow Routina to read calendars." : {
+
+    },
+    "This note and its files will be permanently deleted." : {
+
+    },
+    "This permanently deletes all Routina data from iCloud and from this device." : {
+
+    },
+    "This removes %@ from saved places. Linked tasks will keep working, but they will no longer be tied to this place." : {
+
+    },
+    "This removes the check-in at %@ from your place timeline." : {
+
+    },
+    "This sprint does not have any assigned tasks yet." : {
+
+    },
+    "This sprint has no tasks yet." : {
+
+    },
+    "This timer is no longer active on this iPhone." : {
+
+    },
+    "This will permanently remove %@ and its logs." : {
+
+    },
+    "Through" : {
+
+    },
+    "Time" : {
+
+    },
+    "Time %lld" : {
+
+    },
+    "Time Zone" : {
+
+    },
+    "Time spent" : {
+
+    },
+    "Time type" : {
+
+    },
+    "Time zone" : {
+
+    },
+    "Timed" : {
+
+    },
+    "Timed repeating tasks alert at their scheduled time. Notifications include quick actions for Done and Snooze." : {
+
+    },
+    "Timeline" : {
+
+    },
+    "Timeline Row" : {
+
+    },
+    "Timeline activity on %@ and not in planner" : {
+
+    },
+    "Timeline tabs" : {
+
+    },
+    "Timeline type" : {
+
+    },
+    "Timer" : {
+
+    },
+    "Times" : {
+
+    },
+    "Timing" : {
+
+    },
+    "Tips" : {
+
+    },
+    "Title" : {
+
+    },
+    "To" : {
+
+    },
+    "Today" : {
+
+    },
+    "Today in Routina" : {
+
+    },
+    "Tomorrow" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Try a different search, time range, or done type." : {
+
+    },
+    "Try a different time range or filter." : {
+
+    },
+    "Try a different timeline search or filters." : {
+
+    },
+    "Try a different word or paste an emoji to narrow the list." : {
+
+    },
+    "Try a shorter search." : {
+
+    },
+    "Try again" : {
+
+    },
+    "Try again after checking calendar permissions." : {
+
+    },
+    "Try another search." : {
+
+    },
+    "Try part of the task name or a copied task link." : {
+
+    },
+    "Turn On App Lock" : {
+
+    },
+    "Turn on App Lock before deleting iCloud data. Routina will use %@ to confirm this action." : {
+
+    },
+    "Turn this off temporarily when preparing screenshots from the development app." : {
+
+    },
+    "Turning on App Lock..." : {
+
+    },
+    "Type" : {
+
+    },
+    "Unassigned Focus" : {
+
+    },
+    "Undo" : {
+
+    },
+    "Undo sleep mode" : {
+
+    },
+    "Unlock" : {
+
+    },
+    "Unlock Goal" : {
+
+    },
+    "Unlock Routina" : {
+
+    },
+    "Unlock now, or save coins for a rarer companion or artifact." : {
+
+    },
+    "Unlock price" : {
+
+    },
+    "Unpleasant" : {
+
+    },
+    "Untitled note" : {
+
+    },
+    "Update this tag everywhere it is used. Renaming to an existing tag will merge them." : {
+
+    },
+    "Updating details…" : {
+
+    },
+    "Urgency" : {
+
+    },
+    "Urgency: %@" : {
+
+    },
+    "Use %@" : {
+
+    },
+    "Use %@ emoji" : {
+
+    },
+    "Use Find on map to attach coordinates for the task map and navigation buttons." : {
+
+    },
+    "Use Repeating Task as Group…" : {
+
+    },
+    "Use This Location" : {
+
+    },
+    "Use a Repeating Task as a Group" : {
+
+    },
+    "Use as Task Ladder Group…" : {
+
+    },
+    "Use as Task Ladder group" : {
+
+    },
+    "Use the duration as the day’s total when the work happened in multiple sessions." : {
+
+    },
+    "Use the previous run after reopening the app following a crash or force-quit. It contains the most recently saved data from that run." : {
+
+    },
+    "Uses the last valid day in shorter months." : {
+
+    },
+    "Value inherited from tasks" : {
+
+    },
+    "Values" : {
+
+    },
+    "Verify Backup" : {
+
+    },
+    "Verifying device authentication…" : {
+
+    },
+    "Version" : {
+
+    },
+    "Visualize" : {
+
+    },
+    "Voice" : {
+
+    },
+    "Voice Note" : {
+
+    },
+    "Wake Up" : {
+
+    },
+    "Wake up before starting a focus timer." : {
+
+    },
+    "Wash clothes" : {
+
+    },
+    "Water plants every Saturday at 9 #home" : {
+
+    },
+    "Water plants every Saturday at 9am #home" : {
+
+    },
+    "Weekday" : {
+
+    },
+    "What are you doing?" : {
+
+    },
+    "What happened?" : {
+
+    },
+    "When" : {
+
+    },
+    "When %@ is completed" : {
+
+    },
+    "When enabled, Routina creates one charge repeating task for this Mac and turns it red, urgent, and pinned when the battery is below the threshold." : {
+
+    },
+    "When enabled, Routina creates one charge repeating task for this device and turns it red, urgent, and pinned when the battery is below the threshold." : {
+
+    },
+    "When enabled, the Home toolbar shows your total Done count." : {
+
+    },
+    "When off, planner dates show a timeline badge that opens the activity list instead." : {
+
+    },
+    "When this task is completed" : {
+
+    },
+    "Where should this task go?" : {
+
+    },
+    "Whether %@ changes" : {
+
+    },
+    "Which task should come first?" : {
+
+    },
+    "With Local AI Access enabled, you can also ask about your own data:" : {
+
+    },
+    "Workspace and actions: %@" : {
+
+    },
+    "Worlds" : {
+
+    },
+    "Write a note" : {
+
+    },
+    "XP toward Rank %lld" : {
+
+    },
+    "Yesterday · Completed task" : {
+
+    },
+    "You can also drag an image from Finder onto this area." : {
+
+    },
+    "You're awake. Slept %@." : {
+
+    },
+    "Your place sessions will appear here grouped by date." : {
+
+    },
+    "active day" : {
+
+    },
+    "active days" : {
+
+    },
+    "activities logged" : {
+
+    },
+    "activity logged" : {
+
+    },
+    "and" : {
+
+    },
+    "and does not change." : {
+
+    },
+    "before due" : {
+
+    },
+    "changes" : {
+
+    },
+    "creatures" : {
+
+    },
+    "does not change" : {
+
+    },
+    "elapsed" : {
+
+    },
+    "example.com" : {
+
+    },
+    "h.qadirian@gmail.com" : {
+
+    },
+    "health, focus, morning" : {
+
+    },
+    "health, travel, work" : {
+
+    },
+    "hours" : {
+
+    },
+    "https://example.com" : {
+
+    },
+    "iCloud" : {
+
+    },
+    "iCloud & Backup" : {
+
+    },
+    "iOS confirms icon changes before applying them." : {
+
+    },
+    "is" : {
+
+    },
+    "min" : {
+
+    },
+    "next" : {
+
+    },
+    "one level every" : {
+
+    },
+    "over" : {
+
+    },
+    "overdue" : {
+
+    },
+    "paused" : {
+
+    },
+    "spendable" : {
+
+    },
+    "starting" : {
+
+    },
+    "tag:work -state:done type:one-time" : {
+
+    },
+    "to" : {
+
+    },
+    "toward" : {
+
+    },
+    "water plants every Sat at 9 #home" : {
+
+    },
+    "•" : {
+
+    },
+    "⋮" : {
+
+    },
+    "│" : {
+
+    },
+    "✨" : {
+
+    },
+    "🗓️" : {
+
+    }
+  },
+  "version" : "1.0"
+}

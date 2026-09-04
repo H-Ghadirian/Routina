@@ -60,6 +60,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
 - [0711](../decisions/0711-gate-disabled-events-across-mac-release-surfaces.md)
 - [0714](../decisions/0714-treat-single-time-structured-routines-as-occurrences.md)
+- [0719](../decisions/0719-externalize-localizable-and-structured-product-copy.md)
 
 ## Current Contract
 
@@ -72,6 +73,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Top-level section names are unique within their surface, not across the whole catalog. The same name can therefore be created once in `Main task list` and once in `Backlog`; duplicate names remain rejected within the same surface, and subsection names remain unique under their parent.
 - Mac Settings -> Sections expands one custom-section editor at a time. The card's height and disclosure affordance animate, while editor controls remain clipped to the rounded card and do not fade or slide independently.
 - iOS and macOS Settings provide a native `Search Settings` field. It searches visible destination titles, stable aliases such as `backlog`, `sync`, `flags`, and `reminders`, and curated user-facing concepts inside each destination. Search terms and explanatory result subtitles follow the current platform: Mac can match Planner Calendar, Calendar List, keyboard shortcuts, and all four hide Flags; iOS does not advertise those Mac-only concepts and instead matches its Calendar task-review and Siri/Apple Shortcuts controls. Feature-gated destinations are excluded, and an explicit empty state appears when no destination matches.
+- Settings section titles and platform-specific search metadata, plus the Quick Add examples, syntax groups, and notes, load from a validated localized resource. The bundled catalog must contain every Settings section for both macOS and mobile before it can be used; this changes content ownership without changing current English copy or feature availability.
 - Task creation has no purchase entitlement or Settings override. Support & About continues to expose the general Privacy Policy and Terms of Use links. The legacy synchronized unlimited-task preference remains inert only for data-model and backup compatibility.
 - Calendar task import always supports Apple Calendar. Outlook appears only when the app bundle has a nonempty Microsoft Graph client ID, so unconfigured release builds do not advertise a nonfunctional sign-in path.
 - Planner Calendar configuration remains in Mac Settings -> Calendar. iOS Settings -> Calendar contains only Calendar task review/import and supplementary Persian-date display because iOS has no Planner surface that can consume the Mac preference.

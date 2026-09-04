@@ -156,6 +156,24 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func settingsContentCatalogCoversEveryPlatformSectionAndQuickAddGuide() {
+        let catalog = SettingsContentCatalog.shared
+        let expectedSectionIDs = Set(SettingsSectionID.allCases.map(\.rawValue))
+
+        #expect(Set(catalog.sections.macOS.map(\.id)) == expectedSectionIDs)
+        #expect(Set(catalog.sections.mobile.map(\.id)) == expectedSectionIDs)
+        #expect(SettingsQuickAddSyntaxGuide.examples.count == 6)
+        #expect(
+            SettingsQuickAddSyntaxGuide.syntaxGroups.map(\.title) == [
+                "Dates",
+                "Times",
+                "Repeating tasks",
+                "Metadata",
+            ])
+        #expect(SettingsQuickAddSyntaxGuide.notes.count == 5)
+    }
+
+    @Test
     func compactSettingsKeepsSearchCloseToTheDestinationList() throws {
         let source = try SourceInspectionSupport.readProjectFile("iOS/Screens/Settings/SettingsIOSViews.swift")
 

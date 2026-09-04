@@ -1,0 +1,614 @@
+{
+  "coinRules" : [
+    {
+      "actionTitle" : "Complete a task",
+      "coinsPerAction" : 12,
+      "id" : "done",
+      "sourceTitle" : "Task completions",
+      "systemImage" : "checkmark.seal.fill",
+      "unitPlural" : "completions",
+      "unitSingular" : "completion"
+    },
+    {
+      "actionTitle" : "Create a task",
+      "coinsPerAction" : 5,
+      "id" : "created",
+      "sourceTitle" : "Created tasks",
+      "systemImage" : "plus.circle.fill",
+      "unitPlural" : "tasks",
+      "unitSingular" : "task"
+    },
+    {
+      "actionTitle" : "Finish a task focus block",
+      "coinsPerAction" : 4,
+      "id" : "focus",
+      "sourceTitle" : "Task focus blocks",
+      "systemImage" : "timer",
+      "unitPlural" : "blocks",
+      "unitSingular" : "block"
+    },
+    {
+      "actionTitle" : "Finish a board focus block",
+      "coinsPerAction" : 6,
+      "id" : "boardFocus",
+      "sourceTitle" : "Board focus blocks",
+      "systemImage" : "square.grid.3x3.fill",
+      "unitPlural" : "blocks",
+      "unitSingular" : "block"
+    },
+    {
+      "actionTitle" : "Plan a block",
+      "coinsPerAction" : 4,
+      "id" : "plannerBlocks",
+      "sourceTitle" : "Planner blocks",
+      "systemImage" : "calendar.badge.plus",
+      "unitPlural" : "blocks",
+      "unitSingular" : "block"
+    },
+    {
+      "actionTitle" : "Plan one hour",
+      "coinsPerAction" : 2,
+      "id" : "plannedHours",
+      "sourceTitle" : "Planned hours",
+      "systemImage" : "clock.fill",
+      "unitPlural" : "hours",
+      "unitSingular" : "hour"
+    },
+    {
+      "actionTitle" : "Refine a plan",
+      "coinsPerAction" : 2,
+      "id" : "plannerRefinements",
+      "sourceTitle" : "Plan refinements",
+      "systemImage" : "slider.horizontal.3",
+      "unitPlural" : "refinements",
+      "unitSingular" : "refinement"
+    },
+    {
+      "actionTitle" : "Complete sleep",
+      "coinsPerAction" : 25,
+      "id" : "sleep",
+      "sourceTitle" : "Completed sleep",
+      "systemImage" : "bed.double.fill",
+      "unitPlural" : "sessions",
+      "unitSingular" : "session"
+    },
+    {
+      "actionTitle" : "Complete away",
+      "coinsPerAction" : 16,
+      "id" : "away",
+      "sourceTitle" : "Completed away",
+      "systemImage" : "lock.shield.fill",
+      "unitPlural" : "sessions",
+      "unitSingular" : "session"
+    },
+    {
+      "actionTitle" : "Capture a record",
+      "coinsPerAction" : 6,
+      "id" : "captures",
+      "sourceTitle" : "Captures",
+      "systemImage" : "sparkles",
+      "unitPlural" : "captures",
+      "unitSingular" : "capture"
+    },
+    {
+      "actionTitle" : "Create a goal",
+      "coinsPerAction" : 14,
+      "id" : "goals",
+      "sourceTitle" : "Goals",
+      "systemImage" : "target",
+      "unitPlural" : "goals",
+      "unitSingular" : "goal"
+    },
+    {
+      "actionTitle" : "Check in to a place",
+      "coinsPerAction" : 10,
+      "id" : "places",
+      "sourceTitle" : "Check-ins",
+      "systemImage" : "mappin.and.ellipse",
+      "unitPlural" : "check-ins",
+      "unitSingular" : "check-in"
+    }
+  ],
+  "items" : [
+    {
+      "id" : "trail-compass",
+      "kind" : "tool",
+      "requiredCoins" : 200,
+      "requiredStageCount" : 1,
+      "subtitle" : "Unlocked after the first few wins.",
+      "systemImage" : "location.north.line.fill",
+      "title" : "Trail Compass"
+    },
+    {
+      "id" : "meadow-guide",
+      "kind" : "companion",
+      "requiredCoins" : 900,
+      "requiredStageCount" : 4,
+      "subtitle" : "A tiny guide for the first map.",
+      "systemImage" : "sun.max.fill",
+      "title" : "Meadow Guide"
+    },
+    {
+      "id" : "focus-lantern",
+      "kind" : "tool",
+      "requiredCoins" : 1900,
+      "requiredStageCount" : 7,
+      "subtitle" : "A badge for showing up to focus.",
+      "systemImage" : "lamp.desk.fill",
+      "title" : "Focus Lantern"
+    },
+    {
+      "id" : "quiet-keeper",
+      "kind" : "companion",
+      "requiredCoins" : 3500,
+      "requiredStageCount" : 10,
+      "subtitle" : "A calm character for balanced repeating tasks.",
+      "systemImage" : "sparkles",
+      "title" : "Quiet Keeper"
+    },
+    {
+      "id" : "city-banner",
+      "kind" : "artifact",
+      "requiredCoins" : 6000,
+      "requiredStageCount" : 12,
+      "subtitle" : "Marks the second-world clear.",
+      "systemImage" : "flag.checkered",
+      "title" : "City Banner"
+    },
+    {
+      "id" : "lunar-key",
+      "kind" : "artifact",
+      "requiredCoins" : 11000,
+      "requiredStageCount" : 15,
+      "subtitle" : "Signals entry into the archive.",
+      "systemImage" : "key.fill",
+      "title" : "Lunar Key"
+    },
+    {
+      "id" : "archive-cloak",
+      "kind" : "artifact",
+      "requiredCoins" : 18500,
+      "requiredStageCount" : 18,
+      "subtitle" : "A late archive artifact.",
+      "systemImage" : "theatermasks.fill",
+      "title" : "Archive Cloak"
+    },
+    {
+      "id" : "aurora-pickaxe",
+      "kind" : "tool",
+      "requiredCoins" : 30000,
+      "requiredStageCount" : 21,
+      "subtitle" : "A tool for the high mountain climb.",
+      "systemImage" : "hammer.fill",
+      "title" : "Aurora Pickaxe"
+    },
+    {
+      "id" : "summit-banner",
+      "kind" : "artifact",
+      "requiredCoins" : 47000,
+      "requiredStageCount" : 24,
+      "subtitle" : "A trophy from Aurora Peaks.",
+      "systemImage" : "flag.2.crossed.fill",
+      "title" : "Summit Banner"
+    },
+    {
+      "id" : "forge-core",
+      "kind" : "booster",
+      "requiredCoins" : 65000,
+      "requiredStageCount" : 26,
+      "subtitle" : "The first endgame booster.",
+      "systemImage" : "atom",
+      "title" : "Forge Core"
+    },
+    {
+      "id" : "nebula-crown",
+      "kind" : "artifact",
+      "requiredCoins" : 86000,
+      "requiredStageCount" : 28,
+      "subtitle" : "A rare long-run artifact.",
+      "systemImage" : "crown.fill",
+      "title" : "Nebula Crown"
+    },
+    {
+      "id" : "world-engine",
+      "kind" : "artifact",
+      "requiredCoins" : 110000,
+      "requiredStageCount" : 30,
+      "subtitle" : "The first Adventure season capstone.",
+      "systemImage" : "infinity.circle.fill",
+      "title" : "World Engine"
+    }
+  ],
+  "worlds" : [
+    {
+      "accentName" : "green",
+      "artAssetName" : "AdventureMorningMeadow",
+      "id" : "morning-meadow",
+      "requiredActions" : 0,
+      "requiredCoins" : 0,
+      "stages" : [
+        {
+          "id" : "meadow-1",
+          "number" : 1,
+          "requiredActions" : 2,
+          "requiredActiveDays" : 1,
+          "requiredCoins" : 50,
+          "rewardCoins" : 20,
+          "subtitle" : "Complete or create anything in Routina.",
+          "title" : "First Steps",
+          "worldID" : "morning-meadow"
+        },
+        {
+          "id" : "meadow-2",
+          "number" : 2,
+          "requiredActions" : 8,
+          "requiredActiveDays" : 2,
+          "requiredCoins" : 150,
+          "rewardCoins" : 30,
+          "subtitle" : "Turn repeated effort into coins.",
+          "title" : "Checklist Nook",
+          "worldID" : "morning-meadow"
+        },
+        {
+          "id" : "meadow-3",
+          "number" : 3,
+          "requiredActions" : 18,
+          "requiredActiveDays" : 4,
+          "requiredCoins" : 300,
+          "rewardCoins" : 40,
+          "subtitle" : "Mix focus blocks with task progress.",
+          "title" : "Focus Pond",
+          "worldID" : "morning-meadow"
+        },
+        {
+          "id" : "meadow-4",
+          "number" : 4,
+          "requiredActions" : 35,
+          "requiredActiveDays" : 7,
+          "requiredCoins" : 550,
+          "rewardCoins" : 55,
+          "subtitle" : "Build several active days.",
+          "title" : "Habit Gate",
+          "worldID" : "morning-meadow"
+        },
+        {
+          "id" : "meadow-5",
+          "number" : 5,
+          "requiredActions" : 55,
+          "requiredActiveDays" : 10,
+          "requiredCoins" : 850,
+          "rewardCoins" : 70,
+          "subtitle" : "Organized tasks push the trail forward.",
+          "title" : "Tag Grove",
+          "worldID" : "morning-meadow"
+        },
+        {
+          "id" : "meadow-6",
+          "number" : 6,
+          "requiredActions" : 80,
+          "requiredActiveDays" : 14,
+          "requiredCoins" : 1200,
+          "rewardCoins" : 90,
+          "subtitle" : "Clear the first map with steady history.",
+          "title" : "Meadow Gate",
+          "worldID" : "morning-meadow"
+        }
+      ],
+      "subtitle" : "Start the trail with ordinary wins.",
+      "systemImage" : "sun.max.fill",
+      "title" : "Morning Meadow"
+    },
+    {
+      "accentName" : "blue",
+      "artAssetName" : "AdventureClockworkCity",
+      "id" : "clockwork-city",
+      "requiredActions" : 24,
+      "requiredCoins" : 480,
+      "stages" : [
+        {
+          "id" : "city-1",
+          "number" : 7,
+          "requiredActions" : 110,
+          "requiredActiveDays" : 18,
+          "requiredCoins" : 1700,
+          "rewardCoins" : 110,
+          "subtitle" : "More actions open the second map.",
+          "title" : "Planning Station",
+          "worldID" : "clockwork-city"
+        },
+        {
+          "id" : "city-2",
+          "number" : 8,
+          "requiredActions" : 145,
+          "requiredActiveDays" : 23,
+          "requiredCoins" : 2300,
+          "rewardCoins" : 130,
+          "subtitle" : "Keep productive days connected.",
+          "title" : "Momentum Rails",
+          "worldID" : "clockwork-city"
+        },
+        {
+          "id" : "city-3",
+          "number" : 9,
+          "requiredActions" : 185,
+          "requiredActiveDays" : 29,
+          "requiredCoins" : 3000,
+          "rewardCoins" : 150,
+          "subtitle" : "Longer focus history powers the tower.",
+          "title" : "Deep Work Tower",
+          "worldID" : "clockwork-city"
+        },
+        {
+          "id" : "city-4",
+          "number" : 10,
+          "requiredActions" : 230,
+          "requiredActiveDays" : 36,
+          "requiredCoins" : 3800,
+          "rewardCoins" : 175,
+          "subtitle" : "Use captures and completions together.",
+          "title" : "Workshop Bridge",
+          "worldID" : "clockwork-city"
+        },
+        {
+          "id" : "city-5",
+          "number" : 11,
+          "requiredActions" : 285,
+          "requiredActiveDays" : 44,
+          "requiredCoins" : 4700,
+          "rewardCoins" : 205,
+          "subtitle" : "More kinds of Routina activity become fuel.",
+          "title" : "Signal Market",
+          "worldID" : "clockwork-city"
+        },
+        {
+          "id" : "city-6",
+          "number" : 12,
+          "requiredActions" : 350,
+          "requiredActiveDays" : 53,
+          "requiredCoins" : 5800,
+          "rewardCoins" : 240,
+          "subtitle" : "Finish the city by proving consistency.",
+          "title" : "Clockwork Gate",
+          "worldID" : "clockwork-city"
+        }
+      ],
+      "subtitle" : "Unlock deeper encounters with steady output.",
+      "systemImage" : "gearshape.2.fill",
+      "title" : "Clockwork City"
+    },
+    {
+      "accentName" : "indigo",
+      "artAssetName" : "AdventureLunarArchive",
+      "id" : "lunar-archive",
+      "requiredActions" : 76,
+      "requiredCoins" : 1600,
+      "stages" : [
+        {
+          "id" : "lunar-1",
+          "number" : 13,
+          "requiredActions" : 430,
+          "requiredActiveDays" : 64,
+          "requiredCoins" : 7200,
+          "rewardCoins" : 280,
+          "subtitle" : "Unlock the archive with broad consistency.",
+          "title" : "Quiet Launch",
+          "worldID" : "lunar-archive"
+        },
+        {
+          "id" : "lunar-2",
+          "number" : 14,
+          "requiredActions" : 520,
+          "requiredActiveDays" : 76,
+          "requiredCoins" : 8800,
+          "rewardCoins" : 330,
+          "subtitle" : "Captured thoughts become map progress.",
+          "title" : "Memory Vault",
+          "worldID" : "lunar-archive"
+        },
+        {
+          "id" : "lunar-3",
+          "number" : 15,
+          "requiredActions" : 620,
+          "requiredActiveDays" : 90,
+          "requiredCoins" : 10600,
+          "rewardCoins" : 390,
+          "subtitle" : "A larger action history lights the archive.",
+          "title" : "Starlit Sprint",
+          "worldID" : "lunar-archive"
+        },
+        {
+          "id" : "lunar-4",
+          "number" : 16,
+          "requiredActions" : 735,
+          "requiredActiveDays" : 105,
+          "requiredCoins" : 12600,
+          "rewardCoins" : 460,
+          "subtitle" : "Balance focus, rest, and tasks.",
+          "title" : "Moonlit Library",
+          "worldID" : "lunar-archive"
+        },
+        {
+          "id" : "lunar-5",
+          "number" : 17,
+          "requiredActions" : 865,
+          "requiredActiveDays" : 122,
+          "requiredCoins" : 15000,
+          "rewardCoins" : 540,
+          "subtitle" : "A long-lived repeating-task history opens the hall.",
+          "title" : "Orbit Hall",
+          "worldID" : "lunar-archive"
+        },
+        {
+          "id" : "lunar-6",
+          "number" : 18,
+          "requiredActions" : 1010,
+          "requiredActiveDays" : 140,
+          "requiredCoins" : 17800,
+          "rewardCoins" : 640,
+          "subtitle" : "Clear the archive with mature momentum.",
+          "title" : "Archive Gate",
+          "worldID" : "lunar-archive"
+        }
+      ],
+      "subtitle" : "Late-game encounters for a broad Routina history.",
+      "systemImage" : "moon.stars.fill",
+      "title" : "Lunar Archive"
+    },
+    {
+      "accentName" : "mint",
+      "artAssetName" : "AdventureAuroraPeaks",
+      "id" : "aurora-peaks",
+      "requiredActions" : 1180,
+      "requiredCoins" : 21200,
+      "stages" : [
+        {
+          "id" : "peaks-1",
+          "number" : 19,
+          "requiredActions" : 1180,
+          "requiredActiveDays" : 160,
+          "requiredCoins" : 21200,
+          "rewardCoins" : 760,
+          "subtitle" : "The fourth world starts after a real season.",
+          "title" : "Snowline Camp",
+          "worldID" : "aurora-peaks"
+        },
+        {
+          "id" : "peaks-2",
+          "number" : 20,
+          "requiredActions" : 1375,
+          "requiredActiveDays" : 182,
+          "requiredCoins" : 25000,
+          "rewardCoins" : 900,
+          "subtitle" : "Keep the active-day trail alive.",
+          "title" : "Glacier Steps",
+          "worldID" : "aurora-peaks"
+        },
+        {
+          "id" : "peaks-3",
+          "number" : 21,
+          "requiredActions" : 1590,
+          "requiredActiveDays" : 206,
+          "requiredCoins" : 29400,
+          "rewardCoins" : 1060,
+          "subtitle" : "Deep progress lights up the ridge.",
+          "title" : "Aurora Ridge",
+          "worldID" : "aurora-peaks"
+        },
+        {
+          "id" : "peaks-4",
+          "number" : 22,
+          "requiredActions" : 1830,
+          "requiredActiveDays" : 232,
+          "requiredCoins" : 34400,
+          "rewardCoins" : 1240,
+          "subtitle" : "A larger system of habits carries upward.",
+          "title" : "Summit Forge",
+          "worldID" : "aurora-peaks"
+        },
+        {
+          "id" : "peaks-5",
+          "number" : 23,
+          "requiredActions" : 2100,
+          "requiredActiveDays" : 260,
+          "requiredCoins" : 40000,
+          "rewardCoins" : 1460,
+          "subtitle" : "Cross the pass with durable output.",
+          "title" : "Northern Pass",
+          "worldID" : "aurora-peaks"
+        },
+        {
+          "id" : "peaks-6",
+          "number" : 24,
+          "requiredActions" : 2400,
+          "requiredActiveDays" : 290,
+          "requiredCoins" : 46500,
+          "rewardCoins" : 1720,
+          "subtitle" : "Complete the peaks with long-run consistency.",
+          "title" : "Aurora Gate",
+          "worldID" : "aurora-peaks"
+        }
+      ],
+      "subtitle" : "High-altitude stages for long-term mastery.",
+      "systemImage" : "mountain.2.fill",
+      "title" : "Aurora Peaks"
+    },
+    {
+      "accentName" : "pink",
+      "artAssetName" : "AdventureNebulaForge",
+      "id" : "nebula-forge",
+      "requiredActions" : 2750,
+      "requiredCoins" : 54000,
+      "stages" : [
+        {
+          "id" : "forge-1",
+          "number" : 25,
+          "requiredActions" : 2750,
+          "requiredActiveDays" : 323,
+          "requiredCoins" : 54000,
+          "rewardCoins" : 2000,
+          "subtitle" : "Open the forge after sustained months.",
+          "title" : "Ignition Bay",
+          "worldID" : "nebula-forge"
+        },
+        {
+          "id" : "forge-2",
+          "number" : 26,
+          "requiredActions" : 3150,
+          "requiredActiveDays" : 360,
+          "requiredCoins" : 62500,
+          "rewardCoins" : 2350,
+          "subtitle" : "Shape the long arc of your repeating tasks.",
+          "title" : "Star Anvil",
+          "worldID" : "nebula-forge"
+        },
+        {
+          "id" : "forge-3",
+          "number" : 27,
+          "requiredActions" : 3600,
+          "requiredActiveDays" : 400,
+          "requiredCoins" : 72000,
+          "rewardCoins" : 2750,
+          "subtitle" : "High-volume action history powers the loom.",
+          "title" : "Plasma Loom",
+          "worldID" : "nebula-forge"
+        },
+        {
+          "id" : "forge-4",
+          "number" : 28,
+          "requiredActions" : 4100,
+          "requiredActiveDays" : 444,
+          "requiredCoins" : 83000,
+          "rewardCoins" : 3200,
+          "subtitle" : "Cross from productivity into endurance.",
+          "title" : "Comet Foundry",
+          "worldID" : "nebula-forge"
+        },
+        {
+          "id" : "forge-5",
+          "number" : 29,
+          "requiredActions" : 4650,
+          "requiredActiveDays" : 492,
+          "requiredCoins" : 95500,
+          "rewardCoins" : 3750,
+          "subtitle" : "The final map asks for rare consistency.",
+          "title" : "Nebula Crown",
+          "worldID" : "nebula-forge"
+        },
+        {
+          "id" : "forge-6",
+          "number" : 30,
+          "requiredActions" : 5250,
+          "requiredActiveDays" : 545,
+          "requiredCoins" : 110000,
+          "rewardCoins" : 4400,
+          "subtitle" : "Finish the first long-form Adventure season.",
+          "title" : "World Engine",
+          "worldID" : "nebula-forge"
+        }
+      ],
+      "subtitle" : "Endgame work for a serious Routina history.",
+      "systemImage" : "sparkles.rectangle.stack.fill",
+      "title" : "Nebula Forge"
+    }
+  ]
+}

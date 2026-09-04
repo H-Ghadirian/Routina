@@ -1,0 +1,79 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "Add a routine on iPhone and keep both apps open for first sync." : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Checked in" : {
+
+    },
+    "End check-in" : {
+
+    },
+    "Finish Focus" : {
+
+    },
+    "Going to sleep" : {
+
+    },
+    "I'm awake" : {
+
+    },
+    "Next: %@" : {
+
+    },
+    "No routines yet" : {
+
+    },
+    "Open on iPhone" : {
+
+    },
+    "Pause Focus" : {
+
+    },
+    "Paused" : {
+
+    },
+    "Place" : {
+
+    },
+    "Resume Focus" : {
+
+    },
+    "Routina" : {
+
+    },
+    "Sleep mode" : {
+
+    },
+    "Start Focus" : {
+
+    },
+    "Start Sleep" : {
+
+    },
+    "Starting sleep mode will stop the current focus timer." : {
+
+    },
+    "Stop focus timer?" : {
+
+    },
+    "Wake around %@" : {
+
+    }
+  },
+  "version" : "1.0"
+}

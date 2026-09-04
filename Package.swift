@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "RoutinaModules",
+    defaultLocalization: "en",
     platforms: [
         .iOS("26.4"),
         .macOS("26.4"),
@@ -334,11 +335,15 @@ let package = Package(
                 "Features/Settings/SettingsRoutineDataTransferActionExecutionSupport.swift",
                 "Features/Settings/SettingsRoutineDataTransferExecutionSupport.swift",
                 "Features/Settings/SettingsRoutineDataTransferSupport.swift",
+                "Features/Settings/SettingsContentCatalog.swift",
+                "Features/Settings/SettingsQuickAddSyntaxGuide.swift",
                 "Features/Settings/SettingsSectionViewSupport.swift",
                 "Features/Settings/SettingsSectionStyleSupport.swift",
+                "Features/Settings/SettingsStatePresentation.swift",
                 "Features/Settings/SettingsTagManagerRefreshActionSupport.swift",
                 "Features/Settings/SettingsTagMetadataActionSupport.swift",
                 "Features/Settings/SettingsTagMutationActionSupport.swift",
+                "Features/Settings/SettingsTagPresentation.swift",
                 "Features/Settings/SettingsTagSupport.swift",
                 "Features/Settings/SettingsTagExecutionSupport.swift",
                 "Features/Settings/SettingsTagPersistenceSupport.swift",
@@ -596,6 +601,9 @@ let package = Package(
                 "Services/GitLabWidgetService.swift",
                 "Services/MacAppWidgetAvailability.swift",
                 "Views/AppLockGate.swift",
+            ],
+            resources: [
+                .process("Resources")
             ]
         ),
         .target(
@@ -629,7 +637,10 @@ let package = Package(
         ),
         .target(
             name: "RoutinaHelpSupport",
-            path: "SharedCore/Help"
+            path: "SharedCore/Help",
+            resources: [
+                .process("Resources")
+            ]
         ),
         .executableTarget(
             name: "RoutinaAIMCPServer",

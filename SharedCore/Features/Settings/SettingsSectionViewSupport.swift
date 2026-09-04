@@ -58,14 +58,15 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 .git,
                 .quickAdd,
                 .shortcuts,
-                .aiConnections
+                .aiConnections,
             ],
             [
                 .about
-            ]
+            ],
         ]
 
-        return groupedSections
+        return
+            groupedSections
             .map {
                 $0.filter {
                     isSectionVisible(
@@ -95,14 +96,14 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             return false
         }
         #if !os(macOS) && !ROUTINA_IOS_FAMILY_CONTROLS
-        if section == .blocking {
-            return false
-        }
+            if section == .blocking {
+                return false
+            }
         #endif
         #if !os(macOS)
-        if section == .sections || section == .aiConnections {
-            return false
-        }
+            if section == .sections || section == .aiConnections {
+                return false
+            }
         #endif
         if section == .support {
             return false
@@ -125,145 +126,20 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    private var content: SettingsContentCatalog.SectionContent {
+        SettingsContentCatalog.shared.section(for: self)
+    }
+
     var title: String {
-        switch self {
-        case .general:       return "General"
-        case .devices:       return "Devices"
-        case .notifications: return "Notifications"
-        case .blocking:      return "Blocking"
-        case .calendar:      return "Calendar"
-        case .places:        return "Places"
-        case .tags:          return "Tags"
-        case .flags:         return "Flags"
-        case .sections:      return "Sections"
-        case .appearance:    return "Appearance"
-        case .iCloud:        return "iCloud & Backup"
-        case .git:           return "Git"
-        case .backup:        return "Data Backup"
-        case .quickAdd:      return "Quick Add"
-        case .shortcuts:     return "Shortcuts"
-        case .aiConnections: return "AI Connections"
-        case .support:       return "Support"
-        case .about:         return "Support & About"
-        }
+        content.title
     }
 
-    /// Stable words people commonly use when looking for a Settings area.
-    /// These aliases complement the concrete controls listed in
-    /// `searchDetailTerms` below.
     private var searchAliases: [String] {
-        switch self {
-        case .general:
-            return ["preferences", "app lock", "battery", "defaults"]
-        case .devices:
-            return ["sessions", "mac", "iphone", "ipad"]
-        case .notifications:
-            return ["reminders", "alerts", "scheduled"]
-        case .blocking:
-            return ["focus", "screen time", "apps", "websites"]
-        case .calendar:
-            return ["apple calendar", "outlook", "events"]
-        case .places:
-            return ["location", "maps", "check in"]
-        case .tags:
-            return ["labels", "colors", "related tags"]
-        case .flags:
-            #if os(macOS)
-            return ["task behavior", "hide", "calendar list", "timeline", "task ladder", "auto assume done"]
-            #else
-            return ["task behavior", "hide", "timeline", "task ladder", "auto assume done"]
-            #endif
-        case .sections:
-            return ["task list", "backlog", "super section", "subsection"]
-        case .appearance:
-            return ["theme", "dark mode", "light mode", "rows"]
-        case .iCloud:
-            return ["backup", "sync", "cloud", "icloud", "restore"]
-        case .git:
-            return ["github", "gitlab", "repository", "commit"]
-        case .backup:
-            return ["export", "import", "data"]
-        case .quickAdd:
-            return ["smart add", "parser", "dates"]
-        case .shortcuts:
-            #if os(macOS)
-            return ["keyboard", "hotkeys", "commands"]
-            #else
-            return ["siri", "apple shortcuts", "automation"]
-            #endif
-        case .aiConnections:
-            return ["mcp", "local ai", "automation", "read only"]
-        case .support:
-            return ["help", "contact"]
-        case .about:
-            return ["privacy", "terms", "version", "diagnostics"]
-        }
+        content.searchAliases
     }
 
-    /// User-facing controls and concepts inside each Settings destination.
-    /// These make a result explain why its category matched the query.
     var searchDetailTerms: [String] {
-        switch self {
-        case .general:
-            return ["App Lock", "Battery repeating tasks"]
-        case .devices:
-            return ["Device sessions", "Sync devices"]
-        case .notifications:
-            return ["Daily reminder", "Pending notifications", "Notification permissions"]
-        case .blocking:
-            return ["Focus mode", "App blocking", "Website blocking"]
-        case .calendar:
-            #if os(macOS)
-            return ["Calendar import", "Planner calendar", "Calendar list", "Automatic timeline activity", "Persian dates"]
-            #else
-            return ["Review Calendar Tasks", "Persian dates"]
-            #endif
-        case .places:
-            return ["Places", "Maps", "Check in"]
-        case .tags:
-            return ["Saved tags", "Tag colors", "Related tags"]
-        case .flags:
-            #if os(macOS)
-            return [
-                "Hide from Task Lists",
-                "Hide from Calendar List",
-                "Hide from Timeline",
-                "Hide from Task Ladder",
-                "Auto Assume Done"
-            ]
-            #else
-            return [
-                "Hide from Task Lists",
-                "Hide from Timeline",
-                "Hide from Task Ladder",
-                "Auto Assume Done"
-            ]
-            #endif
-        case .sections:
-            return ["Main task list", "Backlog", "Super sections", "Subsections"]
-        case .appearance:
-            return ["Theme", "App icon", "Task row", "Timeline row"]
-        case .iCloud:
-            return ["Sync", "Export", "Import", "Cloud reset", "Backup"]
-        case .git:
-            return ["GitHub", "GitLab", "Repository", "Commit"]
-        case .backup:
-            return ["Backup", "Export", "Import"]
-        case .quickAdd:
-            return ["Smart Add", "Dates", "Times", "Links", "Recurrence"]
-        case .shortcuts:
-            #if os(macOS)
-            return ["Keyboard", "Siri", "Apple Shortcuts"]
-            #else
-            return ["Siri", "Apple Shortcuts"]
-            #endif
-        case .aiConnections:
-            return ["MCP", "Local AI", "Read-only task access"]
-        case .support:
-            return ["Help", "Contact"]
-        case .about:
-            return ["Privacy Policy", "Terms of Use", "Version", "Diagnostics"]
-        }
+        content.searchDetailTerms
     }
 
     var searchTerms: [String] {
@@ -309,29 +185,29 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     var icon: String {
         switch self {
-        case .general:       return "gearshape.fill"
-        case .devices:       return "desktopcomputer.and.macbook"
+        case .general: return "gearshape.fill"
+        case .devices: return "desktopcomputer.and.macbook"
         case .notifications: return "bell.badge.fill"
-        case .blocking:      return "lock.shield.fill"
-        case .calendar:      return "calendar.badge.plus"
-        case .places:        return "mappin.and.ellipse"
-        case .tags:          return "tag.fill"
-        case .flags:         return "flag.fill"
-        case .sections:      return "sidebar.leading"
-        case .appearance:    return "app.badge.fill"
-        case .iCloud:        return "icloud.fill"
-        case .git:           return "arrow.triangle.branch"
-        case .backup:        return "externaldrive.fill"
-        case .quickAdd:      return "text.badge.plus"
+        case .blocking: return "lock.shield.fill"
+        case .calendar: return "calendar.badge.plus"
+        case .places: return "mappin.and.ellipse"
+        case .tags: return "tag.fill"
+        case .flags: return "flag.fill"
+        case .sections: return "sidebar.leading"
+        case .appearance: return "app.badge.fill"
+        case .iCloud: return "icloud.fill"
+        case .git: return "arrow.triangle.branch"
+        case .backup: return "externaldrive.fill"
+        case .quickAdd: return "text.badge.plus"
         case .shortcuts:
             #if os(macOS)
-            return "keyboard.fill"
+                return "keyboard.fill"
             #else
-            return "square.grid.2x2.fill"
+                return "square.grid.2x2.fill"
             #endif
         case .aiConnections: return "sparkles"
-        case .support:       return "envelope.fill"
-        case .about:         return "info.circle.fill"
+        case .support: return "envelope.fill"
+        case .about: return "info.circle.fill"
         }
     }
 
@@ -424,9 +300,9 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
         case .shortcuts:
             #if os(macOS)
-            return SettingsSectionRowPresentation(subtitle: "Keyboard, Siri, and Apple Shortcuts")
+                return SettingsSectionRowPresentation(subtitle: "Keyboard, Siri, and Apple Shortcuts")
             #else
-            return SettingsSectionRowPresentation(subtitle: "Siri and Apple Shortcuts")
+                return SettingsSectionRowPresentation(subtitle: "Siri and Apple Shortcuts")
             #endif
 
         case .aiConnections:
@@ -449,16 +325,15 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     }
 
     private func dataContinuitySubtitle(in state: SettingsFeatureState) -> String {
-        if state.cloud.isCloudSyncInProgress ||
-            state.cloud.isCloudDataResetAuthenticationInProgress ||
-            state.cloud.isCloudDataResetInProgress ||
-            !state.cloud.cloudStatusMessage.isEmpty ||
-            !state.cloud.cloudSyncAvailable {
+        let cloudOperationIsInProgress = state.cloud.isCloudSyncInProgress
+            || state.cloud.isCloudDataResetAuthenticationInProgress
+            || state.cloud.isCloudDataResetInProgress
+        let cloudNeedsStatus = !state.cloud.cloudStatusMessage.isEmpty || !state.cloud.cloudSyncAvailable
+        if cloudOperationIsInProgress || cloudNeedsStatus {
             return state.cloud.overviewSubtitle
         }
 
-        if state.dataTransfer.isDataTransferInProgress ||
-            !state.dataTransfer.dataTransferStatusMessage.isEmpty {
+        if state.dataTransfer.isDataTransferInProgress || !state.dataTransfer.dataTransferStatusMessage.isEmpty {
             return state.dataTransfer.overviewSubtitle
         }
 
@@ -472,8 +347,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         if state.cloud.isCloudSyncInProgress {
             return "Syncing"
         }
-        if state.cloud.isCloudDataResetAuthenticationInProgress ||
-            state.cloud.isCloudDataResetInProgress {
+        if state.cloud.isCloudDataResetAuthenticationInProgress || state.cloud.isCloudDataResetInProgress {
             return "Reset"
         }
         if state.dataTransfer.isDataTransferInProgress {
@@ -490,509 +364,5 @@ struct SettingsSectionRowPresentation: Equatable {
     init(subtitle: String? = nil, value: String? = nil) {
         self.subtitle = subtitle
         self.value = value
-    }
-}
-
-struct SettingsQuickAddExample: Identifiable, Equatable {
-    var phrase: String
-    var result: String
-
-    var id: String { phrase }
-}
-
-struct SettingsQuickAddSyntaxGroup: Identifiable, Equatable {
-    var title: String
-    var rows: [SettingsQuickAddSyntaxItem]
-
-    var id: String { title }
-}
-
-struct SettingsQuickAddSyntaxItem: Identifiable, Equatable {
-    var syntax: String
-    var detail: String
-
-    var id: String { syntax }
-}
-
-enum SettingsQuickAddSyntaxGuide {
-    static let examples: [SettingsQuickAddExample] = [
-        SettingsQuickAddExample(
-            phrase: "Water plants every Saturday at 9am #home",
-            result: "Creates a weekly repeating task on Saturday at 9:00 AM with #home."
-        ),
-        SettingsQuickAddExample(
-            phrase: "Submit report tomorrow at 5pm !high #work",
-            result: "Creates a high-priority one-time task due tomorrow at 5:00 PM."
-        ),
-        SettingsQuickAddExample(
-            phrase: "Clean desk every 2 days softly @Home",
-            result: "Creates a Gentle repeating task every 2 days and links it to Home."
-        ),
-        SettingsQuickAddExample(
-            phrase: "Pay rent monthly on 1st at 8am #finance",
-            result: "Creates a monthly repeating task on the 1st at 8:00 AM."
-        ),
-        SettingsQuickAddExample(
-            phrase: "Read for 25m today",
-            result: "Creates a one-time task available today and enables a 25-minute focus estimate."
-        ),
-        SettingsQuickAddExample(
-            phrase: "Physiotherapist 25 August 15:00",
-            result: "Creates a one-time task available on the next 25 August at 15:00."
-        )
-    ]
-
-    static let syntaxGroups: [SettingsQuickAddSyntaxGroup] = [
-        SettingsQuickAddSyntaxGroup(
-            title: "Dates",
-            rows: [
-                SettingsQuickAddSyntaxItem(syntax: "today", detail: "Available today."),
-                SettingsQuickAddSyntaxItem(syntax: "tomorrow", detail: "Available tomorrow."),
-                SettingsQuickAddSyntaxItem(syntax: "due Friday", detail: "Due on the next Friday."),
-                SettingsQuickAddSyntaxItem(syntax: "by Friday", detail: "Also sets the next Friday deadline."),
-                SettingsQuickAddSyntaxItem(syntax: "25 August", detail: "Available on the next 25 August."),
-                SettingsQuickAddSyntaxItem(syntax: "Tuesday, 25 August", detail: "Accepts a matching weekday too.")
-            ]
-        ),
-        SettingsQuickAddSyntaxGroup(
-            title: "Times",
-            rows: [
-                SettingsQuickAddSyntaxItem(syntax: "at 9am", detail: "Sets a morning time."),
-                SettingsQuickAddSyntaxItem(syntax: "at 9:30pm", detail: "Sets an evening time."),
-                SettingsQuickAddSyntaxItem(syntax: "15:00 / at 15:00", detail: "Uses 24-hour time.")
-            ]
-        ),
-        SettingsQuickAddSyntaxGroup(
-            title: "Repeating tasks",
-            rows: [
-                SettingsQuickAddSyntaxItem(syntax: "daily", detail: "Creates a daily repeating task."),
-                SettingsQuickAddSyntaxItem(syntax: "every day", detail: "Also creates a daily repeating task."),
-                SettingsQuickAddSyntaxItem(syntax: "every 2 days", detail: "Creates an interval repeating task."),
-                SettingsQuickAddSyntaxItem(syntax: "every Monday", detail: "Creates a weekly repeating task."),
-                SettingsQuickAddSyntaxItem(syntax: "weekly on Monday", detail: "Also creates a weekly repeating task."),
-                SettingsQuickAddSyntaxItem(syntax: "monthly on 15th", detail: "Creates a monthly repeating task.")
-            ]
-        ),
-        SettingsQuickAddSyntaxGroup(
-            title: "Metadata",
-            rows: [
-                SettingsQuickAddSyntaxItem(syntax: "#home", detail: "Adds a one-word tag."),
-                SettingsQuickAddSyntaxItem(syntax: "@Office", detail: "Links a one-word place when it exists."),
-                SettingsQuickAddSyntaxItem(syntax: "!urgent", detail: "Sets urgent priority."),
-                SettingsQuickAddSyntaxItem(syntax: "!high / !medium / !low", detail: "Sets priority."),
-                SettingsQuickAddSyntaxItem(syntax: "25m / 45 min / 1h", detail: "Adds an estimated focus duration."),
-                SettingsQuickAddSyntaxItem(syntax: "soft / softly", detail: "Creates a Gentle repeating task when used with recurrence.")
-            ]
-        )
-    ]
-
-    static let notes: [String] = [
-        "No date or recurrence creates a normal one-time task.",
-        "Recurrence phrases create repeating tasks.",
-        "Times apply to the due date or recurrence in the same phrase.",
-        "Tags and places stop at spaces, so use one-word names.",
-        "Optional starters like add, create, new, task, one-time task, repeating task, and remind me to are removed from the final title. Legacy todo and routine starters also work."
-    ]
-
-    static func visibleExamples(includingPlaces: Bool) -> [SettingsQuickAddExample] {
-        guard !includingPlaces else { return examples }
-
-        return examples.filter { example in
-            !example.phrase.contains("@")
-        }
-    }
-
-    static func visibleSyntaxGroups(includingPlaces: Bool) -> [SettingsQuickAddSyntaxGroup] {
-        guard !includingPlaces else { return syntaxGroups }
-
-        return syntaxGroups.map { group in
-            SettingsQuickAddSyntaxGroup(
-                title: group.title,
-                rows: group.rows.filter { !$0.syntax.contains("@") }
-            )
-        }
-    }
-
-    static func visibleNotes(includingPlaces: Bool) -> [String] {
-        guard !includingPlaces else { return notes }
-
-        return notes.map { note in
-            note.replacingOccurrences(of: "Tags and places stop at spaces", with: "Tags stop at spaces")
-        }
-    }
-}
-
-extension SettingsNotificationsState {
-    var overviewSubtitle: String {
-        if notificationsEnabled {
-            let time = notificationReminderTime.formatted(date: .omitted, time: .shortened)
-            return "Daily reminder at \(time)"
-        }
-        if systemSettingsNotificationsEnabled == false {
-            return "Disabled in System Settings"
-        }
-        return "Repeating-task reminders are turned off"
-    }
-}
-
-extension SettingsAppearanceState {
-    var overviewSubtitle: String {
-        #if os(macOS)
-        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText)"
-        #else
-        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText) • Rows: \(taskRowVisibility.summaryText) • Timeline: \(timelineRowVisibility.summaryText)"
-        #endif
-    }
-
-    var routineListSectioningSubtitle: String {
-        routineListSectioningMode.subtitle
-    }
-
-    var calendarOverviewSubtitle: String {
-        #if os(macOS)
-        let plannerText = showsTimelineTasksInDayPlanner
-            ? "Automatic timeline activity"
-            : "Timeline badges"
-
-        if showPersianDates {
-            return "\(plannerText) • Persian dates"
-        }
-
-        return plannerText
-        #else
-        let calendarTaskText = "Review events before adding tasks"
-        if showPersianDates {
-            return "\(calendarTaskText) • Persian dates"
-        }
-        return calendarTaskText
-        #endif
-    }
-
-    var appLockDetailText: String {
-        if let appLockUnavailableReason, isAppLockEnabled == false {
-            return appLockUnavailableReason
-        }
-
-        if isAppLockEnabled {
-            return "Routina will ask for \(appLockMethodDescription) whenever the app becomes active."
-        }
-
-        return "Require \(appLockMethodDescription) before showing your tasks."
-    }
-}
-
-extension SettingsGitHubState {
-    var overviewSubtitle: String {
-        if let connectedRepository {
-            return connectedRepository.fullName
-        }
-        if let connectedViewerLogin, !connectedViewerLogin.isEmpty {
-            return "@\(connectedViewerLogin) profile activity"
-        }
-
-        return "Connect GitHub to show repository or profile activity"
-    }
-
-    var repositorySummaryText: String {
-        let owner = repositoryOwner.trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = repositoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !owner.isEmpty, !name.isEmpty else {
-            return "No repository selected"
-        }
-
-        return "\(owner)/\(name)"
-    }
-
-    var profileSummaryText: String {
-        if let connectedViewerLogin, !connectedViewerLogin.isEmpty {
-            return "@\(connectedViewerLogin)"
-        }
-
-        return "Uses the authenticated GitHub account"
-    }
-
-    var saveValidationMessage: String? {
-        switch scope {
-        case .repository:
-            let owner = repositoryOwner.trimmingCharacters(in: .whitespacesAndNewlines)
-            let name = repositoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            guard !owner.isEmpty || !name.isEmpty else {
-                return nil
-            }
-
-            if owner.isEmpty || name.isEmpty {
-                return "Enter both the repository owner and repository name."
-            }
-
-            return nil
-
-        case .profile:
-            let trimmedToken = accessTokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-            if hasSavedAccessToken || !trimmedToken.isEmpty {
-                return nil
-            }
-            return "Add a personal access token to load profile activity."
-        }
-    }
-
-    var tokenStatusText: String {
-        let savedTokenStatus = if hasSavedAccessToken {
-            accessTokenDraft.isEmpty
-                ? "A token is already saved in Keychain. Leave the field empty to keep it."
-                : "A new token will replace the saved one."
-        } else {
-            "The token is stored securely in Keychain."
-        }
-
-        switch scope {
-        case .repository:
-            if hasSavedAccessToken {
-                return savedTokenStatus
-            }
-            return "Optional for public repositories. Add a token for private repos or higher API limits."
-
-        case .profile:
-            if hasSavedAccessToken {
-                return savedTokenStatus
-            }
-            return "Required for profile activity. Use a personal access token that can read your contribution data."
-        }
-    }
-
-    var detailSubtitle: String {
-        switch scope {
-        case .repository:
-            return "Connect one repository to show commits, merged pull requests, and contributor counts in Stats."
-        case .profile:
-            return "Connect your GitHub account to show your full contribution activity across repositories."
-        }
-    }
-
-    var infoText: String {
-        switch scope {
-        case .repository:
-            return "Use a fine-grained or classic GitHub personal access token with read access to the repository if it is private. The token is stored in Keychain."
-        case .profile:
-            return "Profile mode reads the authenticated account's contribution calendar and totals. A GitHub personal access token is required and stored in Keychain."
-        }
-    }
-
-    var saveButtonTitle: String {
-        switch scope {
-        case .repository:
-            return "Save Connection"
-        case .profile:
-            return "Connect Profile"
-        }
-    }
-
-    var removeButtonDisabled: Bool {
-        isOperationInProgress || !hasConnectedConfiguration
-    }
-
-    var activeModeSummary: String {
-        switch scope {
-        case .repository:
-            return repositorySummaryText
-        case .profile:
-            return profileSummaryText
-        }
-    }
-
-    var isSaveDisabled: Bool {
-        switch scope {
-        case .repository:
-            return isOperationInProgress
-                || saveValidationMessage != nil
-                || repositorySummaryText == "No repository selected"
-        case .profile:
-            return isOperationInProgress || saveValidationMessage != nil
-        }
-    }
-}
-
-extension SettingsDiagnosticsState {
-    var aboutOverviewSubtitle: String {
-        if isDebugSectionVisible {
-            return "Version \(appVersion) • Diagnostics unlocked"
-        }
-        if appVersion.isEmpty {
-            return "App details"
-        }
-        return "Version \(appVersion)"
-    }
-}
-
-enum SettingsTagSourcePresentation {
-    static var goalsAreAvailableOnCurrentPlatform: Bool {
-        return SharedDefaults.app[.appSettingGoalsTabEnabled]
-    }
-
-    static var eventsAreAvailableOnCurrentPlatform: Bool {
-        return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]
-    }
-
-    static func pluralSourceList(
-        includesGoals: Bool,
-        includesNotes: Bool,
-        includesEvents: Bool,
-        conjunction: String
-    ) -> String {
-        sourceList(
-            task: "tasks",
-            goal: "goals",
-            note: "notes",
-            event: "events",
-            includesGoals: includesGoals,
-            includesNotes: includesNotes,
-            includesEvents: includesEvents,
-            conjunction: conjunction
-        )
-    }
-
-    static func singularSourceList(
-        includesGoals: Bool,
-        includesNotes: Bool,
-        includesEvents: Bool,
-        conjunction: String
-    ) -> String {
-        sourceList(
-            task: "task",
-            goal: "goal",
-            note: "note",
-            event: "event",
-            includesGoals: includesGoals,
-            includesNotes: includesNotes,
-            includesEvents: includesEvents,
-            conjunction: conjunction
-        )
-    }
-
-    private static func sourceList(
-        task: String,
-        goal: String,
-        note: String,
-        event: String,
-        includesGoals: Bool,
-        includesNotes: Bool,
-        includesEvents: Bool,
-        conjunction: String
-    ) -> String {
-        var sources = [task]
-        if includesGoals {
-            sources.append(goal)
-        }
-        if includesNotes {
-            sources.append(note)
-        }
-        if includesEvents {
-            sources.append(event)
-        }
-        guard sources.count > 2 else {
-            return sources.joined(separator: " \(conjunction) ")
-        }
-        return "\(sources.dropLast().joined(separator: ", ")), \(conjunction) \(sources.last ?? "")"
-    }
-}
-
-extension SettingsTagsState {
-    var overviewSubtitle: String {
-        switch savedTags.count {
-        case 0:
-            let sources = SettingsTagSourcePresentation.pluralSourceList(
-                includesGoals: SettingsTagSourcePresentation.goalsAreAvailableOnCurrentPlatform,
-                includesNotes: SharedDefaults.app[.appSettingNotesEnabled],
-                includesEvents: SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
-                conjunction: "and"
-            )
-            return "Review and manage tags across \(sources)"
-        case 1:
-            return "1 saved tag"
-        default:
-            return "\(savedTags.count) saved tags"
-        }
-    }
-
-    var deleteConfirmationMessage: String {
-        guard let tag = tagPendingDeletion else {
-            let sources = SettingsTagSourcePresentation.singularSourceList(
-                includesGoals: SettingsTagSourcePresentation.goalsAreAvailableOnCurrentPlatform,
-                includesNotes: SharedDefaults.app[.appSettingNotesEnabled],
-                includesEvents: SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
-                conjunction: "or"
-            )
-            return "This will remove the tag from every \(sources) that uses it."
-        }
-
-        let affectedParts = tag.settingsAffectedDeletionParts
-        let affectedText = affectedParts.isEmpty
-            ? "no saved items will lose it"
-            : "\(affectedParts.joined(separator: " and ")) will lose it"
-
-        return "Delete \(tag.name)? This cannot be undone, and \(affectedText)."
-    }
-
-    var isSaveRenameDisabled: Bool {
-        guard
-            !isTagOperationInProgress,
-            let cleanedTagName = RoutineTag.cleaned(tagRenameDraft)
-        else {
-            return true
-        }
-
-        guard let pendingTag = tagPendingRename else { return false }
-        return cleanedTagName == pendingTag.name
-    }
-}
-
-extension RoutineTagSummary {
-    var settingsSubtitle: String {
-        let routinesOnly = max(0, linkedRoutineCount - linkedTodoCount)
-        var parts: [String] = []
-        if routinesOnly > 0 {
-            parts.append(routinesOnly == 1 ? "1 repeating task" : "\(routinesOnly) repeating tasks")
-        }
-        if linkedTodoCount > 0 {
-            parts.append(linkedTodoCount == 1 ? "1 one-time task" : "\(linkedTodoCount) one-time tasks")
-        }
-        if linkedGoalCount > 0 {
-            parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
-        }
-        if SharedDefaults.app[.appSettingNotesEnabled], linkedNoteCount > 0 {
-            parts.append(linkedNoteCount == 1 ? "1 note" : "\(linkedNoteCount) notes")
-        }
-        if SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
-           linkedEventCount > 0 {
-            parts.append(linkedEventCount == 1 ? "1 event" : "\(linkedEventCount) events")
-        }
-        if doneCount > 0 {
-            parts.append(doneCount == 1 ? "1 done" : "\(doneCount) done")
-        }
-        guard !parts.isEmpty else { return "" }
-        return "Used by " + parts.joined(separator: " · ")
-    }
-
-    var settingsAffectedDeletionParts: [String] {
-        let routinesOnly = max(0, linkedRoutineCount - linkedTodoCount)
-        var parts: [String] = []
-        if routinesOnly > 0 {
-            parts.append(routinesOnly == 1 ? "1 repeating task" : "\(routinesOnly) repeating tasks")
-        }
-        if linkedTodoCount > 0 {
-            parts.append(linkedTodoCount == 1 ? "1 one-time task" : "\(linkedTodoCount) one-time tasks")
-        }
-        if linkedGoalCount > 0 {
-            parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
-        }
-        if SharedDefaults.app[.appSettingNotesEnabled], linkedNoteCount > 0 {
-            parts.append(linkedNoteCount == 1 ? "1 note" : "\(linkedNoteCount) notes")
-        }
-        if SettingsTagSourcePresentation.eventsAreAvailableOnCurrentPlatform,
-           linkedEventCount > 0 {
-            parts.append(linkedEventCount == 1 ? "1 event" : "\(linkedEventCount) events")
-        }
-        return parts
     }
 }

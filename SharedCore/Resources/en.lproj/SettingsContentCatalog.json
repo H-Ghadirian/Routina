@@ -1,0 +1,689 @@
+{
+  "quickAdd": {
+    "examples": [
+      {
+        "phrase": "Water plants every Saturday at 9am #home",
+        "result": "Creates a weekly repeating task on Saturday at 9:00 AM with #home."
+      },
+      {
+        "phrase": "Submit report tomorrow at 5pm !high #work",
+        "result": "Creates a high-priority one-time task due tomorrow at 5:00 PM."
+      },
+      {
+        "phrase": "Clean desk every 2 days softly @Home",
+        "result": "Creates a Gentle repeating task every 2 days and links it to Home."
+      },
+      {
+        "phrase": "Pay rent monthly on 1st at 8am #finance",
+        "result": "Creates a monthly repeating task on the 1st at 8:00 AM."
+      },
+      {
+        "phrase": "Read for 25m today",
+        "result": "Creates a one-time task available today and enables a 25-minute focus estimate."
+      },
+      {
+        "phrase": "Physiotherapist 25 August 15:00",
+        "result": "Creates a one-time task available on the next 25 August at 15:00."
+      }
+    ],
+    "notes": [
+      "No date or recurrence creates a normal one-time task.",
+      "Recurrence phrases create repeating tasks.",
+      "Times apply to the due date or recurrence in the same phrase.",
+      "Tags and places stop at spaces, so use one-word names.",
+      "Optional starters like add, create, new, task, one-time task, repeating task, and remind me to are removed from the final title. Legacy todo and routine starters also work."
+    ],
+    "syntaxGroups": [
+      {
+        "rows": [
+          {
+            "detail": "Available today.",
+            "syntax": "today"
+          },
+          {
+            "detail": "Available tomorrow.",
+            "syntax": "tomorrow"
+          },
+          {
+            "detail": "Due on the next Friday.",
+            "syntax": "due Friday"
+          },
+          {
+            "detail": "Also sets the next Friday deadline.",
+            "syntax": "by Friday"
+          },
+          {
+            "detail": "Available on the next 25 August.",
+            "syntax": "25 August"
+          },
+          {
+            "detail": "Accepts a matching weekday too.",
+            "syntax": "Tuesday, 25 August"
+          }
+        ],
+        "title": "Dates"
+      },
+      {
+        "rows": [
+          {
+            "detail": "Sets a morning time.",
+            "syntax": "at 9am"
+          },
+          {
+            "detail": "Sets an evening time.",
+            "syntax": "at 9:30pm"
+          },
+          {
+            "detail": "Uses 24-hour time.",
+            "syntax": "15:00 / at 15:00"
+          }
+        ],
+        "title": "Times"
+      },
+      {
+        "rows": [
+          {
+            "detail": "Creates a daily repeating task.",
+            "syntax": "daily"
+          },
+          {
+            "detail": "Also creates a daily repeating task.",
+            "syntax": "every day"
+          },
+          {
+            "detail": "Creates an interval repeating task.",
+            "syntax": "every 2 days"
+          },
+          {
+            "detail": "Creates a weekly repeating task.",
+            "syntax": "every Monday"
+          },
+          {
+            "detail": "Also creates a weekly repeating task.",
+            "syntax": "weekly on Monday"
+          },
+          {
+            "detail": "Creates a monthly repeating task.",
+            "syntax": "monthly on 15th"
+          }
+        ],
+        "title": "Repeating tasks"
+      },
+      {
+        "rows": [
+          {
+            "detail": "Adds a one-word tag.",
+            "syntax": "#home"
+          },
+          {
+            "detail": "Links a one-word place when it exists.",
+            "syntax": "@Office"
+          },
+          {
+            "detail": "Sets urgent priority.",
+            "syntax": "!urgent"
+          },
+          {
+            "detail": "Sets priority.",
+            "syntax": "!high / !medium / !low"
+          },
+          {
+            "detail": "Adds an estimated focus duration.",
+            "syntax": "25m / 45 min / 1h"
+          },
+          {
+            "detail": "Creates a Gentle repeating task when used with recurrence.",
+            "syntax": "soft / softly"
+          }
+        ],
+        "title": "Metadata"
+      }
+    ]
+  },
+  "sections": {
+    "macOS": [
+      {
+        "id": "general",
+        "searchAliases": [
+          "preferences",
+          "app lock",
+          "battery",
+          "defaults"
+        ],
+        "searchDetailTerms": [
+          "App Lock",
+          "Battery repeating tasks"
+        ],
+        "title": "General"
+      },
+      {
+        "id": "devices",
+        "searchAliases": [
+          "sessions",
+          "mac",
+          "iphone",
+          "ipad"
+        ],
+        "searchDetailTerms": [
+          "Device sessions",
+          "Sync devices"
+        ],
+        "title": "Devices"
+      },
+      {
+        "id": "notifications",
+        "searchAliases": [
+          "reminders",
+          "alerts",
+          "scheduled"
+        ],
+        "searchDetailTerms": [
+          "Daily reminder",
+          "Pending notifications",
+          "Notification permissions"
+        ],
+        "title": "Notifications"
+      },
+      {
+        "id": "blocking",
+        "searchAliases": [
+          "focus",
+          "screen time",
+          "apps",
+          "websites"
+        ],
+        "searchDetailTerms": [
+          "Focus mode",
+          "App blocking",
+          "Website blocking"
+        ],
+        "title": "Blocking"
+      },
+      {
+        "id": "calendar",
+        "searchAliases": [
+          "apple calendar",
+          "outlook",
+          "events"
+        ],
+        "searchDetailTerms": [
+          "Calendar import",
+          "Planner calendar",
+          "Calendar list",
+          "Automatic timeline activity",
+          "Persian dates"
+        ],
+        "title": "Calendar"
+      },
+      {
+        "id": "places",
+        "searchAliases": [
+          "location",
+          "maps",
+          "check in"
+        ],
+        "searchDetailTerms": [
+          "Places",
+          "Maps",
+          "Check in"
+        ],
+        "title": "Places"
+      },
+      {
+        "id": "tags",
+        "searchAliases": [
+          "labels",
+          "colors",
+          "related tags"
+        ],
+        "searchDetailTerms": [
+          "Saved tags",
+          "Tag colors",
+          "Related tags"
+        ],
+        "title": "Tags"
+      },
+      {
+        "id": "flags",
+        "searchAliases": [
+          "task behavior",
+          "hide",
+          "calendar list",
+          "timeline",
+          "task ladder",
+          "auto assume done"
+        ],
+        "searchDetailTerms": [
+          "Hide from Task Lists",
+          "Hide from Calendar List",
+          "Hide from Timeline",
+          "Hide from Task Ladder",
+          "Auto Assume Done"
+        ],
+        "title": "Flags"
+      },
+      {
+        "id": "sections",
+        "searchAliases": [
+          "task list",
+          "backlog",
+          "super section",
+          "subsection"
+        ],
+        "searchDetailTerms": [
+          "Main task list",
+          "Backlog",
+          "Super sections",
+          "Subsections"
+        ],
+        "title": "Sections"
+      },
+      {
+        "id": "appearance",
+        "searchAliases": [
+          "theme",
+          "dark mode",
+          "light mode",
+          "rows"
+        ],
+        "searchDetailTerms": [
+          "Theme",
+          "App icon",
+          "Task row",
+          "Timeline row"
+        ],
+        "title": "Appearance"
+      },
+      {
+        "id": "iCloud",
+        "searchAliases": [
+          "backup",
+          "sync",
+          "cloud",
+          "icloud",
+          "restore"
+        ],
+        "searchDetailTerms": [
+          "Sync",
+          "Export",
+          "Import",
+          "Cloud reset",
+          "Backup"
+        ],
+        "title": "iCloud & Backup"
+      },
+      {
+        "id": "git",
+        "searchAliases": [
+          "github",
+          "gitlab",
+          "repository",
+          "commit"
+        ],
+        "searchDetailTerms": [
+          "GitHub",
+          "GitLab",
+          "Repository",
+          "Commit"
+        ],
+        "title": "Git"
+      },
+      {
+        "id": "backup",
+        "searchAliases": [
+          "export",
+          "import",
+          "data"
+        ],
+        "searchDetailTerms": [
+          "Backup",
+          "Export",
+          "Import"
+        ],
+        "title": "Data Backup"
+      },
+      {
+        "id": "quickAdd",
+        "searchAliases": [
+          "smart add",
+          "parser",
+          "dates"
+        ],
+        "searchDetailTerms": [
+          "Smart Add",
+          "Dates",
+          "Times",
+          "Links",
+          "Recurrence"
+        ],
+        "title": "Quick Add"
+      },
+      {
+        "id": "shortcuts",
+        "searchAliases": [
+          "keyboard",
+          "hotkeys",
+          "commands"
+        ],
+        "searchDetailTerms": [
+          "Keyboard",
+          "Siri",
+          "Apple Shortcuts"
+        ],
+        "title": "Shortcuts"
+      },
+      {
+        "id": "aiConnections",
+        "searchAliases": [
+          "mcp",
+          "local ai",
+          "automation",
+          "read only"
+        ],
+        "searchDetailTerms": [
+          "MCP",
+          "Local AI",
+          "Read-only task access"
+        ],
+        "title": "AI Connections"
+      },
+      {
+        "id": "support",
+        "searchAliases": [
+          "help",
+          "contact"
+        ],
+        "searchDetailTerms": [
+          "Help",
+          "Contact"
+        ],
+        "title": "Support"
+      },
+      {
+        "id": "about",
+        "searchAliases": [
+          "privacy",
+          "terms",
+          "version",
+          "diagnostics"
+        ],
+        "searchDetailTerms": [
+          "Privacy Policy",
+          "Terms of Use",
+          "Version",
+          "Diagnostics"
+        ],
+        "title": "Support & About"
+      }
+    ],
+    "mobile": [
+      {
+        "id": "general",
+        "searchAliases": [
+          "preferences",
+          "app lock",
+          "battery",
+          "defaults"
+        ],
+        "searchDetailTerms": [
+          "App Lock",
+          "Battery repeating tasks"
+        ],
+        "title": "General"
+      },
+      {
+        "id": "devices",
+        "searchAliases": [
+          "sessions",
+          "mac",
+          "iphone",
+          "ipad"
+        ],
+        "searchDetailTerms": [
+          "Device sessions",
+          "Sync devices"
+        ],
+        "title": "Devices"
+      },
+      {
+        "id": "notifications",
+        "searchAliases": [
+          "reminders",
+          "alerts",
+          "scheduled"
+        ],
+        "searchDetailTerms": [
+          "Daily reminder",
+          "Pending notifications",
+          "Notification permissions"
+        ],
+        "title": "Notifications"
+      },
+      {
+        "id": "blocking",
+        "searchAliases": [
+          "focus",
+          "screen time",
+          "apps",
+          "websites"
+        ],
+        "searchDetailTerms": [
+          "Focus mode",
+          "App blocking",
+          "Website blocking"
+        ],
+        "title": "Blocking"
+      },
+      {
+        "id": "calendar",
+        "searchAliases": [
+          "apple calendar",
+          "outlook",
+          "events"
+        ],
+        "searchDetailTerms": [
+          "Review Calendar Tasks",
+          "Persian dates"
+        ],
+        "title": "Calendar"
+      },
+      {
+        "id": "places",
+        "searchAliases": [
+          "location",
+          "maps",
+          "check in"
+        ],
+        "searchDetailTerms": [
+          "Places",
+          "Maps",
+          "Check in"
+        ],
+        "title": "Places"
+      },
+      {
+        "id": "tags",
+        "searchAliases": [
+          "labels",
+          "colors",
+          "related tags"
+        ],
+        "searchDetailTerms": [
+          "Saved tags",
+          "Tag colors",
+          "Related tags"
+        ],
+        "title": "Tags"
+      },
+      {
+        "id": "flags",
+        "searchAliases": [
+          "task behavior",
+          "hide",
+          "timeline",
+          "task ladder",
+          "auto assume done"
+        ],
+        "searchDetailTerms": [
+          "Hide from Task Lists",
+          "Hide from Timeline",
+          "Hide from Task Ladder",
+          "Auto Assume Done"
+        ],
+        "title": "Flags"
+      },
+      {
+        "id": "sections",
+        "searchAliases": [
+          "task list",
+          "backlog",
+          "super section",
+          "subsection"
+        ],
+        "searchDetailTerms": [
+          "Main task list",
+          "Backlog",
+          "Super sections",
+          "Subsections"
+        ],
+        "title": "Sections"
+      },
+      {
+        "id": "appearance",
+        "searchAliases": [
+          "theme",
+          "dark mode",
+          "light mode",
+          "rows"
+        ],
+        "searchDetailTerms": [
+          "Theme",
+          "App icon",
+          "Task row",
+          "Timeline row"
+        ],
+        "title": "Appearance"
+      },
+      {
+        "id": "iCloud",
+        "searchAliases": [
+          "backup",
+          "sync",
+          "cloud",
+          "icloud",
+          "restore"
+        ],
+        "searchDetailTerms": [
+          "Sync",
+          "Export",
+          "Import",
+          "Cloud reset",
+          "Backup"
+        ],
+        "title": "iCloud & Backup"
+      },
+      {
+        "id": "git",
+        "searchAliases": [
+          "github",
+          "gitlab",
+          "repository",
+          "commit"
+        ],
+        "searchDetailTerms": [
+          "GitHub",
+          "GitLab",
+          "Repository",
+          "Commit"
+        ],
+        "title": "Git"
+      },
+      {
+        "id": "backup",
+        "searchAliases": [
+          "export",
+          "import",
+          "data"
+        ],
+        "searchDetailTerms": [
+          "Backup",
+          "Export",
+          "Import"
+        ],
+        "title": "Data Backup"
+      },
+      {
+        "id": "quickAdd",
+        "searchAliases": [
+          "smart add",
+          "parser",
+          "dates"
+        ],
+        "searchDetailTerms": [
+          "Smart Add",
+          "Dates",
+          "Times",
+          "Links",
+          "Recurrence"
+        ],
+        "title": "Quick Add"
+      },
+      {
+        "id": "shortcuts",
+        "searchAliases": [
+          "siri",
+          "apple shortcuts",
+          "automation"
+        ],
+        "searchDetailTerms": [
+          "Siri",
+          "Apple Shortcuts"
+        ],
+        "title": "Shortcuts"
+      },
+      {
+        "id": "aiConnections",
+        "searchAliases": [
+          "mcp",
+          "local ai",
+          "automation",
+          "read only"
+        ],
+        "searchDetailTerms": [
+          "MCP",
+          "Local AI",
+          "Read-only task access"
+        ],
+        "title": "AI Connections"
+      },
+      {
+        "id": "support",
+        "searchAliases": [
+          "help",
+          "contact"
+        ],
+        "searchDetailTerms": [
+          "Help",
+          "Contact"
+        ],
+        "title": "Support"
+      },
+      {
+        "id": "about",
+        "searchAliases": [
+          "privacy",
+          "terms",
+          "version",
+          "diagnostics"
+        ],
+        "searchDetailTerms": [
+          "Privacy Policy",
+          "Terms of Use",
+          "Version",
+          "Diagnostics"
+        ],
+        "title": "Support & About"
+      }
+    ]
+  }
+}

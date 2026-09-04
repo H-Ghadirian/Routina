@@ -5,6 +5,18 @@ import Testing
 @MainActor
 struct HomeAdventureProgressionTests {
     @Test
+    func contentCatalogLoadsEveryRuleWorldStageAndItem() {
+        let catalog = HomeAdventureContentCatalog.shared
+
+        #expect(catalog.coinRules.count == 12)
+        #expect(catalog.worlds.count == 5)
+        #expect(catalog.worlds.flatMap(\.stages).count == 30)
+        #expect(catalog.items.count == 12)
+        #expect(catalog.worlds.first?.title == "Morning Meadow")
+        #expect(catalog.items.last?.title == "World Engine")
+    }
+
+    @Test
     func build_awardsCoinsForMacActivitySources() {
         let referenceDate = Date(timeIntervalSince1970: 1_800_000_000)
         let calendar = Calendar(identifier: .gregorian)

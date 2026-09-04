@@ -1,0 +1,69 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld" : {
+
+    },
+    "%lld contributions" : {
+
+    },
+    "--:--" : {
+
+    },
+    "@%@" : {
+
+    },
+    "Focus" : {
+
+    },
+    "Focus Timer" : {
+
+    },
+    "Focus progress" : {
+
+    },
+    "Focusing on" : {
+
+    },
+    "GitHub Activity" : {
+
+    },
+    "GitLab Activity" : {
+
+    },
+    "Idle" : {
+
+    },
+    "Less" : {
+
+    },
+    "More" : {
+
+    },
+    "Open Routina to load\nyour GitHub contribution graph." : {
+
+    },
+    "Open Routina to load\nyour GitLab contribution graph." : {
+
+    },
+    "Routina" : {
+
+    },
+    "Routina Stats" : {
+
+    },
+    "Shows the current Routina focus session timer." : {
+
+    },
+    "Today's tasks, completions, and streak at a glance." : {
+
+    },
+    "Your GitHub contribution graph for the past year." : {
+
+    },
+    "Your GitLab contribution graph for the past year." : {
+
+    }
+  },
+  "version" : "1.0"
+}

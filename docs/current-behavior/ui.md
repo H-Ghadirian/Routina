@@ -71,9 +71,11 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - [0709](../decisions/0709-defer-ipad-support-until-it-is-ready.md)
 - [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
 - [0711](../decisions/0711-gate-disabled-events-across-mac-release-surfaces.md)
+- [0719](../decisions/0719-externalize-localizable-and-structured-product-copy.md)
 
 ## Current Contract
 
+- The iOS and macOS apps share a committed String Catalog, while the Widget and Watch extension own target-specific catalogs. Long structured Help, Settings and Quick Add, and Mac Adventure content loads from validated English localized resources; missing or malformed bundled resources are treated as development/build failures. This establishes the source-language inventory and resource boundary but does not yet provide non-English translations.
 - The supported iOS release family is iPhone only. Adaptive iPad layout and
   navigation branches may remain in the source for future work, but they are
   dormant development paths and do not constitute current product support.
