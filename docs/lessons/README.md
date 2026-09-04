@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0299 — Keep semantic badge wording independent from tint](0299-keep-semantic-badge-wording-independent-from-tint.md)
 - [0298 — Place or clip every custom-layout subview](0298-place-or-clip-every-custom-layout-subview.md)
 - [0297 — Do not compress distinct row labels into ellipses](0297-do-not-compress-distinct-row-labels-into-ellipses.md)
 - [0296 — Keep selection-scoped actions primary](0296-keep-selection-scoped-actions-primary.md)

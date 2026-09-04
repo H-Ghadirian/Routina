@@ -1,7 +1,7 @@
 # iOS Workspace Controls
 
 Area: Tasks / Backlog / Task Ladder / iOS
-Decision links: [0736](../decisions/0736-give-ios-workspaces-scope-aware-controls.md), [0737](../decisions/0737-summarize-active-workspace-controls-in-place.md)
+Decision links: [0736](../decisions/0736-give-ios-workspaces-scope-aware-controls.md), [0737](../decisions/0737-summarize-active-workspace-controls-in-place.md), [0738](../decisions/0738-label-ios-task-row-badges-explicitly.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/IOSHomeWorkspaceNavigationSourceTests.swift`
@@ -43,3 +43,10 @@ When they open Backlog or Task Ladder controls
 Then no Mac row Appearance tab is shown
 And task meaning, filter meaning, sort meaning, and vocabulary remain consistent
 without forcing the Mac density configuration onto the compact phone rows
+
+Given a task row appears in iPhone Backlog or Task Ladder
+When task type or lifecycle status is shown
+Then each badge includes explicit readable wording such as `One-time`, `Repeating`,
+`To Do`, or `In Progress`
+And color and symbol reinforce that wording instead of carrying its meaning alone
+And the complete badges stack when they cannot fit beside each other

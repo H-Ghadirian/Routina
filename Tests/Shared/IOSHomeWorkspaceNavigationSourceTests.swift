@@ -89,6 +89,25 @@ struct IOSHomeWorkspaceNavigationSourceTests {
     }
 
     @Test
+    func compactSemanticBadgesNameTaskTypeAndStatusWithoutDependingOnColor() throws {
+        let semanticRow = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskSemanticIOSRowLabel.swift"
+        )
+
+        #expect(
+            semanticRow.contains(
+                "let title = taskType == .todo ? \"One-time\" : \"Repeating\""
+            )
+        )
+        #expect(semanticRow.contains("Text(title)"))
+        #expect(semanticRow.contains(".foregroundStyle(.primary)"))
+        #expect(semanticRow.contains("accessibilityLabel: \"Task type:"))
+        #expect(semanticRow.contains("accessibilityLabel: \"Status:"))
+        #expect(semanticRow.contains(".stroke(tint.opacity(0.34)"))
+        #expect(!semanticRow.contains("Label(title, systemImage: systemImage)"))
+    }
+
+    @Test
     func backlogAndTaskLadderUseOneScopeAwareWorkspaceControlsPattern() throws {
         let backlogView = try Self.sourceFile("iOS/Screens/Backlog/BacklogIOSView.swift")
         let backlogControls = try Self.sourceFile(

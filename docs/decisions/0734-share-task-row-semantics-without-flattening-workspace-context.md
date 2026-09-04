@@ -11,6 +11,7 @@ Accepted
 ## Refined By
 
 - [0735 — Compose Main Task List From Shared Task-Row Semantics](0735-compose-main-task-list-from-shared-task-row-semantics.md) brings Main Task List identity and stable lifecycle meaning into the shared snapshot while preserving its richer occurrence and action context.
+- [0738 — Label iOS Task-Row Badges Explicitly](0738-label-ios-task-row-badges-explicitly.md) makes the shared iPhone type and status treatment text-first while preserving the semantic vocabulary and adaptive compact layout.
 
 ## Refines
 

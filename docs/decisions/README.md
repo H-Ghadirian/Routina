@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0738](0738-label-ios-task-row-badges-explicitly.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0734](0734-share-task-row-semantics-without-flattening-workspace-context.md):** iPhone Backlog and Task Ladder type/status badges always expose compact readable wording, use color and symbols only as supporting cues, and stack complete badges when horizontal space is tight.
 - **[0737](0737-summarize-active-workspace-controls-in-place.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0722](0722-move-mac-task-ladder-controls-to-the-right-sidebar.md), [0727](0727-move-mac-backlog-status-out-of-the-list-header.md), and [0736](0736-give-ios-workspaces-scope-aware-controls.md):** active Main Task List, Backlog, and Task Ladder controls gain compact state-derived summaries in platform-native chrome; category routing and reset stay scoped, while scrolling lists retain their content-first layout.
 - **[0736](0736-give-ios-workspaces-scope-aware-controls.md) refines [0089](0089-prefer-native-apple-platform-patterns.md) and [0734](0734-share-task-row-semantics-without-flattening-workspace-context.md), and complements [0721](0721-customize-mac-backlog-row-appearance.md) and [0722](0722-move-mac-task-ladder-controls-to-the-right-sidebar.md):** iPhone Backlog and Task Ladder share one native workspace-control entry, expose their scope-specific Filter/Sort or View/Sort meanings with active state and contextual reset, and deliberately retain compact phone rows instead of copying Mac Appearance preferences.
 - **[0735](0735-compose-main-task-list-from-shared-task-row-semantics.md) refines [0038](0038-configure-home-task-row-fields.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0593](0593-show-relationship-blocking-in-home-task-rows.md), and [0734](0734-share-task-row-semantics-without-flattening-workspace-context.md):** Main Task List composes the shared semantic row snapshot for identity and stable lifecycle meaning, keeps one-time step position as separate progress, and layers its richer occurrence, location, planning, and action context on top without adding render-path derivation.
@@ -859,6 +860,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0738](0738-label-ios-task-row-badges-explicitly.md) | Label iOS Task-Row Badges Explicitly | Accepted | 2026-09-05 |
 | [0737](0737-summarize-active-workspace-controls-in-place.md) | Summarize Active Workspace Controls in Place | Accepted | 2026-09-05 |
 | [0736](0736-give-ios-workspaces-scope-aware-controls.md) | Give iOS Workspaces Scope-Aware Controls | Accepted | 2026-09-04 |
 | [0735](0735-compose-main-task-list-from-shared-task-row-semantics.md) | Compose Main Task List From Shared Task-Row Semantics | Accepted | 2026-09-04 |

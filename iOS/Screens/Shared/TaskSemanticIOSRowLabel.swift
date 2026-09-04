@@ -150,10 +150,12 @@ struct TaskSemanticIOSRowLabel: View {
         status: TaskRowSemanticPresentation.Status?
     ) -> some View {
         if let taskType {
+            let title = taskType == .todo ? "One-time" : "Repeating"
             badge(
-                taskType.userFacingTitle,
+                title,
                 systemImage: taskType == .todo ? "checklist" : "repeat",
-                tint: taskType == .todo ? .blue : .green
+                tint: taskType == .todo ? .blue : .green,
+                accessibilityLabel: "Task type: \(title)"
             )
         }
 
@@ -161,7 +163,8 @@ struct TaskSemanticIOSRowLabel: View {
             badge(
                 status.title,
                 systemImage: status.systemImage,
-                tint: tint(for: status.tone)
+                tint: tint(for: status.tone),
+                accessibilityLabel: "Status: \(status.title)"
             )
         }
     }
@@ -169,16 +172,29 @@ struct TaskSemanticIOSRowLabel: View {
     private func badge(
         _ title: String,
         systemImage: String,
-        tint: Color
+        tint: Color,
+        accessibilityLabel: String
     ) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(tint)
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(tint.opacity(0.11), in: Capsule())
+        HStack(spacing: 4) {
+            Image(systemName: systemImage)
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
+
+            Text(title)
+                .foregroundStyle(.primary)
+        }
+        .font(.caption.weight(.semibold))
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(Color.primary.opacity(0.06), in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(tint.opacity(0.34), lineWidth: 0.75)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
     }
 
     @ViewBuilder
