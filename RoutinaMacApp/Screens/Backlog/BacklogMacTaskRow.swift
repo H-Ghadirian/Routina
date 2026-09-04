@@ -9,8 +9,13 @@ struct BacklogMacTaskRow<MoveMenu: View>: View {
     let isSelected: Bool
     let visibility: HomeTaskRowVisibility
     let showsPlaces: Bool
+    let showsTomorrowPlanningShortcut: Bool
     let tagColors: [String: String]
     let onOpen: () -> Void
+    let onPlanForToday: () -> Void
+    let onPlanForTomorrow: () -> Void
+    let onChoosePlanDate: () -> Void
+    let onClearPlan: () -> Void
     let onMoveToMainTaskList: () -> Void
     @ViewBuilder let moveMenu: () -> MoveMenu
 
@@ -50,6 +55,19 @@ struct BacklogMacTaskRow<MoveMenu: View>: View {
             Menu("Move to Backlog", content: moveMenu)
             if task.customTaskSectionID != nil {
                 Button("Move to Main Task List", action: onMoveToMainTaskList)
+            }
+            if task.supportsStoredPlanning {
+                Divider()
+                Menu("Plan to do") {
+                    Button("Today", action: onPlanForToday)
+                    if showsTomorrowPlanningShortcut {
+                        Button("Tomorrow", action: onPlanForTomorrow)
+                    }
+                    Button("Choose Date...", action: onChoosePlanDate)
+                    if task.plannedDate != nil {
+                        Button("Clear Plan", action: onClearPlan)
+                    }
+                }
             }
         }
     }

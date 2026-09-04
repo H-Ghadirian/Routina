@@ -414,7 +414,7 @@ And the manual Refresh Backlog control remains available in the right-side Backl
 ### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
 
 Area: Tasks / Mac Backlog
-Decision links: [0728](../decisions/0728-scope-mac-backlog-reset-to-each-control-tab.md), [0727](../decisions/0727-move-mac-backlog-status-out-of-the-list-header.md), [0723](../decisions/0723-filter-mac-backlog-by-due-status.md), [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0729](../decisions/0729-plan-backlog-tasks-from-their-context-menu.md), [0728](../decisions/0728-scope-mac-backlog-reset-to-each-control-tab.md), [0727](../decisions/0727-move-mac-backlog-status-out-of-the-list-header.md), [0723](../decisions/0723-filter-mac-backlog-by-due-status.md), [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
@@ -448,6 +448,13 @@ Then Backlog destinations appear beneath one `Backlog` submenu
 And a section with subsections opens one additional level
 And `New Backlog Super Section…` creates a Backlog section and assigns the selected task
 And the Backlog workspace does not show a permanent section-name composer
+
+Given an eligible task is visible in a Mac Backlog section
+When the person opens its row context menu
+Then `Plan to do` offers Today, Choose Date, and Clear Plan when a plan exists
+And Tomorrow is offered only while the Tomorrow section is enabled
+When the person changes the plan
+Then the date is stored with the normal planning semantics and the task remains in the same Backlog path
 
 Given `Read mail` exists on `Radar › Future` and is not in Backlog
 When the person searches Backlog for `Read mail`

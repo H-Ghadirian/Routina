@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import SwiftData
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
@@ -214,5 +215,73 @@ struct BacklogFeatureTests {
         }
 
         #expect(store.state.presentation.sections.map(\.id) == [sectionID, emptySectionID])
+    }
+
+    @Test
+    func planTaskUpdatesBacklogAndPersistsWithoutChangingItsSection() async throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
+        let referenceDate = Date(timeIntervalSince1970: 1_000)
+        let requestedDate = Date(timeIntervalSince1970: 200_000)
+        let expectedDate = calendar.startOfDay(for: requestedDate)
+        let sectionID = UUID()
+        let task = RoutineTask(
+            name: "Read someday",
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let context = makeInMemoryContext()
+        context.insert(task)
+        try context.save()
+        let section = HomeCustomTaskSection(
+            id: sectionID,
+            surface: .backlog,
+            title: "Someday",
+            createdAt: nil
+        )
+        var initialState = BacklogFeature.State()
+        initialState.tasks = [task.detachedCopy()]
+        initialState.customSections = [section]
+        initialState.selectedTaskID = task.id
+        initialState.taskDetailState = HomeTaskSupport.makeTaskDetailState(
+            for: task,
+            now: referenceDate,
+            calendar: calendar
+        )
+        initialState.presentation = BacklogTaskListPresentation.make(
+            tasks: initialState.tasks,
+            customSections: initialState.customSections,
+            flagRules: [],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let store = TestStore(initialState: initialState) {
+            BacklogFeature()
+        } withDependencies: {
+            $0.calendar = calendar
+            $0.date.now = referenceDate
+            $0.modelContext = { context }
+        }
+
+        await store.send(.planTask(task.id, requestedDate)) {
+            $0.tasks[0].plannedDate = expectedDate
+            $0.taskDetailState?.task.plannedDate = expectedDate
+            $0.taskDetailState?.taskRefreshID = 1
+            $0.presentation = BacklogTaskListPresentation.make(
+                tasks: $0.tasks,
+                customSections: $0.customSections,
+                flagRules: [],
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
+        await store.finish()
+
+        let persistedTask = try #require(
+            context.fetch(HomeTaskSupport.taskDescriptor(for: task.id)).first
+        )
+        #expect(persistedTask.plannedDate == expectedDate)
+        #expect(persistedTask.customTaskSectionID == sectionID)
+        #expect(store.state.presentation.sections.first?.tasks.map(\.id) == [task.id])
     }
 }

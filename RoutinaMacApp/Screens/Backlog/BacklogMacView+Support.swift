@@ -249,8 +249,13 @@ extension BacklogMacView {
                 isSelected: store.selectedTaskID == task.id,
                 visibility: backlogTaskRowVisibility,
                 showsPlaces: isPlacesEnabled,
+                showsTomorrowPlanningShortcut: showsTomorrowInTaskList,
                 tagColors: store.tagColors,
                 onOpen: { store.send(.taskSelected(task.id)) },
+                onPlanForToday: { planTaskForToday(task.id) },
+                onPlanForTomorrow: { planTaskForTomorrow(task.id) },
+                onChoosePlanDate: { presentPlanningDatePicker(for: task) },
+                onClearPlan: { store.send(.planTask(task.id, nil)) },
                 onMoveToMainTaskList: { store.send(.moveTask(task.id, to: nil)) },
                 moveMenu: { backlogMoveMenuItems(for: task.id) }
             )
@@ -263,6 +268,43 @@ extension BacklogMacView {
 
     var isSearching: Bool {
         HomeTaskSearchIndex.query(store.searchText) != nil
+    }
+
+    var planningDatePickerPresentedBinding: Binding<Bool> {
+        Binding(
+            get: { planningDateTaskID != nil },
+            set: { isPresented in
+                if !isPresented {
+                    dismissPlanningDatePicker()
+                }
+            }
+        )
+    }
+
+    func planTaskForToday(_ taskID: UUID) {
+        store.send(.planTask(taskID, calendar.startOfDay(for: Date())))
+    }
+
+    func planTaskForTomorrow(_ taskID: UUID) {
+        let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)
+            ?? today.addingTimeInterval(86_400)
+        store.send(.planTask(taskID, calendar.startOfDay(for: tomorrow)))
+    }
+
+    func presentPlanningDatePicker(for task: RoutineTask) {
+        planningDateTaskID = task.id
+        planningDateDraft = task.plannedDate ?? Date()
+    }
+
+    func savePlanningDatePicker() {
+        guard let taskID = planningDateTaskID else { return }
+        store.send(.planTask(taskID, planningDateDraft))
+        dismissPlanningDatePicker()
+    }
+
+    func dismissPlanningDatePicker() {
+        planningDateTaskID = nil
     }
 
     @ViewBuilder

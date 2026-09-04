@@ -57,6 +57,7 @@ struct BacklogFeature {
         case subsectionDisclosureToggled(UUID)
         case taskSelected(UUID)
         case taskDetail(TaskDetailFeature.Action)
+        case planTask(UUID, Date?)
         case moveTask(UUID, to: UUID?)
     }
 
@@ -207,6 +208,27 @@ struct BacklogFeature {
                     rebuildPresentation(&state)
                 }
                 return effect
+
+            case let .planTask(taskID, plannedDate):
+                guard let update = HomeTaskLifecycleSupport.planTask(
+                    taskID: taskID,
+                    plannedDate: plannedDate,
+                    calendar: calendar,
+                    tasks: &state.tasks
+                ) else {
+                    return .none
+                }
+                if var taskDetailState = state.taskDetailState,
+                   taskDetailState.task.id == taskID {
+                    taskDetailState.task.plannedDate = update.plannedDate
+                    taskDetailState.taskRefreshID &+= 1
+                    state.taskDetailState = taskDetailState
+                }
+                rebuildPresentation(&state)
+                return HomeTaskLifecycleExecutionSupport.planTask(
+                    update,
+                    modelContext: modelContext
+                )
 
             case let .moveTask(taskID, destinationSectionID):
                 return moveTask(taskID, to: destinationSectionID)

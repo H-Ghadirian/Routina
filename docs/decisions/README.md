@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0729](0729-plan-backlog-tasks-from-their-context-menu.md) refines [0200](0200-support-task-planned-dates.md), [0363](0363-gate-mac-plan-tomorrow-menu-item.md), and [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md):** eligible Mac Backlog rows offer the Main Task List's Plan to do choices while preserving their Backlog path and the existing planning semantics.
 - **[0728](0728-scope-mac-backlog-reset-to-each-control-tab.md) revises [0721](0721-customize-mac-backlog-row-appearance.md) and refines [0727](0727-move-mac-backlog-status-out-of-the-list-header.md):** Backlog controls remove their repeated inner title and subtitle, and Filter, Sort, and Appearance each reset only their own state while preserving the other tabs.
 - **[0727](0727-move-mac-backlog-status-out-of-the-list-header.md) revises [0632](0632-integrate-mac-workspaces-in-the-main-window.md) and refines [0633](0633-make-mac-backlog-hierarchical-and-searchable.md), [0721](0721-customize-mac-backlog-row-appearance.md), and [0722](0722-move-mac-task-ladder-controls-to-the-right-sidebar.md):** Mac Backlog begins directly with list content instead of repeating its workspace title, subtitle, count, and refresh strip; count and manual refresh move into the existing right-side controls.
 - **[0726](0726-keep-selected-assumed-day-confirmation-primary.md) revises [0725](0725-resolve-selected-assumed-days-from-mac-task-details.md) and refines [0626](0626-join-mac-task-detail-completion-and-overflow.md):** selecting an assumed date keeps confirmation scoped to that date; full Mac Task Details moves counted bulk confirmation into the adjacent `⋮` menu beside `Missed`.
@@ -849,6 +850,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0729](0729-plan-backlog-tasks-from-their-context-menu.md) | Plan Backlog Tasks From Their Context Menu | Accepted | 2026-09-04 |
 | [0728](0728-scope-mac-backlog-reset-to-each-control-tab.md) | Scope Mac Backlog Reset to Each Control Tab | Accepted | 2026-09-04 |
 | [0727](0727-move-mac-backlog-status-out-of-the-list-header.md) | Move Mac Backlog Status Out of the List Header | Accepted | 2026-09-04 |
 | [0726](0726-keep-selected-assumed-day-confirmation-primary.md) | Keep Selected Assumed-Day Confirmation Primary | Accepted | 2026-09-04 |

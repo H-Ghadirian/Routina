@@ -198,6 +198,29 @@ struct MacWorkspaceNavigationSourceTests {
     }
 
     @Test
+    func backlogTaskContextMenuOffersTheMainTaskListPlanningChoices() throws {
+        let rowSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Backlog/BacklogMacTaskRow.swift"
+        )
+        let backlogSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Backlog/BacklogMacView.swift"
+        )
+        let supportSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Backlog/BacklogMacView+Support.swift"
+        )
+
+        #expect(rowSource.contains("if task.supportsStoredPlanning"))
+        #expect(rowSource.contains("Menu(\"Plan to do\")"))
+        #expect(rowSource.contains("Button(\"Today\""))
+        #expect(rowSource.contains("Button(\"Tomorrow\""))
+        #expect(rowSource.contains("Button(\"Choose Date...\""))
+        #expect(rowSource.contains("Button(\"Clear Plan\""))
+        #expect(backlogSource.contains("appSettingShowTomorrowInTaskList"))
+        #expect(backlogSource.contains("TaskPlanningDatePickerSheet("))
+        #expect(supportSource.contains("store.send(.planTask("))
+    }
+
+    @Test
     func macSectionSettingsSeparatesRadarAndBacklogCatalogs() throws {
         let sectionsSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Settings/SettingsMacTaskSectionsDetailView.swift"

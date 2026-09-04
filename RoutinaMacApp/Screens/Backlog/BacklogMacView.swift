@@ -46,10 +46,17 @@ struct BacklogMacView<FilterView: View>: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowTomorrowInTaskList.rawValue,
+        store: SharedDefaults.app
+    ) var showsTomorrowInTaskList = false
+    @Environment(\.calendar) var calendar
     @State var newSectionTitle = ""
     @State var newSectionTaskID: UUID?
     @State var isNewSectionPromptPresented = false
     @State var newSubsectionTitleBySectionID: [UUID: String] = [:]
+    @State var planningDateTaskID: UUID?
+    @State var planningDateDraft = Date()
 
     var body: some View {
         backlogContent
@@ -75,6 +82,13 @@ struct BacklogMacView<FilterView: View>: View {
             Button("Cancel", role: .cancel) {
                 resetNewSectionPrompt()
             }
+        }
+        .sheet(isPresented: planningDatePickerPresentedBinding) {
+            TaskPlanningDatePickerSheet(
+                date: $planningDateDraft,
+                onCancel: dismissPlanningDatePicker,
+                onSave: savePlanningDatePicker
+            )
         }
     }
 
