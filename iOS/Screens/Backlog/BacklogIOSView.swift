@@ -137,7 +137,7 @@ struct BacklogIOSView: View {
                     } label: {
                         taskLabel(
                             result.task,
-                            subtitle: result.locationTitle
+                            pathTitle: result.locationTitle
                         )
                     }
                 }
@@ -226,7 +226,7 @@ struct BacklogIOSView: View {
         NavigationLink {
             BacklogIOSTaskDestination(store: store, taskID: task.id)
         } label: {
-            taskLabel(task, subtitle: taskSubtitle(task, pathTitle: pathTitle))
+            taskLabel(task, pathTitle: pathTitle)
         }
         .contentShape(Rectangle())
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -241,34 +241,32 @@ struct BacklogIOSView: View {
         }
     }
 
+    @ViewBuilder
     private func taskLabel(
         _ task: RoutineTask,
-        subtitle: String
+        pathTitle: String
     ) -> some View {
-        HStack(spacing: 10) {
-            Text(task.emoji ?? "✨")
-                .font(.body)
-
+        if let row = store.presentation.rowPresentationsByTaskID[task.id] {
+            TaskSemanticIOSRowLabel(
+                presentation: row,
+                contextText: backlogContext(pathTitle: pathTitle, row: row),
+                showsTaskType: true,
+                showsStatus: true,
+                showsPin: true
+            )
+        } else {
             VStack(alignment: .leading, spacing: 3) {
                 Text(task.name ?? "Untitled task")
                     .lineLimit(2)
 
-                Text(subtitle)
+                Text(pathTitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-
-            Spacer(minLength: 4)
-
-            if task.isPinned {
-                Image(systemName: "pin.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
     }
 
     private var searchTextBinding: Binding<String> {
@@ -302,12 +300,12 @@ struct BacklogIOSView: View {
         }
     }
 
-    private func taskSubtitle(_ task: RoutineTask, pathTitle: String) -> String {
-        let hidingFlags = RoutineFlagRules.flagsHidingFromTaskLists(
-            task.flags,
-            rules: store.flagRules
-        )
-        return ([pathTitle] + hidingFlags).joined(separator: " • ")
+    private func backlogContext(
+        pathTitle: String,
+        row: BacklogTaskRowPresentation
+    ) -> String {
+        ([pathTitle] + row.hidingFlags + [row.scheduleText, row.stepsText].compactMap { $0 })
+            .joined(separator: " • ")
     }
 
     private func sectionColor(_ section: HomeCustomTaskSection) -> Color {

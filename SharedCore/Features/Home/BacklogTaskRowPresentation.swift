@@ -1,24 +1,32 @@
 import Foundation
 
-enum BacklogTaskRowTone: Equatable {
+/// Platform-neutral meaning used by every task-row surface that consumes the
+/// shared semantic snapshot. Views remain free to render these tones using
+/// platform-appropriate controls and density.
+enum TaskRowSemanticTone: Equatable, Sendable {
     case secondary
     case blue
+    case green
+    case indigo
     case orange
     case red
     case teal
 }
 
+typealias BacklogTaskRowTone = TaskRowSemanticTone
+
 struct BacklogTaskRowPresentationContext {
     let flagRules: [RoutineFlagRule]
+    let relationshipBlockedTaskIDs: Set<UUID>
     let referenceDate: Date
     let calendar: Calendar
 }
 
-struct BacklogTaskRowPresentation: Equatable, Identifiable {
-    struct Status: Equatable {
+struct TaskRowSemanticPresentation: Equatable, Identifiable, Sendable {
+    struct Status: Equatable, Sendable {
         let title: String
         let systemImage: String
-        let tone: BacklogTaskRowTone
+        let tone: TaskRowSemanticTone
     }
 
     let id: UUID
@@ -26,7 +34,8 @@ struct BacklogTaskRowPresentation: Equatable, Identifiable {
     let emoji: String
     let hasImage: Bool
     let isPinned: Bool
-    let isOneOffTask: Bool
+    /// Nil is reserved for Task Ladder container groups, which are not tasks.
+    let taskType: RoutineTaskType?
     let color: RoutineTaskColor
     let status: Status?
     let scheduleText: String?
@@ -38,11 +47,16 @@ struct BacklogTaskRowPresentation: Equatable, Identifiable {
     let flags: [String]
     let hidingFlags: [String]
 
+    var isOneOffTask: Bool {
+        taskType == .todo
+    }
+
     static func make(
         task: RoutineTask,
         flagRules: [RoutineFlagRule],
         referenceDate: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        isRelationshipBlocked: Bool = false
     ) -> Self {
         Self(
             id: task.id,
@@ -50,9 +64,14 @@ struct BacklogTaskRowPresentation: Equatable, Identifiable {
             emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨",
             hasImage: task.hasImage,
             isPinned: task.isPinned,
-            isOneOffTask: task.isOneOffTask,
+            taskType: task.scheduleMode.taskType,
             color: task.color,
-            status: status(for: task, referenceDate: referenceDate, calendar: calendar),
+            status: status(
+                for: task,
+                isRelationshipBlocked: isRelationshipBlocked,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ),
             scheduleText: scheduleText(for: task, referenceDate: referenceDate, calendar: calendar),
             pressureText: task.pressure.metadataLabel,
             progressText: progressText(for: task, referenceDate: referenceDate, calendar: calendar),
@@ -78,9 +97,29 @@ struct BacklogTaskRowPresentation: Equatable, Identifiable {
 
     private static func status(
         for task: RoutineTask,
+        isRelationshipBlocked: Bool,
         referenceDate: Date,
         calendar: Calendar
     ) -> Status? {
+        if task.isArchived(referenceDate: referenceDate, calendar: calendar) {
+            return task.isSnoozed(referenceDate: referenceDate, calendar: calendar)
+                ? Status(title: "Not today", systemImage: "moon.zzz.fill", tone: .indigo)
+                : Status(title: "Paused", systemImage: "pause.circle.fill", tone: .teal)
+        }
+        if task.isCompletedOneOff {
+            return Status(title: "Done", systemImage: "checkmark.circle.fill", tone: .green)
+        }
+        if task.isCanceledOneOff {
+            return Status(title: "Canceled", systemImage: "xmark.circle.fill", tone: .orange)
+        }
+        if isRelationshipBlocked {
+            return Status(
+                title: "Blocked",
+                systemImage: "exclamationmark.circle.fill",
+                tone: .orange
+            )
+        }
+
         if task.isOneOffTask {
             if task.isInProgress || task.todoState == .inProgress {
                 return Status(title: "In Progress", systemImage: "arrow.clockwise.circle.fill", tone: .blue)
@@ -226,6 +265,11 @@ struct BacklogTaskRowPresentation: Equatable, Identifiable {
     }
 }
 
+/// Backlog owns where and why a task is shown, while this shared value owns
+/// what the task means. Keep the established name as a compatibility alias for
+/// existing Mac row and presentation call sites.
+typealias BacklogTaskRowPresentation = TaskRowSemanticPresentation
+
 enum BacklogTaskRowPresentationCache {
     static func makeList(
         sections: [BacklogTaskListPresentation.Section],
@@ -239,18 +283,21 @@ enum BacklogTaskRowPresentationCache {
             sections.flatMap { section in
                 section.tasks + section.subsections.flatMap(\.tasks)
             } + hiddenByFlagTasks
+        let presentedTasks = visibleTasks + outsideBacklogResults.map(\.task)
         let presentations = Dictionary(
-            uniqueKeysWithValues: visibleTasks.map { task in
+            presentedTasks.map { task in
                 (
                     task.id,
                     BacklogTaskRowPresentation.make(
                         task: task,
                         flagRules: context.flagRules,
                         referenceDate: context.referenceDate,
-                        calendar: context.calendar
+                        calendar: context.calendar,
+                        isRelationshipBlocked: context.relationshipBlockedTaskIDs.contains(task.id)
                     )
                 )
-            }
+            },
+            uniquingKeysWith: { first, _ in first }
         )
         let numbers = Dictionary(
             uniqueKeysWithValues: visibleTasks.enumerated().map { offset, task in

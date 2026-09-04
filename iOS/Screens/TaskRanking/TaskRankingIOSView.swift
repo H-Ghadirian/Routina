@@ -208,9 +208,9 @@ struct TaskRankingIOSView: View {
                             )
                         } label: {
                             taskLabel(
-                                match.task,
+                                presentation: match.appearance,
                                 subtitle: match.locationTitle,
-                                metadata: nil
+                                identityKind: match.isTaskGroup ? .taskGroup : .task
                             )
                         }
                     }
@@ -228,9 +228,9 @@ struct TaskRankingIOSView: View {
                             )
                         } label: {
                             taskLabel(
-                                match.task,
+                                presentation: match.appearance,
                                 subtitle: match.reason,
-                                metadata: nil
+                                identityKind: match.isTaskGroup ? .taskGroup : .task
                             )
                         }
                     }
@@ -300,11 +300,20 @@ struct TaskRankingIOSView: View {
             NavigationLink {
                 rankingDestination(for: task, metadata: metadata)
             } label: {
-                taskLabel(
-                    task,
-                    subtitle: rowSubtitle(metadata),
-                    metadata: metadata
-                )
+                if let metadata {
+                    taskLabel(
+                        presentation: metadata.appearance,
+                        subtitle: rowSubtitle(metadata),
+                        identityKind: metadata.isGroup
+                            ? .containerGroup
+                            : (metadata.isTaskGroup ? .taskGroup : .task),
+                        showsInheritedValue: metadata.inheritsMetricValue
+                    )
+                } else {
+                    Text(task.name ?? "Untitled task")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
             }
 
             if canOpenInnerLadder {
@@ -364,36 +373,19 @@ struct TaskRankingIOSView: View {
     }
 
     private func taskLabel(
-        _ task: RoutineTask,
+        presentation: TaskRankingRowPresentation,
         subtitle: String?,
-        metadata: TaskRankingPresentation.RowMetadata?
+        identityKind: TaskSemanticIOSRowLabel.IdentityKind,
+        showsInheritedValue: Bool = false
     ) -> some View {
-        HStack(spacing: 10) {
-            Text(task.emoji ?? "✨")
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(task.name ?? "Untitled task")
-                    .lineLimit(2)
-
-                if let subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-            }
-
-            Spacer(minLength: 2)
-
-            if metadata?.inheritsMetricValue == true {
-                Image(systemName: "arrow.triangle.branch")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("Inherited value")
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
+        TaskSemanticIOSRowLabel(
+            presentation: presentation,
+            contextText: subtitle,
+            identityKind: identityKind,
+            showsTaskType: presentation.taskType == .routine,
+            showsStatus: identityKind != .containerGroup,
+            showsInheritedValue: showsInheritedValue
+        )
     }
 
     private func rowSubtitle(
@@ -401,15 +393,7 @@ struct TaskRankingIOSView: View {
     ) -> String? {
         guard let metadata else { return nil }
         var labels: [String] = []
-        if metadata.isGroup {
-            labels.append("Group")
-        } else if metadata.isTaskGroup {
-            labels.append("Task group")
-        }
         labels.append(contentsOf: metadata.tagLabels)
-        if metadata.isRepeating {
-            labels.append("Repeating")
-        }
         if let temporalTimingLabel = metadata.temporalTimingLabel {
             labels.append(temporalTimingLabel)
         }

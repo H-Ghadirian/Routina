@@ -339,6 +339,7 @@ struct BacklogTaskListPresentation: Equatable {
         customSections: [HomeCustomTaskSection],
         flagRules: [RoutineFlagRule],
         availableFlags: [String] = [],
+        completionDatesByTaskID: [UUID: Set<Date>] = [:],
         filters: BacklogFilterState = .default,
         fileAttachmentTaskIDs: Set<UUID> = [],
         searchText: String = "",
@@ -346,6 +347,12 @@ struct BacklogTaskListPresentation: Equatable {
         calendar: Calendar
     ) -> Self {
         let sections = HomeCustomTaskSectionStorage.sanitized(customSections)
+        let relationshipBlockedTaskIDs = HomeDisplayFilterSupport.activeRelationshipBlockedTaskIDs(
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            completionDatesByTaskID: completionDatesByTaskID
+        )
         let backlogSections = sections.filter { $0.surface == .backlog }
         let backlogSectionIDs = Set(backlogSections.map(\.id))
         let normalizedSearchQuery = HomeTaskSearchIndex.query(searchText)
@@ -507,7 +514,12 @@ struct BacklogTaskListPresentation: Equatable {
             outsideBacklogResults: outsideBacklogResults,
             hasAnySearchResult: hasFilteredBacklogSearchResult || !outsideBacklogResults.isEmpty,
             filterCatalog: filterCatalog,
-            context: BacklogTaskRowPresentationContext(flagRules: flagRules, referenceDate: referenceDate, calendar: calendar)
+            context: BacklogTaskRowPresentationContext(
+                flagRules: flagRules,
+                relationshipBlockedTaskIDs: relationshipBlockedTaskIDs,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
         )
     }
 

@@ -310,6 +310,8 @@ enum TaskRankingMetricValue: Equatable, Hashable, Sendable {
 struct TaskRankingSearchPresentation: Equatable {
     struct Match: Identifiable, Equatable {
         let task: RoutineTask
+        let appearance: TaskRankingRowPresentation
+        let isTaskGroup: Bool
         /// The ladder scope in which the task is a directly visible row.
         let scopePath: [UUID]
         let locationTitle: String
@@ -319,6 +321,8 @@ struct TaskRankingSearchPresentation: Equatable {
 
     struct OutsideMatch: Identifiable, Equatable {
         let task: RoutineTask
+        let appearance: TaskRankingRowPresentation
+        let isTaskGroup: Bool
         let reason: String
 
         var id: UUID { task.id }
@@ -414,6 +418,14 @@ struct TaskRankingSearchPresentation: Equatable {
             )?.title ?? metric.missingValueTitle
             return Match(
                 task: task,
+                appearance: TaskRankingRowPresentation.make(
+                    task: task,
+                    isContainerGroup: false,
+                    flagRules: flagRules,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                ),
+                isTaskGroup: organization.isTaskGroup(taskID: task.id),
                 scopePath: path,
                 locationTitle: (["Task Ladder"] + titles + [valueTitle])
                     .joined(separator: " › ")
@@ -448,7 +460,19 @@ struct TaskRankingSearchPresentation: Equatable {
             } else {
                 reason = "Unavailable while a linked prerequisite is incomplete"
             }
-            return OutsideMatch(task: task, reason: reason)
+            return OutsideMatch(
+                task: task,
+                appearance: TaskRowSemanticPresentation.make(
+                    task: task,
+                    flagRules: flagRules,
+                    referenceDate: referenceDate,
+                    calendar: calendar,
+                    isRelationshipBlocked: reason
+                        == "Unavailable while a linked prerequisite is incomplete"
+                ),
+                isTaskGroup: organization.isTaskGroup(taskID: task.id),
+                reason: reason
+            )
         }.sorted { lhs, rhs in
             taskComesBefore(lhs.task, rhs.task)
         }

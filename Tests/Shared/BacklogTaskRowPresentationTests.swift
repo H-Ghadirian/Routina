@@ -81,6 +81,7 @@ struct BacklogTaskRowPresentationTests {
         #expect(row.hasImage)
         #expect(row.isPinned)
         #expect(row.isOneOffTask)
+        #expect(row.taskType == .todo)
         #expect(row.color == .purple)
         #expect(row.status?.title == "In Progress")
         #expect(row.tags == ["Work"])
@@ -91,6 +92,80 @@ struct BacklogTaskRowPresentationTests {
                 == "Due today • High pressure • Step 1 of 2 • Next: Outline • Library"
         )
         #expect(presentation.rowNumbersByTaskID[task.id] == 1)
+    }
+
+    @Test
+    func backlogUsesRelationshipAwareSemanticStatusFromItsCachedSnapshot() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        let referenceDate = Date(timeIntervalSince1970: 1_735_905_600)
+        let sectionID = UUID()
+        let blocker = RoutineTask(name: "Approve proposal", scheduleMode: .oneOff)
+        let dependent = RoutineTask(
+            name: "Send proposal",
+            customTaskSectionID: sectionID,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: blocker.id, kind: .blockedBy)
+            ],
+            scheduleMode: .oneOff,
+            todoStateRawValue: TodoState.inProgress.rawValue
+        )
+        let section = HomeCustomTaskSection(
+            id: sectionID,
+            surface: .backlog,
+            title: "Later",
+            createdAt: nil
+        )
+
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [dependent, blocker],
+            customSections: [section],
+            flagRules: [],
+            completionDatesByTaskID: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let row = try #require(presentation.rowPresentationsByTaskID[dependent.id])
+        #expect(row.status?.title == "Blocked")
+        #expect(row.status?.tone == .orange)
+
+        let resolvedPresentation = BacklogTaskListPresentation.make(
+            tasks: [dependent, blocker],
+            customSections: [section],
+            flagRules: [],
+            completionDatesByTaskID: [blocker.id: [referenceDate]],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let resolvedRow = try #require(
+            resolvedPresentation.rowPresentationsByTaskID[dependent.id]
+        )
+        #expect(resolvedRow.status?.title == "In Progress")
+    }
+
+    @Test
+    func outsideBacklogSearchResultsAlsoReceiveCachedSemanticRows() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        let referenceDate = Date(timeIntervalSince1970: 1_735_905_600)
+        let completed = RoutineTask(
+            name: "Filed taxes",
+            scheduleMode: .oneOff,
+            lastDone: referenceDate.addingTimeInterval(-60)
+        )
+
+        let presentation = BacklogTaskListPresentation.make(
+            tasks: [completed],
+            customSections: [],
+            flagRules: [],
+            searchText: "taxes",
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(presentation.outsideBacklogResults.map(\.task.id) == [completed.id])
+        let row = try #require(presentation.rowPresentationsByTaskID[completed.id])
+        #expect(row.status?.title == "Done")
+        #expect(row.status?.tone == .green)
     }
 
     @Test

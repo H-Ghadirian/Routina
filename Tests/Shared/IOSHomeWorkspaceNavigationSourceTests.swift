@@ -52,6 +52,9 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         let taskLadderView = try Self.sourceFile(
             "iOS/Screens/TaskRanking/TaskRankingIOSView.swift"
         )
+        let semanticRow = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskSemanticIOSRowLabel.swift"
+        )
         let backlogFeature = try Self.sourceFile(
             "SharedCore/Features/Home/BacklogFeature.swift"
         )
@@ -69,11 +72,16 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         #expect(backlogView.contains("ForEach(store.presentation.sections)"))
         #expect(backlogView.contains("ForEach(store.presentation.hiddenByFlagTasks)"))
         #expect(backlogView.contains(".customSectionsChanged("))
+        #expect(backlogView.contains("rowPresentationsByTaskID[task.id]"))
+        #expect(backlogView.contains("TaskSemanticIOSRowLabel("))
         #expect(backlogFeature.contains("BacklogTaskListPresentation.make("))
 
         #expect(taskLadderView.contains("ForEach(store.presentation.sections)"))
         #expect(taskLadderView.contains("ForEach(TaskRankingMetric.allCases)"))
         #expect(taskLadderView.contains("openInnerLadder(task.id)"))
+        #expect(taskLadderView.contains("presentation: metadata.appearance"))
+        #expect(taskLadderView.contains("presentation: match.appearance"))
+        #expect(semanticRow.contains("let presentation: TaskRowSemanticPresentation"))
         #expect(taskLadderFeature.contains("TaskRankingPresentation.make("))
     }
 

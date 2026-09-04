@@ -264,6 +264,8 @@ struct TaskRankingMacRow: View {
         switch tone {
         case .secondary: return .secondary
         case .blue: return .blue
+        case .green: return .green
+        case .indigo: return .indigo
         case .orange: return .orange
         case .red: return .red
         case .teal: return .teal

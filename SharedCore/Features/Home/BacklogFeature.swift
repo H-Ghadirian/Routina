@@ -14,6 +14,7 @@ struct BacklogFeature {
     @ObservableState
     struct State: Equatable {
         var tasks: [RoutineTask] = []
+        var completionDatesByTaskID: [UUID: Set<Date>] = [:]
         var customSections: [HomeCustomTaskSection] = []
         var flagRules: [RoutineFlagRule] = []
         var definedFlags: [String] = []
@@ -39,6 +40,7 @@ struct BacklogFeature {
         case automaticRefresh
         case tasksLoaded(
             [RoutineTask],
+            [UUID: Set<Date>],
             [HomeCustomTaskSection],
             [RoutineFlagRule],
             Set<UUID>,
@@ -110,6 +112,7 @@ struct BacklogFeature {
 
             case let .tasksLoaded(
                 tasks,
+                completionDatesByTaskID,
                 customSections,
                 flagRules,
                 fileAttachmentTaskIDs,
@@ -118,6 +121,7 @@ struct BacklogFeature {
             ):
                 state.isLoading = false
                 state.tasks = tasks
+                state.completionDatesByTaskID = completionDatesByTaskID
                 state.customSections = customSections
                 state.flagRules = RoutineFlagRules.sanitized(flagRules)
                 state.fileAttachmentTaskIDs = fileAttachmentTaskIDs
@@ -242,6 +246,7 @@ struct BacklogFeature {
             customSections: state.customSections,
             flagRules: state.flagRules,
             availableFlags: state.definedFlags,
+            completionDatesByTaskID: state.completionDatesByTaskID,
             filters: state.filters,
             fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
             searchText: state.searchText,
@@ -254,12 +259,18 @@ struct BacklogFeature {
         .run { @MainActor send in
             do {
                 let tasks = try modelContext().fetch(FetchDescriptor<RoutineTask>())
+                let logs = try modelContext().fetch(FetchDescriptor<RoutineLog>())
+                let completionDatesByTaskID = HomeTaskSupport.makeDoneStats(
+                    tasks: tasks,
+                    logs: logs
+                ).completedDatesByTaskID
                 let fileAttachmentTaskIDs = Set(
                     try modelContext().fetch(FetchDescriptor<RoutineAttachment>()).map(\.taskID)
                 )
                 send(
                     .tasksLoaded(
                         tasks,
+                        completionDatesByTaskID,
                         appSettingsClient.customTaskSections(),
                         appSettingsClient.flagRules(),
                         fileAttachmentTaskIDs,
