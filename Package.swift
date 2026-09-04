@@ -242,6 +242,7 @@ let package = Package(
                 "Features/Home/BacklogTaskListPresentation.swift",
                 "Features/Home/BacklogTaskRowPresentation.swift",
                 "Features/Home/TaskRankingFeature.swift",
+                "Features/Home/TaskRankingWorkspaceControlState.swift",
                 "Features/Home/TaskRankingPresentation.swift",
                 "Features/Home/TaskRankingRowPresentation.swift",
                 "Features/Home/HomeTaskDeletionSupport.swift",

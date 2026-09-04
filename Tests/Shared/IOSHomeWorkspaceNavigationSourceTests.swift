@@ -52,6 +52,9 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         let taskLadderView = try Self.sourceFile(
             "iOS/Screens/TaskRanking/TaskRankingIOSView.swift"
         )
+        let taskLadderControls = try Self.sourceFile(
+            "iOS/Screens/TaskRanking/TaskRankingIOSControlsView.swift"
+        )
         let semanticRow = try Self.sourceFile(
             "iOS/Screens/Shared/TaskSemanticIOSRowLabel.swift"
         )
@@ -77,12 +80,53 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         #expect(backlogFeature.contains("BacklogTaskListPresentation.make("))
 
         #expect(taskLadderView.contains("ForEach(store.presentation.sections)"))
-        #expect(taskLadderView.contains("ForEach(TaskRankingMetric.allCases)"))
+        #expect(taskLadderControls.contains("ForEach(TaskRankingMetric.allCases)"))
         #expect(taskLadderView.contains("openInnerLadder(task.id)"))
         #expect(taskLadderView.contains("presentation: metadata.appearance"))
         #expect(taskLadderView.contains("presentation: match.appearance"))
         #expect(semanticRow.contains("let presentation: TaskRowSemanticPresentation"))
         #expect(taskLadderFeature.contains("TaskRankingPresentation.make("))
+    }
+
+    @Test
+    func backlogAndTaskLadderUseOneScopeAwareWorkspaceControlsPattern() throws {
+        let backlogView = try Self.sourceFile("iOS/Screens/Backlog/BacklogIOSView.swift")
+        let backlogControls = try Self.sourceFile(
+            "iOS/Screens/Backlog/BacklogIOSControlsView.swift"
+        )
+        let backlogDetails = try Self.sourceFile(
+            "iOS/Screens/Backlog/BacklogIOSControlDetailView.swift"
+        )
+        let taskLadderView = try Self.sourceFile(
+            "iOS/Screens/TaskRanking/TaskRankingIOSView.swift"
+        )
+        let taskLadderControls = try Self.sourceFile(
+            "iOS/Screens/TaskRanking/TaskRankingIOSControlsView.swift"
+        )
+        let sharedButton = try Self.sourceFile(
+            "iOS/Screens/Shared/IOSWorkspaceControlsButton.swift"
+        )
+
+        #expect(backlogView.contains("IOSWorkspaceControlsButton("))
+        #expect(backlogView.contains("isCustomized: store.filters.hasNonDefaultOptions"))
+        #expect(backlogView.contains("BacklogIOSControlsView(store: store)"))
+        #expect(backlogControls.contains("case filter = \"Filter\""))
+        #expect(backlogControls.contains("case sort = \"Sort\""))
+        #expect(backlogControls.contains("store.filters.resettingFilters()"))
+        #expect(backlogControls.contains("store.filters.resettingSortOrder()"))
+        #expect(backlogDetails.contains("ForEach(BacklogDueDateFilter.allCases)"))
+        #expect(backlogDetails.contains("ForEach(BacklogSortOrder.allCases)"))
+
+        #expect(taskLadderView.contains("IOSWorkspaceControlsButton("))
+        #expect(taskLadderView.contains("TaskRankingIOSControlsView(store: store)"))
+        #expect(!taskLadderView.contains("private var controlsSection"))
+        #expect(taskLadderControls.contains("case view = \"View\""))
+        #expect(taskLadderControls.contains("case sort = \"Sort\""))
+        #expect(taskLadderControls.contains("store.send(.reversedMetricsChanged([]))"))
+
+        #expect(sharedButton.contains("isCustomized ? Color.accentColor : Color.primary"))
+        #expect(!backlogControls.contains("Appearance"))
+        #expect(!taskLadderControls.contains("Appearance"))
     }
 
     @Test

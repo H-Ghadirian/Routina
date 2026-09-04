@@ -274,9 +274,7 @@ struct TaskRankingMacControlsDetailView: View {
     }
 
     private var hasNonDefaultControls: Bool {
-        store.metric != .pressure
-            || store.valueMode != .base
-            || !store.reversedMetrics.isEmpty
+        store.hasNonDefaultWorkspaceControls
             || taskRowVisibility != .taskLadderDefaultValue
     }
 

@@ -4,6 +4,8 @@ import SwiftUI
 struct BacklogIOSView: View {
     let store: StoreOf<BacklogFeature>
 
+    @State private var isControlsPresented = false
+
     @AppStorage(
         UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
         store: SharedDefaults.app
@@ -48,7 +50,14 @@ struct BacklogIOSView: View {
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: searchTextBinding, prompt: "Search Backlog")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                IOSWorkspaceControlsButton(
+                    title: "Backlog Controls",
+                    isCustomized: store.filters.hasNonDefaultOptions
+                ) {
+                    isControlsPresented = true
+                }
+
                 Button {
                     store.send(.refresh)
                 } label: {
@@ -56,6 +65,9 @@ struct BacklogIOSView: View {
                 }
                 .disabled(store.isLoading)
             }
+        }
+        .sheet(isPresented: $isControlsPresented) {
+            BacklogIOSControlsView(store: store)
         }
         .onAppear {
             store.send(.onAppear)

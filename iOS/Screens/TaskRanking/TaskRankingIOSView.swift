@@ -6,6 +6,7 @@ struct TaskRankingIOSView: View {
     private let isInnerLadderDestination: Bool
 
     @State private var innerLadderNodeID: UUID?
+    @State private var isControlsPresented = false
 
     @AppStorage(
         UserDefaultStringValueKey.appSettingMacTaskRankingReversedMetrics.rawValue,
@@ -30,7 +31,7 @@ struct TaskRankingIOSView: View {
 
     var body: some View {
         List {
-            controlsSection
+            scopeNavigationSection
 
             if isSearching {
                 searchSections
@@ -87,13 +88,11 @@ struct TaskRankingIOSView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button {
-                    store.send(.directionToggled)
-                } label: {
-                    Label(
-                        store.metric.directionTitle(isReversed: store.isReversed),
-                        systemImage: "arrow.up.arrow.down"
-                    )
+                IOSWorkspaceControlsButton(
+                    title: "Task Ladder Controls",
+                    isCustomized: hasCustomizedControls
+                ) {
+                    isControlsPresented = true
                 }
 
                 Button {
@@ -103,6 +102,9 @@ struct TaskRankingIOSView: View {
                 }
                 .disabled(store.isLoading)
             }
+        }
+        .sheet(isPresented: $isControlsPresented) {
+            TaskRankingIOSControlsView(store: store)
         }
         .onAppear {
             store.send(
@@ -147,30 +149,10 @@ struct TaskRankingIOSView: View {
         }
     }
 
-    private var controlsSection: some View {
-        Section {
-            Picker("Rank by", selection: Binding(
-                get: { store.metric },
-                set: { store.send(.metricChanged($0)) }
-            )) {
-                ForEach(TaskRankingMetric.allCases) { metric in
-                    Text(metric.title).tag(metric)
-                }
-            }
-
-            if store.metric.supportsTemporalWeight {
-                Picker("Values", selection: Binding(
-                    get: { store.valueMode },
-                    set: { store.send(.valueModeChanged($0)) }
-                )) {
-                    ForEach(TaskRankingValueMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            if !store.scopePath.isEmpty && !isInnerLadderDestination {
+    @ViewBuilder
+    private var scopeNavigationSection: some View {
+        if !store.scopePath.isEmpty && !isInnerLadderDestination {
+            Section {
                 Button {
                     store.send(.scopeBackTapped)
                 } label: {
@@ -179,12 +161,11 @@ struct TaskRankingIOSView: View {
                         .contentShape(Rectangle())
                 }
             }
-
-            LabeledContent("Order") {
-                Text(store.metric.directionTitle(isReversed: store.isReversed))
-                    .foregroundStyle(.secondary)
-            }
         }
+    }
+
+    private var hasCustomizedControls: Bool {
+        store.hasNonDefaultWorkspaceControls
     }
 
     @ViewBuilder
