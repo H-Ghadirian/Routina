@@ -26,7 +26,7 @@ struct StatsCreatedTasksChartSection: View {
 
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
-                title: "Tasks created per day",
+                title: createdTasksPresentation.chartTitle,
                 subtitle: createdTasksPresentation.chartSubtitle(
                     totalCount: metrics.createdTotalCount,
                     activeDayCount: metrics.createdActiveDayCount

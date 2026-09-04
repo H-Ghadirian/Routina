@@ -46,6 +46,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0706](../decisions/0706-gate-disabled-emotions-at-release-presentation-boundaries.md)
 - [0710](../decisions/0710-gate-disabled-events-across-ios-release-surfaces.md)
 - [0711](../decisions/0711-gate-disabled-events-across-mac-release-surfaces.md)
+- [0730](../decisions/0730-name-the-created-task-chart-for-its-time-range.md)
 
 ## Current Contract
 
@@ -62,7 +63,8 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - On macOS, clicking anywhere on a task-backed Stats rectangle opens an anchored evidence popover; Return and Space do the same when the rectangle has keyboard focus. This includes the activity overview; Daily average and Best day; Focus time and Focus per day; Done, Canceled, Missed, Assumed done, and Assumed time; and Repeating-task, open One-time-task, Active-item, and Archived-item summaries. Non-task-backed rectangles remain informational only.
 - Evidence popovers use the same active task-type, matrix, query, Tag, Flag, and inclusive date filters as their source rectangle. Recorded and assumed outcomes group repeated occurrences under one task row with an explicit multiplier. Assumed time lists positive estimated-time contributors, while Focus lists aggregated task and non-task focus sources so the shown duration remains explainable. General inventory lists use current task state; Best day narrows its evidence to the displayed peak date. These lists are informational and do not mutate or navigate to tasks.
 - Stats refreshes cache the matching task IDs beside the metrics. The Mac evidence resolver runs only after a deliberate rectangle action and its anchored popover uses a lazy bounded list, so no additional whole-history derivation enters the scrolling dashboard render path.
-- Single-day ranges, whether selected through Today or a one-day custom range, omit multi-day comparisons such as daily averages, best-day callouts, active-day badges, trend charts, and the `Tasks created per day` chart.
+- Single-day ranges, whether selected through Today or a one-day custom range, omit multi-day comparisons such as daily averages, best-day callouts, active-day badges, trend charts, and the created-task chart.
+- The created-task chart title follows the selected preset as `Tasks created per day`, `per week`, `per month`, or `per year`. An arbitrary Custom range remains `per day`, matching its date-based chart presentation.
 - Dashboard reports appear only when their backing metric has data. Saved order and hidden-item preferences are preserved for when data appears later.
 - When the dashboard has no reports and no active filters, its guidance names Sleep only while both the Away parent experiment and the Sleep experiment are enabled. With Sleep unavailable, the empty state mentions tasks, Focus, and other logged activity without advertising Sleep. Filtered empty states keep their range-and-filter recovery guidance instead.
 - iOS Stats omits toolbar controls that cannot affect the current presentation. Cards/Compact requires a visible summary item; Edit requires at least one reportable dashboard item, including a hidden one that can be restored; and Filter requires task data or an active sheet filter that can be cleared. A non-default date range alone does not keep Filter visible because the range selector remains directly available. If reportable items disappear during editing, Stats exits edit mode and dismisses Add.

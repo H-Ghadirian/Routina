@@ -1,6 +1,23 @@
+import Foundation
+
 struct StatsCreatedTasksPresentation {
     let taskTypeFilter: StatsTaskTypeFilter
     let selectedRange: DoneChartRange
+
+    var chartTitle: String {
+        switch selectedRange.kind {
+        case .today:
+            return String(localized: "Tasks created per day")
+        case .week:
+            return String(localized: "Tasks created per week")
+        case .month:
+            return String(localized: "Tasks created per month")
+        case .year:
+            return String(localized: "Tasks created per year")
+        case .custom:
+            return String(localized: "Tasks created per day")
+        }
+    }
 
     func chartSubtitle(totalCount: Int, activeDayCount: Int) -> String {
         if totalCount == 0 {

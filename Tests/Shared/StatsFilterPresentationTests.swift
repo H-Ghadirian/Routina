@@ -22,6 +22,36 @@ struct StatsFilterPresentationTests {
     }
 
     @Test
+    func createdTaskChartTitleFollowsPresetRange() {
+        #expect(
+            StatsCreatedTasksPresentation(taskTypeFilter: .all, selectedRange: .today).chartTitle
+                == "Tasks created per day"
+        )
+        #expect(
+            StatsCreatedTasksPresentation(taskTypeFilter: .all, selectedRange: .week).chartTitle
+                == "Tasks created per week"
+        )
+        #expect(
+            StatsCreatedTasksPresentation(taskTypeFilter: .all, selectedRange: .month).chartTitle
+                == "Tasks created per month"
+        )
+        #expect(
+            StatsCreatedTasksPresentation(taskTypeFilter: .all, selectedRange: .year).chartTitle
+                == "Tasks created per year"
+        )
+    }
+
+    @Test
+    func createdTaskChartTitleKeepsCustomRangesDayBased() {
+        let range = DoneChartRange.custom(from: .distantPast, through: .now)
+
+        #expect(
+            StatsCreatedTasksPresentation(taskTypeFilter: .all, selectedRange: range).chartTitle
+                == "Tasks created per day"
+        )
+    }
+
+    @Test
     func activeSheetFilterCountTracksEveryStatsFilterBucket() {
         let presentation = makePresentation(
             taskTypeFilter: .todos,
