@@ -220,12 +220,15 @@ extension DayPlanFocusSessionPlannerSync {
     @discardableResult
     static func removeFocusBlock(
         for session: FocusSession,
+        additionalBlockIDs: Set<UUID> = [],
         context: ModelContext
     ) -> Bool {
         do {
             let records = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
                 .filter { record in
-                    record.id == session.id || isFocusSegmentBlock(record.detachedBlock, for: session)
+                    additionalBlockIDs.contains(record.id)
+                        || record.id == session.id
+                        || isFocusSegmentBlock(record.detachedBlock, for: session)
                 }
             guard !records.isEmpty else {
                 return false

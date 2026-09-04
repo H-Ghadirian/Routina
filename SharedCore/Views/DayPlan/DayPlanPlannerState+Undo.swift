@@ -63,6 +63,12 @@ extension DayPlanPlannerState {
         dayBlocks.append(resizedBlock)
         let sortedBlocks = sortedDayBlocks(dayBlocks)
         weekBlocksByDayKey[dayKey] = sortedBlocks
+        persistCompletedFocusResizeProgressIfNeeded(
+            resizedBlock,
+            on: date,
+            calendar: calendar,
+            context: context
+        )
         DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey, context: context)
 
         selectedDate = date
@@ -86,17 +92,20 @@ extension DayPlanPlannerState {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
         let focusSession = DayPlanFocusSessionPlannerSync.completedFocusSession(
             matching: block,
-            in: focusSessions
+            in: focusSessions,
+            calendar: calendar,
+            context: context
         )
+        let persistedFocusBlocks =
+            focusSession.map {
+                DayPlanFocusSessionPlannerSync.persistedFocusBlocks(
+                    for: $0,
+                    context: context
+                )
+            } ?? []
         let affectedDayKeys = orderedUniqueDayKeys(
             [dayKey]
-                + (focusSession.map {
-                    DayPlanFocusSessionPlannerSync.persistedFocusBlocks(
-                        for: $0,
-                        context: context
-                    )
-                    .map(\.dayKey)
-                } ?? [])
+                + persistedFocusBlocks.map(\.dayKey)
         )
         let beforeSnapshots = snapshots(forDayKeys: affectedDayKeys, context: context)
         guard
@@ -109,7 +118,15 @@ extension DayPlanPlannerState {
                 focusSession: focusSession.map(DayPlanFocusSessionUndoSnapshot.init(session:))
             )
         else { return }
-        pendingResizeUndo = DayPlanPendingResizeUndo(blockID: block.id, beforeSide: beforeSide)
+        let focusBlockIDs =
+            focusSession == nil
+            ? []
+            : Set(persistedFocusBlocks.map(\.id)).union([block.id])
+        pendingResizeUndo = DayPlanPendingResizeUndo(
+            blockID: block.id,
+            beforeSide: beforeSide,
+            focusBlockIDs: focusBlockIDs
+        )
     }
 
     func endResizeBlock(
@@ -204,7 +221,8 @@ extension DayPlanPlannerState {
                 titleSnapshot: resizedBlock.titleSnapshot,
                 emojiSnapshot: resizedBlock.emojiSnapshot,
                 calendar: calendar,
-                context: context
+                context: context,
+                replacingPlannerBlockIDs: pendingResizeUndo.focusBlockIDs
             )
         else { return nil }
 
@@ -212,6 +230,28 @@ extension DayPlanPlannerState {
             session: session,
             resizedDate: resizedDate,
             updatedBlock: updatedBlock
+        )
+    }
+
+    private func persistCompletedFocusResizeProgressIfNeeded(
+        _ resizedBlock: DayPlanBlock,
+        on date: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        guard let focusSessionSnapshot = pendingResizeUndo?.beforeSide.focusSession,
+            let session = focusSession(withID: focusSessionSnapshot.id, context: context),
+            let resizedStart = calendar.date(
+                byAdding: .minute,
+                value: resizedBlock.startMinute,
+                to: calendar.startOfDay(for: date)
+            )
+        else { return }
+
+        _ = DayPlanFocusSessionPlannerSync.applyCompletedFocusTiming(
+            to: session,
+            startedAt: resizedStart,
+            durationMinutes: resizedBlock.durationMinutes
         )
     }
 

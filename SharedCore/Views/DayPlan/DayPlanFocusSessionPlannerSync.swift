@@ -19,6 +19,53 @@ enum DayPlanFocusSessionPlannerSync {
         }
     }
 
+    static func completedFocusSession(
+        matching block: DayPlanBlock,
+        in sessions: [FocusSession],
+        calendar: Calendar,
+        context: ModelContext
+    ) -> FocusSession? {
+        if let identifiedSession = completedFocusSession(matching: block, in: sessions) {
+            return identifiedSession
+        }
+
+        let taskID = block.taskID
+        let persistedSessions: [FocusSession]
+        do {
+            persistedSessions = try context.fetch(
+                FetchDescriptor<FocusSession>(
+                    predicate: #Predicate<FocusSession> { session in
+                        session.taskID == taskID
+                    }
+                )
+            )
+        } catch {
+            NSLog("Failed to load Focus sessions for Planner resize: \(error.localizedDescription)")
+            persistedSessions = []
+        }
+
+        var candidatesByID = Dictionary(uniqueKeysWithValues: sessions.map { ($0.id, $0) })
+        for session in persistedSessions {
+            candidatesByID[session.id] = session
+        }
+        let candidates = Array(candidatesByID.values)
+
+        if let identifiedSession = completedFocusSession(matching: block, in: candidates) {
+            return identifiedSession
+        }
+
+        let geometryMatches = candidates.filter { session in
+            completedFocusEvidenceMatches(
+                block,
+                session: session,
+                calendar: calendar,
+                context: context
+            )
+        }
+        guard geometryMatches.count == 1 else { return nil }
+        return geometryMatches[0]
+    }
+
     static func completedTagFocusSession(
         matching block: DayPlanBlock,
         in sessions: [FocusSession]
@@ -59,7 +106,8 @@ enum DayPlanFocusSessionPlannerSync {
         titleSnapshot: String,
         emojiSnapshot: String?,
         calendar: Calendar,
-        context: ModelContext
+        context: ModelContext,
+        replacingPlannerBlockIDs: Set<UUID> = []
     ) -> DayPlanBlock? {
         guard session.isTaskFocus || session.isTagFocus,
             session.completedAt != nil,
@@ -69,14 +117,20 @@ enum DayPlanFocusSessionPlannerSync {
         }
 
         let clampedDurationMinutes = min(max(durationMinutes, 1), DayPlanBlock.minutesPerDay)
-        _ = removeFocusBlock(for: session, context: context)
+        _ = removeFocusBlock(
+            for: session,
+            additionalBlockIDs: replacingPlannerBlockIDs,
+            context: context
+        )
 
+        guard
+            applyCompletedFocusTiming(
+                to: session,
+                startedAt: startedAt,
+                durationMinutes: clampedDurationMinutes
+            )
+        else { return nil }
         let durationSeconds = TimeInterval(clampedDurationMinutes * 60)
-        session.startedAt = startedAt
-        session.completedAt = startedAt.addingTimeInterval(durationSeconds)
-        session.abandonedAt = nil
-        session.plannedDurationSeconds = durationSeconds
-        session.clearPauseTracking()
         let title = session.focusTagTitle ?? titleSnapshot
         DeviceActivityRecorder.recordAction(
             .updated,
@@ -99,6 +153,29 @@ enum DayPlanFocusSessionPlannerSync {
         )
         _ = upsertBlocks(blocks, context: context)
         return blocks.first
+    }
+
+    @discardableResult
+    static func applyCompletedFocusTiming(
+        to session: FocusSession,
+        startedAt: Date,
+        durationMinutes: Int
+    ) -> Bool {
+        guard session.isTaskFocus || session.isTagFocus,
+            session.completedAt != nil,
+            session.abandonedAt == nil
+        else {
+            return false
+        }
+
+        let clampedDurationMinutes = min(max(durationMinutes, 1), DayPlanBlock.minutesPerDay)
+        let durationSeconds = TimeInterval(clampedDurationMinutes * 60)
+        session.startedAt = startedAt
+        session.completedAt = startedAt.addingTimeInterval(durationSeconds)
+        session.abandonedAt = nil
+        session.plannedDurationSeconds = durationSeconds
+        session.clearPauseTracking()
+        return true
     }
 
     @MainActor
@@ -226,6 +303,59 @@ enum DayPlanFocusSessionPlannerSync {
                 sessionID: session.id,
                 segmentStartedAt: block.createdAt
             )
+    }
+
+    private static func completedFocusEvidenceMatches(
+        _ block: DayPlanBlock,
+        session: FocusSession,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> Bool {
+        guard session.isTaskFocus || session.isTagFocus,
+            session.completedAt != nil,
+            session.abandonedAt == nil,
+            session.taskID == block.taskID,
+            let startedAt = session.startedAt
+        else {
+            return false
+        }
+
+        let intervals: [(startedAt: Date, durationSeconds: TimeInterval)]
+        if session.plannedDurationSeconds > 0 {
+            intervals = [(startedAt, session.plannedDurationSeconds)]
+        } else {
+            let actions = focusPauseResumeActionLogs(for: session.id, context: context)
+            if actions.isEmpty {
+                intervals = [(startedAt, max(60, session.actualDurationSeconds))]
+            } else {
+                intervals = focusSegments(
+                    startedAt: startedAt,
+                    completedAt: session.completedAt,
+                    pausedAt: session.pausedAt,
+                    actions: actions
+                ).map { interval in
+                    (interval.startedAt, interval.durationSeconds)
+                }
+            }
+        }
+
+        return intervals.contains { interval in
+            focusSegmentBlocks(
+                session: session,
+                taskID: session.taskID,
+                title: block.titleSnapshot,
+                emoji: block.emojiSnapshot,
+                segmentStartedAt: interval.startedAt,
+                durationSeconds: interval.durationSeconds,
+                calendar: calendar,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            ).contains { expectedBlock in
+                expectedBlock.dayKey == block.dayKey
+                    && expectedBlock.startMinute == block.startMinute
+                    && expectedBlock.durationMinutes == block.durationMinutes
+                    && abs(expectedBlock.createdAt.timeIntervalSince(block.createdAt)) < 1
+            }
+        }
     }
 
     private static func correctedCompletedSegmentDurations(

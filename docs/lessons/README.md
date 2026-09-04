@@ -44,6 +44,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0298 — Place or clip every custom-layout subview](0298-place-or-clip-every-custom-layout-subview.md)
 - [0297 — Do not compress distinct row labels into ellipses](0297-do-not-compress-distinct-row-labels-into-ellipses.md)
 - [0296 — Keep selection-scoped actions primary](0296-keep-selection-scoped-actions-primary.md)
+- [0295 — Do not defer durable drag state to mouse-up](0295-do-not-defer-durable-drag-state-to-mouse-up.md)
 - [0294 — Index cross-collection lookups before scanning](0294-index-cross-collection-lookups-before-scanning.md)
 - [0293 — Preserve closure-backed sections during extraction](0293-preserve-closure-backed-sections-during-extraction.md)
 - [0292 — Cache toolbar counts with the display snapshot](0292-cache-toolbar-counts-with-the-display-snapshot.md)

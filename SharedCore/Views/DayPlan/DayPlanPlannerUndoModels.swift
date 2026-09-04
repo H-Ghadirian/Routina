@@ -51,6 +51,7 @@ struct DayPlanPlannerUndoChange: Equatable {
 struct DayPlanPendingResizeUndo {
     var blockID: UUID
     var beforeSide: DayPlanPlannerUndoSide
+    var focusBlockIDs: Set<UUID> = []
 }
 
 @MainActor

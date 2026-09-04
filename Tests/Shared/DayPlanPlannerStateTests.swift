@@ -1101,6 +1101,224 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func resizingCompletedTaskFocusPersistsBeforeGestureEndWhenPlannerSnapshotIsStale() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T01:15:00Z"))
+        let originalCompletedAt = try #require(date("2026-05-07T08:15:00Z"))
+        let task = RoutineTask(
+            name: "Replace product slider",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            taskID: task.id,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: originalCompletedAt
+        )
+        context.insert(task)
+        context.insert(session)
+        let originalBlock = try #require(
+            DayPlanFocusSessionPlannerSync.saveCompletedFocusBlock(
+                for: task,
+                session: session,
+                calendar: calendar,
+                context: context
+            )
+        )
+        let planner = DayPlanPlannerState(selectedDate: startedAt)
+        planner.loadBlocks(calendar: calendar, context: context)
+
+        planner.beginResizeBlock(
+            originalBlock,
+            on: startedAt,
+            calendar: calendar,
+            context: context,
+            focusSessions: []
+        )
+        let didResize = planner.resizeBlock(
+            originalBlock.id,
+            on: startedAt,
+            startMinute: 75,
+            durationMinutes: 150,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(didResize)
+
+        let verificationContext = ModelContext(context.container)
+        let persistedSessions = try verificationContext.fetch(FetchDescriptor<FocusSession>())
+        let persistedSession = try #require(persistedSessions.first { $0.id == session.id })
+        let persistedBlocks = DayPlanStorage.loadBlocks(
+            for: startedAt,
+            calendar: calendar,
+            context: verificationContext
+        )
+
+        #expect(persistedSession.startedAt == startedAt)
+        #expect(persistedSession.completedAt == startedAt.addingTimeInterval(150 * 60))
+        #expect(persistedSession.plannedDurationSeconds == 150 * 60)
+        #expect(persistedSession.actualDurationSeconds == 150 * 60)
+        #expect(persistedBlocks.first { $0.id == originalBlock.id }?.durationMinutes == 150)
+        #expect(
+            FocusSessionCardSnapshot(taskID: task.id, sessions: persistedSessions).totalCompletedSeconds
+                == 150 * 60
+        )
+    }
+
+    @Test
+    func resizingLegacyFocusEvidenceRecoversItsSessionAndCanonicalizesPersistence() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T01:15:00Z"))
+        let originalCompletedAt = try #require(date("2026-05-07T08:15:00Z"))
+        let task = RoutineTask(
+            name: "Replace product slider",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            taskID: task.id,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: originalCompletedAt
+        )
+        let legacyBlock = DayPlanBlock(
+            id: UUID(),
+            taskID: task.id,
+            dayKey: DayPlanStorage.dayKey(for: startedAt, calendar: calendar),
+            startMinute: 75,
+            durationMinutes: 7 * 60,
+            titleSnapshot: task.name ?? "Untitled task",
+            createdAt: startedAt,
+            updatedAt: originalCompletedAt,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        context.insert(task)
+        context.insert(session)
+        DayPlanStorage.saveBlocks(
+            [legacyBlock],
+            for: startedAt,
+            calendar: calendar,
+            context: context
+        )
+        let planner = DayPlanPlannerState(selectedDate: startedAt)
+        planner.loadBlocks(calendar: calendar, context: context)
+
+        planner.beginResizeBlock(
+            legacyBlock,
+            on: startedAt,
+            calendar: calendar,
+            context: context,
+            focusSessions: [session]
+        )
+        let didResize = planner.resizeBlock(
+            legacyBlock.id,
+            on: startedAt,
+            startMinute: 75,
+            durationMinutes: 150,
+            calendar: calendar,
+            context: context
+        )
+        planner.endResizeBlock(legacyBlock.id, calendar: calendar, context: context)
+
+        #expect(didResize)
+
+        let verificationContext = ModelContext(context.container)
+        let persistedSessions = try verificationContext.fetch(FetchDescriptor<FocusSession>())
+        let persistedSession = try #require(persistedSessions.first { $0.id == session.id })
+        let persistedBlocks = DayPlanStorage.loadBlocks(
+            for: startedAt,
+            calendar: calendar,
+            context: verificationContext
+        )
+
+        #expect(persistedSession.completedAt == startedAt.addingTimeInterval(150 * 60))
+        #expect(persistedSession.actualDurationSeconds == 150 * 60)
+        #expect(persistedBlocks.count == 1)
+        #expect(persistedBlocks.first?.id == session.id)
+        #expect(persistedBlocks.first?.durationMinutes == 150)
+
+        let recreatedPlanner = DayPlanPlannerState(selectedDate: startedAt)
+        recreatedPlanner.loadBlocks(calendar: calendar, context: verificationContext)
+        #expect(recreatedPlanner.blocks.first?.id == session.id)
+        #expect(recreatedPlanner.blocks.first?.durationMinutes == 150)
+    }
+
+    @Test
+    func resizingCoincidentOrdinaryTaskBlockDoesNotRewriteFocusHistory() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T01:15:00Z"))
+        let originalCompletedAt = try #require(date("2026-05-07T08:15:00Z"))
+        let task = RoutineTask(
+            name: "Replace product slider",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            taskID: task.id,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: originalCompletedAt
+        )
+        let ordinaryBlock = DayPlanBlock(
+            id: UUID(),
+            taskID: task.id,
+            dayKey: DayPlanStorage.dayKey(for: startedAt, calendar: calendar),
+            startMinute: 75,
+            durationMinutes: 7 * 60,
+            titleSnapshot: task.name ?? "Untitled task",
+            createdAt: startedAt.addingTimeInterval(-24 * 60 * 60),
+            updatedAt: startedAt.addingTimeInterval(-24 * 60 * 60)
+        )
+        context.insert(task)
+        context.insert(session)
+        DayPlanStorage.saveBlocks(
+            [ordinaryBlock],
+            for: startedAt,
+            calendar: calendar,
+            context: context
+        )
+        let planner = DayPlanPlannerState(selectedDate: startedAt)
+        planner.loadBlocks(calendar: calendar, context: context)
+
+        planner.beginResizeBlock(
+            ordinaryBlock,
+            on: startedAt,
+            calendar: calendar,
+            context: context,
+            focusSessions: [session]
+        )
+        let didResize = planner.resizeBlock(
+            ordinaryBlock.id,
+            on: startedAt,
+            startMinute: 75,
+            durationMinutes: 150,
+            calendar: calendar,
+            context: context
+        )
+        planner.endResizeBlock(ordinaryBlock.id, calendar: calendar, context: context)
+
+        #expect(didResize)
+
+        let verificationContext = ModelContext(context.container)
+        let persistedSessions = try verificationContext.fetch(FetchDescriptor<FocusSession>())
+        let persistedSession = try #require(persistedSessions.first { $0.id == session.id })
+        let persistedBlocks = DayPlanStorage.loadBlocks(
+            for: startedAt,
+            calendar: calendar,
+            context: verificationContext
+        )
+
+        #expect(persistedSession.plannedDurationSeconds == 0)
+        #expect(persistedSession.completedAt == originalCompletedAt)
+        #expect(persistedSession.actualDurationSeconds == 7 * 60 * 60)
+        #expect(persistedBlocks.count == 1)
+        #expect(persistedBlocks.first?.id == ordinaryBlock.id)
+        #expect(persistedBlocks.first?.durationMinutes == 150)
+    }
+
+    @Test
     func resizingPlannerBlockKeepsHandlesOutsideChangingCardContent() throws {
         let calendarSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
