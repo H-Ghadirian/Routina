@@ -2982,16 +2982,21 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func taskRowVisibilityRoundTripsOptInMultilineTitles() {
+    func taskRowVisibilityRoundTripsIndependentMultilineChoices() {
         let visibility = HomeTaskRowVisibility(
             hiddenFields: [.tags, .icon],
-            allowsMultilineTitles: true
+            allowsMultilineTitles: true,
+            allowsMultilineDetails: true
         )
 
-        #expect(visibility.storageRawValue == "icon,tags,multilineTitles")
+        #expect(visibility.storageRawValue == "icon,tags,multilineTitles,multilineDetails")
         #expect(HomeTaskRowVisibility(storageRawValue: visibility.storageRawValue) == visibility)
         #expect(!HomeTaskRowVisibility.defaultValue.allowsMultilineTitles)
+        #expect(!HomeTaskRowVisibility.defaultValue.allowsMultilineDetails)
         #expect(visibility.setting(.tags, visible: true).allowsMultilineTitles)
+        #expect(visibility.setting(.tags, visible: true).allowsMultilineDetails)
+        #expect(visibility.settingMultilineTitles(false).allowsMultilineDetails)
+        #expect(visibility.settingMultilineDetails(false).allowsMultilineTitles)
     }
 
     @Test

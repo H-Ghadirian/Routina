@@ -76,12 +76,16 @@ extension HomeTCAView {
             rowVisibility.shows(.statusBadge)
             ? taskListStatusBadgeStyle(for: task, metadataPresenter: metadataPresenter)
             : nil
+        let secondaryLabels = taskListRowLabelItems(
+            for: task,
+            showsTags: rowVisibility.shows(.tags),
+            showsFlags: rowVisibility.shows(.flags),
+            showsGoals: isGoalsTabEnabled && rowVisibility.shows(.goals),
+            showsPlannedTodayLabel: showsPlannedTodayLabel
+        )
         let showsSecondaryLabels =
             statusBadgeStyle != nil
-            || showsPlannedTodayLabel
-            || rowVisibility.shows(.tags) && !task.tags.isEmpty
-            || rowVisibility.shows(.flags) && !task.flags.isEmpty
-            || isGoalsTabEnabled && rowVisibility.shows(.goals) && !task.goalTitles.isEmpty
+            || !secondaryLabels.isEmpty
 
         return HStack(alignment: .top, spacing: 10) {
             if rowVisibility.shows(.icon) || rowVisibility.shows(.rowNumber) {
@@ -120,21 +124,12 @@ extension HomeTCAView {
                 }
 
                 if showsSecondaryLabels {
-                    HStack(alignment: .center, spacing: 6) {
-                        taskListRowLabels(
-                            for: task,
-                            showsTags: rowVisibility.shows(.tags),
-                            showsFlags: rowVisibility.shows(.flags),
-                            showsGoals: isGoalsTabEnabled && rowVisibility.shows(.goals),
-                            showsPlannedTodayLabel: showsPlannedTodayLabel
-                        )
-
-                        Spacer(minLength: 6)
-
-                        if let statusBadgeStyle {
-                            HomeStatusBadgeView(style: statusBadgeStyle)
-                        }
-                    }
+                    HomeMacTaskRowSecondaryLabels(
+                        labels: secondaryLabels,
+                        statusBadgeStyle: statusBadgeStyle,
+                        allowsMultilineDetails: rowVisibility.allowsMultilineDetails,
+                        tagTint: tagTint(for:)
+                    )
                 }
 
                 if let metadataText {
@@ -238,83 +233,27 @@ extension HomeTCAView {
         return .secondary
     }
 
-    private func sidebarTagChip(_ tag: String) -> some View {
-        let tint = tagTint(for: tag)
-
-        return Text("#\(tag)")
-            .font(.caption2.weight(.semibold))
-            .foregroundColor(tint)
-            .lineLimit(1)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .routinaGlassPill(tint: tint, tintOpacity: 0.14)
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(tint.opacity(0.28), lineWidth: 0.5)
-            )
-    }
-
-    private func sidebarFlagChip(_ flag: String) -> some View {
-        Label(flag, systemImage: "flag.fill")
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(.orange)
-            .lineLimit(1)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .routinaGlassPill(tint: .orange, tintOpacity: 0.14)
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(Color.orange.opacity(0.28), lineWidth: 0.5)
-            )
-    }
-
-    private func taskListRowLabels(
+    private func taskListRowLabelItems(
         for task: HomeFeature.RoutineDisplay,
         showsTags: Bool,
         showsFlags: Bool,
         showsGoals: Bool,
         showsPlannedTodayLabel: Bool
-    ) -> some View {
-        HStack(spacing: 6) {
-            if showsPlannedTodayLabel {
-                Label("Planned today", systemImage: "calendar")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14)
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(Color.accentColor.opacity(0.30), lineWidth: 0.5)
-                    )
-                    .accessibilityLabel("Planned for today")
-            }
-
-            if showsTags {
-                ForEach(task.tags, id: \.self) { tag in
-                    sidebarTagChip(tag)
-                }
-            }
-
-            if showsFlags {
-                ForEach(task.flags, id: \.self) { flag in
-                    sidebarFlagChip(flag)
-                }
-            }
-
-            if showsGoals {
-                ForEach(task.goalTitles, id: \.self) { goal in
-                    Label(goal, systemImage: "target")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
+    ) -> [HomeMacTaskRowSecondaryLabel] {
+        var labels: [HomeMacTaskRowSecondaryLabel] = []
+        if showsPlannedTodayLabel {
+            labels.append(.plannedToday)
         }
-        .lineLimit(1)
-        .frame(minHeight: 20, alignment: .leading)
+        if showsTags {
+            labels.append(contentsOf: task.tags.map(HomeMacTaskRowSecondaryLabel.tag))
+        }
+        if showsFlags {
+            labels.append(contentsOf: task.flags.map(HomeMacTaskRowSecondaryLabel.flag))
+        }
+        if showsGoals {
+            labels.append(contentsOf: task.goalTitles.map(HomeMacTaskRowSecondaryLabel.goal))
+        }
+        return labels
     }
 
     func macTaskSourceList(

@@ -1352,6 +1352,9 @@ extension HomeTCAView {
             },
             onTaskRowMultilineTitlesChanged: { isEnabled in
                 settingsStore.send(.taskRowMultilineTitlesChanged(isEnabled))
+            },
+            onTaskRowMultilineDetailsChanged: { isEnabled in
+                settingsStore.send(.taskRowMultilineDetailsChanged(isEnabled))
             }
         ) {
             tagFilterBar

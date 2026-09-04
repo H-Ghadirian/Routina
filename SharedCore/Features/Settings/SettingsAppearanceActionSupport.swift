@@ -60,6 +60,19 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func taskRowMultilineDetailsChanged(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        SettingsAppearanceEditor.updateTaskRowMultilineDetails(
+            isEnabled,
+            state: &state
+        )
+        appSettingsClient.setTaskRowVisibility(state.taskRowVisibility)
+        return .none
+    }
+
     static func timelineRowFieldVisibilityChanged(
         _ field: HomeTimelineRowField,
         isVisible: Bool,

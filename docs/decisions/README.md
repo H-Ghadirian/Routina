@@ -20,6 +20,7 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0731](0731-let-mac-task-row-details-wrap.md) refines [0038](0038-configure-home-task-row-fields.md), [0254](0254-move-mac-task-row-appearance-to-home-filter-detail.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md), and [0663](0663-allow-optional-multiline-mac-task-titles.md):** Mac Main Task List appearance adds independent Multiline Details; expanded rows flow every enabled secondary label, while compact rows keep complete labels and summarize overflow with an accessible `+N more` chip.
 - **[0730](0730-name-the-created-task-chart-for-its-time-range.md) refines [0415](0415-support-custom-stats-date-ranges.md) and [0668](0668-separate-general-stats-and-standardize-task-type-language.md):** the created-task chart heading follows the selected Day, Week, Month, or Year preset, while arbitrary Custom ranges retain their day-based chart label.
 - **[0729](0729-plan-backlog-tasks-from-their-context-menu.md) refines [0200](0200-support-task-planned-dates.md), [0363](0363-gate-mac-plan-tomorrow-menu-item.md), and [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md):** eligible Mac Backlog rows offer the Main Task List's Plan to do choices while preserving their Backlog path and the existing planning semantics.
 - **[0728](0728-scope-mac-backlog-reset-to-each-control-tab.md) revises [0721](0721-customize-mac-backlog-row-appearance.md) and refines [0727](0727-move-mac-backlog-status-out-of-the-list-header.md):** Backlog controls remove their repeated inner title and subtitle, and Filter, Sort, and Appearance each reset only their own state while preserving the other tabs.
@@ -851,6 +852,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0731](0731-let-mac-task-row-details-wrap.md) | Let Mac Task-Row Details Wrap | Accepted | 2026-09-04 |
 | [0730](0730-name-the-created-task-chart-for-its-time-range.md) | Name the Created-Task Chart for Its Time Range | Accepted | 2026-09-04 |
 | [0729](0729-plan-backlog-tasks-from-their-context-menu.md) | Plan Backlog Tasks From Their Context Menu | Accepted | 2026-09-04 |
 | [0728](0728-scope-mac-backlog-reset-to-each-control-tab.md) | Scope Mac Backlog Reset to Each Control Tab | Accepted | 2026-09-04 |

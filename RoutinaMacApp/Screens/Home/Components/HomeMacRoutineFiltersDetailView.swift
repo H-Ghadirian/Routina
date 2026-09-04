@@ -38,6 +38,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
     let showsPlaceTaskRowField: Bool
     let onTaskRowFieldVisibilityChanged: (HomeTaskRowField, Bool) -> Void
     let onTaskRowMultilineTitlesChanged: (Bool) -> Void
+    let onTaskRowMultilineDetailsChanged: (Bool) -> Void
     @ViewBuilder let tagSectionContent: () -> TagContent
     @ViewBuilder let placeSectionContent: () -> PlaceContent
     @ViewBuilder let flagSectionContent: () -> FlagContent
@@ -132,6 +133,12 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
                 "Multiline Titles",
                 subtitle: "Wrap long task titles onto additional lines.",
                 isOn: taskRowMultilineTitlesBinding
+            )
+
+            HomeMacFilterAppearanceToggleRow(
+                "Multiline Details",
+                subtitle: "Wrap tags, flags, goals, and status onto additional lines.",
+                isOn: taskRowMultilineDetailsBinding
             )
 
             ForEach(macTaskRowFields) { field in
@@ -385,6 +392,13 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
         Binding(
             get: { taskRowVisibility.allowsMultilineTitles },
             set: { onTaskRowMultilineTitlesChanged($0) }
+        )
+    }
+
+    private var taskRowMultilineDetailsBinding: Binding<Bool> {
+        Binding(
+            get: { taskRowVisibility.allowsMultilineDetails },
+            set: { onTaskRowMultilineDetailsChanged($0) }
         )
     }
 

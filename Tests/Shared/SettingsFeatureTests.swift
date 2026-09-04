@@ -546,6 +546,28 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func taskRowMultilineDetailsChanged_persistsSelection() async {
+        let persistedValue = LockIsolated<HomeTaskRowVisibility?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setTaskRowVisibility = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.taskRowMultilineDetailsChanged(true)) {
+            $0.appearance.taskRowVisibility = HomeTaskRowVisibility(
+                allowsMultilineDetails: true
+            )
+        }
+
+        #expect(
+            persistedValue.value == HomeTaskRowVisibility(allowsMultilineDetails: true)
+        )
+    }
+
+    @Test
     func appColorSchemeChanged_persistsSelection() async {
         let persistedValue = LockIsolated<AppColorScheme?>(nil)
 

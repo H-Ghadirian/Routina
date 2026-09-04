@@ -15,6 +15,7 @@ struct SettingsFeature {
         case tagCounterDisplayModeChanged(TagCounterDisplayMode)
         case taskRowFieldVisibilityChanged(HomeTaskRowField, Bool)
         case taskRowMultilineTitlesChanged(Bool)
+        case taskRowMultilineDetailsChanged(Bool)
         case timelineRowFieldVisibilityChanged(HomeTimelineRowField, Bool)
         case appLockToggled(Bool)
         case appLockEnableFinished(DeviceAuthenticationResult)
@@ -176,6 +177,13 @@ struct SettingsFeature {
 
             case let .taskRowMultilineTitlesChanged(isEnabled):
                 return SettingsAppearanceActionHandler.taskRowMultilineTitlesChanged(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .taskRowMultilineDetailsChanged(isEnabled):
+                return SettingsAppearanceActionHandler.taskRowMultilineDetailsChanged(
                     isEnabled,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient

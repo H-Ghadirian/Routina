@@ -4028,10 +4028,10 @@ When the user opens Task List -> Appearance or views a main task row
 Then the Task Row card does not expose a `Goals` option or count it in the shown-fields summary
 And task rows do not display linked Goal labels even if the saved visibility choice and task links remain stored
 
-### Mac Main Task Titles Can Wrap Without Mixing Metadata
+### Mac Main Task Titles and Details Can Wrap Independently
 
 Area: Tasks, Settings
-Decision links: [0662](../decisions/0662-reserve-the-first-mac-task-row-line-for-the-title.md), [0663](../decisions/0663-allow-optional-multiline-mac-task-titles.md)
+Decision links: [0662](../decisions/0662-reserve-the-first-mac-task-row-line-for-the-title.md), [0663](../decisions/0663-allow-optional-multiline-mac-task-titles.md), [0731](../decisions/0731-let-mac-task-row-details-wrap.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
@@ -4047,6 +4047,19 @@ Then long main task-list titles wrap onto additional lines
 And secondary labels plus later metadata remain below the complete title block
 And changing another Task Row field preserves the multiline choice
 And iOS task rows remain unchanged
+
+Given a Mac main task-list row has several enabled Tags, Flags, Goals, or status details
+When `Multiline Details` is off
+Then every visible chip keeps its complete recognizable label
+And details that do not fit are represented by one `+N more` chip
+And hover and accessibility text identify the omitted details
+And the status badge keeps its trailing placement
+
+When `Multiline Details` is on
+Then every enabled secondary detail flows onto as many lines as required
+And the row grows to fit the complete detail sequence
+And changing Multiline Titles or another Task Row field preserves the choice
+And ordinary, search-only, and `Hidden by flag` rows use the same behavior
 
 ### Mac Task Form Section Titles Stay Consistent
 

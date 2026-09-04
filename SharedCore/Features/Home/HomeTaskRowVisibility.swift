@@ -146,16 +146,20 @@ struct HomeTaskRowVisibility: Equatable, Sendable {
     )
     static let taskLadderDefaultStorageRawValue = taskLadderDefaultValue.storageRawValue ?? ""
     private static let multilineTitlesStorageValue = "multilineTitles"
+    private static let multilineDetailsStorageValue = "multilineDetails"
 
     var hiddenFields: Set<HomeTaskRowField>
     var allowsMultilineTitles: Bool
+    var allowsMultilineDetails: Bool
 
     init(
         hiddenFields: Set<HomeTaskRowField> = [],
-        allowsMultilineTitles: Bool = false
+        allowsMultilineTitles: Bool = false,
+        allowsMultilineDetails: Bool = false
     ) {
         self.hiddenFields = hiddenFields.intersection(Set(HomeTaskRowField.allCases))
         self.allowsMultilineTitles = allowsMultilineTitles
+        self.allowsMultilineDetails = allowsMultilineDetails
     }
 
     init(storageRawValue: String?) {
@@ -166,7 +170,8 @@ struct HomeTaskRowVisibility: Equatable, Sendable {
         )
         self.init(
             hiddenFields: HomeTaskRowField.decodedHiddenFields(from: storageRawValue),
-            allowsMultilineTitles: storedValues.contains(Self.multilineTitlesStorageValue)
+            allowsMultilineTitles: storedValues.contains(Self.multilineTitlesStorageValue),
+            allowsMultilineDetails: storedValues.contains(Self.multilineDetailsStorageValue)
         )
     }
 
@@ -176,6 +181,9 @@ struct HomeTaskRowVisibility: Equatable, Sendable {
             .map(\.rawValue)
         if allowsMultilineTitles {
             storedValues.append(Self.multilineTitlesStorageValue)
+        }
+        if allowsMultilineDetails {
+            storedValues.append(Self.multilineDetailsStorageValue)
         }
         return storedValues.isEmpty ? nil : storedValues.joined(separator: ",")
     }
@@ -199,14 +207,24 @@ struct HomeTaskRowVisibility: Equatable, Sendable {
         }
         return HomeTaskRowVisibility(
             hiddenFields: updatedFields,
-            allowsMultilineTitles: allowsMultilineTitles
+            allowsMultilineTitles: allowsMultilineTitles,
+            allowsMultilineDetails: allowsMultilineDetails
         )
     }
 
     func settingMultilineTitles(_ isEnabled: Bool) -> HomeTaskRowVisibility {
         HomeTaskRowVisibility(
             hiddenFields: hiddenFields,
-            allowsMultilineTitles: isEnabled
+            allowsMultilineTitles: isEnabled,
+            allowsMultilineDetails: allowsMultilineDetails
+        )
+    }
+
+    func settingMultilineDetails(_ isEnabled: Bool) -> HomeTaskRowVisibility {
+        HomeTaskRowVisibility(
+            hiddenFields: hiddenFields,
+            allowsMultilineTitles: allowsMultilineTitles,
+            allowsMultilineDetails: isEnabled
         )
     }
 }

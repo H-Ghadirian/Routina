@@ -44,6 +44,13 @@ enum SettingsAppearanceEditor {
         state.taskRowVisibility = state.taskRowVisibility.settingMultilineTitles(isEnabled)
     }
 
+    static func updateTaskRowMultilineDetails(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState
+    ) {
+        state.taskRowVisibility = state.taskRowVisibility.settingMultilineDetails(isEnabled)
+    }
+
     static func updateTimelineRowVisibility(
         _ visibility: HomeTimelineRowVisibility,
         state: inout SettingsAppearanceState
