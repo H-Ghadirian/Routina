@@ -191,7 +191,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
 }
 
 struct TaskDetailHeaderTitleBoundsPreferenceKey: PreferenceKey {
-    nonisolated(unsafe) static var defaultValue: Anchor<CGRect>?
+    static let defaultValue: Anchor<CGRect>? = nil
 
     static func reduce(
         value: inout Anchor<CGRect>?,
@@ -202,7 +202,7 @@ struct TaskDetailHeaderTitleBoundsPreferenceKey: PreferenceKey {
 }
 
 private struct TaskDetailHeaderMetricPreferenceKey: PreferenceKey {
-    nonisolated(unsafe) static var defaultValue: [TaskDetailHeaderSectionViewMetric: CGFloat] = [:]
+    static let defaultValue: [TaskDetailHeaderSectionViewMetric: CGFloat] = [:]
 
     static func reduce(
         value: inout [TaskDetailHeaderSectionViewMetric: CGFloat],

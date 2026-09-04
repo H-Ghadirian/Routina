@@ -613,7 +613,9 @@ struct StatsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, focusSessions, sprintFocusSessions, focusSessionEvents, boardSprints, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions):
+            case let .setData(tasks, logs, focusSessions, sprintFocusSessions, focusSessionEvents,
+                              boardSprints, sleepSessions, awaySessions, emotionLogs, notes,
+                              events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions):
                 state.hasLoadedDataSnapshot = true
                 state.tasks = tasks
                 state.logs = logs
@@ -938,10 +940,10 @@ struct StatsFeature {
                     let data = try await self.gitHubStatsClient.fetchContributionYear()
                     GitHubWidgetService.writeAndReload(data)
                 } catch {
-                    NSLog("GitHubWidgetService: fetchContributionYear failed — \(error.localizedDescription)")
+                    RoutinaLog.error("GitHubWidgetService: fetchContributionYear failed — \(error.localizedDescription)")
                 }
             } else {
-                NSLog("GitHubWidgetService: skipping widget fetch — scope is not profile")
+                RoutinaLog.notice("GitHubWidgetService: skipping widget fetch — scope is not profile")
             }
 
             if !skipGitLab, self.gitLabStatsClient.loadConnectionStatus().isConnected {
@@ -949,10 +951,10 @@ struct StatsFeature {
                     let data = try await self.gitLabStatsClient.fetchContributionYear()
                     GitLabWidgetService.writeAndReload(data)
                 } catch {
-                    NSLog("GitLabWidgetService: fetchContributionYear failed — \(error.localizedDescription)")
+                    RoutinaLog.error("GitLabWidgetService: fetchContributionYear failed — \(error.localizedDescription)")
                 }
             } else if !skipGitLab {
-                NSLog("GitLabWidgetService: skipping widget fetch — not connected")
+                RoutinaLog.notice("GitLabWidgetService: skipping widget fetch — not connected")
             }
         }
     }

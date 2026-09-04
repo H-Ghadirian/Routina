@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
@@ -53,6 +54,7 @@ struct BacklogFeatureTests {
         let store = TestStore(initialState: BacklogFeature.State()) {
             BacklogFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
         }
 
@@ -66,6 +68,7 @@ struct BacklogFeatureTests {
         let store = TestStore(initialState: BacklogFeature.State()) {
             BacklogFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
         }
 

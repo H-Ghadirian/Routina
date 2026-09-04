@@ -1,5 +1,8 @@
 import Foundation
 
+// Foundation documents UserDefaults as thread-safe, but it does not yet
+// declare Sendable. Keep this compatibility conformance centralized here so
+// callers do not add scattered concurrency escapes.
 extension UserDefaults: @retroactive @unchecked Sendable {}
 
 extension UserDefaults: UserDefaultsProtocol {

@@ -60,49 +60,31 @@ enum SettingsAppearanceEditor {
     }
 
     static func refreshFromSettings(
-        appColorScheme: AppColorScheme,
-        appLockEnabled: Bool,
-        gitFeaturesEnabled: Bool,
-        taskSharingEnabled: Bool,
-        taskRelationshipVisualizerEnabled: Bool,
-        placesEnabled: Bool,
-        notesEnabled: Bool,
-        awayEnabled: Bool,
-        filterQuerySectionsEnabled: Bool,
-        showPersianDates: Bool,
-        showTimelineTasksInDayPlanner: Bool,
-        separateDailyRoutinesInTaskList: Bool,
-        showTomorrowInTaskList: Bool,
-        showDoneCountInToolbar: Bool,
-        taskRowVisibility: HomeTaskRowVisibility,
-        timelineRowVisibility: HomeTimelineRowVisibility,
-        deviceAuthenticationStatus: DeviceAuthenticationStatus,
-        selectedAppIcon: AppIconOption,
-        hasTemporaryViewStateToReset: Bool,
+        _ snapshot: SettingsOnAppearSnapshot,
         state: inout SettingsAppearanceState
     ) {
-        state.appColorScheme = appColorScheme
-        state.isAppLockEnabled = appLockEnabled
-        state.isGitFeaturesEnabled = gitFeaturesEnabled
-        state.isTaskSharingEnabled = taskSharingEnabled
-        state.isTaskRelationshipVisualizerEnabled = taskRelationshipVisualizerEnabled
-        state.isPlacesEnabled = placesEnabled
-        state.isNotesEnabled = notesEnabled
-        state.isAwayEnabled = awayEnabled
-        state.showsFilterQuerySections = filterQuerySectionsEnabled
-        state.showPersianDates = showPersianDates
-        state.showsTimelineTasksInDayPlanner = showTimelineTasksInDayPlanner
-        state.separatesDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
-        state.showsTomorrowInTaskList = showTomorrowInTaskList
-        state.showsDoneCountInToolbar = showDoneCountInToolbar
-        state.taskRowVisibility = taskRowVisibility
+        state.appColorScheme = snapshot.appColorScheme
+        state.isAppLockEnabled = snapshot.appLockEnabled
+        state.isGitFeaturesEnabled = snapshot.gitFeaturesEnabled
+        state.isTaskSharingEnabled = snapshot.taskSharingEnabled
+        state.isTaskRelationshipVisualizerEnabled = snapshot.taskRelationshipVisualizerEnabled
+        state.isPlacesEnabled = snapshot.placesEnabled
+        state.isNotesEnabled = snapshot.notesEnabled
+        state.isAwayEnabled = snapshot.awayEnabled
+        state.showsFilterQuerySections = snapshot.filterQuerySectionsEnabled
+        state.showPersianDates = snapshot.showPersianDates
+        state.showsTimelineTasksInDayPlanner = snapshot.showTimelineTasksInDayPlanner
+        state.separatesDailyRoutinesInTaskList = snapshot.separateDailyRoutinesInTaskList
+        state.showsTomorrowInTaskList = snapshot.showTomorrowInTaskList
+        state.showsDoneCountInToolbar = snapshot.showDoneCountInToolbar
+        state.taskRowVisibility = snapshot.taskRowVisibility
         state.isAppLockToggleInProgress = false
-        state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
-        state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
+        state.appLockMethodDescription = snapshot.deviceAuthenticationStatus.methodDescription
+        state.appLockUnavailableReason = snapshot.deviceAuthenticationStatus.unavailableReason
         state.appLockStatusMessage = ""
-        state.selectedAppIcon = selectedAppIcon
-        state.timelineRowVisibility = timelineRowVisibility
-        state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset
+        state.selectedAppIcon = snapshot.selectedAppIcon
+        state.timelineRowVisibility = snapshot.timelineRowVisibility
+        state.hasTemporaryViewStateToReset = snapshot.hasTemporaryViewStateToReset
         state.appIconStatusMessage = ""
         state.temporaryViewStateStatusMessage = ""
         state.isSettingsResetAuthenticationInProgress = false

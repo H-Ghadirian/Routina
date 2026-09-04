@@ -138,7 +138,10 @@ private final class MCPStdioServer {
                 "name": serverName,
                 "version": serverVersion
             ],
-            "instructions": "Read-only Routina support. Use search_routina_help or get_routina_help_topic to explain Routina features and interface concepts. Use search_tasks for questions about the user\u{2019}s tasks, list_overdue_tasks for overdue routines and todos, and get_task when you already have a task UUID. Help lookup does not require access to personal task data."
+            "instructions": "Read-only Routina support. Use search_routina_help or get_routina_help_topic to explain "
+                + "Routina features and interface concepts. Use search_tasks for questions about the user\u{2019}s tasks, "
+                + "list_overdue_tasks for overdue routines and todos, and get_task when you already have a task UUID. "
+                + "Help lookup does not require access to personal task data."
         ]
     }
 

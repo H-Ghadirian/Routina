@@ -156,7 +156,11 @@ struct SettingsMacBlockingDetailView: View {
                         }
                     }
 
-                    Text("Routina redirects matching tabs in Safari, Chrome, Edge, Brave, Arc, Opera, Vivaldi, and Chromium while blocking is active. macOS may ask for permission to control each browser. Firefox support needs a future browser extension.")
+                    Text(
+                        "Routina redirects matching tabs in Safari, Chrome, Edge, Brave, Arc, Opera, Vivaldi, "
+                            + "and Chromium while blocking is active. macOS may ask for permission to control "
+                            + "each browser. Firefox support needs a future browser extension."
+                    )
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

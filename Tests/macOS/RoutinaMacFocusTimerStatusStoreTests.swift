@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 import XCTest
 @testable @preconcurrency import RoutinaMacOSDev

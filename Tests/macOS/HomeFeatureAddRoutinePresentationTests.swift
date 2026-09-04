@@ -11,6 +11,7 @@ struct HomeFeatureAddRoutinePresentationTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -21,7 +22,9 @@ struct HomeFeatureAddRoutinePresentationTests {
                 organization: AddRoutineOrganizationState(
                     availableTagSummaries: [],
                     existingRoutineNames: []
-                )
+                ),
+                referenceDate: homeAddRoutineReferenceDate,
+                calendar: homeAddRoutineCalendar
             )
         }
 
@@ -38,6 +41,7 @@ struct HomeFeatureAddRoutinePresentationTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -45,12 +49,15 @@ struct HomeFeatureAddRoutinePresentationTests {
         await store.send(.openAddTaskInCustomSection(sectionID)) {
             $0.isAddRoutineSheetPresented = true
             $0.macSidebarMode = .addTask
+            $0.navigation.addTaskReturnMode = .routines
             $0.addRoutineState = AddRoutineFeature.State(
                 organization: AddRoutineOrganizationState(
                     customTaskSectionID: sectionID,
                     availableTagSummaries: [],
                     existingRoutineNames: []
-                )
+                ),
+                referenceDate: homeAddRoutineReferenceDate,
+                calendar: homeAddRoutineCalendar
             )
         }
     }
@@ -69,6 +76,7 @@ struct HomeFeatureAddRoutinePresentationTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
         }
@@ -95,6 +103,7 @@ struct HomeFeatureAddRoutinePresentationTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
         }
@@ -113,7 +122,9 @@ struct HomeFeatureAddRoutinePresentationTests {
                 organization: AddRoutineOrganizationState(
                     availableTagSummaries: [],
                     existingRoutineNames: []
-                )
+                ),
+                referenceDate: homeAddRoutineReferenceDate,
+                calendar: homeAddRoutineCalendar
             )
         }
 
@@ -143,6 +154,7 @@ struct HomeFeatureAddRoutinePresentationTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -157,13 +169,6 @@ struct HomeFeatureAddRoutinePresentationTests {
                     ],
                     availableRelationshipTasks: [
                         RoutineTaskRelationshipCandidate(
-                            id: currentTask.id,
-                            name: "Draft report",
-                            emoji: "📝",
-                            relationships: [],
-                            status: .onTrack
-                        ),
-                        RoutineTaskRelationshipCandidate(
                             id: task.id,
                             name: "Read",
                             emoji: "📚",
@@ -171,7 +176,9 @@ struct HomeFeatureAddRoutinePresentationTests {
                         )
                     ],
                     existingRoutineNames: ["Read"]
-                )
+                ),
+                referenceDate: homeAddRoutineReferenceDate,
+                calendar: homeAddRoutineCalendar
             )
         }
     }
@@ -185,6 +192,7 @@ struct HomeFeatureAddRoutinePresentationTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -196,7 +204,9 @@ struct HomeFeatureAddRoutinePresentationTests {
                 organization: AddRoutineOrganizationState(
                     availableTagSummaries: [],
                     existingRoutineNames: []
-                )
+                ),
+                referenceDate: homeAddRoutineReferenceDate,
+                calendar: homeAddRoutineCalendar
             )
         }
     }
@@ -238,6 +248,7 @@ struct HomeFeatureAddRoutinePresentationTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -251,16 +262,23 @@ struct HomeFeatureAddRoutinePresentationTests {
                     availableTags: ["Focus", "Writing"],
                     availableTagSummaries: [
                         RoutineTagSummary(name: "Focus", linkedRoutineCount: 1, doneCount: 0),
-                        RoutineTagSummary(name: "Writing", linkedRoutineCount: 1, doneCount: 0)
+                        RoutineTagSummary(name: "Writing", linkedRoutineCount: 1, doneCount: 0),
                     ],
                     availableRelationshipTasks: [
+                        RoutineTaskRelationshipCandidate(
+                            id: currentTask.id,
+                            name: "Draft report",
+                            emoji: "📝",
+                            relationships: [],
+                            status: .onTrack
+                        ),
                         RoutineTaskRelationshipCandidate(
                             id: relatedTask.id,
                             name: "Review draft",
                             emoji: "🔍",
                             relationships: [],
                             status: .onTrack
-                        )
+                        ),
                     ],
                     existingRoutineNames: ["Draft report", "Review draft"],
                     availablePlaces: [
@@ -271,32 +289,47 @@ struct HomeFeatureAddRoutinePresentationTests {
                             linkedRoutineCount: 2
                         )
                     ]
-                )
+                ),
+                referenceDate: homeAddRoutineReferenceDate,
+                calendar: homeAddRoutineCalendar
             )
         }
 
         let addRoutineState = try #require(store.state.addRoutineState)
-        #expect(addRoutineState.organization.relationships == [
-            RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
-        ])
+        #expect(
+            addRoutineState.organization.relationships == [
+                RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
+            ])
         #expect(addRoutineState.organization.availableTags == ["Focus", "Writing"])
         #expect(addRoutineState.organization.existingRoutineNames == ["Draft report", "Review draft"])
-        #expect(addRoutineState.organization.availablePlaces == [
-            RoutinePlaceSummary(
-                id: place.id,
-                name: "Office",
-                radiusMeters: place.radiusMeters,
-                linkedRoutineCount: 2
-            )
-        ])
-        #expect(addRoutineState.organization.availableRelationshipTasks == [
-            RoutineTaskRelationshipCandidate(
-                id: relatedTask.id,
-                name: "Review draft",
-                emoji: "🔍",
-                relationships: [],
-                status: .onTrack
-            )
-        ])
+        #expect(
+            addRoutineState.organization.availablePlaces == [
+                RoutinePlaceSummary(
+                    id: place.id,
+                    name: "Office",
+                    radiusMeters: place.radiusMeters,
+                    linkedRoutineCount: 2
+                )
+            ])
+        #expect(
+            addRoutineState.organization.availableRelationshipTasks == [
+                RoutineTaskRelationshipCandidate(
+                    id: currentTask.id,
+                    name: "Draft report",
+                    emoji: "📝",
+                    relationships: [],
+                    status: .onTrack
+                ),
+                RoutineTaskRelationshipCandidate(
+                    id: relatedTask.id,
+                    name: "Review draft",
+                    emoji: "🔍",
+                    relationships: [],
+                    status: .onTrack
+                ),
+            ])
     }
 }
+
+private let homeAddRoutineReferenceDate = makeDate("2026-03-20T10:00:00Z")
+private let homeAddRoutineCalendar = makeTestCalendar()

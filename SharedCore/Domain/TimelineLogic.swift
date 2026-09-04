@@ -294,11 +294,13 @@ struct TimelineEntry: Identifiable, Equatable {
         self.entryType = entryType
         self.durationSeconds = durationSeconds
         self.activityTitle = activityTitle
-        self.searchableText = searchableText ?? Self.defaultSearchableText(
-            taskName: taskName,
-            taskEmoji: taskEmoji,
-            activityTitle: activityTitle
-        )
+        self.searchableText =
+            searchableText
+            ?? Self.defaultSearchableText(
+                taskName: taskName,
+                taskEmoji: taskEmoji,
+                activityTitle: activityTitle
+            )
     }
 
     private static func defaultSearchableText(
@@ -493,9 +495,10 @@ enum TimelineLogic {
         mediaFilter: TaskMediaFilter = .all,
         now: Date,
         calendar: Calendar
-        ) -> [TimelineEntry] {
+    ) -> [TimelineEntry] {
         let contentFilterType = filterType.isStatusCase ? TimelineFilterType.all : filterType
-        let effectiveStatusFilter = statusFilter == .all
+        let effectiveStatusFilter =
+            statusFilter == .all
             ? TimelineStatusFilter(legacyFilterType: filterType)
             : statusFilter
         let lookup = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -538,12 +541,14 @@ enum TimelineLogic {
             let hasVoiceNote = task?.hasVoiceNote ?? false
             let currentTaskLadderValues = currentTaskLadderValuesByTaskID[log.taskID]
 
-            guard HomeDisplayFilterSupport.matchesMediaFilter(
-                mediaFilter,
-                hasImage: hasImage,
-                hasFileAttachment: hasFileAttachment,
-                hasVoiceNote: hasVoiceNote
-            ) else {
+            guard
+                HomeDisplayFilterSupport.matchesMediaFilter(
+                    mediaFilter,
+                    hasImage: hasImage,
+                    hasFileAttachment: hasFileAttachment,
+                    hasVoiceNote: hasVoiceNote
+                )
+            else {
                 return nil
             }
 
@@ -589,7 +594,7 @@ enum TimelineLogic {
 
         let eventEntries = events.compactMap { event -> TimelineEntry? in
             guard contentFilterType == .all || contentFilterType == .events,
-                  mediaFilter == .all
+                mediaFilter == .all
             else {
                 return nil
             }
@@ -615,7 +620,7 @@ enum TimelineLogic {
 
         let emotionEntries = emotionLogs.compactMap { emotion -> TimelineEntry? in
             guard contentFilterType == .all || contentFilterType == .emotions,
-                  mediaFilter == .all
+                mediaFilter == .all
             else {
                 return nil
             }
@@ -644,12 +649,12 @@ enum TimelineLogic {
 
             let hasFileAttachment = noteAttachmentNoteIDs.contains(note.id)
             guard contentFilterType == .all || contentFilterType == .notes,
-                  HomeDisplayFilterSupport.matchesMediaFilter(
+                HomeDisplayFilterSupport.matchesMediaFilter(
                     mediaFilter,
                     hasImage: note.hasImage,
                     hasFileAttachment: hasFileAttachment,
                     hasVoiceNote: note.hasVoiceNote
-                  )
+                )
             else {
                 return nil
             }
@@ -678,9 +683,9 @@ enum TimelineLogic {
         )
         let focusEntries = focusSessions.flatMap { session -> [TimelineEntry] in
             guard contentFilterType == .all || contentFilterType == .focus,
-                  mediaFilter == .all,
-                  session.state != .abandoned,
-                  let startedAt = session.startedAt
+                mediaFilter == .all,
+                session.state != .abandoned,
+                let startedAt = session.startedAt
             else {
                 return []
             }
@@ -731,8 +736,8 @@ enum TimelineLogic {
                 calendar: calendar
             )
             if daySlices.isEmpty,
-               session.state == .active,
-               startedAt <= now {
+                session.state == .active,
+                startedAt <= now {
                 daySlices = [
                     FocusActivityDaySlice(
                         sessionID: session.id,
@@ -748,8 +753,9 @@ enum TimelineLogic {
 
             return slicesByDay.keys.sorted().compactMap { day in
                 guard let slices = slicesByDay[day]?.sorted(by: { $0.startedAt < $1.startedAt }),
-                      let firstSlice = slices.first,
-                      let lastSlice = slices.last else {
+                    let firstSlice = slices.first,
+                    let lastSlice = slices.last
+                else {
                     return nil
                 }
                 if let cutoff, day < cutoff { return nil }
@@ -793,7 +799,7 @@ enum TimelineLogic {
         )
         let sprintFocusEntries = sprintFocusSessions.flatMap { session -> [TimelineEntry] in
             guard contentFilterType == .all || contentFilterType == .focus,
-                  mediaFilter == .all
+                mediaFilter == .all
             else {
                 return []
             }
@@ -801,11 +807,12 @@ enum TimelineLogic {
             let startedAt = session.startedAt
             let sprintTitle = sprintLookup[session.sprintID]?.title
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            let title = if let sprintTitle, !sprintTitle.isEmpty {
-                sprintTitle
-            } else {
-                "Board focus"
-            }
+            let title =
+                if let sprintTitle, !sprintTitle.isEmpty {
+                    sprintTitle
+                } else {
+                    "Board focus"
+                }
             let stoppedAt = session.stoppedAt
             let intervals = FocusActivityIntervalResolver.intervals(
                 for: session,
@@ -817,8 +824,8 @@ enum TimelineLogic {
                 calendar: calendar
             )
             if daySlices.isEmpty,
-               session.isActive,
-               startedAt <= now {
+                session.isActive,
+                startedAt <= now {
                 daySlices = [
                     FocusActivityDaySlice(
                         sessionID: session.id,
@@ -834,8 +841,9 @@ enum TimelineLogic {
 
             return slicesByDay.keys.sorted().compactMap { day in
                 guard let slices = slicesByDay[day]?.sorted(by: { $0.startedAt < $1.startedAt }),
-                      let firstSlice = slices.first,
-                      let lastSlice = slices.last else {
+                    let firstSlice = slices.first,
+                    let lastSlice = slices.last
+                else {
                     return nil
                 }
                 if let cutoff, day < cutoff { return nil }
@@ -866,8 +874,8 @@ enum TimelineLogic {
 
         let sleepEntries = sleepSessions.compactMap { session -> TimelineEntry? in
             guard contentFilterType == .all || contentFilterType == .sleep,
-                  mediaFilter == .all,
-                  let startedAt = session.startedAt
+                mediaFilter == .all,
+                let startedAt = session.startedAt
             else {
                 return nil
             }
@@ -895,12 +903,12 @@ enum TimelineLogic {
         let placeEntries = placeCheckInSessions.compactMap { session -> TimelineEntry? in
             let hasImage = session.hasImage
             guard contentFilterType == .all || contentFilterType == .places,
-                  HomeDisplayFilterSupport.matchesMediaFilter(
+                HomeDisplayFilterSupport.matchesMediaFilter(
                     mediaFilter,
                     hasImage: hasImage,
                     hasFileAttachment: false
-                  ),
-                  let startedAt = session.startedAt
+                ),
+                let startedAt = session.startedAt
             else {
                 return nil
             }
@@ -974,7 +982,8 @@ enum TimelineLogic {
             )
         }
 
-        return (logEntries
+        return
+            (logEntries
             + eventEntries
             + emotionEntries
             + noteEntries
@@ -994,18 +1003,27 @@ enum TimelineLogic {
         calendar: Calendar
     ) -> [RoutineLog] {
         var resolvedLogs = logs
+        resolvedLogs.reserveCapacity(logs.count + tasks.count)
+
+        var completionDaysByTaskID: [UUID: Set<Date>] = [:]
+        completionDaysByTaskID.reserveCapacity(tasks.count)
+        for log in logs {
+            guard log.kind.resolvesDoneDate,
+                let timestamp = log.timestamp
+            else {
+                continue
+            }
+            completionDaysByTaskID[log.taskID, default: []].insert(
+                calendar.startOfDay(for: timestamp)
+            )
+        }
 
         for task in tasks {
             guard let lastDone = task.lastDone else { continue }
-            let hasCompletionLog = resolvedLogs.contains { log in
-                guard log.taskID == task.id,
-                      log.kind.resolvesDoneDate,
-                      let timestamp = log.timestamp else {
-                    return false
-                }
-                return calendar.isDate(timestamp, inSameDayAs: lastDone)
+            let completionDay = calendar.startOfDay(for: lastDone)
+            guard completionDaysByTaskID[task.id]?.contains(completionDay) != true else {
+                continue
             }
-            guard !hasCompletionLog else { continue }
 
             resolvedLogs.append(
                 RoutineLog(
@@ -1015,6 +1033,7 @@ enum TimelineLogic {
                     kind: .completed
                 )
             )
+            completionDaysByTaskID[task.id, default: []].insert(completionDay)
         }
 
         return resolvedLogs
@@ -1090,7 +1109,8 @@ enum TimelineLogic {
             let day = calendar.startOfDay(for: entry.timestamp)
             grouped[day, default: []].append(entry)
         }
-        return grouped
+        return
+            grouped
             .sorted { $0.key > $1.key }
             .map {
                 (
@@ -1163,24 +1183,25 @@ enum TimelineSyntheticLogID {
     static func completion(taskID: UUID, completedAt: Date) -> UUID {
         let uuid = taskID.uuid
         let timestampBits = completedAt.timeIntervalSinceReferenceDate.bitPattern
-        return UUID(uuid: (
-            uuid.0 ^ byte(timestampBits, shift: 56),
-            uuid.1 ^ byte(timestampBits, shift: 48),
-            uuid.2 ^ byte(timestampBits, shift: 40),
-            uuid.3 ^ byte(timestampBits, shift: 32),
-            uuid.4 ^ byte(timestampBits, shift: 24),
-            uuid.5 ^ byte(timestampBits, shift: 16),
-            uuid.6 ^ byte(timestampBits, shift: 8),
-            uuid.7 ^ byte(timestampBits, shift: 0),
-            uuid.8 ^ byte(timestampBits, shift: 56),
-            uuid.9 ^ byte(timestampBits, shift: 48),
-            uuid.10 ^ byte(timestampBits, shift: 40),
-            uuid.11 ^ byte(timestampBits, shift: 32),
-            uuid.12 ^ byte(timestampBits, shift: 24),
-            uuid.13 ^ byte(timestampBits, shift: 16),
-            uuid.14 ^ byte(timestampBits, shift: 8),
-            uuid.15 ^ byte(timestampBits, shift: 0)
-        ))
+        return UUID(
+            uuid: (
+                uuid.0 ^ byte(timestampBits, shift: 56),
+                uuid.1 ^ byte(timestampBits, shift: 48),
+                uuid.2 ^ byte(timestampBits, shift: 40),
+                uuid.3 ^ byte(timestampBits, shift: 32),
+                uuid.4 ^ byte(timestampBits, shift: 24),
+                uuid.5 ^ byte(timestampBits, shift: 16),
+                uuid.6 ^ byte(timestampBits, shift: 8),
+                uuid.7 ^ byte(timestampBits, shift: 0),
+                uuid.8 ^ byte(timestampBits, shift: 56),
+                uuid.9 ^ byte(timestampBits, shift: 48),
+                uuid.10 ^ byte(timestampBits, shift: 40),
+                uuid.11 ^ byte(timestampBits, shift: 32),
+                uuid.12 ^ byte(timestampBits, shift: 24),
+                uuid.13 ^ byte(timestampBits, shift: 16),
+                uuid.14 ^ byte(timestampBits, shift: 8),
+                uuid.15 ^ byte(timestampBits, shift: 0)
+            ))
     }
 
     private static func byte(_ value: UInt64, shift: Int) -> UInt8 {

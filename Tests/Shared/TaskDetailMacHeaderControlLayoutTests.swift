@@ -4,9 +4,7 @@ import Testing
 struct TaskDetailMacHeaderControlLayoutTests {
     @Test
     func taskLadderValuesKeepCurrentValuesVisibleAndExpandOnePickerAtATime() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let source = try SourceInspectionSupport.readMacTaskDetailSources()
         let actionControls = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift"
         )
@@ -16,13 +14,13 @@ struct TaskDetailMacHeaderControlLayoutTests {
             in: source
         )
         let todoControls = try Self.sourceSection(
-            startingAt: "private var todoHeaderControls: some View",
+            startingAt: "var todoHeaderControls: some View",
             endingAt: "private var taskDetailStatusControls: some View",
             in: source
         )
         let routineControls = try Self.sourceSection(
-            startingAt: "private var routineHeaderControls: some View",
-            endingAt: "private var taskDetailContent: some View",
+            startingAt: "var routineHeaderControls: some View",
+            endingAt: "var taskDetailContent: some View",
             in: source
         )
 
@@ -114,20 +112,18 @@ struct TaskDetailMacHeaderControlLayoutTests {
         let headerSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailMacHeaderSupplementaryContent.swift"
         )
-        let detailSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let detailSource = try SourceInspectionSupport.readMacTaskDetailSources()
         let contentSource = try Self.sourceFile(
             "SharedCore/Screens/TaskDetail/TaskDetailExtrasSectionView.swift"
         )
         let extrasVisibility = try Self.sourceSection(
-            startingAt: "private var hasTaskExtras: Bool",
-            endingAt: "private var shouldShowHeatmapSection",
+            startingAt: "var hasTaskExtras: Bool",
+            endingAt: "var shouldShowHeatmapSection",
             in: detailSource
         )
         let extrasCard = try Self.sourceSection(
-            startingAt: "private var taskExtrasSection: some View",
-            endingAt: "private var linkedEventsSection",
+            startingAt: "var taskExtrasSection: some View",
+            endingAt: "var linkedEventsSection",
             in: detailSource
         )
 
@@ -168,13 +164,6 @@ struct TaskDetailMacHeaderControlLayoutTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        return try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

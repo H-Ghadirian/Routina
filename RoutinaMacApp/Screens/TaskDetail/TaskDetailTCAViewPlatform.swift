@@ -228,7 +228,7 @@ struct CloudSharingToolbarButton: NSViewRepresentable {
             error: Error?
         ) {
             if let error {
-                NSLog("Failed to complete CloudKit sharing: \(error.localizedDescription)")
+                RoutinaLog.error("Failed to complete CloudKit sharing: \(error.localizedDescription)")
                 if let activeAnchorView {
                     presentCloudSharingErrorAlert(error, from: activeAnchorView)
                 }
@@ -267,7 +267,8 @@ struct CloudSharingToolbarButton: NSViewRepresentable {
     }
 }
 
-private final class MacCloudSharingCoordinator: @unchecked Sendable {
+@MainActor
+private final class MacCloudSharingCoordinator {
     weak var coordinator: CloudSharingToolbarButton.Coordinator?
 
     init(_ coordinator: CloudSharingToolbarButton.Coordinator) {

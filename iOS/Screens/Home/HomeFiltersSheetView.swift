@@ -300,43 +300,47 @@ struct HomeFiltersSheetView<TagPicker: View>: View {
                 actions: actions.flagActions
             )
         case .place:
-            HomeFiltersDetailSheet(title: "Place") {
-                Section {
-                    if configuration.place.hasSavedPlaces {
-                        Picker(
-                            "Show \(configuration.place.placeFilterPluralNoun)",
-                            selection: bindings.selectedPlaceID
-                        ) {
-                            Text(configuration.place.placeFilterAllTitle).tag(Optional<UUID>.none)
-                            ForEach(configuration.place.sortedRoutinePlaces) { place in
-                                Text(place.displayName).tag(Optional(place.id))
-                            }
-                        }
-                        .pickerStyle(.menu)
-                    } else {
-                        Text("No saved places yet")
-                            .foregroundStyle(.secondary)
-                    }
+            placeFilterSheet
+        case .statsTaskType, .timelineRange, .timelineType:
+            EmptyView()
+        }
+    }
 
-                    if configuration.place.hasPlaceLinkedRoutines
-                        && configuration.place.isLocationAuthorized {
-                        Toggle(
-                            "Hide unavailable \(configuration.place.placeFilterPluralNoun)",
-                            isOn: bindings.hideUnavailableRoutines
-                        )
-                    }
-                } footer: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(configuration.place.placeFilterSectionDescription)
-
-                        if configuration.place.hasPlaceLinkedRoutines {
-                            Text(configuration.place.locationStatusText)
+    private var placeFilterSheet: some View {
+        HomeFiltersDetailSheet(title: "Place") {
+            Section {
+                if configuration.place.hasSavedPlaces {
+                    Picker(
+                        "Show \(configuration.place.placeFilterPluralNoun)",
+                        selection: bindings.selectedPlaceID
+                    ) {
+                        Text(configuration.place.placeFilterAllTitle).tag(Optional<UUID>.none)
+                        ForEach(configuration.place.sortedRoutinePlaces) { place in
+                            Text(place.displayName).tag(Optional(place.id))
                         }
+                    }
+                    .pickerStyle(.menu)
+                } else {
+                    Text("No saved places yet")
+                        .foregroundStyle(.secondary)
+                }
+
+                if configuration.place.hasPlaceLinkedRoutines
+                    && configuration.place.isLocationAuthorized {
+                    Toggle(
+                        "Hide unavailable \(configuration.place.placeFilterPluralNoun)",
+                        isOn: bindings.hideUnavailableRoutines
+                    )
+                }
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(configuration.place.placeFilterSectionDescription)
+
+                    if configuration.place.hasPlaceLinkedRoutines {
+                        Text(configuration.place.locationStatusText)
                     }
                 }
             }
-        case .statsTaskType, .timelineRange, .timelineType:
-            EmptyView()
         }
     }
 

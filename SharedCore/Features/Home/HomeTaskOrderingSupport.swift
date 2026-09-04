@@ -77,7 +77,7 @@ enum HomeTaskOrderingSupport {
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("\(failureMessage): \(error)")
+                RoutinaLog.error("\(failureMessage): \(error)")
             }
         }
     }

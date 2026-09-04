@@ -191,7 +191,26 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage,
+             .focusTime,
+             .sleepTime,
+             .sleepSessions,
+             .awayTime,
+             .emotions,
+             .notes,
+             .events,
+             .goals,
+             .focusAverage,
+             .bestDay,
+             .totalDones,
+             .assumedDones,
+             .assumedEstimatedTime,
+             .totalCancels,
+             .totalMissed,
+             .routineCount,
+             .todoCount,
+             .activeItems,
+             .archivedItems:
             return "A compact stats card in the summary grid."
         case .unassignedFocus:
             return "Focus sessions waiting to be assigned."
@@ -301,7 +320,26 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
 
     var isSummaryCard: Bool {
         switch self {
-        case .dailyAverage, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage,
+             .focusTime,
+             .sleepTime,
+             .sleepSessions,
+             .awayTime,
+             .emotions,
+             .notes,
+             .events,
+             .goals,
+             .focusAverage,
+             .bestDay,
+             .totalDones,
+             .assumedDones,
+             .assumedEstimatedTime,
+             .totalCancels,
+             .totalMissed,
+             .routineCount,
+             .todoCount,
+             .activeItems,
+             .archivedItems:
             return true
         default:
             return false

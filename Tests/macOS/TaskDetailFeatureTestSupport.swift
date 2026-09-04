@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 @testable @preconcurrency import RoutinaMacOSDev
 
 @MainActor

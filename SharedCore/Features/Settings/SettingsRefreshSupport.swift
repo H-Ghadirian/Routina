@@ -101,25 +101,7 @@ enum SettingsRefreshEditor {
             state: &state.appearance
         )
         SettingsAppearanceEditor.refreshFromSettings(
-            appColorScheme: snapshot.appColorScheme,
-            appLockEnabled: snapshot.appLockEnabled,
-            gitFeaturesEnabled: snapshot.gitFeaturesEnabled,
-            taskSharingEnabled: snapshot.taskSharingEnabled,
-            taskRelationshipVisualizerEnabled: snapshot.taskRelationshipVisualizerEnabled,
-            placesEnabled: snapshot.placesEnabled,
-            notesEnabled: snapshot.notesEnabled,
-            awayEnabled: snapshot.awayEnabled,
-            filterQuerySectionsEnabled: snapshot.filterQuerySectionsEnabled,
-            showPersianDates: snapshot.showPersianDates,
-            showTimelineTasksInDayPlanner: snapshot.showTimelineTasksInDayPlanner,
-            separateDailyRoutinesInTaskList: snapshot.separateDailyRoutinesInTaskList,
-            showTomorrowInTaskList: snapshot.showTomorrowInTaskList,
-            showDoneCountInToolbar: snapshot.showDoneCountInToolbar,
-            taskRowVisibility: snapshot.taskRowVisibility,
-            timelineRowVisibility: snapshot.timelineRowVisibility,
-            deviceAuthenticationStatus: snapshot.deviceAuthenticationStatus,
-            selectedAppIcon: snapshot.selectedAppIcon,
-            hasTemporaryViewStateToReset: snapshot.hasTemporaryViewStateToReset,
+            snapshot,
             state: &state.appearance
         )
     }

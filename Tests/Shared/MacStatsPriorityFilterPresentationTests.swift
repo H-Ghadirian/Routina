@@ -81,13 +81,6 @@ struct MacStatsPriorityFilterPresentationTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        return try String(
-            contentsOf: repositoryRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

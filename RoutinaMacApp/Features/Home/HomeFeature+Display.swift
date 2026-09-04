@@ -88,6 +88,10 @@ extension HomeFeature {
         state.awayRoutineDisplays = away
         state.archivedRoutineDisplays = archived
         state.boardTodoDisplays = boardTodos
+        state.homeToolbarRoutineCount = (active + away + archived).lazy.filter { !$0.isOneOffTask }.count
+        state.homeToolbarTodoCount = boardTodos.lazy.filter {
+            !$0.isCompletedOneOff && !$0.isCanceledOneOff
+        }.count
         state.flagFilterOptions = HomeFlagFilterCatalog.options(from: active + away + archived)
         if didChangeDisplays {
             state.routineDisplaysRevision = state.routineDisplaysRevision &+ 1

@@ -5,15 +5,6 @@ struct HomeRoutineMetadataBadgeStyle {
     let systemImage: String
     let foregroundColor: Color
     let backgroundColor: Color
-
-    var tuple: (
-        title: String,
-        systemImage: String,
-        foregroundColor: Color,
-        backgroundColor: Color
-    ) {
-        (title, systemImage, foregroundColor, backgroundColor)
-    }
 }
 
 enum HomeRoutineMetadataBadgeMode {

@@ -56,7 +56,7 @@ struct StatsChartPresentation {
     }
 
     func sparklineColor(for point: DoneChartPoint, maxCount: Int, highlightedBusiestDay: DoneChartPoint?) -> Color {
-        guard point.count > 0 else {
+        guard point.count > .zero else {
             return Color.white.opacity(0.12)
         }
 
@@ -221,7 +221,7 @@ struct StatsChartPresentation {
     }
 
     func dailyBarXAxisDates(from points: [DoneChartPoint]) -> [Date] {
-        let activePoints = points.filter { $0.count > 0 }
+        let activePoints = points.filter { $0.count > .zero }
         let labelPoints = activePoints.isEmpty ? points : activePoints
 
         return sampledSparklinePoints(from: labelPoints).map(\.date)

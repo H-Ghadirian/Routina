@@ -70,7 +70,7 @@ struct StatsCreatedTasksChartSection: View {
                                 ? AnyShapeStyle(highlightBarFill)
                                 : AnyShapeStyle(createdBarFill)
                         )
-                        .opacity(point.count == 0 ? 0.35 : 1)
+                        .opacity(point.count == .zero ? 0.35 : 1)
                     }
 
                     if metrics.createdAveragePerDay > 0 {

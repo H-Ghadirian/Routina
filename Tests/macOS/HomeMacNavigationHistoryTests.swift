@@ -3,64 +3,69 @@ import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
 @MainActor
+@Suite(.serialized)
 struct HomeMacNavigationHistoryTests {
     @Test
     func backAndForwardTraverseRecordedSnapshots() {
-        let taskID = UUID()
-        let emptyDetails = snapshot(detailMode: .details)
-        let taskDetails = snapshot(
-            sidebarSelection: .task(taskID),
-            selectedTaskID: taskID,
-            detailMode: .details
-        )
-        let places = snapshot(
-            sidebarSelection: .task(taskID),
-            selectedTaskID: taskID,
-            detailMode: .places
-        )
-        var history = HomeMacNavigationHistory()
+        withPlacesEnabled {
+            let taskID = UUID()
+            let emptyDetails = snapshot(detailMode: .details)
+            let taskDetails = snapshot(
+                sidebarSelection: .task(taskID),
+                selectedTaskID: taskID,
+                detailMode: .details
+            )
+            let places = snapshot(
+                sidebarSelection: .task(taskID),
+                selectedTaskID: taskID,
+                detailMode: .places
+            )
+            var history = HomeMacNavigationHistory()
 
-        history.record(emptyDetails)
-        history.record(taskDetails)
-        history.record(places)
+            history.record(emptyDetails)
+            history.record(taskDetails)
+            history.record(places)
 
-        #expect(history.goBack(from: places) == taskDetails)
-        #expect(history.goBack(from: taskDetails) == emptyDetails)
-        #expect(history.goForward(from: emptyDetails) == taskDetails)
-        #expect(history.goForward(from: taskDetails) == places)
+            #expect(history.goBack(from: places) == taskDetails)
+            #expect(history.goBack(from: taskDetails) == emptyDetails)
+            #expect(history.goForward(from: emptyDetails) == taskDetails)
+            #expect(history.goForward(from: taskDetails) == places)
+        }
     }
 
     @Test
     func recordingNewSnapshotAfterBackClearsForwardStack() {
-        let taskAID = UUID()
-        let taskBID = UUID()
-        let emptyDetails = snapshot(detailMode: .details)
-        let taskADetails = snapshot(
-            sidebarSelection: .task(taskAID),
-            selectedTaskID: taskAID,
-            detailMode: .details
-        )
-        let places = snapshot(
-            sidebarSelection: .task(taskAID),
-            selectedTaskID: taskAID,
-            detailMode: .places
-        )
-        let taskBDetails = snapshot(
-            sidebarSelection: .task(taskBID),
-            selectedTaskID: taskBID,
-            detailMode: .details
-        )
-        var history = HomeMacNavigationHistory()
+        withPlacesEnabled {
+            let taskAID = UUID()
+            let taskBID = UUID()
+            let emptyDetails = snapshot(detailMode: .details)
+            let taskADetails = snapshot(
+                sidebarSelection: .task(taskAID),
+                selectedTaskID: taskAID,
+                detailMode: .details
+            )
+            let places = snapshot(
+                sidebarSelection: .task(taskAID),
+                selectedTaskID: taskAID,
+                detailMode: .places
+            )
+            let taskBDetails = snapshot(
+                sidebarSelection: .task(taskBID),
+                selectedTaskID: taskBID,
+                detailMode: .details
+            )
+            var history = HomeMacNavigationHistory()
 
-        history.record(emptyDetails)
-        history.record(taskADetails)
-        history.record(places)
-        #expect(history.goBack(from: places) == taskADetails)
+            history.record(emptyDetails)
+            history.record(taskADetails)
+            history.record(places)
+            #expect(history.goBack(from: places) == taskADetails)
 
-        history.record(taskBDetails)
+            history.record(taskBDetails)
 
-        #expect(!history.canGoForward)
-        #expect(history.goBack(from: taskBDetails) == taskADetails)
+            #expect(!history.canGoForward)
+            #expect(history.goBack(from: taskBDetails) == taskADetails)
+        }
     }
 
     @Test
@@ -175,5 +180,20 @@ struct HomeMacNavigationHistoryTests {
             progressMode: progressMode,
             taskDetailPanePlacement: taskDetailPanePlacement
         )
+    }
+
+    private func withPlacesEnabled(_ operation: () -> Void) {
+        let key = UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue
+        let previousValue = SharedDefaults.app.object(forKey: key)
+        defer {
+            if let previousValue {
+                SharedDefaults.app.set(previousValue, forKey: key)
+            } else {
+                SharedDefaults.app.removeObject(forKey: key)
+            }
+        }
+
+        SharedDefaults.app[.appSettingPlacesEnabled] = true
+        operation()
     }
 }

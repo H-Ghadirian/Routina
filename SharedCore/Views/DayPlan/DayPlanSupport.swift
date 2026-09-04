@@ -53,10 +53,12 @@ struct DayPlanAdaptiveTimeAxis: Equatable {
 
             for interval in sortedIntervals {
                 let intervalEndMinute = interval.startMinute + interval.durationMinutes
-                guard let nextStartMinute = Self.firstStartMinute(
-                    atOrAfter: intervalEndMinute,
-                    in: sortedStartMinutes
-                ) else {
+                guard
+                    let nextStartMinute = Self.firstStartMinute(
+                        atOrAfter: intervalEndMinute,
+                        in: sortedStartMinutes
+                    )
+                else {
                     continue
                 }
 
@@ -178,9 +180,10 @@ struct DayPlanAdaptiveTimeAxis: Equatable {
 
         if let incrementMinutes {
             let increment = max(incrementMinutes, 1)
-            resolvedTargetMinute = Int(
-                (targetMinute / CGFloat(increment)).rounded()
-            ) * increment
+            resolvedTargetMinute =
+                Int(
+                    (targetMinute / CGFloat(increment)).rounded()
+                ) * increment
         } else {
             resolvedTargetMinute = Int(targetMinute.rounded())
         }
@@ -447,7 +450,8 @@ struct DayPlanVisibleBlockContext {
         }
 
         guard let task = tasksByID[taskID],
-              let day = Self.date(fromDayKey: dayKey, calendar: calendar) else {
+            let day = Self.date(fromDayKey: dayKey, calendar: calendar)
+        else {
             return false
         }
 
@@ -457,12 +461,12 @@ struct DayPlanVisibleBlockContext {
 
         return task.hidesAssumedDoneCalendarBlock
             && RoutineAssumedCompletion.isAssumedDone(
-            for: task,
-            on: day,
-            referenceDate: referenceDate,
-            logs: logs,
-            calendar: calendar
-        )
+                for: task,
+                on: day,
+                referenceDate: referenceDate,
+                logs: logs,
+                calendar: calendar
+            )
     }
 
     func isHiddenTaskDay(taskID: UUID, on date: Date) -> Bool {
@@ -487,9 +491,10 @@ struct DayPlanVisibleBlockContext {
     private static func date(fromDayKey dayKey: String, calendar: Calendar) -> Date? {
         let parts = dayKey.split(separator: "-")
         guard parts.count == 3,
-              let year = Int(parts[0]),
-              let month = Int(parts[1]),
-              let day = Int(parts[2]) else {
+            let year = Int(parts[0]),
+            let month = Int(parts[1]),
+            let day = Int(parts[2])
+        else {
             return nil
         }
 
@@ -511,8 +516,9 @@ enum DayPlanScheduleViewVisibility {
         blocks.filter { block in
             guard !block.isCompletedActivity else { return false }
             guard let context,
-                  let taskID = block.taskID,
-                  !block.isEvent else {
+                let taskID = block.taskID,
+                !block.isEvent
+            else {
                 return true
             }
             return !context.isHiddenTaskDay(taskID: taskID, on: block.startDate)
@@ -590,10 +596,12 @@ enum DayPlanCalendarTimelineActivityPresentationFilter {
         isTaskFilterActive: Bool,
         normalizedSearchText: String
     ) -> Bool {
-        guard filters.includesTimelineActivity(
-            activity,
-            includesAssumedDone: includesAssumedDone
-        ) else {
+        guard
+            filters.includesTimelineActivity(
+                activity,
+                includesAssumedDone: includesAssumedDone
+            )
+        else {
             return false
         }
 
@@ -715,1006 +723,37 @@ enum DayPlanVisibleBlocks {
         activeFocusSessions: [FocusSession],
         referenceDayKey: String?
     ) -> Set<UUID> {
-        Set(activeFocusSessions.compactMap { session in
-            guard session.plannedDurationSeconds <= 0,
-                  session.completedAt == nil,
-                  session.abandonedAt == nil,
-                  session.pausedAt == nil,
-                  session.startedAt != nil,
-                  session.isTaskFocus || session.isTagFocus else {
-                return nil
-            }
-
-            guard let latestSegmentBlock = DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
-                in: blocks,
-                for: session
-            ) else {
-                return nil
-            }
-
-            if let referenceDayKey, latestSegmentBlock.dayKey != referenceDayKey {
-                return nil
-            }
-
-            if latestSegmentBlock.id == session.id,
-               session.accumulatedPausedSeconds > 0 {
-                return nil
-            }
-
-            return latestSegmentBlock.id
-        })
-    }
-}
-
-struct DayPlanDoneTaskOccurrence: Equatable {
-    var source: DayPlanTimelineActivitySource
-    var completedAt: Date
-    var durationMinutes: Int
-    var hasSpecificTime: Bool = true
-}
-
-struct DayPlanDayTaskListItem: Identifiable, Equatable {
-    enum Section: String, CaseIterable, Equatable {
-        case planned
-        case assumedDone
-        case confirmedAssumedDone
-        case done
-
-        var title: String {
-            switch self {
-            case .planned:
-                return "Planned tasks"
-            case .assumedDone:
-                return "Assumed done"
-            case .confirmedAssumedDone:
-                return "Confirmed assumed done"
-            case .done:
-                return "Done"
-            }
-        }
-
-        var isRecordedCompletion: Bool {
-            self == .confirmedAssumedDone || self == .done
-        }
-    }
-
-    enum Placement: Equatable {
-        case anyTime
-        case allDay
-        case durationOnly(durationMinutes: Int)
-        case timed(startMinute: Int, durationMinutes: Int)
-    }
-
-    var id: String
-    var taskID: UUID
-    var blockID: UUID?
-    var title: String
-    var emoji: String?
-    var section: Section = .planned
-    var placement: Placement
-    var doneOccurrence: DayPlanDoneTaskOccurrence? = nil
-    var plannedCompletionDate: Date? = nil
-}
-
-struct DayPlanDoneTaskWorkTiming: Equatable {
-    var startMinute: Int
-    var durationMinutes: Int
-}
-
-extension DayPlanDoneTaskOccurrence {
-    func workTiming(calendar: Calendar) -> DayPlanDoneTaskWorkTiming {
-        let durationMinutes = DayPlanBlock.clampedDuration(
-            durationMinutes,
-            startMinute: 0,
-            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-        )
-        let completionComponents = calendar.dateComponents(
-            [.hour, .minute],
-            from: completedAt
-        )
-        let completionMinute = ((completionComponents.hour ?? 0) * 60)
-            + (completionComponents.minute ?? 0)
-        let startMinute = DayPlanBlock.clampedStartMinute(
-            max(0, completionMinute - durationMinutes)
-        )
-        return DayPlanDoneTaskWorkTiming(
-            startMinute: startMinute,
-            durationMinutes: DayPlanBlock.clampedDuration(
-                durationMinutes,
-                startMinute: hasSpecificTime ? startMinute : 0,
-                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-            )
-        )
-    }
-}
-
-struct DayPlanDayTaskCounts: Equatable {
-    var planned: Int = 0
-    var assumedDone: Int = 0
-    var confirmedAssumedDone: Int = 0
-    var done: Int = 0
-
-    var total: Int {
-        planned + assumedDone + confirmedAssumedDone + done
-    }
-
-    init(
-        planned: Int = 0,
-        assumedDone: Int = 0,
-        confirmedAssumedDone: Int = 0,
-        done: Int = 0
-    ) {
-        self.planned = planned
-        self.assumedDone = assumedDone
-        self.confirmedAssumedDone = confirmedAssumedDone
-        self.done = done
-    }
-
-    init(items: [DayPlanDayTaskListItem]) {
-        for item in items {
-            switch item.section {
-            case .planned:
-                planned += 1
-            case .assumedDone:
-                assumedDone += 1
-            case .confirmedAssumedDone:
-                confirmedAssumedDone += 1
-            case .done:
-                done += 1
-            }
-        }
-    }
-}
-
-struct DayPlanDayTaskResolutionOverlay: Equatable {
-    enum Resolution: Equatable {
-        case completed(DayPlanDoneTaskOccurrence)
-        case missed
-    }
-
-    private struct Key: Hashable {
-        var taskID: UUID
-        var dayKey: String
-    }
-
-    private var resolutions: [Key: Resolution] = [:]
-
-    mutating func complete(
-        _ item: DayPlanDayTaskListItem,
-        on date: Date,
-        completedAt: Date,
-        calendar: Calendar
-    ) {
-        resolutions[key(for: item.taskID, on: date, calendar: calendar)] = .completed(
-            DayPlanDoneTaskOccurrence(
-                source: .taskLastDone,
-                completedAt: completedAt,
-                durationMinutes: durationMinutes(for: item.placement),
-                hasSpecificTime: hasSpecificTime(for: item.placement)
-            )
-        )
-    }
-
-    mutating func markMissed(
-        taskID: UUID,
-        on date: Date,
-        calendar: Calendar
-    ) {
-        resolutions[key(for: taskID, on: date, calendar: calendar)] = .missed
-    }
-
-    mutating func reset() {
-        resolutions.removeAll(keepingCapacity: true)
-    }
-
-    func applying(
-        to items: [DayPlanDayTaskListItem],
-        on date: Date,
-        calendar: Calendar
-    ) -> [DayPlanDayTaskListItem] {
-        guard !resolutions.isEmpty else { return items }
-        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-
-        return items.compactMap { item in
-            guard let resolution = resolutions[Key(taskID: item.taskID, dayKey: dayKey)]
-            else {
-                return item
-            }
-
-            switch resolution {
-            case let .completed(doneOccurrence):
-                guard item.section == .planned || item.section == .assumedDone else {
-                    return item
-                }
-                var confirmedItem = item
-                confirmedItem.section = item.section == .assumedDone
-                    ? .confirmedAssumedDone
-                    : .done
-                confirmedItem.doneOccurrence = doneOccurrence
-                confirmedItem.plannedCompletionDate = nil
-                return confirmedItem
-            case .missed:
-                return item.section == .assumedDone ? nil : item
-            }
-        }
-    }
-
-    private func key(
-        for taskID: UUID,
-        on date: Date,
-        calendar: Calendar
-    ) -> Key {
-        Key(
-            taskID: taskID,
-            dayKey: DayPlanStorage.dayKey(for: date, calendar: calendar)
-        )
-    }
-
-    private func durationMinutes(for placement: DayPlanDayTaskListItem.Placement) -> Int {
-        switch placement {
-        case let .durationOnly(durationMinutes), let .timed(_, durationMinutes):
-            return durationMinutes
-        case .anyTime, .allDay:
-            return 0
-        }
-    }
-
-    private func hasSpecificTime(for placement: DayPlanDayTaskListItem.Placement) -> Bool {
-        if case .timed = placement {
-            return true
-        }
-        return false
-    }
-}
-
-enum DayPlanPlannedTaskCompletion {
-    static func completionDate(
-        for task: RoutineTask,
-        on selectedDay: Date,
-        placement: DayPlanDayTaskListItem.Placement,
-        referenceDate: Date,
-        logs: [RoutineLog],
-        calendar: Calendar
-    ) -> Date? {
-        let selectedDayStart = calendar.startOfDay(for: selectedDay)
-        let referenceDayStart = calendar.startOfDay(for: referenceDate)
-        guard selectedDayStart <= referenceDayStart,
-              !task.hasSequentialSteps,
-              !task.isChecklistCompletionRoutine,
-              !task.blocksManualCompletionForIncompleteChecklist
-        else {
-            return nil
-        }
-
-        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
-            guard let completionDate = RoutineDateMath.completionTargetDate(
-                for: task,
-                selectedDay: selectedDayStart,
-                referenceDate: referenceDate,
-                calendar: calendar
-            ), RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
-                for: task,
-                completionDate: completionDate,
-                referenceDate: referenceDate,
-                logs: logs,
-                calendar: calendar
-            ) else {
-                return nil
-            }
-            return completionDate
-        }
-
-        let completionDate: Date
-        if calendar.isDate(selectedDayStart, inSameDayAs: referenceDayStart) {
-            completionDate = referenceDate
-        } else if case let .timed(startMinute, durationMinutes) = placement {
-            completionDate = calendar.date(
-                byAdding: .minute,
-                value: startMinute + durationMinutes,
-                to: selectedDayStart
-            ) ?? selectedDayStart
-        } else if let timeOfDay = task.recurrenceRule.timeRange?.start
-            ?? task.recurrenceRule.timeOfDay,
-            !task.isOneOffTask {
-            completionDate = timeOfDay.date(on: selectedDayStart, calendar: calendar)
-        } else {
-            completionDate = calendar.date(
-                bySettingHour: 12,
-                minute: 0,
-                second: 0,
-                of: selectedDayStart
-            ) ?? selectedDayStart
-        }
-
-        let isHistoricalCompletion = !calendar.isDate(
-            completionDate,
-            inSameDayAs: referenceDate
-        )
-        let canMarkDone = RoutineDateMath.canMarkDone(
-            for: task,
-            referenceDate: completionDate,
-            calendar: calendar,
-            ignoreArchiveAtReferenceDate: isHistoricalCompletion
-        )
-        let canCompleteEarly = RoutineDateMath.canCompleteScheduledOccurrenceEarly(
-            for: task,
-            completedAt: completionDate,
-            calendar: calendar
-        )
-        return canMarkDone || canCompleteEarly ? completionDate : nil
-    }
-}
-
-enum DayPlanDayTaskListPresentation {
-    static func items(
-        on date: Date,
-        timedBlocks: [DayPlanBlock],
-        allDayBlocks: [DayPlanAllDayBlock],
-        plannedDateTasks: [RoutineTask] = [],
-        timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
-        tasks: [RoutineTask] = [],
-        logs: [RoutineLog] = [],
-        referenceDate: Date = Date(),
-        calendar: Calendar,
-        excludedTaskIDs: Set<UUID> = [],
-        visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
-    ) -> [DayPlanDayTaskListItem] {
-        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-        let completionContext = DayPlanDayTaskListCompletionContext(
-            tasks: tasks,
-            logs: logs,
-            calendar: calendar
-        )
-        let allDayItems = allDayBlocks
-            .enumerated()
-            .compactMap { offset, allDayBlock -> DayPlanDayTaskListItem? in
-                guard let taskID = allDayBlock.taskID,
-                      !allDayBlock.isEvent,
-                      !excludedTaskIDs.contains(taskID),
-                      allDayBlockIntersects(allDayBlock, date: date, calendar: calendar) else {
-                    return nil
-                }
-                guard let section = completionContext.sectionForPlannerBackedTask(
-                    taskID,
-                    dayKey: dayKey
-                ) else {
-                    return nil
-                }
-
-                return DayPlanDayTaskListItem(
-                    id: "all-day-\(taskID.uuidString)-\(offset)",
-                    taskID: taskID,
-                    blockID: nil,
-                    title: allDayBlock.title,
-                    emoji: allDayBlock.emoji,
-                    section: section,
-                    placement: .allDay,
-                    doneOccurrence: section.isRecordedCompletion
-                        ? completionContext.doneOccurrence(taskID, dayKey: dayKey)
-                        : nil
-                )
-            }
-            .sorted { lhs, rhs in
-                let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
-                if titleComparison != .orderedSame {
-                    return titleComparison == .orderedAscending
-                }
-                return lhs.id < rhs.id
-            }
-
-        let plannedTaskIDs = Set(allDayItems.map(\.taskID) + timedBlocks.map(\.taskID))
-        let plannedDateItems = plannedDateTasks
-            .compactMap { task -> DayPlanDayTaskListItem? in
-                guard !plannedTaskIDs.contains(task.id),
-                      !excludedTaskIDs.contains(task.id),
-                      !completionContext.hasCompletion(
-                        task.id,
-                        dayKey: dayKey
-                      ),
-                      isVisiblePlannedDateTask(
-                        task,
-                        on: date,
-                        calendar: calendar,
-                        visibilityCache: visibilityCache
-                      ) else {
-                    return nil
-                }
-
-                return DayPlanDayTaskListItem(
-                    id: "planned-date-\(task.id.uuidString)",
-                    taskID: task.id,
-                    blockID: nil,
-                    title: DayPlanTaskSorting.title(for: task),
-                    emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
-                    placement: .anyTime
-                )
-            }
-            .sorted { lhs, rhs in
-                let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
-                if titleComparison != .orderedSame {
-                    return titleComparison == .orderedAscending
-                }
-                return lhs.id < rhs.id
-            }
-
-        let timedItems = timedBlocks
-            .compactMap { block -> DayPlanDayTaskListItem? in
-                guard !excludedTaskIDs.contains(block.taskID) else { return nil }
-                let section: DayPlanDayTaskListItem.Section
-                if block.taskID == FocusSession.unassignedTaskID {
-                    section = .done
-                } else {
-                    guard let plannerSection = completionContext.sectionForPlannerBackedTask(
-                        block.taskID,
-                        dayKey: dayKey
-                    ) else {
-                        return nil
-                    }
-                    section = plannerSection
-                }
-
-                return DayPlanDayTaskListItem(
-                    id: "timed-\(block.id.uuidString)",
-                    taskID: block.taskID,
-                    blockID: block.id,
-                    title: block.titleSnapshot,
-                    emoji: block.emojiSnapshot,
-                    section: section,
-                    placement: .timed(
-                        startMinute: block.startMinute,
-                        durationMinutes: block.durationMinutes
-                    ),
-                    doneOccurrence: section.isRecordedCompletion
-                        ? completionContext.doneOccurrence(block.taskID, dayKey: dayKey)
-                        : nil
-                )
-            }
-            .sorted { lhs, rhs in
-                switch (lhs.placement, rhs.placement) {
-                case let (.timed(lhsStart, _), .timed(rhsStart, _)) where lhsStart != rhsStart:
-                    return lhsStart < rhsStart
-                default:
-                    let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
-                    if titleComparison != .orderedSame {
-                        return titleComparison == .orderedAscending
-                    }
-                    return lhs.id < rhs.id
-                }
-            }
-
-        let activityItems = timelineActivityBlocks
-            .compactMap { activity -> DayPlanDayTaskListItem? in
-                guard activity.kind == .completed else { return nil }
-
-                let block = activity.block
-                guard !excludedTaskIDs.contains(block.taskID) else { return nil }
-                let section: DayPlanDayTaskListItem.Section
-                let identifierPrefix: String
-                if activity.source.isSyntheticAssumedDone {
-                    section = .assumedDone
-                    identifierPrefix = "assumed"
-                } else if activity.isConfirmedAssumedDone {
-                    section = .confirmedAssumedDone
-                    identifierPrefix = "confirmed-assumed"
-                } else {
-                    section = .done
-                    identifierPrefix = "done"
-                }
-                return DayPlanDayTaskListItem(
-                    id: "\(identifierPrefix)-\(activity.id)",
-                    taskID: block.taskID,
-                    blockID: nil,
-                    title: block.titleSnapshot,
-                    emoji: block.emojiSnapshot,
-                    section: section,
-                    placement: activity.hasSpecificTime
-                        ? .timed(
-                            startMinute: block.startMinute,
-                            durationMinutes: block.durationMinutes
-                        )
-                        : .durationOnly(durationMinutes: block.durationMinutes),
-                    doneOccurrence: activity.source.isSyntheticAssumedDone
-                        ? nil
-                        : DayPlanDoneTaskOccurrence(
-                            source: activity.source,
-                            completedAt: block.updatedAt,
-                            durationMinutes: block.durationMinutes,
-                            hasSpecificTime: activity.hasSpecificTime
-                        )
-                )
-            }
-
-        let assumedDoneItems = sortedActivityItems(
-            activityItems.filter { $0.section == .assumedDone }
-        )
-        let assumedDoneTaskIDs = Set(assumedDoneItems.map(\.taskID))
-        let plannerBackedRecordedCompletionItems = (
-            allDayItems.filter { $0.section.isRecordedCompletion }
-                + timedItems.filter { $0.section.isRecordedCompletion }
-        )
-        .map { recordedCompletionItem($0, calendar: calendar) }
-        let rawRecordedCompletionItems = sortedActivityItems(
-            plannerBackedRecordedCompletionItems
-                + activityItems.filter { $0.section.isRecordedCompletion }
-        )
-        let confirmedAssumedDoneItems = rawRecordedCompletionItems.filter {
-            $0.section == .confirmedAssumedDone
-        }
-        let rawDoneItems = rawRecordedCompletionItems.filter { $0.section == .done }
-        let plannedAllDayItems = allDayItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
-        let plannedTimedItems = timedItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
-        let visibleTaskIDsBeforeFulfillmentSuppression = Set(
-            (plannedAllDayItems
-                + plannedDateItems
-                + plannedTimedItems
-                + assumedDoneItems
-                + confirmedAssumedDoneItems
-                + rawDoneItems)
-                .map(\.taskID)
-        )
-        let doneItems = rawDoneItems.filter { item in
-            let sourceTaskIDs = completionContext.fulfillmentSourceTaskIDs(
-                for: item.taskID,
-                dayKey: dayKey
-            )
-            guard !sourceTaskIDs.isEmpty,
-                  !completionContext.hasDirectCompletion(item.taskID, dayKey: dayKey),
-                  !sourceTaskIDs.isDisjoint(with: visibleTaskIDsBeforeFulfillmentSuppression)
-            else {
-                return true
-            }
-            return false
-        }
-
-        return (plannedAllDayItems
-            + plannedDateItems
-            + plannedTimedItems
-            + assumedDoneItems
-            + confirmedAssumedDoneItems
-            + doneItems)
-            .map { item in
-                guard item.section == .planned,
-                      let task = completionContext.task(item.taskID)
+        Set(
+            activeFocusSessions.compactMap { session in
+                guard session.plannedDurationSeconds <= 0,
+                    session.completedAt == nil,
+                    session.abandonedAt == nil,
+                    session.pausedAt == nil,
+                    session.startedAt != nil,
+                    session.isTaskFocus || session.isTagFocus
                 else {
-                    return item
+                    return nil
                 }
-                var completableItem = item
-                completableItem.plannedCompletionDate = DayPlanPlannedTaskCompletion.completionDate(
-                    for: task,
-                    on: date,
-                    placement: item.placement,
-                    referenceDate: referenceDate,
-                    logs: logs,
-                    calendar: calendar
-                )
-                return completableItem
-            }
-    }
 
-    private static func sortedActivityItems(_ items: [DayPlanDayTaskListItem]) -> [DayPlanDayTaskListItem] {
-        items.sorted { lhs, rhs in
-            switch (lhs.placement, rhs.placement) {
-            case let (.timed(lhsStart, _), .timed(rhsStart, _)) where lhsStart != rhsStart:
-                return lhsStart < rhsStart
-            default:
-                let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
-                if titleComparison != .orderedSame {
-                    return titleComparison == .orderedAscending
-                }
-                return lhs.id < rhs.id
-            }
-        }
-    }
-
-    private static func recordedCompletionItem(
-        _ item: DayPlanDayTaskListItem,
-        calendar: Calendar
-    ) -> DayPlanDayTaskListItem {
-        guard let occurrence = item.doneOccurrence else { return item }
-
-        var recordedItem = item
-        let workTiming = occurrence.workTiming(calendar: calendar)
-        if occurrence.hasSpecificTime {
-            recordedItem.placement = .timed(
-                startMinute: workTiming.startMinute,
-                durationMinutes: workTiming.durationMinutes
-            )
-        } else {
-            recordedItem.placement = .durationOnly(
-                durationMinutes: workTiming.durationMinutes
-            )
-        }
-        return recordedItem
-    }
-
-    private static func allDayBlockIntersects(
-        _ block: DayPlanAllDayBlock,
-        date: Date,
-        calendar: Calendar
-    ) -> Bool {
-        let dayStart = calendar.startOfDay(for: date)
-        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
-            return false
-        }
-        return block.startDate < dayEnd && block.endDate > dayStart
-    }
-
-    private static func isVisiblePlannedDateTask(
-        _ task: RoutineTask,
-        on date: Date,
-        calendar: Calendar,
-        visibilityCache: DayPlanPlannedDateTaskVisibilityCache?
-    ) -> Bool {
-        guard let plannedDate = task.plannedDate else { return false }
-        let dayStart = calendar.startOfDay(for: date)
-        let isDailyRoutineForTaskList = visibilityCache?.isDailyRoutineForTaskList(task)
-            ?? task.isDailyRoutineForTaskList
-        return RoutineTaskPlanningSupport.supportsStoredPlanning(
-                scheduleMode: task.scheduleMode,
-                cadenceEnabled: task.cadenceEnabled,
-                isDailyRoutine: isDailyRoutineForTaskList
-            )
-            && !task.isCompletedOneOff
-            && !task.isCanceledOneOff
-            && !task.isPinned
-            && !task.isArchived(referenceDate: dayStart, calendar: calendar)
-            && calendar.isDate(plannedDate, inSameDayAs: dayStart)
-    }
-}
-
-private struct DayPlanDayTaskListCompletionContext {
-    private var tasksByID: [UUID: RoutineTask] = [:]
-    private var completedDayKeysByTaskID: [UUID: Set<String>] = [:]
-    private var directCompletedDayKeysByTaskID: [UUID: Set<String>] = [:]
-    private var confirmedAssumedDoneDayKeysByTaskID: [UUID: Set<String>] = [:]
-    private var fulfillmentSourceTaskIDsByTaskIDAndDayKey: [UUID: [String: Set<UUID>]] = [:]
-    private var doneOccurrencesByTaskIDAndDayKey: [UUID: [String: DayPlanDoneTaskOccurrence]] = [:]
-
-    init(
-        tasks: [RoutineTask],
-        logs: [RoutineLog],
-        calendar: Calendar
-    ) {
-        for task in tasks {
-            tasksByID[task.id] = task
-            if let lastDone = task.lastDone,
-               let dayKey = recordCompletion(lastDone, taskID: task.id, calendar: calendar) {
-                recordDoneOccurrence(
-                    DayPlanDoneTaskOccurrence(
-                        source: .taskLastDone,
-                        completedAt: lastDone,
-                        durationMinutes: effectiveDurationMinutes(
-                            actualDurationMinutes: task.actualDurationMinutes,
-                            task: task
-                        ),
-                        hasSpecificTime: true
-                    ),
-                    taskID: task.id,
-                    dayKey: dayKey
-                )
-            }
-        }
-
-        for log in logs where log.kind.resolvesDoneDate {
-            guard let dayKey = recordCompletion(log.timestamp, taskID: log.taskID, calendar: calendar) else {
-                continue
-            }
-            switch log.kind {
-            case .completed:
-                directCompletedDayKeysByTaskID[log.taskID, default: []].insert(dayKey)
-                if log.isConfirmedAssumedDone {
-                    confirmedAssumedDoneDayKeysByTaskID[log.taskID, default: []].insert(dayKey)
-                }
-                if let timestamp = log.timestamp {
-                    recordDoneOccurrence(
-                        DayPlanDoneTaskOccurrence(
-                            source: .log(log.id),
-                            completedAt: timestamp,
-                            durationMinutes: effectiveDurationMinutes(
-                                actualDurationMinutes: log.actualDurationMinutes,
-                                task: tasksByID[log.taskID]
-                            ),
-                            hasSpecificTime: log.hasSpecificWorkTime ?? true
-                        ),
-                        taskID: log.taskID,
-                        dayKey: dayKey
+                guard
+                    let latestSegmentBlock = DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
+                        in: blocks,
+                        for: session
                     )
+                else {
+                    return nil
                 }
-            case .fulfilled:
-                guard let sourceTaskID = log.sourceTaskID else { break }
-                fulfillmentSourceTaskIDsByTaskIDAndDayKey[log.taskID, default: [:]][dayKey, default: []]
-                    .insert(sourceTaskID)
-            case .canceled, .missed:
-                break
-            }
-        }
-    }
 
-    @discardableResult
-    mutating private func recordCompletion(
-        _ timestamp: Date?,
-        taskID: UUID,
-        calendar: Calendar
-    ) -> String? {
-        guard let timestamp else { return nil }
-        let dayKey = displayDayKey(for: timestamp, taskID: taskID, calendar: calendar)
-        completedDayKeysByTaskID[taskID, default: []].insert(dayKey)
-        return dayKey
-    }
+                if let referenceDayKey, latestSegmentBlock.dayKey != referenceDayKey {
+                    return nil
+                }
 
-    private func displayDayKey(
-        for timestamp: Date,
-        taskID: UUID,
-        calendar: Calendar
-    ) -> String {
-        let displayDay = tasksByID[taskID]
-            .flatMap { task in
-                RoutineDateMath.completionDisplayDay(
-                    for: task,
-                    completionDate: timestamp,
-                    calendar: calendar
-                )
-            }
-            ?? calendar.startOfDay(for: timestamp)
-        return DayPlanStorage.dayKey(for: displayDay, calendar: calendar)
-    }
+                if latestSegmentBlock.id == session.id, session.accumulatedPausedSeconds > 0 {
+                    return nil
+                }
 
-    func hasCompletion(
-        _ taskID: UUID,
-        dayKey: String
-    ) -> Bool {
-        completedDayKeysByTaskID[taskID]?.contains(dayKey) == true
-    }
-
-    func hasDirectCompletion(
-        _ taskID: UUID,
-        dayKey: String
-    ) -> Bool {
-        directCompletedDayKeysByTaskID[taskID]?.contains(dayKey) == true
-    }
-
-    func fulfillmentSourceTaskIDs(
-        for taskID: UUID,
-        dayKey: String
-    ) -> Set<UUID> {
-        fulfillmentSourceTaskIDsByTaskIDAndDayKey[taskID]?[dayKey] ?? []
-    }
-
-    func doneOccurrence(
-        _ taskID: UUID,
-        dayKey: String
-    ) -> DayPlanDoneTaskOccurrence? {
-        doneOccurrencesByTaskIDAndDayKey[taskID]?[dayKey]
-    }
-
-    func task(_ taskID: UUID) -> RoutineTask? {
-        tasksByID[taskID]
-    }
-
-    func sectionForPlannerBackedTask(
-        _ taskID: UUID,
-        dayKey: String
-    ) -> DayPlanDayTaskListItem.Section? {
-        if hasCompletion(taskID, dayKey: dayKey) {
-            return confirmedAssumedDoneDayKeysByTaskID[taskID]?.contains(dayKey) == true
-                ? .confirmedAssumedDone
-                : .done
-        }
-        if tasksByID[taskID]?.isCompletedOneOff == true {
-            return nil
-        }
-        return .planned
-    }
-
-    private mutating func recordDoneOccurrence(
-        _ occurrence: DayPlanDoneTaskOccurrence,
-        taskID: UUID,
-        dayKey: String
-    ) {
-        if let current = doneOccurrencesByTaskIDAndDayKey[taskID]?[dayKey],
-           occurrence.completedAt < current.completedAt {
-            return
-        }
-        doneOccurrencesByTaskIDAndDayKey[taskID, default: [:]][dayKey] = occurrence
-    }
-
-    private func effectiveDurationMinutes(
-        actualDurationMinutes: Int?,
-        task: RoutineTask?
-    ) -> Int {
-        actualDurationMinutes
-            ?? task?.estimatedDurationMinutes
-            ?? DayPlanBlock.minimumDurationMinutes * 2
-    }
-}
-
-final class DayPlanDayTaskListItemsCache: ObservableObject {
-    private struct Signature: Hashable {
-        var dataSnapshotID: UUID
-        var dayKey: String
-        var calendarIdentifier: String
-        var timeZoneIdentifier: String
-        var firstWeekday: Int
-        var minimumDaysInFirstWeek: Int
-        var visibilitySignature: DayPlanDayTaskListVisibilitySignature
-        var excludedTaskIDs: Set<UUID>
-        var completionReferenceMinute: Int
-        var timedBlocks: [TimedBlockSignature]
-        var timelineActivities: [TimelineActivitySignature]
-
-        init(
-            dataSnapshotID: UUID,
-            date: Date,
-            timedBlocks: [DayPlanBlock],
-            timelineActivityBlocks: [DayPlanTimelineActivityBlock],
-            referenceDate: Date,
-            calendar: Calendar,
-            visibilitySignature: DayPlanDayTaskListVisibilitySignature,
-            excludedTaskIDs: Set<UUID>
-        ) {
-            self.dataSnapshotID = dataSnapshotID
-            dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-            calendarIdentifier = String(describing: calendar.identifier)
-            timeZoneIdentifier = calendar.timeZone.identifier
-            firstWeekday = calendar.firstWeekday
-            minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
-            self.visibilitySignature = visibilitySignature
-            self.excludedTaskIDs = excludedTaskIDs
-            completionReferenceMinute = Int(referenceDate.timeIntervalSinceReferenceDate / 60)
-            self.timedBlocks = timedBlocks.map(TimedBlockSignature.init(block:))
-            timelineActivities = timelineActivityBlocks
-                .map(TimelineActivitySignature.init(activity:))
-                .sorted { $0.id < $1.id }
-        }
-    }
-
-    private struct TimedBlockSignature: Hashable {
-        var id: UUID
-        var taskID: UUID
-        var dayKey: String
-        var startMinute: Int
-        var durationMinutes: Int
-        var titleSnapshot: String
-        var emojiSnapshot: String?
-
-        init(block: DayPlanBlock) {
-            id = block.id
-            taskID = block.taskID
-            dayKey = block.dayKey
-            startMinute = block.startMinute
-            durationMinutes = block.durationMinutes
-            titleSnapshot = block.titleSnapshot
-            emojiSnapshot = block.emojiSnapshot
-        }
-    }
-
-    private struct TimelineActivitySignature: Hashable {
-        var id: String
-        var kindRawValue: String
-        var taskID: UUID
-        var dayKey: String
-        var startMinute: Int
-        var durationMinutes: Int
-        var titleSnapshot: String
-        var emojiSnapshot: String?
-        var updatedAt: Date
-        var isConfirmedAssumedDone: Bool
-
-        init(activity: DayPlanTimelineActivityBlock) {
-            let block = activity.block
-            id = activity.id
-            kindRawValue = activity.kind.rawValue
-            taskID = block.taskID
-            dayKey = block.dayKey
-            startMinute = block.startMinute
-            durationMinutes = block.durationMinutes
-            titleSnapshot = block.titleSnapshot
-            emojiSnapshot = block.emojiSnapshot
-            updatedAt = block.updatedAt
-            isConfirmedAssumedDone = activity.isConfirmedAssumedDone
-        }
-    }
-
-    private var itemsBySignature: [Signature: [DayPlanDayTaskListItem]] = [:]
-
-    func items(
-        dataSnapshotID: UUID,
-        on date: Date,
-        timedBlocks: [DayPlanBlock],
-        allDayBlocks: [DayPlanAllDayBlock],
-        plannedDateTasks: [RoutineTask],
-        timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
-        tasks: [RoutineTask] = [],
-        logs: [RoutineLog] = [],
-        referenceDate: Date = Date(),
-        calendar: Calendar,
-        visibilitySignature: DayPlanDayTaskListVisibilitySignature = .unfiltered,
-        excludedTaskIDs: Set<UUID> = [],
-        visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
-    ) -> [DayPlanDayTaskListItem] {
-        let signature = Signature(
-            dataSnapshotID: dataSnapshotID,
-            date: date,
-            timedBlocks: timedBlocks,
-            timelineActivityBlocks: timelineActivityBlocks,
-            referenceDate: referenceDate,
-            calendar: calendar,
-            visibilitySignature: visibilitySignature,
-            excludedTaskIDs: excludedTaskIDs
-        )
-        if let items = itemsBySignature[signature] {
-            return items
-        }
-
-        let items = DayPlanDayTaskListPresentation.items(
-            on: date,
-            timedBlocks: timedBlocks,
-            allDayBlocks: allDayBlocks,
-            plannedDateTasks: plannedDateTasks,
-            timelineActivityBlocks: timelineActivityBlocks,
-            tasks: tasks,
-            logs: logs,
-            referenceDate: referenceDate,
-            calendar: calendar,
-            excludedTaskIDs: excludedTaskIDs,
-            visibilityCache: visibilityCache
-        )
-        if itemsBySignature.count > 96 {
-            itemsBySignature.removeAll(keepingCapacity: true)
-        }
-        itemsBySignature[signature] = items
-        return items
-    }
-}
-
-final class DayPlanPlannedDateTaskVisibilityCache: ObservableObject {
-    private struct Signature: Equatable {
-        var scheduleModeRawValue: String
-        var recurrenceStorageVersion: Int16
-        var recurrenceKindRawValue: String?
-        var recurrenceTimeOfDayHour: Int?
-        var recurrenceTimeOfDayMinute: Int?
-        var recurrenceTimeRangeStartHour: Int?
-        var recurrenceTimeRangeStartMinute: Int?
-        var recurrenceTimeRangeEndHour: Int?
-        var recurrenceTimeRangeEndMinute: Int?
-        var recurrenceWeekday: Int?
-        var recurrenceDayOfMonth: Int?
-        var recurrenceRuleStorage: String
-        var checklistItemsStorage: String
-
-        init(task: RoutineTask) {
-            scheduleModeRawValue = task.scheduleModeRawValue
-            recurrenceStorageVersion = task.recurrenceStorageVersion
-            recurrenceKindRawValue = task.recurrenceKindRawValue
-            recurrenceTimeOfDayHour = task.recurrenceTimeOfDayHour
-            recurrenceTimeOfDayMinute = task.recurrenceTimeOfDayMinute
-            recurrenceTimeRangeStartHour = task.recurrenceTimeRangeStartHour
-            recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
-            recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
-            recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
-            recurrenceWeekday = task.recurrenceWeekday
-            recurrenceDayOfMonth = task.recurrenceDayOfMonth
-            recurrenceRuleStorage = task.recurrenceRuleStorage
-            checklistItemsStorage = task.checklistItemsStorage
-        }
-    }
-
-    private struct Entry {
-        var signature: Signature
-        var isDailyRoutineForTaskList: Bool
-    }
-
-    private var entries: [UUID: Entry] = [:]
-
-    func isDailyRoutineForTaskList(_ task: RoutineTask) -> Bool {
-        let signature = Signature(task: task)
-        if let entry = entries[task.id], entry.signature == signature {
-            return entry.isDailyRoutineForTaskList
-        }
-        let value = task.isDailyRoutineForTaskList
-        entries[task.id] = Entry(signature: signature, isDailyRoutineForTaskList: value)
-        return value
+                return latestSegmentBlock.id
+            })
     }
 }
 

@@ -159,7 +159,7 @@ struct StatsFeatureDerivedStateSupportTests {
         }?.count == 1)
         #expect(state.metrics.sparklinePoints.first {
             calendar.isDate($0.date, equalTo: makeDate("2026-05-01T00:00:00Z"), toGranularity: .month)
-        }?.count == 0)
+        }?.count == .zero)
         #expect(state.metrics.sparklineMaxCount == 2)
     }
 
@@ -215,7 +215,7 @@ struct StatsFeatureDerivedStateSupportTests {
 
             return DoneChartPoint(date: date, count: offset.isMultiple(of: 2) ? 1 : 0)
         }
-        let activeDates = Set(points.filter { $0.count > 0 }.map(\.date))
+        let activeDates = Set(points.filter { $0.count > .zero }.map(\.date))
 
         let axisDates = StatsChartPresentation(
             selectedRange: .year,
@@ -972,11 +972,7 @@ struct StatsFeatureDerivedStateSupportTests {
         ]
 
         for path in chartPaths {
-            let source = try String(
-                contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                    .appendingPathComponent(path),
-                encoding: .utf8
-            )
+            let source = try SourceInspectionSupport.readProjectFile(path)
 
             #expect(source.contains("x: .fit(to: .chart)"), "Missing horizontal annotation fitting in \(path)")
         }
@@ -984,10 +980,8 @@ struct StatsFeatureDerivedStateSupportTests {
 
     @Test
     func focusChartScrollContentFillsItsAvailableViewport() throws {
-        let source = try String(
-            contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("SharedCore/Views/StatsFocusChartSection.swift"),
-            encoding: .utf8
+        let source = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Views/StatsFocusChartSection.swift"
         )
 
         #expect(source.contains(".containerRelativeFrame(.horizontal)"))
@@ -997,10 +991,8 @@ struct StatsFeatureDerivedStateSupportTests {
 
     @Test
     func cumulativeFocusChartFitsItsWholeTrendInTheViewport() throws {
-        let source = try String(
-            contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("SharedCore/Views/StatsFocusChartSection.swift"),
-            encoding: .utf8
+        let source = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Views/StatsFocusChartSection.swift"
         )
         let start = try #require(source.range(of: "private struct StatsFocusCumulativeChart"))
         let end = try #require(
@@ -1019,10 +1011,8 @@ struct StatsFeatureDerivedStateSupportTests {
 
     @Test
     func hourlyActivityFactsUseAReadableSummaryPanel() throws {
-        let source = try String(
-            contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("SharedCore/Views/StatsHourlyActivitySection.swift"),
-            encoding: .utf8
+        let source = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Views/StatsHourlyActivitySection.swift"
         )
 
         #expect(source.contains("StatsHourlyActivitySummaryPanel("))
@@ -1090,17 +1080,11 @@ struct StatsFeatureDerivedStateSupportTests {
 
     @Test
     func iOSStatsScrollBuilderStaysLazyAndHistoryFree() throws {
-        let repositoryURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let viewSource = try String(
-            contentsOf: repositoryURL.appendingPathComponent("iOS/Screens/Stats/StatsView.swift"),
-            encoding: .utf8
+        let viewSource = try SourceInspectionSupport.readProjectFile(
+            "iOS/Screens/Stats/StatsView.swift"
         )
-        let featureSource = try String(
-            contentsOf: repositoryURL.appendingPathComponent("iOS/Features/App/AppFeature.swift"),
-            encoding: .utf8
+        let featureSource = try SourceInspectionSupport.readProjectFile(
+            "iOS/Features/App/AppFeature.swift"
         )
         let dashboardStart = try #require(
             viewSource.range(of: "private var statsDashboardContent: some View")

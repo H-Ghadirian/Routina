@@ -812,6 +812,17 @@ extension HomeTCAView {
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
+    private var macTimelineSidebarEntryCount: Int {
+        timelineSourceLogs.count
+            + (areMacEventEmotionActionsEnabled ? events.count + emotionLogs.count : 0)
+            + (isNotesEnabled ? notes.count : 0)
+            + focusSessions.count
+            + sprintFocusSessions.count
+            + (includesMacSleepTimelineFilters ? sleepSessions.count : 0)
+            + (isAwayEnabled ? awaySessions.count : 0)
+            + (isPlacesEnabled ? placeCheckInSessions.count : 0)
+    }
+
     func macPlannerTimelineListView(dateJumpRequest: DayPlanTimelineDateJumpRequest?) -> some View {
         HomeMacPlannerTimelineListView(
             timelineEntryCount: plannerTimelineEntryCount,
@@ -864,7 +875,7 @@ extension HomeTCAView {
             }
 
             HomeMacTimelineSidebarView(
-                timelineEntryCount: timelineSourceLogs.count + (areMacEventEmotionActionsEnabled ? events.count + emotionLogs.count : 0) + (isNotesEnabled ? notes.count : 0) + focusSessions.count + sprintFocusSessions.count + (includesMacSleepTimelineFilters ? sleepSessions.count : 0) + (isAwayEnabled ? awaySessions.count : 0) + (isPlacesEnabled ? placeCheckInSessions.count : 0),
+                timelineEntryCount: macTimelineSidebarEntryCount,
                 groupedEntries: groupedTimelineEntries,
                 rowNumbersByEntryID: macTimelinePresentation.rowNumbersByEntryID,
                 presentationID: macTimelineSidebarPresentationID,

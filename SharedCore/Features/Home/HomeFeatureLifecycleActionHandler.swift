@@ -18,7 +18,7 @@ struct HomeFeatureLifecycleActionHandler<State: HomeFeatureLifecycleState, Actio
     var persistTemporaryViewState: (State) -> Void
     var loadOnAppearEffect: (State) -> Effect<Action>
     var manualRefreshEffect: () -> Effect<Action>
-    var loadFailureLogger: (String) -> Void = { print($0) }
+    var loadFailureLogger: (String) -> Void = { RoutinaLog.error($0) }
 
     func onAppear(state: inout State) -> Effect<Action> {
         if !state.hasLoadedTaskSnapshot {

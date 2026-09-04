@@ -1,6 +1,8 @@
+import Foundation
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
+@MainActor
 struct FormSectionTests {
     @Test
     func behaviorCardTitleMatchesSidebarSectionTitle() {

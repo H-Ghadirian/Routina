@@ -61,7 +61,7 @@ struct HomeFeatureAddRoutineActionHandler<State: HomeFeatureAddRoutineActionStat
     }
 
     func failSave() -> Effect<Action> {
-        print("Failed to save routine.")
+        RoutinaLog.error("Failed to save routine.")
         return .none
     }
 }

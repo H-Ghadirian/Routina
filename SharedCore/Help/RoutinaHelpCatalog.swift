@@ -55,8 +55,12 @@ public enum RoutinaHelpCatalog {
             summary: "Task Ladder is a full-size workspace in the main macOS window for comparing active tasks by one value at a time.",
             details: [
                 "Choose Task Ladder from the main window’s workspace menu or press Shift-Command-R. It can compare Pressure, Urgency, Importance, Thinking needed, or Estimated time.",
-                "The persistent top search finds root and nested Ladder tasks without changing their rank. Locate enters the matching group and reveals the row. Matches excluded by lifecycle, Blocked state, a Flag, or an unfinished prerequisite are listed separately with the reason.",
-                "Pressure, Urgency, Importance, and Thinking needed use value sections such as High, Medium, Low, and No value. Moving a task across sections changes only the selected value; ordering within a section is a separate tie-break for that value.",
+                "The persistent top search finds root and nested Ladder tasks without changing their rank. "
+                    + "Locate enters the matching group and reveals the row. Matches excluded by lifecycle, Blocked state, "
+                    + "a Flag, or an unfinished prerequisite are listed separately with the reason.",
+                "Pressure, Urgency, Importance, and Thinking needed use value sections such as High, Medium, Low, and No value. "
+                    + "Moving a task across sections changes only the selected value; ordering within a section is a separate "
+                    + "tie-break for that value.",
                 "Estimated time is a factual numeric sort, so it cannot be manually reordered. Task Ladder placement is independent of Home, Backlog, and task-completion relationships.",
                 "Paused, snoozed, blocked, completed, canceled, archived, and tasks hidden by a matching Flag do not appear. Groups can collect comparable tasks into smaller nested ladders."
             ],
@@ -229,11 +233,17 @@ public enum RoutinaHelpCatalog {
             summary: "Backlog is a full-size workspace in the main macOS window for work intentionally kept off the main task list.",
             details: [
                 "Choose Backlog from the main window’s workspace menu or press Shift-Command-B.",
-                "Routina has no generic unsectioned Backlog destination. A Home task's Move to > Backlog menu can create a new Backlog super section and assign that task; Settings can create an empty section for later use.",
+                "Routina has no generic unsectioned Backlog destination. A Home task's Move to > Backlog menu can create "
+                    + "a new Backlog super section and assign that task; Settings can create an empty section for later use.",
                 "Backlog super sections can contain one level of subsection. Empty sections stay visible so you can add a subsection immediately, and both levels can collapse.",
-                "On Mac, Filter and Sort can narrow Backlog or order each group by Due Soonest or Due Latest. Due order uses one-time deadlines and repeating Due occurrences, keeps tasks without a due boundary last, and does not move tasks between sections.",
+                "On Mac, Filter and Sort can narrow Backlog or order each group by Due Soonest or Due Latest. "
+                    + "Due order uses one-time deadlines and repeating Due occurrences, keeps tasks without a due boundary last, "
+                    + "and does not move tasks between sections.",
                 "In macOS Settings -> Sections, use the Main task list / Backlog segmented picker to see and create sections for one workspace surface at a time. Subsections stay with their parent surface.",
-                "Use the persistent top search to find deferred tasks by their text, tags, Flags, destination, or Backlog path. A matching task outside Backlog is labelled with its real location. Click its summary to open Task Details; active organizational matches can be shown in Planner, completed one-off matches can be shown in Timeline, and either can be moved to an explicit Backlog section without creating a duplicate.",
+                "Use the persistent top search to find deferred tasks by their text, tags, Flags, destination, or Backlog path. "
+                    + "A matching task outside Backlog is labelled with its real location. Click its summary to open Task Details; "
+                    + "active organizational matches can be shown in Planner, completed one-off matches can be shown in Timeline, "
+                    + "and either can be moved to an explicit Backlog section without creating a duplicate.",
                 "Moving a task to a Backlog section removes it from normal Home placement without completing, pausing, or deleting it. Move to Main Task List returns it to ordinary Home placement.",
                 "The separate beta Board backlog is unrelated and does not create sections in the Backlog workspace."
             ],

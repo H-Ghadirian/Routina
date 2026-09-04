@@ -73,6 +73,11 @@ private enum GitLabStatsClientKey: DependencyKey {
     static let testValue = GitLabStatsClient.noop
 }
 
+private enum RoutinaLogClientKey: DependencyKey {
+    static let liveValue = RoutinaLogClient.live
+    static let testValue = RoutinaLogClient.noop
+}
+
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -142,5 +147,10 @@ extension DependencyValues {
     var gitLabStatsClient: GitLabStatsClient {
         get { self[GitLabStatsClientKey.self] }
         set { self[GitLabStatsClientKey.self] = newValue }
+    }
+
+    var routinaLogClient: RoutinaLogClient {
+        get { self[RoutinaLogClientKey.self] }
+        set { self[RoutinaLogClientKey.self] = newValue }
     }
 }

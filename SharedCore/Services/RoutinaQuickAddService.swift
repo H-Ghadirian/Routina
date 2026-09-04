@@ -142,7 +142,7 @@ enum RoutinaQuickAddService {
         do {
             try SprintBoardClient.routeNewTodoToMatchingBacklog(task)
         } catch {
-            print("Failed to route quick add task to backlog: \(error)")
+            RoutinaLog.error("Failed to route quick add task to backlog: \(error)")
         }
         await refreshNotification(for: task, referenceDate: referenceDate, calendar: calendar)
         notifyDataChanged(using: context)

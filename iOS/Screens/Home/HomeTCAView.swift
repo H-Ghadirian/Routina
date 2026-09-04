@@ -369,7 +369,7 @@ homeContent
     }
 
     func statusBadge(for task: HomeFeature.RoutineDisplay) -> some View {
-        HomeStatusBadgeView(style: badgeStyle(for: task).map { HomeStatusBadgeStyle($0) })
+        HomeStatusBadgeView(style: badgeStyle(for: task).map(HomeStatusBadgeStyle.init))
     }
 
     func taskTypeBadge(for task: HomeFeature.RoutineDisplay) -> some View {

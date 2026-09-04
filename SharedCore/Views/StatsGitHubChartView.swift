@@ -29,7 +29,7 @@ struct StatsGitHubChartView: View {
                             ? AnyShapeStyle(highlightBarFill)
                             : AnyShapeStyle(baseBarFill)
                     )
-                    .opacity(point.count == 0 ? 0.35 : 1)
+                    .opacity(point.count == .zero ? 0.35 : 1)
                 }
 
                 if averageCount > 0 {

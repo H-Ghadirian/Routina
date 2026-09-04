@@ -12,20 +12,22 @@ extension HomeTCAView {
 
     var homeAdventureProgression: HomeAdventureProgression {
         HomeAdventureProgressionBuilder.build(
-            tasks: store.routineTasks,
-            logs: store.timelineLogs,
-            focusSessions: focusSessions,
-            sprintFocusSessions: sprintFocusSessions,
-            sleepSessions: isAwayEnabled ? sleepSessions : [],
-            awaySessions: isAwayEnabled ? awaySessions : [],
-            dayPlanBlocks: dayPlanBlocks,
-            emotionLogs: emotionLogs,
-            notes: isNotesEnabled ? notes : [],
-            events: events,
-            goals: store.routineGoals,
-            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
-            referenceDate: Date(),
-            calendar: calendar
+            .init(
+                tasks: store.routineTasks,
+                logs: store.timelineLogs,
+                focusSessions: focusSessions,
+                sprintFocusSessions: sprintFocusSessions,
+                sleepSessions: isAwayEnabled ? sleepSessions : [],
+                awaySessions: isAwayEnabled ? awaySessions : [],
+                dayPlanBlocks: dayPlanBlocks,
+                emotionLogs: emotionLogs,
+                notes: isNotesEnabled ? notes : [],
+                events: events,
+                goals: store.routineGoals,
+                placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
+                referenceDate: Date(),
+                calendar: calendar
+            )
         )
     }
 

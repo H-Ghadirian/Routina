@@ -10,12 +10,6 @@ enum StatsSummaryCardItemBuilder {
         showsActiveAccessory: Bool = false
     ) -> [StatsSummaryCardItem] {
         var items: [StatsSummaryCardItem] = []
-        let activeArchivePresentation = StatsActiveArchiveSummaryPresentation(
-            taskTypeFilter: taskTypeFilter,
-            filteredTaskCount: filteredTaskCount,
-            activeItemCount: metrics.activeRoutineCount,
-            archivedItemCount: metrics.archivedRoutineCount
-        )
 
         if selectedRange.trailingDayCount > 1 {
             items.append(
@@ -211,26 +205,12 @@ enum StatsSummaryCardItemBuilder {
             )
         )
 
-        items.append(
-            StatsSummaryCardItem(
-                icon: "checklist",
-                accent: .green,
-                title: activeArchivePresentation.activeTitle,
-                value: metrics.activeRoutineCount.formatted(),
-                caption: activeArchivePresentation.activeCaption,
-                accessibilityIdentifier: "stats.summary.activeRoutines",
-                showsAccessory: showsActiveAccessory
-            )
-        )
-
-        items.append(
-            StatsSummaryCardItem(
-                icon: "archivebox.fill",
-                accent: .teal,
-                title: activeArchivePresentation.archivedTitle,
-                value: metrics.archivedRoutineCount.formatted(),
-                caption: activeArchivePresentation.archivedCaption,
-                accessibilityIdentifier: "stats.summary.archivedRoutines"
+        items.append(contentsOf:
+            activeArchiveItems(
+                metrics: metrics,
+                taskTypeFilter: taskTypeFilter,
+                filteredTaskCount: filteredTaskCount,
+                showsActiveAccessory: showsActiveAccessory
             )
         )
 
@@ -240,6 +220,39 @@ enum StatsSummaryCardItemBuilder {
                 metrics: metrics
             )
         }
+    }
+
+    private static func activeArchiveItems(
+        metrics: StatsFeatureMetrics,
+        taskTypeFilter: StatsTaskTypeFilter,
+        filteredTaskCount: Int,
+        showsActiveAccessory: Bool
+    ) -> [StatsSummaryCardItem] {
+        let presentation = StatsActiveArchiveSummaryPresentation(
+            taskTypeFilter: taskTypeFilter,
+            filteredTaskCount: filteredTaskCount,
+            activeItemCount: metrics.activeRoutineCount,
+            archivedItemCount: metrics.archivedRoutineCount
+        )
+        return [
+            StatsSummaryCardItem(
+                icon: "checklist",
+                accent: .green,
+                title: presentation.activeTitle,
+                value: metrics.activeRoutineCount.formatted(),
+                caption: presentation.activeCaption,
+                accessibilityIdentifier: "stats.summary.activeRoutines",
+                showsAccessory: showsActiveAccessory
+            ),
+            StatsSummaryCardItem(
+                icon: "archivebox.fill",
+                accent: .teal,
+                title: presentation.archivedTitle,
+                value: metrics.archivedRoutineCount.formatted(),
+                caption: presentation.archivedCaption,
+                accessibilityIdentifier: "stats.summary.archivedRoutines"
+            )
+        ]
     }
 
     private static func emotionCaption(metrics: StatsFeatureMetrics) -> String {

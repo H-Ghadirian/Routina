@@ -284,20 +284,13 @@ struct HomeTaskHelperTests {
 
     @Test
     func rowIconColorPathDoesNotRebuildTaskListFiltering() throws {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
         let paths = [
             "iOS/Screens/Home/HomeTCAView+Filtering.swift",
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Filtering.swift"
         ]
 
         for path in paths {
-            let source = try String(
-                contentsOf: projectRoot.appendingPathComponent(path),
-                encoding: .utf8
-            )
+            let source = try SourceInspectionSupport.readProjectFile(path)
             #expect(source.contains("HomeRoutineRowToneResolver.tone"))
             #expect(!source.contains("let urgency = urgencyLevel(for: task)"))
             #expect(!source.contains("Double(daysSinceScheduleAnchor(task))"))
@@ -306,13 +299,8 @@ struct HomeTaskHelperTests {
 
     @Test
     func homeLoadingStateIncludesTextIconAndShimmerPlaceholder() throws {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        let source = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Screens/Home/HomeStatusAndEmptyViews.swift"),
-            encoding: .utf8
+        let source = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Screens/Home/HomeStatusAndEmptyViews.swift"
         )
 
         #expect(source.contains("struct HomeLoadingStateView"))

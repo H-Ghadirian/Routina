@@ -7,7 +7,7 @@ private struct RoutinaMacFocusTimerStatusStoreKey: EnvironmentKey {
 }
 
 private struct RoutinaMacOpenFocusTimerTargetKey: EnvironmentKey {
-    nonisolated(unsafe) static let defaultValue: ((RoutinaDeepLink?) -> Void)? = nil
+    static let defaultValue: (@MainActor @Sendable (RoutinaDeepLink?) -> Void)? = nil
 }
 
 extension EnvironmentValues {
@@ -16,7 +16,7 @@ extension EnvironmentValues {
         set { self[RoutinaMacFocusTimerStatusStoreKey.self] = newValue }
     }
 
-    var routinaMacOpenFocusTimerTarget: ((RoutinaDeepLink?) -> Void)? {
+    var routinaMacOpenFocusTimerTarget: (@MainActor @Sendable (RoutinaDeepLink?) -> Void)? {
         get { self[RoutinaMacOpenFocusTimerTargetKey.self] }
         set { self[RoutinaMacOpenFocusTimerTargetKey.self] = newValue }
     }
@@ -154,7 +154,7 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
         do {
             _ = try statusStore.togglePauseResume(for: status)
         } catch {
-            NSLog("Failed to toggle focus timer pause state from toolbar: \(error.localizedDescription)")
+            RoutinaLog.error("Failed to toggle focus timer pause state from toolbar: \(error.localizedDescription)")
         }
     }
 
@@ -170,7 +170,7 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
             )
             statusStore.refresh()
         } catch {
-            NSLog("Failed to finish focus timer from toolbar: \(error.localizedDescription)")
+            RoutinaLog.error("Failed to finish focus timer from toolbar: \(error.localizedDescription)")
         }
     }
 
@@ -185,7 +185,7 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
             )
             statusStore.refresh()
         } catch {
-            NSLog("Failed to abandon focus timer from toolbar: \(error.localizedDescription)")
+            RoutinaLog.error("Failed to abandon focus timer from toolbar: \(error.localizedDescription)")
         }
     }
 }

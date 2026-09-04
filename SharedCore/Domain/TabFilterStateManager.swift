@@ -161,10 +161,10 @@ struct TabFilterStateManager {
         var selectedFilter: RoutineListFilter
         var advancedQuery: String
         var selectedManualPlaceFilterID: UUID?
-        var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
-        var selectedTodoStateFilter: TodoState? = nil
-        var selectedPressureFilter: RoutineTaskPressure? = nil
-        var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
+        var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+        var selectedTodoStateFilter: TodoState?
+        var selectedPressureFilter: RoutineTaskPressure?
+        var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
         var selectedGoalFilter: HomeTaskGoalFilter = .all
         var selectedMediaFilter: TaskMediaFilter = .all
         var selectedEstimationFilter: TaskEstimationFilter = .all
@@ -255,37 +255,11 @@ struct TabFilterStateManager {
             self.showArchivedTasks = showArchivedTasks
         }
 
-        private enum CodingKeys: String, CodingKey {
-            case selectedTag
-            case selectedTags
-            case includeTagMatchMode
-            case selectedFlags
-            case includeFlagMatchMode
-            case excludedFlags
-            case excludeFlagMatchMode
-            case excludedTags
-            case excludeTagMatchMode
-            case selectedFilter
-            case advancedQuery
-            case selectedManualPlaceFilterID
-            case selectedImportanceUrgencyFilter
-            case selectedTodoStateFilter
-            case selectedPressureFilter
-            case selectedThinkingNeededFilter
-            case selectedGoalFilter
-            case selectedMediaFilter
-            case selectedEstimationFilter
-            case hideAssumedDoneTasks
-            case taskListViewMode
-            case taskListSortOrder
-            case createdDateFilter
-            case showArchivedTasks
-        }
-
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: TabFilterSnapshotCodingKey.self)
             selectedTag = try container.decodeIfPresent(String.self, forKey: .selectedTag)
-            selectedTags = try container.decodeIfPresent(Set<String>.self, forKey: .selectedTags)
+            selectedTags =
+                try container.decodeIfPresent(Set<String>.self, forKey: .selectedTags)
                 ?? selectedTag.map { [$0] } ?? []
             includeTagMatchMode = try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .includeTagMatchMode) ?? .all
             selectedFlags = try container.decodeIfPresent(Set<String>.self, forKey: .selectedFlags) ?? []
@@ -297,7 +271,8 @@ struct TabFilterStateManager {
             selectedFilter = try container.decodeIfPresent(RoutineListFilter.self, forKey: .selectedFilter) ?? .all
             advancedQuery = try container.decodeIfPresent(String.self, forKey: .advancedQuery) ?? ""
             selectedManualPlaceFilterID = try container.decodeIfPresent(UUID.self, forKey: .selectedManualPlaceFilterID)
-            selectedImportanceUrgencyFilter = try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .selectedImportanceUrgencyFilter)
+            selectedImportanceUrgencyFilter = try container.decodeIfPresent(
+                ImportanceUrgencyFilterCell.self, forKey: .selectedImportanceUrgencyFilter)
             selectedTodoStateFilter = try container.decodeIfPresent(TodoState.self, forKey: .selectedTodoStateFilter)
             selectedPressureFilter = try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .selectedPressureFilter)
             selectedThinkingNeededFilter = try container.decodeIfPresent(
@@ -333,438 +308,29 @@ struct TabFilterStateManager {
     }
 }
 
-struct TemporaryViewState: Equatable, Codable, Sendable {
-    var selectedAppTabRawValue: String?
-    var homeTaskListModeRawValue: String?
-    var homeSelectedFilter: RoutineListFilter
-    var homeAdvancedQuery: String
-    var homeSelectedTag: String?
-    var homeSelectedTags: Set<String>
-    var homeIncludeTagMatchMode: RoutineTagMatchMode
-    var homeSelectedFlags: Set<String> = []
-    var homeIncludeFlagMatchMode: RoutineTagMatchMode = .all
-    var homeExcludedFlags: Set<String> = []
-    var homeExcludeFlagMatchMode: RoutineTagMatchMode = .any
-    var homeExcludedTags: Set<String>
-    var homeExcludeTagMatchMode: RoutineTagMatchMode
-    var homeSelectedManualPlaceFilterID: UUID?
-    var homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
-    var homeSelectedTodoStateFilter: TodoState? = nil
-    var homeSelectedPressureFilter: RoutineTaskPressure? = nil
-    var homeSelectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
-    var homeSelectedGoalFilter: HomeTaskGoalFilter = .all
-    var homeSelectedMediaFilter: TaskMediaFilter = .all
-    var homeSelectedEstimationFilter: TaskEstimationFilter = .all
-    var homeHideAssumedDoneTasks: Bool = false
-    var homeTaskListViewMode: HomeTaskListViewMode = .all
-    var homeTaskListSortOrder: HomeTaskListSortOrder = .smart
-    var homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all
-    var homeShowArchivedTasks: Bool = true
-    var homeTabFilterSnapshots: [String: TabFilterStateManager.Snapshot]
-    var hideUnavailableRoutines: Bool
-    var homeSelectedTimelineRange: TimelineRange
-    var homeSelectedTimelineFilterType: TimelineFilterType
-    var homeSelectedTimelineStatusFilter: TimelineStatusFilter = .all
-    var homeSelectedTimelineTag: String?
-    var homeSelectedTimelineTags: Set<String>
-    var homeTimelineIncludeTagMatchMode: RoutineTagMatchMode
-    var homeSelectedTimelineFlags: Set<String> = []
-    var homeTimelineIncludeFlagMatchMode: RoutineTagMatchMode = .all
-    var homeSelectedTimelineExcludedTags: Set<String> = []
-    var homeTimelineExcludeTagMatchMode: RoutineTagMatchMode
-    var homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
-    var homeSelectedTimelinePressureFilter: RoutineTaskPressure? = nil
-    var homeSelectedTimelineThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil
-    var homeSelectedTimelineEstimationFilter: TaskEstimationFilter = .all
-    var homeSelectedTimelineMediaFilter: TaskMediaFilter = .all
-    var macHomeSidebarModeRawValue: String?
-    var macSelectedSettingsSectionRawValue: String?
-    var timelineSelectedRange: TimelineRange
-    var timelineFilterType: TimelineFilterType
-    var timelineSelectedTag: String?
-    var timelineSelectedTags: Set<String>
-    var timelineIncludeTagMatchMode: RoutineTagMatchMode
-    var timelineSelectedFlags: Set<String> = []
-    var timelineIncludeFlagMatchMode: RoutineTagMatchMode = .all
-    var timelineExcludedTags: Set<String>
-    var timelineExcludeTagMatchMode: RoutineTagMatchMode
-    var timelineSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
-    var timelineMediaFilter: TaskMediaFilter = .all
-    var statsSelectedRange: DoneChartRange
-    var statsSelectedTag: String?
-    var statsSelectedTags: Set<String>
-    var statsIncludeTagMatchMode: RoutineTagMatchMode
-    var statsExcludedTags: Set<String>
-    var statsExcludeTagMatchMode: RoutineTagMatchMode
-    var statsSelectedFlags: Set<String>
-    var statsIncludeFlagMatchMode: RoutineTagMatchMode
-    var statsExcludedFlags: Set<String>
-    var statsExcludeFlagMatchMode: RoutineTagMatchMode
-    var statsSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
-    var statsTaskTypeFilterRawValue: String?
-    var statsAdvancedQuery: String
-
-    init(
-        selectedAppTabRawValue: String?,
-        homeTaskListModeRawValue: String?,
-        homeSelectedFilter: RoutineListFilter,
-        homeAdvancedQuery: String = "",
-        homeSelectedTag: String?,
-        homeSelectedTags: Set<String>? = nil,
-        homeIncludeTagMatchMode: RoutineTagMatchMode = .all,
-        homeSelectedFlags: Set<String> = [],
-        homeIncludeFlagMatchMode: RoutineTagMatchMode = .all,
-        homeExcludedFlags: Set<String> = [],
-        homeExcludeFlagMatchMode: RoutineTagMatchMode = .any,
-        homeExcludedTags: Set<String>,
-        homeExcludeTagMatchMode: RoutineTagMatchMode = .any,
-        homeSelectedManualPlaceFilterID: UUID?,
-        homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
-        homeSelectedTodoStateFilter: TodoState? = nil,
-        homeSelectedPressureFilter: RoutineTaskPressure? = nil,
-        homeSelectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
-        homeSelectedGoalFilter: HomeTaskGoalFilter = .all,
-        homeSelectedMediaFilter: TaskMediaFilter = .all,
-        homeSelectedEstimationFilter: TaskEstimationFilter = .all,
-        homeHideAssumedDoneTasks: Bool = false,
-        homeTaskListViewMode: HomeTaskListViewMode = .all,
-        homeTaskListSortOrder: HomeTaskListSortOrder = .smart,
-        homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all,
-        homeShowArchivedTasks: Bool = true,
-        homeTabFilterSnapshots: [String: TabFilterStateManager.Snapshot],
-        hideUnavailableRoutines: Bool,
-        homeSelectedTimelineRange: TimelineRange,
-        homeSelectedTimelineFilterType: TimelineFilterType,
-        homeSelectedTimelineStatusFilter: TimelineStatusFilter = .all,
-        homeSelectedTimelineTag: String?,
-        homeSelectedTimelineTags: Set<String>? = nil,
-        homeTimelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
-        homeSelectedTimelineFlags: Set<String> = [],
-        homeTimelineIncludeFlagMatchMode: RoutineTagMatchMode = .all,
-        homeSelectedTimelineExcludedTags: Set<String> = [],
-        homeTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
-        homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
-        homeSelectedTimelinePressureFilter: RoutineTaskPressure? = nil,
-        homeSelectedTimelineThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
-        homeSelectedTimelineEstimationFilter: TaskEstimationFilter = .all,
-        homeSelectedTimelineMediaFilter: TaskMediaFilter = .all,
-        macHomeSidebarModeRawValue: String?,
-        macSelectedSettingsSectionRawValue: String?,
-        timelineSelectedRange: TimelineRange,
-        timelineFilterType: TimelineFilterType,
-        timelineSelectedTag: String?,
-        timelineSelectedTags: Set<String>? = nil,
-        timelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
-        timelineSelectedFlags: Set<String> = [],
-        timelineIncludeFlagMatchMode: RoutineTagMatchMode = .all,
-        timelineExcludedTags: Set<String> = [],
-        timelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
-        timelineSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
-        timelineMediaFilter: TaskMediaFilter = .all,
-        statsSelectedRange: DoneChartRange,
-        statsSelectedTag: String?,
-        statsSelectedTags: Set<String>? = nil,
-        statsIncludeTagMatchMode: RoutineTagMatchMode = .all,
-        statsExcludedTags: Set<String>,
-        statsExcludeTagMatchMode: RoutineTagMatchMode = .any,
-        statsSelectedFlags: Set<String> = [],
-        statsIncludeFlagMatchMode: RoutineTagMatchMode = .all,
-        statsExcludedFlags: Set<String> = [],
-        statsExcludeFlagMatchMode: RoutineTagMatchMode = .any,
-        statsSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
-        statsTaskTypeFilterRawValue: String?,
-        statsAdvancedQuery: String = ""
-    ) {
-        self.selectedAppTabRawValue = selectedAppTabRawValue
-        self.homeTaskListModeRawValue = homeTaskListModeRawValue
-        self.homeSelectedFilter = homeSelectedFilter
-        self.homeAdvancedQuery = homeAdvancedQuery
-        self.homeSelectedTag = homeSelectedTag
-        self.homeSelectedTags = homeSelectedTags ?? homeSelectedTag.map { [$0] } ?? []
-        self.homeIncludeTagMatchMode = homeIncludeTagMatchMode
-        self.homeSelectedFlags = homeSelectedFlags
-        self.homeIncludeFlagMatchMode = homeIncludeFlagMatchMode
-        self.homeExcludedFlags = homeExcludedFlags
-        self.homeExcludeFlagMatchMode = homeExcludeFlagMatchMode
-        self.homeExcludedTags = homeExcludedTags
-        self.homeExcludeTagMatchMode = homeExcludeTagMatchMode
-        self.homeSelectedManualPlaceFilterID = homeSelectedManualPlaceFilterID
-        self.homeSelectedImportanceUrgencyFilter = homeSelectedImportanceUrgencyFilter
-        self.homeSelectedTodoStateFilter = homeSelectedTodoStateFilter
-        self.homeSelectedPressureFilter = homeSelectedPressureFilter
-        self.homeSelectedThinkingNeededFilter = homeSelectedThinkingNeededFilter
-        self.homeSelectedGoalFilter = homeSelectedGoalFilter
-        self.homeSelectedMediaFilter = homeSelectedMediaFilter
-        self.homeSelectedEstimationFilter = homeSelectedEstimationFilter
-        self.homeHideAssumedDoneTasks = homeHideAssumedDoneTasks
-        self.homeTaskListViewMode = homeTaskListViewMode
-        self.homeTaskListSortOrder = homeTaskListSortOrder
-        self.homeCreatedDateFilter = homeCreatedDateFilter
-        self.homeShowArchivedTasks = homeShowArchivedTasks
-        self.homeTabFilterSnapshots = homeTabFilterSnapshots
-        self.hideUnavailableRoutines = hideUnavailableRoutines
-        self.homeSelectedTimelineRange = homeSelectedTimelineRange
-        self.homeSelectedTimelineFilterType = homeSelectedTimelineFilterType
-        self.homeSelectedTimelineStatusFilter = homeSelectedTimelineStatusFilter
-        self.homeSelectedTimelineTag = homeSelectedTimelineTag
-        self.homeSelectedTimelineTags = homeSelectedTimelineTags ?? homeSelectedTimelineTag.map { [$0] } ?? []
-        self.homeTimelineIncludeTagMatchMode = homeTimelineIncludeTagMatchMode
-        self.homeSelectedTimelineFlags = homeSelectedTimelineFlags
-        self.homeTimelineIncludeFlagMatchMode = homeTimelineIncludeFlagMatchMode
-        self.homeSelectedTimelineExcludedTags = homeSelectedTimelineExcludedTags
-        self.homeTimelineExcludeTagMatchMode = homeTimelineExcludeTagMatchMode
-        self.homeSelectedTimelineImportanceUrgencyFilter = homeSelectedTimelineImportanceUrgencyFilter
-        self.homeSelectedTimelinePressureFilter = homeSelectedTimelinePressureFilter
-        self.homeSelectedTimelineThinkingNeededFilter = homeSelectedTimelineThinkingNeededFilter
-        self.homeSelectedTimelineEstimationFilter = homeSelectedTimelineEstimationFilter
-        self.homeSelectedTimelineMediaFilter = homeSelectedTimelineMediaFilter
-        self.macHomeSidebarModeRawValue = macHomeSidebarModeRawValue
-        self.macSelectedSettingsSectionRawValue = macSelectedSettingsSectionRawValue
-        self.timelineSelectedRange = timelineSelectedRange
-        self.timelineFilterType = timelineFilterType
-        self.timelineSelectedTag = timelineSelectedTag
-        self.timelineSelectedTags = timelineSelectedTags ?? timelineSelectedTag.map { [$0] } ?? []
-        self.timelineIncludeTagMatchMode = timelineIncludeTagMatchMode
-        self.timelineSelectedFlags = timelineSelectedFlags
-        self.timelineIncludeFlagMatchMode = timelineIncludeFlagMatchMode
-        self.timelineExcludedTags = timelineExcludedTags
-        self.timelineExcludeTagMatchMode = timelineExcludeTagMatchMode
-        self.timelineSelectedImportanceUrgencyFilter = timelineSelectedImportanceUrgencyFilter
-        self.timelineMediaFilter = timelineMediaFilter
-        self.statsSelectedRange = statsSelectedRange
-        self.statsSelectedTag = statsSelectedTag
-        self.statsSelectedTags = statsSelectedTags ?? statsSelectedTag.map { [$0] } ?? []
-        self.statsIncludeTagMatchMode = statsIncludeTagMatchMode
-        self.statsExcludedTags = statsExcludedTags
-        self.statsExcludeTagMatchMode = statsExcludeTagMatchMode
-        self.statsSelectedFlags = statsSelectedFlags
-        self.statsIncludeFlagMatchMode = statsIncludeFlagMatchMode
-        self.statsExcludedFlags = statsExcludedFlags
-        self.statsExcludeFlagMatchMode = statsExcludeFlagMatchMode
-        self.statsSelectedImportanceUrgencyFilter = statsSelectedImportanceUrgencyFilter
-        self.statsTaskTypeFilterRawValue = statsTaskTypeFilterRawValue
-        self.statsAdvancedQuery = statsAdvancedQuery
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case selectedAppTabRawValue
-        case homeTaskListModeRawValue
-        case homeSelectedFilter
-        case homeAdvancedQuery
-        case homeSelectedTag
-        case homeSelectedTags
-        case homeIncludeTagMatchMode
-        case homeSelectedFlags
-        case homeIncludeFlagMatchMode
-        case homeExcludedFlags
-        case homeExcludeFlagMatchMode
-        case homeExcludedTags
-        case homeExcludeTagMatchMode
-        case homeSelectedManualPlaceFilterID
-        case homeSelectedImportanceUrgencyFilter
-        case homeSelectedTodoStateFilter
-        case homeSelectedPressureFilter
-        case homeSelectedThinkingNeededFilter
-        case homeSelectedGoalFilter
-        case homeSelectedMediaFilter
-        case homeSelectedEstimationFilter
-        case homeHideAssumedDoneTasks
-        case homeTaskListViewMode
-        case homeTaskListSortOrder
-        case homeCreatedDateFilter
-        case homeShowArchivedTasks
-        case homeTabFilterSnapshots
-        case hideUnavailableRoutines
-        case homeSelectedTimelineRange
-        case homeSelectedTimelineFilterType
-        case homeSelectedTimelineStatusFilter
-        case homeSelectedTimelineTag
-        case homeSelectedTimelineTags
-        case homeTimelineIncludeTagMatchMode
-        case homeSelectedTimelineFlags
-        case homeTimelineIncludeFlagMatchMode
-        case homeSelectedTimelineExcludedTags
-        case homeTimelineExcludeTagMatchMode
-        case homeSelectedTimelineImportanceUrgencyFilter
-        case homeSelectedTimelinePressureFilter
-        case homeSelectedTimelineThinkingNeededFilter
-        case homeSelectedTimelineEstimationFilter
-        case homeSelectedTimelineMediaFilter
-        case macHomeSidebarModeRawValue
-        case macSelectedSettingsSectionRawValue
-        case timelineSelectedRange
-        case timelineFilterType
-        case timelineSelectedTag
-        case timelineSelectedTags
-        case timelineIncludeTagMatchMode
-        case timelineSelectedFlags
-        case timelineIncludeFlagMatchMode
-        case timelineExcludedTags
-        case timelineExcludeTagMatchMode
-        case timelineSelectedImportanceUrgencyFilter
-        case timelineMediaFilter
-        case statsSelectedRange
-        case statsSelectedTag
-        case statsSelectedTags
-        case statsIncludeTagMatchMode
-        case statsExcludedTags
-        case statsExcludeTagMatchMode
-        case statsSelectedFlags
-        case statsIncludeFlagMatchMode
-        case statsExcludedFlags
-        case statsExcludeFlagMatchMode
-        case statsSelectedImportanceUrgencyFilter
-        case statsTaskTypeFilterRawValue
-        case statsAdvancedQuery
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.init(
-            selectedAppTabRawValue: try container.decodeIfPresent(String.self, forKey: .selectedAppTabRawValue),
-            homeTaskListModeRawValue: try container.decodeIfPresent(String.self, forKey: .homeTaskListModeRawValue),
-            homeSelectedFilter: try container.decodeIfPresent(RoutineListFilter.self, forKey: .homeSelectedFilter) ?? .all,
-            homeAdvancedQuery: try container.decodeIfPresent(String.self, forKey: .homeAdvancedQuery) ?? "",
-            homeSelectedTag: try container.decodeIfPresent(String.self, forKey: .homeSelectedTag),
-            homeSelectedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTags),
-            homeIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeIncludeTagMatchMode) ?? .all,
-            homeSelectedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedFlags) ?? [],
-            homeIncludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeIncludeFlagMatchMode) ?? .all,
-            homeExcludedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .homeExcludedFlags) ?? [],
-            homeExcludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeExcludeFlagMatchMode) ?? .any,
-            homeExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeExcludedTags) ?? [],
-            homeExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeExcludeTagMatchMode) ?? .any,
-            homeSelectedManualPlaceFilterID: try container.decodeIfPresent(UUID.self, forKey: .homeSelectedManualPlaceFilterID),
-            homeSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .homeSelectedImportanceUrgencyFilter),
-            homeSelectedTodoStateFilter: try container.decodeIfPresent(TodoState.self, forKey: .homeSelectedTodoStateFilter),
-            homeSelectedPressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedPressureFilter),
-            homeSelectedThinkingNeededFilter: try container.decodeIfPresent(
-                RoutineTaskThinkingNeeded.self,
-                forKey: .homeSelectedThinkingNeededFilter
-            ),
-            homeSelectedGoalFilter: try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .homeSelectedGoalFilter) ?? .all,
-            homeSelectedMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedMediaFilter) ?? .all,
-            homeSelectedEstimationFilter: try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .homeSelectedEstimationFilter) ?? .all,
-            homeHideAssumedDoneTasks: try container.decodeIfPresent(Bool.self, forKey: .homeHideAssumedDoneTasks) ?? false,
-            homeTaskListViewMode: try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .homeTaskListViewMode) ?? .all,
-            homeTaskListSortOrder: try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .homeTaskListSortOrder) ?? .smart,
-            homeCreatedDateFilter: try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .homeCreatedDateFilter) ?? .all,
-            homeShowArchivedTasks: try container.decodeIfPresent(Bool.self, forKey: .homeShowArchivedTasks) ?? true,
-            homeTabFilterSnapshots: try container.decodeIfPresent([String: TabFilterStateManager.Snapshot].self, forKey: .homeTabFilterSnapshots) ?? [:],
-            hideUnavailableRoutines: try container.decodeIfPresent(Bool.self, forKey: .hideUnavailableRoutines) ?? false,
-            homeSelectedTimelineRange: try container.decodeIfPresent(TimelineRange.self, forKey: .homeSelectedTimelineRange) ?? .all,
-            homeSelectedTimelineFilterType: try container.decodeIfPresent(TimelineFilterType.self, forKey: .homeSelectedTimelineFilterType) ?? .all,
-            homeSelectedTimelineStatusFilter: try container.decodeIfPresent(TimelineStatusFilter.self, forKey: .homeSelectedTimelineStatusFilter) ?? .all,
-            homeSelectedTimelineTag: try container.decodeIfPresent(String.self, forKey: .homeSelectedTimelineTag),
-            homeSelectedTimelineTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineTags),
-            homeTimelineIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineIncludeTagMatchMode) ?? .all,
-            homeSelectedTimelineFlags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineFlags) ?? [],
-            homeTimelineIncludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineIncludeFlagMatchMode) ?? .all,
-            homeSelectedTimelineExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineExcludedTags) ?? [],
-            homeTimelineExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineExcludeTagMatchMode) ?? .any,
-            homeSelectedTimelineImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .homeSelectedTimelineImportanceUrgencyFilter),
-            homeSelectedTimelinePressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedTimelinePressureFilter),
-            homeSelectedTimelineThinkingNeededFilter: try container.decodeIfPresent(RoutineTaskThinkingNeeded.self, forKey: .homeSelectedTimelineThinkingNeededFilter),
-            homeSelectedTimelineEstimationFilter: try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .homeSelectedTimelineEstimationFilter) ?? .all,
-            homeSelectedTimelineMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedTimelineMediaFilter) ?? .all,
-            macHomeSidebarModeRawValue: try container.decodeIfPresent(String.self, forKey: .macHomeSidebarModeRawValue),
-            macSelectedSettingsSectionRawValue: try container.decodeIfPresent(String.self, forKey: .macSelectedSettingsSectionRawValue),
-            timelineSelectedRange: try container.decodeIfPresent(TimelineRange.self, forKey: .timelineSelectedRange) ?? .all,
-            timelineFilterType: try container.decodeIfPresent(TimelineFilterType.self, forKey: .timelineFilterType) ?? .all,
-            timelineSelectedTag: try container.decodeIfPresent(String.self, forKey: .timelineSelectedTag),
-            timelineSelectedTags: try container.decodeIfPresent(Set<String>.self, forKey: .timelineSelectedTags),
-            timelineIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .timelineIncludeTagMatchMode) ?? .all,
-            timelineSelectedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .timelineSelectedFlags) ?? [],
-            timelineIncludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .timelineIncludeFlagMatchMode) ?? .all,
-            timelineExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .timelineExcludedTags) ?? [],
-            timelineExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .timelineExcludeTagMatchMode) ?? .any,
-            timelineSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .timelineSelectedImportanceUrgencyFilter),
-            timelineMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .timelineMediaFilter) ?? .all,
-            statsSelectedRange: try container.decodeIfPresent(DoneChartRange.self, forKey: .statsSelectedRange) ?? .week,
-            statsSelectedTag: try container.decodeIfPresent(String.self, forKey: .statsSelectedTag),
-            statsSelectedTags: try container.decodeIfPresent(Set<String>.self, forKey: .statsSelectedTags),
-            statsIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsIncludeTagMatchMode) ?? .all,
-            statsExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .statsExcludedTags) ?? [],
-            statsExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsExcludeTagMatchMode) ?? .any,
-            statsSelectedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .statsSelectedFlags) ?? [],
-            statsIncludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsIncludeFlagMatchMode) ?? .all,
-            statsExcludedFlags: try container.decodeIfPresent(Set<String>.self, forKey: .statsExcludedFlags) ?? [],
-            statsExcludeFlagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsExcludeFlagMatchMode) ?? .any,
-            statsSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .statsSelectedImportanceUrgencyFilter),
-            statsTaskTypeFilterRawValue: try container.decodeIfPresent(String.self, forKey: .statsTaskTypeFilterRawValue),
-            statsAdvancedQuery: try container.decodeIfPresent(String.self, forKey: .statsAdvancedQuery) ?? ""
-        )
-    }
-
-    static let `default` = TemporaryViewState(
-        selectedAppTabRawValue: Tab.home.rawValue,
-        homeTaskListModeRawValue: nil,
-        homeSelectedFilter: .all,
-        homeAdvancedQuery: "",
-        homeSelectedTag: nil,
-        homeSelectedTags: [],
-        homeIncludeTagMatchMode: .all,
-        homeSelectedFlags: [],
-        homeIncludeFlagMatchMode: .all,
-        homeExcludedFlags: [],
-        homeExcludeFlagMatchMode: .any,
-        homeExcludedTags: [],
-        homeExcludeTagMatchMode: .any,
-        homeSelectedManualPlaceFilterID: nil,
-        homeSelectedImportanceUrgencyFilter: nil,
-        homeSelectedTodoStateFilter: nil,
-        homeSelectedPressureFilter: nil,
-        homeSelectedThinkingNeededFilter: nil,
-        homeSelectedGoalFilter: .all,
-        homeSelectedMediaFilter: .all,
-        homeSelectedEstimationFilter: .all,
-        homeHideAssumedDoneTasks: false,
-        homeTaskListViewMode: .all,
-        homeTaskListSortOrder: .smart,
-        homeCreatedDateFilter: .all,
-        homeShowArchivedTasks: true,
-        homeTabFilterSnapshots: [:],
-        hideUnavailableRoutines: false,
-        homeSelectedTimelineRange: .all,
-        homeSelectedTimelineFilterType: .all,
-        homeSelectedTimelineStatusFilter: .all,
-        homeSelectedTimelineTag: nil,
-        homeSelectedTimelineTags: [],
-        homeTimelineIncludeTagMatchMode: .all,
-        homeSelectedTimelineFlags: [],
-        homeTimelineIncludeFlagMatchMode: .all,
-        homeSelectedTimelineExcludedTags: [],
-        homeTimelineExcludeTagMatchMode: .any,
-        homeSelectedTimelineImportanceUrgencyFilter: nil,
-        homeSelectedTimelinePressureFilter: nil,
-        homeSelectedTimelineThinkingNeededFilter: nil,
-        homeSelectedTimelineEstimationFilter: .all,
-        homeSelectedTimelineMediaFilter: .all,
-        macHomeSidebarModeRawValue: nil,
-        macSelectedSettingsSectionRawValue: nil,
-        timelineSelectedRange: .all,
-        timelineFilterType: .all,
-        timelineSelectedTag: nil,
-        timelineSelectedTags: [],
-        timelineIncludeTagMatchMode: .all,
-        timelineSelectedFlags: [],
-        timelineIncludeFlagMatchMode: .all,
-        timelineExcludedTags: [],
-        timelineExcludeTagMatchMode: .any,
-        timelineSelectedImportanceUrgencyFilter: nil,
-        timelineMediaFilter: .all,
-        statsSelectedRange: .week,
-        statsSelectedTag: nil,
-        statsSelectedTags: [],
-        statsIncludeTagMatchMode: .all,
-        statsExcludedTags: [],
-        statsExcludeTagMatchMode: .any,
-        statsSelectedFlags: [],
-        statsIncludeFlagMatchMode: .all,
-        statsExcludedFlags: [],
-        statsExcludeFlagMatchMode: .any,
-        statsSelectedImportanceUrgencyFilter: nil,
-        statsTaskTypeFilterRawValue: nil,
-        statsAdvancedQuery: ""
-    )
+private enum TabFilterSnapshotCodingKey: String, CodingKey {
+    case selectedTag
+    case selectedTags
+    case includeTagMatchMode
+    case selectedFlags
+    case includeFlagMatchMode
+    case excludedFlags
+    case excludeFlagMatchMode
+    case excludedTags
+    case excludeTagMatchMode
+    case selectedFilter
+    case advancedQuery
+    case selectedManualPlaceFilterID
+    case selectedImportanceUrgencyFilter
+    case selectedTodoStateFilter
+    case selectedPressureFilter
+    case selectedThinkingNeededFilter
+    case selectedGoalFilter
+    case selectedMediaFilter
+    case selectedEstimationFilter
+    case hideAssumedDoneTasks
+    case taskListViewMode
+    case taskListSortOrder
+    case createdDateFilter
+    case showArchivedTasks
 }

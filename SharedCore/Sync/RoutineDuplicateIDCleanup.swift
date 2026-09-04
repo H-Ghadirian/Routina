@@ -72,9 +72,9 @@ enum RoutineDuplicateIDCleanup {
             guard total > 0 else { return }
 
             try context.save()
-            print("RoutineDuplicateIDCleanup removed \(total) duplicate row(s): tasks=\(removedTasks) places=\(removedPlaces) logs=\(removedLogs) sessions=\(removedSessions) awaySessions=\(removedAwaySessions) sleepSessions=\(removedSleepSessions) placeCheckIns=\(removedPlaceCheckIns) emotions=\(removedEmotions) notes=\(removedNotes) events=\(removedEvents)")
+            RoutinaLog.notice("RoutineDuplicateIDCleanup removed \(total) duplicate row(s): tasks=\(removedTasks) places=\(removedPlaces) logs=\(removedLogs) sessions=\(removedSessions) awaySessions=\(removedAwaySessions) sleepSessions=\(removedSleepSessions) placeCheckIns=\(removedPlaceCheckIns) emotions=\(removedEmotions) notes=\(removedNotes) events=\(removedEvents)")
         } catch {
-            print("RoutineDuplicateIDCleanup failed: \(error)")
+            RoutinaLog.error("RoutineDuplicateIDCleanup failed: \(error)")
         }
     }
 

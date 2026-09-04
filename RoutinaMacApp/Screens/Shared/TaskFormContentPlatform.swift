@@ -26,8 +26,9 @@ struct TaskFormContent: View {
     @State private var placeManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
+    @State private var fallbackFormCoordinator = AddEditFormCoordinator()
     @Environment(\.calendar) private var calendar
-    @Environment(\.addEditFormCoordinator) private var formCoordinator
+    @Environment(\.addEditFormCoordinator) private var inheritedFormCoordinator
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
@@ -59,6 +60,10 @@ struct TaskFormContent: View {
 
     private var nameFocusBinding: FocusState<Bool>.Binding {
         model.nameFocus ?? $fallbackNameFocused
+    }
+
+    private var formCoordinator: AddEditFormCoordinator {
+        inheritedFormCoordinator ?? fallbackFormCoordinator
     }
 
     var body: some View {

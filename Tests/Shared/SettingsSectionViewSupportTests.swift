@@ -1,11 +1,11 @@
 import Foundation
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 @MainActor
@@ -79,10 +79,6 @@ struct SettingsSectionViewSupportTests {
 
     @Test
     func cloudSyncViewsUseLinearProgressBars() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
         let expectations = [
             (
                 path: "iOS/Screens/Settings/SettingsCloudDetailView.swift",
@@ -96,17 +92,10 @@ struct SettingsSectionViewSupportTests {
                 path: "iOS/Screens/Home/HomeTCAViewPlatform.swift",
                 statusNeedle: "manualCloudRefreshStatusText"
             ),
-            (
-                path: "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift",
-                statusNeedle: "manualCloudRefreshStatusText"
-            )
         ]
 
         for expectation in expectations {
-            let source = try String(
-                contentsOf: projectRoot.appendingPathComponent(expectation.path),
-                encoding: .utf8
-            )
+            let source = try SourceInspectionSupport.readProjectFile(expectation.path)
             #expect(
                 source.contains(".progressViewStyle(.linear)"),
                 "Missing sync progress bar in \(expectation.path)"
@@ -116,6 +105,10 @@ struct SettingsSectionViewSupportTests {
                 "Missing live sync status in \(expectation.path)"
             )
         }
+
+        let macHomeSource = try SourceInspectionSupport.readMacHomePlatformSources()
+        #expect(macHomeSource.contains(".progressViewStyle(.linear)"))
+        #expect(macHomeSource.contains("manualCloudRefreshStatusText"))
     }
 
     @Test
@@ -126,9 +119,11 @@ struct SettingsSectionViewSupportTests {
 
         #expect(sections.first == .general)
         #expect(SettingsSectionID.general.title == "General")
-        #expect(SettingsSectionID.general.rowPresentation(in: state) == SettingsSectionRowPresentation(
-            subtitle: "App Lock: On • Battery repeating tasks"
-        ))
+        #expect(
+            SettingsSectionID.general.rowPresentation(in: state)
+                == SettingsSectionRowPresentation(
+                    subtitle: "App Lock: On • Battery repeating tasks"
+                ))
     }
 
     @Test
@@ -149,63 +144,66 @@ struct SettingsSectionViewSupportTests {
         #expect(SettingsSectionID.filteredSections(sections, matching: "no such setting").isEmpty)
         #expect(SettingsSectionID.filteredSections(sections, matching: "   ") == sections)
         #if os(macOS)
-        #expect(SettingsSectionID.flags.searchResultSubtitle(for: "hide") ==
-            "Matches: Hide from Task Lists • Hide from Calendar List • Hide from Timeline • Hide from Task Ladder")
+            #expect(
+                SettingsSectionID.flags.searchResultSubtitle(for: "hide")
+                    == "Matches: Hide from Task Lists • Hide from Calendar List • Hide from Timeline • Hide from Task Ladder")
         #else
-        #expect(SettingsSectionID.flags.searchResultSubtitle(for: "hide") ==
-            "Matches: Hide from Task Lists • Hide from Timeline • Hide from Task Ladder")
+            #expect(
+                SettingsSectionID.flags.searchResultSubtitle(for: "hide")
+                    == "Matches: Hide from Task Lists • Hide from Timeline • Hide from Task Ladder")
         #endif
         #expect(SettingsSectionID.flags.searchResultSubtitle(for: "flags") == nil)
     }
 
     @Test
     func compactSettingsKeepsSearchCloseToTheDestinationList() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let source = try String(
-            contentsOf: projectRoot.appendingPathComponent("iOS/Screens/Settings/SettingsIOSViews.swift"),
-            encoding: .utf8
-        )
+        let source = try SourceInspectionSupport.readProjectFile("iOS/Screens/Settings/SettingsIOSViews.swift")
 
         #expect(source.contains(".contentMargins(.top, 0, for: .scrollContent)"))
     }
 
     @Test
     func visibleSectionsHideDevicesWhenFeatureIsDisabled() {
-        #expect(!SettingsSectionID.visibleSections(
-            isGitFeaturesEnabled: false
-        ).contains(.devices))
-        #expect(SettingsSectionID.visibleSections(
-            isGitFeaturesEnabled: false,
-            isDevicesSectionEnabled: true
-        ).contains(.devices))
-        #expect(!SettingsSectionID.compactSectionGroups(
-            isGitFeaturesEnabled: false
-        ).flatMap { $0 }.contains(.devices))
-        #expect(SettingsSectionID.compactSectionGroups(
-            isGitFeaturesEnabled: false,
-            isDevicesSectionEnabled: true
-        ).flatMap { $0 }.contains(.devices))
+        #expect(
+            !SettingsSectionID.visibleSections(
+                isGitFeaturesEnabled: false
+            ).contains(.devices))
+        #expect(
+            SettingsSectionID.visibleSections(
+                isGitFeaturesEnabled: false,
+                isDevicesSectionEnabled: true
+            ).contains(.devices))
+        #expect(
+            !SettingsSectionID.compactSectionGroups(
+                isGitFeaturesEnabled: false
+            ).flatMap { $0 }.contains(.devices))
+        #expect(
+            SettingsSectionID.compactSectionGroups(
+                isGitFeaturesEnabled: false,
+                isDevicesSectionEnabled: true
+            ).flatMap { $0 }.contains(.devices))
     }
 
     @Test
     func visibleSectionsHidePlacesWhenFeatureIsDisabled() {
-        #expect(!SettingsSectionID.visibleSections(
-            isGitFeaturesEnabled: false
-        ).contains(.places))
-        #expect(SettingsSectionID.visibleSections(
-            isGitFeaturesEnabled: false,
-            isPlacesEnabled: true
-        ).contains(.places))
-        #expect(!SettingsSectionID.compactSectionGroups(
-            isGitFeaturesEnabled: false
-        ).flatMap { $0 }.contains(.places))
-        #expect(SettingsSectionID.compactSectionGroups(
-            isGitFeaturesEnabled: false,
-            isPlacesEnabled: true
-        ).flatMap { $0 }.contains(.places))
+        #expect(
+            !SettingsSectionID.visibleSections(
+                isGitFeaturesEnabled: false
+            ).contains(.places))
+        #expect(
+            SettingsSectionID.visibleSections(
+                isGitFeaturesEnabled: false,
+                isPlacesEnabled: true
+            ).contains(.places))
+        #expect(
+            !SettingsSectionID.compactSectionGroups(
+                isGitFeaturesEnabled: false
+            ).flatMap { $0 }.contains(.places))
+        #expect(
+            SettingsSectionID.compactSectionGroups(
+                isGitFeaturesEnabled: false,
+                isPlacesEnabled: true
+            ).flatMap { $0 }.contains(.places))
     }
 
     @Test
@@ -219,14 +217,16 @@ struct SettingsSectionViewSupportTests {
     @Test
     func sectionsRowAppearsOnMacWithRulesSummary() {
         #if os(macOS)
-        let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
-        let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
+            let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
+            let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
 
-        #expect(sections.contains(.sections))
-        #expect(compactSections.contains(.sections))
-        #expect(SettingsSectionID.sections.rowPresentation(in: SettingsFeatureState()) == SettingsSectionRowPresentation(
-            subtitle: "Custom task list sections and rules"
-        ))
+            #expect(sections.contains(.sections))
+            #expect(compactSections.contains(.sections))
+            #expect(
+                SettingsSectionID.sections.rowPresentation(in: SettingsFeatureState())
+                    == SettingsSectionRowPresentation(
+                        subtitle: "Custom task list sections and rules"
+                    ))
         #endif
     }
 
@@ -260,24 +260,28 @@ struct SettingsSectionViewSupportTests {
         #expect(compactSections.contains(.shortcuts))
         #expect(SettingsSectionID.shortcuts.title == "Shortcuts")
         #if os(macOS)
-        let expectedSubtitle = "Keyboard, Siri, and Apple Shortcuts"
+            let expectedSubtitle = "Keyboard, Siri, and Apple Shortcuts"
         #else
-        let expectedSubtitle = "Siri and Apple Shortcuts"
+            let expectedSubtitle = "Siri and Apple Shortcuts"
         #endif
-        #expect(SettingsSectionID.shortcuts.rowPresentation(in: SettingsFeatureState()) == SettingsSectionRowPresentation(
-            subtitle: expectedSubtitle
-        ))
+        #expect(
+            SettingsSectionID.shortcuts.rowPresentation(in: SettingsFeatureState())
+                == SettingsSectionRowPresentation(
+                    subtitle: expectedSubtitle
+                ))
     }
 
     @Test
     func aiConnectionsSectionIsAvailableOnlyOnMac() {
         let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
         #if os(macOS)
-        #expect(sections.contains(.aiConnections))
-        #expect(SettingsSectionID.aiConnections.title == "AI Connections")
-        #expect(SettingsSectionID.aiConnections.rowPresentation(in: SettingsFeatureState()).subtitle == "Read-only access for local AI clients")
+            #expect(sections.contains(.aiConnections))
+            #expect(SettingsSectionID.aiConnections.title == "AI Connections")
+            #expect(
+                SettingsSectionID.aiConnections.rowPresentation(in: SettingsFeatureState()).subtitle
+                    == "Read-only access for local AI clients")
         #else
-        #expect(!sections.contains(.aiConnections))
+            #expect(!sections.contains(.aiConnections))
         #endif
     }
 
@@ -287,10 +291,12 @@ struct SettingsSectionViewSupportTests {
 
         #expect(compactSections.contains(.blocking))
         #expect(SettingsSectionID.blocking.title == "Blocking")
-        #expect(SettingsSectionID.blocking.rowPresentation(in: SettingsFeatureState()) == SettingsSectionRowPresentation(
-            subtitle: "Apps and websites across protected modes",
-            value: "Modes"
-        ))
+        #expect(
+            SettingsSectionID.blocking.rowPresentation(in: SettingsFeatureState())
+                == SettingsSectionRowPresentation(
+                    subtitle: "Apps and websites across protected modes",
+                    value: "Modes"
+                ))
     }
 
     @Test
@@ -314,9 +320,9 @@ struct SettingsSectionViewSupportTests {
         let presentation = SettingsSectionID.calendar.rowPresentation(in: state)
 
         #if os(macOS)
-        #expect(presentation.subtitle == "Timeline badges • Persian dates")
+            #expect(presentation.subtitle == "Timeline badges • Persian dates")
         #else
-        #expect(presentation.subtitle == "Review events before adding tasks • Persian dates")
+            #expect(presentation.subtitle == "Review events before adding tasks • Persian dates")
         #endif
         #expect(presentation.value == "Persian")
     }
@@ -324,15 +330,15 @@ struct SettingsSectionViewSupportTests {
     @Test
     func settingsSearchUsesOnlyControlsAvailableOnTheCurrentPlatform() {
         #if os(macOS)
-        #expect(SettingsSectionID.calendar.matchesSearch("Planner calendar"))
-        #expect(SettingsSectionID.flags.matchesSearch("Calendar list"))
-        #expect(SettingsSectionID.shortcuts.matchesSearch("keyboard"))
+            #expect(SettingsSectionID.calendar.matchesSearch("Planner calendar"))
+            #expect(SettingsSectionID.flags.matchesSearch("Calendar list"))
+            #expect(SettingsSectionID.shortcuts.matchesSearch("keyboard"))
         #else
-        #expect(!SettingsSectionID.calendar.matchesSearch("Planner calendar"))
-        #expect(!SettingsSectionID.flags.matchesSearch("Calendar list"))
-        #expect(!SettingsSectionID.shortcuts.matchesSearch("keyboard"))
-        #expect(SettingsSectionID.calendar.matchesSearch("Review Calendar Tasks"))
-        #expect(SettingsSectionID.shortcuts.matchesSearch("Siri"))
+            #expect(!SettingsSectionID.calendar.matchesSearch("Planner calendar"))
+            #expect(!SettingsSectionID.flags.matchesSearch("Calendar list"))
+            #expect(!SettingsSectionID.shortcuts.matchesSearch("keyboard"))
+            #expect(SettingsSectionID.calendar.matchesSearch("Review Calendar Tasks"))
+            #expect(SettingsSectionID.shortcuts.matchesSearch("Siri"))
         #endif
     }
 

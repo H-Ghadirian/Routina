@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import ConcurrencyExtras
+import Foundation
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
@@ -122,6 +123,7 @@ struct AppFeatureTests {
 
     @Test
     func flagRuleChangesImmediatelyUpdateHomeFilteringRules() async {
+        let referenceRule = RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)
         let persistedRules = LockIsolated<[RoutineFlagRule]>([])
         let store = TestStore(
             initialState: AppFeature.State(
@@ -130,35 +132,49 @@ struct AppFeatureTests {
         ) {
             AppFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.appSettingsClient.flagRules = { persistedRules.value }
             $0.appSettingsClient.setFlagRules = { persistedRules.setValue($0) }
         }
 
-        await store.send(.settings(.addFlagRuleTapped(
-            flagName: "Reference",
-            kind: .hideFromTaskLists
-        ))) {
-            $0.home.flagRules = [
-                RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)
-            ]
-            $0.settings.flags.rules = [
-                RoutineFlagRule(flag: "Reference", kind: .hideFromTaskLists)
-            ]
+        await store.send(
+            .settings(
+                .addFlagRuleTapped(
+                    flagName: "Reference",
+                    kind: .hideFromTaskLists
+                ))
+        ) {
+            $0.home.flagRules = [referenceRule]
+            $0.settings.flags.rules = [referenceRule]
             $0.settings.flags.statusMessage = "Added hide tasks from normal task lists for Reference."
         }
 
-        await store.send(.settings(.removeFlagRuleTapped(
-            flagName: "Reference",
-            kind: .hideFromTaskLists
-        ))) {
+        await store.receive(.timeline(.flagRulesChanged([referenceRule]))) {
+            $0.timeline.flagRules = [referenceRule]
+            $0.timeline.presentationRevision = 1
+        }
+
+        await store.send(
+            .settings(
+                .removeFlagRuleTapped(
+                    flagName: "Reference",
+                    kind: .hideFromTaskLists
+                ))
+        ) {
             $0.home.flagRules = []
             $0.settings.flags.rules = []
             $0.settings.flags.statusMessage = "Removed hide tasks from normal task lists for Reference."
+        }
+
+        await store.receive(.timeline(.flagRulesChanged([]))) {
+            $0.timeline.flagRules = []
+            $0.timeline.presentationRevision = 2
         }
     }
 
     @Test
     func openDeepLink_taskSelectsHomeSidebarTaskRow() async {
+        let context = makeInMemoryContext()
         let taskID = UUID()
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
         let store = TestStore(
@@ -171,6 +187,10 @@ struct AppFeatureTests {
             )
         ) {
             AppFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.modelContext = { context }
+            $0.notificationClient = .noop
         }
         store.exhaustivity = .off
 
@@ -209,6 +229,7 @@ struct AppFeatureTests {
         }
 
         await store.receive(.goals(.openGoalDeepLink(goalID))) {
+            $0.goals.refreshGoalPresentation()
             $0.goals.selectedGoalID = goalID
             $0.goals.deepLinkedGoalNavigationID = goalID
         }
@@ -248,6 +269,8 @@ struct AppFeatureTests {
             )
         ) {
             AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.notesEnabled = { true }
         }
 
         await store.send(.openDeepLink(.note(noteID))) {
@@ -407,6 +430,7 @@ struct AppFeatureTests {
 
         await store.send(.timeline(.selectedRangeChanged(.week))) {
             $0.timeline.selectedRange = .week
+            $0.timeline.presentationRevision = 1
         }
 
         #expect(persistedState.value?.timelineSelectedRange == .week)

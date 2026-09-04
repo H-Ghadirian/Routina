@@ -159,10 +159,7 @@ struct CrashlyticsConfigurationTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 
     private static let projectRoot = URL(fileURLWithPath: #filePath)

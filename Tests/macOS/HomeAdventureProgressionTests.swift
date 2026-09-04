@@ -77,20 +77,22 @@ struct HomeAdventureProgressionTests {
         )
 
         let progression = HomeAdventureProgressionBuilder.build(
-            tasks: [taskA, taskB],
-            logs: logs,
-            focusSessions: [focusSession],
-            sprintFocusSessions: [sprintFocusSession],
-            sleepSessions: [sleepSession],
-            awaySessions: [awaySession],
-            dayPlanBlocks: [refinedPlannerBlock, plannerBlock],
-            emotionLogs: [emotion],
-            notes: [note],
-            events: [event],
-            goals: [goal],
-            placeCheckInSessions: [checkIn],
-            referenceDate: referenceDate,
-            calendar: calendar
+            .init(
+                tasks: [taskA, taskB],
+                logs: logs,
+                focusSessions: [focusSession],
+                sprintFocusSessions: [sprintFocusSession],
+                sleepSessions: [sleepSession],
+                awaySessions: [awaySession],
+                dayPlanBlocks: [refinedPlannerBlock, plannerBlock],
+                emotionLogs: [emotion],
+                notes: [note],
+                events: [event],
+                goals: [goal],
+                placeCheckInSessions: [checkIn],
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
         )
 
         #expect(progression.totalCoins == 175)
@@ -129,20 +131,10 @@ struct HomeAdventureProgressionTests {
         let referenceDate = Date(timeIntervalSince1970: 1_800_000_000)
 
         let progression = HomeAdventureProgressionBuilder.build(
-            tasks: [],
-            logs: [],
-            focusSessions: [],
-            sprintFocusSessions: [],
-            sleepSessions: [],
-            awaySessions: [],
-            dayPlanBlocks: [],
-            emotionLogs: [],
-            notes: [],
-            events: [],
-            goals: [],
-            placeCheckInSessions: [],
-            referenceDate: referenceDate,
-            calendar: Calendar(identifier: .gregorian)
+            .init(
+                referenceDate: referenceDate,
+                calendar: Calendar(identifier: .gregorian)
+            )
         )
 
         #expect(progression.totalCoins == 0)
@@ -424,20 +416,11 @@ struct HomeAdventureProgressionTests {
         }
 
         let progression = HomeAdventureProgressionBuilder.build(
-            tasks: [],
-            logs: logs,
-            focusSessions: [],
-            sprintFocusSessions: [],
-            sleepSessions: [],
-            awaySessions: [],
-            dayPlanBlocks: [],
-            emotionLogs: [],
-            notes: [],
-            events: [],
-            goals: [],
-            placeCheckInSessions: [],
-            referenceDate: referenceDate,
-            calendar: calendar
+            .init(
+                logs: logs,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
         )
 
         #expect(progression.totalCoins == 7_008)

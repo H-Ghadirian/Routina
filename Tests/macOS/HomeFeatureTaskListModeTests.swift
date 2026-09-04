@@ -44,9 +44,12 @@ struct HomeFeatureTaskListModeTests {
 
         let initialState = HomeFeature.State(
             routineTasks: [routine],
-            routineDisplays: [makeDisplay(taskID: routineID, name: "Meditate", emoji: "🧘",
-                                          interval: 1, lastDone: nil, isOneOffTask: false,
-                                          isDoneToday: false)],
+            routineDisplays: [
+                makeDisplay(
+                    taskID: routineID, name: "Meditate", emoji: "🧘",
+                    interval: 1, lastDone: nil, isOneOffTask: false,
+                    isDoneToday: false)
+            ],
             selectedTaskID: routineID
         )
 
@@ -68,15 +71,19 @@ struct HomeFeatureTaskListModeTests {
     @Test
     func taskListModeChanged_toRoutines_clearsTodoSelection() async {
         let context = makeInMemoryContext()
-        let todo = makeTask(in: context, name: "Buy milk", interval: 1, lastDone: nil, emoji: "🛒",
-                            scheduleMode: .oneOff)
+        let todo = makeTask(
+            in: context, name: "Buy milk", interval: 1, lastDone: nil, emoji: "🛒",
+            scheduleMode: .oneOff)
         let todoID = todo.id
 
         let initialState = HomeFeature.State(
             routineTasks: [todo],
-            routineDisplays: [makeDisplay(taskID: todoID, name: "Buy milk", emoji: "🛒",
-                                          interval: 1, scheduleMode: .oneOff, lastDone: nil,
-                                          isOneOffTask: true, isDoneToday: false)],
+            routineDisplays: [
+                makeDisplay(
+                    taskID: todoID, name: "Buy milk", emoji: "🛒",
+                    interval: 1, scheduleMode: .oneOff, lastDone: nil,
+                    isOneOffTask: true, isDoneToday: false)
+            ],
             selectedTaskID: todoID,
             taskListMode: .todos
         )
@@ -99,15 +106,19 @@ struct HomeFeatureTaskListModeTests {
     @Test
     func taskListModeChanged_toTodos_keepsTodoSelection() async {
         let context = makeInMemoryContext()
-        let todo = makeTask(in: context, name: "Buy milk", interval: 1, lastDone: nil, emoji: "🛒",
-                            scheduleMode: .oneOff)
+        let todo = makeTask(
+            in: context, name: "Buy milk", interval: 1, lastDone: nil, emoji: "🛒",
+            scheduleMode: .oneOff)
         let todoID = todo.id
 
         let initialState = HomeFeature.State(
             routineTasks: [todo],
-            routineDisplays: [makeDisplay(taskID: todoID, name: "Buy milk", emoji: "🛒",
-                                          interval: 1, scheduleMode: .oneOff, lastDone: nil,
-                                          isOneOffTask: true, isDoneToday: false)],
+            routineDisplays: [
+                makeDisplay(
+                    taskID: todoID, name: "Buy milk", emoji: "🛒",
+                    interval: 1, scheduleMode: .oneOff, lastDone: nil,
+                    isOneOffTask: true, isDoneToday: false)
+            ],
             selectedTaskID: todoID,
             taskListMode: .routines
         )
@@ -135,9 +146,12 @@ struct HomeFeatureTaskListModeTests {
 
         let initialState = HomeFeature.State(
             routineTasks: [routine],
-            routineDisplays: [makeDisplay(taskID: routineID, name: "Meditate", emoji: "🧘",
-                                          interval: 1, lastDone: nil, isOneOffTask: false,
-                                          isDoneToday: false)],
+            routineDisplays: [
+                makeDisplay(
+                    taskID: routineID, name: "Meditate", emoji: "🧘",
+                    interval: 1, lastDone: nil, isOneOffTask: false,
+                    isDoneToday: false)
+            ],
             selectedTaskID: routineID,
             taskListMode: .todos
         )
@@ -475,7 +489,8 @@ struct HomeFeatureTaskListModeTests {
         let router = HomeFeatureMacNavigationRouter(
             setHideUnavailableRoutines: { _ in },
             persistTemporaryViewState: { state in
-                persistedSections.withValue { $0.append(state.selectedSettingsSection) }
+                let selectedSettingsSection = state.selectedSettingsSection
+                persistedSections.withValue { $0.append(selectedSettingsSection) }
             }
         )
         var state = HomeFeature.State(selectedSettingsSection: .notifications)

@@ -42,7 +42,10 @@ struct IOSScrollingPerformanceRegressionTests {
 
         #expect(appView.contains("@State private var appliedSearchText = \"\""))
         #expect(appView.contains("platformSearchHomeView(searchText: $appliedSearchText)"))
-        #expect(appView.contains("platformSearchHomeView(searchText: $appliedSearchText)\n            .searchable(text: $searchText, prompt: \"Search repeating and one-time tasks\")"))
+        #expect(
+            appView.contains(
+                "platformSearchHomeView(searchText: $appliedSearchText)\n            .searchable(text: $searchText, prompt: \"Search repeating and one-time tasks\")"
+            ))
         #expect(appView.contains(".tabViewSearchActivation(.searchTabSelection)"))
         #expect(!appView.contains("tabView\n            .searchable"))
         #expect(appView.contains(".onChange(of: searchText)"))
@@ -199,13 +202,16 @@ struct IOSScrollingPerformanceRegressionTests {
     @Test
     func plannerLifecycleUsesItsSnapshotRevisionInsteadOfHistoryTokens() throws {
         let planner = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let lifecycle = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanPresentationSheets.swift"
+        )
 
-        #expect(planner.contains(".onChange(of: dataRevision)"))
+        #expect(lifecycle.contains(".onChange(of: dataRevision)"))
         #expect(planner.contains("dataRevision: dataSnapshotID"))
-        #expect(!planner.contains("taskChangeToken"))
-        #expect(!planner.contains("focusSessionChangeToken"))
-        #expect(!planner.contains("sleepSessionChangeToken"))
-        #expect(!planner.contains("awaySessionChangeToken"))
+        #expect(!lifecycle.contains("taskChangeToken"))
+        #expect(!lifecycle.contains("focusSessionChangeToken"))
+        #expect(!lifecycle.contains("sleepSessionChangeToken"))
+        #expect(!lifecycle.contains("awaySessionChangeToken"))
     }
 
     @Test
@@ -224,13 +230,6 @@ struct IOSScrollingPerformanceRegressionTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        return try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

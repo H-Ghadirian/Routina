@@ -13,14 +13,19 @@ struct AddRoutineTCAView: View {
     @State var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
+    @State private var fallbackFormCoordinator = AddEditFormCoordinator()
     @AppStorage(
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) var isPlacesEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
-    @Environment(\.addEditFormCoordinator) var formCoordinator
+    @Environment(\.addEditFormCoordinator) private var inheritedFormCoordinator
     @Environment(\.calendar) var calendar
+
+    var formCoordinator: AddEditFormCoordinator {
+        inheritedFormCoordinator ?? fallbackFormCoordinator
+    }
 
     var body: some View {
 NavigationStack {
@@ -43,6 +48,7 @@ NavigationStack {
     }
     .routinaAddRoutineTagNotifications(store: store)
     .routinaAddRoutineSheetFrame()
+    .environment(\.addEditFormCoordinator, formCoordinator)
     .onChange(of: selectedPhotoItem) { _, newItem in
         guard let newItem else { return }
         loadPickedImage(from: newItem)

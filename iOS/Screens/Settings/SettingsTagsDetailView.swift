@@ -81,7 +81,7 @@ struct SettingsTagsDetailView: View {
             SettingsTagRenameSheet(store: store)
                 .presentationDetents([.height(240)])
         }
-        .onChange(of: store.tags.savedTags.map(\.id)) { tagIDs in
+        .onChange(of: store.tags.savedTags.map(\.id)) { _, tagIDs in
             guard let selectedTagID, !tagIDs.contains(selectedTagID) else { return }
             self.selectedTagID = nil
         }

@@ -125,7 +125,7 @@ struct TaskChoiceMissingData: Equatable {
             Item(title: "Pressure", count: pressureCount),
             Item(title: "Thinking needed", count: thinkingNeededCount),
             Item(title: "Time estimate", count: estimatedDurationCount)
-        ].filter { $0.count > 0 }
+        ].filter { $0.count > .zero }
     }
 }
 

@@ -2,267 +2,34 @@ import Combine
 import Foundation
 import SwiftData
 
-struct DayPlanFocusedSleep: Equatable {
-    let sessionID: UUID
-    let startMinute: Int
-    private let token = UUID()
-
-    var scrollTargetID: UUID {
-        token
-    }
-}
-
-enum DayPlanVisibleRangeMode: String, CaseIterable, Codable, Identifiable, Sendable {
-    case day
-    case threeDays
-    case week
-
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .day:
-            return "Day"
-        case .threeDays:
-            return "3 Days"
-        case .week:
-            return "Week"
-        }
-    }
-
-    var navigationDayCount: Int {
-        visibleDayCount
-    }
-
-    var visibleDayCount: Int {
-        switch self {
-        case .day:
-            return 1
-        case .threeDays:
-            return 3
-        case .week:
-            return 7
-        }
-    }
-}
-
-enum DayPlanDisplayMode: String, CaseIterable, Codable, Identifiable, Sendable {
-    case calendar
-    case list
-
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .calendar:
-            return "Calendar"
-        case .list:
-            return "Timeline"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .calendar:
-            return "calendar"
-        case .list:
-            return "list.bullet"
-        }
-    }
-}
-
-enum DayPlanCalendarTaskViewMode: String, CaseIterable, Codable, Identifiable, Sendable {
-    case schedule
-    case list
-
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .schedule:
-            return "Schedule"
-        case .list:
-            return "List"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .schedule:
-            return "clock"
-        case .list:
-            return "list.bullet"
-        }
-    }
-}
-
-enum DayPlanHourSpacing: String, CaseIterable, Identifiable {
-    case standard
-    case spacious
-    case expanded
-
-    var id: Self { self }
-
-    var hourHeight: Double {
-        switch self {
-        case .standard:
-            return 64
-        case .spacious:
-            return 88
-        case .expanded:
-            return 112
-        }
-    }
-
-    var next: Self {
-        switch self {
-        case .standard:
-            return .spacious
-        case .spacious:
-            return .expanded
-        case .expanded:
-            return .expanded
-        }
-    }
-
-    var previous: Self {
-        switch self {
-        case .standard:
-            return .standard
-        case .spacious:
-            return .standard
-        case .expanded:
-            return .spacious
-        }
-    }
-}
-
-struct MacPlannerPresentationPreferences: Codable, Equatable, Sendable {
-    var displayMode: DayPlanDisplayMode = .calendar
-    var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
-    var visibleRangeMode: DayPlanVisibleRangeMode = .week
-
-    static let `default` = Self()
-
-    init(
-        displayMode: DayPlanDisplayMode = .calendar,
-        calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule,
-        visibleRangeMode: DayPlanVisibleRangeMode = .week
-    ) {
-        self.displayMode = displayMode
-        self.calendarTaskViewMode = calendarTaskViewMode
-        self.visibleRangeMode = visibleRangeMode
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case displayMode
-        case calendarTaskViewMode
-        case visibleRangeMode
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        displayMode = try container.decodeIfPresent(DayPlanDisplayMode.self, forKey: .displayMode) ?? .calendar
-        calendarTaskViewMode = try container.decodeIfPresent(
-            DayPlanCalendarTaskViewMode.self,
-            forKey: .calendarTaskViewMode
-        ) ?? .schedule
-        visibleRangeMode = try container.decodeIfPresent(
-            DayPlanVisibleRangeMode.self,
-            forKey: .visibleRangeMode
-        ) ?? .week
-    }
-}
-
-enum MacPlannerPresentationPreferencesStore {
-    static func load(
-        from defaults: UserDefaults = SharedDefaults.app
-    ) -> MacPlannerPresentationPreferences {
-        guard
-            let rawValue = defaults[.appSettingMacPlannerPresentationPreferences],
-            let data = rawValue.data(using: .utf8),
-            let preferences = try? JSONDecoder().decode(MacPlannerPresentationPreferences.self, from: data)
-        else {
-            return .default
-        }
-        return preferences
-    }
-
-    @discardableResult
-    static func update(
-        in defaults: UserDefaults = SharedDefaults.app,
-        _ changes: (inout MacPlannerPresentationPreferences) -> Void
-    ) -> Bool {
-        var preferences = load(from: defaults)
-        let previousPreferences = preferences
-        changes(&preferences)
-        guard preferences != previousPreferences,
-              let data = try? JSONEncoder().encode(preferences),
-              let rawValue = String(data: data, encoding: .utf8)
-        else {
-            return false
-        }
-        defaults[.appSettingMacPlannerPresentationPreferences] = rawValue
-        return true
-    }
-}
-
-private struct DayPlanPlannerUndoSnapshot: Equatable {
+private struct ExactTimedTaskSynchronizationContext {
+    var date: Date
     var dayKey: String
-    var blocks: [DayPlanBlock]
+    var blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    var now: Date
+    var calendar: Calendar
 }
 
-private struct DayPlanFocusSessionUndoSnapshot: Equatable {
-    var id: UUID
-    var startedAt: Date?
-    var plannedDurationSeconds: TimeInterval
-    var completedAt: Date?
-    var abandonedAt: Date?
-    var pausedAt: Date?
-    var accumulatedPausedSeconds: TimeInterval
-
-    init(session: FocusSession) {
-        id = session.id
-        startedAt = session.startedAt
-        plannedDurationSeconds = session.plannedDurationSeconds
-        completedAt = session.completedAt
-        abandonedAt = session.abandonedAt
-        pausedAt = session.pausedAt
-        accumulatedPausedSeconds = session.accumulatedPausedSeconds
+private extension DayPlanBlock {
+    func moved(
+        toDayKey dayKey: String,
+        startMinute: Int,
+        durationMinutes: Int,
+        minimumDurationMinutes: Int
+    ) -> DayPlanBlock {
+        DayPlanBlock(
+            id: id,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: startMinute,
+            durationMinutes: durationMinutes,
+            titleSnapshot: titleSnapshot,
+            emojiSnapshot: emojiSnapshot,
+            createdAt: createdAt,
+            updatedAt: Date(),
+            minimumDurationMinutes: minimumDurationMinutes
+        )
     }
-
-    func apply(to session: FocusSession) {
-        session.startedAt = startedAt
-        session.plannedDurationSeconds = plannedDurationSeconds
-        session.completedAt = completedAt
-        session.abandonedAt = abandonedAt
-        session.pausedAt = pausedAt
-        session.accumulatedPausedSeconds = accumulatedPausedSeconds
-    }
-}
-
-private struct DayPlanPlannerUndoSide: Equatable {
-    var snapshots: [DayPlanPlannerUndoSnapshot]
-    var focusedBlockID: UUID
-    var focusedDate: Date
-    var focusedStartMinute: Int
-    var focusSession: DayPlanFocusSessionUndoSnapshot? = nil
-}
-
-private struct DayPlanPlannerUndoChange: Equatable {
-    var actionName: String
-    var undoSide: DayPlanPlannerUndoSide
-    var redoSide: DayPlanPlannerUndoSide
-}
-
-private struct DayPlanPendingResizeUndo {
-    var blockID: UUID
-    var beforeSide: DayPlanPlannerUndoSide
-}
-
-@MainActor
-private final class DayPlanPlannerUndoTarget: NSObject {
-    weak var planner: DayPlanPlannerState?
 }
 
 @MainActor
@@ -286,10 +53,10 @@ final class DayPlanPlannerState: ObservableObject {
     private var preferredVisibleRangeMode: DayPlanVisibleRangeMode
     private let preferredVisibleRangeModeDidChange: ((DayPlanVisibleRangeMode) -> Void)?
     @Published private var maximumAdaptiveVisibleRangeMode: DayPlanVisibleRangeMode = .week
-    private var pendingResizeUndo: DayPlanPendingResizeUndo?
-    private var plannerUndoChange: DayPlanPlannerUndoChange?
-    private var plannerRedoChange: DayPlanPlannerUndoChange?
-    private let undoTarget = DayPlanPlannerUndoTarget()
+    var pendingResizeUndo: DayPlanPendingResizeUndo?
+    var plannerUndoChange: DayPlanPlannerUndoChange?
+    var plannerRedoChange: DayPlanPlannerUndoChange?
+    let undoTarget = DayPlanPlannerUndoTarget()
 
     init(
         selectedDate: Date = DayPlanPlannerState.defaultSelectedDate(),
@@ -378,8 +145,10 @@ final class DayPlanPlannerState: ObservableObject {
     ) -> DayPlanVisibleRangeMode {
         guard width > 0 else { return .week }
 
-        if isExternalInspectorPresented,
-           width < Double(DayPlanWeekCalendarSizing.inspectorMultiDayMinimumCalendarWidth) {
+        let inspectorRequiresSingleDay =
+            isExternalInspectorPresented
+            && width < Double(DayPlanWeekCalendarSizing.inspectorMultiDayMinimumCalendarWidth)
+        if inspectorRequiresSingleDay {
             return .day
         }
 
@@ -488,103 +257,22 @@ final class DayPlanPlannerState: ObservableObject {
                 in: updatedBlocksByDayKey,
                 context: context
             )
+            let synchronizationContext = ExactTimedTaskSynchronizationContext(
+                date: date,
+                dayKey: dayKey,
+                blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+                now: now,
+                calendar: calendar
+            )
             var didChangeDay = false
 
             for task in candidateTasks {
-                if let windowBlock = automaticWindowScheduledBlock(for: task, on: date, calendar: calendar) {
-                    let windowStartMinute = startMinute(for: windowBlock.startDate, calendar: calendar)
-                    let windowDurationMinutes = scheduledDurationMinutes(
-                        for: windowBlock,
-                        task: task,
-                        startMinute: windowStartMinute
-                    )
-                    if removeStaleScheduledBlocks(
-                        from: &dayBlocks,
-                        taskID: task.id,
-                        scheduledStartMinute: windowStartMinute,
-                        scheduledDurationMinutes: windowDurationMinutes
-                    ) {
-                        didChangeDay = true
-                    }
-                }
-
-                guard let scheduledBlock = exactScheduledBlock(for: task, on: date, calendar: calendar) else {
-                    continue
-                }
-                let startMinute = startMinute(for: scheduledBlock.startDate, calendar: calendar)
-                let durationMinutes = scheduledDurationMinutes(
-                    for: scheduledBlock,
-                    task: task,
-                    startMinute: startMinute
+                let didChangeTask = synchronizeExactTimedTask(
+                    task,
+                    dayBlocks: &dayBlocks,
+                    context: synchronizationContext
                 )
-                guard !task.isArchived(referenceDate: scheduledBlock.startDate, calendar: calendar) else {
-                    if removeStaleScheduledBlocks(
-                        from: &dayBlocks,
-                        taskID: task.id,
-                        scheduledStartMinute: startMinute,
-                        scheduledDurationMinutes: durationMinutes
-                    ) {
-                        didChangeDay = true
-                    }
-                    continue
-                }
-
-                if let existingIndex = dayBlocks.firstIndex(where: { $0.taskID == task.id }) {
-                    let existingBlock = dayBlocks[existingIndex]
-                    guard shouldAutomaticallyManageScheduledBlock(
-                        existingBlock,
-                        scheduledStartMinute: startMinute,
-                        scheduledDurationMinutes: durationMinutes
-                    ) else {
-                        continue
-                    }
-                    guard existingBlock.placementSource != .automatic
-                        || existingBlock.startMinute != startMinute
-                        || existingBlock.durationMinutes != durationMinutes
-                    else {
-                        continue
-                    }
-                    dayBlocks[existingIndex] = DayPlanBlock(
-                        id: existingBlock.id,
-                        taskID: task.id,
-                        dayKey: dayKey,
-                        startMinute: startMinute,
-                        durationMinutes: durationMinutes,
-                        titleSnapshot: DayPlanTaskSorting.title(for: task),
-                        emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
-                        createdAt: existingBlock.createdAt,
-                        updatedAt: now,
-                        placementSource: .automatic,
-                        minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-                    )
-                    didChangeDay = true
-                    continue
-                }
-
-                guard !isBlocked(
-                    dayKey: dayKey,
-                    startMinute: startMinute,
-                    durationMinutes: durationMinutes,
-                    blockedIntervalsByDayKey: blockedIntervalsByDayKey
-                ) else {
-                    continue
-                }
-
-                dayBlocks.append(
-                    DayPlanBlock(
-                        taskID: task.id,
-                        dayKey: dayKey,
-                        startMinute: startMinute,
-                        durationMinutes: durationMinutes,
-                        titleSnapshot: DayPlanTaskSorting.title(for: task),
-                        emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
-                        createdAt: now,
-                        updatedAt: now,
-                        placementSource: .automatic,
-                        minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-                    )
-                )
-                didChangeDay = true
+                didChangeDay = didChangeTask || didChangeDay
             }
 
             if didChangeDay {
@@ -599,6 +287,163 @@ final class DayPlanPlannerState: ObservableObject {
         weekBlocksByDayKey = updatedBlocksByDayKey
         syncSelectedDayBlocks(calendar: calendar, context: context)
         clearMissingSelectedBlock()
+    }
+
+    private func synchronizeExactTimedTask(
+        _ task: RoutineTask,
+        dayBlocks: inout [DayPlanBlock],
+        context: ExactTimedTaskSynchronizationContext
+    ) -> Bool {
+        var didChange = removeStaleWindowBlockIfNeeded(
+            for: task,
+            from: &dayBlocks,
+            context: context
+        )
+        guard
+            let scheduledBlock = exactScheduledBlock(
+                for: task,
+                on: context.date,
+                calendar: context.calendar
+            )
+        else {
+            return didChange
+        }
+
+        let startMinute = startMinute(for: scheduledBlock.startDate, calendar: context.calendar)
+        let durationMinutes = scheduledDurationMinutes(
+            for: scheduledBlock,
+            task: task,
+            startMinute: startMinute
+        )
+        if task.isArchived(referenceDate: scheduledBlock.startDate, calendar: context.calendar) {
+            let removedStaleBlock = removeStaleScheduledBlocks(
+                from: &dayBlocks,
+                taskID: task.id,
+                scheduledStartMinute: startMinute,
+                scheduledDurationMinutes: durationMinutes
+            )
+            return removedStaleBlock || didChange
+        }
+
+        if let existingIndex = dayBlocks.firstIndex(where: { $0.taskID == task.id }) {
+            let updatedExistingBlock = updateExistingExactTimedBlock(
+                at: existingIndex,
+                in: &dayBlocks,
+                for: task,
+                startMinute: startMinute,
+                durationMinutes: durationMinutes,
+                context: context
+            )
+            return updatedExistingBlock || didChange
+        }
+
+        guard
+            !isBlocked(
+                dayKey: context.dayKey,
+                startMinute: startMinute,
+                durationMinutes: durationMinutes,
+                blockedIntervalsByDayKey: context.blockedIntervalsByDayKey
+            )
+        else {
+            return didChange
+        }
+
+        dayBlocks.append(
+            synchronizedExactTimedBlock(
+                for: task,
+                startMinute: startMinute,
+                durationMinutes: durationMinutes,
+                existingBlock: nil,
+                context: context
+            )
+        )
+        didChange = true
+        return didChange
+    }
+
+    private func removeStaleWindowBlockIfNeeded(
+        for task: RoutineTask,
+        from dayBlocks: inout [DayPlanBlock],
+        context: ExactTimedTaskSynchronizationContext
+    ) -> Bool {
+        guard
+            let windowBlock = automaticWindowScheduledBlock(
+                for: task,
+                on: context.date,
+                calendar: context.calendar
+            )
+        else {
+            return false
+        }
+
+        let windowStartMinute = startMinute(for: windowBlock.startDate, calendar: context.calendar)
+        let windowDurationMinutes = scheduledDurationMinutes(
+            for: windowBlock,
+            task: task,
+            startMinute: windowStartMinute
+        )
+        return removeStaleScheduledBlocks(
+            from: &dayBlocks,
+            taskID: task.id,
+            scheduledStartMinute: windowStartMinute,
+            scheduledDurationMinutes: windowDurationMinutes
+        )
+    }
+
+    private func updateExistingExactTimedBlock(
+        at index: Int,
+        in dayBlocks: inout [DayPlanBlock],
+        for task: RoutineTask,
+        startMinute: Int,
+        durationMinutes: Int,
+        context: ExactTimedTaskSynchronizationContext
+    ) -> Bool {
+        let existingBlock = dayBlocks[index]
+        guard
+            shouldAutomaticallyManageScheduledBlock(
+                existingBlock,
+                scheduledStartMinute: startMinute,
+                scheduledDurationMinutes: durationMinutes
+            )
+        else {
+            return false
+        }
+        let needsUpdate =
+            existingBlock.placementSource != .automatic
+            || existingBlock.startMinute != startMinute
+            || existingBlock.durationMinutes != durationMinutes
+        guard needsUpdate else { return false }
+
+        dayBlocks[index] = synchronizedExactTimedBlock(
+            for: task,
+            startMinute: startMinute,
+            durationMinutes: durationMinutes,
+            existingBlock: existingBlock,
+            context: context
+        )
+        return true
+    }
+
+    private func synchronizedExactTimedBlock(
+        for task: RoutineTask,
+        startMinute: Int,
+        durationMinutes: Int,
+        existingBlock: DayPlanBlock?,
+        context: ExactTimedTaskSynchronizationContext
+    ) -> DayPlanBlock {
+        DayPlanBlock(
+            id: existingBlock?.id ?? UUID(),
+            taskID: task.id,
+            dayKey: context.dayKey,
+            startMinute: startMinute,
+            durationMinutes: durationMinutes,
+            titleSnapshot: DayPlanTaskSorting.title(for: task),
+            emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+            createdAt: existingBlock?.createdAt ?? context.now,
+            updatedAt: context.now,
+            placementSource: .automatic,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
     }
 
     func handleSelectedDateChanged(calendar: Calendar, context: ModelContext) {
@@ -730,7 +575,9 @@ final class DayPlanPlannerState: ObservableObject {
             startMinute: targetStartMinute,
             minimumDurationMinutes: targetMinimumDuration
         )
-        var targetBlocks = weekBlocksByDayKey[targetDayKey] ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
+        var targetBlocks =
+            weekBlocksByDayKey[targetDayKey]
+            ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
         let targetEndMinute = targetStartMinute + targetDuration
         let hasConflict = targetBlocks.contains { block in
             guard block.id != id else { return false }
@@ -739,19 +586,15 @@ final class DayPlanPlannerState: ObservableObject {
 
         guard !hasConflict else { return false }
 
-        let movedBlock = DayPlanBlock(
-            id: locatedBlock.block.id,
-            taskID: locatedBlock.block.taskID,
-            dayKey: targetDayKey,
+        let movedBlock = locatedBlock.block.moved(
+            toDayKey: targetDayKey,
             startMinute: targetStartMinute,
             durationMinutes: targetDuration,
-            titleSnapshot: locatedBlock.block.titleSnapshot,
-            emojiSnapshot: locatedBlock.block.emojiSnapshot,
-            createdAt: locatedBlock.block.createdAt,
-            updatedAt: Date(),
             minimumDurationMinutes: targetMinimumDuration
         )
-        var sourceBlocks = weekBlocksByDayKey[locatedBlock.dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: locatedBlock.dayKey, context: context)
+        var sourceBlocks =
+            weekBlocksByDayKey[locatedBlock.dayKey]
+            ?? DayPlanStorage.loadBlocks(forDayKey: locatedBlock.dayKey, context: context)
         sourceBlocks.removeAll { $0.id == id }
 
         if locatedBlock.dayKey == targetDayKey {
@@ -819,7 +662,9 @@ final class DayPlanPlannerState: ObservableObject {
             startMinute: targetStartMinute,
             minimumDurationMinutes: targetMinimumDuration
         )
-        var targetBlocks = weekBlocksByDayKey[targetDayKey] ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
+        var targetBlocks =
+            weekBlocksByDayKey[targetDayKey]
+            ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
         let targetEndMinute = targetStartMinute + targetDuration
         let hasConflict = targetBlocks.contains { block in
             max(targetStartMinute, block.startMinute) < min(targetEndMinute, block.endMinute)
@@ -924,387 +769,6 @@ final class DayPlanPlannerState: ObservableObject {
         durationMinutes = confirmedBlock.durationMinutes
         syncSelectedDayBlocks(calendar: calendar, context: context)
         return true
-    }
-
-    @discardableResult
-    func resizeBlock(
-        _ id: DayPlanBlock.ID,
-        on date: Date,
-        startMinute: Int,
-        durationMinutes: Int,
-        calendar: Calendar,
-        context: ModelContext
-    ) -> Bool {
-        guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
-
-        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-        if pendingResizeUndo == nil,
-           let beforeSide = focusSide(
-                snapshots: snapshots(forDayKeys: [dayKey], context: context),
-                blockID: id,
-                fallbackDate: date,
-                fallbackStartMinute: locatedBlock.block.startMinute,
-                calendar: calendar
-           ) {
-            pendingResizeUndo = DayPlanPendingResizeUndo(blockID: id, beforeSide: beforeSide)
-        }
-        let targetStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
-        let targetDuration = DayPlanBlock.clampedDuration(
-            durationMinutes,
-            startMinute: targetStartMinute
-        )
-        let targetEndMinute = targetStartMinute + targetDuration
-        var dayBlocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
-        let hasConflict = dayBlocks.contains { block in
-            guard block.id != id else { return false }
-            return max(targetStartMinute, block.startMinute) < min(targetEndMinute, block.endMinute)
-        }
-
-        guard !hasConflict else { return false }
-
-        let resizedBlock = DayPlanBlock(
-            id: locatedBlock.block.id,
-            taskID: locatedBlock.block.taskID,
-            dayKey: dayKey,
-            startMinute: targetStartMinute,
-            durationMinutes: targetDuration,
-            titleSnapshot: locatedBlock.block.titleSnapshot,
-            emojiSnapshot: locatedBlock.block.emojiSnapshot,
-            createdAt: locatedBlock.block.createdAt,
-            updatedAt: Date()
-        )
-
-        dayBlocks.removeAll { $0.id == id }
-        dayBlocks.append(resizedBlock)
-        let sortedBlocks = sortedDayBlocks(dayBlocks)
-        weekBlocksByDayKey[dayKey] = sortedBlocks
-        DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey, context: context)
-
-        selectedDate = date
-        focusedSleep = nil
-        selectedBlockID = resizedBlock.id
-        selectedTaskID = resizedBlock.taskID
-        self.startMinute = resizedBlock.startMinute
-        self.durationMinutes = resizedBlock.durationMinutes
-        syncSelectedDayBlocks(calendar: calendar, context: context)
-        return true
-    }
-
-    func beginResizeBlock(
-        _ block: DayPlanBlock,
-        on date: Date,
-        calendar: Calendar,
-        context: ModelContext,
-        focusSessions: [FocusSession] = []
-    ) {
-        clearPlannerUndoHighlight()
-        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-        let focusSession = DayPlanFocusSessionPlannerSync.completedFocusSession(
-            matching: block,
-            in: focusSessions
-        )
-        let affectedDayKeys = orderedUniqueDayKeys(
-            [dayKey] + (focusSession.map {
-                DayPlanFocusSessionPlannerSync.persistedFocusBlocks(
-                    for: $0,
-                    context: context
-                )
-                .map(\.dayKey)
-            } ?? [])
-        )
-        let beforeSnapshots = snapshots(forDayKeys: affectedDayKeys, context: context)
-        guard let beforeSide = focusSide(
-            snapshots: beforeSnapshots,
-            blockID: block.id,
-            fallbackDate: date,
-            fallbackStartMinute: block.startMinute,
-            calendar: calendar,
-            focusSession: focusSession.map(DayPlanFocusSessionUndoSnapshot.init(session:))
-        ) else { return }
-        pendingResizeUndo = DayPlanPendingResizeUndo(blockID: block.id, beforeSide: beforeSide)
-    }
-
-    func endResizeBlock(
-        _ blockID: DayPlanBlock.ID?,
-        calendar: Calendar,
-        context: ModelContext
-    ) {
-        guard let pendingResizeUndo,
-              blockID == nil || pendingResizeUndo.blockID == blockID
-        else {
-            self.pendingResizeUndo = nil
-            return
-        }
-
-        var focusedBlockID = pendingResizeUndo.blockID
-        var focusedDate = pendingResizeUndo.beforeSide.focusedDate
-        var focusedStartMinute = pendingResizeUndo.beforeSide.focusedStartMinute
-        var updatedFocusSessionSnapshot: DayPlanFocusSessionUndoSnapshot?
-        var didUpdateFocusSession = false
-        if let originalFocusSession = pendingResizeUndo.beforeSide.focusSession,
-           let session = focusSession(withID: originalFocusSession.id, context: context),
-           let resizedBlock = locatedBlock(pendingResizeUndo.blockID, calendar: calendar)?.block,
-           let resizedDate = dateForDayKey(resizedBlock.dayKey, calendar: calendar),
-           let resizedStart = calendar.date(
-               byAdding: .minute,
-               value: resizedBlock.startMinute,
-               to: calendar.startOfDay(for: resizedDate)
-           ),
-           let updatedBlock = DayPlanFocusSessionPlannerSync.updateCompletedFocusSession(
-               session,
-               startedAt: resizedStart,
-               durationMinutes: resizedBlock.durationMinutes,
-               titleSnapshot: resizedBlock.titleSnapshot,
-               emojiSnapshot: resizedBlock.emojiSnapshot,
-               calendar: calendar,
-               context: context
-           ) {
-            focusedBlockID = updatedBlock.id
-            focusedDate = resizedDate
-            focusedStartMinute = updatedBlock.startMinute
-            updatedFocusSessionSnapshot = DayPlanFocusSessionUndoSnapshot(session: session)
-
-            for snapshot in pendingResizeUndo.beforeSide.snapshots {
-                weekBlocksByDayKey[snapshot.dayKey] = DayPlanStorage.loadBlocks(
-                    forDayKey: snapshot.dayKey,
-                    context: context
-                )
-            }
-            syncSelectedDayBlocks(calendar: calendar, context: context)
-            selectedBlockID = updatedBlock.id
-            selectedTaskID = updatedBlock.taskID
-            startMinute = updatedBlock.startMinute
-            durationMinutes = updatedBlock.durationMinutes
-            didUpdateFocusSession = true
-        }
-
-        let dayKeys = pendingResizeUndo.beforeSide.snapshots.map(\.dayKey)
-        let afterSnapshots = snapshots(forDayKeys: dayKeys, context: context)
-        let afterSide = focusSide(
-            snapshots: afterSnapshots,
-            blockID: focusedBlockID,
-            fallbackDate: focusedDate,
-            fallbackStartMinute: focusedStartMinute,
-            calendar: calendar,
-            focusSession: updatedFocusSessionSnapshot
-        )
-
-        self.pendingResizeUndo = nil
-
-        guard let afterSide else { return }
-        registerPlannerUndoIfNeeded(
-            actionName: "Resize Planner Block",
-            beforeSnapshots: pendingResizeUndo.beforeSide.snapshots,
-            afterSnapshots: afterSnapshots,
-            beforeFocus: pendingResizeUndo.beforeSide,
-            afterFocus: afterSide,
-            calendar: calendar,
-            context: context
-        )
-        if didUpdateFocusSession {
-            NotificationCenter.default.postRoutineDidUpdate()
-        }
-    }
-
-    func clearPlannerUndo() {
-        pendingResizeUndo = nil
-        plannerUndoChange = nil
-        plannerRedoChange = nil
-        clearPlannerUndoHighlight()
-        RoutinaUndoSupport.removeUndoActions(withTarget: undoTarget)
-        RoutinaUndoSupport.setActiveUndoManager(nil)
-        RoutinaUndoSupport.clearActiveScopedUndo()
-    }
-
-    @discardableResult
-    func performPlannerUndo(calendar: Calendar, context: ModelContext) -> Bool {
-        guard let change = plannerUndoChange else { return false }
-        restore(change.undoSide, calendar: calendar, context: context)
-        plannerUndoChange = nil
-        plannerRedoChange = DayPlanPlannerUndoChange(
-            actionName: change.actionName,
-            undoSide: change.redoSide,
-            redoSide: change.undoSide
-        )
-        return true
-    }
-
-    @discardableResult
-    func performPlannerRedo(calendar: Calendar, context: ModelContext) -> Bool {
-        guard let change = plannerRedoChange else { return false }
-        restore(change.undoSide, calendar: calendar, context: context)
-        plannerRedoChange = nil
-        plannerUndoChange = DayPlanPlannerUndoChange(
-            actionName: change.actionName,
-            undoSide: change.redoSide,
-            redoSide: change.undoSide
-        )
-        return true
-    }
-
-    private func registerPlannerUndoIfNeeded(
-        actionName: String,
-        beforeSnapshots: [DayPlanPlannerUndoSnapshot],
-        afterSnapshots: [DayPlanPlannerUndoSnapshot],
-        beforeFocus: DayPlanPlannerUndoSide?,
-        afterFocus: DayPlanPlannerUndoSide?,
-        calendar: Calendar,
-        context: ModelContext
-    ) {
-        guard beforeSnapshots != afterSnapshots,
-              let beforeFocus,
-              let afterFocus
-        else { return }
-
-        registerPlannerUndo(
-            DayPlanPlannerUndoChange(
-                actionName: actionName,
-                undoSide: beforeFocus,
-                redoSide: afterFocus
-            ),
-            calendar: calendar,
-            context: context
-        )
-    }
-
-    private func registerPlannerUndo(
-        _ change: DayPlanPlannerUndoChange,
-        calendar: Calendar,
-        context: ModelContext
-    ) {
-        plannerUndoChange = change
-        plannerRedoChange = nil
-
-        guard let undoManager = RoutinaUndoSupport.currentUndoManager,
-              undoManager.isUndoRegistrationEnabled
-        else { return }
-
-        undoManager.registerUndo(withTarget: undoTarget) { target in
-            target.planner?.applyPlannerUndo(change, calendar: calendar, context: context)
-        }
-        undoManager.setActionName(change.actionName)
-    }
-
-    private func applyPlannerUndo(
-        _ change: DayPlanPlannerUndoChange,
-        calendar: Calendar,
-        context: ModelContext
-    ) {
-        restore(change.undoSide, calendar: calendar, context: context)
-
-        registerPlannerUndo(
-            DayPlanPlannerUndoChange(
-                actionName: change.actionName,
-                undoSide: change.redoSide,
-                redoSide: change.undoSide
-            ),
-            calendar: calendar,
-            context: context
-        )
-    }
-
-    private func restore(
-        _ side: DayPlanPlannerUndoSide,
-        calendar: Calendar,
-        context: ModelContext
-    ) {
-        if let focusSessionSnapshot = side.focusSession,
-           let session = focusSession(withID: focusSessionSnapshot.id, context: context) {
-            focusSessionSnapshot.apply(to: session)
-        }
-
-        for snapshot in side.snapshots {
-            DayPlanStorage.saveBlocks(snapshot.blocks, forDayKey: snapshot.dayKey, context: context)
-            weekBlocksByDayKey[snapshot.dayKey] = snapshot.blocks
-        }
-
-        showDate(side.focusedDate, calendar: calendar, context: context)
-
-        if let focusedBlock = block(withID: side.focusedBlockID) {
-            selectedBlockID = focusedBlock.id
-            selectedTaskID = focusedBlock.taskID
-            startMinute = focusedBlock.startMinute
-            durationMinutes = focusedBlock.durationMinutes
-            highlightedBlockID = focusedBlock.id
-            highlightedBlockScrollMinute = focusedBlock.startMinute
-        } else {
-            highlightedBlockID = side.focusedBlockID
-            highlightedBlockScrollMinute = side.focusedStartMinute
-        }
-
-        NotificationCenter.default.postRoutineDidUpdate()
-    }
-
-    private func block(withID blockID: UUID) -> DayPlanBlock? {
-        blocks.first { $0.id == blockID }
-            ?? weekBlocksByDayKey.values.lazy.compactMap { dayBlocks in
-                dayBlocks.first { $0.id == blockID }
-            }
-            .first
-    }
-
-    private func snapshots(
-        forDayKeys dayKeys: [String],
-        context: ModelContext
-    ) -> [DayPlanPlannerUndoSnapshot] {
-        orderedUniqueDayKeys(dayKeys).map { dayKey in
-            DayPlanPlannerUndoSnapshot(
-                dayKey: dayKey,
-                blocks: weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
-            )
-        }
-    }
-
-    private func focusSide(
-        snapshots: [DayPlanPlannerUndoSnapshot],
-        blockID: UUID,
-        fallbackDate: Date,
-        fallbackStartMinute: Int,
-        calendar: Calendar,
-        focusSession: DayPlanFocusSessionUndoSnapshot? = nil
-    ) -> DayPlanPlannerUndoSide? {
-        let focusedSnapshot = snapshots.first { snapshot in
-            snapshot.blocks.contains { $0.id == blockID }
-        }
-        let focusedBlock = focusedSnapshot?.blocks.first { $0.id == blockID }
-        let focusedDate = focusedSnapshot
-            .flatMap { dateForDayKey($0.dayKey, calendar: calendar) }
-            ?? calendar.startOfDay(for: fallbackDate)
-
-        return DayPlanPlannerUndoSide(
-            snapshots: snapshots,
-            focusedBlockID: blockID,
-            focusedDate: focusedDate,
-            focusedStartMinute: focusedBlock?.startMinute ?? fallbackStartMinute,
-            focusSession: focusSession
-        )
-    }
-
-    private func focusSession(withID id: UUID, context: ModelContext) -> FocusSession? {
-        do {
-            return try context.fetch(FetchDescriptor<FocusSession>()).first { $0.id == id }
-        } catch {
-            NSLog("Failed to load Focus session for Planner resize: \(error.localizedDescription)")
-            return nil
-        }
-    }
-
-    private func orderedUniqueDayKeys(_ dayKeys: [String]) -> [String] {
-        var seen: Set<String> = []
-        return dayKeys.filter { dayKey in
-            seen.insert(dayKey).inserted
-        }
-    }
-
-    private func dateForDayKey(_ dayKey: String, calendar: Calendar) -> Date? {
-        let parts = dayKey.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return nil }
-        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
-    }
-
-    private func clearPlannerUndoHighlight() {
-        highlightedBlockID = nil
-        highlightedBlockScrollMinute = nil
     }
 
     func commitBlock(task: RoutineTask, calendar: Calendar, context: ModelContext) {
@@ -1512,7 +976,7 @@ final class DayPlanPlannerState: ObservableObject {
         )
     }
 
-    private func syncSelectedDayBlocks(calendar: Calendar, context: ModelContext) {
+    func syncSelectedDayBlocks(calendar: Calendar, context: ModelContext) {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         blocks = cachedOrLoadedBlocks(forDayKey: dayKey, in: weekBlocksByDayKey, context: context)
     }
@@ -1547,7 +1011,7 @@ final class DayPlanPlannerState: ObservableObject {
     private struct ExactScheduledBlock {
         var startDate: Date
         var durationMinutes: Int?
-        var fallbackDurationMinutes: Int? = nil
+        var fallbackDurationMinutes: Int?
     }
 
     private func scheduledDurationMinutes(
@@ -1576,7 +1040,8 @@ final class DayPlanPlannerState: ObservableObject {
         case .manual:
             return false
         case .legacy:
-            let matchesCurrentPlacement = block.startMinute == scheduledStartMinute
+            let matchesCurrentPlacement =
+                block.startMinute == scheduledStartMinute
                 && block.durationMinutes == scheduledDurationMinutes
             return matchesCurrentPlacement || block.createdAt == block.updatedAt
         }
@@ -1631,8 +1096,11 @@ final class DayPlanPlannerState: ObservableObject {
 
         if task.isOneOffTask {
             if isDateWithinAvailabilityDateBounds(date, for: task, calendar: calendar) {
-                if let timeRange = task.recurrenceRule.timeRange,
-                   task.recurrenceTimeRangeRole == .scheduledBlock {
+                let scheduledTimeRange =
+                    task.recurrenceTimeRangeRole == .scheduledBlock
+                    ? task.recurrenceRule.timeRange
+                    : nil
+                if let timeRange = scheduledTimeRange {
                     let startDate = timeRange.startDate(on: date, calendar: calendar)
                     let endDate = timeRange.endDate(on: date, calendar: calendar)
                     return ExactScheduledBlock(
@@ -1649,8 +1117,9 @@ final class DayPlanPlannerState: ObservableObject {
             }
 
             guard let deadline = task.deadline,
-                  calendar.isDate(deadline, inSameDayAs: date),
-                  hasExplicitTime(deadline, calendar: calendar) else {
+                calendar.isDate(deadline, inSameDayAs: date),
+                hasExplicitTime(deadline, calendar: calendar)
+            else {
                 return nil
             }
             return ExactScheduledBlock(startDate: deadline, durationMinutes: nil)
@@ -1679,8 +1148,9 @@ final class DayPlanPlannerState: ObservableObject {
         calendar: Calendar
     ) -> ExactScheduledBlock? {
         guard !task.isAllDay,
-              task.recurrenceTimeRangeRole == .availability,
-              let timeRange = task.recurrenceRule.timeRange else {
+            task.recurrenceTimeRangeRole == .availability,
+            let timeRange = task.recurrenceRule.timeRange
+        else {
             return nil
         }
 
@@ -1742,7 +1212,7 @@ final class DayPlanPlannerState: ObservableObject {
         return DayPlanBlock.clampedStartMinute(minute)
     }
 
-    private func locatedBlock(
+    func locatedBlock(
         _ id: DayPlanBlock.ID,
         calendar: Calendar
     ) -> (block: DayPlanBlock, dayKey: String)? {
@@ -1771,7 +1241,7 @@ final class DayPlanPlannerState: ObservableObject {
         }
     }
 
-    private func sortedDayBlocks(_ blocks: [DayPlanBlock]) -> [DayPlanBlock] {
+    func sortedDayBlocks(_ blocks: [DayPlanBlock]) -> [DayPlanBlock] {
         blocks.sorted {
             if $0.startMinute != $1.startMinute {
                 return $0.startMinute < $1.startMinute
@@ -1808,9 +1278,10 @@ final class DayPlanPlannerState: ObservableObject {
         preservingCachedUnassignedFocusBlocks: Bool
     ) -> [DayPlanBlock] {
         guard preservingCachedUnassignedFocusBlocks,
-              loadedBlocks.isEmpty,
-              let cachedFocusBlocks = cachedBlocks?.filter({ $0.taskID == FocusSession.unassignedTaskID }),
-              !cachedFocusBlocks.isEmpty else {
+            loadedBlocks.isEmpty,
+            let cachedFocusBlocks = cachedBlocks?.filter({ $0.taskID == FocusSession.unassignedTaskID }),
+            !cachedFocusBlocks.isEmpty
+        else {
             return loadedBlocks
         }
 

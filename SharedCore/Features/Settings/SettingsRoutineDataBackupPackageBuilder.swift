@@ -4,6 +4,15 @@ import SwiftData
 enum SettingsRoutineDataBackupPackageBuilder {
     typealias Backup = SettingsRoutineDataPersistence.Backup
 
+    private struct PreparedAttachments {
+        var manifests: [Backup.Attachment] = []
+        var taskImageIDs: [UUID: UUID] = [:]
+        var taskVoiceNoteIDs: [UUID: UUID] = [:]
+        var placeCheckInImageIDs: [UUID: UUID] = [:]
+        var noteImageIDs: [UUID: UUID] = [:]
+        var noteVoiceNoteIDs: [UUID: UUID] = [:]
+    }
+
     @MainActor
     static func buildPackage(
         from context: ModelContext,
@@ -73,20 +82,117 @@ enum SettingsRoutineDataBackupPackageBuilder {
         }
         let userPreferences = try context.fetch(FetchDescriptor<RoutinaUserPreferences>()).first
 
-        var attachmentManifests: [Backup.Attachment] = []
-        var taskImageAttachmentIDs: [UUID: UUID] = [:]
-        var taskVoiceNoteAttachmentIDs: [UUID: UUID] = [:]
-        var placeCheckInImageAttachmentIDs: [UUID: UUID] = [:]
-        var noteImageAttachmentIDs: [UUID: UUID] = [:]
-        var noteVoiceNoteAttachmentIDs: [UUID: UUID] = [:]
+        let preparedAttachments = try prepareAttachments(
+            tasks: tasks,
+            placeCheckInSessions: placeCheckInSessions,
+            notes: notes,
+            storedAttachments: storedAttachments,
+            storedNoteAttachments: storedNoteAttachments,
+            exportedAt: exportedAt,
+            writeAttachment: writeAttachment
+        )
 
+        let backup = Backup(
+            schemaVersion: SettingsRoutineDataPersistence.currentSchemaVersion,
+            exportedAt: exportedAt,
+            places: places.map(SettingsRoutineDataBackupMapping.place),
+            goals: goals.map(SettingsRoutineDataBackupMapping.goal),
+            tasks: tasks.map {
+                SettingsRoutineDataBackupMapping.task(
+                    $0,
+                    imageData: nil,
+                    imageAttachmentID: preparedAttachments.taskImageIDs[$0.id],
+                    voiceNoteData: nil,
+                    voiceNoteAttachmentID: preparedAttachments.taskVoiceNoteIDs[$0.id],
+                    includesPressure: true
+                )
+            },
+            logs: logs.map(SettingsRoutineDataBackupMapping.log),
+            sleepSessions: sleepSessions.map(SettingsRoutineDataBackupMapping.sleep),
+            awaySessions: awaySessions.map(SettingsRoutineDataBackupMapping.away),
+            placeCheckInSessions: placeCheckInSessions.map {
+                SettingsRoutineDataBackupMapping.placeCheckIn(
+                    $0,
+                    imageData: nil,
+                    imageAttachmentID: preparedAttachments.placeCheckInImageIDs[$0.id]
+                )
+            },
+            emotionLogs: emotionLogs.map(SettingsRoutineDataBackupMapping.emotion),
+            notes: notes.map {
+                SettingsRoutineDataBackupMapping.note(
+                    $0,
+                    imageData: nil,
+                    imageAttachmentID: preparedAttachments.noteImageIDs[$0.id],
+                    voiceNoteData: nil,
+                    voiceNoteAttachmentID: preparedAttachments.noteVoiceNoteIDs[$0.id]
+                )
+            },
+            events: events.map(SettingsRoutineDataBackupMapping.event),
+            attachments: preparedAttachments.manifests,
+            focusSessions: focusSessions.map(SettingsRoutineDataBackupMapping.focus),
+            dayPlanBlocks: dayPlanBlocks.map(SettingsRoutineDataBackupMapping.dayPlanBlock),
+            boardSprints: boardSprints.map(SettingsRoutineDataBackupMapping.boardSprint),
+            sprintAssignments: sprintAssignments.map(SettingsRoutineDataBackupMapping.sprintAssignment),
+            boardBacklogs: boardBacklogs.map(SettingsRoutineDataBackupMapping.boardBacklog),
+            backlogAssignments: backlogAssignments.map(SettingsRoutineDataBackupMapping.backlogAssignment),
+            sprintFocusSessions: sprintFocusSessions.map(SettingsRoutineDataBackupMapping.sprintFocus),
+            sprintFocusAllocations: sprintFocusAllocations.map(SettingsRoutineDataBackupMapping.sprintFocusAllocation),
+            deviceSessions: deviceSessions.map(SettingsRoutineDataBackupMapping.deviceSession),
+            deviceActionLogs: deviceActionLogs.map(SettingsRoutineDataBackupMapping.deviceActionLog),
+            userPreferences: userPreferences.map(SettingsRoutineDataBackupMapping.userPreferences),
+            verificationReceiptVersion: SettingsRoutineDataBackupVerification.currentReceiptVersion
+        )
+
+        return try SettingsRoutineDataBackupCoding.encode(backup)
+    }
+
+    @MainActor
+    private static func prepareAttachments(
+        tasks: [RoutineTask],
+        placeCheckInSessions: [PlaceCheckInSession],
+        notes: [RoutineNote],
+        storedAttachments: [RoutineAttachment],
+        storedNoteAttachments: [RoutineNoteAttachment],
+        exportedAt: Date,
+        writeAttachment: (String, Data) throws -> Void
+    ) throws -> PreparedAttachments {
+        var result = PreparedAttachments()
+        try appendTaskAttachments(
+            from: tasks,
+            exportedAt: exportedAt,
+            writeAttachment: writeAttachment,
+            to: &result
+        )
+        try appendPlaceAndNoteAttachments(
+            placeCheckInSessions: placeCheckInSessions,
+            notes: notes,
+            exportedAt: exportedAt,
+            writeAttachment: writeAttachment,
+            to: &result
+        )
+        try appendStoredAttachments(
+            storedAttachments,
+            noteAttachments: storedNoteAttachments,
+            writeAttachment: writeAttachment,
+            to: &result
+        )
+        return result
+    }
+
+    @MainActor
+    private static func appendTaskAttachments(
+        from tasks: [RoutineTask],
+        exportedAt: Date,
+        writeAttachment: (String, Data) throws -> Void,
+        to result: inout PreparedAttachments
+    ) throws {
         for task in tasks {
             guard let imageData = task.imageData, !imageData.isEmpty else { continue }
             let attachmentID = UUID()
             let fileName = "\(attachmentID.uuidString).task-image"
             try writeAttachment(fileName, imageData)
-            taskImageAttachmentIDs[task.id] = attachmentID
-            attachmentManifests.append(
+            result.taskImageIDs[task.id] = attachmentID
+            result.manifests.append(
                 .init(
                     id: attachmentID,
                     taskID: task.id,
@@ -105,8 +211,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
             let attachmentID = UUID()
             let fileName = "\(attachmentID.uuidString).task-voice.\(RoutineVoiceNote.fileExtension)"
             try writeAttachment(fileName, voiceNoteData)
-            taskVoiceNoteAttachmentIDs[task.id] = attachmentID
-            attachmentManifests.append(
+            result.taskVoiceNoteIDs[task.id] = attachmentID
+            result.manifests.append(
                 .init(
                     id: attachmentID,
                     taskID: task.id,
@@ -119,14 +225,23 @@ enum SettingsRoutineDataBackupPackageBuilder {
                 )
             )
         }
+    }
 
+    @MainActor
+    private static func appendPlaceAndNoteAttachments(
+        placeCheckInSessions: [PlaceCheckInSession],
+        notes: [RoutineNote],
+        exportedAt: Date,
+        writeAttachment: (String, Data) throws -> Void,
+        to result: inout PreparedAttachments
+    ) throws {
         for session in placeCheckInSessions {
             guard let imageData = session.imageData, !imageData.isEmpty else { continue }
             let attachmentID = UUID()
             let fileName = "\(attachmentID.uuidString).place-check-in-image"
             try writeAttachment(fileName, imageData)
-            placeCheckInImageAttachmentIDs[session.id] = attachmentID
-            attachmentManifests.append(
+            result.placeCheckInImageIDs[session.id] = attachmentID
+            result.manifests.append(
                 .init(
                     id: attachmentID,
                     taskID: nil,
@@ -145,8 +260,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
             let attachmentID = UUID()
             let fileName = "\(attachmentID.uuidString).note-image"
             try writeAttachment(fileName, imageData)
-            noteImageAttachmentIDs[note.id] = attachmentID
-            attachmentManifests.append(
+            result.noteImageIDs[note.id] = attachmentID
+            result.manifests.append(
                 .init(
                     id: attachmentID,
                     taskID: nil,
@@ -165,8 +280,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
             let attachmentID = UUID()
             let fileName = "\(attachmentID.uuidString).note-voice.\(RoutineVoiceNote.fileExtension)"
             try writeAttachment(fileName, voiceNoteData)
-            noteVoiceNoteAttachmentIDs[note.id] = attachmentID
-            attachmentManifests.append(
+            result.noteVoiceNoteIDs[note.id] = attachmentID
+            result.manifests.append(
                 .init(
                     id: attachmentID,
                     taskID: nil,
@@ -179,12 +294,20 @@ enum SettingsRoutineDataBackupPackageBuilder {
                 )
             )
         }
+    }
 
-        for attachment in storedAttachments {
+    @MainActor
+    private static func appendStoredAttachments(
+        _ attachments: [RoutineAttachment],
+        noteAttachments: [RoutineNoteAttachment],
+        writeAttachment: (String, Data) throws -> Void,
+        to result: inout PreparedAttachments
+    ) throws {
+        for attachment in attachments {
             guard !attachment.data.isEmpty else { continue }
             let fileName = SettingsRoutineDataBackupFileNaming.packageAttachmentFileName(for: attachment)
             try writeAttachment(fileName, attachment.data)
-            attachmentManifests.append(
+            result.manifests.append(
                 .init(
                     id: attachment.id,
                     taskID: attachment.taskID,
@@ -198,11 +321,11 @@ enum SettingsRoutineDataBackupPackageBuilder {
             )
         }
 
-        for attachment in storedNoteAttachments {
+        for attachment in noteAttachments {
             guard !attachment.data.isEmpty else { continue }
             let fileName = SettingsRoutineDataBackupFileNaming.packageAttachmentFileName(for: attachment)
             try writeAttachment(fileName, attachment.data)
-            attachmentManifests.append(
+            result.manifests.append(
                 .init(
                     id: attachment.id,
                     taskID: nil,
@@ -215,58 +338,5 @@ enum SettingsRoutineDataBackupPackageBuilder {
                 )
             )
         }
-
-        let backup = Backup(
-            schemaVersion: SettingsRoutineDataPersistence.currentSchemaVersion,
-            exportedAt: exportedAt,
-            places: places.map(SettingsRoutineDataBackupMapping.place),
-            goals: goals.map(SettingsRoutineDataBackupMapping.goal),
-            tasks: tasks.map {
-                SettingsRoutineDataBackupMapping.task(
-                    $0,
-                    imageData: nil,
-                    imageAttachmentID: taskImageAttachmentIDs[$0.id],
-                    voiceNoteData: nil,
-                    voiceNoteAttachmentID: taskVoiceNoteAttachmentIDs[$0.id],
-                    includesPressure: true
-                )
-            },
-            logs: logs.map(SettingsRoutineDataBackupMapping.log),
-            sleepSessions: sleepSessions.map(SettingsRoutineDataBackupMapping.sleep),
-            awaySessions: awaySessions.map(SettingsRoutineDataBackupMapping.away),
-            placeCheckInSessions: placeCheckInSessions.map {
-                SettingsRoutineDataBackupMapping.placeCheckIn(
-                    $0,
-                    imageData: nil,
-                    imageAttachmentID: placeCheckInImageAttachmentIDs[$0.id]
-                )
-            },
-            emotionLogs: emotionLogs.map(SettingsRoutineDataBackupMapping.emotion),
-            notes: notes.map {
-                SettingsRoutineDataBackupMapping.note(
-                    $0,
-                    imageData: nil,
-                    imageAttachmentID: noteImageAttachmentIDs[$0.id],
-                    voiceNoteData: nil,
-                    voiceNoteAttachmentID: noteVoiceNoteAttachmentIDs[$0.id]
-                )
-            },
-            events: events.map(SettingsRoutineDataBackupMapping.event),
-            attachments: attachmentManifests,
-            focusSessions: focusSessions.map(SettingsRoutineDataBackupMapping.focus),
-            dayPlanBlocks: dayPlanBlocks.map(SettingsRoutineDataBackupMapping.dayPlanBlock),
-            boardSprints: boardSprints.map(SettingsRoutineDataBackupMapping.boardSprint),
-            sprintAssignments: sprintAssignments.map(SettingsRoutineDataBackupMapping.sprintAssignment),
-            boardBacklogs: boardBacklogs.map(SettingsRoutineDataBackupMapping.boardBacklog),
-            backlogAssignments: backlogAssignments.map(SettingsRoutineDataBackupMapping.backlogAssignment),
-            sprintFocusSessions: sprintFocusSessions.map(SettingsRoutineDataBackupMapping.sprintFocus),
-            sprintFocusAllocations: sprintFocusAllocations.map(SettingsRoutineDataBackupMapping.sprintFocusAllocation),
-            deviceSessions: deviceSessions.map(SettingsRoutineDataBackupMapping.deviceSession),
-            deviceActionLogs: deviceActionLogs.map(SettingsRoutineDataBackupMapping.deviceActionLog),
-            userPreferences: userPreferences.map(SettingsRoutineDataBackupMapping.userPreferences),
-            verificationReceiptVersion: SettingsRoutineDataBackupVerification.currentReceiptVersion
-        )
-
-        return try SettingsRoutineDataBackupCoding.encode(backup)
     }
 }

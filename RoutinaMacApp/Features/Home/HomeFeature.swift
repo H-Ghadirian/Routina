@@ -4,622 +4,6 @@ import SwiftData
 
 @Reducer
 struct HomeFeature {
-    typealias TaskListMode = HomeTaskListMode
-
-    private enum TaskDetailCancelID: Hashable, Sendable {
-        case task(UUID)
-    }
-
-    typealias SelectedTaskReloadGuard = HomeSelectedTaskReloadGuard
-
-    typealias DoneStats = HomeDoneStats
-
-    typealias MoveDirection = HomeTaskMoveDirection
-
-    typealias RoutineDisplay = HomeRoutineDisplay
-
-    struct TaskCreationConfirmation: Equatable, Identifiable {
-        let taskID: UUID
-        let taskName: String
-
-        var id: UUID { taskID }
-    }
-
-    enum MacSidebarSelection: Hashable, Equatable {
-        case task(UUID)
-        case timelineEntry(UUID)
-    }
-
-    enum MacSidebarMode: String, CaseIterable, Identifiable, Equatable {
-        case routines = "Routines"
-        case board = "Board"
-        case goals = "Goals"
-        case adventure = "Adventure"
-        case timeline = "Timeline"
-        case stats    = "Stats"
-        case backlog = "Backlog"
-        case taskLadder = "Task Ladder"
-        case settings = "Settings"
-        case addTask  = "Add Task"
-
-        var id: Self { self }
-
-        static let workspaceModes: [Self] = [
-            .routines,
-            .backlog,
-            .taskLadder,
-            .goals,
-            .adventure,
-            .stats
-        ]
-    }
-
-    typealias BoardScope = HomeBoardScope
-
-    @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeatureAddRoutineActionState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState, HomeFeatureTaskLifecycleCommandState {
-        var routineTasks: [RoutineTask] = []
-        var routinePlaces: [RoutinePlace] = []
-        var routineGoals: [RoutineGoal] = []
-        var timelineLogs: [RoutineLog] = []
-        var fileAttachmentTaskIDs: Set<UUID> = []
-        var routineDisplays: [RoutineDisplay] = []
-        var awayRoutineDisplays: [RoutineDisplay] = []
-        var archivedRoutineDisplays: [RoutineDisplay] = []
-        var routineDisplaysRevision = 0
-        var board = HomeBoardState()
-        var doneStats: DoneStats = DoneStats()
-        var isLoading = false
-        var hasLoadedTaskSnapshot = false
-        var selection = HomeSelectionState()
-        var presentation = HomePresentationState()
-        var locationSnapshot = LocationSnapshot(
-            authorizationStatus: .notDetermined,
-            coordinate: nil,
-            horizontalAccuracy: nil,
-            timestamp: nil
-        )
-        var hideUnavailableRoutines: Bool = false
-        var taskListMode: TaskListMode = .all
-        var taskFilters = HomeTaskFiltersState()
-        var timelineFilters = HomeTimelineFiltersState()
-        var statsFilters = HomeStatsFiltersState()
-        var navigation = HomeMacNavigationState()
-        var pendingSleepPlannerSessionID: UUID?
-        var relatedTagRules: [RoutineRelatedTagRule] = []
-        var flagRules: [RoutineFlagRule] = []
-        var flagFilterOptions: [HomeFlagFilterOption] = []
-        var tagColors: [String: String] = [:]
-        var statusComposerSaveCount = 0
-        var statusComposerErrorMessage: String?
-        var taskCreationConfirmation: TaskCreationConfirmation?
-
-        init(
-            routineTasks: [RoutineTask] = [],
-            routinePlaces: [RoutinePlace] = [],
-            routineGoals: [RoutineGoal] = [],
-            timelineLogs: [RoutineLog] = [],
-            fileAttachmentTaskIDs: Set<UUID> = [],
-            routineDisplays: [RoutineDisplay] = [],
-            awayRoutineDisplays: [RoutineDisplay] = [],
-            archivedRoutineDisplays: [RoutineDisplay] = [],
-            boardTodoDisplays: [RoutineDisplay] = [],
-            sprintBoardData: SprintBoardData = SprintBoardData(),
-            doneStats: DoneStats = DoneStats(),
-            isLoading: Bool = false,
-            hasLoadedTaskSnapshot: Bool = false,
-            selectedTaskID: UUID? = nil,
-            isAddRoutineSheetPresented: Bool = false,
-            locationSnapshot: LocationSnapshot = LocationSnapshot(
-                authorizationStatus: .notDetermined,
-                coordinate: nil,
-                horizontalAccuracy: nil,
-                timestamp: nil
-            ),
-            hideUnavailableRoutines: Bool = false,
-            addRoutineState: AddRoutineFeature.State? = nil,
-            taskDetailState: TaskDetailFeature.State? = nil,
-            selectedTaskReloadGuard: SelectedTaskReloadGuard? = nil,
-            pendingSelectedChecklistReloadGuardTaskID: UUID? = nil,
-            pendingDeleteTaskIDs: [UUID] = [],
-            isDeleteConfirmationPresented: Bool = false,
-            isMacFilterDetailPresented: Bool = false,
-            taskListMode: TaskListMode = .all,
-            selectedFilter: RoutineListFilter = .all,
-            selectedTag: String? = nil,
-            selectedTags: Set<String> = [],
-            includeTagMatchMode: RoutineTagMatchMode = .all,
-            selectedFlags: Set<String> = [],
-            includeFlagMatchMode: RoutineTagMatchMode = .all,
-            excludedFlags: Set<String> = [],
-            excludeFlagMatchMode: RoutineTagMatchMode = .any,
-            excludedTags: Set<String> = [],
-            excludeTagMatchMode: RoutineTagMatchMode = .any,
-            selectedManualPlaceFilterID: UUID? = nil,
-            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
-            selectedTodoStateFilter: TodoState? = nil,
-            selectedPressureFilter: RoutineTaskPressure? = nil,
-            selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
-            selectedGoalFilter: HomeTaskGoalFilter = .all,
-            selectedMediaFilter: TaskMediaFilter = .all,
-            selectedEstimationFilter: TaskEstimationFilter = .all,
-            hideAssumedDoneTasks: Bool = false,
-            taskListViewMode: HomeTaskListViewMode = .all,
-            taskListSortOrder: HomeTaskListSortOrder = .smart,
-            createdDateFilter: HomeTaskCreatedDateFilter = .all,
-            showArchivedTasks: Bool = true,
-            tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:],
-            isFilterSheetPresented: Bool = false,
-            selectedTimelineRange: TimelineRange = .all,
-            selectedTimelineFilterType: TimelineFilterType = .all,
-            selectedTimelineStatusFilter: TimelineStatusFilter = .all,
-            selectedTimelineTag: String? = nil,
-            selectedTimelineTags: Set<String> = [],
-            selectedTimelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
-            selectedTimelineFlags: Set<String> = [],
-            selectedTimelineIncludeFlagMatchMode: RoutineTagMatchMode = .all,
-            selectedTimelineExcludedTags: Set<String> = [],
-            selectedTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
-            selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
-            selectedTimelinePressureFilter: RoutineTaskPressure? = nil,
-            selectedTimelineThinkingNeededFilter: RoutineTaskThinkingNeeded? = nil,
-            selectedTimelineEstimationFilter: TaskEstimationFilter = .all,
-            selectedTimelineMediaFilter: TaskMediaFilter = .all,
-            statsSelectedRange: DoneChartRange = .week,
-            statsSelectedTag: String? = nil,
-            statsSelectedTags: Set<String> = [],
-            statsIncludeTagMatchMode: RoutineTagMatchMode = .all,
-            macSidebarMode: MacSidebarMode = .routines,
-            macSidebarSelection: MacSidebarSelection? = nil,
-            selectedSettingsSection: SettingsMacSection? = .notifications,
-            selectedBoardScope: BoardScope = .backlog,
-            relatedTagRules: [RoutineRelatedTagRule] = [],
-            flagRules: [RoutineFlagRule] = [],
-            flagFilterOptions: [HomeFlagFilterOption] = [],
-            tagColors: [String: String] = [:]
-        ) {
-            self.routineTasks = routineTasks
-            self.routinePlaces = routinePlaces
-            self.routineGoals = routineGoals
-            self.timelineLogs = timelineLogs
-            self.fileAttachmentTaskIDs = fileAttachmentTaskIDs
-            self.routineDisplays = routineDisplays
-            self.awayRoutineDisplays = awayRoutineDisplays
-            self.archivedRoutineDisplays = archivedRoutineDisplays
-            self.routineDisplaysRevision = routineDisplays.isEmpty
-                && awayRoutineDisplays.isEmpty
-                && archivedRoutineDisplays.isEmpty
-                && boardTodoDisplays.isEmpty
-                ? 0
-                : 1
-            self.board = HomeBoardState(
-                todoDisplays: boardTodoDisplays,
-                sprintBoardData: sprintBoardData,
-                selectedScope: selectedBoardScope
-            )
-            self.doneStats = doneStats
-            self.isLoading = isLoading
-            self.hasLoadedTaskSnapshot = hasLoadedTaskSnapshot
-            self.selection = HomeSelectionState(
-                selectedTaskID: selectedTaskID,
-                taskDetailState: taskDetailState,
-                selectedTaskReloadGuard: selectedTaskReloadGuard,
-                pendingSelectedChecklistReloadGuardTaskID: pendingSelectedChecklistReloadGuardTaskID
-            )
-            self.presentation = HomePresentationState(
-                isAddRoutineSheetPresented: isAddRoutineSheetPresented,
-                addRoutineState: addRoutineState,
-                pendingDeleteTaskIDs: pendingDeleteTaskIDs,
-                isDeleteConfirmationPresented: isDeleteConfirmationPresented,
-                isMacFilterDetailPresented: isMacFilterDetailPresented
-            )
-            self.locationSnapshot = locationSnapshot
-            self.hideUnavailableRoutines = hideUnavailableRoutines
-            self.taskListMode = taskListMode
-            self.taskFilters = HomeTaskFiltersState(
-                selectedFilter: selectedFilter,
-                selectedTag: selectedTag,
-                selectedTags: selectedTags.isEmpty ? selectedTag.map { [$0] } ?? [] : selectedTags,
-                includeTagMatchMode: includeTagMatchMode,
-                selectedFlags: selectedFlags,
-                includeFlagMatchMode: includeFlagMatchMode,
-                excludedFlags: excludedFlags,
-                excludeFlagMatchMode: excludeFlagMatchMode,
-                excludedTags: excludedTags,
-                excludeTagMatchMode: excludeTagMatchMode,
-                selectedManualPlaceFilterID: selectedManualPlaceFilterID,
-                selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
-                selectedTodoStateFilter: selectedTodoStateFilter,
-                selectedPressureFilter: selectedPressureFilter,
-                selectedThinkingNeededFilter: selectedThinkingNeededFilter,
-                selectedGoalFilter: selectedGoalFilter,
-                selectedMediaFilter: selectedMediaFilter,
-                selectedEstimationFilter: selectedEstimationFilter,
-                hideAssumedDoneTasks: hideAssumedDoneTasks,
-                taskListViewMode: taskListViewMode,
-                taskListSortOrder: taskListSortOrder,
-                createdDateFilter: createdDateFilter,
-                showArchivedTasks: showArchivedTasks,
-                tabFilterSnapshots: tabFilterSnapshots,
-                isFilterSheetPresented: isFilterSheetPresented
-            )
-            self.timelineFilters = HomeTimelineFiltersState(
-                selectedRange: selectedTimelineRange,
-                selectedFilterType: selectedTimelineFilterType.isStatusCase ? .all : selectedTimelineFilterType,
-                selectedStatusFilter: selectedTimelineStatusFilter == .all
-                    ? TimelineStatusFilter(legacyFilterType: selectedTimelineFilterType)
-                    : selectedTimelineStatusFilter,
-                selectedTag: selectedTimelineTag,
-                selectedTags: selectedTimelineTags.isEmpty ? selectedTimelineTag.map { [$0] } ?? [] : selectedTimelineTags,
-                includeTagMatchMode: selectedTimelineIncludeTagMatchMode,
-                selectedFlags: selectedTimelineFlags,
-                includeFlagMatchMode: selectedTimelineIncludeFlagMatchMode,
-                selectedExcludedTags: selectedTimelineExcludedTags,
-                excludeTagMatchMode: selectedTimelineExcludeTagMatchMode,
-                selectedImportanceUrgencyFilter: selectedTimelineImportanceUrgencyFilter,
-                selectedPressureFilter: selectedTimelinePressureFilter,
-                selectedThinkingNeededFilter: selectedTimelineThinkingNeededFilter,
-                selectedEstimationFilter: selectedTimelineEstimationFilter,
-                selectedMediaFilter: selectedTimelineMediaFilter
-            )
-            self.statsFilters = HomeStatsFiltersState(
-                selectedRange: statsSelectedRange,
-                selectedTag: statsSelectedTag,
-                selectedTags: statsSelectedTags.isEmpty ? statsSelectedTag.map { [$0] } ?? [] : statsSelectedTags,
-                includeTagMatchMode: statsIncludeTagMatchMode
-            )
-            self.navigation = HomeMacNavigationState(
-                sidebarMode: macSidebarMode,
-                sidebarSelection: macSidebarSelection,
-                selectedSettingsSection: selectedSettingsSection
-            )
-            self.relatedTagRules = relatedTagRules
-            self.flagRules = RoutineFlagRules.sanitized(flagRules)
-            self.flagFilterOptions = flagFilterOptions
-            self.tagColors = RoutineTagColors.sanitized(tagColors)
-        }
-
-        var selectedTaskID: UUID? {
-            get { selection.selectedTaskID }
-            set { selection.selectedTaskID = newValue }
-        }
-
-        var taskDetailState: TaskDetailFeature.State? {
-            get { selection.taskDetailState }
-            set { selection.taskDetailState = newValue }
-        }
-
-        var selectedTaskReloadGuard: SelectedTaskReloadGuard? {
-            get { selection.selectedTaskReloadGuard }
-            set { selection.selectedTaskReloadGuard = newValue }
-        }
-
-        var pendingSelectedChecklistReloadGuardTaskID: UUID? {
-            get { selection.pendingSelectedChecklistReloadGuardTaskID }
-            set { selection.pendingSelectedChecklistReloadGuardTaskID = newValue }
-        }
-
-        var isAddRoutineSheetPresented: Bool {
-            get { presentation.isAddRoutineSheetPresented }
-            set { presentation.isAddRoutineSheetPresented = newValue }
-        }
-
-        var addRoutineState: AddRoutineFeature.State? {
-            get { presentation.addRoutineState }
-            set { presentation.addRoutineState = newValue }
-        }
-
-        var pendingDeleteTaskIDs: [UUID] {
-            get { presentation.pendingDeleteTaskIDs }
-            set { presentation.pendingDeleteTaskIDs = newValue }
-        }
-
-        var isDeleteConfirmationPresented: Bool {
-            get { presentation.isDeleteConfirmationPresented }
-            set { presentation.isDeleteConfirmationPresented = newValue }
-        }
-
-        var isMacFilterDetailPresented: Bool {
-            get { presentation.isMacFilterDetailPresented }
-            set { presentation.isMacFilterDetailPresented = newValue }
-        }
-
-        var manualRefreshErrorMessage: String? {
-            get { presentation.manualRefreshErrorMessage }
-            set { presentation.manualRefreshErrorMessage = newValue }
-        }
-
-        var boardTodoDisplays: [RoutineDisplay] {
-            get { board.todoDisplays }
-            set { board.todoDisplays = newValue }
-        }
-
-        var sprintBoardData: SprintBoardData {
-            get { board.sprintBoardData }
-            set { board.sprintBoardData = newValue }
-        }
-
-        var selectedFilter: RoutineListFilter {
-            get { taskFilters.selectedFilter }
-            set { taskFilters.selectedFilter = newValue }
-        }
-
-        var advancedQuery: String {
-            get { taskFilters.advancedQuery }
-            set { taskFilters.advancedQuery = newValue }
-        }
-
-        var selectedTag: String? {
-            get { taskFilters.selectedTag }
-            set { taskFilters.setSelectedTag(newValue) }
-        }
-
-        var selectedTags: Set<String> {
-            get { taskFilters.effectiveSelectedTags }
-            set { taskFilters.setSelectedTags(newValue) }
-        }
-
-        var selectedFlags: Set<String> {
-            get { taskFilters.selectedFlags }
-            set { taskFilters.selectedFlags = newValue }
-        }
-
-        var includeTagMatchMode: RoutineTagMatchMode {
-            get { taskFilters.includeTagMatchMode }
-            set { taskFilters.includeTagMatchMode = newValue }
-        }
-
-        var includeFlagMatchMode: RoutineTagMatchMode {
-            get { taskFilters.includeFlagMatchMode }
-            set { taskFilters.includeFlagMatchMode = newValue }
-        }
-
-        var excludedFlags: Set<String> {
-            get { taskFilters.excludedFlags }
-            set { taskFilters.excludedFlags = newValue }
-        }
-
-        var excludeFlagMatchMode: RoutineTagMatchMode {
-            get { taskFilters.excludeFlagMatchMode }
-            set { taskFilters.excludeFlagMatchMode = newValue }
-        }
-
-        var excludedTags: Set<String> {
-            get { taskFilters.excludedTags }
-            set { taskFilters.excludedTags = newValue }
-        }
-
-        var excludeTagMatchMode: RoutineTagMatchMode {
-            get { taskFilters.excludeTagMatchMode }
-            set { taskFilters.excludeTagMatchMode = newValue }
-        }
-
-        var selectedManualPlaceFilterID: UUID? {
-            get { taskFilters.selectedManualPlaceFilterID }
-            set { taskFilters.selectedManualPlaceFilterID = newValue }
-        }
-
-        var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? {
-            get { taskFilters.selectedImportanceUrgencyFilter }
-            set { taskFilters.selectedImportanceUrgencyFilter = newValue }
-        }
-
-        var selectedTodoStateFilter: TodoState? {
-            get { taskFilters.selectedTodoStateFilter }
-            set { taskFilters.selectedTodoStateFilter = newValue }
-        }
-
-        var selectedPressureFilter: RoutineTaskPressure? {
-            get { taskFilters.selectedPressureFilter }
-            set { taskFilters.selectedPressureFilter = newValue }
-        }
-
-        var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded? {
-            get { taskFilters.selectedThinkingNeededFilter }
-            set { taskFilters.selectedThinkingNeededFilter = newValue }
-        }
-
-        var selectedGoalFilter: HomeTaskGoalFilter {
-            get { taskFilters.selectedGoalFilter }
-            set { taskFilters.selectedGoalFilter = newValue }
-        }
-
-        var selectedMediaFilter: TaskMediaFilter {
-            get { taskFilters.selectedMediaFilter }
-            set { taskFilters.selectedMediaFilter = newValue }
-        }
-
-        var selectedEstimationFilter: TaskEstimationFilter {
-            get { taskFilters.selectedEstimationFilter }
-            set { taskFilters.selectedEstimationFilter = newValue }
-        }
-
-        var hideAssumedDoneTasks: Bool {
-            get { taskFilters.hideAssumedDoneTasks }
-            set { taskFilters.hideAssumedDoneTasks = newValue }
-        }
-
-        var taskListViewMode: HomeTaskListViewMode {
-            get { taskFilters.taskListViewMode }
-            set { taskFilters.taskListViewMode = newValue }
-        }
-
-        var taskListSortOrder: HomeTaskListSortOrder {
-            get { taskFilters.taskListSortOrder }
-            set { taskFilters.taskListSortOrder = newValue }
-        }
-
-        var createdDateFilter: HomeTaskCreatedDateFilter {
-            get { taskFilters.createdDateFilter }
-            set { taskFilters.createdDateFilter = newValue }
-        }
-
-        var showArchivedTasks: Bool {
-            get { taskFilters.showArchivedTasks }
-            set { taskFilters.showArchivedTasks = newValue }
-        }
-
-        var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] {
-            get { taskFilters.tabFilterSnapshots }
-            set { taskFilters.tabFilterSnapshots = newValue }
-        }
-
-        var isFilterSheetPresented: Bool {
-            get { taskFilters.isFilterSheetPresented }
-            set { taskFilters.isFilterSheetPresented = newValue }
-        }
-
-        var selectedTimelineRange: TimelineRange {
-            get { timelineFilters.selectedRange }
-            set { timelineFilters.selectedRange = newValue }
-        }
-
-        var selectedTimelineFilterType: TimelineFilterType {
-            get { timelineFilters.selectedFilterType }
-            set { timelineFilters.selectedFilterType = newValue }
-        }
-
-        var selectedTimelineStatusFilter: TimelineStatusFilter {
-            get { timelineFilters.selectedStatusFilter }
-            set { timelineFilters.selectedStatusFilter = newValue }
-        }
-
-        var selectedTimelineTag: String? {
-            get { timelineFilters.selectedTag }
-            set { timelineFilters.setSelectedTag(newValue) }
-        }
-
-        var selectedTimelineTags: Set<String> {
-            get { timelineFilters.effectiveSelectedTags }
-            set { timelineFilters.setSelectedTags(newValue) }
-        }
-
-        var selectedTimelineIncludeTagMatchMode: RoutineTagMatchMode {
-            get { timelineFilters.includeTagMatchMode }
-            set { timelineFilters.includeTagMatchMode = newValue }
-        }
-
-        var selectedTimelineFlags: Set<String> {
-            get { timelineFilters.selectedFlags }
-            set { timelineFilters.selectedFlags = newValue }
-        }
-
-        var selectedTimelineIncludeFlagMatchMode: RoutineTagMatchMode {
-            get { timelineFilters.includeFlagMatchMode }
-            set { timelineFilters.includeFlagMatchMode = newValue }
-        }
-
-        var selectedTimelineExcludedTags: Set<String> {
-            get { timelineFilters.selectedExcludedTags }
-            set { timelineFilters.selectedExcludedTags = newValue }
-        }
-
-        var selectedTimelineExcludeTagMatchMode: RoutineTagMatchMode {
-            get { timelineFilters.excludeTagMatchMode }
-            set { timelineFilters.excludeTagMatchMode = newValue }
-        }
-
-        var selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? {
-            get { timelineFilters.selectedImportanceUrgencyFilter }
-            set { timelineFilters.selectedImportanceUrgencyFilter = newValue }
-        }
-
-        var selectedTimelinePressureFilter: RoutineTaskPressure? {
-            get { timelineFilters.selectedPressureFilter }
-            set { timelineFilters.selectedPressureFilter = newValue }
-        }
-
-        var selectedTimelineThinkingNeededFilter: RoutineTaskThinkingNeeded? {
-            get { timelineFilters.selectedThinkingNeededFilter }
-            set { timelineFilters.selectedThinkingNeededFilter = newValue }
-        }
-
-        var selectedTimelineEstimationFilter: TaskEstimationFilter {
-            get { timelineFilters.selectedEstimationFilter }
-            set { timelineFilters.selectedEstimationFilter = newValue }
-        }
-
-        var selectedTimelineMediaFilter: TaskMediaFilter {
-            get { timelineFilters.selectedMediaFilter }
-            set { timelineFilters.selectedMediaFilter = newValue }
-        }
-
-        var statsSelectedRange: DoneChartRange {
-            get { statsFilters.selectedRange }
-            set { statsFilters.selectedRange = newValue }
-        }
-
-        var statsSelectedTag: String? {
-            get { statsFilters.selectedTag }
-            set { statsFilters.setSelectedTag(newValue) }
-        }
-
-        var statsSelectedTags: Set<String> {
-            get { statsFilters.effectiveSelectedTags }
-            set { statsFilters.setSelectedTags(newValue) }
-        }
-
-        var statsIncludeTagMatchMode: RoutineTagMatchMode {
-            get { statsFilters.includeTagMatchMode }
-            set { statsFilters.includeTagMatchMode = newValue }
-        }
-
-        var macSidebarMode: MacSidebarMode {
-            get { navigation.sidebarMode }
-            set { navigation.sidebarMode = newValue }
-        }
-
-        var macSidebarSelection: MacSidebarSelection? {
-            get { navigation.sidebarSelection }
-            set { navigation.sidebarSelection = newValue }
-        }
-
-        var selectedSettingsSection: SettingsMacSection? {
-            get { navigation.selectedSettingsSection }
-            set { navigation.selectedSettingsSection = newValue }
-        }
-
-        var selectedBoardScope: BoardScope {
-            get { board.selectedScope }
-            set { board.selectedScope = newValue }
-        }
-
-        var creatingSprintTitle: String? {
-            get { board.creatingSprintTitle }
-            set { board.creatingSprintTitle = newValue }
-        }
-
-        var creatingBacklogTitle: String? {
-            get { board.creatingBacklogTitle }
-            set { board.creatingBacklogTitle = newValue }
-        }
-
-        var renamingSprintID: UUID? {
-            get { board.renamingSprintID }
-            set { board.renamingSprintID = newValue }
-        }
-
-        var renamingSprintTitle: String {
-            get { board.renamingSprintTitle }
-            set { board.renamingSprintTitle = newValue }
-        }
-
-        var deletingSprintID: UUID? {
-            get { board.deletingSprintID }
-            set { board.deletingSprintID = newValue }
-        }
-
-        var sprintFocusAllocationSessionID: UUID? {
-            get { board.sprintFocusAllocationSessionID }
-            set { board.sprintFocusAllocationSessionID = newValue }
-        }
-
-        var sprintFocusAllocationDrafts: [SprintFocusAllocationDraft] {
-            get { board.sprintFocusAllocationDrafts }
-            set { board.sprintFocusAllocationDrafts = newValue }
-        }
-    }
-
     enum Action: Equatable {
         case onAppear
         case manualRefreshRequested
@@ -774,10 +158,6 @@ struct HomeFeature {
         case routineSaveFailed
     }
 
-    private enum CancelID {
-        case loadTasks
-    }
-
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.modelContext) var modelContext
     @Dependency(\.calendar) var calendar
@@ -789,370 +169,6 @@ struct HomeFeature {
     @Dependency(\.creationDraftClient) var creationDraftClient
     @Dependency(\.sprintBoardClient) var sprintBoardClient
 
-    private func taskLifecycleCoordinator() -> HomeTaskLifecycleCoordinator<Action> {
-        HomeTaskLifecycleCoordinator(
-            referenceDate: { self.now },
-            calendar: calendar,
-            modelContext: { self.modelContext() },
-            cancelNotification: { identifier in
-                await self.notificationClient.cancel(identifier)
-            },
-            scheduleNotification: { payload in
-                await self.notificationClient.schedule(payload)
-            }
-        )
-    }
-
-    private func taskDeletionCoordinator() -> HomeTaskDeletionCoordinator<Action> {
-        HomeTaskDeletionCoordinator(
-            modelContext: { self.modelContext() },
-            saveSprintBoardData: { sprintBoardData in
-                try? await self.sprintBoardClient.save(sprintBoardData)
-            },
-            cancelNotification: { identifier in
-                await self.notificationClient.cancel(identifier)
-            }
-        )
-    }
-
-    private func filterMutationHandler() -> HomeFeatureFilterMutationHandler<State, Action> {
-        HomeFeatureFilterMutationHandler(
-            setHideUnavailableRoutines: { isHidden in
-                appSettingsClient.setHideUnavailableRoutines(isHidden)
-            },
-            persistTemporaryViewState: { state in
-                persistTemporaryViewState(state)
-            }
-        )
-    }
-
-    private func taskLoadHandler() -> HomeFeatureTaskLoadHandler<State, Action> {
-        HomeFeatureTaskLoadHandler(
-            relatedTagRules: { appSettingsClient.relatedTagRules() },
-            flagRules: { appSettingsClient.flagRules() },
-            definedFlags: { appSettingsClient.definedFlags() },
-            tagColors: { appSettingsClient.tagColors() },
-            calendar: { calendar },
-            refreshDisplays: { state in refreshDisplays(&state) },
-            syncSelectedTaskDetailState: { state in selectionRouter().refreshSelectedTaskDetailState(&state) },
-            validateFilterState: { state in filterMutationHandler().validateFilterState(&state) },
-            persistTemporaryViewState: { state in persistTemporaryViewState(state) },
-            refreshSelectedTaskDetailEffect: { state in selectionRouter().refreshSelectedTaskDetailEffect(for: state) },
-            addRoutineAction: { .addRoutineSheet($0) }
-        )
-    }
-
-    private func taskLoadEffectFactory() -> HomeFeatureTaskLoadEffectFactory<Action, CancelID> {
-        HomeFeatureTaskLoadEffectFactory(
-            calendar: calendar,
-            cancelID: CancelID.loadTasks,
-            modelContext: { self.modelContext() },
-            loadedAction: { .tasksLoadedSuccessfully($0, $1, $2, $3, $4) },
-            failedAction: { .tasksLoadFailed }
-        )
-    }
-
-    private func postMutationRefresher() -> HomeFeaturePostMutationRefresher<State, Action> {
-        HomeFeaturePostMutationRefresher(
-            refreshDisplays: { state in refreshDisplays(&state) },
-            syncSelectedTaskDetailState: { state in selectionRouter().refreshSelectedTaskDetailState(&state) },
-            definedFlags: { appSettingsClient.definedFlags() },
-            addRoutineAction: { .addRoutineSheet($0) }
-        )
-    }
-
-    private func selectionRouter() -> HomeFeatureSelectionRouter<State, Action> {
-        HomeFeatureSelectionRouter(
-            now: now,
-            calendar: calendar,
-            makeTaskDetailState: makeTaskDetailState(for:),
-            refreshDisplays: { state in refreshDisplays(&state) },
-            refreshTaskDetailAction: { .taskDetail(.onAppear) },
-            definedFlags: { appSettingsClient.definedFlags() },
-            synchronizePlatformSelection: { state, taskID in
-                if state.macSidebarMode == .routines || state.macSidebarMode == .board {
-                    state.macSidebarSelection = taskID.map(MacSidebarSelection.task)
-                }
-            }
-        )
-    }
-
-    private func taskDetailActionRouter() -> HomeFeatureTaskDetailActionRouter<State, Action> {
-        HomeFeatureTaskDetailActionRouter(
-            clearTaskSelection: { state in
-                selectionRouter().clearTaskSelection(&state)
-            },
-            updatePendingChecklistReloadGuard: { itemID, state in
-                selectionRouter().updatePendingChecklistReloadGuard(for: itemID, state: &state)
-            },
-            updatePendingChecklistUndoReloadGuard: { state in
-                selectionRouter().updatePendingChecklistUndoReloadGuard(&state)
-            },
-            syncSelectedTaskFromTaskDetail: { state in
-                selectionRouter().syncSelectedTaskFromTaskDetail(&state)
-            },
-            syncSelectedTaskLogs: { logs, state in
-                syncSelectedTaskLogs(logs, state: &state)
-            },
-            openLinkedTask: { taskID, state in
-                selectionRouter().openLinkedTask(taskID, state: &state)
-            },
-            openLinkedTaskSheet: { state in
-                addRoutinePresentationRouter().openLinkedTaskSheet(state: &state)
-            }
-        )
-    }
-
-    private func addRoutinePresentationRouter() -> HomeFeatureAddRoutinePresentationRouter<State> {
-        HomeFeatureAddRoutinePresentationRouter(
-            tagCounterDisplayMode: { appSettingsClient.tagCounterDisplayMode() },
-            relatedTagRules: { appSettingsClient.relatedTagRules() },
-            definedFlags: { appSettingsClient.definedFlags() },
-            flagRules: { appSettingsClient.flagRules() },
-            addRoutineDraft: { AddRoutineDraftSnapshot.load(client: creationDraftClient) }
-        )
-    }
-
-    func addRoutineActionHandler() -> HomeFeatureAddRoutineActionHandler<State, Action> {
-        HomeFeatureAddRoutineActionHandler(
-            referenceDate: now,
-            calendar: calendar,
-            dismissSheet: { state in
-                addRoutinePresentationRouter().dismissSheet(state: &state)
-                if state.macSidebarMode == .addTask {
-                    state.navigation.leaveAddTask()
-                    state.presentation.isMacFilterDetailPresented = false
-                    persistTemporaryViewState(state)
-                }
-            },
-            modelContext: { self.modelContext() },
-            scheduleAnchor: { self.now },
-            scheduleNotification: { payload in
-                await self.notificationClient.schedule(payload)
-            },
-            savedAction: { .routineSavedSuccessfully($0) },
-            updateTaskLadderGroup: { taskID, isEnabled in
-                var organization = appSettingsClient.taskLadderOrganization()
-                guard organization.setTaskGroupEnabled(isEnabled, taskID: taskID) else { return }
-                appSettingsClient.setTaskLadderOrganization(organization)
-            },
-            failedAction: { .routineSaveFailed },
-            finishMutation: { effect, state in
-                postMutationRefresher().finishMutation(effect, state: &state)
-            },
-            loadTasksEffect: { loadTasksEffect() },
-            clearDraft: { creationDraftClient.clear(.task) }
-        )
-    }
-
-    private func presentationRouter() -> HomeFeaturePresentationRouter<State> {
-        HomeFeaturePresentationRouter()
-    }
-
-    private func taskListModeRouter() -> HomeFeatureTaskListModeRouter<State> {
-        HomeFeatureTaskListModeRouter(
-            setHideUnavailableRoutines: { isHidden in
-                appSettingsClient.setHideUnavailableRoutines(isHidden)
-            },
-            persistTemporaryViewState: { state in
-                persistTemporaryViewState(state)
-            },
-            synchronizePlatformSelectionAfterModeChange: { state in
-                state.macSidebarSelection = nil
-            }
-        )
-    }
-
-    private func macNavigationRouter() -> HomeFeatureMacNavigationRouter {
-        HomeFeatureMacNavigationRouter(
-            setHideUnavailableRoutines: { isHidden in
-                appSettingsClient.setHideUnavailableRoutines(isHidden)
-            },
-            persistTemporaryViewState: { state in
-                persistTemporaryViewState(state)
-            }
-        )
-    }
-
-    private func macBoardCommandRouter() -> HomeFeatureMacBoardCommandRouter {
-        HomeFeatureMacBoardCommandRouter(
-            moveTodoToState: { id, newState, state in
-                handleMoveTodoToState(id, newState: newState, state: &state)
-            },
-            moveTodoOnBoard: { taskID, targetState, orderedTaskIDs, state in
-                handleMoveTodoOnBoard(
-                    taskID: taskID,
-                    targetState: targetState,
-                    orderedTaskIDs: orderedTaskIDs,
-                    state: &state
-                )
-            },
-            createBacklog: { title, state in
-                handleCreateBacklogConfirmed(title: title, state: &state)
-            },
-            createSprint: { title, state in
-                handleCreateSprintConfirmed(title: title, state: &state)
-            },
-            startSprint: { sprintID, state in
-                handleStartSprint(sprintID, state: &state)
-            },
-            finishSprint: { sprintID, state in
-                handleFinishSprint(sprintID, state: &state)
-            },
-            assignTodoToBacklog: { taskID, backlogID, state in
-                handleAssignTodoToBacklog(taskID: taskID, backlogID: backlogID, state: &state)
-            },
-            assignTodosToBacklog: { taskIDs, backlogID, state in
-                handleAssignTodosToBacklog(taskIDs: taskIDs, backlogID: backlogID, state: &state)
-            },
-            assignTodoToSprint: { taskID, sprintID, state in
-                handleAssignTodoToSprint(taskID: taskID, sprintID: sprintID, state: &state)
-            },
-            assignTodosToSprint: { taskIDs, sprintID, state in
-                handleAssignTodosToSprint(taskIDs: taskIDs, sprintID: sprintID, state: &state)
-            },
-            renameSprint: { id, title, state in
-                handleRenameSprint(id: id, title: title, state: &state)
-            },
-            deleteSprint: { id, state in
-                handleDeleteSprint(id: id, state: &state)
-            }
-        )
-    }
-
-    func taskLifecycleCommandRouter() -> HomeFeatureTaskLifecycleCommandRouter<State, Action> {
-        HomeFeatureTaskLifecycleCommandRouter(
-            markDone: { id, tasks, doneStats in
-                taskLifecycleCoordinator().markTaskDone(
-                    taskID: id,
-                    tasks: &tasks,
-                    doneStats: &doneStats
-                )
-            },
-            markMissed: { id, tasks, doneStats in
-                taskLifecycleCoordinator().markTaskMissed(
-                    taskID: id,
-                    tasks: tasks,
-                    doneStats: &doneStats
-                )
-            },
-            confirmAssumedDone: { id, tasks, doneStats in
-                taskLifecycleCoordinator().confirmAssumedTaskDone(
-                    taskID: id,
-                    tasks: tasks,
-                    doneStats: &doneStats
-                )
-            },
-            markAssumedMissed: { id, tasks, doneStats in
-                taskLifecycleCoordinator().markAssumedTaskMissed(
-                    taskID: id,
-                    tasks: tasks,
-                    doneStats: &doneStats
-                )
-            },
-            markCanceled: { id, tasks, doneStats in
-                taskLifecycleCoordinator().markTaskCanceled(
-                    taskID: id,
-                    tasks: tasks,
-                    doneStats: &doneStats
-                )
-            },
-            pause: { id, tasks in
-                taskLifecycleCoordinator().pauseTask(taskID: id, tasks: &tasks)
-            },
-            resume: { id, tasks in
-                taskLifecycleCoordinator().resumeTask(taskID: id, tasks: &tasks)
-            },
-            notToday: { id, tasks in
-                taskLifecycleCoordinator().notTodayTask(taskID: id, tasks: &tasks)
-            },
-            pin: { id, tasks in
-                taskLifecycleCoordinator().pinTask(taskID: id, tasks: &tasks)
-            },
-            plan: { id, plannedDate, tasks in
-                taskLifecycleCoordinator().planTask(
-                    taskID: id,
-                    plannedDate: plannedDate,
-                    tasks: &tasks
-                )
-            },
-            unpin: { id, tasks in
-                taskLifecycleCoordinator().unpinTask(taskID: id, tasks: &tasks)
-            },
-            finishMutation: { effect, state in
-                postMutationRefresher().finishMutation(effect, state: &state)
-            }
-        )
-    }
-
-    private func lifecycleActionHandler() -> HomeFeatureLifecycleActionHandler<State, Action> {
-        HomeFeatureLifecycleActionHandler(
-            temporaryViewState: { appSettingsClient.temporaryViewState() },
-            applyTemporaryViewState: { persistedState, state in
-                applyTemporaryViewState(persistedState, to: &state)
-            },
-            tagColors: { appSettingsClient.tagColors() },
-            refreshDisplays: { state in
-                refreshDisplays(&state)
-            },
-            setHideUnavailableRoutines: { isHidden in
-                appSettingsClient.setHideUnavailableRoutines(isHidden)
-            },
-            persistTemporaryViewState: { state in
-                persistTemporaryViewState(state)
-            },
-            loadOnAppearEffect: { state in
-                .concatenate(
-                    loadTasksEffect(),
-                    loadSprintBoardEffect(revision: state.board.sprintBoardRevision),
-                    .run { @MainActor send in
-                        let snapshot = await self.locationClient.snapshot(false)
-                        send(.locationSnapshotUpdated(snapshot))
-                    }
-                )
-            },
-            manualRefreshEffect: {
-                HomeFeatureLifecycleEffectSupport.manualRefreshEffect(
-                    modelContext: { self.modelContext() },
-                    pullLatestIntoLocalStore: { try await self.cloudSyncClient.pullLatestIntoLocalStore($0) },
-                    sleepBeforeSecondRefresh: { try await self.clock.sleep(for: .seconds(2)) },
-                    onAppearAction: { .onAppear },
-                    refreshFailedAction: { .manualRefreshFailed($0) }
-                )
-            }
-        )
-    }
-
-    private func automaticPlaceCheckInEffect(for snapshot: LocationSnapshot) -> Effect<Action> {
-        guard appSettingsClient.placesEnabled(),
-              appSettingsClient.automaticPlaceCheckInEnabled() else {
-            return .run { @MainActor _ in
-                do {
-                    _ = try PlaceCheckInSupport.endActiveAutomaticSession(in: self.modelContext())
-                } catch {
-                    NSLog("Ending automatic place check-in failed: \(error.localizedDescription)")
-                }
-            }
-        }
-
-        guard snapshot.canDeterminePresence, let coordinate = snapshot.coordinate else {
-            return .none
-        }
-
-        let horizontalAccuracyMeters = snapshot.horizontalAccuracy
-        return .run { @MainActor _ in
-            do {
-                _ = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
-                    coordinate: coordinate,
-                    horizontalAccuracyMeters: horizontalAccuracyMeters,
-                    in: self.modelContext()
-                )
-            } catch {
-                NSLog("Automatic place check-in failed: \(error.localizedDescription)")
-            }
-        }
-    }
-
     var body: some ReducerOf<Self> {
         CombineReducers {
             Reduce { state, action in
@@ -1160,563 +176,563 @@ struct HomeFeature {
             }
             Reduce { state, action in
                 switch action {
-            case .onAppear:
-                return lifecycleActionHandler().onAppear(state: &state)
+                case .onAppear:
+                    return lifecycleActionHandler().onAppear(state: &state)
 
-            case .manualRefreshRequested:
-                state.isLoading = true
-                state.manualRefreshErrorMessage = nil
-                return lifecycleActionHandler().manualRefreshRequested()
+                case .manualRefreshRequested:
+                    state.isLoading = true
+                    state.manualRefreshErrorMessage = nil
+                    return lifecycleActionHandler().manualRefreshRequested()
 
-            case let .manualRefreshFailed(message):
-                state.manualRefreshErrorMessage = message
-                return .none
-
-            case .manualRefreshErrorDismissed:
-                state.manualRefreshErrorMessage = nil
-                return .none
-
-            case let .statusComposerSaveRequested(rawText):
-                guard let text = RoutineNote.cleanedText(rawText) else { return .none }
-                state.statusComposerErrorMessage = nil
-                let createdAt = now
-                return .run { @MainActor send in
-                    let context = modelContext()
-                    let note = RoutineNote(
-                        body: text,
-                        tags: ["Status"],
-                        createdAt: createdAt,
-                        updatedAt: createdAt
-                    )
-                    context.insert(note)
-                    do {
-                        try context.save()
-                        send(.statusComposerSaveSucceeded)
-                    } catch {
-                        context.delete(note)
-                        send(.statusComposerSaveFailed)
-                    }
-                }
-
-            case .statusComposerSaveSucceeded:
-                state.statusComposerSaveCount += 1
-                state.statusComposerErrorMessage = nil
-                return .none
-
-            case .statusComposerSaveFailed:
-                state.statusComposerErrorMessage = "Status was not saved."
-                return .none
-
-            case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
-                return taskLoadHandler().applyLoadedTasks(
-                    tasks: tasks,
-                    places: places,
-                    goals: goals,
-                    logs: logs,
-                    doneStats: doneStats,
-                    state: &state
-                )
-
-            case let .sprintBoardLoaded(sprintBoardData):
-                return applySprintBoardLoaded(sprintBoardData, state: &state)
-
-            case let .sprintBoardLoadedFromStorage(sprintBoardData, revision):
-                guard revision == state.board.sprintBoardRevision else {
+                case let .manualRefreshFailed(message):
+                    state.manualRefreshErrorMessage = message
                     return .none
-                }
-                return applySprintBoardLoaded(sprintBoardData, state: &state)
 
-            case .tasksLoadFailed:
-                state.isLoading = false
-                state.hasLoadedTaskSnapshot = true
-                return lifecycleActionHandler().tasksLoadFailed()
-
-            case let .locationSnapshotUpdated(snapshot):
-                return .merge(
-                    lifecycleActionHandler().locationSnapshotUpdated(snapshot, state: &state),
-                    automaticPlaceCheckInEffect(for: snapshot)
-                )
-
-            case let .hideUnavailableRoutinesChanged(isHidden):
-                return lifecycleActionHandler().hideUnavailableRoutinesChanged(isHidden, state: &state)
-
-            case let .setSelectedTask(taskID):
-                return selectionRouter().setSelectedTask(taskID, state: &state)
-
-            case let .setAddRoutineSheet(isPresented):
-                addRoutinePresentationRouter().setSheet(isPresented, state: &state)
-                return .none
-
-            case let .openAddTaskSheet(seedName):
-                state.navigation.enterAddTask()
-                state.macSidebarSelection = nil
-                addRoutinePresentationRouter().setSheet(
-                    true,
-                    state: &state,
-                    seedName: seedName
-                )
-                persistTemporaryViewState(state)
-                return .none
-
-            case let .openAddTaskInCustomSection(sectionID):
-                state.navigation.enterAddTask()
-                state.macSidebarSelection = nil
-                addRoutinePresentationRouter().setSheet(
-                    true,
-                    state: &state,
-                    customTaskSectionID: sectionID
-                )
-                persistTemporaryViewState(state)
-                return .none
-
-            case let .openAddTaskInCustomSectionWithName(sectionID, seedName):
-                state.navigation.enterAddTask()
-                state.macSidebarSelection = nil
-                addRoutinePresentationRouter().setSheet(
-                    true,
-                    state: &state,
-                    seedName: seedName,
-                    customTaskSectionID: sectionID
-                )
-                persistTemporaryViewState(state)
-                return .none
-
-            case .dismissTaskCreationConfirmation:
-                state.taskCreationConfirmation = nil
-                return .none
-
-            case let .deleteTasksTapped(ids):
-                presentationRouter().requestDeleteTasks(ids, state: &state)
-                return .none
-
-            case let .setDeleteConfirmation(isPresented):
-                presentationRouter().setDeleteConfirmation(isPresented, state: &state)
-                return .none
-
-            case let .taskListModeChanged(mode):
-                taskListModeRouter().changeMode(mode, state: &state)
-                return .none
-
-            case let .taskListModeFilterChanged(mode):
-                taskListModeRouter().changeMode(mode, state: &state, closesFilterDetail: false)
-                return .none
-
-            case let .setMacFilterDetailPresented(isPresented):
-                presentationRouter().setFilterDetailPresented(isPresented, state: &state)
-                return .none
-
-            // MARK: - Filter actions
-
-            case let .selectedFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedFilter(filter), state: &state)
-
-            case let .advancedQueryChanged(query):
-                return filterMutationHandler().applyTaskFilterMutation(.advancedQuery(query), state: &state)
-
-            case let .selectedTagChanged(tag):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedTag(tag), state: &state)
-
-            case let .selectedTagsChanged(tags):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedTags(tags), state: &state)
-
-            case let .taskDetailTagFilterTapped(tag):
-                guard let cleanedTag = RoutineTag.cleaned(tag) else { return .none }
-                state.macSidebarMode = .routines
-                state.macSidebarSelection = state.selectedTaskID.map(MacSidebarSelection.task)
-                state.isMacFilterDetailPresented = false
-                state.excludedTags = state.excludedTags.filter {
-                    !RoutineTag.contains($0, in: [cleanedTag])
-                }
-                return filterMutationHandler().applyTaskFilterMutation(.selectedTags([cleanedTag]), state: &state)
-
-            case let .includeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
-
-            case let .selectedFlagsChanged(flags):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedFlags(flags), state: &state)
-
-            case let .includeFlagMatchModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.includeFlagMatchMode(mode), state: &state)
-
-            case let .excludedFlagsChanged(flags):
-                return filterMutationHandler().applyTaskFilterMutation(.excludedFlags(flags), state: &state)
-
-            case let .excludeFlagMatchModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.excludeFlagMatchMode(mode), state: &state)
-
-            case let .excludedTagsChanged(tags):
-                return filterMutationHandler().applyTaskFilterMutation(.excludedTags(tags), state: &state)
-
-            case let .excludeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.excludeTagMatchMode(mode), state: &state)
-
-            case let .selectedManualPlaceFilterIDChanged(id):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedManualPlaceFilterID(id), state: &state)
-
-            case let .selectedImportanceUrgencyFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
-
-            case let .selectedTodoStateFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedTodoStateFilter(filter), state: &state)
-
-            case let .selectedPressureFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
-
-            case let .selectedThinkingNeededFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedThinkingNeededFilter(filter), state: &state)
-
-            case let .selectedGoalFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedGoalFilter(filter), state: &state)
-
-            case let .selectedMediaFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedMediaFilter(filter), state: &state)
-
-            case let .selectedEstimationFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedEstimationFilter(filter), state: &state)
-
-            case let .hideAssumedDoneTasksChanged(hideAssumedDoneTasks):
-                let effect = filterMutationHandler().applyTaskFilterMutation(
-                    .hideAssumedDoneTasks(hideAssumedDoneTasks),
-                    state: &state
-                )
-                refreshDisplays(&state)
-                return effect
-
-            case let .taskListViewModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
-
-            case let .taskListSortOrderChanged(order):
-                return filterMutationHandler().applyTaskFilterMutation(.taskListSortOrder(order), state: &state)
-
-            case let .createdDateFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.createdDateFilter(filter), state: &state)
-
-            case let .showArchivedTasksChanged(showArchivedTasks):
-                return filterMutationHandler().applyTaskFilterMutation(.showArchivedTasks(showArchivedTasks), state: &state)
-
-            case let .isFilterSheetPresentedChanged(isPresented):
-                return filterMutationHandler().applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)
-
-            case .clearOptionalFilters:
-                return filterMutationHandler().applyTaskFilterMutation(.clearOptionalFilters, state: &state)
-
-            case .clearTaskListAndSharedFilters:
-                return filterMutationHandler().clearTaskListAndSharedFilters(state: &state)
-
-            case .clearTimelineAndSharedFilters:
-                return filterMutationHandler().clearTimelineAndSharedFilters(state: &state)
-
-            // MARK: - Timeline filter actions
-
-            case let .selectedTimelineRangeChanged(range):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedRange(range), state: &state)
-
-            case let .selectedTimelineFilterTypeChanged(filterType):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedFilterType(filterType), state: &state)
-
-            case let .selectedTimelineStatusFilterChanged(statusFilter):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedStatusFilter(statusFilter), state: &state)
-
-            case let .selectedTimelineTagChanged(tag):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedTag(tag), state: &state)
-
-            case let .selectedTimelineTagsChanged(tags):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedTags(tags), state: &state)
-
-            case let .selectedTimelineIncludeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyTimelineFilterMutation(.includeTagMatchMode(mode), state: &state)
-
-            case let .selectedTimelineFlagsChanged(flags):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedFlags(flags), state: &state)
-
-            case let .selectedTimelineIncludeFlagMatchModeChanged(mode):
-                return filterMutationHandler().applyTimelineFilterMutation(.includeFlagMatchMode(mode), state: &state)
-
-            case let .selectedTimelineExcludedTagsChanged(tags):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedExcludedTags(tags), state: &state)
-
-            case let .selectedTimelineExcludeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyTimelineFilterMutation(.excludeTagMatchMode(mode), state: &state)
-
-            case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
-
-            case let .selectedTimelinePressureFilterChanged(filter):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedPressureFilter(filter), state: &state)
-
-            case let .selectedTimelineThinkingNeededFilterChanged(filter):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedThinkingNeededFilter(filter), state: &state)
-
-            case let .selectedTimelineEstimationFilterChanged(filter):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedEstimationFilter(filter), state: &state)
-
-            case let .selectedTimelineMediaFilterChanged(filter):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedMediaFilter(filter), state: &state)
-
-            case let .fileAttachmentTaskIDsChanged(taskIDs):
-                guard state.fileAttachmentTaskIDs != taskIDs else { return .none }
-                state.fileAttachmentTaskIDs = taskIDs
-                refreshDisplays(&state)
-                return .none
-
-            // MARK: - Stats filter actions
-
-            case let .statsSelectedRangeChanged(range):
-                return filterMutationHandler().applyStatsFilterMutation(.selectedRange(range), state: &state)
-
-            case let .statsSelectedTagChanged(tag):
-                return filterMutationHandler().applyStatsFilterMutation(.selectedTag(tag), state: &state)
-
-            case let .statsSelectedTagsChanged(tags):
-                return filterMutationHandler().applyStatsFilterMutation(.selectedTags(tags), state: &state)
-
-            case let .statsIncludeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyStatsFilterMutation(.includeTagMatchMode(mode), state: &state)
-
-            // MARK: - macOS navigation actions
-
-            case let .macSidebarModeChanged(mode):
-                return macNavigationRouter().sidebarModeChanged(mode, state: &state)
-
-            case let .macSidebarSelectionChanged(selection):
-                return macNavigationRouter().sidebarSelectionChanged(selection, state: &state)
-
-            case let .selectedSettingsSectionChanged(section):
-                return macNavigationRouter().selectedSettingsSectionChanged(section, state: &state)
-
-            case .deleteTasksConfirmed:
-                let ids = presentationRouter().consumePendingDeleteTaskIDs(state: &state)
-                return handleDeleteTasks(ids, state: &state)
-
-            case let .deleteTasks(ids):
-                return handleDeleteTasks(ids, state: &state)
-
-            case let .markTaskDone(id):
-                return taskLifecycleCommandRouter().markTaskDone(id, state: &state)
-
-            case let .markTaskMissed(id):
-                return taskLifecycleCommandRouter().markTaskMissed(id, state: &state)
-
-            case let .confirmAssumedTaskDone(id):
-                return taskLifecycleCommandRouter().confirmAssumedTaskDone(id, state: &state)
-
-            case let .markAssumedTaskMissed(id):
-                return taskLifecycleCommandRouter().markAssumedTaskMissed(id, state: &state)
-
-            case let .markTaskCanceled(id):
-                return taskLifecycleCommandRouter().markTaskCanceled(id, state: &state)
-
-            case let .moveTodoToState(id, newState):
-                return macBoardCommandRouter().moveTodoToState(id, newState, &state)
-
-            case let .moveTodoOnBoard(taskID, targetState, orderedTaskIDs):
-                return macBoardCommandRouter().moveTodoOnBoard(taskID, targetState, orderedTaskIDs, &state)
-
-            case let .selectedBoardScopeChanged(scope):
-                return macBoardCommandRouter().selectedBoardScopeChanged(scope, state: &state)
-
-            case let .openTaskDeepLink(taskID):
-                return macNavigationRouter().openTaskDeepLink(
-                    taskID,
-                    state: &state,
-                    setSelectedTask: { taskID, state in
-                        selectionRouter().setSelectedTask(taskID, state: &state)
+                case .manualRefreshErrorDismissed:
+                    state.manualRefreshErrorMessage = nil
+                    return .none
+
+                case let .statusComposerSaveRequested(rawText):
+                    guard let text = RoutineNote.cleanedText(rawText) else { return .none }
+                    state.statusComposerErrorMessage = nil
+                    let createdAt = now
+                    return .run { @MainActor send in
+                        let context = modelContext()
+                        let note = RoutineNote(
+                            body: text,
+                            tags: ["Status"],
+                            createdAt: createdAt,
+                            updatedAt: createdAt
+                        )
+                        context.insert(note)
+                        do {
+                            try context.save()
+                            send(.statusComposerSaveSucceeded)
+                        } catch {
+                            context.delete(note)
+                            send(.statusComposerSaveFailed)
+                        }
                     }
-                )
 
-            case let .openNoteDeepLink(noteID):
-                guard appSettingsClient.notesEnabled() else { return .none }
-                return macNavigationRouter().openNoteDeepLink(noteID, state: &state)
+                case .statusComposerSaveSucceeded:
+                    state.statusComposerSaveCount += 1
+                    state.statusComposerErrorMessage = nil
+                    return .none
 
-            case let .openEventDeepLink(eventID):
-                guard appSettingsClient.eventEmotionActionsEnabled() else { return .none }
-                return macNavigationRouter().openEventDeepLink(eventID, state: &state)
+                case .statusComposerSaveFailed:
+                    state.statusComposerErrorMessage = "Status was not saved."
+                    return .none
 
-            case let .openSprintDeepLink(sprintID):
-                return macNavigationRouter().openSprintDeepLink(sprintID, state: &state)
+                case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
+                    return taskLoadHandler().applyLoadedTasks(
+                        tasks: tasks,
+                        places: places,
+                        goals: goals,
+                        logs: logs,
+                        doneStats: doneStats,
+                        state: &state
+                    )
 
-            case let .openSleepDeepLink(sleepID):
-                return macNavigationRouter().openSleepDeepLink(sleepID, state: &state)
+                case let .sprintBoardLoaded(sprintBoardData):
+                    return applySprintBoardLoaded(sprintBoardData, state: &state)
 
-            case let .sleepPlannerDeepLinkHandled(sleepID):
-                guard state.pendingSleepPlannerSessionID == sleepID else { return .none }
-                state.pendingSleepPlannerSessionID = nil
-                return .none
+                case let .sprintBoardLoadedFromStorage(sprintBoardData, revision):
+                    guard revision == state.board.sprintBoardRevision else {
+                        return .none
+                    }
+                    return applySprintBoardLoaded(sprintBoardData, state: &state)
 
-            case .createSprintTapped:
-                return macBoardCommandRouter().createSprintTapped(state: &state)
+                case .tasksLoadFailed:
+                    state.isLoading = false
+                    state.hasLoadedTaskSnapshot = true
+                    return lifecycleActionHandler().tasksLoadFailed()
 
-            case .createBacklogTapped:
-                return macBoardCommandRouter().createBacklogTapped(state: &state)
+                case let .locationSnapshotUpdated(snapshot):
+                    return .merge(
+                        lifecycleActionHandler().locationSnapshotUpdated(snapshot, state: &state),
+                        automaticPlaceCheckInEffect(for: snapshot)
+                    )
 
-            case let .createBacklogTitleChanged(title):
-                return macBoardCommandRouter().createBacklogTitleChanged(title, state: &state)
+                case let .hideUnavailableRoutinesChanged(isHidden):
+                    return lifecycleActionHandler().hideUnavailableRoutinesChanged(isHidden, state: &state)
 
-            case .createBacklogConfirmed:
-                return macBoardCommandRouter().createBacklogConfirmed(state: &state)
+                case let .setSelectedTask(taskID):
+                    return selectionRouter().setSelectedTask(taskID, state: &state)
 
-            case .createBacklogCanceled:
-                return macBoardCommandRouter().createBacklogCanceled(state: &state)
+                case let .setAddRoutineSheet(isPresented):
+                    addRoutinePresentationRouter().setSheet(isPresented, state: &state)
+                    return .none
 
-            case let .createSprintTitleChanged(title):
-                return macBoardCommandRouter().createSprintTitleChanged(title, state: &state)
+                case let .openAddTaskSheet(seedName):
+                    state.navigation.enterAddTask()
+                    state.macSidebarSelection = nil
+                    addRoutinePresentationRouter().setSheet(
+                        true,
+                        state: &state,
+                        seedName: seedName
+                    )
+                    persistTemporaryViewState(state)
+                    return .none
 
-            case .createSprintConfirmed:
-                return macBoardCommandRouter().createSprintConfirmed(state: &state)
+                case let .openAddTaskInCustomSection(sectionID):
+                    state.navigation.enterAddTask()
+                    state.macSidebarSelection = nil
+                    addRoutinePresentationRouter().setSheet(
+                        true,
+                        state: &state,
+                        customTaskSectionID: sectionID
+                    )
+                    persistTemporaryViewState(state)
+                    return .none
 
-            case .createSprintCanceled:
-                return macBoardCommandRouter().createSprintCanceled(state: &state)
+                case let .openAddTaskInCustomSectionWithName(sectionID, seedName):
+                    state.navigation.enterAddTask()
+                    state.macSidebarSelection = nil
+                    addRoutinePresentationRouter().setSheet(
+                        true,
+                        state: &state,
+                        seedName: seedName,
+                        customTaskSectionID: sectionID
+                    )
+                    persistTemporaryViewState(state)
+                    return .none
 
-            case let .startSprintTapped(sprintID):
-                return macBoardCommandRouter().startSprint(sprintID, &state)
+                case .dismissTaskCreationConfirmation:
+                    state.taskCreationConfirmation = nil
+                    return .none
 
-            case let .finishSprintTapped(sprintID):
-                return macBoardCommandRouter().finishSprint(sprintID, &state)
+                case let .deleteTasksTapped(ids):
+                    presentationRouter().requestDeleteTasks(ids, state: &state)
+                    return .none
 
-            case let .assignTodoToBacklog(taskID, backlogID):
-                return macBoardCommandRouter().assignTodoToBacklog(taskID, backlogID, &state)
+                case let .setDeleteConfirmation(isPresented):
+                    presentationRouter().setDeleteConfirmation(isPresented, state: &state)
+                    return .none
 
-            case let .assignTodosToBacklog(taskIDs, backlogID):
-                return macBoardCommandRouter().assignTodosToBacklog(taskIDs, backlogID, &state)
+                case let .taskListModeChanged(mode):
+                    taskListModeRouter().changeMode(mode, state: &state)
+                    return .none
 
-            case let .assignTodoToSprint(taskID, sprintID):
-                return macBoardCommandRouter().assignTodoToSprint(taskID, sprintID, &state)
+                case let .taskListModeFilterChanged(mode):
+                    taskListModeRouter().changeMode(mode, state: &state, closesFilterDetail: false)
+                    return .none
 
-            case let .assignTodosToSprint(taskIDs, sprintID):
-                return macBoardCommandRouter().assignTodosToSprint(taskIDs, sprintID, &state)
+                case let .setMacFilterDetailPresented(isPresented):
+                    presentationRouter().setFilterDetailPresented(isPresented, state: &state)
+                    return .none
 
-            case let .setBacklogRoutingTags(backlogID, tags):
-                return handleSetBacklogRoutingTags(
-                    backlogID: backlogID,
-                    tags: tags,
-                    state: &state
-                )
+                // MARK: - Filter actions
 
-            case let .renameSprintTapped(id):
-                return macBoardCommandRouter().renameSprintTapped(id, state: &state)
+                case let .selectedFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedFilter(filter), state: &state)
 
-            case let .renamingSprintTitleChanged(title):
-                return macBoardCommandRouter().renamingSprintTitleChanged(title, state: &state)
+                case let .advancedQueryChanged(query):
+                    return filterMutationHandler().applyTaskFilterMutation(.advancedQuery(query), state: &state)
 
-            case .renameSprintConfirmed:
-                return macBoardCommandRouter().renameSprintConfirmed(state: &state)
+                case let .selectedTagChanged(tag):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedTag(tag), state: &state)
 
-            case .renameSprintCanceled:
-                return macBoardCommandRouter().renameSprintCanceled(state: &state)
+                case let .selectedTagsChanged(tags):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedTags(tags), state: &state)
 
-            case let .deleteSprintTapped(id):
-                return macBoardCommandRouter().deleteSprintTapped(id, state: &state)
+                case let .taskDetailTagFilterTapped(tag):
+                    guard let cleanedTag = RoutineTag.cleaned(tag) else { return .none }
+                    state.macSidebarMode = .routines
+                    state.macSidebarSelection = state.selectedTaskID.map(MacSidebarSelection.task)
+                    state.isMacFilterDetailPresented = false
+                    state.excludedTags = state.excludedTags.filter {
+                        !RoutineTag.contains($0, in: [cleanedTag])
+                    }
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedTags([cleanedTag]), state: &state)
 
-            case let .deleteSprintConfirmed(id):
-                return macBoardCommandRouter().deleteSprint(id, &state)
+                case let .includeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
 
-            case .deleteSprintCanceled:
-                return macBoardCommandRouter().deleteSprintCanceled(state: &state)
+                case let .selectedFlagsChanged(flags):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedFlags(flags), state: &state)
 
-            case let .startSprintFocusTapped(sprintID):
-                return handleStartSprintFocus(sprintID, state: &state)
+                case let .includeFlagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.includeFlagMatchMode(mode), state: &state)
 
-            case let .pauseSprintFocusTapped(sessionID):
-                return handlePauseSprintFocus(sessionID, state: &state)
+                case let .excludedFlagsChanged(flags):
+                    return filterMutationHandler().applyTaskFilterMutation(.excludedFlags(flags), state: &state)
 
-            case let .resumeSprintFocusTapped(sessionID):
-                return handleResumeSprintFocus(sessionID, state: &state)
+                case let .excludeFlagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.excludeFlagMatchMode(mode), state: &state)
 
-            case let .stopSprintFocusTapped(sessionID):
-                return handleStopSprintFocus(sessionID, state: &state)
+                case let .excludedTagsChanged(tags):
+                    return filterMutationHandler().applyTaskFilterMutation(.excludedTags(tags), state: &state)
 
-            case let .abandonSprintFocusTapped(sessionID):
-                return handleAbandonSprintFocus(sessionID, state: &state)
+                case let .excludeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.excludeTagMatchMode(mode), state: &state)
 
-            case let .reviewSprintFocusAllocationTapped(sessionID):
-                beginSprintFocusAllocationReview(sessionID: sessionID, state: &state)
-                return .none
+                case let .selectedManualPlaceFilterIDChanged(id):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedManualPlaceFilterID(id), state: &state)
 
-            case let .deleteSprintFocusSessionTapped(sessionID):
-                return handleDeleteSprintFocusSession(sessionID, state: &state)
+                case let .selectedImportanceUrgencyFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
 
-            case let .sprintFocusAllocationMinutesChanged(taskID, minutes):
-                updateSprintFocusAllocationDraft(taskID: taskID, minutes: minutes, state: &state)
-                return .none
+                case let .selectedTodoStateFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedTodoStateFilter(filter), state: &state)
 
-            case .sprintFocusAllocationSaveTapped:
-                return handleSaveSprintFocusAllocations(state: &state)
+                case let .selectedPressureFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
 
-            case .sprintFocusAllocationCancelTapped:
-                state.sprintFocusAllocationSessionID = nil
-                state.sprintFocusAllocationDrafts = []
-                return .none
+                case let .selectedThinkingNeededFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedThinkingNeededFilter(filter), state: &state)
 
-            case let .pauseTask(id):
-                return taskLifecycleCommandRouter().pauseTask(id, state: &state)
+                case let .selectedGoalFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedGoalFilter(filter), state: &state)
 
-            case let .resumeTask(id):
-                return taskLifecycleCommandRouter().resumeTask(id, state: &state)
+                case let .selectedMediaFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedMediaFilter(filter), state: &state)
 
-            case let .pauseCustomTaskSectionTasks(taskIDs):
-                return pauseCustomTaskSectionTasks(taskIDs, state: &state)
+                case let .selectedEstimationFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedEstimationFilter(filter), state: &state)
 
-            case let .resumeCustomTaskSectionTasks(taskIDs):
-                return resumeCustomTaskSectionTasks(taskIDs, state: &state)
+                case let .hideAssumedDoneTasksChanged(hideAssumedDoneTasks):
+                    let effect = filterMutationHandler().applyTaskFilterMutation(
+                        .hideAssumedDoneTasks(hideAssumedDoneTasks),
+                        state: &state
+                    )
+                    refreshDisplays(&state)
+                    return effect
 
-            case let .notTodayTask(id):
-                return taskLifecycleCommandRouter().notTodayTask(id, state: &state)
+                case let .taskListViewModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
 
-            case let .pinTask(id):
-                return taskLifecycleCommandRouter().pinTask(id, state: &state)
+                case let .taskListSortOrderChanged(order):
+                    return filterMutationHandler().applyTaskFilterMutation(.taskListSortOrder(order), state: &state)
 
-            case let .planTask(id, plannedDate):
-                return taskLifecycleCommandRouter().planTask(id, plannedDate: plannedDate, state: &state)
+                case let .createdDateFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.createdDateFilter(filter), state: &state)
 
-            case let .moveTaskToCustomSection(taskID, sectionID):
-                return moveTaskToCustomSection(
-                    taskID: taskID,
-                    sectionID: sectionID,
-                    state: &state
-                )
+                case let .showArchivedTasksChanged(showArchivedTasks):
+                    return filterMutationHandler().applyTaskFilterMutation(.showArchivedTasks(showArchivedTasks), state: &state)
 
-            case let .deleteCustomTaskSection(sectionID):
-                return deleteCustomTaskSection(sectionID: sectionID, state: &state)
+                case let .isFilterSheetPresentedChanged(isPresented):
+                    return filterMutationHandler().applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)
 
-            case let .unpinTask(id):
-                return taskLifecycleCommandRouter().unpinTask(id, state: &state)
+                case .clearOptionalFilters:
+                    return filterMutationHandler().applyTaskFilterMutation(.clearOptionalFilters, state: &state)
 
-            case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
-                return moveTaskInSection(
-                    taskID: taskID,
-                    sectionKey: sectionKey,
-                    orderedTaskIDs: orderedTaskIDs,
-                    direction: direction,
-                    state: &state
-                )
+                case .clearTaskListAndSharedFilters:
+                    return filterMutationHandler().clearTaskListAndSharedFilters(state: &state)
 
-            case let .setTaskOrderInSection(sectionKey, orderedTaskIDs):
-                return setTaskOrderInSection(
-                    sectionKey: sectionKey,
-                    orderedTaskIDs: orderedTaskIDs,
-                    state: &state
-                )
+                case .clearTimelineAndSharedFilters:
+                    return filterMutationHandler().clearTimelineAndSharedFilters(state: &state)
 
-            case .addRoutineSheet(.delegate(.didCancel)):
-                return addRoutineActionHandler().cancel(state: &state)
+                // MARK: - Timeline filter actions
 
-            case let .addRoutineSheet(.delegate(.didSave(request))):
-                return addRoutineActionHandler().save(request)
+                case let .selectedTimelineRangeChanged(range):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedRange(range), state: &state)
 
-            case let .routineSavedSuccessfully(task):
-                return finishSaveAndRouteNewTodoToBacklog(task, state: &state)
+                case let .selectedTimelineFilterTypeChanged(filterType):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedFilterType(filterType), state: &state)
 
-            case .routineSaveFailed:
-                return .merge(
-                    addRoutineActionHandler().failSave(),
-                    .send(.addRoutineSheet(.saveFailed))
-                )
+                case let .selectedTimelineStatusFilterChanged(statusFilter):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedStatusFilter(statusFilter), state: &state)
 
-            case let .taskDetail(action):
-                return taskDetailActionRouter().handle(action, state: &state) ?? .none
+                case let .selectedTimelineTagChanged(tag):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedTag(tag), state: &state)
 
-            case .addRoutineSheet:
-                return .none
+                case let .selectedTimelineTagsChanged(tags):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedTags(tags), state: &state)
+
+                case let .selectedTimelineIncludeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTimelineFilterMutation(.includeTagMatchMode(mode), state: &state)
+
+                case let .selectedTimelineFlagsChanged(flags):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedFlags(flags), state: &state)
+
+                case let .selectedTimelineIncludeFlagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTimelineFilterMutation(.includeFlagMatchMode(mode), state: &state)
+
+                case let .selectedTimelineExcludedTagsChanged(tags):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedExcludedTags(tags), state: &state)
+
+                case let .selectedTimelineExcludeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTimelineFilterMutation(.excludeTagMatchMode(mode), state: &state)
+
+                case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
+
+                case let .selectedTimelinePressureFilterChanged(filter):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedPressureFilter(filter), state: &state)
+
+                case let .selectedTimelineThinkingNeededFilterChanged(filter):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedThinkingNeededFilter(filter), state: &state)
+
+                case let .selectedTimelineEstimationFilterChanged(filter):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedEstimationFilter(filter), state: &state)
+
+                case let .selectedTimelineMediaFilterChanged(filter):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedMediaFilter(filter), state: &state)
+
+                case let .fileAttachmentTaskIDsChanged(taskIDs):
+                    guard state.fileAttachmentTaskIDs != taskIDs else { return .none }
+                    state.fileAttachmentTaskIDs = taskIDs
+                    refreshDisplays(&state)
+                    return .none
+
+                // MARK: - Stats filter actions
+
+                case let .statsSelectedRangeChanged(range):
+                    return filterMutationHandler().applyStatsFilterMutation(.selectedRange(range), state: &state)
+
+                case let .statsSelectedTagChanged(tag):
+                    return filterMutationHandler().applyStatsFilterMutation(.selectedTag(tag), state: &state)
+
+                case let .statsSelectedTagsChanged(tags):
+                    return filterMutationHandler().applyStatsFilterMutation(.selectedTags(tags), state: &state)
+
+                case let .statsIncludeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyStatsFilterMutation(.includeTagMatchMode(mode), state: &state)
+
+                // MARK: - macOS navigation actions
+
+                case let .macSidebarModeChanged(mode):
+                    return macNavigationRouter().sidebarModeChanged(mode, state: &state)
+
+                case let .macSidebarSelectionChanged(selection):
+                    return macNavigationRouter().sidebarSelectionChanged(selection, state: &state)
+
+                case let .selectedSettingsSectionChanged(section):
+                    return macNavigationRouter().selectedSettingsSectionChanged(section, state: &state)
+
+                case .deleteTasksConfirmed:
+                    let ids = presentationRouter().consumePendingDeleteTaskIDs(state: &state)
+                    return handleDeleteTasks(ids, state: &state)
+
+                case let .deleteTasks(ids):
+                    return handleDeleteTasks(ids, state: &state)
+
+                case let .markTaskDone(id):
+                    return taskLifecycleCommandRouter().markTaskDone(id, state: &state)
+
+                case let .markTaskMissed(id):
+                    return taskLifecycleCommandRouter().markTaskMissed(id, state: &state)
+
+                case let .confirmAssumedTaskDone(id):
+                    return taskLifecycleCommandRouter().confirmAssumedTaskDone(id, state: &state)
+
+                case let .markAssumedTaskMissed(id):
+                    return taskLifecycleCommandRouter().markAssumedTaskMissed(id, state: &state)
+
+                case let .markTaskCanceled(id):
+                    return taskLifecycleCommandRouter().markTaskCanceled(id, state: &state)
+
+                case let .moveTodoToState(id, newState):
+                    return macBoardCommandRouter().moveTodoToState(id, newState, &state)
+
+                case let .moveTodoOnBoard(taskID, targetState, orderedTaskIDs):
+                    return macBoardCommandRouter().moveTodoOnBoard(taskID, targetState, orderedTaskIDs, &state)
+
+                case let .selectedBoardScopeChanged(scope):
+                    return macBoardCommandRouter().selectedBoardScopeChanged(scope, state: &state)
+
+                case let .openTaskDeepLink(taskID):
+                    return macNavigationRouter().openTaskDeepLink(
+                        taskID,
+                        state: &state,
+                        setSelectedTask: { taskID, state in
+                            selectionRouter().setSelectedTask(taskID, state: &state)
+                        }
+                    )
+
+                case let .openNoteDeepLink(noteID):
+                    guard appSettingsClient.notesEnabled() else { return .none }
+                    return macNavigationRouter().openNoteDeepLink(noteID, state: &state)
+
+                case let .openEventDeepLink(eventID):
+                    guard appSettingsClient.eventEmotionActionsEnabled() else { return .none }
+                    return macNavigationRouter().openEventDeepLink(eventID, state: &state)
+
+                case let .openSprintDeepLink(sprintID):
+                    return macNavigationRouter().openSprintDeepLink(sprintID, state: &state)
+
+                case let .openSleepDeepLink(sleepID):
+                    return macNavigationRouter().openSleepDeepLink(sleepID, state: &state)
+
+                case let .sleepPlannerDeepLinkHandled(sleepID):
+                    guard state.pendingSleepPlannerSessionID == sleepID else { return .none }
+                    state.pendingSleepPlannerSessionID = nil
+                    return .none
+
+                case .createSprintTapped:
+                    return macBoardCommandRouter().createSprintTapped(state: &state)
+
+                case .createBacklogTapped:
+                    return macBoardCommandRouter().createBacklogTapped(state: &state)
+
+                case let .createBacklogTitleChanged(title):
+                    return macBoardCommandRouter().createBacklogTitleChanged(title, state: &state)
+
+                case .createBacklogConfirmed:
+                    return macBoardCommandRouter().createBacklogConfirmed(state: &state)
+
+                case .createBacklogCanceled:
+                    return macBoardCommandRouter().createBacklogCanceled(state: &state)
+
+                case let .createSprintTitleChanged(title):
+                    return macBoardCommandRouter().createSprintTitleChanged(title, state: &state)
+
+                case .createSprintConfirmed:
+                    return macBoardCommandRouter().createSprintConfirmed(state: &state)
+
+                case .createSprintCanceled:
+                    return macBoardCommandRouter().createSprintCanceled(state: &state)
+
+                case let .startSprintTapped(sprintID):
+                    return macBoardCommandRouter().startSprint(sprintID, &state)
+
+                case let .finishSprintTapped(sprintID):
+                    return macBoardCommandRouter().finishSprint(sprintID, &state)
+
+                case let .assignTodoToBacklog(taskID, backlogID):
+                    return macBoardCommandRouter().assignTodoToBacklog(taskID, backlogID, &state)
+
+                case let .assignTodosToBacklog(taskIDs, backlogID):
+                    return macBoardCommandRouter().assignTodosToBacklog(taskIDs, backlogID, &state)
+
+                case let .assignTodoToSprint(taskID, sprintID):
+                    return macBoardCommandRouter().assignTodoToSprint(taskID, sprintID, &state)
+
+                case let .assignTodosToSprint(taskIDs, sprintID):
+                    return macBoardCommandRouter().assignTodosToSprint(taskIDs, sprintID, &state)
+
+                case let .setBacklogRoutingTags(backlogID, tags):
+                    return handleSetBacklogRoutingTags(
+                        backlogID: backlogID,
+                        tags: tags,
+                        state: &state
+                    )
+
+                case let .renameSprintTapped(id):
+                    return macBoardCommandRouter().renameSprintTapped(id, state: &state)
+
+                case let .renamingSprintTitleChanged(title):
+                    return macBoardCommandRouter().renamingSprintTitleChanged(title, state: &state)
+
+                case .renameSprintConfirmed:
+                    return macBoardCommandRouter().renameSprintConfirmed(state: &state)
+
+                case .renameSprintCanceled:
+                    return macBoardCommandRouter().renameSprintCanceled(state: &state)
+
+                case let .deleteSprintTapped(id):
+                    return macBoardCommandRouter().deleteSprintTapped(id, state: &state)
+
+                case let .deleteSprintConfirmed(id):
+                    return macBoardCommandRouter().deleteSprint(id, &state)
+
+                case .deleteSprintCanceled:
+                    return macBoardCommandRouter().deleteSprintCanceled(state: &state)
+
+                case let .startSprintFocusTapped(sprintID):
+                    return handleStartSprintFocus(sprintID, state: &state)
+
+                case let .pauseSprintFocusTapped(sessionID):
+                    return handlePauseSprintFocus(sessionID, state: &state)
+
+                case let .resumeSprintFocusTapped(sessionID):
+                    return handleResumeSprintFocus(sessionID, state: &state)
+
+                case let .stopSprintFocusTapped(sessionID):
+                    return handleStopSprintFocus(sessionID, state: &state)
+
+                case let .abandonSprintFocusTapped(sessionID):
+                    return handleAbandonSprintFocus(sessionID, state: &state)
+
+                case let .reviewSprintFocusAllocationTapped(sessionID):
+                    beginSprintFocusAllocationReview(sessionID: sessionID, state: &state)
+                    return .none
+
+                case let .deleteSprintFocusSessionTapped(sessionID):
+                    return handleDeleteSprintFocusSession(sessionID, state: &state)
+
+                case let .sprintFocusAllocationMinutesChanged(taskID, minutes):
+                    updateSprintFocusAllocationDraft(taskID: taskID, minutes: minutes, state: &state)
+                    return .none
+
+                case .sprintFocusAllocationSaveTapped:
+                    return handleSaveSprintFocusAllocations(state: &state)
+
+                case .sprintFocusAllocationCancelTapped:
+                    state.sprintFocusAllocationSessionID = nil
+                    state.sprintFocusAllocationDrafts = []
+                    return .none
+
+                case let .pauseTask(id):
+                    return taskLifecycleCommandRouter().pauseTask(id, state: &state)
+
+                case let .resumeTask(id):
+                    return taskLifecycleCommandRouter().resumeTask(id, state: &state)
+
+                case let .pauseCustomTaskSectionTasks(taskIDs):
+                    return pauseCustomTaskSectionTasks(taskIDs, state: &state)
+
+                case let .resumeCustomTaskSectionTasks(taskIDs):
+                    return resumeCustomTaskSectionTasks(taskIDs, state: &state)
+
+                case let .notTodayTask(id):
+                    return taskLifecycleCommandRouter().notTodayTask(id, state: &state)
+
+                case let .pinTask(id):
+                    return taskLifecycleCommandRouter().pinTask(id, state: &state)
+
+                case let .planTask(id, plannedDate):
+                    return taskLifecycleCommandRouter().planTask(id, plannedDate: plannedDate, state: &state)
+
+                case let .moveTaskToCustomSection(taskID, sectionID):
+                    return moveTaskToCustomSection(
+                        taskID: taskID,
+                        sectionID: sectionID,
+                        state: &state
+                    )
+
+                case let .deleteCustomTaskSection(sectionID):
+                    return deleteCustomTaskSection(sectionID: sectionID, state: &state)
+
+                case let .unpinTask(id):
+                    return taskLifecycleCommandRouter().unpinTask(id, state: &state)
+
+                case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
+                    return moveTaskInSection(
+                        taskID: taskID,
+                        sectionKey: sectionKey,
+                        orderedTaskIDs: orderedTaskIDs,
+                        direction: direction,
+                        state: &state
+                    )
+
+                case let .setTaskOrderInSection(sectionKey, orderedTaskIDs):
+                    return setTaskOrderInSection(
+                        sectionKey: sectionKey,
+                        orderedTaskIDs: orderedTaskIDs,
+                        state: &state
+                    )
+
+                case .addRoutineSheet(.delegate(.didCancel)):
+                    return addRoutineActionHandler().cancel(state: &state)
+
+                case let .addRoutineSheet(.delegate(.didSave(request))):
+                    return addRoutineActionHandler().save(request)
+
+                case let .routineSavedSuccessfully(task):
+                    return finishSaveAndRouteNewTodoToBacklog(task, state: &state)
+
+                case .routineSaveFailed:
+                    return .merge(
+                        addRoutineActionHandler().failSave(),
+                        .send(.addRoutineSheet(.saveFailed))
+                    )
+
+                case let .taskDetail(action):
+                    return taskDetailActionRouter().handle(action, state: &state) ?? .none
+
+                case .addRoutineSheet:
+                    return .none
                 }
             }
             Reduce { state, _ in
@@ -1733,439 +749,11 @@ struct HomeFeature {
         }
     }
 
-    private func reduceTaskDetail(
-        into state: inout State,
-        action: Action
-    ) -> Effect<Action> {
-        guard case let .taskDetail(taskDetailAction) = action,
-              let taskDetailID = state.taskDetailState?.task.id else {
-            return .none
-        }
-
-        state.selection.taskDetailEffectTaskID = taskDetailID
-        return TaskDetailFeature()
-            .reduce(into: &state.taskDetailState!, action: taskDetailAction)
-            .map(Action.taskDetail)
-            .cancellable(id: TaskDetailCancelID.task(taskDetailID))
-    }
-
-    private func cancelStaleTaskDetailEffects(state: inout State) -> Effect<Action> {
-        let currentTaskID = state.taskDetailState?.task.id
-        guard state.selection.taskDetailEffectTaskID != currentTaskID else { return .none }
-
-        let previousTaskID = state.selection.taskDetailEffectTaskID
-        state.selection.taskDetailEffectTaskID = currentTaskID
-        guard let previousTaskID else { return .none }
-        return .cancel(id: TaskDetailCancelID.task(previousTaskID))
-    }
-
-    private func syncSelectedTaskLogs(_ logs: [RoutineLog], state: inout State) {
-        guard let detailTask = state.selection.taskDetailState?.task else { return }
-        let taskID = detailTask.id
-        let resolvedLogs = state.selection.taskDetailState?.logs ?? logs
-        let timelineLogs = TimelineLogic.logsIncludingLastDoneFallbacks(
-            logs: resolvedLogs,
-            tasks: [detailTask],
-            calendar: calendar
-        )
-
-        var updatedDoneStats = state.doneStats
-        updatedDoneStats.replaceLogs(for: taskID, with: timelineLogs)
-        let existingTimelineLogs = state.timelineLogs.filter { $0.taskID == taskID }
-        guard updatedDoneStats != state.doneStats
-            || !HomeTaskSupport.logsHaveSamePayload(existingTimelineLogs, timelineLogs) else {
-            return
-        }
-
-        state.doneStats = updatedDoneStats
-        state.timelineLogs = HomeTaskSupport.replacingTimelineLogs(
-            for: taskID,
-            in: state.timelineLogs,
-            with: timelineLogs
-        )
-        refreshDisplays(&state)
-    }
-
-    private func handleDeleteTasks(_ ids: [UUID], state: inout State) -> Effect<Action> {
-        var routineTasks = state.routineTasks
-        var doneStats = state.doneStats
-        var sprintBoardData: SprintBoardData? = state.sprintBoardData
-        guard let deleteEffect = taskDeletionCoordinator().deleteTasks(
-            ids: ids,
-            tasks: &routineTasks,
-            doneStats: &doneStats,
-            sprintBoardData: &sprintBoardData
-        ) else { return .none }
-        state.routineTasks = routineTasks
-        state.doneStats = doneStats
-        if let sprintBoardData {
-            state.sprintBoardData = sprintBoardData
-        }
-        return postMutationRefresher().finishMutation(
-            deleteEffect,
-            state: &state,
-            refreshAddRoutineAvailability: true
-        )
-    }
-
-    private func moveTaskInSection(
-        taskID: UUID,
-        sectionKey: String,
-        orderedTaskIDs: [UUID],
-        direction: MoveDirection,
-        state: inout State
-    ) -> Effect<Action> {
-        guard let update = HomeTaskOrderingSupport.moveTaskInSection(
-            taskID: taskID,
-            sectionKey: sectionKey,
-            orderedTaskIDs: orderedTaskIDs,
-            direction: direction,
-            tasks: &state.routineTasks
-        ) else { return .none }
-        return postMutationRefresher().finishMutation(
-            HomeTaskOrderingSupport.persistTaskOrder(
-                update,
-                failureMessage: "Failed to persist manual section order",
-                modelContext: { self.modelContext() }
-            ),
-            state: &state
-        )
-    }
-
-    private func applySprintBoardLoaded(
-        _ sprintBoardData: SprintBoardData,
-        state: inout State
-    ) -> Effect<Action> {
-        state.sprintBoardData = sprintBoardData
-        state.selectedBoardScope = HomeBoardMutationSupport.validatedScope(
-            state.selectedBoardScope,
-            in: sprintBoardData
-        )
-        refreshDisplays(&state)
-        return .none
-    }
-
-    func setTaskOrderInSection(
-        sectionKey: String,
-        orderedTaskIDs: [UUID],
-        state: inout State
-    ) -> Effect<Action> {
-        guard let update = HomeTaskOrderingSupport.setTaskOrderInSection(
-            sectionKey: sectionKey,
-            orderedTaskIDs: orderedTaskIDs,
-            tasks: &state.routineTasks
-        ) else { return .none }
-        return postMutationRefresher().finishMutation(
-            HomeTaskOrderingSupport.persistTaskOrder(
-                update,
-                failureMessage: "Failed to persist board section order",
-                modelContext: { self.modelContext() }
-            ),
-            state: &state
-        )
-    }
-
-    private func deleteCustomTaskSection(
-        sectionID: UUID,
-        state: inout State
-    ) -> Effect<Action> {
-        guard let update = HomeTaskLifecycleSupport.deleteCustomTaskSection(
-            sectionID: sectionID,
-            tasks: &state.routineTasks
-        ) else {
-            return .none
-        }
-
-        return postMutationRefresher().finishMutation(
-            persistDeletedCustomTaskSection(update),
-            state: &state
-        )
-    }
-
-    private func pauseCustomTaskSectionTasks(
-        _ taskIDs: [UUID],
-        state: inout State
-    ) -> Effect<Action> {
-        guard let effect = taskLifecycleCoordinator().pauseTasks(
-            taskIDs: taskIDs,
-            tasks: &state.routineTasks
-        ) else {
-            return .none
-        }
-        return postMutationRefresher().finishMutation(effect, state: &state)
-    }
-
-    private func resumeCustomTaskSectionTasks(
-        _ taskIDs: [UUID],
-        state: inout State
-    ) -> Effect<Action> {
-        guard let effect = taskLifecycleCoordinator().resumeTasks(
-            taskIDs: taskIDs,
-            tasks: &state.routineTasks
-        ) else {
-            return .none
-        }
-        return postMutationRefresher().finishMutation(effect, state: &state)
-    }
-
-    private func persistDeletedCustomTaskSection(
-        _ update: HomeDeleteCustomTaskSectionUpdate
-    ) -> Effect<Action> {
-        .run { @MainActor _ in
-            do {
-                let context = modelContext()
-                let changedTaskIDs = Set(update.taskIDs)
-                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                    .filter { changedTaskIDs.contains($0.id) }
-
-                for task in tasks {
-                    if task.customTaskSectionID == update.sectionID {
-                        task.customTaskSectionID = nil
-                    }
-                    var manualSectionOrders = task.manualSectionOrders
-                    manualSectionOrders.removeValue(forKey: update.sectionKey)
-                    task.manualSectionOrders = manualSectionOrders
-                    DeviceActivityRecorder.recordAction(
-                        .updated,
-                        entity: .task,
-                        entityID: task.id,
-                        entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                        details: "Removed task from deleted custom section",
-                        in: context
-                    )
-                }
-
-                try context.save()
-                NotificationCenter.default.postRoutineDidUpdate()
-            } catch {
-                print("Failed to delete custom task section: \(error)")
-            }
-        }
-    }
-
-    private func moveTaskToCustomSection(
-        taskID: UUID,
-        sectionID: UUID?,
-        state: inout State
-    ) -> Effect<Action> {
-        guard let index = state.routineTasks.firstIndex(where: { $0.id == taskID }) else {
-            return .none
-        }
-
-        let task = state.routineTasks[index]
-        let plannedDate = task.plannedDate
-        var manualSectionOrders = task.manualSectionOrders
-        if let sectionID {
-            let sectionKey = HomeCustomTaskSectionStorage.manualOrderSectionKey(for: sectionID)
-            if manualSectionOrders[sectionKey] == nil {
-                manualSectionOrders[sectionKey] = nextManualOrder(in: sectionKey, tasks: state.routineTasks)
-            }
-        }
-
-        guard task.customTaskSectionID != sectionID
-            || task.plannedDate != plannedDate
-            || task.manualSectionOrders != manualSectionOrders else {
-            return .none
-        }
-
-        task.customTaskSectionID = sectionID
-        task.plannedDate = plannedDate
-        task.manualSectionOrders = manualSectionOrders
-        state.routineTasks[index] = task
-
-        return postMutationRefresher().finishMutation(
-            persistCustomTaskSectionAssignment(
-                taskID: taskID,
-                sectionID: sectionID,
-                plannedDate: plannedDate,
-                manualSectionOrders: manualSectionOrders
-            ),
-            state: &state
-        )
-    }
-
-    private func persistCustomTaskSectionAssignment(
-        taskID: UUID,
-        sectionID: UUID?,
-        plannedDate: Date?,
-        manualSectionOrders: [String: Int]
-    ) -> Effect<Action> {
-        .run { @MainActor _ in
-            do {
-                let context = modelContext()
-                guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: taskID)).first else {
-                    return
-                }
-                task.customTaskSectionID = sectionID
-                task.plannedDate = plannedDate
-                task.manualSectionOrders = manualSectionOrders
-                DeviceActivityRecorder.recordAction(
-                    .updated,
-                    entity: .task,
-                    entityID: taskID,
-                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: sectionID == nil ? "Cleared custom task section" : "Moved task to custom section",
-                    in: context
-                )
-                try context.save()
-                NotificationCenter.default.postRoutineDidUpdate()
-            } catch {
-                print("Failed to move task to custom section: \(error)")
-            }
-        }
-    }
-
-    static func boardSectionKey(for state: TodoState) -> String {
-        switch state {
-        case .ready, .paused:
-            return "todoBoard.ready"
-        case .inProgress:
-            return "todoBoard.inProgress"
-        case .blocked:
-            return "todoBoard.blocked"
-        case .done:
-            return "todoBoard.done"
-        }
-    }
-
-    func nextManualOrder(in sectionKey: String, tasks: [RoutineTask]) -> Int {
-        let maxOrder = tasks.compactMap { $0.manualSectionOrders[sectionKey] }.max() ?? -1
-        return maxOrder + 1
-    }
-
-    private func loadSprintBoardEffect(revision: Int) -> Effect<Action> {
-        .run { send in
-            do {
-                let sprintBoardData = try await sprintBoardClient.load()
-                await send(.sprintBoardLoadedFromStorage(sprintBoardData, revision: revision))
-            } catch {
-                print("Failed to load sprint board data: \(error)")
-                await send(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: revision))
-            }
-        }
-    }
-
-    func saveSprintBoardEffect(_ sprintBoardData: SprintBoardData) -> Effect<Action> {
-        .run { _ in
-            do {
-                try await sprintBoardClient.save(sprintBoardData)
-                await MainActor.run {
-                    NotificationCenter.default.postRoutineDidUpdate()
-                }
-            } catch {
-                print("Failed to save sprint board data: \(error)")
-            }
-        }
-    }
-
-    private func loadTasksEffect(performingMaintenance: Bool = false) -> Effect<Action> {
+    func loadTasksEffect(performingMaintenance: Bool = false) -> Effect<Action> {
         taskLoadEffectFactory().loadTasksEffect(performingMaintenance: performingMaintenance)
     }
 
     func syncSelectedTaskDetailState(_ state: inout State) {
         selectionRouter().refreshSelectedTaskDetailState(&state)
-    }
-
-    private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {
-        let restoredState = HomeFeatureTemporaryViewStateSupport.applyBase(
-            persistedState,
-            to: &state,
-            defaultHideUnavailableRoutines: appSettingsClient.hideUnavailableRoutines()
-        )
-
-        if let rawValue = restoredState.macSidebarModeRawValue,
-           let mode = MacSidebarMode(rawValue: rawValue) {
-            state.macSidebarMode = normalizedMacSidebarMode(mode)
-        }
-        if let rawValue = restoredState.macSelectedSettingsSectionRawValue {
-            state.selectedSettingsSection = SettingsMacSection(rawValue: rawValue)?
-                .resolvedNavigationSection
-        }
-
-        if let rawValue = restoredState.taskListModeRawValue,
-           let mode = TaskListMode(rawValue: rawValue) {
-            state.taskListMode = mode
-        }
-    }
-
-    private func persistTemporaryViewState(_ state: State) {
-        let persistedMacSidebarMode = state.macSidebarMode == .addTask
-            ? state.navigation.addTaskReturnMode ?? .routines
-            : normalizedMacSidebarMode(state.macSidebarMode)
-        appSettingsClient.setTemporaryViewState(
-            HomeFeatureTemporaryViewStateSupport.makeTemporaryViewState(
-                from: state,
-                existing: appSettingsClient.temporaryViewState(),
-                macSidebarModeRawValue: persistedMacSidebarMode.rawValue,
-                macSelectedSettingsSectionRawValue: state.selectedSettingsSection?.rawValue
-            )
-        )
-    }
-
-    private func normalizedMacSidebarMode(_ mode: MacSidebarMode) -> MacSidebarMode {
-        switch mode {
-        case .board, .addTask:
-            return .routines
-        case .adventure:
-            return .adventure
-        case .routines, .goals, .timeline, .stats, .backlog, .taskLadder, .settings:
-            return mode
-        }
-    }
-
-}
-
-extension HomeFeature {
-    @MainActor
-    static func detailLogs(taskID: UUID, context: ModelContext) -> [RoutineLog] {
-        HomeTaskSupport.detailLogs(taskID: taskID, context: context)
-    }
-
-    static func availableTags(from routineDisplays: [RoutineDisplay]) -> [String] {
-        HomeRoutineDisplayQuerySupport.availableTags(from: routineDisplays)
-    }
-
-    static func tagSummaries(from routineDisplays: [RoutineDisplay]) -> [RoutineTagSummary] {
-        HomeRoutineDisplayQuerySupport.tagSummaries(from: routineDisplays)
-    }
-
-    static func matchesSelectedTag(_ selectedTag: String?, in tags: [String]) -> Bool {
-        HomeRoutineDisplayQuerySupport.matchesSelectedTag(selectedTag, in: tags)
-    }
-
-    static func matchesSelectedTags(
-        _ selectedTags: Set<String>,
-        mode: RoutineTagMatchMode,
-        in tags: [String]
-    ) -> Bool {
-        HomeRoutineDisplayQuerySupport.matchesSelectedTags(selectedTags, mode: mode, in: tags)
-    }
-
-    static func matchesExcludedTags(_ excludedTags: Set<String>, in tags: [String]) -> Bool {
-        HomeRoutineDisplayQuerySupport.matchesExcludedTags(excludedTags, in: tags)
-    }
-
-    static func matchesExcludedTags(
-        _ excludedTags: Set<String>,
-        mode: RoutineTagMatchMode,
-        in tags: [String]
-    ) -> Bool {
-        HomeRoutineDisplayQuerySupport.matchesExcludedTags(excludedTags, mode: mode, in: tags)
-    }
-
-    static func matchesImportanceUrgencyFilter(
-        _ selectedFilter: ImportanceUrgencyFilterCell?,
-        importance: RoutineTaskImportance,
-        urgency: RoutineTaskUrgency
-    ) -> Bool {
-        HomeRoutineDisplayQuerySupport.matchesImportanceUrgencyFilter(
-            selectedFilter,
-            importance: importance,
-            urgency: urgency
-        )
-    }
-
-    static func matchesTodoStateFilter(_ filter: TodoState?, task: RoutineDisplay) -> Bool {
-        HomeRoutineDisplayQuerySupport.matchesTodoStateFilter(filter, task: task)
     }
 }

@@ -206,7 +206,7 @@ struct StatsCompletionChartSection: View {
                 StatsOutcomeChartSegment(date: point.date, kind: .completed, count: point.doneCount),
                 StatsOutcomeChartSegment(date: point.date, kind: .missed, count: point.missedCount),
                 StatsOutcomeChartSegment(date: point.date, kind: .canceled, count: point.canceledCount)
-            ].filter { $0.count > 0 }
+            ].filter { $0.count > .zero }
         }
     }
 

@@ -4,7 +4,7 @@ import Testing
 struct TaskRelationshipSuggestionRemovalTests {
     @Test
     func taskRelationshipsRemainManualAcrossPlatforms() throws {
-        let macTaskDetail = try sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let macTaskDetail = try SourceInspectionSupport.readMacTaskDetailSources()
         let relationshipPicker = try sourceFile("SharedCore/Views/TaskRelationshipsEditor.swift")
         let commands = try sourceFile("RoutinaMacApp/Commands/RoutineCommands.swift")
         let rootScene = try sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
@@ -20,13 +20,6 @@ struct TaskRelationshipSuggestionRemovalTests {
     }
 
     private func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        return try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

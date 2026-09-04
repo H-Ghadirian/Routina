@@ -41,6 +41,13 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0294 — Index cross-collection lookups before scanning](0294-index-cross-collection-lookups-before-scanning.md)
+- [0293 — Preserve closure-backed sections during extraction](0293-preserve-closure-backed-sections-during-extraction.md)
+- [0292 — Cache toolbar counts with the display snapshot](0292-cache-toolbar-counts-with-the-display-snapshot.md)
+- [0291 — Do not renormalize a calendar-owned date](0291-do-not-renormalize-a-calendar-owned-date.md)
+- [0290 — Aggregate duration before converting units](0290-aggregate-duration-before-converting-units.md)
+- [0289 — Inject the date that seeds editor state](0289-inject-the-date-that-seeds-editor-state.md)
+- [0288 — Give hosted runtime products one owner](0288-declare-runtime-package-products-on-the-linking-target.md)
 - [0287 — Commit edits to the source behind a persisted projection](0287-commit-edits-to-the-source-behind-a-persisted-projection.md)
 - [0286 — Never retry stale exact notifications](0286-never-retry-stale-exact-notifications.md)
 - [0285 — Gate related records at every feature boundary](0285-gate-related-records-at-every-feature-boundary.md)

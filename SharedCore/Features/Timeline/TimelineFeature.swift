@@ -217,7 +217,22 @@ struct TimelineFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, events, emotionLogs, notes, focusSessions, sprintFocusSessions, focusSessionEvents, boardSprints, sleepSessions, placeCheckInSessions, awaySessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
+            case let .setData(
+                tasks,
+                logs,
+                events,
+                emotionLogs,
+                notes,
+                focusSessions,
+                sprintFocusSessions,
+                focusSessionEvents,
+                boardSprints,
+                sleepSessions,
+                placeCheckInSessions,
+                awaySessions,
+                fileAttachmentTaskIDs,
+                noteAttachmentNoteIDs
+            ):
                 state.tasks = tasks
                 state.logs = logs
                 state.events = events

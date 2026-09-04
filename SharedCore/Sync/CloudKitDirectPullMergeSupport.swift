@@ -38,18 +38,10 @@ enum CloudKitDirectPullMergeSupport {
     private static func placeSelectionKey(
         _ place: RoutinePlace,
         linkedCounts: [UUID: Int]
-    ) -> (Int, Int, Date, String, String) {
-        let rawName = place.name
-        let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let linkedCountPenalty = -linkedCounts[place.id, default: 0]
-        let whitespacePenalty = rawName == trimmedName ? 0 : 1
-        let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        return (
-            linkedCountPenalty,
-            whitespacePenalty,
-            place.createdAt,
-            foldedName,
-            place.id.uuidString.lowercased()
+    ) -> PlaceDeduplicationKey {
+        PlaceDeduplicationKey(
+            place: place,
+            linkedCount: linkedCounts[place.id, default: 0]
         )
     }
 }

@@ -765,11 +765,11 @@ homeContent
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.yellow)
 
-            Label("\(store.routineTasks.filter { !$0.isOneOffTask }.count) repeating", systemImage: "arrow.clockwise")
+            Label("\(store.homeToolbarRoutineCount) repeating", systemImage: "arrow.clockwise")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Label("\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count) one-time", systemImage: "checkmark.circle")
+            Label("\(store.homeToolbarTodoCount) one-time", systemImage: "checkmark.circle")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
@@ -905,7 +905,7 @@ homeContent
             return nil
         }
 
-        return metadataPresenter.badgeStyle(for: task).map { HomeStatusBadgeStyle($0.tuple) }
+        return metadataPresenter.badgeStyle(for: task).map(HomeStatusBadgeStyle.init)
     }
 
     @ViewBuilder

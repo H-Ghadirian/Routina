@@ -508,8 +508,13 @@ enum RoutinaQuickAddParser {
         calendar: Calendar
     ) -> ParsedAbsoluteDate? {
         var candidateWorking = working
+        let pattern =
+            #"(?:^|\s)(?:(due|by|on)\s+)?(?:(monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|"#
+            + #"saturday|sat|sunday|sun)\s*,?\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+"#
+            + #"(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|"#
+            + #"september|sep|sept|october|oct|november|nov|december|dec)(?:\s*,?\s*(\d{4}))?(?=\s|$)"#
         guard let match = removeFirstMatch(
-            pattern: #"(?:^|\s)(?:(due|by|on)\s+)?(?:(monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)\s*,?\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)(?:\s*,?\s*(\d{4}))?(?=\s|$)"#,
+            pattern: pattern,
             from: &candidateWorking
         ),
         let day = Int(match.groups[2]),

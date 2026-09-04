@@ -346,10 +346,7 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 
     private static func nativeTarget(named name: String, in project: String) throws -> String {

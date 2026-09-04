@@ -19,7 +19,10 @@ struct HomeFeature {
     typealias RoutineDisplay = HomeRoutineDisplay
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeatureAddRoutineActionState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState, HomeFeatureTaskLifecycleCommandState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState,
+        HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeatureAddRoutineActionState,
+        HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState,
+        HomeFeatureTaskLifecycleCommandState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -661,7 +664,9 @@ struct HomeFeature {
             relatedTagRules: { appSettingsClient.relatedTagRules() },
             definedFlags: { appSettingsClient.definedFlags() },
             flagRules: { appSettingsClient.flagRules() },
-            addRoutineDraft: { AddRoutineDraftSnapshot.load(client: creationDraftClient) }
+            addRoutineDraft: { AddRoutineDraftSnapshot.load(client: creationDraftClient) },
+            referenceDate: { now },
+            calendar: calendar
         )
     }
 
@@ -806,7 +811,8 @@ struct HomeFeature {
 
     private func automaticPlaceCheckInEffect(for snapshot: LocationSnapshot) -> Effect<Action> {
         guard appSettingsClient.placesEnabled(),
-              appSettingsClient.automaticPlaceCheckInEnabled() else {
+            appSettingsClient.automaticPlaceCheckInEnabled()
+        else {
             return .run { @MainActor _ in
                 do {
                     _ = try PlaceCheckInSupport.endActiveAutomaticSession(in: self.modelContext())
@@ -841,300 +847,300 @@ struct HomeFeature {
             }
             Reduce { state, action in
                 switch action {
-            case .onAppear:
-                return lifecycleActionHandler().onAppear(state: &state)
+                case .onAppear:
+                    return lifecycleActionHandler().onAppear(state: &state)
 
-            case .manualRefreshRequested:
-                state.isLoading = true
-                state.manualRefreshErrorMessage = nil
-                return lifecycleActionHandler().manualRefreshRequested()
+                case .manualRefreshRequested:
+                    state.isLoading = true
+                    state.manualRefreshErrorMessage = nil
+                    return lifecycleActionHandler().manualRefreshRequested()
 
-            case let .manualRefreshFailed(message):
-                state.manualRefreshErrorMessage = message
-                return .none
+                case let .manualRefreshFailed(message):
+                    state.manualRefreshErrorMessage = message
+                    return .none
 
-            case .manualRefreshErrorDismissed:
-                state.manualRefreshErrorMessage = nil
-                return .none
+                case .manualRefreshErrorDismissed:
+                    state.manualRefreshErrorMessage = nil
+                    return .none
 
-            case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
-                return taskLoadHandler().applyLoadedTasks(
-                    tasks: tasks,
-                    places: places,
-                    goals: goals,
-                    logs: logs,
-                    doneStats: doneStats,
-                    state: &state
-                )
+                case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
+                    return taskLoadHandler().applyLoadedTasks(
+                        tasks: tasks,
+                        places: places,
+                        goals: goals,
+                        logs: logs,
+                        doneStats: doneStats,
+                        state: &state
+                    )
 
-            case .tasksLoadFailed:
-                state.isLoading = false
-                state.hasLoadedTaskSnapshot = true
-                return lifecycleActionHandler().tasksLoadFailed()
+                case .tasksLoadFailed:
+                    state.isLoading = false
+                    state.hasLoadedTaskSnapshot = true
+                    return lifecycleActionHandler().tasksLoadFailed()
 
-            case let .locationSnapshotUpdated(snapshot):
-                return .merge(
-                    lifecycleActionHandler().locationSnapshotUpdated(snapshot, state: &state),
-                    automaticPlaceCheckInEffect(for: snapshot)
-                )
+                case let .locationSnapshotUpdated(snapshot):
+                    return .merge(
+                        lifecycleActionHandler().locationSnapshotUpdated(snapshot, state: &state),
+                        automaticPlaceCheckInEffect(for: snapshot)
+                    )
 
-            case let .hideUnavailableRoutinesChanged(isHidden):
-                return lifecycleActionHandler().hideUnavailableRoutinesChanged(isHidden, state: &state)
+                case let .hideUnavailableRoutinesChanged(isHidden):
+                    return lifecycleActionHandler().hideUnavailableRoutinesChanged(isHidden, state: &state)
 
-            case let .setSelectedTask(taskID):
-                return selectionRouter().setSelectedTask(taskID, state: &state)
+                case let .setSelectedTask(taskID):
+                    return selectionRouter().setSelectedTask(taskID, state: &state)
 
-            case let .setAddRoutineSheet(isPresented):
-                addRoutinePresentationRouter().setSheet(isPresented, state: &state)
-                return .none
+                case let .setAddRoutineSheet(isPresented):
+                    addRoutinePresentationRouter().setSheet(isPresented, state: &state)
+                    return .none
 
-            case let .setSmartAddTaskSheet(isPresented):
-                addRoutinePresentationRouter().setSmartSheet(isPresented, state: &state)
-                return .none
+                case let .setSmartAddTaskSheet(isPresented):
+                    addRoutinePresentationRouter().setSmartSheet(isPresented, state: &state)
+                    return .none
 
-            case .prepareAddRoutineDetails:
-                addRoutinePresentationRouter().prepareSheetDetails(state: &state)
-                return .none
+                case .prepareAddRoutineDetails:
+                    addRoutinePresentationRouter().prepareSheetDetails(state: &state)
+                    return .none
 
-            case let .deleteTasksTapped(ids):
-                presentationRouter().requestDeleteTasks(ids, state: &state)
-                return .none
+                case let .deleteTasksTapped(ids):
+                    presentationRouter().requestDeleteTasks(ids, state: &state)
+                    return .none
 
-            case let .setDeleteConfirmation(isPresented):
-                presentationRouter().setDeleteConfirmation(isPresented, state: &state)
-                return .none
+                case let .setDeleteConfirmation(isPresented):
+                    presentationRouter().setDeleteConfirmation(isPresented, state: &state)
+                    return .none
 
-            case let .taskListModeChanged(mode):
-                taskListModeRouter().changeMode(mode, state: &state)
-                return .none
-
-            case let .setMacFilterDetailPresented(isPresented):
-                presentationRouter().setFilterDetailPresented(isPresented, state: &state)
-                return .none
-
-            // MARK: - Filter actions
-
-            case let .selectedFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedFilter(filter), state: &state)
-
-            case let .advancedQueryChanged(query):
-                return filterMutationHandler().applyTaskFilterMutation(.advancedQuery(query), state: &state)
-
-            case let .selectedTagChanged(tag):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedTag(tag), state: &state)
-
-            case let .selectedTagsChanged(tags):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedTags(tags), state: &state)
-
-            case let .includeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
-
-            case let .selectedFlagsChanged(flags):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedFlags(flags), state: &state)
-
-            case let .includeFlagMatchModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.includeFlagMatchMode(mode), state: &state)
-
-            case let .excludedTagsChanged(tags):
-                return filterMutationHandler().applyTaskFilterMutation(.excludedTags(tags), state: &state)
+                case let .taskListModeChanged(mode):
+                    taskListModeRouter().changeMode(mode, state: &state)
+                    return .none
+
+                case let .setMacFilterDetailPresented(isPresented):
+                    presentationRouter().setFilterDetailPresented(isPresented, state: &state)
+                    return .none
+
+                // MARK: - Filter actions
+
+                case let .selectedFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedFilter(filter), state: &state)
+
+                case let .advancedQueryChanged(query):
+                    return filterMutationHandler().applyTaskFilterMutation(.advancedQuery(query), state: &state)
+
+                case let .selectedTagChanged(tag):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedTag(tag), state: &state)
+
+                case let .selectedTagsChanged(tags):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedTags(tags), state: &state)
+
+                case let .includeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
+
+                case let .selectedFlagsChanged(flags):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedFlags(flags), state: &state)
+
+                case let .includeFlagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.includeFlagMatchMode(mode), state: &state)
+
+                case let .excludedTagsChanged(tags):
+                    return filterMutationHandler().applyTaskFilterMutation(.excludedTags(tags), state: &state)
 
-            case let .excludeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.excludeTagMatchMode(mode), state: &state)
+                case let .excludeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.excludeTagMatchMode(mode), state: &state)
 
-            case let .selectedManualPlaceFilterIDChanged(id):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedManualPlaceFilterID(id), state: &state)
-
-            case let .selectedImportanceUrgencyFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
-
-            case let .selectedTodoStateFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedTodoStateFilter(filter), state: &state)
+                case let .selectedManualPlaceFilterIDChanged(id):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedManualPlaceFilterID(id), state: &state)
+
+                case let .selectedImportanceUrgencyFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
+
+                case let .selectedTodoStateFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedTodoStateFilter(filter), state: &state)
 
-            case let .selectedPressureFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
+                case let .selectedPressureFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
 
-            case let .selectedThinkingNeededFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedThinkingNeededFilter(filter), state: &state)
-
-            case let .selectedGoalFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedGoalFilter(filter), state: &state)
-
-            case let .selectedMediaFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedMediaFilter(filter), state: &state)
+                case let .selectedThinkingNeededFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedThinkingNeededFilter(filter), state: &state)
+
+                case let .selectedGoalFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedGoalFilter(filter), state: &state)
+
+                case let .selectedMediaFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedMediaFilter(filter), state: &state)
 
-            case let .selectedEstimationFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.selectedEstimationFilter(filter), state: &state)
+                case let .selectedEstimationFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.selectedEstimationFilter(filter), state: &state)
 
-            case let .hideAssumedDoneTasksChanged(hideAssumedDoneTasks):
-                let effect = filterMutationHandler().applyTaskFilterMutation(
-                    .hideAssumedDoneTasks(hideAssumedDoneTasks),
-                    state: &state
-                )
-                refreshDisplays(&state)
-                return effect
+                case let .hideAssumedDoneTasksChanged(hideAssumedDoneTasks):
+                    let effect = filterMutationHandler().applyTaskFilterMutation(
+                        .hideAssumedDoneTasks(hideAssumedDoneTasks),
+                        state: &state
+                    )
+                    refreshDisplays(&state)
+                    return effect
 
-            case let .taskListViewModeChanged(mode):
-                return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
+                case let .taskListViewModeChanged(mode):
+                    return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
 
-            case let .taskListSortOrderChanged(order):
-                return filterMutationHandler().applyTaskFilterMutation(.taskListSortOrder(order), state: &state)
+                case let .taskListSortOrderChanged(order):
+                    return filterMutationHandler().applyTaskFilterMutation(.taskListSortOrder(order), state: &state)
 
-            case let .createdDateFilterChanged(filter):
-                return filterMutationHandler().applyTaskFilterMutation(.createdDateFilter(filter), state: &state)
+                case let .createdDateFilterChanged(filter):
+                    return filterMutationHandler().applyTaskFilterMutation(.createdDateFilter(filter), state: &state)
 
-            case let .showArchivedTasksChanged(showArchivedTasks):
-                return filterMutationHandler().applyTaskFilterMutation(.showArchivedTasks(showArchivedTasks), state: &state)
+                case let .showArchivedTasksChanged(showArchivedTasks):
+                    return filterMutationHandler().applyTaskFilterMutation(.showArchivedTasks(showArchivedTasks), state: &state)
 
-            case let .isFilterSheetPresentedChanged(isPresented):
-                return filterMutationHandler().applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)
+                case let .isFilterSheetPresentedChanged(isPresented):
+                    return filterMutationHandler().applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)
 
-            case .clearOptionalFilters:
-                return filterMutationHandler().applyTaskFilterMutation(.clearOptionalFilters, state: &state)
+                case .clearOptionalFilters:
+                    return filterMutationHandler().applyTaskFilterMutation(.clearOptionalFilters, state: &state)
 
-            case let .applyFastTagFilter(tag):
-                guard let cleanedTag = RoutineTag.cleaned(tag) else { return .none }
-                state.taskFilters.setSelectedTags([cleanedTag])
-                state.taskFilters.includeTagMatchMode = .all
-                state.taskFilters.selectedFlags = []
-                state.taskFilters.includeFlagMatchMode = .all
-                state.taskFilters.excludedTags = []
-                state.taskFilters.excludeTagMatchMode = .any
-                state.taskFilters.advancedQuery = ""
-                state.taskFilters.selectedManualPlaceFilterID = nil
-                state.taskFilters.selectedImportanceUrgencyFilter = nil
-                state.taskFilters.selectedTodoStateFilter = nil
-                state.taskFilters.selectedPressureFilter = nil
-                state.taskFilters.selectedThinkingNeededFilter = nil
-                state.taskFilters.selectedGoalFilter = .all
-                state.taskFilters.selectedMediaFilter = .all
-                state.taskFilters.selectedEstimationFilter = .all
-                if state.hideUnavailableRoutines {
-                    state.hideUnavailableRoutines = false
-                    appSettingsClient.setHideUnavailableRoutines(false)
-                }
-                state.taskFilters.isFilterSheetPresented = false
-                state.presentation.isMacFilterDetailPresented = false
-                persistTemporaryViewState(state)
-                return .none
+                case let .applyFastTagFilter(tag):
+                    guard let cleanedTag = RoutineTag.cleaned(tag) else { return .none }
+                    state.taskFilters.setSelectedTags([cleanedTag])
+                    state.taskFilters.includeTagMatchMode = .all
+                    state.taskFilters.selectedFlags = []
+                    state.taskFilters.includeFlagMatchMode = .all
+                    state.taskFilters.excludedTags = []
+                    state.taskFilters.excludeTagMatchMode = .any
+                    state.taskFilters.advancedQuery = ""
+                    state.taskFilters.selectedManualPlaceFilterID = nil
+                    state.taskFilters.selectedImportanceUrgencyFilter = nil
+                    state.taskFilters.selectedTodoStateFilter = nil
+                    state.taskFilters.selectedPressureFilter = nil
+                    state.taskFilters.selectedThinkingNeededFilter = nil
+                    state.taskFilters.selectedGoalFilter = .all
+                    state.taskFilters.selectedMediaFilter = .all
+                    state.taskFilters.selectedEstimationFilter = .all
+                    if state.hideUnavailableRoutines {
+                        state.hideUnavailableRoutines = false
+                        appSettingsClient.setHideUnavailableRoutines(false)
+                    }
+                    state.taskFilters.isFilterSheetPresented = false
+                    state.presentation.isMacFilterDetailPresented = false
+                    persistTemporaryViewState(state)
+                    return .none
 
-            // MARK: - Timeline filter actions
+                // MARK: - Timeline filter actions
 
-            case let .selectedTimelineRangeChanged(range):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedRange(range), state: &state)
+                case let .selectedTimelineRangeChanged(range):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedRange(range), state: &state)
 
-            case let .selectedTimelineFilterTypeChanged(filterType):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedFilterType(filterType), state: &state)
+                case let .selectedTimelineFilterTypeChanged(filterType):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedFilterType(filterType), state: &state)
 
-            case let .selectedTimelineTagChanged(tag):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedTag(tag), state: &state)
+                case let .selectedTimelineTagChanged(tag):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedTag(tag), state: &state)
 
-            case let .selectedTimelineTagsChanged(tags):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedTags(tags), state: &state)
+                case let .selectedTimelineTagsChanged(tags):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedTags(tags), state: &state)
 
-            case let .selectedTimelineIncludeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyTimelineFilterMutation(.includeTagMatchMode(mode), state: &state)
+                case let .selectedTimelineIncludeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTimelineFilterMutation(.includeTagMatchMode(mode), state: &state)
 
-            case let .selectedTimelineFlagsChanged(flags):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedFlags(flags), state: &state)
+                case let .selectedTimelineFlagsChanged(flags):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedFlags(flags), state: &state)
 
-            case let .selectedTimelineIncludeFlagMatchModeChanged(mode):
-                return filterMutationHandler().applyTimelineFilterMutation(.includeFlagMatchMode(mode), state: &state)
+                case let .selectedTimelineIncludeFlagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTimelineFilterMutation(.includeFlagMatchMode(mode), state: &state)
 
-            case let .selectedTimelineExcludedTagsChanged(tags):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedExcludedTags(tags), state: &state)
+                case let .selectedTimelineExcludedTagsChanged(tags):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedExcludedTags(tags), state: &state)
 
-            case let .selectedTimelineExcludeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyTimelineFilterMutation(.excludeTagMatchMode(mode), state: &state)
+                case let .selectedTimelineExcludeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyTimelineFilterMutation(.excludeTagMatchMode(mode), state: &state)
 
-            case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
+                case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
 
-            case let .selectedTimelineMediaFilterChanged(filter):
-                return filterMutationHandler().applyTimelineFilterMutation(.selectedMediaFilter(filter), state: &state)
+                case let .selectedTimelineMediaFilterChanged(filter):
+                    return filterMutationHandler().applyTimelineFilterMutation(.selectedMediaFilter(filter), state: &state)
 
-            case let .fileAttachmentTaskIDsChanged(taskIDs):
-                guard state.fileAttachmentTaskIDs != taskIDs else { return .none }
-                state.fileAttachmentTaskIDs = taskIDs
-                refreshDisplays(&state)
-                return .none
+                case let .fileAttachmentTaskIDsChanged(taskIDs):
+                    guard state.fileAttachmentTaskIDs != taskIDs else { return .none }
+                    state.fileAttachmentTaskIDs = taskIDs
+                    refreshDisplays(&state)
+                    return .none
 
-            // MARK: - Stats filter actions
+                // MARK: - Stats filter actions
 
-            case let .statsSelectedRangeChanged(range):
-                return filterMutationHandler().applyStatsFilterMutation(.selectedRange(range), state: &state)
+                case let .statsSelectedRangeChanged(range):
+                    return filterMutationHandler().applyStatsFilterMutation(.selectedRange(range), state: &state)
 
-            case let .statsSelectedTagChanged(tag):
-                return filterMutationHandler().applyStatsFilterMutation(.selectedTag(tag), state: &state)
+                case let .statsSelectedTagChanged(tag):
+                    return filterMutationHandler().applyStatsFilterMutation(.selectedTag(tag), state: &state)
 
-            case let .statsSelectedTagsChanged(tags):
-                return filterMutationHandler().applyStatsFilterMutation(.selectedTags(tags), state: &state)
+                case let .statsSelectedTagsChanged(tags):
+                    return filterMutationHandler().applyStatsFilterMutation(.selectedTags(tags), state: &state)
 
-            case let .statsIncludeTagMatchModeChanged(mode):
-                return filterMutationHandler().applyStatsFilterMutation(.includeTagMatchMode(mode), state: &state)
+                case let .statsIncludeTagMatchModeChanged(mode):
+                    return filterMutationHandler().applyStatsFilterMutation(.includeTagMatchMode(mode), state: &state)
 
-            case .deleteTasksConfirmed:
-                let ids = presentationRouter().consumePendingDeleteTaskIDs(state: &state)
-                return handleDeleteTasks(ids, state: &state)
+                case .deleteTasksConfirmed:
+                    let ids = presentationRouter().consumePendingDeleteTaskIDs(state: &state)
+                    return handleDeleteTasks(ids, state: &state)
 
-            case let .deleteTasks(ids):
-                return handleDeleteTasks(ids, state: &state)
+                case let .deleteTasks(ids):
+                    return handleDeleteTasks(ids, state: &state)
 
-            case let .markTaskDone(id):
-                return taskLifecycleCommandRouter().markTaskDone(id, state: &state)
+                case let .markTaskDone(id):
+                    return taskLifecycleCommandRouter().markTaskDone(id, state: &state)
 
-            case let .markTaskMissed(id):
-                return taskLifecycleCommandRouter().markTaskMissed(id, state: &state)
+                case let .markTaskMissed(id):
+                    return taskLifecycleCommandRouter().markTaskMissed(id, state: &state)
 
-            case let .markTaskCanceled(id):
-                return taskLifecycleCommandRouter().markTaskCanceled(id, state: &state)
+                case let .markTaskCanceled(id):
+                    return taskLifecycleCommandRouter().markTaskCanceled(id, state: &state)
 
-            case let .pauseTask(id):
-                return taskLifecycleCommandRouter().pauseTask(id, state: &state)
+                case let .pauseTask(id):
+                    return taskLifecycleCommandRouter().pauseTask(id, state: &state)
 
-            case let .resumeTask(id):
-                return taskLifecycleCommandRouter().resumeTask(id, state: &state)
+                case let .resumeTask(id):
+                    return taskLifecycleCommandRouter().resumeTask(id, state: &state)
 
-            case let .notTodayTask(id):
-                return taskLifecycleCommandRouter().notTodayTask(id, state: &state)
+                case let .notTodayTask(id):
+                    return taskLifecycleCommandRouter().notTodayTask(id, state: &state)
 
-            case let .pinTask(id):
-                return taskLifecycleCommandRouter().pinTask(id, state: &state)
+                case let .pinTask(id):
+                    return taskLifecycleCommandRouter().pinTask(id, state: &state)
 
-            case let .planTask(id, plannedDate):
-                return taskLifecycleCommandRouter().planTask(id, plannedDate: plannedDate, state: &state)
+                case let .planTask(id, plannedDate):
+                    return taskLifecycleCommandRouter().planTask(id, plannedDate: plannedDate, state: &state)
 
-            case let .unpinTask(id):
-                return taskLifecycleCommandRouter().unpinTask(id, state: &state)
+                case let .unpinTask(id):
+                    return taskLifecycleCommandRouter().unpinTask(id, state: &state)
 
-            case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
-                return moveTaskInSection(
-                    taskID: taskID,
-                    sectionKey: sectionKey,
-                    orderedTaskIDs: orderedTaskIDs,
-                    direction: direction,
-                    state: &state
-                )
+                case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
+                    return moveTaskInSection(
+                        taskID: taskID,
+                        sectionKey: sectionKey,
+                        orderedTaskIDs: orderedTaskIDs,
+                        direction: direction,
+                        state: &state
+                    )
 
-            case .addRoutineSheet(.delegate(.didCancel)):
-                return addRoutineActionHandler().cancel(state: &state)
+                case .addRoutineSheet(.delegate(.didCancel)):
+                    return addRoutineActionHandler().cancel(state: &state)
 
-            case let .addRoutineSheet(.delegate(.didSave(request))):
-                return addRoutineActionHandler().save(request)
+                case let .addRoutineSheet(.delegate(.didSave(request))):
+                    return addRoutineActionHandler().save(request)
 
-            case let .routineSavedSuccessfully(task):
-                return addRoutineActionHandler().finishSave(task, state: &state)
+                case let .routineSavedSuccessfully(task):
+                    return addRoutineActionHandler().finishSave(task, state: &state)
 
-            case .routineSaveFailed:
-                return .merge(
-                    addRoutineActionHandler().failSave(),
-                    .send(.addRoutineSheet(.saveFailed))
-                )
+                case .routineSaveFailed:
+                    return .merge(
+                        addRoutineActionHandler().failSave(),
+                        .send(.addRoutineSheet(.saveFailed))
+                    )
 
-            case let .taskDetail(action):
-                return taskDetailActionRouter().handle(action, state: &state) ?? .none
+                case let .taskDetail(action):
+                    return taskDetailActionRouter().handle(action, state: &state) ?? .none
 
-            case .addRoutineSheet:
-                return .none
+                case .addRoutineSheet:
+                    return .none
                 }
             }
             Reduce { state, _ in
@@ -1156,7 +1162,8 @@ struct HomeFeature {
         action: Action
     ) -> Effect<Action> {
         guard case let .taskDetail(taskDetailAction) = action,
-              let taskDetailID = state.taskDetailState?.task.id else {
+            let taskDetailID = state.taskDetailState?.task.id
+        else {
             return .none
         }
 
@@ -1190,8 +1197,10 @@ struct HomeFeature {
         var updatedDoneStats = state.doneStats
         updatedDoneStats.replaceLogs(for: taskID, with: timelineLogs)
         let existingTimelineLogs = state.timelineLogs.filter { $0.taskID == taskID }
-        guard updatedDoneStats != state.doneStats
-            || !HomeTaskSupport.logsHaveSamePayload(existingTimelineLogs, timelineLogs) else {
+        guard
+            updatedDoneStats != state.doneStats
+                || !HomeTaskSupport.logsHaveSamePayload(existingTimelineLogs, timelineLogs)
+        else {
             return
         }
 
@@ -1208,12 +1217,14 @@ struct HomeFeature {
         var routineTasks = state.routineTasks
         var doneStats = state.doneStats
         var sprintBoardData: SprintBoardData?
-        guard let deleteEffect = taskDeletionCoordinator().deleteTasks(
-            ids: ids,
-            tasks: &routineTasks,
-            doneStats: &doneStats,
-            sprintBoardData: &sprintBoardData
-        ) else { return .none }
+        guard
+            let deleteEffect = taskDeletionCoordinator().deleteTasks(
+                ids: ids,
+                tasks: &routineTasks,
+                doneStats: &doneStats,
+                sprintBoardData: &sprintBoardData
+            )
+        else { return .none }
         state.routineTasks = routineTasks
         state.doneStats = doneStats
         return postMutationRefresher().finishMutation(
@@ -1230,13 +1241,15 @@ struct HomeFeature {
         direction: MoveDirection,
         state: inout State
     ) -> Effect<Action> {
-        guard let update = HomeTaskOrderingSupport.moveTaskInSection(
-            taskID: taskID,
-            sectionKey: sectionKey,
-            orderedTaskIDs: orderedTaskIDs,
-            direction: direction,
-            tasks: &state.routineTasks
-        ) else { return .none }
+        guard
+            let update = HomeTaskOrderingSupport.moveTaskInSection(
+                taskID: taskID,
+                sectionKey: sectionKey,
+                orderedTaskIDs: orderedTaskIDs,
+                direction: direction,
+                tasks: &state.routineTasks
+            )
+        else { return .none }
         return postMutationRefresher().finishMutation(
             HomeTaskOrderingSupport.persistTaskOrder(
                 update,

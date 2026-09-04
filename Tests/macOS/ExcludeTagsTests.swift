@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
@@ -168,7 +169,7 @@ struct ExcludeTagsTests {
 
         #expect(candidateTags == ["Morning"])
         #expect(!candidateTags.contains("Health"))  // Task B didn't match include
-        #expect(!candidateTags.contains("Focus"))   // Include tag excluded from the list
+        #expect(!candidateTags.contains("Focus"))  // Include tag excluded from the list
     }
 
     @Test

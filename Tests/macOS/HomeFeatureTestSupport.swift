@@ -6,7 +6,8 @@ import Foundation
 func receiveTaskDetailNotificationStatus(
     _ store: TestStoreOf<HomeFeature>
 ) async {
-    let isAlreadyLoaded = store.state.taskDetailState?.hasLoadedNotificationStatus == true
+    let isAlreadyLoaded =
+        store.state.taskDetailState?.hasLoadedNotificationStatus == true
         && store.state.taskDetailState?.appNotificationsEnabled == false
         && store.state.taskDetailState?.systemNotificationsAuthorized == false
     if isAlreadyLoaded {
@@ -67,11 +68,12 @@ func makeDisplay(
     assignedBacklogID: UUID? = nil,
     assignedBacklogTitle: String? = nil
 ) -> HomeFeature.RoutineDisplay {
-    let resolvedScheduleAnchor = scheduleAnchor ?? lastDone
     let resolvedIsPaused = isPaused || pausedAt != nil || snoozedUntil != nil
     let resolvedIsOneOffTask = isOneOffTask || scheduleMode == .oneOff
+    let resolvedScheduleAnchor = scheduleAnchor ?? (resolvedIsOneOffTask ? nil : lastDone)
     let resolvedIsCompletedOneOff = isCompletedOneOff || (resolvedIsOneOffTask && lastDone != nil && !isInProgress)
-    let resolvedDaysUntilDue = daysUntilDue ?? (resolvedIsPaused ? 0 : ((resolvedIsCompletedOneOff || isCanceledOneOff) ? Int.max : interval))
+    let resolvedDaysUntilDue =
+        daysUntilDue ?? (resolvedIsPaused ? 0 : ((resolvedIsCompletedOneOff || isCanceledOneOff) ? Int.max : interval))
     let resolvedRecurrenceRule = recurrenceRule ?? .interval(days: interval)
     return HomeFeature.RoutineDisplay(
         taskID: taskID,
@@ -80,9 +82,21 @@ func makeDisplay(
         notes: nil,
         hasImage: false,
         placeID: placeID,
+        placeIDs: placeID.map { [$0] } ?? [],
         placeName: placeName,
         locationAvailability: locationAvailability,
         tags: tags,
+        taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(for: tags),
+        indexedSearchText: HomeTaskSearchIndex.make(
+            name: name,
+            emoji: emoji,
+            taskDescription: nil,
+            notes: nil,
+            placeName: placeName,
+            tags: tags,
+            flags: [],
+            goalTitles: []
+        ),
         steps: steps,
         interval: interval,
         recurrenceRule: resolvedRecurrenceRule,
@@ -90,6 +104,7 @@ func makeDisplay(
         cadenceEnabled: cadenceEnabled,
         createdAt: createdAt,
         isSoftIntervalRoutine: scheduleMode.isSoftIntervalRoutine,
+        surfacesSoftIntervalNudges: cadenceEnabled && scheduleMode.isSoftIntervalRoutine,
         lastDone: lastDone,
         canceledAt: canceledAt,
         dueDate: dueDate,
@@ -97,6 +112,9 @@ func makeDisplay(
         priority: priority,
         importance: importance,
         urgency: urgency,
+        currentTaskLadderImportanceOverride: importance,
+        currentTaskLadderUrgencyOverride: urgency,
+        currentTaskLadderPressureOverride: RoutineTaskPressure.none,
         scheduleAnchor: resolvedScheduleAnchor,
         pausedAt: pausedAt,
         snoozedUntil: snoozedUntil,
@@ -128,4 +146,29 @@ func makeDisplay(
         assignedBacklogID: assignedBacklogID,
         assignedBacklogTitle: assignedBacklogTitle
     )
+}
+
+func makeOneOffDisplay(
+    taskID: UUID,
+    name: String,
+    emoji: String,
+    completionDate: Date?
+) -> HomeFeature.RoutineDisplay {
+    var display = makeDisplay(
+        taskID: taskID,
+        name: name,
+        emoji: emoji,
+        interval: 1,
+        scheduleMode: .oneOff,
+        lastDone: completionDate,
+        daysUntilDue: completionDate == nil ? 0 : .max,
+        isOneOffTask: true,
+        isCompletedOneOff: completionDate != nil,
+        isDoneToday: completionDate != nil,
+        doneCount: completionDate == nil ? 0 : 1
+    )
+    if completionDate != nil {
+        display.todoState = .done
+    }
+    return display
 }

@@ -98,6 +98,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View, Fla
                     placeSectionContent()
                 }
             }
+
+            if showsFlagSection {
+                flagSectionContent()
+            }
         }
     }
 

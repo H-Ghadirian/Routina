@@ -1,11 +1,11 @@
 import Foundation
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 @MainActor
@@ -85,9 +85,10 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
 
         #expect(didOpen)
         #expect(state.presentation.isAddRoutineSheetPresented)
-        #expect(state.presentation.addRoutineState?.organization.relationships == [
-            RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
-        ])
+        #expect(
+            state.presentation.addRoutineState?.organization.relationships == [
+                RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
+            ])
         #expect(
             state.presentation.addRoutineState?.organization.availableRelationshipTasks.map(\.id)
                 == [currentTask.id, otherTask.id]
@@ -163,9 +164,10 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
         _ = makeRouter(addRoutineDraft: { draft }).openLinkedTaskSheet(state: &state)
 
         #expect(state.presentation.addRoutineState?.basics.routineName == "")
-        #expect(state.presentation.addRoutineState?.organization.relationships == [
-            RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
-        ])
+        #expect(
+            state.presentation.addRoutineState?.organization.relationships == [
+                RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
+            ])
     }
 
     @Test
@@ -190,7 +192,9 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
             tagCounterDisplayMode: { .combinedTotal },
             relatedTagRules: { [RoutineRelatedTagRule(tag: "Deep", relatedTags: ["Work"])] },
             definedFlags: { ["Reference", "Private"] },
-            addRoutineDraft: addRoutineDraft
+            addRoutineDraft: addRoutineDraft,
+            referenceDate: { Date(timeIntervalSinceReferenceDate: 0) },
+            calendar: makeTestCalendar()
         )
     }
 }

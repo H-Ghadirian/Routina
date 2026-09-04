@@ -1,0 +1,67 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.4.app/Contents/Developer
+
+jobs:
+  quality-and-shared-tests:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Select comparison revision
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "QUALITY_BASE_REF=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
+          else
+            echo "QUALITY_BASE_REF=${{ github.event.before }}" >> "$GITHUB_ENV"
+          fi
+      - name: Enforce code quality budgets
+        run: script/code_quality_guard.sh
+      - name: Run shared tests
+        run: swift test -q
+
+  macos-tests:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run macOS tests
+        run: >-
+          xcodebuild test -quiet
+          -project RoutinaMacOS.xcodeproj
+          -scheme RoutinaMacOSDev
+          -destination 'platform=macOS'
+          -derivedDataPath .build/xcode-derived-data/ci-macos-dev
+          CODE_SIGNING_ALLOWED=NO
+
+  ios-tests:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Boot an available iPhone simulator
+        run: |
+          simulator_udid=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }')
+          test -n "$simulator_udid"
+          echo "SIMULATOR_UDID=$simulator_udid" >> "$GITHUB_ENV"
+          xcrun simctl boot "$simulator_udid" || true
+          xcrun simctl bootstatus "$simulator_udid" -b
+      - name: Run iOS tests
+        run: >-
+          xcodebuild test -quiet
+          -project RoutinaiOS.xcodeproj
+          -scheme RoutinaiOSDev
+          -destination "platform=iOS Simulator,id=$SIMULATOR_UDID"
+          -derivedDataPath .build/xcode-derived-data/ci-ios-simulator-dev
+          CODE_SIGNING_ALLOWED=NO

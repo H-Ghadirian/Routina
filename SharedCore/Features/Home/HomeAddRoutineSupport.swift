@@ -2,6 +2,11 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 
+struct AddRoutineInitialDate {
+    let referenceDate: Date
+    let calendar: Calendar
+}
+
 enum HomeAddRoutineSupport {
     static func makeAddRoutineState(
         tasks: [RoutineTask],
@@ -12,7 +17,8 @@ enum HomeAddRoutineSupport {
         relatedTagRules: [RoutineRelatedTagRule],
         availableFlags: [String] = [],
         flagRules: [RoutineFlagRule] = [],
-        preselectedRelationships: [RoutineTaskRelationship] = []
+        preselectedRelationships: [RoutineTaskRelationship] = [],
+        initialDate: AddRoutineInitialDate
     ) -> AddRoutineFeature.State {
         let learnedRules = RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
         let tagSummaries = AddRoutineOrganizationEditor.sortedTagSummaries(
@@ -36,7 +42,9 @@ enum HomeAddRoutineSupport {
                 ),
                 existingRoutineNames: HomeTaskSupport.existingRoutineNames(from: tasks),
                 availablePlaces: RoutinePlace.summaries(from: places, linkedTo: tasks)
-            )
+            ),
+            referenceDate: initialDate.referenceDate,
+            calendar: initialDate.calendar
         )
     }
 
@@ -182,11 +190,13 @@ enum HomeAddRoutineSupport {
         presentation.addRoutineState = nil
         NotificationCenter.default.postRoutineDidUpdate()
 
-        guard NotificationCoordinator.shouldScheduleNotification(
-            for: task,
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) else {
+        guard
+            NotificationCoordinator.shouldScheduleNotification(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        else {
             return .none
         }
 
@@ -210,12 +220,14 @@ enum HomeAddRoutineSupport {
     ) -> Effect<Action> {
         .merge(
             .send(action(.existingRoutineNamesChanged(HomeTaskSupport.existingRoutineNames(from: tasks)))),
-            .send(action(.availableTagSummariesChanged(
-                RoutineTag.summaries(
-                    from: tasks,
-                    countsByTaskID: doneStats.countsByTaskID
-                )
-            ))),
+            .send(
+                action(
+                    .availableTagSummariesChanged(
+                        RoutineTag.summaries(
+                            from: tasks,
+                            countsByTaskID: doneStats.countsByTaskID
+                        )
+                    ))),
             .send(action(.availableFlagsChanged(RoutineFlag.deduplicated(availableFlags)))),
             .send(action(.availablePlacesChanged(RoutinePlace.summaries(from: places, linkedTo: tasks)))),
             .send(action(.availableGoalsChanged(RoutineGoalSummary.summaries(from: goals)))),

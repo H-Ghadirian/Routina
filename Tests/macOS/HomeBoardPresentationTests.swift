@@ -84,12 +84,13 @@ struct HomeBoardPresentationTests {
         )
 
         let readyColumn = try #require(presentation.columns.first { $0.state == .ready })
-        #expect(readyColumn.tasks.map(\.name) == [
-            "Ordered first",
-            "Ordered second",
-            "Pinned",
-            "Due soon"
-        ])
+        #expect(
+            readyColumn.tasks.map(\.name) == [
+                "Ordered first",
+                "Ordered second",
+                "Pinned",
+                "Due soon",
+            ])
     }
 
     @Test
@@ -185,6 +186,7 @@ private func makeBoardDisplay(
         placeName: nil,
         locationAvailability: .unrestricted,
         tags: tags,
+        taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(for: tags),
         steps: [],
         interval: 1,
         recurrenceRule: .interval(days: 1),

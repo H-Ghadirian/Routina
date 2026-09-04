@@ -423,6 +423,9 @@ public struct PersistenceController {
 
 }
 
+// ModelContainer is designed to vend actor-confined ModelContext instances,
+// but does not currently make PersistenceController implicitly Sendable.
+// The controller itself is immutable after initialization.
 extension PersistenceController: @unchecked Sendable {}
 
 /// Keeps startup-only integrity work off the UI executor. The worker owns a

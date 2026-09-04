@@ -76,23 +76,11 @@ struct CloudKitSyncDiagnosticsTests {
 
     @Test
     func manualRefreshResetsInactivityOnProgressAndSavesTokenOnlyAfterMerge() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let fetcherSource = try String(
-            contentsOf: projectRoot
-                .appendingPathComponent("SharedCore")
-                .appendingPathComponent("Sync")
-                .appendingPathComponent("CloudKitDirectPullFetcher.swift"),
-            encoding: .utf8
+        let fetcherSource = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Sync/CloudKitDirectPullFetcher.swift"
         )
-        let serviceSource = try String(
-            contentsOf: projectRoot
-                .appendingPathComponent("SharedCore")
-                .appendingPathComponent("Sync")
-                .appendingPathComponent("CloudKitDirectPullService.swift"),
-            encoding: .utf8
+        let serviceSource = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Sync/CloudKitDirectPullService.swift"
         )
 
         let changedStart = try #require(fetcherSource.range(of: "func recordChanged"))

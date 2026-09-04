@@ -7,7 +7,9 @@ enum RoutineAssumedCompletion {
     }
 
     static let defaultDoneTimeOfDay = RoutineTimeOfDay(hour: 12, minute: 0)
-    static let flagRuleAvailabilitySummary = "Available for scheduled daily, weekly, monthly, or yearly repeating tasks with one occurrence per day; eligible multi-day After done repeating tasks; and one-time tasks with one date and a Time block."
+    static let flagRuleAvailabilitySummary =
+        "Available for scheduled daily, weekly, monthly, or yearly repeating tasks with one occurrence per day; "
+        + "eligible multi-day After done repeating tasks; and one-time tasks with one date and a Time block."
 
     static func isEligible(_ task: RoutineTask) -> Bool {
         task.autoAssumeDailyDone

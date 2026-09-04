@@ -1,0 +1,71 @@
+included:
+  - SharedCore
+  - RoutinaMacApp
+  - iOS
+  - RoutinaWidget
+  - RoutinaWatchExtension
+  - Tools
+  - Tests
+
+excluded:
+  - .build
+  - build
+  - .swiftpm
+
+disabled_rules:
+  # swift-format deliberately keeps trailing commas in multiline collections.
+  - trailing_comma
+  # Short domain names such as `id`, `x`, and `y` are established throughout
+  # the scheduling and geometry code.
+  - identifier_name
+
+opt_in_rules:
+  - closure_spacing
+  - collection_alignment
+  - contains_over_first_not_nil
+  - empty_count
+  - empty_string
+  - explicit_init
+  - fatal_error_message
+  - first_where
+  - flatmap_over_map_reduce
+  - last_where
+  - modifier_order
+  - overridden_super_call
+  - prefer_zero_over_explicit_init
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+
+analyzer_rules:
+  - unused_import
+
+line_length:
+  warning: 140
+  error: 220
+  ignores_comments: true
+  ignores_interpolated_strings: true
+  ignores_urls: true
+
+file_length:
+  warning: 500
+  error: 2000
+
+type_body_length:
+  warning: 500
+  error: 1500
+
+function_body_length:
+  warning: 80
+  error: 200
+
+cyclomatic_complexity:
+  warning: 15
+  error: 40
+
+function_parameter_count:
+  warning: 7
+  error: 12
+
+reporter: xcode

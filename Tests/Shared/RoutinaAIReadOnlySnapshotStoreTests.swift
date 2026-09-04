@@ -58,17 +58,7 @@ struct RoutinaAIReadOnlySnapshotStoreTests {
 
     @Test
     func mcpServerDoesNotOpenRoutinasPersistenceStore() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let serverDirectory = projectRoot
-            .appendingPathComponent("Tools/RoutinaAIMCPServer", isDirectory: true)
-        let source = try FileManager.default
-            .contentsOfDirectory(at: serverDirectory, includingPropertiesForKeys: nil)
-            .filter { $0.pathExtension == "swift" }
-            .map { try String(contentsOf: $0, encoding: .utf8) }
-            .joined(separator: "\n")
+        let source = try SourceInspectionSupport.readProjectSwiftFiles(in: "Tools/RoutinaAIMCPServer")
 
         #expect(!source.contains("PersistenceController"))
         #expect(!source.contains("makeLocalOnlyContainer"))
@@ -80,15 +70,7 @@ struct RoutinaAIReadOnlySnapshotStoreTests {
 
     @Test
     func mcpProductHelpDoesNotRequireThePersonalTaskSnapshot() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let source = try String(
-            contentsOf: projectRoot
-                .appendingPathComponent("Tools/RoutinaAIMCPServer/main.swift"),
-            encoding: .utf8
-        )
+        let source = try SourceInspectionSupport.readProjectFile("Tools/RoutinaAIMCPServer/main.swift")
 
         #expect(source.contains("search_routina_help"))
         #expect(source.contains("get_routina_help_topic"))

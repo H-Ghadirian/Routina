@@ -15,6 +15,8 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
     var definedFlags: () -> [String] = { [] }
     var flagRules: () -> [RoutineFlagRule] = { [] }
     var addRoutineDraft: () -> AddRoutineDraftSnapshot?
+    var referenceDate: () -> Date
+    var calendar: Calendar
 
     func setSheet(
         _ isPresented: Bool,
@@ -52,7 +54,7 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
 
     func prepareSheetDetails(state: inout State) {
         guard state.presentation.isAddRoutineSheetPresented,
-              state.presentation.addRoutineState == nil
+            state.presentation.addRoutineState == nil
         else { return }
 
         state.presentation.addRoutineState = makeAddRoutineState(for: state)
@@ -61,7 +63,8 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
     @discardableResult
     func openLinkedTaskSheet(state: inout State) -> Bool {
         guard let currentTaskID = state.selection.taskDetailState?.task.id,
-              let kind = state.selection.taskDetailState?.addLinkedTaskRelationshipKind else {
+            let kind = state.selection.taskDetailState?.addLinkedTaskRelationshipKind
+        else {
             return false
         }
 
@@ -91,10 +94,14 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
             relatedTagRules: relatedTagRules(),
             availableFlags: definedFlags(),
             flagRules: flagRules(),
-            preselectedRelationships: preselectedRelationships
+            preselectedRelationships: preselectedRelationships,
+            initialDate: AddRoutineInitialDate(
+                referenceDate: referenceDate(),
+                calendar: calendar
+            )
         )
         if let seedName = seedName.flatMap(RoutineTask.trimmedName),
-           !seedName.isEmpty {
+            !seedName.isEmpty {
             AddRoutineValidationEditor.setRoutineName(
                 seedName,
                 state: &addRoutineState
@@ -103,7 +110,7 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
             return addRoutineState
         }
         guard preselectedRelationships.isEmpty,
-              let draft = addRoutineDraft()
+            let draft = addRoutineDraft()
         else {
             addRoutineState.organization.customTaskSectionID = customTaskSectionID
             return addRoutineState

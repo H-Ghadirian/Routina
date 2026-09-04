@@ -3,15 +3,30 @@ import Foundation
 import SwiftData
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 @MainActor
 struct AddRoutineFeatureTests {
+    @Test
+    func stateInitializationUsesInjectedDateForRecurrenceDefaults() {
+        let referenceDate = makeDate("2026-03-20T10:00:00Z")
+        let calendar = makeTestCalendar()
+
+        let state = AddRoutineFeature.State(
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(state.schedule.advancedRecurrenceRule.startDate == referenceDate)
+        #expect(state.schedule.recurrenceWeekday == 6)
+        #expect(state.schedule.recurrenceDayOfMonth == 20)
+    }
+
     @Test
     func frequencyMetadata_isConsistent() {
         #expect(AddRoutineFeature.Frequency.day.daysMultiplier == 1)
@@ -231,22 +246,25 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Call accountant",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(
-                days: 1,
-                timeRange: RoutineTimeRange(
-                    start: RoutineTimeOfDay(hour: 9, minute: 0),
-                    end: RoutineTimeOfDay(hour: 11, minute: 30)
-                )
-            ),
-            emoji: "📞",
-            availabilityStartDate: expectedStartDate,
-            availabilityEndDate: expectedEndDate,
-            calendar: makeTestCalendar(),
-            scheduleMode: .oneOff
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Call accountant",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(
+                            days: 1,
+                            timeRange: RoutineTimeRange(
+                                start: RoutineTimeOfDay(hour: 9, minute: 0),
+                                end: RoutineTimeOfDay(hour: 11, minute: 30)
+                            )
+                        ),
+                        emoji: "📞",
+                        availabilityStartDate: expectedStartDate,
+                        availabilityEndDate: expectedEndDate,
+                        calendar: makeTestCalendar(),
+                        scheduleMode: .oneOff
+                    ))))
     }
 
     @Test
@@ -291,16 +309,19 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Visit pharmacy",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
-            emoji: "✨",
-            availabilityStartDate: expectedDate,
-            plannedDate: expectedDate,
-            calendar: makeTestCalendar(),
-            scheduleMode: .oneOff
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Visit pharmacy",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1),
+                        emoji: "✨",
+                        availabilityStartDate: expectedDate,
+                        plannedDate: expectedDate,
+                        calendar: makeTestCalendar(),
+                        scheduleMode: .oneOff
+                    ))))
     }
 
     @Test
@@ -329,19 +350,22 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Group session",
-            frequencyInDays: 1,
-            recurrenceRule: .weekly(
-                on: [5],
-                timeRange: RoutineTimeRange(
-                    start: RoutineTimeOfDay(hour: 18, minute: 30),
-                    end: RoutineTimeOfDay(hour: 20, minute: 0)
-                )
-            ),
-            emoji: "✨",
-            recurrenceTimeRangeRole: .scheduledBlock
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Group session",
+                        frequencyInDays: 1,
+                        recurrenceRule: .weekly(
+                            on: [5],
+                            timeRange: RoutineTimeRange(
+                                start: RoutineTimeOfDay(hour: 18, minute: 30),
+                                end: RoutineTimeOfDay(hour: 20, minute: 0)
+                            )
+                        ),
+                        emoji: "✨",
+                        recurrenceTimeRangeRole: .scheduledBlock
+                    ))))
     }
 
     @Test
@@ -646,9 +670,9 @@ struct AddRoutineFeatureTests {
             initialState: makeState(
                 organization: AddRoutineOrganizationState(
                     relationships: [
-                    RoutineTaskRelationship(targetTaskID: keptID, kind: .related),
-                    RoutineTaskRelationship(targetTaskID: removedID, kind: .blocks)
-                ]
+                        RoutineTaskRelationship(targetTaskID: keptID, kind: .related),
+                        RoutineTaskRelationship(targetTaskID: removedID, kind: .blocks),
+                    ]
                 )
             )
         ) {
@@ -713,7 +737,7 @@ struct AddRoutineFeatureTests {
             RoutineTagSummary(name: "Calm", linkedRoutineCount: 1, doneCount: 1),
             RoutineTagSummary(name: "Focus", linkedRoutineCount: 2, doneCount: 7),
             RoutineTagSummary(name: "Health", linkedRoutineCount: 4, doneCount: 4),
-            RoutineTagSummary(name: "Brain", linkedRoutineCount: 3, doneCount: 5)
+            RoutineTagSummary(name: "Brain", linkedRoutineCount: 3, doneCount: 5),
         ]
 
         await store.send(.availableTagSummariesChanged(summaries)) {
@@ -721,7 +745,7 @@ struct AddRoutineFeatureTests {
                 RoutineTagSummary(name: "Focus", linkedRoutineCount: 2, doneCount: 7),
                 RoutineTagSummary(name: "Brain", linkedRoutineCount: 3, doneCount: 5),
                 RoutineTagSummary(name: "Health", linkedRoutineCount: 4, doneCount: 4),
-                RoutineTagSummary(name: "Calm", linkedRoutineCount: 1, doneCount: 1)
+                RoutineTagSummary(name: "Calm", linkedRoutineCount: 1, doneCount: 1),
             ]
             $0.organization.availableTags = ["Focus", "Brain", "Health", "Calm"]
         }
@@ -741,20 +765,25 @@ struct AddRoutineFeatureTests {
             doneStats: HomeDoneStats(
                 countsByTaskID: [
                     frequentTask.id: 7,
-                    doneHeavyTask.id: 3
+                    doneHeavyTask.id: 3,
                 ]
             ),
             tagCounterDisplayMode: .combinedTotal,
-            relatedTagRules: []
+            relatedTagRules: [],
+            initialDate: AddRoutineInitialDate(
+                referenceDate: Date(timeIntervalSinceReferenceDate: 0),
+                calendar: makeTestCalendar()
+            )
         )
 
         #expect(state.organization.availableTags == ["Focus", "Finance", "Admin", "Health"])
-        #expect(state.organization.availableTagSummaries == [
-            RoutineTagSummary(name: "Focus", linkedRoutineCount: 1, doneCount: 7),
-            RoutineTagSummary(name: "Finance", linkedRoutineCount: 1, doneCount: 3),
-            RoutineTagSummary(name: "Admin", linkedRoutineCount: 1, doneCount: 0),
-            RoutineTagSummary(name: "Health", linkedRoutineCount: 1, doneCount: 0)
-        ])
+        #expect(
+            state.organization.availableTagSummaries == [
+                RoutineTagSummary(name: "Focus", linkedRoutineCount: 1, doneCount: 7),
+                RoutineTagSummary(name: "Finance", linkedRoutineCount: 1, doneCount: 3),
+                RoutineTagSummary(name: "Admin", linkedRoutineCount: 1, doneCount: 0),
+                RoutineTagSummary(name: "Health", linkedRoutineCount: 1, doneCount: 0),
+            ])
     }
 
     @Test
@@ -772,12 +801,15 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Read",
-            frequencyInDays: 21,
-            recurrenceRule: .interval(days: 21),
-            emoji: "📚"
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Read",
+                        frequencyInDays: 21,
+                        recurrenceRule: .interval(days: 21),
+                        emoji: "📚"
+                    ))))
     }
 
     @Test
@@ -788,12 +820,12 @@ struct AddRoutineFeatureTests {
                 basics: AddRoutineBasicsState(routineName: "Laundry", selectedPlaceID: placeID),
                 organization: AddRoutineOrganizationState(
                     availablePlaces: [
-                    RoutinePlaceSummary(
-                        id: placeID,
-                        name: "Home",
-                        radiusMeters: 150,
-                        linkedRoutineCount: 0
-                    )
+                        RoutinePlaceSummary(
+                            id: placeID,
+                            name: "Home",
+                            radiusMeters: 150,
+                            linkedRoutineCount: 0
+                        )
                     ]
                 ),
                 schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
@@ -805,13 +837,16 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Laundry",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
-            emoji: "✨",
-            selectedPlaceID: placeID
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Laundry",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1),
+                        emoji: "✨",
+                        selectedPlaceID: placeID
+                    ))))
     }
 
     @Test
@@ -827,7 +862,7 @@ struct AddRoutineFeatureTests {
                 organization: AddRoutineOrganizationState(
                     availablePlaces: [
                         RoutinePlaceSummary(id: homeID, name: "Home", radiusMeters: 150, linkedRoutineCount: 0),
-                        RoutinePlaceSummary(id: gymID, name: "Gym", radiusMeters: 150, linkedRoutineCount: 0)
+                        RoutinePlaceSummary(id: gymID, name: "Gym", radiusMeters: 150, linkedRoutineCount: 0),
                     ]
                 ),
                 schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
@@ -839,14 +874,17 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Stretch",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
-            emoji: "✨",
-            selectedPlaceID: homeID,
-            selectedPlaceIDs: [homeID, gymID]
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Stretch",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1),
+                        emoji: "✨",
+                        selectedPlaceID: homeID,
+                        selectedPlaceIDs: [homeID, gymID]
+                    ))))
     }
 
     @Test
@@ -869,16 +907,19 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Implement Apple Sign In",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
-            emoji: "✨",
-            scheduleMode: .oneOff,
-            estimatedDurationMinutes: 180,
-            storyPoints: 5,
-            focusModeEnabled: true
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Implement Apple Sign In",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1),
+                        emoji: "✨",
+                        scheduleMode: .oneOff,
+                        estimatedDurationMinutes: 180,
+                        storyPoints: 5,
+                        focusModeEnabled: true
+                    ))))
     }
 
     @Test
@@ -928,22 +969,25 @@ struct AddRoutineFeatureTests {
                 for: .softInterval
             )
         }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Analyzed support queue",
-            frequencyInDays: 21,
-            recurrenceRule: .weekly(on: [3, 5], at: exactTime),
-            emoji: "✨",
-            routineDurationMode: .multiDay,
-            plannedDate: date,
-            calendar: makeTestCalendar(),
-            steps: [step],
-            scheduleMode: .softInterval,
-            checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .softInterval),
-            estimatedDurationMinutes: 120,
-            actualDurationMinutes: 95,
-            cadenceEnabled: true,
-            nudgesEnabled: false
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Analyzed support queue",
+                        frequencyInDays: 21,
+                        recurrenceRule: .weekly(on: [3, 5], at: exactTime),
+                        emoji: "✨",
+                        routineDurationMode: .multiDay,
+                        plannedDate: date,
+                        calendar: makeTestCalendar(),
+                        steps: [step],
+                        scheduleMode: .softInterval,
+                        checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .softInterval),
+                        estimatedDurationMinutes: 120,
+                        actualDurationMinutes: 95,
+                        cadenceEnabled: true,
+                        nudgesEnabled: false
+                    ))))
     }
 
     @Test
@@ -971,17 +1015,20 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Morning check-in",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
-            emoji: "✨",
-            scheduleMode: .softInterval,
-            autoAssumeDailyDone: true,
-            autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay,
-            cadenceEnabled: true,
-            nudgesEnabled: false
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Morning check-in",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1),
+                        emoji: "✨",
+                        scheduleMode: .softInterval,
+                        autoAssumeDailyDone: true,
+                        autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay,
+                        cadenceEnabled: true,
+                        nudgesEnabled: false
+                    ))))
     }
 
     @Test
@@ -1006,15 +1053,18 @@ struct AddRoutineFeatureTests {
 
         #expect(store.state.canAutoAssumeDailyDone)
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Journal",
-            frequencyInDays: 2,
-            recurrenceRule: .interval(days: 2),
-            emoji: "✨",
-            scheduleMode: .fixedInterval,
-            autoAssumeDailyDone: true,
-            autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Journal",
+                        frequencyInDays: 2,
+                        recurrenceRule: .interval(days: 2),
+                        emoji: "✨",
+                        scheduleMode: .fixedInterval,
+                        autoAssumeDailyDone: true,
+                        autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay
+                    ))))
     }
 
     @Test
@@ -1048,18 +1098,21 @@ struct AddRoutineFeatureTests {
 
         #expect(store.state.canAutoAssumeDailyDone)
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Museum visit",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1, timeRange: timeBlock),
-            emoji: "✨",
-            availabilityStartDate: scheduledDate,
-            calendar: makeTestCalendar(),
-            scheduleMode: .oneOff,
-            recurrenceTimeRangeRole: .scheduledBlock,
-            autoAssumeDailyDone: true,
-            autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Museum visit",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1, timeRange: timeBlock),
+                        emoji: "✨",
+                        availabilityStartDate: scheduledDate,
+                        calendar: makeTestCalendar(),
+                        scheduleMode: .oneOff,
+                        recurrenceTimeRangeRole: .scheduledBlock,
+                        autoAssumeDailyDone: true,
+                        autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay
+                    ))))
     }
 
     @Test
@@ -1091,17 +1144,20 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Ad hoc symptom log",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
-            emoji: "✨",
-            plannedDate: plannedDate,
-            calendar: makeTestCalendar(),
-            scheduleMode: .softInterval,
-            cadenceEnabled: false,
-            nudgesEnabled: false
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Ad hoc symptom log",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1),
+                        emoji: "✨",
+                        plannedDate: plannedDate,
+                        calendar: makeTestCalendar(),
+                        scheduleMode: .softInterval,
+                        cadenceEnabled: false,
+                        nudgesEnabled: false
+                    ))))
     }
 
     @Test
@@ -1141,15 +1197,18 @@ struct AddRoutineFeatureTests {
                 for: .softIntervalChecklist
             )
         }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Retrospective notes",
-            frequencyInDays: 60,
-            recurrenceRule: .monthly(on: [5, 20], at: exactTime),
-            emoji: "✨",
-            scheduleMode: .softIntervalChecklist,
-            checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .softIntervalChecklist),
-            cadenceEnabled: true
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Retrospective notes",
+                        frequencyInDays: 60,
+                        recurrenceRule: .monthly(on: [5, 20], at: exactTime),
+                        emoji: "✨",
+                        scheduleMode: .softIntervalChecklist,
+                        checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .softIntervalChecklist),
+                        cadenceEnabled: true
+                    ))))
     }
 
     @Test
@@ -1162,9 +1221,9 @@ struct AddRoutineFeatureTests {
                 organization: AddRoutineOrganizationState(
                     existingRoutineNames: [],
                     availablePlaces: [
-                    RoutinePlaceSummary(id: keptPlaceID, name: "Office", radiusMeters: 150, linkedRoutineCount: 0),
-                    RoutinePlaceSummary(id: removedPlaceID, name: "Home", radiusMeters: 150, linkedRoutineCount: 1)
-                ]
+                        RoutinePlaceSummary(id: keptPlaceID, name: "Office", radiusMeters: 150, linkedRoutineCount: 0),
+                        RoutinePlaceSummary(id: removedPlaceID, name: "Home", radiusMeters: 150, linkedRoutineCount: 1),
+                    ]
                 )
             )
         ) {
@@ -1308,12 +1367,13 @@ struct AddRoutineFeatureTests {
         }
 
         let calendar = makeTestCalendar()
-        let expectedAvailability = calendar.date(from: DateComponents(
-            timeZone: calendar.timeZone,
-            year: 2026,
-            month: 4,
-            day: 24
-        ))
+        let expectedAvailability = calendar.date(
+            from: DateComponents(
+                timeZone: calendar.timeZone,
+                year: 2026,
+                month: 4,
+                day: 24
+            ))
 
         await store.send(.saveTapped) {
             $0.isSaving = true
@@ -1324,17 +1384,20 @@ struct AddRoutineFeatureTests {
             $0.schedule.recurrenceHasExplicitTime = true
             $0.schedule.recurrenceTimeOfDay = RoutineTimeOfDay(hour: 20, minute: 0)
         }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Pay rent",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1, at: RoutineTimeOfDay(hour: 20, minute: 0)),
-            emoji: "✨",
-            availabilityStartDate: expectedAvailability,
-            plannedDate: expectedAvailability,
-            calendar: calendar,
-            tags: ["finance"],
-            scheduleMode: .oneOff
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Pay rent",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1, at: RoutineTimeOfDay(hour: 20, minute: 0)),
+                        emoji: "✨",
+                        availabilityStartDate: expectedAvailability,
+                        plannedDate: expectedAvailability,
+                        calendar: calendar,
+                        tags: ["finance"],
+                        scheduleMode: .oneOff
+                    ))))
     }
 
     @Test
@@ -1423,12 +1486,15 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Read",
-            frequencyInDays: 5,
-            recurrenceRule: .interval(days: 5),
-            emoji: "📚"
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Read",
+                        frequencyInDays: 5,
+                        recurrenceRule: .interval(days: 5),
+                        emoji: "📚"
+                    ))))
     }
 
     @Test
@@ -1467,7 +1533,7 @@ struct AddRoutineFeatureTests {
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
-            $0.isSaving = true
+                $0.isSaving = true
                 $0.checklist.stepDraft = ""
             }
         }
@@ -1485,7 +1551,7 @@ struct AddRoutineFeatureTests {
         let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
         let checklistItems = [
             RoutineChecklistItem(title: "Whites", intervalDays: 3),
-            RoutineChecklistItem(title: "Colors", intervalDays: 5)
+            RoutineChecklistItem(title: "Colors", intervalDays: 5),
         ]
         let exactTime = RoutineTimeOfDay(hour: 18, minute: 30)
 
@@ -1592,7 +1658,7 @@ struct AddRoutineFeatureTests {
             $0.organization.availableTagSummaries = [
                 RoutineTagSummary(name: "Focus", linkedRoutineCount: 0),
                 RoutineTagSummary(name: "health", linkedRoutineCount: 0),
-                RoutineTagSummary(name: "Morning", linkedRoutineCount: 0)
+                RoutineTagSummary(name: "Morning", linkedRoutineCount: 0),
             ]
         }
     }
@@ -1606,14 +1672,14 @@ struct AddRoutineFeatureTests {
         let summaries = [
             RoutineTagSummary(name: "Morning", linkedRoutineCount: 2),
             RoutineTagSummary(name: "focus", linkedRoutineCount: 5),
-            RoutineTagSummary(name: "Health", linkedRoutineCount: 1)
+            RoutineTagSummary(name: "Health", linkedRoutineCount: 1),
         ]
 
         await store.send(.availableTagSummariesChanged(summaries)) {
             $0.organization.availableTagSummaries = [
                 RoutineTagSummary(name: "focus", linkedRoutineCount: 5),
                 RoutineTagSummary(name: "Morning", linkedRoutineCount: 2),
-                RoutineTagSummary(name: "Health", linkedRoutineCount: 1)
+                RoutineTagSummary(name: "Health", linkedRoutineCount: 1),
             ]
             $0.organization.availableTags = ["focus", "Morning", "Health"]
         }
@@ -1668,9 +1734,9 @@ struct AddRoutineFeatureTests {
                     routineTags: ["Morning"],
                     availableTags: ["Focus", "Morning"],
                     availableTagSummaries: [
-                    RoutineTagSummary(name: "Focus", linkedRoutineCount: 3),
-                    RoutineTagSummary(name: "Morning", linkedRoutineCount: 1)
-                ]
+                        RoutineTagSummary(name: "Focus", linkedRoutineCount: 3),
+                        RoutineTagSummary(name: "Morning", linkedRoutineCount: 1),
+                    ]
                 )
             )
         ) {
@@ -1681,7 +1747,7 @@ struct AddRoutineFeatureTests {
             $0.organization.availableTags = ["Deep Work", "Morning"]
             $0.organization.availableTagSummaries = [
                 RoutineTagSummary(name: "Deep Work", linkedRoutineCount: 3),
-                RoutineTagSummary(name: "Morning", linkedRoutineCount: 1)
+                RoutineTagSummary(name: "Morning", linkedRoutineCount: 1),
             ]
         }
     }
@@ -1694,9 +1760,9 @@ struct AddRoutineFeatureTests {
                     routineTags: ["Morning", "Deep Work"],
                     availableTags: ["Deep Work", "Morning"],
                     availableTagSummaries: [
-                    RoutineTagSummary(name: "Deep Work", linkedRoutineCount: 4),
-                    RoutineTagSummary(name: "Morning", linkedRoutineCount: 2)
-                ]
+                        RoutineTagSummary(name: "Deep Work", linkedRoutineCount: 4),
+                        RoutineTagSummary(name: "Morning", linkedRoutineCount: 2),
+                    ]
                 )
             )
         ) {
@@ -1735,13 +1801,16 @@ struct AddRoutineFeatureTests {
             $0.organization.routineTags = ["Mindset", "night", "focus"]
             $0.organization.tagDraft = ""
         }
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Read",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
-            emoji: "📚",
-            tags: ["Mindset", "night", "focus"]
-        ))))
+        await store.receive(
+            .delegate(
+                .didSave(
+                    makeSaveRequest(
+                        name: "Read",
+                        frequencyInDays: 1,
+                        recurrenceRule: .interval(days: 1),
+                        emoji: "📚",
+                        tags: ["Mindset", "night", "focus"]
+                    ))))
     }
 
     @Test
@@ -1806,20 +1875,13 @@ struct AddRoutineFeatureTests {
 
     @Test
     func addTaskInteractionWorkStaysOutOfTheSwiftUIRenderPath() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
         let addTaskViewPaths = [
             "iOS/Screens/AddRoutine/AddRoutineTCAView.swift",
-            "RoutinaMacApp/Screens/AddRoutine/AddRoutineTCAView.swift"
+            "RoutinaMacApp/Screens/AddRoutine/AddRoutineTCAView.swift",
         ]
 
         for path in addTaskViewPaths {
-            let source = try String(
-                contentsOf: projectRoot.appendingPathComponent(path),
-                encoding: .utf8
-            )
+            let source = try SourceInspectionSupport.readProjectFile(path)
             #expect(!source.contains("AddRoutineDraftSnapshot(state: store.state)"))
             #expect(!source.contains("@Query(sort: \\RoutineEvent.startedAt"))
             #expect(!source.contains("availableEventCandidates"))
@@ -1827,11 +1889,8 @@ struct AddRoutineFeatureTests {
             #expect(source.contains(".equatable()"))
         }
 
-        let addTaskModelFactorySource = try String(
-            contentsOf: projectRoot.appendingPathComponent(
-                "SharedCore/Screens/Shared/AddRoutineTaskFormModelFactory.swift"
-            ),
-            encoding: .utf8
+        let addTaskModelFactorySource = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Screens/Shared/AddRoutineTaskFormModelFactory.swift"
         )
         #expect(
             addTaskModelFactorySource.contains(
@@ -1844,11 +1903,8 @@ struct AddRoutineFeatureTests {
             )
         )
 
-        let segmentedControlSource = try String(
-            contentsOf: projectRoot.appendingPathComponent(
-                "SharedCore/Views/RoutinaLiquidGlass.swift"
-            ),
-            encoding: .utf8
+        let segmentedControlSource = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Views/RoutinaLiquidGlass.swift"
         )
         #expect(
             !segmentedControlSource.contains(
@@ -1861,11 +1917,8 @@ struct AddRoutineFeatureTests {
             )
         )
 
-        let recurrenceEditorSource = try String(
-            contentsOf: projectRoot.appendingPathComponent(
-                "SharedCore/Views/AdvancedRecurrenceEditor.swift"
-            ),
-            encoding: .utf8
+        let recurrenceEditorSource = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Views/AdvancedRecurrenceEditor.swift"
         )
         #expect(recurrenceEditorSource.contains("static let options: [Option]"))
         #expect(recurrenceEditorSource.contains("List(options)"))

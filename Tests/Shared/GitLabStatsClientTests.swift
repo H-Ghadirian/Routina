@@ -140,7 +140,7 @@ struct GitLabStatsClientTests {
     }
 
     @Test
-    func makeGitLabWidgetData_gridEndsOnToday() {
+    func makeGitLabWidgetData_gridEndsOnToday() throws {
         let calendar = makeUTCCalendar()
         let now = makeUTCDate("2025-04-23T10:00:00Z")
         let today = calendar.startOfDay(for: now)
@@ -156,7 +156,7 @@ struct GitLabStatsClientTests {
 
         // Last cell in the last week whose date string matches today.
         let todayString = gitLabDayString(today, calendar: calendar)
-        let lastWeek = try! #require(data.weeks.last)
+        let lastWeek = try #require(data.weeks.last)
         let cellForToday = lastWeek.days.first(where: { $0.date == todayString })
         #expect(cellForToday != nil)
         #expect(cellForToday?.count == 4)
@@ -165,7 +165,7 @@ struct GitLabStatsClientTests {
     // MARK: - buildWeeks grid layout
 
     @Test
-    func buildWeeks_usesSundayStartedWeeks() {
+    func buildWeeks_usesSundayStartedWeeks() throws {
         // Pick a known Wednesday as startDay; the grid must pad Sun/Mon/Tue
         // as leading blanks and produce a Sunday-first week.
         let calendar = makeUTCCalendar()
@@ -179,16 +179,16 @@ struct GitLabStatsClientTests {
             calendar: calendar
         )
 
-        let firstWeek = try! #require(weeks.first)
+        let firstWeek = try #require(weeks.first)
         #expect(firstWeek.days.count == 7)
 
         // Leading Sun/Mon/Tue must be before startDay (outside the window)
         // and therefore have count 0.
         let startString = gitLabDayString(startDay, calendar: calendar)
-        let startIndex = try! #require(firstWeek.days.firstIndex(where: { $0.date == startString }))
+        let startIndex = try #require(firstWeek.days.firstIndex(where: { $0.date == startString }))
         #expect(startIndex == 3) // Wednesday = index 3 in a Sunday-first week
         for leadingDay in firstWeek.days.prefix(startIndex) {
-            #expect(leadingDay.count == 0)
+            #expect(leadingDay.count == .zero)
         }
     }
 
@@ -212,7 +212,7 @@ struct GitLabStatsClientTests {
         let outsideCell = weeks.flatMap(\.days).first(where: { $0.date == outsideString })
         // Either the cell isn't rendered at all, or it's rendered with 0.
         if let cell = outsideCell {
-            #expect(cell.count == 0)
+            #expect(cell.count == .zero)
         }
     }
 }

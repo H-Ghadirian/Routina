@@ -240,9 +240,7 @@ struct TaskDetailPlatformActionParityTests {
         let iosSource = try Self.sourceFile(
             "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
         )
-        let macSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let macSource = try SourceInspectionSupport.readMacTaskDetailSources()
         let iosTodoContent = try Self.sourceSection(
             startingAt: "private var todoDetailContent",
             endingAt: "private var taskDetailContent",
@@ -254,13 +252,13 @@ struct TaskDetailPlatformActionParityTests {
             in: iosSource
         )
         let macTodoContent = try Self.sourceSection(
-            startingAt: "private var todoDetailContent",
+            startingAt: "var todoDetailContent",
             endingAt: "private var todoStateTimingSummary",
             in: macSource
         )
         let macRoutineContent = try Self.sourceSection(
-            startingAt: "private var taskDetailContent",
-            endingAt: "private var taskDetailActionCluster",
+            startingAt: "var taskDetailContent",
+            endingAt: "var taskDetailActionCluster",
             in: macSource
         )
 
@@ -365,27 +363,25 @@ struct TaskDetailPlatformActionParityTests {
 
     @Test
     func macTaskDetailsHideEmptyLinkedTasksBehindAddMoreDetails() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let source = try SourceInspectionSupport.readMacTaskDetailSources()
         let todoContent = try Self.sourceSection(
-            startingAt: "private var todoDetailContent",
-            endingAt: "private var taskDetailContent",
+            startingAt: "var todoDetailContent",
+            endingAt: "var taskDetailContent",
             in: source
         )
         let routineContent = try Self.sourceSection(
-            startingAt: "private var taskDetailContent",
-            endingAt: "private var taskDetailActionCluster",
+            startingAt: "var taskDetailContent",
+            endingAt: "var taskDetailActionCluster",
             in: source
         )
         let optionalActions = try Self.sourceSection(
-            startingAt: "private var optionalDetailActions",
-            endingAt: "private var shouldShowCommentsSection",
+            startingAt: "var optionalDetailActions",
+            endingAt: "var shouldShowCommentsSection",
             in: source
         )
         let relationshipVisibility = try Self.sourceSection(
-            startingAt: "private var shouldShowRelationshipsSection",
-            endingAt: "private var shouldShowLinkedEventsSection",
+            startingAt: "var shouldShowRelationshipsSection",
+            endingAt: "var shouldShowLinkedEventsSection",
             in: source
         )
 
@@ -414,13 +410,6 @@ struct TaskDetailPlatformActionParityTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        return try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

@@ -18,14 +18,7 @@ struct HomeStatusBadgeStyle {
         self.backgroundColor = backgroundColor
     }
 
-    init(
-        _ style: (
-            title: String,
-            systemImage: String,
-            foregroundColor: Color,
-            backgroundColor: Color
-        )
-    ) {
+    init(_ style: HomeRoutineMetadataBadgeStyle) {
         self.init(
             title: style.title,
             systemImage: style.systemImage,

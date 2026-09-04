@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// Coordinates task-form focus, progressive disclosure, ordering, and section scrolling.
+@MainActor
 @Observable
 final class AddEditFormCoordinator {
     var scrollTarget: FormSection?
@@ -86,11 +87,11 @@ final class AddEditFormCoordinator {
 }
 
 private struct AddEditFormCoordinatorKey: EnvironmentKey {
-    nonisolated(unsafe) static let defaultValue = AddEditFormCoordinator()
+    static let defaultValue: AddEditFormCoordinator? = nil
 }
 
 extension EnvironmentValues {
-    var addEditFormCoordinator: AddEditFormCoordinator {
+    var addEditFormCoordinator: AddEditFormCoordinator? {
         get { self[AddEditFormCoordinatorKey.self] }
         set { self[AddEditFormCoordinatorKey.self] = newValue }
     }

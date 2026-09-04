@@ -73,7 +73,7 @@ extension HomeFeature {
                     try context.save()
                     NotificationCenter.default.postRoutineDidUpdate()
                 } catch {
-                    print("Failed to move todo to paused from board: \(error)")
+                    RoutinaLog.error("Failed to move todo to paused from board: \(error)")
                 }
             }
 
@@ -110,7 +110,7 @@ extension HomeFeature {
                     try context.save()
                     NotificationCenter.default.postRoutineDidUpdate()
                 } catch {
-                    print("Failed to move todo to \(rawValue) from board: \(error)")
+                    RoutinaLog.error("Failed to move todo to \(rawValue) from board: \(error)")
                 }
             }
 
@@ -683,7 +683,7 @@ extension HomeFeature {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to save sprint focus allocations: \(error)")
+                RoutinaLog.error("Failed to save sprint focus allocations: \(error)")
             }
         }
     }

@@ -2,11 +2,11 @@ import Foundation
 import SwiftData
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 struct TimelineLogicTests {
@@ -61,17 +61,18 @@ struct TimelineLogicTests {
 
     @Test
     func timelinePigmentCasesUsePrimaryTimelineTypes() {
-        #expect(TimelineFilterType.timelinePigmentCases == [
-            .all,
-            .routines,
-            .todos,
-            .focus,
-            .notes,
-            .places,
-            .emotions,
-            .sleep,
-            .away,
-        ])
+        #expect(
+            TimelineFilterType.timelinePigmentCases == [
+                .all,
+                .routines,
+                .todos,
+                .focus,
+                .notes,
+                .places,
+                .emotions,
+                .sleep,
+                .away,
+            ])
         #expect(TimelineFilterType.timelinePigmentCases.allSatisfy { $0.isTimelinePigmentCase })
         #expect(TimelineFilterType.events.isTimelinePigmentCase == false)
         #expect(TimelineFilterType.done.isTimelinePigmentCase == false)
@@ -79,26 +80,28 @@ struct TimelineLogicTests {
 
     @Test
     func timelineVisibleCasesCanHideEventAndEmotionFilters() {
-        #expect(TimelineFilterType.visibleContentTypeCases(includingEventEmotion: false) == [
-            .all,
-            .routines,
-            .todos,
-            .focus,
-            .notes,
-            .places,
-            .sleep,
-            .away,
-        ])
-        #expect(TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: false) == [
-            .all,
-            .routines,
-            .todos,
-            .focus,
-            .notes,
-            .places,
-            .sleep,
-            .away,
-        ])
+        #expect(
+            TimelineFilterType.visibleContentTypeCases(includingEventEmotion: false) == [
+                .all,
+                .routines,
+                .todos,
+                .focus,
+                .notes,
+                .places,
+                .sleep,
+                .away,
+            ])
+        #expect(
+            TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: false) == [
+                .all,
+                .routines,
+                .todos,
+                .focus,
+                .notes,
+                .places,
+                .sleep,
+                .away,
+            ])
         #expect(TimelineFilterType.visibleCases(includingEventEmotion: false).contains(.events) == false)
         #expect(TimelineFilterType.visibleCases(includingEventEmotion: false).contains(.emotions) == false)
         #expect(TimelineFilterType.events.normalized(includingEventEmotion: false) == .all)
@@ -107,54 +110,58 @@ struct TimelineLogicTests {
 
     @Test
     func timelineVisibleCasesCanHidePlaceFilters() {
-        #expect(TimelineFilterType.visibleContentTypeCases(includingEventEmotion: true, includingPlaces: false) == [
-            .all,
-            .routines,
-            .todos,
-            .focus,
-            .events,
-            .emotions,
-            .notes,
-            .sleep,
-            .away,
-        ])
-        #expect(TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: true, includingPlaces: false) == [
-            .all,
-            .routines,
-            .todos,
-            .focus,
-            .notes,
-            .emotions,
-            .sleep,
-            .away,
-        ])
+        #expect(
+            TimelineFilterType.visibleContentTypeCases(includingEventEmotion: true, includingPlaces: false) == [
+                .all,
+                .routines,
+                .todos,
+                .focus,
+                .events,
+                .emotions,
+                .notes,
+                .sleep,
+                .away,
+            ])
+        #expect(
+            TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: true, includingPlaces: false) == [
+                .all,
+                .routines,
+                .todos,
+                .focus,
+                .notes,
+                .emotions,
+                .sleep,
+                .away,
+            ])
         #expect(TimelineFilterType.visibleCases(includingEventEmotion: true, includingPlaces: false).contains(.places) == false)
         #expect(TimelineFilterType.places.normalized(includingEventEmotion: true, includingPlaces: false) == .all)
     }
 
     @Test
     func timelineVisibleCasesCanHideSleepFilters() {
-        #expect(TimelineFilterType.visibleContentTypeCases(includingEventEmotion: true, includingSleep: false) == [
-            .all,
-            .routines,
-            .todos,
-            .focus,
-            .events,
-            .emotions,
-            .notes,
-            .places,
-            .away,
-        ])
-        #expect(TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: true, includingSleep: false) == [
-            .all,
-            .routines,
-            .todos,
-            .focus,
-            .notes,
-            .places,
-            .emotions,
-            .away,
-        ])
+        #expect(
+            TimelineFilterType.visibleContentTypeCases(includingEventEmotion: true, includingSleep: false) == [
+                .all,
+                .routines,
+                .todos,
+                .focus,
+                .events,
+                .emotions,
+                .notes,
+                .places,
+                .away,
+            ])
+        #expect(
+            TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: true, includingSleep: false) == [
+                .all,
+                .routines,
+                .todos,
+                .focus,
+                .notes,
+                .places,
+                .emotions,
+                .away,
+            ])
         #expect(TimelineFilterType.visibleCases(includingEventEmotion: true, includingSleep: false).contains(.sleep) == false)
         #expect(TimelineFilterType.sleep.normalized(includingEventEmotion: true, includingSleep: false) == .all)
     }
@@ -369,7 +376,7 @@ struct TimelineLogicTests {
         let now = makeDate("2026-03-20T10:00:00Z")
         let task = makeRoutineTask()
         let validLog = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
-        let nilLog = RoutineLog(taskID: task.id) // timestamp defaults to nil
+        let nilLog = RoutineLog(taskID: task.id)  // timestamp defaults to nil
 
         let entries = TimelineLogic.filteredEntries(
             logs: [validLog, nilLog],
@@ -393,7 +400,7 @@ struct TimelineLogicTests {
 
         let entries = TimelineLogic.filteredEntries(
             logs: [log],
-            tasks: [], // no matching task
+            tasks: [],  // no matching task
             range: .all,
             filterType: .all,
             now: now,
@@ -1406,14 +1413,15 @@ struct TimelineLogicTests {
         )
         let log = makeLog(taskID: task.id, timestamp: now)
 
-        let entry = try #require(TimelineLogic.filteredEntries(
-            logs: [log],
-            tasks: [task],
-            range: .all,
-            filterType: .all,
-            now: now,
-            calendar: calendar
-        ).first)
+        let entry = try #require(
+            TimelineLogic.filteredEntries(
+                logs: [log],
+                tasks: [task],
+                range: .all,
+                filterType: .all,
+                now: now,
+                calendar: calendar
+            ).first)
 
         #expect(entry.hasTaskLadderValues)
         #expect(entry.importance == .level1)
@@ -1422,6 +1430,41 @@ struct TimelineLogicTests {
         #expect(entry.currentPressure == .high)
         #expect(entry.thinkingNeeded == .high)
         #expect(entry.estimatedDurationMinutes == 45)
+    }
+
+    @Test
+    func lastDoneFallbackIndexPreservesCalendarDaySemantics() throws {
+        let calendar = makeTestCalendar()
+        let taskWithLog = makeRoutineTask(name: "Logged")
+        let taskWithoutLog = makeRoutineTask(name: "Fallback")
+        let lastDone = makeDate("2026-03-20T18:00:00Z")
+        taskWithLog.lastDone = lastDone
+        taskWithoutLog.lastDone = lastDone
+        let existingLog = makeLog(
+            taskID: taskWithLog.id,
+            timestamp: makeDate("2026-03-20T08:00:00Z"),
+            kind: .fulfilled
+        )
+
+        let resolvedLogs = TimelineLogic.logsIncludingLastDoneFallbacks(
+            logs: [existingLog],
+            tasks: [taskWithLog, taskWithoutLog],
+            calendar: calendar
+        )
+
+        #expect(resolvedLogs.count == 2)
+        #expect(resolvedLogs.first?.id == existingLog.id)
+        let fallback = try #require(resolvedLogs.last)
+        #expect(fallback.taskID == taskWithoutLog.id)
+        #expect(fallback.timestamp == lastDone)
+        #expect(fallback.kind == .completed)
+        #expect(
+            fallback.id
+                == TimelineSyntheticLogID.completion(
+                    taskID: taskWithoutLog.id,
+                    completedAt: lastDone
+                )
+        )
     }
 
     @Test
@@ -1554,7 +1597,7 @@ struct TimelineLogicTests {
                 tags: ["focus", "Health"],
                 isOneOff: true,
                 kind: .completed
-            )
+            ),
         ]
 
         #expect(TimelineLogic.availableTags(from: entries) == ["Focus", "Health", "Morning"])
@@ -1569,7 +1612,7 @@ struct TimelineLogicTests {
             availableTags: ["Focus", "Admin", "Deep Work", "Errand"],
             relatedTagRules: [
                 RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Deep Work"]),
-                RoutineRelatedTagRule(tag: "Admin", relatedTags: ["Errand"])
+                RoutineRelatedTagRule(tag: "Admin", relatedTags: ["Errand"]),
             ]
         )
 
@@ -1599,7 +1642,7 @@ struct TimelineLogicTests {
                 tags: ["Errand"],
                 isOneOff: true,
                 kind: .completed
-            )
+            ),
         ]
         let presentation = TimelineFilterPresentation(
             selectedTags: ["Focus"],
@@ -1680,13 +1723,6 @@ struct TimelineLogicTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        return try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

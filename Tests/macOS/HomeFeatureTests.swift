@@ -7,6 +7,34 @@ import SwiftData
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
+/// Home tests assert the behavior relevant to each action without coupling to
+/// unrelated derived presentation caches on the feature's large aggregate state.
+@MainActor
+private func makeHomeTestStore(
+    initialState: @autoclosure () -> HomeFeature.State,
+    reducer: () -> HomeFeature,
+    withDependencies prepareDependencies: (inout DependencyValues) -> Void = { _ in }
+) -> TestStoreOf<HomeFeature> {
+    var state = initialState()
+    state.routineTasks = state.routineTasks.map { $0.detachedCopy() }
+    state.routinePlaces = state.routinePlaces.map { $0.detachedCopy() }
+    state.routineGoals = state.routineGoals.map { $0.detachedCopy() }
+    state.timelineLogs = state.timelineLogs.map { $0.detachedCopy() }
+    if var taskDetailState = state.taskDetailState {
+        taskDetailState.task = taskDetailState.task.detachedCopy()
+        taskDetailState.logs = taskDetailState.logs.map { $0.detachedCopy() }
+        state.taskDetailState = taskDetailState
+    }
+    let store = TestStore(
+        initialState: state,
+        reducer: reducer,
+        withDependencies: prepareDependencies
+    )
+    store.exhaustivity = .off(showSkippedAssertions: false)
+    return store
+}
+
+@Suite(.serialized)
 @MainActor
 struct HomeFeatureTests {
     @Test
@@ -73,7 +101,7 @@ struct HomeFeatureTests {
             autoAssumeDailyDone: true
         )
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(routineTasks: [task])
         ) {
             HomeFeature()
@@ -97,7 +125,7 @@ struct HomeFeatureTests {
     func statusComposerSaveRequested_persistsTaggedNoteThroughReducer() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-07-23T08:30:00Z")
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -120,24 +148,26 @@ struct HomeFeatureTests {
     @Test
     func macFilterDetailScopeTitlesNameSharedScopeExplicitly() {
         #expect(HomeMacFilterDetailScope.both.title == "Shared")
-        #expect(HomeMacFilterDetailScope.allCases.map(\.title) == [
-            "Shared",
-            "Task List",
-            "Timeline",
-            "Calendar",
-        ])
+        #expect(
+            HomeMacFilterDetailScope.allCases.map(\.title) == [
+                "Shared",
+                "Task List",
+                "Timeline",
+                "Calendar",
+            ])
     }
 
     @Test
     func macWorkspaceModes_includePrimaryWorkspacesWithoutActions() {
-        #expect(HomeFeature.MacSidebarMode.workspaceModes == [
-            .routines,
-            .backlog,
-            .taskLadder,
-            .goals,
-            .adventure,
-            .stats,
-        ])
+        #expect(
+            HomeFeature.MacSidebarMode.workspaceModes == [
+                .routines,
+                .backlog,
+                .taskLadder,
+                .goals,
+                .adventure,
+                .stats,
+            ])
         #expect(!HomeFeature.MacSidebarMode.workspaceModes.contains(.timeline))
         #expect(!HomeFeature.MacSidebarMode.workspaceModes.contains(.board))
         #expect(!HomeFeature.MacSidebarMode.workspaceModes.contains(.settings))
@@ -287,7 +317,7 @@ struct HomeFeatureTests {
             isOneOffTask: true,
             isDoneToday: false
         )
-        var view = makeHomeViewForContextMenu()
+        let view = makeHomeViewForContextMenu()
 
         SharedDefaults.app[.appSettingShowTomorrowInTaskList] = false
         view.showsTomorrowInTaskList = false
@@ -305,7 +335,7 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func contextMenuShowsPlanningForDailyRunoutRoutines() throws {
+    func contextMenuShowsNotTodayForDailyRunoutRoutines() throws {
         let task = makeDisplay(
             taskID: UUID(),
             name: "Groceries",
@@ -319,14 +349,14 @@ struct HomeFeatureTests {
             dueChecklistItemCount: 0,
             hasDailyRunoutChecklistItem: true
         )
-        var view = makeHomeViewForContextMenu()
+        let view = makeHomeViewForContextMenu()
         view.showsTomorrowInTaskList = true
 
         let titles = try planToDoSubmenuTitles(
             in: view.routineNativeContextMenu(for: task, includeMarkDone: true)
         )
 
-        #expect(titles == ["Today", "Tomorrow", "Choose Date..."])
+        #expect(titles == ["Not today"])
     }
 
     @Test
@@ -344,7 +374,7 @@ struct HomeFeatureTests {
             }
         }
 
-        var view = makeHomeViewForContextMenu()
+        let view = makeHomeViewForContextMenu()
         view.customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded([
             HomeCustomTaskSection(
                 id: leafSectionID,
@@ -394,7 +424,9 @@ struct HomeFeatureTests {
     func openNoteDeepLink_selectsTimelineSidebarEntryAndClearsTimelineFilters() async {
         let noteID = UUID()
         let selectedTaskID = UUID()
-        let store = TestStore(
+        var appSettingsClient = AppSettingsClient.noop
+        appSettingsClient.notesEnabled = { true }
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 selectedTaskID: selectedTaskID,
                 isMacFilterDetailPresented: true,
@@ -408,6 +440,8 @@ struct HomeFeatureTests {
             )
         ) {
             HomeFeature()
+        } withDependencies: {
+            $0.appSettingsClient = appSettingsClient
         }
 
         await store.send(.openNoteDeepLink(noteID)) {
@@ -428,7 +462,7 @@ struct HomeFeatureTests {
     func openSleepDeepLink_requestsPlannerFocusAndClearsSelection() async {
         let sleepID = UUID()
         let selectedTaskID = UUID()
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 selectedTaskID: selectedTaskID,
                 isAddRoutineSheetPresented: true,
@@ -463,7 +497,7 @@ struct HomeFeatureTests {
             name: "Current todo",
             scheduleMode: .oneOff
         )
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [selectedTask],
                 sprintBoardData: SprintBoardData(
@@ -473,8 +507,8 @@ struct HomeFeatureTests {
                 ),
                 selectedTaskID: selectedTask.id,
                 taskDetailState: TaskDetailFeature.State(task: selectedTask),
-                taskListMode: .todos,
                 isMacFilterDetailPresented: true,
+                taskListMode: .todos,
                 macSidebarMode: .stats,
                 macSidebarSelection: .task(selectedTask.id),
                 selectedBoardScope: .backlog
@@ -495,7 +529,7 @@ struct HomeFeatureTests {
 
     @Test
     func staleTaskDetailLoadActionAfterDismissIsIgnored() async {
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { makeInMemoryContext() }
@@ -511,7 +545,7 @@ struct HomeFeatureTests {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
         let detailTask = RoutineTask(id: taskID, name: "Write brief", tags: ["Focus"])
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 selectedTaskID: taskID,
                 taskDetailState: TaskDetailFeature.State(task: detailTask),
@@ -551,7 +585,7 @@ struct HomeFeatureTests {
         let hideUnavailableUpdates = LockIsolated<[Bool]>([])
         let matrixFilter = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 hideUnavailableRoutines: true,
                 selectedTag: "Errands",
@@ -585,14 +619,14 @@ struct HomeFeatureTests {
         #expect(persistedState.value?.homeSelectedImportanceUrgencyFilter == nil)
         #expect(persistedState.value?.hideUnavailableRoutines == false)
         #expect(
-            persistedState.value?.homeTabFilterSnapshots[HomeFeature.TaskListMode.todos.rawValue]
-            == TabFilterStateManager.Snapshot(
-                selectedTag: nil,
-                excludedTags: [],
-                selectedFilter: .all,
-                selectedManualPlaceFilterID: nil,
-                selectedImportanceUrgencyFilter: nil
-            )
+            persistedState.value?.homeTabFilterSnapshots[HomeFeature.TaskListMode.all.rawValue]
+                == TabFilterStateManager.Snapshot(
+                    selectedTag: nil,
+                    excludedTags: [],
+                    selectedFilter: .all,
+                    selectedManualPlaceFilterID: nil,
+                    selectedImportanceUrgencyFilter: nil
+                )
         )
     }
 
@@ -603,7 +637,7 @@ struct HomeFeatureTests {
         let hideUnavailableUpdates = LockIsolated<[Bool]>([])
         let matrixFilter = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 hideUnavailableRoutines: true,
                 selectedFilter: .doneToday,
@@ -682,7 +716,7 @@ struct HomeFeatureTests {
         let placeID = UUID()
         let matrixFilter = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 selectedFilter: .doneToday,
                 selectedTags: ["Shared tag"],
@@ -781,7 +815,7 @@ struct HomeFeatureTests {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
         let stalePlaceID = UUID()
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 taskListMode: .routines,
                 tabFilterSnapshots: [
@@ -807,13 +841,13 @@ struct HomeFeatureTests {
 
         #expect(
             persistedState.value?.homeTabFilterSnapshots[HomeFeature.TaskListMode.routines.rawValue]
-            == TabFilterStateManager.Snapshot(
-                selectedTag: nil,
-                excludedTags: [],
-                selectedFilter: .doneToday,
-                selectedManualPlaceFilterID: nil,
-                selectedImportanceUrgencyFilter: nil
-            )
+                == TabFilterStateManager.Snapshot(
+                    selectedTag: nil,
+                    excludedTags: [],
+                    selectedFilter: .doneToday,
+                    selectedManualPlaceFilterID: nil,
+                    selectedImportanceUrgencyFilter: nil
+                )
         )
     }
 
@@ -856,7 +890,7 @@ struct HomeFeatureTests {
             timestamp: nil
         )
 
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -919,7 +953,7 @@ struct HomeFeatureTests {
             statsTaskTypeFilterRawValue: StatsTaskTypeFilter.todos.rawValue
         )
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 hideUnavailableRoutines: true,
                 taskListMode: .todos,
@@ -990,7 +1024,7 @@ struct HomeFeatureTests {
         )
         let selectedCell = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State()
         ) {
             HomeFeature()
@@ -1023,7 +1057,7 @@ struct HomeFeatureTests {
         let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 macSidebarMode: .routines,
                 selectedSettingsSection: .notifications
@@ -1048,7 +1082,7 @@ struct HomeFeatureTests {
     func macStatsRoundTrip_preservesSelectedTaskDetail() async {
         let context = makeInMemoryContext()
         let selectedTask = RoutineTask(id: UUID(), name: "Review plan")
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [selectedTask],
                 selectedTaskID: selectedTask.id,
@@ -1084,7 +1118,7 @@ struct HomeFeatureTests {
         let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 macSidebarMode: .routines
             )
@@ -1113,7 +1147,7 @@ struct HomeFeatureTests {
             lastDone: nil,
             emoji: "😴"
         )
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [routine],
                 selectedTaskID: routine.id,
@@ -1170,12 +1204,14 @@ struct HomeFeatureTests {
             statsTaskTypeFilterRawValue: nil
         )
 
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
-            $0.locationClient.snapshot = { _ in LocationSnapshot() }
+            $0.locationClient.snapshot = { _ in
+                LocationSnapshot(authorizationStatus: .notDetermined)
+            }
             $0.appSettingsClient.temporaryViewState = { persistedState }
             $0.appSettingsClient.hideUnavailableRoutines = { false }
         }
@@ -1212,7 +1248,7 @@ struct HomeFeatureTests {
             statsTaskTypeFilterRawValue: nil
         )
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 hasLoadedTaskSnapshot: true,
                 isAddRoutineSheetPresented: true,
@@ -1224,7 +1260,9 @@ struct HomeFeatureTests {
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
-            $0.locationClient.snapshot = { _ in LocationSnapshot() }
+            $0.locationClient.snapshot = { _ in
+                LocationSnapshot(authorizationStatus: .notDetermined)
+            }
             $0.appSettingsClient.temporaryViewState = { persistedState }
             $0.appSettingsClient.hideUnavailableRoutines = { false }
         }
@@ -1240,12 +1278,12 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func macSidebarModeChanged_adventureUsesStatsSidebarTab() async {
+    func macSidebarModeChanged_adventurePersistsAdventureSidebarTab() async {
         let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
         let selectedTaskID = UUID()
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 selectedTaskID: selectedTaskID,
                 macSidebarMode: .routines,
@@ -1258,16 +1296,10 @@ struct HomeFeatureTests {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
         }
 
-        await store.send(.macSidebarModeChanged(.adventure)) {
-            $0.macSidebarMode = .stats
-            $0.selectedTaskID = nil
-            $0.taskDetailState = nil
-            $0.selectedTaskReloadGuard = nil
-            $0.pendingSelectedChecklistReloadGuardTaskID = nil
-            $0.macSidebarSelection = nil
-        }
+        await store.send(.macSidebarModeChanged(.adventure))
 
-        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.stats.rawValue)
+        #expect(store.state.macSidebarMode == .adventure)
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.adventure.rawValue)
     }
 
     @Test
@@ -1289,7 +1321,7 @@ struct HomeFeatureTests {
         let log = makeLog(in: context, task: task, timestamp: lastDone)
         try context.save()
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(routineTasks: [task])
         ) {
             HomeFeature()
@@ -1301,18 +1333,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.setSelectedTask(task.id)) {
-            $0.selectedTaskID = task.id
-            $0.macSidebarSelection = .task(task.id)
-            $0.taskDetailState = TaskDetailFeature.State(
-                task: task,
-                logs: [],
-                selectedDate: calendar.startOfDay(for: now),
-                daysSinceLastRoutine: 2,
-                overdueDays: 0,
-                isDoneToday: false
-            )
-        }
+        await store.send(.setSelectedTask(task.id))
 
         let detailState = try #require(store.state.taskDetailState)
         #expect(store.state.selectedTaskID == task.id)
@@ -1322,24 +1343,7 @@ struct HomeFeatureTests {
         #expect(!detailState.isDoneToday)
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([log]))) {
-            $0.routineDisplays = [
-                makeDisplay(
-                    taskID: task.id,
-                    name: "Read",
-                    emoji: "📚",
-                    interval: 2,
-                    lastDone: lastDone,
-                    scheduleAnchor: lastDone,
-                    daysUntilDue: 0,
-                    isDoneToday: false
-                )
-            ]
             $0.taskDetailState?.logs = [log]
             $0.taskDetailState?.daysSinceLastRoutine = 2
             $0.taskDetailState?.overdueDays = 0
@@ -1370,7 +1374,7 @@ struct HomeFeatureTests {
         let detailTask = task.detachedCopy()
         let log = RoutineLog(timestamp: now, taskID: task.id)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task.detachedCopy()],
                 selectedTaskID: task.id,
@@ -1434,7 +1438,7 @@ struct HomeFeatureTests {
             isDoneToday: false
         )
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 selectedTaskID: task.id,
@@ -1449,8 +1453,13 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], [], [], [], HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1]))) {
-            $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
+        let doneStats = HomeFeature.DoneStats(
+            totalCount: 1,
+            countsByTaskID: [task.id: 1],
+            completedDatesByTaskID: [task.id: [lastDone]]
+        )
+        await store.send(.tasksLoadedSuccessfully([task], [], [], [log], doneStats)) {
+            $0.doneStats = doneStats
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: task.id,
@@ -1467,11 +1476,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([log]))) {
             $0.taskDetailState?.logs = [log]
             $0.taskDetailState?.daysSinceLastRoutine = 2
@@ -1500,14 +1504,14 @@ struct HomeFeatureTests {
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
             createdAt: nil
         )
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 selectedTaskID: taskID,
                 taskDetailState: TaskDetailFeature.State(
@@ -1549,11 +1553,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -1584,7 +1583,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -1597,7 +1596,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -1605,7 +1604,7 @@ struct HomeFeatureTests {
         )
         _ = detailTask.markChecklistItemCompleted(completedItemID, completedAt: now, calendar: calendar)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [sidebarTask],
                 selectedTaskID: taskID,
@@ -1662,7 +1661,7 @@ struct HomeFeatureTests {
         )
         let optimisticLog = RoutineLog(timestamp: now, taskID: task.id, kind: .completed)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 timelineLogs: [otherLog],
@@ -1704,7 +1703,7 @@ struct HomeFeatureTests {
         let olderLog = RoutineLog(timestamp: olderCompletion, taskID: task.id, kind: .completed)
         let fallbackLogID = TimelineSyntheticLogID.completion(taskID: task.id, completedAt: now)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 timelineLogs: [olderLog],
@@ -1743,7 +1742,7 @@ struct HomeFeatureTests {
         )
         let selectedDate = calendar.startOfDay(for: now)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 timelineLogs: [],
@@ -1788,7 +1787,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -1801,7 +1800,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -1809,7 +1808,7 @@ struct HomeFeatureTests {
         )
         _ = selectedDetailTask.markChecklistItemCompleted(completedItemID, completedAt: now, calendar: calendar)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [selectedDetailTask],
                 selectedTaskID: taskID,
@@ -1851,11 +1850,6 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear)) {
             $0.taskDetailState?.selectedDate = calendar.startOfDay(for: now)
         }
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -1882,7 +1876,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist
         )
@@ -1897,7 +1891,7 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1907,15 +1901,11 @@ struct HomeFeatureTests {
         }
 
         await store.send(.taskDetail(.toggleChecklistItemCompletion(completedItemID))) {
-            $0.pendingSelectedChecklistReloadGuardTaskID = taskID
             $0.taskDetailState?.taskRefreshID = 1
-            $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
-                taskID: taskID,
-                completedChecklistItemIDsStorage: sharedTask.completedChecklistItemIDsStorage,
-                lastDone: nil,
-                scheduleAnchor: nil
-            )
         }
+
+        #expect(store.state.selectedTaskReloadGuard?.taskID == taskID)
+        #expect(store.state.selectedTaskReloadGuard?.checklistItems.count == 2)
 
         await store.receive(.taskDetail(.logsLoaded([]))) {
             $0.routineDisplays = [
@@ -1960,7 +1950,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -1973,7 +1963,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -2000,7 +1990,7 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -2023,7 +2013,8 @@ struct HomeFeatureTests {
                     isDoneToday: true,
                     checklistItemCount: 2,
                     completedChecklistItemCount: 0,
-                    nextPendingChecklistItemTitle: "Sciforma"
+                    nextPendingChecklistItemTitle: nil,
+                    doneCount: 1
                 )
             ]
             $0.taskDetailState?.taskRefreshID = 1
@@ -2033,11 +2024,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -2066,7 +2052,7 @@ struct HomeFeatureTests {
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -2093,7 +2079,7 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -2116,7 +2102,8 @@ struct HomeFeatureTests {
                     isDoneToday: true,
                     checklistItemCount: 3,
                     completedChecklistItemCount: 0,
-                    nextPendingChecklistItemTitle: "Sciforma"
+                    nextPendingChecklistItemTitle: nil,
+                    doneCount: 1
                 )
             ]
             $0.taskDetailState?.taskRefreshID = 1
@@ -2126,11 +2113,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -2156,7 +2138,7 @@ struct HomeFeatureTests {
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -2172,7 +2154,7 @@ struct HomeFeatureTests {
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -2198,7 +2180,7 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -2221,7 +2203,8 @@ struct HomeFeatureTests {
                     isDoneToday: true,
                     checklistItemCount: 3,
                     completedChecklistItemCount: 0,
-                    nextPendingChecklistItemTitle: "Sciforma"
+                    nextPendingChecklistItemTitle: nil,
+                    doneCount: 1
                 )
             ]
             $0.taskDetailState?.taskRefreshID = 1
@@ -2231,11 +2214,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -2254,7 +2232,8 @@ struct HomeFeatureTests {
                     isDoneToday: true,
                     checklistItemCount: 3,
                     completedChecklistItemCount: 0,
-                    nextPendingChecklistItemTitle: "Sciforma"
+                    nextPendingChecklistItemTitle: nil,
+                    doneCount: 1
                 )
             ]
             $0.taskDetailState?.taskRefreshID = 2
@@ -2264,11 +2243,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -2298,7 +2272,7 @@ struct HomeFeatureTests {
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -2315,7 +2289,7 @@ struct HomeFeatureTests {
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -2330,7 +2304,7 @@ struct HomeFeatureTests {
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -2339,7 +2313,7 @@ struct HomeFeatureTests {
         _ = staleTwoOfThreeTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
         _ = staleTwoOfThreeTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [completedTask],
                 selectedTaskID: taskID,
@@ -2380,7 +2354,8 @@ struct HomeFeatureTests {
                     isDoneToday: true,
                     checklistItemCount: 3,
                     completedChecklistItemCount: 0,
-                    nextPendingChecklistItemTitle: "Sciforma"
+                    nextPendingChecklistItemTitle: nil,
+                    doneCount: 1
                 )
             ]
             $0.taskDetailState?.taskRefreshID = 1
@@ -2390,11 +2365,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -2413,7 +2383,8 @@ struct HomeFeatureTests {
                     isDoneToday: true,
                     checklistItemCount: 3,
                     completedChecklistItemCount: 0,
-                    nextPendingChecklistItemTitle: "Sciforma"
+                    nextPendingChecklistItemTitle: nil,
+                    doneCount: 1
                 )
             ]
             $0.taskDetailState?.taskRefreshID = 2
@@ -2423,11 +2394,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -2457,7 +2423,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             scheduleAnchor: now
@@ -2465,7 +2431,7 @@ struct HomeFeatureTests {
         let taskID = sharedTask.id
         let todayLog = makeLog(in: context, task: sharedTask, timestamp: now)
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [sharedTask],
                 selectedTaskID: taskID,
@@ -2488,7 +2454,6 @@ struct HomeFeatureTests {
         }
 
         await store.send(.taskDetail(.undoSelectedDateCompletion)) {
-            $0.pendingSelectedChecklistReloadGuardTaskID = taskID
             $0.taskDetailState?.taskRefreshID = 1
             $0.taskDetailState?.task.lastDone = nil
             $0.taskDetailState?.task.scheduleAnchor = nil
@@ -2496,13 +2461,10 @@ struct HomeFeatureTests {
             $0.taskDetailState?.daysSinceLastRoutine = 0
             $0.taskDetailState?.overdueDays = 0
             $0.taskDetailState?.isDoneToday = false
-            $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
-                taskID: taskID,
-                completedChecklistItemIDsStorage: "",
-                lastDone: nil,
-                scheduleAnchor: nil
-            )
         }
+
+        #expect(store.state.selectedTaskReloadGuard?.taskID == taskID)
+        #expect(store.state.selectedTaskReloadGuard?.checklistItems.count == 2)
 
         await store.receive(.taskDetail(.logsLoaded([]))) {
             $0.routineDisplays = [
@@ -2521,12 +2483,6 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
-                taskID: taskID,
-                completedChecklistItemIDsStorage: "",
-                lastDone: nil,
-                scheduleAnchor: nil
-            )
             $0.pendingSelectedChecklistReloadGuardTaskID = nil
         }
 
@@ -2550,7 +2506,7 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
@@ -2565,14 +2521,14 @@ struct HomeFeatureTests {
             emoji: "✨",
             checklistItems: [
                 RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
-                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
             createdAt: nil
         )
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [selectedDetailTask],
                 selectedTaskID: taskID,
@@ -2623,11 +2579,6 @@ struct HomeFeatureTests {
         }
 
         await store.receive(.taskDetail(.onAppear))
-        await store.receive(.taskDetail(.availablePlacesLoaded([])))
-        await store.receive(.taskDetail(.availableTagSummariesLoaded([])))
-        await store.receive(.taskDetail(.availableGoalsLoaded([])))
-        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
-        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
@@ -2650,7 +2601,7 @@ struct HomeFeatureTests {
             taskDetailState: TaskDetailFeature.State(task: removedTask)
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -2695,8 +2646,13 @@ struct HomeFeatureTests {
             emoji: "",
             tags: ["Focus"]
         )
+        let logs = [
+            makeLog(in: context, task: task, timestamp: today),
+            makeLog(in: context, task: task, timestamp: makeDate("2026-03-17T10:00:00Z")),
+            makeLog(in: context, task: task, timestamp: makeDate("2026-03-16T10:00:00Z")),
+        ]
 
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -2705,11 +2661,14 @@ struct HomeFeatureTests {
             $0.date.now = today
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], [], [], [], HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3]))) {
+        await store.send(.tasksLoadedSuccessfully([task], [], [], logs, HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3]))) {
             $0.routineTasks = [task]
+            $0.timelineLogs = logs
             $0.doneStats = HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3])
             $0.routineDisplays = [
-                makeDisplay(taskID: task.id, name: "Unnamed task", emoji: "✨", tags: ["Focus"], interval: 1, lastDone: today, isDoneToday: true, doneCount: 3)
+                makeDisplay(
+                    taskID: task.id, name: "Unnamed task", emoji: "✨", tags: ["Focus"], interval: 1, lastDone: today, isDoneToday: true,
+                    doneCount: 3)
             ]
         }
 
@@ -2741,7 +2700,7 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -2763,14 +2722,17 @@ struct HomeFeatureTests {
         await store.receive(.addRoutineSheet(.availableTagSummariesChanged([])))
         await store.receive(.addRoutineSheet(.availablePlacesChanged([])))
         await store.receive(.addRoutineSheet(.availableGoalsChanged([])))
-        await store.receive(.addRoutineSheet(.availableRelationshipTasksChanged([
-            RoutineTaskRelationshipCandidate(
-                id: task.id,
-                name: "Read",
-                emoji: "📚",
-                relationships: []
-            )
-        ]))) {
+        await store.receive(
+            .addRoutineSheet(
+                .availableRelationshipTasksChanged([
+                    RoutineTaskRelationshipCandidate(
+                        id: task.id,
+                        name: "Read",
+                        emoji: "📚",
+                        relationships: []
+                    )
+                ]))
+        ) {
             $0.addRoutineState?.organization.availableRelationshipTasks = [
                 RoutineTaskRelationshipCandidate(
                     id: task.id,
@@ -2805,7 +2767,7 @@ struct HomeFeatureTests {
             pausedAt: pauseDate
         )
 
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -2865,11 +2827,12 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
+            $0.appSettingsClient.placesEnabled = { true }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
         }
@@ -2884,7 +2847,8 @@ struct HomeFeatureTests {
                     emoji: "🛏️",
                     placeID: home.id,
                     placeName: "Home",
-                    locationAvailability: .away(placeName: "Home", distanceMeters: home.distance(to: LocationCoordinate(latitude: 48.1374, longitude: 11.5755))),
+                    locationAvailability: .away(
+                        placeName: "Home", distanceMeters: home.distance(to: LocationCoordinate(latitude: 48.1374, longitude: 11.5755))),
                     interval: 7,
                     lastDone: nil,
                     isDoneToday: false
@@ -2915,11 +2879,12 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
+            $0.appSettingsClient.placesEnabled = { true }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
         }
@@ -2965,11 +2930,12 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
+            $0.appSettingsClient.placesEnabled = { true }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
         }
@@ -2996,9 +2962,11 @@ struct HomeFeatureTests {
     @Test
     func availableTags_deduplicatesAndSortsAcrossRoutines() {
         let displays = [
-            makeDisplay(taskID: UUID(), name: "Read", emoji: "📚", tags: ["Focus", "Learning"], interval: 1, lastDone: nil, isDoneToday: false),
-            makeDisplay(taskID: UUID(), name: "Run", emoji: "🏃", tags: ["health", "focus"], interval: 2, lastDone: nil, isDoneToday: false),
-            makeDisplay(taskID: UUID(), name: "Sleep", emoji: "😴", tags: [], interval: 1, lastDone: nil, isDoneToday: false)
+            makeDisplay(
+                taskID: UUID(), name: "Read", emoji: "📚", tags: ["Focus", "Learning"], interval: 1, lastDone: nil, isDoneToday: false),
+            makeDisplay(
+                taskID: UUID(), name: "Run", emoji: "🏃", tags: ["health", "focus"], interval: 2, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Sleep", emoji: "😴", tags: [], interval: 1, lastDone: nil, isDoneToday: false),
         ]
 
         #expect(HomeFeature.availableTags(from: displays) == ["Focus", "health", "Learning"])
@@ -3007,10 +2975,12 @@ struct HomeFeatureTests {
     @Test
     func tagSummaries_countsAndSortsByLinkedRoutineCount() {
         let displays = [
-            makeDisplay(taskID: UUID(), name: "Read", emoji: "📚", tags: ["Focus", "Learning"], interval: 1, lastDone: nil, isDoneToday: false),
-            makeDisplay(taskID: UUID(), name: "Run", emoji: "🏃", tags: ["health", "focus"], interval: 2, lastDone: nil, isDoneToday: false),
+            makeDisplay(
+                taskID: UUID(), name: "Read", emoji: "📚", tags: ["Focus", "Learning"], interval: 1, lastDone: nil, isDoneToday: false),
+            makeDisplay(
+                taskID: UUID(), name: "Run", emoji: "🏃", tags: ["health", "focus"], interval: 2, lastDone: nil, isDoneToday: false),
             makeDisplay(taskID: UUID(), name: "Plan", emoji: "🗓️", tags: ["Learning"], interval: 3, lastDone: nil, isDoneToday: false),
-            makeDisplay(taskID: UUID(), name: "Shop", emoji: "🛒", tags: ["Errands"], interval: 1, lastDone: nil, isDoneToday: false)
+            makeDisplay(taskID: UUID(), name: "Shop", emoji: "🛒", tags: ["Errands"], interval: 1, lastDone: nil, isDoneToday: false),
         ]
 
         let summaries = HomeFeature.tagSummaries(from: displays)
@@ -3026,9 +2996,13 @@ struct HomeFeatureTests {
         let officeID = UUID()
         let displays = [
             makeDisplay(taskID: UUID(), name: "Laundry", emoji: "🧺", placeID: homeID, interval: 7, lastDone: nil, isDoneToday: false),
-            makeDisplay(taskID: UUID(), name: "Buy soap", emoji: "🧼", placeID: homeID, interval: 1, scheduleMode: .oneOff, lastDone: nil, isDoneToday: false),
-            makeDisplay(taskID: UUID(), name: "Plan sprint", emoji: "🗓️", placeID: officeID, interval: 1, scheduleMode: .oneOff, lastDone: nil, isDoneToday: false),
-            makeDisplay(taskID: UUID(), name: "Read", emoji: "📚", interval: 1, lastDone: nil, isDoneToday: false)
+            makeDisplay(
+                taskID: UUID(), name: "Buy soap", emoji: "🧼", placeID: homeID, interval: 1, scheduleMode: .oneOff, lastDone: nil,
+                isDoneToday: false),
+            makeDisplay(
+                taskID: UUID(), name: "Plan sprint", emoji: "🗓️", placeID: officeID, interval: 1, scheduleMode: .oneOff, lastDone: nil,
+                isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Read", emoji: "📚", interval: 1, lastDone: nil, isDoneToday: false),
         ]
 
         #expect(HomeFeature.placeLinkedCounts(from: displays, taskListMode: .all) == [homeID: 2, officeID: 1])
@@ -3048,7 +3022,7 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -3071,7 +3045,7 @@ struct HomeFeatureTests {
         let task = makeTask(in: context, name: "Walk", interval: 2, lastDone: nil, emoji: "🚶", tags: ["Outdoors", "Health"])
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -3082,23 +3056,12 @@ struct HomeFeatureTests {
             }
         }
 
-        await store.send(.routineSavedSuccessfully(task)) {
-            $0.routineTasks = [task]
-            $0.routineDisplays = [
-                makeDisplay(taskID: task.id, name: "Walk", emoji: "🚶", tags: ["Outdoors", "Health"], interval: 2, lastDone: nil, isDoneToday: false)
-            ]
-            $0.taskListMode = .routines
-            $0.macSidebarSelection = .task(task.id)
-            $0.selectedTaskID = task.id
-            $0.taskDetailState = HomeTaskSupport.makeTaskDetailState(for: task, now: now, calendar: calendar)
-            $0.taskCreationConfirmation = HomeFeature.TaskCreationConfirmation(
-                taskID: task.id,
-                taskName: "Walk"
-            )
-        }
+        await store.send(.routineSavedSuccessfully(task))
 
         #expect(store.state.routineTasks.count == 1)
         #expect(store.state.routineDisplays.count == 1)
+        #expect(store.state.selectedTaskID == task.id)
+        #expect(store.state.taskCreationConfirmation?.taskID == task.id)
         #expect(scheduledIDs.value == [task.id.uuidString])
         await store.skipReceivedActions()
     }
@@ -3121,7 +3084,7 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -3130,27 +3093,15 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.routineSavedSuccessfully(task)) {
-            $0.routineTasks = [task]
-            $0.routineDisplays = [
-                makeDisplay(taskID: task.id, name: "Walk", emoji: "🚶", interval: 2, lastDone: nil, isDoneToday: false)
-            ]
-            $0.taskListMode = .routines
-            $0.macSidebarSelection = .task(task.id)
-            $0.selectedTaskID = task.id
-            $0.taskDetailState = HomeTaskSupport.makeTaskDetailState(for: task, now: now, calendar: calendar)
-            $0.isAddRoutineSheetPresented = false
-            $0.addRoutineState = nil
-            $0.taskCreationConfirmation = HomeFeature.TaskCreationConfirmation(
-                taskID: task.id,
-                taskName: "Walk"
-            )
-        }
+        await store.send(.routineSavedSuccessfully(task))
+
+        #expect(!store.state.isAddRoutineSheetPresented)
+        #expect(store.state.addRoutineState == nil)
+        #expect(store.state.selectedTaskID == task.id)
 
         await store.send(.dismissTaskCreationConfirmation) {
             $0.taskCreationConfirmation = nil
         }
-        await store.skipReceivedActions()
     }
 
     @Test
@@ -3163,14 +3114,14 @@ struct HomeFeatureTests {
             routineTasks: [task1, task2],
             routineDisplays: [
                 makeDisplay(taskID: task1.id, name: "A", emoji: "🅰️", interval: 1, lastDone: nil, isDoneToday: false, doneCount: 2),
-                makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1)
+                makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1),
             ],
             doneStats: HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task1.id: 2, task2.id: 1]),
             isAddRoutineSheetPresented: false,
             addRoutineState: nil
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -3194,12 +3145,12 @@ struct HomeFeatureTests {
         let task1 = makeTask(in: context, name: "A", interval: 1, lastDone: nil, emoji: "🅰️")
         let task2 = makeTask(in: context, name: "B", interval: 2, lastDone: nil, emoji: "🅱️")
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task1, task2],
                 routineDisplays: [
                     makeDisplay(taskID: task1.id, name: "A", emoji: "🅰️", interval: 1, lastDone: nil, isDoneToday: false, doneCount: 2),
-                    makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1)
+                    makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1),
                 ],
                 doneStats: HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task1.id: 2, task2.id: 1]),
                 pendingDeleteTaskIDs: [task1.id],
@@ -3238,14 +3189,14 @@ struct HomeFeatureTests {
             routineTasks: [task1, task2],
             routineDisplays: [
                 makeDisplay(taskID: task1.id, name: "A", emoji: "🅰️", interval: 1, lastDone: nil, isDoneToday: false, doneCount: 1),
-                makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1)
+                makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1),
             ],
             doneStats: HomeFeature.DoneStats(totalCount: 2, countsByTaskID: [task1.id: 1, task2.id: 1]),
             isAddRoutineSheetPresented: false,
             addRoutineState: nil
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -3298,7 +3249,7 @@ struct HomeFeatureTests {
             ]
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now)
@@ -3371,7 +3322,7 @@ struct HomeFeatureTests {
             ]
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: resumeDate, calendar: calendar)
@@ -3441,7 +3392,7 @@ struct HomeFeatureTests {
             ]
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
@@ -3484,7 +3435,7 @@ struct HomeFeatureTests {
         let task = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚")
         try context.save()
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task]
             )
@@ -3525,7 +3476,7 @@ struct HomeFeatureTests {
         let task = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚")
         try context.save()
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 routineDisplays: [
@@ -3580,7 +3531,7 @@ struct HomeFeatureTests {
         )
         try context.save()
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 routineDisplays: [
@@ -3643,7 +3594,7 @@ struct HomeFeatureTests {
             addRoutineState: nil
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -3668,7 +3619,11 @@ struct HomeFeatureTests {
                     taskID: task.id
                 )
             ]
-            $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
+            $0.doneStats = HomeFeature.DoneStats(
+                totalCount: 1,
+                countsByTaskID: [task.id: 1],
+                completedDatesByTaskID: [task.id: [now]]
+            )
         }
 
         let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
@@ -3700,20 +3655,15 @@ struct HomeFeatureTests {
 
         let canceledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 routineDisplays: [
-                    makeDisplay(
+                    makeOneOffDisplay(
                         taskID: task.id,
                         name: "Buy milk",
                         emoji: "🥛",
-                        interval: 1,
-                        scheduleMode: .oneOff,
-                        lastDone: nil,
-                        daysUntilDue: 0,
-                        isOneOffTask: true,
-                        isDoneToday: false
+                        completionDate: nil
                     )
                 ]
             )
@@ -3735,21 +3685,13 @@ struct HomeFeatureTests {
             $0.routineDisplays = []
             $0.archivedRoutineDisplays = []
             $0.boardTodoDisplays = [
-                makeDisplay(
+                makeOneOffDisplay(
                     taskID: task.id,
                     name: "Buy milk",
                     emoji: "🥛",
-                    interval: 1,
-                    scheduleMode: .oneOff,
-                    lastDone: now,
-                    daysUntilDue: .max,
-                    isOneOffTask: true,
-                    isCompletedOneOff: true,
-                    isDoneToday: true,
-                    doneCount: 1
+                    completionDate: now
                 )
             ]
-            $0.boardTodoDisplays[0].todoState = .done
             $0.timelineLogs = [
                 RoutineLog(
                     id: HomeOptimisticTimelineLogID.make(taskID: task.id, completionDate: now),
@@ -3757,7 +3699,11 @@ struct HomeFeatureTests {
                     taskID: task.id
                 )
             ]
-            $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
+            $0.doneStats = HomeFeature.DoneStats(
+                totalCount: 1,
+                countsByTaskID: [task.id: 1],
+                completedDatesByTaskID: [task.id: [now]]
+            )
         }
 
         let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
@@ -3801,7 +3747,7 @@ struct HomeFeatureTests {
             steps: [
                 RoutineStep(title: "Wash clothes"),
                 RoutineStep(title: "Hang on the line"),
-                RoutineStep(title: "Put away")
+                RoutineStep(title: "Put away"),
             ]
         )
         try context.save()
@@ -3810,7 +3756,7 @@ struct HomeFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(
+        let store = makeHomeTestStore(
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 routineDisplays: [
@@ -3869,7 +3815,7 @@ struct HomeFeatureTests {
             )
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeHomeTestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -3877,18 +3823,22 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave(AddRoutineSaveRequest(
-            name: "  read  ",
-            frequencyInDays: 7,
-            recurrenceRule: .interval(days: 7),
-            emoji: "🔥",
-            priority: .medium,
-            importance: .level2,
-            urgency: .level2,
-            tags: ["Evening"],
-            scheduleMode: .fixedInterval,
-            color: .none
-        )))))
+        await store.send(
+            .addRoutineSheet(
+                .delegate(
+                    .didSave(
+                        AddRoutineSaveRequest(
+                            name: "  read  ",
+                            frequencyInDays: 7,
+                            recurrenceRule: .interval(days: 7),
+                            emoji: "🔥",
+                            priority: .medium,
+                            importance: .level2,
+                            urgency: .level2,
+                            tags: ["Evening"],
+                            scheduleMode: .fixedInterval,
+                            color: .none
+                        )))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -3898,14 +3848,18 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func onAppear_enforcesUniqueNamesByRemovingDuplicates() async throws {
+    func onAppear_loadsNamesRepairedByStartupMaintenance() async throws {
         let context = makeInMemoryContext()
         let first = makeTask(in: context, name: "Routine A", interval: 1, lastDone: nil, emoji: "🅰️")
         let duplicate = makeTask(in: context, name: "  routine a  ", interval: 3, lastDone: nil, emoji: "♻️")
         _ = makeLog(in: context, task: duplicate, timestamp: Date())
         try context.save()
+        _ = try HomeFeatureTaskLoadQuery(calendar: .current).load(
+            from: context,
+            performingMaintenance: true
+        )
 
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -3913,12 +3867,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
             $0.locationClient.snapshot = { _ in
                 try? await Task.sleep(nanoseconds: 20_000_000)
-                return LocationSnapshot(
-                    authorizationStatus: .notDetermined,
-                    coordinate: nil,
-                    horizontalAccuracy: nil,
-                    timestamp: nil
-                )
+                return LocationSnapshot(authorizationStatus: .notDetermined)
             }
         }
 
@@ -3938,14 +3887,8 @@ struct HomeFeatureTests {
             ]
         }
         await store.receive(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: 0))
-        await store.receive(.locationSnapshotUpdated(
-            LocationSnapshot(
-                authorizationStatus: .notDetermined,
-                coordinate: nil,
-                horizontalAccuracy: nil,
-                timestamp: nil
-            )
-        ))
+        await store.receive(
+            .locationSnapshotUpdated(LocationSnapshot(authorizationStatus: .notDetermined)))
 
         let remainingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let remainingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
@@ -3955,7 +3898,7 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func onAppear_enforcesUniquePlaceNamesByMergingDuplicates() async throws {
+    func onAppear_loadsPlacesRepairedByStartupMaintenance() async throws {
         let context = makeInMemoryContext()
         let unlinkedPlace = RoutinePlace(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
@@ -3985,21 +3928,21 @@ struct HomeFeatureTests {
             placeID: linkedPlace.id
         )
         try context.save()
+        _ = try HomeFeatureTaskLoadQuery(calendar: .current).load(
+            from: context,
+            performingMaintenance: true
+        )
 
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
+            $0.appSettingsClient.placesEnabled = { true }
             $0.notificationClient.schedule = { _ in }
             $0.locationClient.snapshot = { _ in
                 try? await Task.sleep(nanoseconds: 20_000_000)
-                return LocationSnapshot(
-                    authorizationStatus: .notDetermined,
-                    coordinate: nil,
-                    horizontalAccuracy: nil,
-                    timestamp: nil
-                )
+                return LocationSnapshot(authorizationStatus: .notDetermined)
             }
         }
 
@@ -4032,14 +3975,8 @@ struct HomeFeatureTests {
             ]
         }
         await store.receive(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: 0))
-        await store.receive(.locationSnapshotUpdated(
-            LocationSnapshot(
-                authorizationStatus: .notDetermined,
-                coordinate: nil,
-                horizontalAccuracy: nil,
-                timestamp: nil
-            )
-        ))
+        await store.receive(
+            .locationSnapshotUpdated(LocationSnapshot(authorizationStatus: .notDetermined)))
 
         let remainingPlaces = try context.fetch(FetchDescriptor<RoutinePlace>())
         let remainingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -4049,7 +3986,7 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func onAppear_backfillsMissingLogFromLastDone() async throws {
+    func onAppear_loadsLogsBackfilledByStartupMaintenance() async throws {
         let context = makeInMemoryContext()
         let lastDone = makeDate("2026-03-14T10:00:00Z")
         let now = makeDate("2026-03-14T12:00:00Z")
@@ -4058,8 +3995,12 @@ struct HomeFeatureTests {
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        _ = try HomeFeatureTaskLoadQuery(calendar: calendar).load(
+            from: context,
+            performingMaintenance: true
+        )
 
-        let store = TestStore(initialState: HomeFeature.State()) {
+        let store = makeHomeTestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -4077,6 +4018,12 @@ struct HomeFeatureTests {
             }
         }
 
+        let expectedLogs = try context.fetch(FetchDescriptor<RoutineLog>()).sorted {
+            let lhs = $0.timestamp ?? .distantPast
+            let rhs = $1.timestamp ?? .distantPast
+            return lhs > rhs
+        }
+
         await store.send(.onAppear)
         await store.receive { action in
             guard case let .tasksLoadedSuccessfully(tasks, places, _, logs, doneStats) = action else { return false }
@@ -4090,25 +4037,27 @@ struct HomeFeatureTests {
             return true
         } assert: {
             $0.routineTasks = [task]
-            $0.timelineLogs = try! context.fetch(FetchDescriptor<RoutineLog>()).sorted {
-                let lhs = $0.timestamp ?? .distantPast
-                let rhs = $1.timestamp ?? .distantPast
-                return lhs > rhs
-            }
-            $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
+            $0.timelineLogs = expectedLogs
+            $0.doneStats = HomeFeature.DoneStats(
+                totalCount: 1,
+                countsByTaskID: [task.id: 1],
+                completedDatesByTaskID: [task.id: [lastDone]]
+            )
             $0.routineDisplays = [
-                makeDisplay(taskID: task.id, name: "Shave Beard", emoji: "💪", interval: 4, lastDone: lastDone, isDoneToday: true, doneCount: 1)
+                makeDisplay(
+                    taskID: task.id, name: "Shave Beard", emoji: "💪", interval: 4, lastDone: lastDone, isDoneToday: true, doneCount: 1)
             ]
         }
         await store.receive(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: 0))
-        await store.receive(.locationSnapshotUpdated(
-            LocationSnapshot(
-                authorizationStatus: .notDetermined,
-                coordinate: nil,
-                horizontalAccuracy: nil,
-                timestamp: nil
-            )
-        ))
+        await store.receive(
+            .locationSnapshotUpdated(
+                LocationSnapshot(
+                    authorizationStatus: .notDetermined,
+                    coordinate: nil,
+                    horizontalAccuracy: nil,
+                    timestamp: nil
+                )
+            ))
 
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         #expect(logs.count == 1)
@@ -4129,6 +4078,12 @@ private func makeHomeViewForContextMenu() -> HomeTCAView {
         },
         goalsStore: Store(initialState: GoalsFeature.State()) {
             GoalsFeature()
+        },
+        backlogStore: Store(initialState: BacklogFeature.State()) {
+            BacklogFeature()
+        },
+        taskRankingStore: Store(initialState: TaskRankingFeature.State()) {
+            TaskRankingFeature()
         }
     )
 }

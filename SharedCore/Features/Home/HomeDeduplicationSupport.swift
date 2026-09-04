@@ -2,6 +2,33 @@ import Foundation
 import SwiftData
 
 enum HomeDeduplicationSupport {
+    private struct TaskSelectionKey: Comparable {
+        let whitespacePenalty: Int
+        let foldedName: String
+        let normalizedID: String
+
+        init(task: RoutineTask) {
+            let rawName = task.name ?? ""
+            let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+            whitespacePenalty = rawName == trimmedName ? 0 : 1
+            foldedName = trimmedName.folding(
+                options: [.caseInsensitive, .diacriticInsensitive],
+                locale: .current
+            )
+            normalizedID = task.id.uuidString.lowercased()
+        }
+
+        static func < (lhs: Self, rhs: Self) -> Bool {
+            if lhs.whitespacePenalty != rhs.whitespacePenalty {
+                return lhs.whitespacePenalty < rhs.whitespacePenalty
+            }
+            if lhs.foldedName != rhs.foldedName {
+                return lhs.foldedName < rhs.foldedName
+            }
+            return lhs.normalizedID < rhs.normalizedID
+        }
+    }
+
     static func hasDuplicateRoutineName(
         _ name: String,
         in context: ModelContext,
@@ -153,12 +180,8 @@ enum HomeDeduplicationSupport {
         } ?? places[0]
     }
 
-    private static func taskSelectionKey(_ task: RoutineTask) -> (Int, String, String) {
-        let rawName = task.name ?? ""
-        let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let whitespacePenalty = rawName == trimmedName ? 0 : 1
-        let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        return (whitespacePenalty, foldedName, task.id.uuidString.lowercased())
+    private static func taskSelectionKey(_ task: RoutineTask) -> TaskSelectionKey {
+        TaskSelectionKey(task: task)
     }
 
     private static func remappedRelationships(
@@ -180,18 +203,10 @@ enum HomeDeduplicationSupport {
     private static func placeSelectionKey(
         _ place: RoutinePlace,
         linkedCounts: [UUID: Int]
-    ) -> (Int, Int, Date, String, String) {
-        let rawName = place.name
-        let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let linkedCountPenalty = -linkedCounts[place.id, default: 0]
-        let whitespacePenalty = rawName == trimmedName ? 0 : 1
-        let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        return (
-            linkedCountPenalty,
-            whitespacePenalty,
-            place.createdAt,
-            foldedName,
-            place.id.uuidString.lowercased()
+    ) -> PlaceDeduplicationKey {
+        PlaceDeduplicationKey(
+            place: place,
+            linkedCount: linkedCounts[place.id, default: 0]
         )
     }
 }

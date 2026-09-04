@@ -12,7 +12,7 @@ Every Home task reload ran whole-history repair work before fetching presentatio
 
 ## Fix
 
-Home now performs repair and migration maintenance only while establishing its initial task snapshot. Ordinary notifications, post-mutation reloads, and reappearances use the lightweight fetch path. The Home refresh observer no longer schedules an initial-load action when a valid snapshot is already present.
+Home originally moved repair and migration maintenance to its initial task snapshot. Decision 0559 later moved that initial maintenance again, into a utility-priority startup model actor. Ordinary Home loads now always use the lightweight fetch path. The Home refresh observer also avoids scheduling an initial-load action when a valid snapshot already exists.
 
 ## Prevention Rule
 
@@ -20,4 +20,6 @@ Do not put migrations, deduplication, repair, or orphan cleanup in a frequently 
 
 ## Regression Safeguard
 
-`PerformanceRegressionTests.testMacHomeRunsWholeHistoryMaintenanceOnlyForInitialLoad` verifies the initial-load boundary, the lightweight default reload path, and the already-loaded appearance guard.
+`PerformanceRegressionTests.testMacHomeDefersWholeHistoryMaintenanceOffTheMainActor` verifies that Home does not request maintenance, retains a lightweight default reload path, and leaves the explicit maintenance capability to startup infrastructure.
+
+Related decision: [0559 — Run startup data maintenance off the main actor](../decisions/0559-run-startup-data-maintenance-off-the-main-actor.md).

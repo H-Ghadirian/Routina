@@ -36,7 +36,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to update checklist routine from home list: \(error)")
+                RoutinaLog.error("Failed to update checklist routine from home list: \(error)")
             }
         }
     }
@@ -90,7 +90,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to mark routine as done from home list: \(error)")
+                RoutinaLog.error("Failed to mark routine as done from home list: \(error)")
             }
         }
     }
@@ -131,7 +131,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to mark exact-time routine as missed from home list: \(error)")
+                RoutinaLog.error("Failed to mark exact-time routine as missed from home list: \(error)")
             }
         }
     }
@@ -173,7 +173,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to confirm assumed task from home list: \(error)")
+                RoutinaLog.error("Failed to confirm assumed task from home list: \(error)")
             }
         }
     }
@@ -215,7 +215,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to mark assumed task as missed from home list: \(error)")
+                RoutinaLog.error("Failed to mark assumed task as missed from home list: \(error)")
             }
         }
     }
@@ -256,7 +256,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to mark exact-time routine occurrence as canceled from home list: \(error)")
+                RoutinaLog.error("Failed to mark exact-time routine occurrence as canceled from home list: \(error)")
             }
         }
     }
@@ -295,7 +295,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 await cancelNotification(update.taskID.uuidString)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to pause routine from home list: \(error)")
+                RoutinaLog.error("Failed to pause routine from home list: \(error)")
             }
         }
     }
@@ -348,7 +348,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to resume routine from home list: \(error)")
+                RoutinaLog.error("Failed to resume routine from home list: \(error)")
             }
         }
     }
@@ -394,7 +394,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to pause routines from custom section: \(error)")
+                RoutinaLog.error("Failed to pause routines from custom section: \(error)")
             }
         }
     }
@@ -459,7 +459,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to resume routines from custom section: \(error)")
+                RoutinaLog.error("Failed to resume routines from custom section: \(error)")
             }
         }
     }
@@ -509,7 +509,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to archive routine for today from home list: \(error)")
+                RoutinaLog.error("Failed to archive routine for today from home list: \(error)")
             }
         }
     }
@@ -537,7 +537,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to pin routine from home list: \(error)")
+                RoutinaLog.error("Failed to pin routine from home list: \(error)")
             }
         }
     }
@@ -552,26 +552,20 @@ enum HomeTaskLifecycleExecutionSupport {
                 guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: update.taskID)).first else {
                     return
                 }
-                let effectivePlannedDate = RoutineTask.effectivePlannedDate(
-                    plannedDate: update.plannedDate,
-                    scheduleMode: task.scheduleMode,
-                    availabilityStartDate: task.availabilityStartDate,
-                    availabilityEndDate: task.availabilityEndDate
-                )
-                task.plannedDate = effectivePlannedDate
+                task.plannedDate = update.plannedDate
                 task.customTaskSectionID = update.customTaskSectionID
                 DeviceActivityRecorder.recordAction(
                     .updated,
                     entity: .task,
                     entityID: update.taskID,
                     entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: effectivePlannedDate == nil ? "Cleared task plan" : "Planned task",
+                    details: update.plannedDate == nil ? "Cleared task plan" : "Planned task",
                     in: context
                 )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to plan routine from home list: \(error)")
+                RoutinaLog.error("Failed to plan routine from home list: \(error)")
             }
         }
     }
@@ -598,7 +592,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to unpin routine from home list: \(error)")
+                RoutinaLog.error("Failed to unpin routine from home list: \(error)")
             }
         }
     }

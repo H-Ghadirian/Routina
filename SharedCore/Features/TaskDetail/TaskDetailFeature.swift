@@ -1,520 +1,9 @@
 import ComposableArchitecture
 import Foundation
-import SwiftData
-import UserNotifications
 
 struct TaskDetailFeature: Reducer {
     private enum CancelID {
         case loadContext
-    }
-
-    typealias EditFrequency = TaskFormFrequencyUnit
-
-    @ObservableState
-    struct State: Equatable {
-        struct ChecklistItemsCache: Equatable {
-            var storage: String = ""
-            var items: [RoutineChecklistItem] = []
-
-            static func == (_ lhs: ChecklistItemsCache, _ rhs: ChecklistItemsCache) -> Bool {
-                true
-            }
-        }
-
-        struct PendingManualCompletion: Equatable {
-            var completedAt: Date
-            var referenceDate: Date
-            var previousTodoStateTitle: String?
-            var targets: [RoutineTaskResolvedRelationship]
-            var selectedTargetIDs: [UUID] = []
-        }
-
-        var task: RoutineTask
-        var taskRefreshID: UInt64 = 0
-        @ObservationStateIgnored var checklistItemsCache = ChecklistItemsCache()
-        var logs: [RoutineLog] = []
-        var pendingLocalCompletionDates: [Date] = []
-        var pendingLocalRemovalDates: [Date] = []
-        var selectedDate: Date?
-        var selectedOccurrenceDate: Date?
-        var daysSinceLastRoutine: Int = 0
-        var overdueDays: Int = 0
-        var isDoneToday: Bool = false
-        var isAssumedDoneToday: Bool = false
-        var isEditSheetPresented: Bool = false
-        var isAddDetailChooserPresented: Bool = false
-        var editRoutineName: String = ""
-        var editCustomTaskSectionID: UUID?
-        var editRoutineEmoji: String = "✨"
-        var editTaskDescription: String = ""
-        var editRoutineNotes: String = ""
-        var detailCommentDraft: String = ""
-        var editingDetailCommentID: UUID?
-        var editingDetailCommentDraft: String = ""
-        var editRoutineLink: String = ""
-        var editDeadline: Date?
-        var editIsAllDay: Bool = false
-        var editRoutineDurationMode: RoutineDurationMode = .oneDay
-        var editAvailabilityStartDate: Date?
-        var editAvailabilityEndDate: Date?
-        var editPlannedDate: Date?
-        var editReminderAt: Date?
-        var editPriority: RoutineTaskPriority = .none
-        var editImportance: RoutineTaskImportance = .level2
-        var editUrgency: RoutineTaskUrgency = .level2
-        var editPressure: RoutineTaskPressure = .none
-        var editTemporalWeightRule: RoutineTaskTemporalWeightRule?
-        var editTaskLadderEntryWindow: RoutineTaskLadderEntryWindow = .throughoutCycle
-        var editThinkingNeeded: RoutineTaskThinkingNeeded = .none
-        var editImageData: Data?
-        var editVoiceNote: RoutineVoiceNote?
-        var taskAttachments: [AttachmentItem] = []
-        var editAttachments: [AttachmentItem] = []
-        var editRoutineTags: [String] = []
-        var editRoutineFlags: [String] = []
-        var editRoutineGoals: [RoutineGoalSummary] = []
-        var editEventIDs: [UUID] = []
-        var editRelationships: [RoutineTaskRelationship] = []
-        var editTagDraft: String = ""
-        var editFlagDraft: String = ""
-        var editGoalDraft: String = ""
-        var editFlagSelectionValidationMessage: String?
-        var editScheduleMode: RoutineScheduleMode = .fixedInterval
-        var editRoutineSteps: [RoutineStep] = []
-        var editStepDraft: String = ""
-        var editRoutineChecklistItems: [RoutineChecklistItem] = []
-        var editChecklistItemDraftTitle: String = ""
-        var editChecklistItemDraftInterval: Int = 3
-        var editChecklistValidationMessage: String?
-        var availablePlaces: [RoutinePlaceSummary] = []
-        var availableTags: [String] = []
-        var availableFlags: [String] = []
-        var flagRules: [RoutineFlagRule] = []
-        var availableTagSummaries: [RoutineTagSummary] = []
-        var availableGoals: [RoutineGoalSummary] = []
-        var availableEvents: [RoutineEventLinkCandidate] = []
-        var relatedTagRules: [RoutineRelatedTagRule] = []
-        var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
-        var editAvailableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
-        /// Home provides this context from its loaded task snapshot before selecting a detail.
-        /// Standalone detail presentations leave this `false` and load their own context.
-        var hasPreloadedEditContext = false
-        var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
-        var editSelectedPlaceID: UUID?
-        var editSelectedPlaceIDs: [UUID] = []
-        var editDestinationAddress: String = ""
-        var editDestinationCoordinate: LocationCoordinate?
-        var editFrequency: EditFrequency = .day
-        var editFrequencyValue: Int = 1
-        var editRecurrenceDraft: RoutineRecurrenceDraft = RoutineRecurrenceDraft(cadence: .none)
-        var editRecurrenceDraftIsAuthoritative: Bool = false
-        var editRecurrenceEditorMode: RoutineRecurrenceEditorMode = .simple
-        var editAdvancedRecurrenceRule: RoutineAdvancedRecurrenceRule = RoutineAdvancedRecurrenceRule()
-        var editRecurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
-        var editRecurrenceHasExplicitTime: Bool = false
-        var editRecurrenceHasTimeRange: Bool = false
-        var editRecurrenceTimeRangeRole: RoutineTimeRangeRole = .availability
-        var editRecurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
-        var editRecurrenceTimeRangeStart: RoutineTimeOfDay = RoutineTimeRange.defaultValue.start
-        var editRecurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end
-        var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
-        var editRecurrenceWeekdays: [Int] = []
-        var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
-        var editRecurrenceDaysOfMonth: [Int] = []
-        var editAutoAssumeDailyDone: Bool = false
-        var editHidesAssumedDoneCalendarBlock: Bool = false
-        var editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
-        var editEstimatedDurationMinutes: Int?
-        var editActualDurationMinutes: Int?
-        var editStoryPoints: Int?
-        var editFocusModeEnabled: Bool = false
-        var editCadenceEnabled: Bool = true
-        var editAutoPauseAfterCompletion: Bool = false
-        var editNudgesEnabled: Bool = true
-        var taskLadderGroupHasChildren: Bool = false
-        var editTaskLadderGroupEnabled: Bool = false
-        var isDeleteConfirmationPresented: Bool = false
-        var isUndoCompletionConfirmationPresented: Bool = false
-        var isManualCompletionConfirmationPresented: Bool = false
-        var pendingManualCompletion: PendingManualCompletion?
-        var pendingLogRemovalTimestamp: Date?
-        var shouldDismissAfterDelete: Bool = false
-        var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
-        var editColor: RoutineTaskColor = .none
-        var isBlockedStateConfirmationPresented: Bool = false
-        var hasLoadedNotificationStatus: Bool = false
-        var appNotificationsEnabled: Bool = true
-        var systemNotificationsAuthorized: Bool = true
-
-        var candidateRecurrenceRule: RoutineRecurrenceRule {
-            candidateRecurrenceDraft.resolvedRecurrenceRule()
-                ?? legacyCandidateRecurrenceRule
-        }
-
-        var candidateRecurrenceDraft: RoutineRecurrenceDraft {
-            recurrenceDraftForPersistence()
-        }
-
-        func recurrenceDraftForPersistence(
-            calendar: Calendar = .current
-        ) -> RoutineRecurrenceDraft {
-            editRecurrenceDraftIsAuthoritative
-                ? editRecurrenceDraft
-                : legacyRecurrenceDraft(calendar: calendar)
-        }
-
-        mutating func synchronizeRecurrenceDraftFromLegacy() {
-            editRecurrenceDraftIsAuthoritative = false
-        }
-
-        private var legacyCandidateRecurrenceRule: RoutineRecurrenceRule {
-            let fallbackInterval = !editScheduleMode.usesRoutineCadence
-                ? 1
-                : TaskFormRecurrenceConstraints.effectiveIntervalDays(
-                    value: editFrequencyValue,
-                    unit: editFrequency,
-                    scheduleMode: editScheduleMode,
-                    routineDurationMode: editRoutineDurationMode,
-                    recurrenceKind: editRecurrenceKind
-                )
-            let usesAvailabilityTiming = !editIsAllDay
-            let timeRange = usesAvailabilityTiming ? editRecurrenceTimeRange : nil
-
-            if !editScheduleMode.usesRoutineCadence {
-                return .interval(
-                    days: 1,
-                    at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
-                    timeRange: timeRange
-                )
-            }
-
-            guard !editScheduleMode.isChecklistDrivenMode else {
-                return .interval(days: max(fallbackInterval, 1))
-            }
-
-            if editRecurrenceEditorMode == .advanced {
-                return .advanced(
-                    editAdvancedRecurrenceRule,
-                    timeRange: timeRange
-                )
-            }
-
-            switch editRecurrenceKind {
-            case .intervalDays:
-                return .interval(
-                    days: max(fallbackInterval, 1),
-                    at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
-                    timeRange: timeRange
-                )
-            case .dailyTime:
-                if let timeRange {
-                    return .daily(in: timeRange)
-                }
-                return RoutineRecurrenceRule(
-                    kind: .dailyTime,
-                    timeOfDay: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil
-                )
-            case .weekly:
-                return .weekly(
-                    on: effectiveEditRecurrenceWeekdays,
-                    at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
-                    timeRange: timeRange
-                )
-            case .monthlyDay:
-                return .monthly(
-                    on: effectiveEditRecurrenceDaysOfMonth,
-                    at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
-                    timeRange: timeRange
-                )
-            }
-        }
-
-        private func legacyRecurrenceDraft(
-            calendar: Calendar
-        ) -> RoutineRecurrenceDraft {
-            let cadenceOverride: RoutineRecurrenceDraft.Cadence?
-            if !editScheduleMode.usesRoutineCadence {
-                cadenceOverride = RoutineRecurrenceDraft.Cadence.none
-            } else if editScheduleMode.taskType != .todo,
-                      !editCadenceEnabled {
-                cadenceOverride = editAutoPauseAfterCompletion
-                    ? .manual
-                    : RoutineRecurrenceDraft.Cadence.none
-            } else if editScheduleMode.isChecklistDrivenMode {
-                cadenceOverride = .itemRunout
-            } else {
-                cadenceOverride = nil
-            }
-
-            let recurrenceRule = legacyCandidateRecurrenceRule
-            let draft = RoutineRecurrenceDraft(
-                recurrenceRule: recurrenceRule,
-                cadence: cadenceOverride,
-                timeRangeRole: editRecurrenceTimeRangeRole,
-                calendar: calendar
-            )
-            return draft
-        }
-
-        var effectiveEditRecurrenceWeekdays: [Int] {
-            let selectedWeekdays = Array(Set(editRecurrenceWeekdays.map { min(max($0, 1), 7) })).sorted()
-            return selectedWeekdays.isEmpty ? [min(max(editRecurrenceWeekday, 1), 7)] : selectedWeekdays
-        }
-
-        var effectiveEditRecurrenceDaysOfMonth: [Int] {
-            let selectedDays = Array(Set(editRecurrenceDaysOfMonth.map { min(max($0, 1), 31) })).sorted()
-            return selectedDays.isEmpty ? [min(max(editRecurrenceDayOfMonth, 1), 31)] : selectedDays
-        }
-
-        var editRecurrenceTimeRange: RoutineTimeRange? {
-            guard editRecurrenceHasTimeRange else { return nil }
-            return RoutineTimeRange(
-                start: editRecurrenceTimeRangeStart,
-                end: editRecurrenceTimeRangeEnd
-            )
-        }
-
-        var canAutoAssumeDailyDone: Bool {
-            candidateRecurrenceDraft.validationIssue == nil
-                && RoutineAssumedCompletion.canEnable(
-                scheduleMode: editScheduleMode,
-                recurrenceRule: candidateRecurrenceRule,
-                recurrenceTimeRangeRole: editRecurrenceTimeRangeRole,
-                availabilityStartDate: editAvailabilityStartDate,
-                availabilityEndDate: editAvailabilityEndDate,
-                isAllDay: editIsAllDay,
-                cadenceEnabled: editScheduleMode.taskType == .todo
-                    ? true
-                    : editCadenceEnabled,
-                hasSequentialSteps: !editRoutineSteps.isEmpty,
-                hasChecklistItems: !editRoutineChecklistItems.isEmpty
-                )
-        }
-
-        var autoAssumeDoneUnavailableReason: String? {
-            candidateRecurrenceDraft.validationIssue == nil
-                ? RoutineAssumedCompletion.unavailableReason(
-                    scheduleMode: editScheduleMode,
-                    recurrenceRule: candidateRecurrenceRule,
-                    recurrenceTimeRangeRole: editRecurrenceTimeRangeRole,
-                    availabilityStartDate: editAvailabilityStartDate,
-                    availabilityEndDate: editAvailabilityEndDate,
-                    isAllDay: editIsAllDay,
-                    cadenceEnabled: editScheduleMode.taskType == .todo
-                        ? true
-                        : editCadenceEnabled,
-                    hasSequentialSteps: !editRoutineSteps.isEmpty,
-                    hasChecklistItems: !editRoutineChecklistItems.isEmpty
-                )
-                : "Fix the recurrence before using this Flag."
-        }
-
-        var autoAssumeDoneEnabledByFlag: Bool {
-            RoutineFlagRules.enablesAutoAssumeDone(
-                flags: editRoutineFlags,
-                rules: flagRules
-            ) && autoAssumeDoneUnavailableReason == nil
-        }
-
-        var canAddDetailComment: Bool {
-            RoutineTaskComment.sanitizedBody(detailCommentDraft) != nil
-        }
-
-        var canSaveEditingDetailComment: Bool {
-            guard let editingDetailCommentID,
-                  let comment = task.comments.first(where: { $0.id == editingDetailCommentID }),
-                  let body = RoutineTaskComment.sanitizedBody(editingDetailCommentDraft) else {
-                return false
-            }
-            return body != comment.body
-        }
-
-        var taskGoalSummaries: [RoutineGoalSummary] {
-            let resolvedGoals = RoutineGoalSummary.summaries(
-                for: task.goalIDs,
-                in: availableGoals
-            )
-            if !resolvedGoals.isEmpty || task.goalIDs.isEmpty {
-                return resolvedGoals
-            }
-            return RoutineGoalSummary.summaries(
-                for: task.goalIDs,
-                in: editRoutineGoals
-            )
-        }
-
-        var taskEventCandidates: [RoutineEventLinkCandidate] {
-            RoutineEventLinkCandidate.selectedCandidates(
-                for: task.eventIDs,
-                in: availableEvents
-            )
-        }
-    }
-
-    enum Action: Equatable {
-        case markAsDone
-        case cancelTodo
-        case toggleChecklistRunoutItemDone(UUID)
-        case extendChecklistItemRunout(UUID)
-        case toggleChecklistItemCompletion(UUID)
-        case markChecklistItemCompleted(UUID)
-        case detailAddChecklistItemTapped
-        case detailUpdateChecklistItem(UUID, title: String, intervalDays: Int)
-        case requestUndoSelectedDateCompletion
-        case undoSelectedDateCompletion
-        case requestRemoveLogEntry(Date)
-        case removeLogEntry(Date)
-        case setManualCompletionConfirmation(Bool)
-        case confirmManualCompletion([UUID])
-        case updateTaskDuration(Int?)
-        case updateLogDuration(UUID, Int?)
-        case revealTodoStateInTaskDetail
-        case revealImportanceInTaskDetail
-        case revealUrgencyInTaskDetail
-        case revealHeatmapInTaskDetail
-        case revealHistoryInTaskDetail
-        case taskDetailCalendarExpansionChanged(Bool)
-        case pauseTapped
-        case pauseUntilTapped(Date)
-        case notTodayTapped
-        case resumeTapped
-        case startOngoingTapped
-        case finishOngoingTapped
-        case selectedDateChanged(Date)
-        case selectOccurrence(Date)
-        case markOccurrenceDone(Date)
-        case markOccurrenceMissed(Date)
-        case markOccurrenceCanceled(Date)
-        case setEditSheet(Bool)
-        case setAddDetailChooserPresented(Bool)
-        case prepareInlineEdit
-        case editRoutineNameChanged(String)
-        case editCustomTaskSectionChanged(UUID?)
-        case editRoutineEmojiChanged(String)
-        case editTaskDescriptionChanged(String)
-        case editRoutineNotesChanged(String)
-        case detailCommentDraftChanged(String)
-        case detailCommentAddTapped
-        case detailCommentEditTapped(UUID)
-        case detailCommentEditDraftChanged(String)
-        case detailCommentEditCancelTapped
-        case detailCommentEditSaveTapped(UUID)
-        case detailCommentDeleteTapped(UUID)
-        case detailLinkExistingTask(UUID, RoutineTaskRelationshipKind)
-        case editRoutineLinkChanged(String)
-        case editDeadlineEnabledChanged(Bool)
-        case editDeadlineDateChanged(Date)
-        case editAllDayChanged(Bool)
-        case editRoutineDurationModeChanged(RoutineDurationMode)
-        case editAvailabilityStartDateChanged(Date?)
-        case editAvailabilityEndDateChanged(Date?)
-        case editPlannedDateChanged(Date?)
-        case editReminderEnabledChanged(Bool)
-        case editReminderDateChanged(Date)
-        case editReminderLeadMinutesChanged(Int?)
-        case editPriorityChanged(RoutineTaskPriority)
-        case editImportanceChanged(RoutineTaskImportance)
-        case editUrgencyChanged(RoutineTaskUrgency)
-        case editPressureChanged(RoutineTaskPressure)
-        case editTemporalWeightRuleChanged(RoutineTaskTemporalWeightRule?)
-        case editTaskLadderEntryWindowChanged(RoutineTaskLadderEntryWindow)
-        case editThinkingNeededChanged(RoutineTaskThinkingNeeded)
-        case editImagePicked(Data?)
-        case editRemoveImageTapped
-        case editVoiceNoteChanged(RoutineVoiceNote?)
-        case editAttachmentPicked(Data, String)
-        case editRemoveAttachment(UUID)
-        case attachmentsLoaded([AttachmentItem])
-        case editTagDraftChanged(String)
-        case editFlagDraftChanged(String)
-        case editGoalDraftChanged(String)
-        case editAddTagTapped
-        case editAddFlagTapped
-        case editAddGoalTapped
-        case editRemoveTag(String)
-        case editRemoveFlag(String)
-        case editRemoveGoal(UUID)
-        case editAddRelationship(UUID, RoutineTaskRelationshipKind)
-        case editRemoveRelationship(UUID)
-        case editTagRenamed(oldName: String, newName: String)
-        case editTagDeleted(String)
-        case editScheduleModeChanged(RoutineScheduleMode)
-        case editStepDraftChanged(String)
-        case editAddStepTapped
-        case editRemoveStep(UUID)
-        case editMoveStepUp(UUID)
-        case editMoveStepDown(UUID)
-        case editChecklistItemDraftTitleChanged(String)
-        case editChecklistItemDraftIntervalChanged(Int)
-        case editAddChecklistItemTapped
-        case editRemoveChecklistItem(UUID)
-        case availablePlacesLoaded([RoutinePlaceSummary])
-        case availableTagsLoaded([String])
-        case availableFlagsLoaded([String])
-        case flagRulesLoaded([RoutineFlagRule])
-        case availableTagSummariesLoaded([RoutineTagSummary])
-        case availableGoalsLoaded([RoutineGoalSummary])
-        case availableEventsLoaded([RoutineEventLinkCandidate])
-        case relatedTagRulesLoaded([RoutineRelatedTagRule])
-        case availableRelationshipTasksLoaded([RoutineTaskRelationshipCandidate])
-        case editSelectedPlaceChanged(UUID?)
-        case editSelectedPlaceIDsChanged([UUID])
-        case editDestinationAddressChanged(String)
-        case editDestinationCoordinateChanged(LocationCoordinate?)
-        case editToggleTagSelection(String)
-        case editToggleFlagSelection(String)
-        case editToggleGoalSelection(RoutineGoalSummary)
-        case editToggleEventSelection(UUID)
-        case editEstimatedDurationChanged(Int?)
-        case editActualDurationChanged(Int?)
-        case editStoryPointsChanged(Int?)
-        case editFocusModeEnabledChanged(Bool)
-        case editCadenceEnabledChanged(Bool)
-        case editNudgesEnabledChanged(Bool)
-        case editTaskLadderGroupEnabledChanged(Bool)
-        case editFrequencyChanged(EditFrequency)
-        case editFrequencyValueChanged(Int)
-        case editRecurrenceEditorModeChanged(RoutineRecurrenceEditorMode)
-        case editAdvancedRecurrenceRuleChanged(RoutineAdvancedRecurrenceRule)
-        case editRecurrenceDraftChanged(RoutineRecurrenceDraft)
-        case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
-        case editRecurrenceHasExplicitTimeChanged(Bool)
-        case editRecurrenceHasTimeRangeChanged(Bool)
-        case editRecurrenceTimeRangeRoleChanged(RoutineTimeRangeRole)
-        case editRecurrenceTimeOfDayChanged(RoutineTimeOfDay)
-        case editRecurrenceTimeRangeStartChanged(RoutineTimeOfDay)
-        case editRecurrenceTimeRangeEndChanged(RoutineTimeOfDay)
-        case editRecurrenceWeekdayChanged(Int)
-        case editRecurrenceWeekdaysChanged([Int])
-        case editRecurrenceDayOfMonthChanged(Int)
-        case editRecurrenceDaysOfMonthChanged([Int])
-        case editAutoAssumeDailyDoneChanged(Bool)
-        case editHidesAssumedDoneCalendarBlockChanged(Bool)
-        case editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay)
-        case editSaveTapped
-        case editSaveRejected(RoutineTask)
-        case confirmAssumedPastDays
-        case setDeleteConfirmation(Bool)
-        case setUndoCompletionConfirmation(Bool)
-        case confirmUndoCompletion
-        case deleteRoutineConfirmed
-        case routineDeleted
-        case deleteDismissHandled
-        case logsLoaded([RoutineLog])
-        case openLinkedTask(UUID)
-        case addLinkedTaskRelationshipKindChanged(RoutineTaskRelationshipKind)
-        case openAddLinkedTask
-        case editColorChanged(RoutineTaskColor)
-        case todoStateChanged(TodoState)
-        case pressureChanged(RoutineTaskPressure)
-        case thinkingNeededChanged(RoutineTaskThinkingNeeded)
-        case importanceChanged(RoutineTaskImportance)
-        case urgencyChanged(RoutineTaskUrgency)
-        case setBlockedStateConfirmation(Bool)
-        case confirmBlockedStateCompletion
-        case notificationDisabledWarningTapped
-        case notificationStatusLoaded(appEnabled: Bool, systemAuthorized: Bool)
-        case onAppear
     }
 
     @Dependency(\.notificationClient) var notificationClient
@@ -524,294 +13,6 @@ struct TaskDetailFeature: Reducer {
     @Dependency(\.appSettingsClient) var appSettingsClient
     @Dependency(\.urlOpenerClient) var urlOpenerClient
 
-    private func statusMutationHandler() -> TaskDetailStatusMutationHandler {
-        TaskDetailStatusMutationHandler(
-            now: { now },
-            matrixPriority: { importance, urgency in
-                matrixPriority(importance: importance, urgency: urgency)
-            },
-            appendLocalTodoStateChange: { task, previousStateTitle, newStateTitle in
-                appendLocalTodoStateChange(
-                    to: task,
-                    previousStateTitle: previousStateTitle,
-                    newStateTitle: newStateTitle
-                )
-            },
-            refreshTaskView: { state in
-                refreshTaskView(&state)
-            },
-            updateDerivedState: { state in
-                updateDerivedState(&state)
-            }
-        )
-    }
-
-    private func statusActionHandler() -> TaskDetailStatusActionHandler {
-        TaskDetailStatusActionHandler(
-            mutationHandler: statusMutationHandler(),
-            markAsDone: { state in
-                reduce(into: &state, action: .markAsDone)
-            },
-            persistTodoStateChange: { request in
-                handleTodoStateChanged(
-                    taskID: request.taskID,
-                    rawValue: request.rawValue,
-                    pausedAt: request.pausedAt,
-                    clearSnoozed: request.clearSnoozed,
-                    previousStateTitle: request.previousStateTitle,
-                    newStateTitle: request.newStateTitle
-                )
-            },
-            persistPressureChange: { mutation in
-                handlePressureChanged(taskID: mutation.taskID, pressure: mutation.pressure)
-            },
-            persistThinkingNeededChange: { mutation in
-                handleThinkingNeededChanged(
-                    taskID: mutation.taskID,
-                    thinkingNeeded: mutation.thinkingNeeded
-                )
-            },
-            persistMatrixPositionChange: { mutation in
-                handleMatrixPositionChanged(
-                    taskID: mutation.taskID,
-                    importance: mutation.importance,
-                    urgency: mutation.urgency,
-                    priority: mutation.priority,
-                    hasExplicitImportance: mutation.hasExplicitImportance,
-                    hasExplicitUrgency: mutation.hasExplicitUrgency
-                )
-            }
-        )
-    }
-
-    private func editDraftMutationHandler() -> TaskDetailEditDraftMutationHandler {
-        TaskDetailEditDraftMutationHandler(
-            matrixPriority: { importance, urgency in
-                matrixPriority(importance: importance, urgency: urgency)
-            },
-            refreshTaskView: { state in
-                refreshTaskView(&state)
-            }
-        )
-    }
-
-    private func basicEditActionHandler() -> TaskDetailBasicEditActionHandler {
-        TaskDetailBasicEditActionHandler(
-            draftMutationHandler: editDraftMutationHandler()
-        )
-    }
-
-    private func sanitizeEditTemporalWeightRule(_ state: inout State) {
-        guard let rule = state.editTemporalWeightRule else { return }
-        guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
-            scheduleMode: state.editScheduleMode,
-            cadenceEnabled: state.editScheduleMode.taskType == .todo
-                ? true
-                : state.editCadenceEnabled
-        ) else {
-            state.editTemporalWeightRule = nil
-            return
-        }
-        state.editTemporalWeightRule = rule.sanitized(
-            baseImportance: state.editImportance,
-            baseUrgency: state.editUrgency,
-            basePressure: state.editPressure,
-            maximumBeforeDueDays: state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
-        )
-    }
-
-    private func sanitizeEditTaskLadderEntryWindow(_ state: inout State) {
-        state.editTaskLadderEntryWindow = RoutineTaskLadderEntryResolver.sanitizedWindow(
-            state.editTaskLadderEntryWindow,
-            scheduleMode: state.editScheduleMode,
-            cadenceEnabled: state.editScheduleMode.taskType == .todo
-                ? true
-                : state.editCadenceEnabled,
-            hasDeadline: state.editDeadline != nil,
-            maximumBeforeDueDays: state.editScheduleMode.taskType == .todo
-                ? nil
-                : state.candidateRecurrenceDraft.maximumTemporalWeightBeforeDueDays
-        )
-    }
-
-    private func tagGoalRelationshipEditActionHandler() -> TaskDetailTagGoalRelationshipEditActionHandler {
-        TaskDetailTagGoalRelationshipEditActionHandler(
-            draftMutationHandler: editDraftMutationHandler()
-        )
-    }
-
-    private func recurrenceEditActionHandler() -> TaskDetailRecurrenceEditActionHandler {
-        TaskDetailRecurrenceEditActionHandler(
-            now: { now },
-            calendar: calendar
-        )
-    }
-
-    private func stepChecklistEditActionHandler() -> TaskDetailStepChecklistEditActionHandler {
-        TaskDetailStepChecklistEditActionHandler(now: { now }, calendar: { calendar })
-    }
-
-    private func editContextActionHandler() -> TaskDetailEditContextActionHandler {
-        TaskDetailEditContextActionHandler()
-    }
-
-    private func dialogLifecycleActionHandler() -> TaskDetailDialogLifecycleActionHandler {
-        TaskDetailDialogLifecycleActionHandler(
-            calendar: calendar,
-            syncEditFormFromTask: { state in
-                syncEditFormFromTask(&state)
-            },
-            loadEditContext: { taskID in
-                loadEditContext(excluding: taskID)
-            }
-        )
-    }
-
-    private func routineLifecycleActionHandler() -> TaskDetailRoutineLifecycleActionHandler {
-        TaskDetailRoutineLifecycleActionHandler(
-            now: { now },
-            calendar: calendar,
-            refreshTaskView: { state in
-                refreshTaskView(&state)
-            },
-            updateDerivedState: { state in
-                updateDerivedState(&state)
-            },
-            upsertLocalLog: { date, state in
-                upsertLocalLog(at: date, in: &state)
-            },
-            persistPause: { taskID, pausedAt, pauseUntil in
-                handlePauseRoutine(taskID: taskID, pausedAt: pausedAt, pauseUntil: pauseUntil)
-            },
-            persistNotToday: { taskID, snoozedUntil in
-                handleNotTodayRoutine(taskID: taskID, snoozedUntil: snoozedUntil)
-            },
-            persistResume: { taskID, resumedAt in
-                handleResumeRoutine(taskID: taskID, resumedAt: resumedAt)
-            },
-            persistStartOngoing: { taskID, startedAt in
-                handleStartOngoing(taskID: taskID, startedAt: startedAt)
-            },
-            persistFinishOngoing: { taskID, finishedAt in
-                handleFinishOngoing(taskID: taskID, finishedAt: finishedAt)
-            }
-        )
-    }
-
-    private func completionLogActionHandler() -> TaskDetailCompletionLogActionHandler {
-        TaskDetailCompletionLogActionHandler(
-            now: { now },
-            calendar: calendar,
-            resolvedSelectedDay: { selectedDate in
-                resolvedSelectedDay(for: selectedDate)
-            },
-            removePendingLocalCompletion: { day, state in
-                removePendingLocalCompletion(on: day, from: &state)
-            },
-            trackPendingLocalRemoval: { day, state in
-                trackPendingLocalRemoval(on: day, in: &state)
-            },
-            removeCompletion: { day, state in
-                removeCompletion(on: day, from: &state)
-            },
-            removeLogEntryLocally: { timestamp, state in
-                removeLogEntry(at: timestamp, from: &state)
-            },
-            logsPreservingPendingLocalCompletions: { logs, state in
-                logsPreservingPendingLocalCompletions(logs, in: &state)
-            },
-            upsertLocalLog: { date, state in
-                upsertLocalLog(at: date, in: &state)
-            },
-            upsertConfirmedAssumedDoneLocalLog: { date, state in
-                upsertLocalLog(at: date, isConfirmedAssumedDone: true, in: &state)
-            },
-            refreshTaskView: { state in
-                refreshTaskView(&state)
-            },
-            updateDerivedState: { state in
-                updateDerivedState(&state)
-            },
-            persistUndoCompletion: { taskID, completedDay in
-                handleUndoCompletion(taskID: taskID, completedDay: completedDay)
-            },
-            persistRemoveLogEntry: { taskID, timestamp in
-                handleRemoveLogEntry(taskID: taskID, timestamp: timestamp)
-            },
-            persistLogDuration: { taskID, logID, previousDuration, duration in
-                handleUpdateLogDuration(
-                    taskID: taskID,
-                    logID: logID,
-                    previousDurationMinutes: previousDuration,
-                    durationMinutes: duration
-                )
-            },
-            persistTaskDuration: { taskID, previousDuration, duration in
-                handleUpdateTaskDuration(
-                    taskID: taskID,
-                    previousDurationMinutes: previousDuration,
-                    durationMinutes: duration
-                )
-            },
-            persistConfirmAssumedPastDays: { taskID, days in
-                handleConfirmAssumedPastDays(taskID: taskID, days: days)
-            }
-        )
-    }
-
-    private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
-        TaskDetailEditSaveRequestBuilder(
-            now: { now },
-            calendar: calendar,
-            matrixPriority: { importance, urgency in
-                matrixPriority(importance: importance, urgency: urgency)
-            }
-        )
-    }
-
-    private func editAddDraftFlag(state: inout State) -> Effect<Action> {
-        let flags = RoutineFlag.parseDraft(state.editFlagDraft)
-        state.editFlagDraft = ""
-        for flag in flags {
-            _ = editToggleFlagSelection(flag, state: &state)
-        }
-        return .none
-    }
-
-    private func editToggleFlagSelection(
-        _ flag: String,
-        state: inout State
-    ) -> Effect<Action> {
-        if RoutineFlag.contains(flag, in: state.editRoutineFlags) {
-            state.editRoutineFlags = RoutineFlag.removing(flag, from: state.editRoutineFlags)
-            state.editFlagSelectionValidationMessage = nil
-            return .none
-        }
-        if RoutineFlagRules.contains(.autoAssumeDone, for: flag, in: state.flagRules),
-           let reason = state.autoAssumeDoneUnavailableReason {
-            state.editFlagSelectionValidationMessage = "\(flag) was not added. \(reason) \(RoutineAssumedCompletion.flagRuleAvailabilitySummary)"
-            return .none
-        }
-        state.editRoutineFlags = RoutineFlag.appending(flag, to: state.editRoutineFlags)
-        state.editFlagSelectionValidationMessage = nil
-        return .none
-    }
-
-    private func markManualFulfillmentTargetsDone(
-        _ targetIDs: Set<UUID>,
-        in state: inout State
-    ) {
-        guard !targetIDs.isEmpty else { return }
-        for index in state.availableRelationshipTasks.indices
-            where targetIDs.contains(state.availableRelationshipTasks[index].id) {
-            state.availableRelationshipTasks[index].status = .doneToday
-        }
-        for index in state.editAvailableRelationshipTasks.indices
-            where targetIDs.contains(state.editAvailableRelationshipTasks[index].id) {
-            state.editAvailableRelationshipTasks[index].status = .doneToday
-        }
-    }
-
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
@@ -820,11 +21,13 @@ struct TaskDetailFeature: Reducer {
             guard !state.task.isCanceledOneOff else { return .none }
             if state.task.isChecklistDriven {
                 guard let completionDate = resolvedRunoutActionDate(for: state.selectedDate) else { return .none }
-                guard RoutineDateMath.canMarkDone(
-                    for: state.task,
-                    referenceDate: completionDate,
-                    calendar: calendar
-                ) else {
+                guard
+                    RoutineDateMath.canMarkDone(
+                        for: state.task,
+                        referenceDate: completionDate,
+                        calendar: calendar
+                    )
+                else {
                     return .none
                 }
                 let dueItemIDs = Set(
@@ -858,7 +61,8 @@ struct TaskDetailFeature: Reducer {
             let pendingManualCompletion = state.pendingManualCompletion
             let selectedDay = calendar.startOfDay(for: state.selectedDate ?? now)
             let isConfirmingAssumedDone = state.isSelectedDateAssumedDone
-            let assumedScheduledBlockTiming = state.isSelectedDateAssumedDone
+            let assumedScheduledBlockTiming =
+                state.isSelectedDateAssumedDone
                 ? RoutineAssumedCompletion.scheduledBlockCompletionTiming(
                     for: state.task,
                     on: selectedDay,
@@ -873,10 +77,12 @@ struct TaskDetailFeature: Reducer {
             } else if let selectedOccurrenceDate = state.validSelectedOccurrenceDate {
                 completionDate = selectedOccurrenceDate
             } else {
-                guard let resolvedCompletionDate = resolvedMarkAsDoneDate(
-                    for: state.selectedDate,
-                    task: state.task
-                ) else {
+                guard
+                    let resolvedCompletionDate = resolvedMarkAsDoneDate(
+                        for: state.selectedDate,
+                        task: state.task
+                    )
+                else {
                     return .none
                 }
                 completionDate = resolvedCompletionDate
@@ -887,13 +93,15 @@ struct TaskDetailFeature: Reducer {
             let isHistoricalCompletion = completionDate < now && !calendar.isDate(completionDate, inSameDayAs: now)
             let previousTodoStateTitle = state.task.isOneOffTask ? state.task.todoState?.displayTitle : nil
             if RoutineDateMath.usesExactTimedOccurrences(for: state.task) {
-                guard RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
-                    for: state.task,
-                    completionDate: completionDate,
-                    referenceDate: now,
-                    logs: state.logs,
-                    calendar: calendar
-                ) else {
+                guard
+                    RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
+                        for: state.task,
+                        completionDate: completionDate,
+                        referenceDate: now,
+                        logs: state.logs,
+                        calendar: calendar
+                    )
+                else {
                     return .none
                 }
             } else {
@@ -916,7 +124,7 @@ struct TaskDetailFeature: Reducer {
             if state.pendingManualCompletion == nil {
                 let manualTargets = state.manualCompletionTargets(for: completionDate)
                 if !manualTargets.isEmpty {
-                    state.pendingManualCompletion = State.PendingManualCompletion(
+                    state.pendingManualCompletion = PendingManualCompletion(
                         completedAt: completionDate,
                         referenceDate: now,
                         previousTodoStateTitle: previousTodoStateTitle,
@@ -993,30 +201,31 @@ struct TaskDetailFeature: Reducer {
         case let .toggleChecklistRunoutItemDone(itemID):
             guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             guard let actionDate = resolvedRunoutActionDate(for: state.selectedDate) else { return .none }
-            if let item = state.task.checklistItems.first(where: { $0.id == itemID }),
-               TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
-                item,
-                referenceDate: actionDate,
-                calendar: calendar
-               ) {
-                let undoUpdate = state.task.undoChecklistItemRunoutDone(
-                    itemID,
+            if let item = state.task.checklistItems.first(where: { $0.id == itemID }) {
+                if TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
+                    item,
                     referenceDate: actionDate,
                     calendar: calendar
-                )
-                guard undoUpdate.restoredItemCount > 0 else { return .none }
-                if let removedCompletionAt = undoUpdate.removedCompletionAt {
-                    state.logs.removeAll { log in
-                        log.kind == .completed && log.timestamp == removedCompletionAt
+                ) {
+                    let undoUpdate = state.task.undoChecklistItemRunoutDone(
+                        itemID,
+                        referenceDate: actionDate,
+                        calendar: calendar
+                    )
+                    guard undoUpdate.restoredItemCount > 0 else { return .none }
+                    if let removedCompletionAt = undoUpdate.removedCompletionAt {
+                        state.logs.removeAll { log in
+                            log.kind == .completed && log.timestamp == removedCompletionAt
+                        }
                     }
+                    refreshTaskView(&state)
+                    updateDerivedState(&state)
+                    return handleChecklistItemRunoutDoneUndone(
+                        taskID: state.task.id,
+                        itemID: itemID,
+                        undoneAt: actionDate
+                    )
                 }
-                refreshTaskView(&state)
-                updateDerivedState(&state)
-                return handleChecklistItemRunoutDoneUndone(
-                    taskID: state.task.id,
-                    itemID: itemID,
-                    undoneAt: actionDate
-                )
             }
 
             let doneAt = actionDate
@@ -1081,9 +290,11 @@ struct TaskDetailFeature: Reducer {
                 )
             }
             let referenceDate = now
-            if state.task.isChecklistCompletionRoutine,
-               state.isDoneToday,
-               state.task.checklistItems.contains(where: { $0.id == itemID }) {
+            let isCompletedRoutineItem =
+                state.task.isChecklistCompletionRoutine
+                && state.isDoneToday
+                && state.task.checklistItems.contains(where: { $0.id == itemID })
+            if isCompletedRoutineItem {
                 return .none
             }
             if state.task.isChecklistItemCompleted(itemID, referenceDate: referenceDate, calendar: calendar) {
@@ -1212,7 +423,8 @@ struct TaskDetailFeature: Reducer {
 
         case let .detailUpdateChecklistItem(itemID, draftTitle, intervalDays):
             guard let title = RoutineChecklistItem.normalizedTitle(draftTitle),
-                  state.task.checklistItems.contains(where: { $0.id == itemID }) else {
+                state.task.checklistItems.contains(where: { $0.id == itemID })
+            else {
                 return .none
             }
             let updatedItems = RoutineChecklistItem.sanitized(
@@ -1345,18 +557,20 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .markOccurrenceDone(occurrence):
-            guard RoutineDateMath.scheduledOccurrences(
-                for: state.task,
-                on: occurrence,
-                calendar: calendar
-            ).contains(where: {
-                RoutineOccurrenceIdentity.matches(
-                    $0,
-                    occurrence,
+            guard
+                RoutineDateMath.scheduledOccurrences(
                     for: state.task,
+                    on: occurrence,
                     calendar: calendar
-                )
-            }) else {
+                ).contains(where: {
+                    RoutineOccurrenceIdentity.matches(
+                        $0,
+                        occurrence,
+                        for: state.task,
+                        calendar: calendar
+                    )
+                })
+            else {
                 return .none
             }
             state.selectedDate = calendar.startOfDay(for: occurrence)
@@ -1364,21 +578,23 @@ struct TaskDetailFeature: Reducer {
             return reduce(into: &state, action: .markAsDone)
 
         case let .markOccurrenceMissed(occurrence):
-            guard TaskDetailOccurrencePresentation.allItems(
-                for: state.task,
-                on: occurrence,
-                selectedOccurrence: occurrence,
-                referenceDate: now,
-                logs: state.logs,
-                calendar: calendar
-            ).first(where: {
-                RoutineOccurrenceIdentity.matches(
-                    $0.occurrence,
-                    occurrence,
+            guard
+                TaskDetailOccurrencePresentation.allItems(
                     for: state.task,
+                    on: occurrence,
+                    selectedOccurrence: occurrence,
+                    referenceDate: now,
+                    logs: state.logs,
                     calendar: calendar
-                )
-            })?.canMarkMissed == true else {
+                ).first(where: {
+                    RoutineOccurrenceIdentity.matches(
+                        $0.occurrence,
+                        occurrence,
+                        for: state.task,
+                        calendar: calendar
+                    )
+                })?.canMarkMissed == true
+            else {
                 return .none
             }
             state.selectedDate = calendar.startOfDay(for: occurrence)
@@ -1396,21 +612,23 @@ struct TaskDetailFeature: Reducer {
             )
 
         case let .markOccurrenceCanceled(occurrence):
-            guard TaskDetailOccurrencePresentation.allItems(
-                for: state.task,
-                on: occurrence,
-                selectedOccurrence: occurrence,
-                referenceDate: now,
-                logs: state.logs,
-                calendar: calendar
-            ).first(where: {
-                RoutineOccurrenceIdentity.matches(
-                    $0.occurrence,
-                    occurrence,
+            guard
+                TaskDetailOccurrencePresentation.allItems(
                     for: state.task,
+                    on: occurrence,
+                    selectedOccurrence: occurrence,
+                    referenceDate: now,
+                    logs: state.logs,
                     calendar: calendar
-                )
-            })?.canCancel == true else {
+                ).first(where: {
+                    RoutineOccurrenceIdentity.matches(
+                        $0.occurrence,
+                        occurrence,
+                        for: state.task,
+                        calendar: calendar
+                    )
+                })?.canCancel == true
+            else {
                 return .none
             }
             state.selectedDate = calendar.startOfDay(for: occurrence)
@@ -1484,8 +702,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .detailCommentEditSaveTapped(commentID):
             guard state.editingDetailCommentID == commentID,
-                  let body = RoutineTaskComment.sanitizedBody(state.editingDetailCommentDraft),
-                  let index = state.task.comments.firstIndex(where: { $0.id == commentID }) else {
+                let body = RoutineTaskComment.sanitizedBody(state.editingDetailCommentDraft),
+                let index = state.task.comments.firstIndex(where: { $0.id == commentID })
+            else {
                 return .none
             }
             guard state.task.comments[index].body != body else {
@@ -1516,7 +735,8 @@ struct TaskDetailFeature: Reducer {
 
         case let .detailLinkExistingTask(targetTaskID, kind):
             guard targetTaskID != state.task.id,
-                  state.linkableRelationshipTasks.contains(where: { $0.id == targetTaskID }) else {
+                state.linkableRelationshipTasks.contains(where: { $0.id == targetTaskID })
+            else {
                 return .none
             }
             let previousRelationships = RoutineTask.editableRelationships(

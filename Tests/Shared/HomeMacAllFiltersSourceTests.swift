@@ -154,7 +154,10 @@ struct HomeMacAllFiltersSourceTests {
         #expect(group.contains("tintOpacity: 0.08"))
 
         #expect(sharedFilters.contains("HomeMacSharedFlagFiltersView("))
-        #expect(!taskListFilters.contains("if showsFlagSection"))
+        #expect(taskListFilters.contains("if showsFlagSection"))
+        #expect(taskListFilters.contains("flagSectionContent()"))
+        #expect(!taskListFilters.contains("HomeMacSharedFlagFiltersView("))
+        #expect(!taskListFilters.contains("HomeMacCompactFlagFiltersView("))
         #expect(!timelineFilters.contains("HomeMacCompactFlagFiltersView("))
         #expect(!timelineFilters.contains("HomeMacCollapsibleFilterSection("))
         #expect(!timelineFilters.contains("flagButton(\"Default Timeline\""))
@@ -211,13 +214,6 @@ struct HomeMacAllFiltersSourceTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        return try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

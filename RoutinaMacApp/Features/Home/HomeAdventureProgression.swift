@@ -333,7 +333,7 @@ struct HomeAdventureStage: Identifiable, Equatable {
         [
             coinStarEarned,
             actionStarEarned,
-            activeDayStarEarned
+            activeDayStarEarned,
         ].filter(\.self).count
     }
 
@@ -545,7 +545,7 @@ struct HomeAdventureCoinRule: Identifiable, Equatable {
             unitSingular: "check-in",
             unitPlural: "check-ins",
             coinsPerAction: 10
-        )
+        ),
     ]
 
     func source(count: Int) -> HomeAdventureCoinSource {
@@ -563,41 +563,29 @@ struct HomeAdventureCoinRule: Identifiable, Equatable {
 }
 
 enum HomeAdventureProgressionBuilder {
-    static func build(
-        tasks: [RoutineTask],
-        logs: [RoutineLog],
-        focusSessions: [FocusSession],
-        sprintFocusSessions: [SprintFocusSessionRecord],
-        sleepSessions: [SleepSession],
-        awaySessions: [AwaySession],
-        dayPlanBlocks: [DayPlanBlockRecord],
-        emotionLogs: [EmotionLog],
-        notes: [RoutineNote],
-        events: [RoutineEvent],
-        goals: [RoutineGoal],
-        placeCheckInSessions: [PlaceCheckInSession],
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> HomeAdventureProgression {
-        let metrics = Metrics(
-            tasks: tasks,
-            logs: logs,
-            focusSessions: focusSessions,
-            sprintFocusSessions: sprintFocusSessions,
-            sleepSessions: sleepSessions,
-            awaySessions: awaySessions,
-            dayPlanBlocks: dayPlanBlocks,
-            emotionLogs: emotionLogs,
-            notes: notes,
-            events: events,
-            goals: goals,
-            placeCheckInSessions: placeCheckInSessions,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
+    struct Input {
+        var tasks: [RoutineTask] = []
+        var logs: [RoutineLog] = []
+        var focusSessions: [FocusSession] = []
+        var sprintFocusSessions: [SprintFocusSessionRecord] = []
+        var sleepSessions: [SleepSession] = []
+        var awaySessions: [AwaySession] = []
+        var dayPlanBlocks: [DayPlanBlockRecord] = []
+        var emotionLogs: [EmotionLog] = []
+        var notes: [RoutineNote] = []
+        var events: [RoutineEvent] = []
+        var goals: [RoutineGoal] = []
+        var placeCheckInSessions: [PlaceCheckInSession] = []
+        let referenceDate: Date
+        let calendar: Calendar
+    }
+
+    static func build(_ input: Input) -> HomeAdventureProgression {
+        let metrics = Metrics(input)
         let sources = coinSources(from: metrics)
         let totalCoins = sources.reduce(0) { $0 + $1.coins }
-        let totalXP = metrics.completedLogCount * 10
+        let totalXP =
+            metrics.completedLogCount * 10
             + metrics.createdTaskCount * 4
             + metrics.taskFocusBlockCount * 3
             + metrics.boardFocusBlockCount * 4
@@ -716,14 +704,14 @@ enum HomeAdventureProgressionBuilder {
             "away": metrics.completedAwayCount,
             "captures": metrics.captureActionCount,
             "goals": metrics.goalCount,
-            "places": metrics.placeCheckInCount
+            "places": metrics.placeCheckInCount,
         ]
 
         let sources = HomeAdventureCoinRule.all.map { rule in
             rule.source(count: countsByRuleID[rule.id] ?? 0)
         }
 
-        return sources.filter { $0.count > 0 || $0.coins > 0 }
+        return sources.filter { $0.count > .zero || $0.coins > 0 }
     }
 
     private static func worldTemplates() -> [WorldTemplate] {
@@ -743,7 +731,8 @@ enum HomeAdventureProgressionBuilder {
                     StageTemplate("meadow-3", "morning-meadow", 3, "Focus Pond", "Mix focus blocks with task progress.", 300, 18, 4, 40),
                     StageTemplate("meadow-4", "morning-meadow", 4, "Habit Gate", "Build several active days.", 550, 35, 7, 55),
                     StageTemplate("meadow-5", "morning-meadow", 5, "Tag Grove", "Organized tasks push the trail forward.", 850, 55, 10, 70),
-                    StageTemplate("meadow-6", "morning-meadow", 6, "Meadow Gate", "Clear the first map with steady history.", 1_200, 80, 14, 90)
+                    StageTemplate(
+                        "meadow-6", "morning-meadow", 6, "Meadow Gate", "Clear the first map with steady history.", 1_200, 80, 14, 90),
                 ]
             ),
             WorldTemplate(
@@ -756,12 +745,26 @@ enum HomeAdventureProgressionBuilder {
                 requiredCoins: 480,
                 requiredActions: 24,
                 stages: [
-                    StageTemplate("city-1", "clockwork-city", 7, "Planning Station", "More actions open the second map.", 1_700, 110, 18, 110),
+                    StageTemplate(
+                        "city-1", "clockwork-city", 7, "Planning Station", "More actions open the second map.", 1_700, 110, 18, 110),
                     StageTemplate("city-2", "clockwork-city", 8, "Momentum Rails", "Keep productive days connected.", 2_300, 145, 23, 130),
-                    StageTemplate("city-3", "clockwork-city", 9, "Deep Work Tower", "Longer focus history powers the tower.", 3_000, 185, 29, 150),
-                    StageTemplate("city-4", "clockwork-city", 10, "Workshop Bridge", "Use captures and completions together.", 3_800, 230, 36, 175),
-                    StageTemplate("city-5", "clockwork-city", 11, "Signal Market", "More kinds of Routina activity become fuel.", 4_700, 285, 44, 205),
-                    StageTemplate("city-6", "clockwork-city", 12, "Clockwork Gate", "Finish the city by proving consistency.", 5_800, 350, 53, 240)
+                    StageTemplate(
+                        "city-3", "clockwork-city", 9, "Deep Work Tower", "Longer focus history powers the tower.", 3_000, 185, 29, 150),
+                    StageTemplate(
+                        "city-4", "clockwork-city", 10, "Workshop Bridge", "Use captures and completions together.", 3_800, 230, 36, 175),
+                    StageTemplate(
+                        "city-5",
+                        "clockwork-city",
+                        11,
+                        "Signal Market",
+                        "More kinds of Routina activity become fuel.",
+                        4_700,
+                        285,
+                        44,
+                        205
+                    ),
+                    StageTemplate(
+                        "city-6", "clockwork-city", 12, "Clockwork Gate", "Finish the city by proving consistency.", 5_800, 350, 53, 240),
                 ]
             ),
             WorldTemplate(
@@ -774,12 +777,20 @@ enum HomeAdventureProgressionBuilder {
                 requiredCoins: 1_600,
                 requiredActions: 76,
                 stages: [
-                    StageTemplate("lunar-1", "lunar-archive", 13, "Quiet Launch", "Unlock the archive with broad consistency.", 7_200, 430, 64, 280),
-                    StageTemplate("lunar-2", "lunar-archive", 14, "Memory Vault", "Captured thoughts become map progress.", 8_800, 520, 76, 330),
-                    StageTemplate("lunar-3", "lunar-archive", 15, "Starlit Sprint", "A larger action history lights the archive.", 10_600, 620, 90, 390),
-                    StageTemplate("lunar-4", "lunar-archive", 16, "Moonlit Library", "Balance focus, rest, and tasks.", 12_600, 735, 105, 460),
-                    StageTemplate("lunar-5", "lunar-archive", 17, "Orbit Hall", "A long-lived repeating-task history opens the hall.", 15_000, 865, 122, 540),
-                    StageTemplate("lunar-6", "lunar-archive", 18, "Archive Gate", "Clear the archive with mature momentum.", 17_800, 1_010, 140, 640)
+                    StageTemplate(
+                        "lunar-1", "lunar-archive", 13, "Quiet Launch", "Unlock the archive with broad consistency.", 7_200, 430, 64, 280),
+                    StageTemplate(
+                        "lunar-2", "lunar-archive", 14, "Memory Vault", "Captured thoughts become map progress.", 8_800, 520, 76, 330),
+                    StageTemplate(
+                        "lunar-3", "lunar-archive", 15, "Starlit Sprint", "A larger action history lights the archive.", 10_600, 620, 90,
+                        390),
+                    StageTemplate(
+                        "lunar-4", "lunar-archive", 16, "Moonlit Library", "Balance focus, rest, and tasks.", 12_600, 735, 105, 460),
+                    StageTemplate(
+                        "lunar-5", "lunar-archive", 17, "Orbit Hall", "A long-lived repeating-task history opens the hall.", 15_000, 865,
+                        122, 540),
+                    StageTemplate(
+                        "lunar-6", "lunar-archive", 18, "Archive Gate", "Clear the archive with mature momentum.", 17_800, 1_010, 140, 640),
                 ]
             ),
             WorldTemplate(
@@ -792,12 +803,21 @@ enum HomeAdventureProgressionBuilder {
                 requiredCoins: 21_200,
                 requiredActions: 1_180,
                 stages: [
-                    StageTemplate("peaks-1", "aurora-peaks", 19, "Snowline Camp", "The fourth world starts after a real season.", 21_200, 1_180, 160, 760),
-                    StageTemplate("peaks-2", "aurora-peaks", 20, "Glacier Steps", "Keep the active-day trail alive.", 25_000, 1_375, 182, 900),
-                    StageTemplate("peaks-3", "aurora-peaks", 21, "Aurora Ridge", "Deep progress lights up the ridge.", 29_400, 1_590, 206, 1_060),
-                    StageTemplate("peaks-4", "aurora-peaks", 22, "Summit Forge", "A larger system of habits carries upward.", 34_400, 1_830, 232, 1_240),
-                    StageTemplate("peaks-5", "aurora-peaks", 23, "Northern Pass", "Cross the pass with durable output.", 40_000, 2_100, 260, 1_460),
-                    StageTemplate("peaks-6", "aurora-peaks", 24, "Aurora Gate", "Complete the peaks with long-run consistency.", 46_500, 2_400, 290, 1_720)
+                    StageTemplate(
+                        "peaks-1", "aurora-peaks", 19, "Snowline Camp", "The fourth world starts after a real season.", 21_200, 1_180, 160,
+                        760),
+                    StageTemplate(
+                        "peaks-2", "aurora-peaks", 20, "Glacier Steps", "Keep the active-day trail alive.", 25_000, 1_375, 182, 900),
+                    StageTemplate(
+                        "peaks-3", "aurora-peaks", 21, "Aurora Ridge", "Deep progress lights up the ridge.", 29_400, 1_590, 206, 1_060),
+                    StageTemplate(
+                        "peaks-4", "aurora-peaks", 22, "Summit Forge", "A larger system of habits carries upward.", 34_400, 1_830, 232,
+                        1_240),
+                    StageTemplate(
+                        "peaks-5", "aurora-peaks", 23, "Northern Pass", "Cross the pass with durable output.", 40_000, 2_100, 260, 1_460),
+                    StageTemplate(
+                        "peaks-6", "aurora-peaks", 24, "Aurora Gate", "Complete the peaks with long-run consistency.", 46_500, 2_400, 290,
+                        1_720),
                 ]
             ),
             WorldTemplate(
@@ -810,14 +830,25 @@ enum HomeAdventureProgressionBuilder {
                 requiredCoins: 54_000,
                 requiredActions: 2_750,
                 stages: [
-                    StageTemplate("forge-1", "nebula-forge", 25, "Ignition Bay", "Open the forge after sustained months.", 54_000, 2_750, 323, 2_000),
-                    StageTemplate("forge-2", "nebula-forge", 26, "Star Anvil", "Shape the long arc of your repeating tasks.", 62_500, 3_150, 360, 2_350),
-                    StageTemplate("forge-3", "nebula-forge", 27, "Plasma Loom", "High-volume action history powers the loom.", 72_000, 3_600, 400, 2_750),
-                    StageTemplate("forge-4", "nebula-forge", 28, "Comet Foundry", "Cross from productivity into endurance.", 83_000, 4_100, 444, 3_200),
-                    StageTemplate("forge-5", "nebula-forge", 29, "Nebula Crown", "The final map asks for rare consistency.", 95_500, 4_650, 492, 3_750),
-                    StageTemplate("forge-6", "nebula-forge", 30, "World Engine", "Finish the first long-form Adventure season.", 110_000, 5_250, 545, 4_400)
+                    StageTemplate(
+                        "forge-1", "nebula-forge", 25, "Ignition Bay", "Open the forge after sustained months.", 54_000, 2_750, 323, 2_000),
+                    StageTemplate(
+                        "forge-2", "nebula-forge", 26, "Star Anvil", "Shape the long arc of your repeating tasks.", 62_500, 3_150, 360,
+                        2_350),
+                    StageTemplate(
+                        "forge-3", "nebula-forge", 27, "Plasma Loom", "High-volume action history powers the loom.", 72_000, 3_600, 400,
+                        2_750),
+                    StageTemplate(
+                        "forge-4", "nebula-forge", 28, "Comet Foundry", "Cross from productivity into endurance.", 83_000, 4_100, 444, 3_200
+                    ),
+                    StageTemplate(
+                        "forge-5", "nebula-forge", 29, "Nebula Crown", "The final map asks for rare consistency.", 95_500, 4_650, 492, 3_750
+                    ),
+                    StageTemplate(
+                        "forge-6", "nebula-forge", 30, "World Engine", "Finish the first long-form Adventure season.", 110_000, 5_250, 545,
+                        4_400),
                 ]
-            )
+            ),
         ]
     }
 
@@ -826,7 +857,8 @@ enum HomeAdventureProgressionBuilder {
             ItemTemplate("trail-compass", "Trail Compass", "Unlocked after the first few wins.", "location.north.line.fill", .tool, 200, 1),
             ItemTemplate("meadow-guide", "Meadow Guide", "A tiny guide for the first map.", "sun.max.fill", .companion, 900, 4),
             ItemTemplate("focus-lantern", "Focus Lantern", "A badge for showing up to focus.", "lamp.desk.fill", .tool, 1_900, 7),
-            ItemTemplate("quiet-keeper", "Quiet Keeper", "A calm character for balanced repeating tasks.", "sparkles", .companion, 3_500, 10),
+            ItemTemplate(
+                "quiet-keeper", "Quiet Keeper", "A calm character for balanced repeating tasks.", "sparkles", .companion, 3_500, 10),
             ItemTemplate("city-banner", "City Banner", "Marks the second-world clear.", "flag.checkered", .artifact, 6_000, 12),
             ItemTemplate("lunar-key", "Lunar Key", "Signals entry into the archive.", "key.fill", .artifact, 11_000, 15),
             ItemTemplate("archive-cloak", "Archive Cloak", "A late archive artifact.", "theatermasks.fill", .artifact, 18_500, 18),
@@ -834,7 +866,8 @@ enum HomeAdventureProgressionBuilder {
             ItemTemplate("summit-banner", "Summit Banner", "A trophy from Aurora Peaks.", "flag.2.crossed.fill", .artifact, 47_000, 24),
             ItemTemplate("forge-core", "Forge Core", "The first endgame booster.", "atom", .booster, 65_000, 26),
             ItemTemplate("nebula-crown", "Nebula Crown", "A rare long-run artifact.", "crown.fill", .artifact, 86_000, 28),
-            ItemTemplate("world-engine", "World Engine", "The first Adventure season capstone.", "infinity.circle.fill", .artifact, 110_000, 30)
+            ItemTemplate(
+                "world-engine", "World Engine", "The first Adventure season capstone.", "infinity.circle.fill", .artifact, 110_000, 30),
         ]
     }
 }
@@ -943,67 +976,54 @@ private struct Metrics {
             + placeCheckInCount
     }
 
-    init(
-        tasks: [RoutineTask],
-        logs: [RoutineLog],
-        focusSessions: [FocusSession],
-        sprintFocusSessions: [SprintFocusSessionRecord],
-        sleepSessions: [SleepSession],
-        awaySessions: [AwaySession],
-        dayPlanBlocks: [DayPlanBlockRecord],
-        emotionLogs: [EmotionLog],
-        notes: [RoutineNote],
-        events: [RoutineEvent],
-        goals: [RoutineGoal],
-        placeCheckInSessions: [PlaceCheckInSession],
-        referenceDate: Date,
-        calendar: Calendar
-    ) {
-        completedLogCount = logs.filter { $0.kind == .completed }.count
-        createdTaskCount = tasks.filter { $0.createdAt != nil }.count
-        let taskFocusSeconds = focusSessions.reduce(0) { total, session in
-            total + session.activeDurationSeconds(at: referenceDate)
+    init(_ input: HomeAdventureProgressionBuilder.Input) {
+        completedLogCount = input.logs.filter { $0.kind == .completed }.count
+        createdTaskCount = input.tasks.filter { $0.createdAt != nil }.count
+        let taskFocusSeconds = input.focusSessions.reduce(0) { total, session in
+            total + session.activeDurationSeconds(at: input.referenceDate)
         }
-        let boardFocusSeconds = sprintFocusSessions.reduce(0) { total, session in
-            total + session.activeDurationSeconds(at: referenceDate)
+        let boardFocusSeconds = input.sprintFocusSessions.reduce(0) { total, session in
+            total + session.activeDurationSeconds(at: input.referenceDate)
         }
         taskFocusBlockCount = FocusBlockProgress.filledBlockCount(for: taskFocusSeconds)
         boardFocusBlockCount = FocusBlockProgress.filledBlockCount(for: boardFocusSeconds)
-        plannerBlockCount = dayPlanBlocks.count
-        plannedHourCount = dayPlanBlocks.reduce(0) { total, block in
-            total + max(0, block.durationMinutes) / 60
+        plannerBlockCount = input.dayPlanBlocks.count
+        let plannedMinutes = input.dayPlanBlocks.reduce(0) { total, block in
+            total + max(0, block.durationMinutes)
         }
-        plannerRefinementCount = dayPlanBlocks.filter { block in
-            block.updatedAt.timeIntervalSince(block.createdAt) > 1
-        }.count
-        completedSleepCount = sleepSessions.filter { !$0.isActive }.count
-        completedAwayCount = awaySessions.filter { $0.state == .completed }.count
-        captureActionCount = emotionLogs.count + notes.count + events.count
-        goalCount = goals.count
-        placeCheckInCount = placeCheckInSessions.count
+        plannedHourCount = plannedMinutes / 60
+        plannerRefinementCount =
+            input.dayPlanBlocks.filter { block in
+                block.updatedAt.timeIntervalSince(block.createdAt) > 1
+            }.count
+        completedSleepCount = input.sleepSessions.filter { !$0.isActive }.count
+        completedAwayCount = input.awaySessions.filter { $0.state == .completed }.count
+        captureActionCount = input.emotionLogs.count + input.notes.count + input.events.count
+        goalCount = input.goals.count
+        placeCheckInCount = input.placeCheckInSessions.count
 
         var activeDays = Set<Date>()
         func insertDay(_ date: Date?) {
             guard let date else { return }
-            activeDays.insert(calendar.startOfDay(for: date))
+            activeDays.insert(input.calendar.startOfDay(for: date))
         }
-        logs.forEach { insertDay($0.timestamp) }
-        tasks.forEach { insertDay($0.createdAt) }
-        focusSessions.forEach { insertDay($0.startedAt) }
-        sprintFocusSessions.forEach { insertDay($0.startedAt) }
-        dayPlanBlocks.forEach { block in
+        input.logs.forEach { insertDay($0.timestamp) }
+        input.tasks.forEach { insertDay($0.createdAt) }
+        input.focusSessions.forEach { insertDay($0.startedAt) }
+        input.sprintFocusSessions.forEach { insertDay($0.startedAt) }
+        input.dayPlanBlocks.forEach { block in
             insertDay(block.createdAt)
             if block.updatedAt.timeIntervalSince(block.createdAt) > 1 {
                 insertDay(block.updatedAt)
             }
         }
-        sleepSessions.forEach { insertDay($0.startedAt) }
-        awaySessions.forEach { insertDay($0.startedAt) }
-        emotionLogs.forEach { insertDay($0.createdAt) }
-        notes.forEach { insertDay($0.createdAt) }
-        events.forEach { insertDay($0.startedAt ?? $0.createdAt) }
-        goals.forEach { insertDay($0.createdAt) }
-        placeCheckInSessions.forEach { insertDay($0.startedAt ?? $0.createdAt) }
+        input.sleepSessions.forEach { insertDay($0.startedAt) }
+        input.awaySessions.forEach { insertDay($0.startedAt) }
+        input.emotionLogs.forEach { insertDay($0.createdAt) }
+        input.notes.forEach { insertDay($0.createdAt) }
+        input.events.forEach { insertDay($0.startedAt ?? $0.createdAt) }
+        input.goals.forEach { insertDay($0.createdAt) }
+        input.placeCheckInSessions.forEach { insertDay($0.startedAt ?? $0.createdAt) }
         activeDayCount = activeDays.count
     }
 }

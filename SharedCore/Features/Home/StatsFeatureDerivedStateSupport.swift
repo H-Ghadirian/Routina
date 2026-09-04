@@ -618,8 +618,8 @@ enum StatsFeatureDerivedStateBuilder {
                 highlightedFocusWeekdayAverage: (strongestFocusWeekdayAverage?.seconds ?? 0) > 0
                     ? strongestFocusWeekdayAverage
                     : nil,
-                activeDayCount: chartPoints.filter { $0.count > 0 }.count,
-                createdActiveDayCount: createdChartPoints.filter { $0.count > 0 }.count,
+                activeDayCount: chartPoints.filter { $0.count > .zero }.count,
+                createdActiveDayCount: createdChartPoints.filter { $0.count > .zero }.count,
                 focusActiveDayCount: focusChartPoints.filter { $0.seconds > 0 }.count,
                 chartUpperBound: Double(max(maxCount, Int(ceil(averagePerDay))) + 1),
                 createdChartUpperBound: Double(max(maxCreatedCount, Int(ceil(createdAveragePerDay))) + 1),

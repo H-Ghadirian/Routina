@@ -28,7 +28,8 @@ private struct MacDoubleClickEventMonitor: NSViewRepresentable {
         context.coordinator.update(enabled: enabled, action: action, view: nsView)
     }
 
-    final class Coordinator: @unchecked Sendable {
+    @MainActor
+    final class Coordinator {
         private var enabled: Bool
         private var action: () -> Void
         private weak var view: NSView?
@@ -39,7 +40,7 @@ private struct MacDoubleClickEventMonitor: NSViewRepresentable {
             self.action = action
         }
 
-        deinit {
+        isolated deinit {
             if let monitor {
                 NSEvent.removeMonitor(monitor)
             }

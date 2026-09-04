@@ -3105,6 +3105,12 @@ struct HomeFeatureTests {
             }
         }
 
+        let expectedLogs = try context.fetch(FetchDescriptor<RoutineLog>()).sorted {
+            let lhs = $0.timestamp ?? .distantPast
+            let rhs = $1.timestamp ?? .distantPast
+            return lhs > rhs
+        }
+
         await store.send(.onAppear)
         await store.receive { action in
             guard case let .tasksLoadedSuccessfully(tasks, places, _, logs, doneStats) = action else { return false }
@@ -3118,11 +3124,7 @@ struct HomeFeatureTests {
             return true
         } assert: {
             $0.routineTasks = [task]
-            $0.timelineLogs = try! context.fetch(FetchDescriptor<RoutineLog>()).sorted {
-                let lhs = $0.timestamp ?? .distantPast
-                let rhs = $1.timestamp ?? .distantPast
-                return lhs > rhs
-            }
+            $0.timelineLogs = expectedLogs
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
             $0.routineDisplays = [
                 makeDisplay(taskID: task.id, name: "Shave Beard", emoji: "💪", interval: 4, lastDone: lastDone, isDoneToday: true, doneCount: 1)

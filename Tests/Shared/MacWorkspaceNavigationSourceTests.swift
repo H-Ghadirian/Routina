@@ -8,14 +8,12 @@ struct MacWorkspaceNavigationSourceTests {
             "RoutinaMacApp/Features/App/AppFeature.swift"
         )
         let homeFeatureSource = try Self.sourceFile(
-            "RoutinaMacApp/Features/Home/HomeFeature.swift"
+            "RoutinaMacApp/Features/Home/HomeFeature+Types.swift"
         )
         let sceneSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift"
         )
-        let platformSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
-        )
+        let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
         let toolbarSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"
         )
@@ -51,9 +49,7 @@ struct MacWorkspaceNavigationSourceTests {
 
     @Test
     func topSearchIsWorkspaceAwareForPlannerBacklogAndTaskLadder() throws {
-        let platformSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
-        )
+        let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
         let backlogSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Backlog/BacklogMacView.swift"
         )
@@ -96,9 +92,7 @@ struct MacWorkspaceNavigationSourceTests {
         let toolbarSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"
         )
-        let platformSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
-        )
+        let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
         let detailContainerSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"
         )
@@ -139,9 +133,7 @@ struct MacWorkspaceNavigationSourceTests {
         let homeSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift"
         )
-        let platformSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift"
-        )
+        let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
 
         #expect(homeSource.contains("Where should this task go?"))
         #expect(homeSource.contains("Button(\"Main task list\")"))
@@ -171,13 +163,6 @@ struct MacWorkspaceNavigationSourceTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        return try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

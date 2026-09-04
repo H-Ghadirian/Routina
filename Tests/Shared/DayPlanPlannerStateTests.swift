@@ -2,11 +2,11 @@ import Foundation
 import SwiftData
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 @MainActor
@@ -157,7 +157,7 @@ struct DayPlanPlannerStateTests {
                 startMinute: 9 * 60,
                 durationMinutes: 30,
                 titleSnapshot: "Visible planned"
-            )
+            ),
         ]
         let hiddenActivityTaskIDs = Array(hiddenTaskIDs.dropFirst())
         let activities = [
@@ -234,7 +234,7 @@ struct DayPlanPlannerStateTests {
                 ),
                 kind: .completed,
                 source: .log(UUID())
-            )
+            ),
         ]
 
         let items = DayPlanDayTaskListPresentation.items(
@@ -255,7 +255,12 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func calendarListFlagUsesCachedMembershipWithoutChangingFocusedDayRows() throws {
-        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let source =
+            try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+            + "\n"
+            + (try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanTimelineDataSnapshot.swift"))
+            + "\n"
+            + (try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanTimelineRenderSnapshot.swift"))
         let macDetailSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"
         )
@@ -296,7 +301,7 @@ struct DayPlanPlannerStateTests {
             "RoutinaMacApp/Screens/Home/Components/HomeMacCalendarFiltersDetailView.swift"
         )
         let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
+            "SharedCore/Views/DayPlan/DayPlanDayTaskListContentView.swift"
         )
 
         #expect(filterSource.contains("case appearance"))
@@ -314,9 +319,13 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func macCalendarListTaskSectionsDefaultToCollapsible() throws {
-        let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
-        )
+        let calendarSource =
+            try Self.sourceFile(
+                "SharedCore/Views/DayPlan/DayPlanDayTaskColumnsView.swift"
+            )
+            + Self.sourceFile(
+                "SharedCore/Views/DayPlan/DayPlanDayTaskListContentView.swift"
+            )
         let settingsSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Settings/SettingsMacView.swift"
         )
@@ -326,22 +335,22 @@ struct DayPlanPlannerStateTests {
 
         #expect(
             calendarSource.contains(
-                "var plannedTasksSectionCollapsed: Binding<Bool>? = nil"
+                "var plannedTasksSectionCollapsed: Binding<Bool>?"
             )
         )
         #expect(
             calendarSource.contains(
-                "var assumedDoneSectionCollapsed: Binding<Bool>? = nil"
+                "var assumedDoneSectionCollapsed: Binding<Bool>?"
             )
         )
         #expect(
             calendarSource.contains(
-                "var confirmedAssumedDoneSectionCollapsed: Binding<Bool>? = nil"
+                "var confirmedAssumedDoneSectionCollapsed: Binding<Bool>?"
             )
         )
         #expect(
             calendarSource.contains(
-                "var doneSectionCollapsed: Binding<Bool>? = nil"
+                "var doneSectionCollapsed: Binding<Bool>?"
             )
         )
         #expect(calendarSource.contains("case .planned:"))
@@ -403,9 +412,11 @@ struct DayPlanPlannerStateTests {
     @Test
     func macPlannerChoicesAreOwnedByPersistedHomePresentationState() throws {
         let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
-        let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
+        let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
-        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let dayPlanSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanDetailView.swift"
+        )
 
         #expect(
             homeSource.contains(
@@ -430,7 +441,10 @@ struct DayPlanPlannerStateTests {
             "The embedded DayPlanDetailView should receive Calendar task view state from Mac Home instead of owning reset-prone local state."
         )
         #expect(
-            !dayPlanSource.contains("@State private var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule\n    @State private var isCalendarFilterSidebarPresented"),
+            !dayPlanSource.contains(
+                "@State private var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule\n"
+                    + "    @State private var isCalendarFilterSidebarPresented"
+            ),
             "DayPlanDetailView should not reset Calendar List to Schedule when the Mac detail child is recreated."
         )
     }
@@ -451,11 +465,12 @@ struct DayPlanPlannerStateTests {
             }
         )
         #expect(
-            MacPlannerPresentationPreferencesStore.load(from: defaults) == MacPlannerPresentationPreferences(
-                displayMode: .list,
-                calendarTaskViewMode: .list,
-                visibleRangeMode: .threeDays
-            )
+            MacPlannerPresentationPreferencesStore.load(from: defaults)
+                == MacPlannerPresentationPreferences(
+                    displayMode: .list,
+                    calendarTaskViewMode: .list,
+                    visibleRangeMode: .threeDays
+                )
         )
         #expect(
             !MacPlannerPresentationPreferencesStore.update(in: defaults) { preferences in
@@ -466,11 +481,12 @@ struct DayPlanPlannerStateTests {
 
         defaults[.appSettingMacPlannerPresentationPreferences] = #"{"displayMode":"list"}"#
         #expect(
-            MacPlannerPresentationPreferencesStore.load(from: defaults) == MacPlannerPresentationPreferences(
-                displayMode: .list,
-                calendarTaskViewMode: .schedule,
-                visibleRangeMode: .week
-            )
+            MacPlannerPresentationPreferencesStore.load(from: defaults)
+                == MacPlannerPresentationPreferences(
+                    displayMode: .list,
+                    calendarTaskViewMode: .schedule,
+                    visibleRangeMode: .week
+                )
         )
     }
 
@@ -590,11 +606,12 @@ struct DayPlanPlannerStateTests {
 
         #expect(planner.visibleRangeMode == .threeDays)
         #expect(planner.availableVisibleRangeModes == [.day, .threeDays])
-        #expect(planner.visibleDates(calendar: calendar) == [
-            try #require(date("2026-05-02T00:00:00Z")),
-            try #require(date("2026-05-03T00:00:00Z")),
-            try #require(date("2026-05-04T00:00:00Z")),
-        ])
+        #expect(
+            planner.visibleDates(calendar: calendar) == [
+                try #require(date("2026-05-02T00:00:00Z")),
+                try #require(date("2026-05-03T00:00:00Z")),
+                try #require(date("2026-05-04T00:00:00Z")),
+            ])
 
         planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 420, calendar: calendar, context: context)
 
@@ -605,9 +622,10 @@ struct DayPlanPlannerStateTests {
 
         #expect(planner.visibleRangeMode == .day)
         #expect(planner.availableVisibleRangeModes == [.day])
-        #expect(planner.visibleDates(calendar: calendar) == [
-            try #require(date("2026-05-03T00:00:00Z")),
-        ])
+        #expect(
+            planner.visibleDates(calendar: calendar) == [
+                try #require(date("2026-05-03T00:00:00Z"))
+            ])
     }
 
     @Test
@@ -625,9 +643,10 @@ struct DayPlanPlannerStateTests {
         )
 
         #expect(planner.visibleRangeMode == .day)
-        #expect(planner.visibleDates(calendar: calendar) == [
-            try #require(date("2026-05-03T00:00:00Z")),
-        ])
+        #expect(
+            planner.visibleDates(calendar: calendar) == [
+                try #require(date("2026-05-03T00:00:00Z"))
+            ])
 
         planner.setAdaptiveVisibleRangeMode(
             forAvailableWidth: Double(DayPlanWeekCalendarSizing.inspectorMultiDayMinimumCalendarWidth),
@@ -645,9 +664,9 @@ struct DayPlanPlannerStateTests {
         let weekMinimumWidth = Double(
             DayPlanWeekCalendarSizing.timeColumnWidth
                 + CGFloat(DayPlanVisibleRangeMode.week.visibleDayCount)
-                    * DayPlanWeekCalendarSizing.minimumDayWidth(
-                        isExternalInspectorPresented: false
-                    )
+                * DayPlanWeekCalendarSizing.minimumDayWidth(
+                    isExternalInspectorPresented: false
+                )
         )
 
         #expect(
@@ -675,11 +694,12 @@ struct DayPlanPlannerStateTests {
 
         #expect(planner.visibleRangeMode == .threeDays)
         #expect(planner.selectedDate == expectedSelectedDate)
-        #expect(planner.visibleDates(calendar: calendar) == [
-            try #require(date("2026-05-05T00:00:00Z")),
-            try #require(date("2026-05-06T00:00:00Z")),
-            try #require(date("2026-05-07T00:00:00Z")),
-        ])
+        #expect(
+            planner.visibleDates(calendar: calendar) == [
+                try #require(date("2026-05-05T00:00:00Z")),
+                try #require(date("2026-05-06T00:00:00Z")),
+                try #require(date("2026-05-07T00:00:00Z")),
+            ])
     }
 
     @Test
@@ -694,9 +714,10 @@ struct DayPlanPlannerStateTests {
         planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 1_200, calendar: calendar, context: context)
 
         #expect(planner.visibleRangeMode == .day)
-        #expect(planner.visibleDates(calendar: calendar) == [
-            try #require(date("2026-05-03T00:00:00Z")),
-        ])
+        #expect(
+            planner.visibleDates(calendar: calendar) == [
+                try #require(date("2026-05-03T00:00:00Z"))
+            ])
     }
 
     @Test
@@ -713,11 +734,12 @@ struct DayPlanPlannerStateTests {
         planner.setAdaptiveVisibleRangeMode(forAvailableWidth: 1_200, calendar: calendar, context: context)
 
         #expect(planner.visibleRangeMode == .threeDays)
-        #expect(planner.visibleDates(calendar: calendar) == [
-            try #require(date("2026-05-02T00:00:00Z")),
-            try #require(date("2026-05-03T00:00:00Z")),
-            try #require(date("2026-05-04T00:00:00Z")),
-        ])
+        #expect(
+            planner.visibleDates(calendar: calendar) == [
+                try #require(date("2026-05-02T00:00:00Z")),
+                try #require(date("2026-05-03T00:00:00Z")),
+                try #require(date("2026-05-04T00:00:00Z")),
+            ])
     }
 
     @Test
@@ -899,7 +921,7 @@ struct DayPlanPlannerStateTests {
         #expect(
             DayPlanWeekCalendarSizing.minimumDetailWidth(isExternalInspectorPresented: true)
                 == DayPlanWeekCalendarSizing.minimumCalendarWidth(isExternalInspectorPresented: true)
-                    + DayPlanWeekCalendarSizing.detailHorizontalPadding
+                + DayPlanWeekCalendarSizing.detailHorizontalPadding
         )
     }
 
@@ -951,7 +973,7 @@ struct DayPlanPlannerStateTests {
         let block = dayPlanBlock(on: blockDate, calendar: calendar)
         let planner = DayPlanPlannerState(selectedDate: selectedDate)
         planner.weekBlocksByDayKey = [
-            block.dayKey: [block],
+            block.dayKey: [block]
         ]
 
         let visibleDatesBefore = planner.weekDates(calendar: calendar)
@@ -972,7 +994,7 @@ struct DayPlanPlannerStateTests {
         let block = dayPlanBlock(on: blockDate, calendar: calendar)
         let planner = DayPlanPlannerState(selectedDate: selectedDate)
         planner.weekBlocksByDayKey = [
-            block.dayKey: [block],
+            block.dayKey: [block]
         ]
 
         let visibleDatesBefore = planner.weekDates(calendar: calendar)
@@ -1080,17 +1102,11 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func resizingPlannerBlockKeepsHandlesOutsideChangingCardContent() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let calendarSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"),
-            encoding: .utf8
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
         )
-        let blockLayerSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"),
-            encoding: .utf8
+        let blockLayerSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"
         )
 
         #expect(calendarSource.contains("resizingContentLayoutHeight: resizeSession?.contentLayoutHeight"))
@@ -1105,17 +1121,11 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func smallPlannerBlocksKeepMoveDragAreaBetweenResizeHandles() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let resizeHandleSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanResizeHandle.swift"),
-            encoding: .utf8
+        let resizeHandleSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanResizeHandle.swift"
         )
-        let blockLayerSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"),
-            encoding: .utf8
+        let blockLayerSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"
         )
 
         #expect(resizeHandleSource.contains("var hitHeight: CGFloat = 16"))
@@ -1127,17 +1137,11 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func calendarTimedLayersDeclareFullContentFrames() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let gridSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekGridView.swift"),
-            encoding: .utf8
+        let gridSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekGridView.swift"
         )
-        let blockLayerSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"),
-            encoding: .utf8
+        let blockLayerSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"
         )
 
         #expect(gridSource.contains(".frame(width: contentWidth, height: contentHeight, alignment: .topLeading)"))
@@ -1146,13 +1150,8 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func calendarTimedLayerRebuildsWhenRangeBlockSignatureChanges() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let calendarSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"),
-            encoding: .utf8
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
         )
 
         #expect(calendarSource.contains(".id(timedBlockLayerIdentity)"))
@@ -1164,13 +1163,8 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func unassignedFocusBlocksUseDayScopedRenderIDs() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let blockLayerSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"),
-            encoding: .utf8
+        let blockLayerSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"
         )
 
         #expect(blockLayerSource.contains("block.taskID == FocusSession.unassignedTaskID"))
@@ -1183,13 +1177,8 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func plannedTaskSidebarOpeningDoesNotSelectDate() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let calendarSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"),
-            encoding: .utf8
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
         )
         let functionStart = try #require(calendarSource.range(of: "private func presentDayTaskListSidebar(on date: Date) {"))
         let functionEnd = try #require(calendarSource[functionStart.upperBound...].range(of: "\n    }\n\n    @ViewBuilder"))
@@ -1201,23 +1190,18 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func rightSidebarDayTaskRowsDragButCalendarListColumnsDoNotDrag() throws {
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let calendarSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"),
-            encoding: .utf8
-        )
-        let dayPlanSource = try String(
-            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlanView.swift"),
-            encoding: .utf8
+        let calendarSource = try [
+            Self.sourceFile("SharedCore/Views/DayPlan/DayPlanDayTaskColumnsView.swift"),
+            Self.sourceFile("SharedCore/Views/DayPlan/DayPlanDayTaskListContentView.swift"),
+        ].joined(separator: "\n")
+        let dayTaskSidebarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanFilterSidebars.swift"
         )
         let columnStart = try #require(calendarSource.range(of: "private struct DayPlanDayTaskColumnView: View {"))
         let columnEnd = try #require(calendarSource[columnStart.upperBound...].range(of: "\nstruct DayPlanDayTaskListContentView: View {"))
         let columnSource = calendarSource[columnStart.lowerBound..<columnEnd.lowerBound]
-        let sidebarStart = try #require(dayPlanSource.range(of: "private struct DayPlanDayTaskListSidebar: View {"))
-        let sidebarSource = dayPlanSource[sidebarStart.lowerBound...]
+        let sidebarStart = try #require(dayTaskSidebarSource.range(of: "struct DayPlanDayTaskListSidebar: View {"))
+        let sidebarSource = dayTaskSidebarSource[sidebarStart.lowerBound...]
 
         #expect(calendarSource.contains(".dayPlanDayTaskDrag(dragProvider)"))
         #expect(columnSource.contains("DayPlanDayTaskListContentView("))
@@ -1229,7 +1213,9 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func calendarListPlannedRowsCompleteThroughRoutineHistoryWithoutEditingBlocks() throws {
-        let calendarSource = try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift")
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanDayTaskListContentView.swift"
+        )
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
         let actionStart = try #require(
             dayPlanSource.range(
@@ -1304,10 +1290,12 @@ struct DayPlanPlannerStateTests {
         #expect(occurrence.completedAt == completedAt)
         #expect(occurrence.durationMinutes == 45)
         #expect(occurrence.hasSpecificTime)
-        #expect(doneItem.placement == .timed(
-            startMinute: 13 * 60 + 45,
-            durationMinutes: 45
-        ))
+        #expect(
+            doneItem.placement
+                == .timed(
+                    startMinute: 13 * 60 + 45,
+                    durationMinutes: 45
+                ))
 
         let plannedItem = try #require(items.first(where: { $0.taskID == plannedTask.id }))
         #expect(plannedItem.section == .planned)
@@ -1539,8 +1527,13 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func macCalendarListTaskDetailEditsDoneOccurrencesInsteadOfPlannedBlocks() throws {
-        let calendarSource = try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift")
-        let taskDetailSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanDayTaskListContentView.swift"
+        )
+        let taskDetailSource = try SourceInspectionSupport.readMacTaskDetailSources()
+        let doneOccurrenceSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailDoneOccurrenceSection.swift"
+        )
         let durationEntrySource = try Self.sourceFile("SharedCore/Screens/Shared/TaskFormDurationEntry.swift")
         let containerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
@@ -1550,20 +1543,20 @@ struct DayPlanPlannerStateTests {
         #expect(sidebarSource.contains("item.doneOccurrence.map"))
         #expect(!sidebarSource.contains("item.section == .planned"))
         #expect(containerSource.contains("doneOccurrenceContext: doneOccurrenceContext(for: detailStore.task.id)"))
-        #expect(taskDetailSource.contains("Text(\"Done this day\")"))
-        #expect(taskDetailSource.contains("\"When\""))
-        #expect(taskDetailSource.contains("Text(\"No specific time\")"))
-        #expect(taskDetailSource.contains("if hasSpecificTime"))
-        #expect(taskDetailSource.contains("\"Duration\""))
-        #expect(taskDetailSource.contains("TaskFormDurationEntry("))
-        #expect(taskDetailSource.contains("minutes: durationBinding"))
-        #expect(taskDetailSource.contains("bounds: durationRange"))
-        #expect(taskDetailSource.contains("startMinute: hasSpecificTime ? startMinute : 0"))
+        #expect(doneOccurrenceSource.contains("Text(\"Done this day\")"))
+        #expect(doneOccurrenceSource.contains("\"When\""))
+        #expect(doneOccurrenceSource.contains("Text(\"No specific time\")"))
+        #expect(doneOccurrenceSource.contains("if hasSpecificTime"))
+        #expect(doneOccurrenceSource.contains("\"Duration\""))
+        #expect(doneOccurrenceSource.contains("TaskFormDurationEntry("))
+        #expect(doneOccurrenceSource.contains("minutes: durationBinding"))
+        #expect(doneOccurrenceSource.contains("bounds: durationRange"))
+        #expect(doneOccurrenceSource.contains("startMinute: hasSpecificTime ? startMinute : 0"))
         #expect(durationEntrySource.contains("durationNumberField(title: \"Hours\""))
         #expect(durationEntrySource.contains("durationNumberField(title: \"Minutes\""))
-        #expect(taskDetailSource.contains("\"Save Time & Duration\""))
-        #expect(taskDetailSource.contains("\"Save Duration\""))
-        #expect(taskDetailSource.contains("DayPlanTimelineTasks.updateCompletedActivity("))
+        #expect(doneOccurrenceSource.contains("\"Save Time & Duration\""))
+        #expect(doneOccurrenceSource.contains("\"Save Duration\""))
+        #expect(doneOccurrenceSource.contains("DayPlanTimelineTasks.updateCompletedActivity("))
         #expect(!taskDetailSource.contains("Text(\"Schedule this day\")"))
         #expect(!taskDetailSource.contains("\"Add to Schedule\""))
     }
@@ -1571,7 +1564,7 @@ struct DayPlanPlannerStateTests {
     @Test
     func plannerTaskDetailTitleUsesTaskUUIDDragPayload() throws {
         let headerSource = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift")
-        let taskDetailSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let taskDetailSource = try SourceInspectionSupport.readMacTaskDetailSources()
         let containerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
 
         #expect(headerSource.contains("let titleDragPayload: String?"))
@@ -1669,7 +1662,7 @@ struct DayPlanPlannerStateTests {
                 timestamp: missedAt,
                 taskID: missedTaskID,
                 kind: .missed
-            ),
+            )
         ]
 
         let visibleBlocks = DayPlanVisibleBlocks.blocks(
@@ -1752,7 +1745,7 @@ struct DayPlanPlannerStateTests {
             autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 0)
         )
         let blocks = [
-            plannerBlock(taskID: assumedTaskID, title: "Brush teeth", on: blockDate, calendar: calendar),
+            plannerBlock(taskID: assumedTaskID, title: "Brush teeth", on: blockDate, calendar: calendar)
         ]
 
         let visibleBlocks = DayPlanVisibleBlocks.blocks(
@@ -1783,7 +1776,7 @@ struct DayPlanPlannerStateTests {
             hidesAssumedDoneCalendarBlock: true
         )
         let blocks = [
-            plannerBlock(taskID: assumedTaskID, title: "Brush teeth", on: blockDate, calendar: calendar),
+            plannerBlock(taskID: assumedTaskID, title: "Brush teeth", on: blockDate, calendar: calendar)
         ]
 
         let visibleBlocks = DayPlanVisibleBlocks.blocks(
@@ -1954,7 +1947,7 @@ struct DayPlanPlannerStateTests {
                 taskID: taskID,
                 kind: .completed,
                 actualDurationMinutes: 60
-            ),
+            )
         ]
         let awaySession = AwaySession(
             preset: .custom,
@@ -2087,7 +2080,7 @@ struct DayPlanPlannerStateTests {
                 taskID: taskID,
                 kind: .completed,
                 actualDurationMinutes: 30
-            ),
+            )
         ]
 
         let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
@@ -2121,7 +2114,7 @@ struct DayPlanPlannerStateTests {
                 timestamp: completedAt,
                 taskID: taskID,
                 kind: .completed
-            ),
+            )
         ]
 
         let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
@@ -2222,10 +2215,11 @@ struct DayPlanPlannerStateTests {
             id: taskID,
             name: "Brush Teeth",
             scheduleMode: .softInterval,
-            recurrenceRule: .daily(in: RoutineTimeRange(
-                start: RoutineTimeOfDay(hour: 21, minute: 0),
-                end: RoutineTimeOfDay(hour: 3, minute: 0)
-            )),
+            recurrenceRule: .daily(
+                in: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 21, minute: 0),
+                    end: RoutineTimeOfDay(hour: 3, minute: 0)
+                )),
             createdAt: createdAt,
             autoAssumeDailyDone: true,
             autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 12, minute: 0),
@@ -2277,10 +2271,12 @@ struct DayPlanPlannerStateTests {
             name: "Museum visit",
             availabilityStartDate: scheduledDay,
             scheduleMode: .oneOff,
-            recurrenceRule: .interval(days: 1, timeRange: RoutineTimeRange(
-                start: RoutineTimeOfDay(hour: 12, minute: 0),
-                end: RoutineTimeOfDay(hour: 15, minute: 0)
-            )),
+            recurrenceRule: .interval(
+                days: 1,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 12, minute: 0),
+                    end: RoutineTimeOfDay(hour: 15, minute: 0)
+                )),
             recurrenceTimeRangeRole: .scheduledBlock,
             createdAt: date("2026-06-20T08:00:00Z"),
             autoAssumeDailyDone: true,
@@ -2412,7 +2408,7 @@ struct DayPlanPlannerStateTests {
                     title: "first meal",
                     intervalDays: 3,
                     createdAt: createdAt
-                ),
+                )
             ],
             scheduleMode: .softIntervalChecklist,
             recurrenceRule: .interval(days: 1),
@@ -2454,7 +2450,7 @@ struct DayPlanPlannerStateTests {
                     title: "first meal",
                     intervalDays: 3,
                     createdAt: createdAt
-                ),
+                )
             ],
             scheduleMode: .softIntervalChecklist,
             recurrenceRule: .interval(days: 1),
@@ -2496,7 +2492,7 @@ struct DayPlanPlannerStateTests {
                     title: "first meal",
                     intervalDays: 3,
                     createdAt: createdAt
-                ),
+                )
             ],
             scheduleMode: .softIntervalChecklist,
             recurrenceRule: .interval(days: 1),
@@ -2623,7 +2619,7 @@ struct DayPlanPlannerStateTests {
                 taskID: taskID,
                 kind: .completed,
                 actualDurationMinutes: 30
-            ),
+            )
         ]
         let visibleBlocks = DayPlanTimelineTasks.automaticSuggestionBlocks(
             on: activityDate,
@@ -2722,9 +2718,9 @@ struct DayPlanPlannerStateTests {
             name: "Sick day",
             emoji: "🤒",
             notes: """
-            Imported from Outlook.
-            Calendar event: outlook:sick-day
-            """,
+                Imported from Outlook.
+                Calendar event: outlook:sick-day
+                """,
             deadline: deadline,
             scheduleMode: .oneOff
         )
@@ -2909,7 +2905,7 @@ struct DayPlanPlannerStateTests {
                 timestamp: completedAt,
                 taskID: taskID,
                 kind: .completed
-            ),
+            )
         ]
 
         let blocks = DayPlanAllDayTasks.blocks(
@@ -3539,7 +3535,9 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func routineUpdateRefreshesPlannerSnapshotWhileTaskInspectorIsOpen() throws {
-        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let source = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanTimelinePanelView.swift"
+        )
         let refreshFunction = try #require(
             source.range(of: "private func requestTimelineDataSnapshotRefresh()")
         )
@@ -7069,9 +7067,7 @@ struct DayPlanPlannerStateTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            .appendingPathComponent(relativePath)
-        return try String(contentsOf: url, encoding: .utf8)
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }
 
@@ -7137,7 +7133,8 @@ private func tagFocusSegmentBlock(
     let components = calendar.dateComponents([.hour, .minute], from: startedAt)
     let startMinute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
     let durationMinutes = max(1, Int(ceil(endedAt.timeIntervalSince(startedAt) / 60)))
-    let blockID = usesSessionID
+    let blockID =
+        usesSessionID
         ? sessionID
         : DayPlanFocusSessionPlannerSync.focusSegmentBlockID(
             sessionID: sessionID,

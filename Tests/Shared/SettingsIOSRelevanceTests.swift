@@ -81,9 +81,7 @@ struct SettingsIOSRelevanceTests {
         let macTaskFormSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"
         )
-        let macTaskDetailSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let macTaskDetailSource = try SourceInspectionSupport.readMacTaskDetailSources()
         let macTagsSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Settings/SettingsMacTagsListContent.swift"
         )
@@ -149,7 +147,10 @@ struct SettingsIOSRelevanceTests {
             "areMacEventEmotionActionsEnabled && !store.taskEventCandidates.isEmpty"
         ))
         #expect(macTaskDetailSource.contains(
-            "if areMacEventEmotionActionsEnabled,\n           let event = events.first"
+            "let event =\n"
+                + "            areMacEventEmotionActionsEnabled\n"
+                + "            ? events.first(where: { $0.id == eventID })\n"
+                + "            : nil"
         ))
         #expect(macTaskDetailSource.contains(
             "goals: isGoalsTabEnabled ? store.taskGoalSummaries : []"
@@ -197,13 +198,6 @@ struct SettingsIOSRelevanceTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let projectRoot = testsDirectory.deletingLastPathComponent()
-        return try String(
-            contentsOf: projectRoot.appendingPathComponent(relativePath),
-            encoding: .utf8
-        )
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 }

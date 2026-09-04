@@ -17,12 +17,12 @@
 		4E0000112E80000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		4E0000122E80000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
 		4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
-		6B1000012F10000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */; };
-		6B1000022F10000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001042E5F000100000001 /* Dependencies */; };
-		6B1000032F10000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001052E5F000100000001 /* CasePaths */; };
 		6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001082E5F000100000001 /* ConcurrencyExtras */; };
 		AA000101PLUGINKIT00000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63D2F965A91009F0331 /* WidgetKit.framework */; };
 		AA000102PLUGINKIT00000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63F2F965A91009F0331 /* SwiftUI.framework */; };
+		C30010022F50000100000001 /* SourceInspectionSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30010012F50000100000001 /* SourceInspectionSupport.swift */; };
+		D30000012F50000100000001 /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = D30001012F50000100000001 /* SwiftUINavigation */; };
+		D30000022F50000100000001 /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = D30001012F50000100000001 /* SwiftUINavigation */; };
 		F20000012FA0000100000001 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F20002012FA0000100000001 /* FirebaseCore */; };
 		F20000022FA0000100000001 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = F20002022FA0000100000001 /* FirebaseCrashlytics */; };
 		F20000032FA0000100000001 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F20002012FA0000100000001 /* FirebaseCore */; };
@@ -54,6 +54,7 @@
 		5F1000082E90000100000001 /* RoutinaWatchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutinaWatchExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaMacOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutinaWidgetDevExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C30010012F50000100000001 /* SourceInspectionSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SourceInspectionSupport.swift; path = Tests/Shared/SourceInspectionSupport.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -157,6 +158,7 @@
 				2C0000112E60000100000001 /* Dependencies in Frameworks */,
 				2C0000122E60000100000001 /* CasePaths in Frameworks */,
 				2C0000142E60000100000001 /* ConcurrencyExtras in Frameworks */,
+				D30000012F50000100000001 /* SwiftUINavigation in Frameworks */,
 				F20000012FA0000100000001 /* FirebaseCore in Frameworks */,
 				F20000022FA0000100000001 /* FirebaseCrashlytics in Frameworks */,
 			);
@@ -170,6 +172,7 @@
 				4E0000112E80000100000001 /* Dependencies in Frameworks */,
 				4E0000122E80000100000001 /* CasePaths in Frameworks */,
 				4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */,
+				D30000022F50000100000001 /* SwiftUINavigation in Frameworks */,
 				F20000032FA0000100000001 /* FirebaseCore in Frameworks */,
 				F20000042FA0000100000001 /* FirebaseCrashlytics in Frameworks */,
 			);
@@ -179,9 +182,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6B1000012F10000100000001 /* ComposableArchitecture in Frameworks */,
-				6B1000022F10000100000001 /* Dependencies in Frameworks */,
-				6B1000032F10000100000001 /* CasePaths in Frameworks */,
 				6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -210,6 +210,7 @@
 		2A5A74B42D7B92F600E91075 = {
 			isa = PBXGroup;
 			children = (
+				C30010012F50000100000001 /* SourceInspectionSupport.swift */,
 				2A5DD6582F9661DB009F0331 /* RoutinaWidgetExtension.entitlements */,
 				6A0000012F00000100000001 /* MacApp */,
 				6A0000022F00000100000001 /* SharedCore */,
@@ -294,6 +295,7 @@
 				2B1001012E5F000100000001 /* Dependencies */,
 				2B1001022E5F000100000001 /* CasePaths */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				D30001012F50000100000001 /* SwiftUINavigation */,
 				F20002012FA0000100000001 /* FirebaseCore */,
 				F20002022FA0000100000001 /* FirebaseCrashlytics */,
 			);
@@ -328,6 +330,7 @@
 				2B1001012E5F000100000001 /* Dependencies */,
 				2B1001022E5F000100000001 /* CasePaths */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				D30001012F50000100000001 /* SwiftUINavigation */,
 				F20002012FA0000100000001 /* FirebaseCore */,
 				F20002022FA0000100000001 /* FirebaseCrashlytics */,
 			);
@@ -353,9 +356,6 @@
 			);
 			name = RoutinaMacOSTests;
 			packageProductDependencies = (
-				2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */,
-				2B1001042E5F000100000001 /* Dependencies */,
-				2B1001052E5F000100000001 /* CasePaths */,
 				2B1001082E5F000100000001 /* ConcurrencyExtras */,
 			);
 			productName = RoutinaMacOSTests;
@@ -427,6 +427,7 @@
 				2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 				2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */,
 				2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */,
+				D30002012F50000100000001 /* XCRemoteSwiftPackageReference "swift-navigation" */,
 				F20001012FA0000100000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -688,6 +689,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C30010022F50000100000001 /* SourceInspectionSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1039,6 +1041,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_DEBUG_DYLIB = NO;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1336,6 +1339,14 @@
 				minimumVersion = 1.4.1;
 			};
 		};
+		D30002012F50000100000001 /* XCRemoteSwiftPackageReference "swift-navigation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-navigation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.11.1;
+			};
+		};
 		F20001012FA0000100000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
@@ -1352,27 +1363,12 @@
 			package = 2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
 		};
-		2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
-			productName = ComposableArchitecture;
-		};
 		2B1001012E5F000100000001 /* Dependencies */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
 			productName = Dependencies;
 		};
 		2B1001022E5F000100000001 /* CasePaths */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */;
-			productName = CasePaths;
-		};
-		2B1001042E5F000100000001 /* Dependencies */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
-			productName = Dependencies;
-		};
-		2B1001052E5F000100000001 /* CasePaths */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */;
 			productName = CasePaths;
@@ -1386,6 +1382,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
 			productName = ConcurrencyExtras;
+		};
+		D30001012F50000100000001 /* SwiftUINavigation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D30002012F50000100000001 /* XCRemoteSwiftPackageReference "swift-navigation" */;
+			productName = SwiftUINavigation;
 		};
 		F20002012FA0000100000001 /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;

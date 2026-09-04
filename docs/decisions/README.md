@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0718](0718-link-tca-runtime-products-explicitly-in-app-targets.md) refines [0477](0477-keep-ios-ui-benchmarks-dev-hosted-and-explicitly-linked.md) and [0717](0717-ratchet-code-quality-with-shared-boundaries.md):** hosted Mac tests use one host-owned TCA runtime graph, Mac app targets directly link SwiftUI Navigation, and the Dev Debug host keeps a conventional executable layout.
+- **[0717](0717-ratchet-code-quality-with-shared-boundaries.md) refines [0136](0136-refactor-large-files-judiciously.md), [0417](0417-route-feature-data-loading-through-reducers.md), and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** repository-wide linting uses a committed baseline, new Swift files are formatter-clean, structural debt can only ratchet downward, identical app implementations live in SharedCore, operational logs use an injected client, and CI verifies shared, macOS, and iOS targets.
 - **[0716](0716-sort-mac-backlog-by-due-date.md) revises [0690](0690-place-mac-filters-beside-planner-and-backlog-workspaces.md) and refines [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md):** Mac Backlog renames its companion surface to `Filter and Sort` and adds explicit Default, Due Soonest, and Due Latest ordering within each Backlog group, with true due boundaries derived only when the cached presentation rebuilds.
 - **[0715](0715-update-recorded-focus-at-its-source-when-resizing-planner-evidence.md) refines [0600](0600-edit-recorded-tag-focus-from-mac-planner.md), [0651](0651-keep-task-focus-separate-from-actual-time.md), and [0691](0691-split-focus-activity-across-local-days.md):** resizing completed task- or tag-Focus evidence in Mac Calendar updates the owning Focus session and rebuilds its Planner evidence as one undoable change, so Task Details, persistence, and later Planner reconciliation remain aligned without changing Actual time.
 - **[0714](0714-treat-single-time-structured-routines-as-occurrences.md) refines [0002](0002-define-exact-time-routine-completion-semantics.md), [0003](0003-resolve-exact-time-missed-assumptions.md), [0412](0412-add-advanced-recurrence-beside-simple.md), [0433](0433-identify-subdaily-history-by-scheduled-occurrence.md), and [0615](0615-group-and-control-pending-notification-occurrences.md):** a fixed structured routine with one occurrence per day uses exact missed-occurrence semantics without requiring an outer range, stale exact alerts are dropped instead of retried one minute later, and Task Details offers occurrence-specific review.
@@ -838,6 +840,9 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0718](0718-link-tca-runtime-products-explicitly-in-app-targets.md) | Keep Hosted Mac Tests on One Runtime Package Graph | Accepted | 2026-09-03 |
+| [0717](0717-ratchet-code-quality-with-shared-boundaries.md) | Ratchet Code Quality With Shared Boundaries | Accepted | 2026-09-03 |
+| [0716](0716-sort-mac-backlog-by-due-date.md) | Sort Mac Backlog by Due Date | Accepted | 2026-09-03 |
 | [0715](0715-update-recorded-focus-at-its-source-when-resizing-planner-evidence.md) | Update Recorded Focus at Its Source When Resizing Planner Evidence | Accepted | 2026-09-03 |
 | [0714](0714-treat-single-time-structured-routines-as-occurrences.md) | Treat Single-Time Structured Routines as Occurrences | Accepted | 2026-09-03 |
 | [0713](0713-retain-project-local-xcode-build-caches.md) | Retain Project-Local Xcode Build Caches | Accepted | 2026-09-02 |

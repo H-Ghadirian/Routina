@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
@@ -6,11 +7,11 @@ struct RoutinePauseArchivePresentationTests {
     func pauseActionTitle_tracksArchivedState() {
         #expect(
             RoutinePauseArchivePresentation.make(isPaused: false, context: .detail).actionTitle
-                == "Pause Routine"
+                == "Pause Repeating Task"
         )
         #expect(
             RoutinePauseArchivePresentation.make(isPaused: true, context: .detail).actionTitle
-                == "Resume Routine"
+                == "Resume Repeating Task"
         )
     }
 
@@ -22,7 +23,7 @@ struct RoutinePauseArchivePresentationTests {
         )
         #expect(
             RoutinePauseArchivePresentation.make(isPaused: true, context: .detail).description
-                == "Archived routines stay out of the main list and won't send reminders until resumed."
+                == "Archived repeating tasks stay out of the main list and won't send reminders until resumed."
         )
     }
 
@@ -30,11 +31,11 @@ struct RoutinePauseArchivePresentationTests {
     func editSheetPresentation_explainsArchiveTransitions() {
         #expect(
             RoutinePauseArchivePresentation.make(isPaused: false, context: .editSheet).description
-                == "Pausing moves this routine into the archived list, hides it from the main list, and stops notifications."
+                == "Pausing moves this repeating task into the archived list, hides it from the main list, and stops notifications."
         )
         #expect(
             RoutinePauseArchivePresentation.make(isPaused: true, context: .editSheet).description
-                == "This routine is archived right now. Resume it to bring it back to the main list and notifications."
+                == "This repeating task is archived right now. Resume it to bring it back to the main list and notifications."
         )
     }
 }

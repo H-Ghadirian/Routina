@@ -1,3 +1,4 @@
+import Foundation
 import MapKit
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev

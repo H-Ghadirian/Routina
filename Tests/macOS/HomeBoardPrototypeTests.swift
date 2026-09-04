@@ -158,7 +158,7 @@ struct HomeBoardPrototypeTests {
             .filter { $0.todoState == .ready }
             .sorted {
                 ($0.manualSectionOrders[HomeFeature.boardSectionKey(for: .ready)] ?? .max)
-                < ($1.manualSectionOrders[HomeFeature.boardSectionKey(for: .ready)] ?? .max)
+                    < ($1.manualSectionOrders[HomeFeature.boardSectionKey(for: .ready)] ?? .max)
             }
 
         #expect(readyTasks.map(\.id) == [second.id, first.id])
@@ -225,7 +225,7 @@ struct HomeBoardPrototypeTests {
             .filter { $0.todoState == .blocked }
             .sorted {
                 ($0.manualSectionOrders[HomeFeature.boardSectionKey(for: .blocked)] ?? .max)
-                < ($1.manualSectionOrders[HomeFeature.boardSectionKey(for: .blocked)] ?? .max)
+                    < ($1.manualSectionOrders[HomeFeature.boardSectionKey(for: .blocked)] ?? .max)
             }
 
         #expect(blockedTasks.map(\.id) == [moving.id, firstBlocked.id])
@@ -386,7 +386,7 @@ struct HomeBoardPrototypeTests {
                     scheduleMode: .oneOff,
                     createdAt: todo.createdAt,
                     lastDone: nil,
-                    daysUntilDue: 0,
+                    daysUntilDue: .max,
                     isDoneToday: false,
                     todoState: .ready,
                     assignedBacklogID: backlog.id,
@@ -500,7 +500,7 @@ struct HomeBoardPrototypeTests {
         await store.send(.assignTodosToSprint(taskIDs: [firstTodo.id, secondTodo.id], sprintID: sprint.id)) {
             $0.sprintBoardData.assignments = [
                 SprintAssignment(todoID: firstTodo.id, sprintID: sprint.id),
-                SprintAssignment(todoID: secondTodo.id, sprintID: sprint.id)
+                SprintAssignment(todoID: secondTodo.id, sprintID: sprint.id),
             ]
             $0.routineDisplays[0].assignedSprintID = sprint.id
             $0.routineDisplays[0].assignedSprintTitle = "Sprint 7"
@@ -941,7 +941,7 @@ struct HomeBoardPrototypeTests {
                     sprints: [sprint],
                     assignments: [
                         SprintAssignment(todoID: first.id, sprintID: sprint.id),
-                        SprintAssignment(todoID: second.id, sprintID: sprint.id)
+                        SprintAssignment(todoID: second.id, sprintID: sprint.id),
                     ],
                     focusSessions: [secondSession, firstSession]
                 )
@@ -985,7 +985,7 @@ struct HomeBoardPrototypeTests {
                     sprints: [sprint],
                     assignments: [
                         SprintAssignment(todoID: first.id, sprintID: sprint.id),
-                        SprintAssignment(todoID: second.id, sprintID: sprint.id)
+                        SprintAssignment(todoID: second.id, sprintID: sprint.id),
                     ],
                     focusSessions: [secondSession, firstSession]
                 ),
@@ -1038,7 +1038,7 @@ struct HomeBoardPrototypeTests {
             stoppedAt: makeDate("2026-03-20T10:07:00Z"),
             allocations: [
                 SprintFocusAllocation(taskID: first.id, minutes: 78),
-                SprintFocusAllocation(taskID: second.id, minutes: 10)
+                SprintFocusAllocation(taskID: second.id, minutes: 10),
             ]
         )
 
@@ -1060,7 +1060,7 @@ struct HomeBoardPrototypeTests {
                     sprints: [sprint],
                     assignments: [
                         SprintAssignment(todoID: first.id, sprintID: sprint.id),
-                        SprintAssignment(todoID: second.id, sprintID: sprint.id)
+                        SprintAssignment(todoID: second.id, sprintID: sprint.id),
                     ],
                     focusSessions: [overAllocatedSession]
                 )

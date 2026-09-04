@@ -616,22 +616,13 @@ struct TaskRankingPresentation: Equatable {
             calendar: calendar,
             completionDatesByTaskID: completionDatesByTaskID
         )
-        let eligibleTasks = tasks.filter { task in
-            let isHiddenFromTaskLadder = task.flags.contains { flag in
-                RoutineFlag.normalized(flag).map(taskLadderExclusionFlagIDs.contains) ?? false
-            }
-            return !task.isArchived(referenceDate: referenceDate, calendar: calendar)
-                && !task.isCompletedOneOff
-                && !task.isCanceledOneOff
-                && task.todoState != .blocked
-                && !relationshipBlockedTaskIDs.contains(task.id)
-                && !isHiddenFromTaskLadder
-                && RoutineTaskLadderEntryResolver.isEligible(
-                    task,
-                    referenceDate: referenceDate,
-                    calendar: calendar
-                )
-        }
+        let eligibleTasks = eligibleTasks(
+            from: tasks,
+            excludingFlagIDs: taskLadderExclusionFlagIDs,
+            relationshipBlockedTaskIDs: relationshipBlockedTaskIDs,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let eligibleTasksByID = Dictionary(
             eligibleTasks.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
@@ -813,6 +804,31 @@ struct TaskRankingPresentation: Equatable {
             eligibleTaskIDs: eligibleTaskIDs,
             linkedTaskChildSuggestions: linkedTaskChildSuggestions
         )
+    }
+
+    private static func eligibleTasks(
+        from tasks: [RoutineTask],
+        excludingFlagIDs: Set<String>,
+        relationshipBlockedTaskIDs: Set<UUID>,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [RoutineTask] {
+        tasks.filter { task in
+            let isHiddenFromTaskLadder = task.flags.contains { flag in
+                RoutineFlag.normalized(flag).map(excludingFlagIDs.contains) ?? false
+            }
+            return !task.isArchived(referenceDate: referenceDate, calendar: calendar)
+                && !task.isCompletedOneOff
+                && !task.isCanceledOneOff
+                && task.todoState != .blocked
+                && !relationshipBlockedTaskIDs.contains(task.id)
+                && !isHiddenFromTaskLadder
+                && RoutineTaskLadderEntryResolver.isEligible(
+                    task,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
+        }
     }
 
     private static func estimatedTimePresentation(

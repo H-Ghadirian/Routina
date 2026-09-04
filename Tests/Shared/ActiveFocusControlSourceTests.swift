@@ -36,13 +36,7 @@ struct ActiveFocusControlSourceTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let sourceURL = testsDirectory
-            .deletingLastPathComponent()
-            .appendingPathComponent(relativePath)
-        return try String(contentsOf: sourceURL, encoding: .utf8)
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 
     private static func sourceSection(

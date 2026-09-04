@@ -83,13 +83,11 @@ struct TaskDetailSharedViewSupportTests {
 
     @Test
     func macTaskDetailLinkActionOpensPickerWithoutRevealingDuplicateEditor() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
-        let actionStart = try #require(source.range(of: "private func openExistingTaskLinker()"))
+        let source = try SourceInspectionSupport.readMacTaskDetailSources()
+        let actionStart = try #require(source.range(of: "func openExistingTaskLinker()"))
         let actionEnd = try #require(
             source.range(
-                of: "private var existingTaskLinkerSheet",
+                of: "var existingTaskLinkerSheet",
                 range: actionStart.upperBound..<source.endIndex
             )
         )
@@ -128,13 +126,11 @@ struct TaskDetailSharedViewSupportTests {
 
     @Test
     func macTaskDetailTimeEditorCanReplaceAnExistingTaskTotal() throws {
-        let detailSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let detailSource = try SourceInspectionSupport.readMacTaskDetailSources()
         let headerSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
         )
-        let editActionStart = try #require(detailSource.range(of: "private func beginEditingTaskTime()"))
+        let editActionStart = try #require(detailSource.range(of: "func beginEditingTaskTime()"))
         let editActionEnd = try #require(
             detailSource.range(
                 of: "private func relatedTaskName",
@@ -159,9 +155,7 @@ struct TaskDetailSharedViewSupportTests {
         let timePresentationSource = try Self.sourceFile(
             "SharedCore/Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift"
         )
-        let macDetailSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let macDetailSource = try SourceInspectionSupport.readMacTaskDetailSources()
         let macTimeHeaderSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
         )
@@ -254,9 +248,7 @@ struct TaskDetailSharedViewSupportTests {
 
     @Test
     func macTaskDetailsKeepTaskLadderGroupActivationInTheEditor() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let source = try SourceInspectionSupport.readMacTaskDetailSources()
         let editorSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Shared/TaskFormMacCards.swift"
         )
@@ -268,9 +260,7 @@ struct TaskDetailSharedViewSupportTests {
 
     @Test
     func taskDetailStateControlsUseRelationshipAwareTodoState() throws {
-        let macDetail = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
-        )
+        let macDetail = try SourceInspectionSupport.readMacTaskDetailSources()
         let macControls = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift"
         )
@@ -301,13 +291,7 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let sourceURL = testsDirectory
-            .deletingLastPathComponent()
-            .appendingPathComponent(relativePath)
-        return try String(contentsOf: sourceURL, encoding: .utf8)
+        try SourceInspectionSupport.readProjectFile(relativePath)
     }
 
     private static func sourceSection(
@@ -619,7 +603,7 @@ struct TaskDetailSharedViewSupportTests {
     @Test
     func taskDetailsOfferMissingEstimateOnBothPlatforms() throws {
         let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
-        let macDetail = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let macDetail = try SourceInspectionSupport.readMacTaskDetailSources()
 
         for source in [iosDetail, macDetail] {
             #expect(source.contains("if shouldShowEstimationAddAction"))
@@ -651,7 +635,7 @@ struct TaskDetailSharedViewSupportTests {
     func taskDetailsKeepTaskLadderValuesTogetherAndLockConfiguredTimeRules() throws {
         let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
         let iosControls = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
-        let macDetail = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let macDetail = try SourceInspectionSupport.readMacTaskDetailSources()
         let macControls = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift")
         let valuesBox = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailTaskLadderValuesBox.swift")
 
@@ -744,7 +728,7 @@ struct TaskDetailSharedViewSupportTests {
     @Test
     func iosTaskDetailCalendarUsesTaskOwnedDisclosureState() throws {
         let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
-        let macDetail = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let macDetail = try SourceInspectionSupport.readMacTaskDetailSources()
 
         #expect(iosDetail.contains("TaskDetailCalendarDisclosureCard("))
         #expect(iosDetail.contains("isExpanded: store.task.isTaskDetailCalendarExpanded"))

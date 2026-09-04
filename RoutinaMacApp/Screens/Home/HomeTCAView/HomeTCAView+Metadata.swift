@@ -44,8 +44,8 @@ extension HomeTCAView {
 
     func badgeStyle(
         for task: HomeFeature.RoutineDisplay
-    ) -> (title: String, systemImage: String, foregroundColor: Color, backgroundColor: Color)? {
-        routineMetadataPresenter.badgeStyle(for: task)?.tuple
+    ) -> HomeRoutineMetadataBadgeStyle? {
+        routineMetadataPresenter.badgeStyle(for: task)
     }
 
     func stepMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
