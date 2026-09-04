@@ -55,6 +55,10 @@ struct HomeMacTaskRowMetadataLayoutSourceTests {
         #expect(labelsSource.contains("ForEach(1...labels.count, id: \\.self)"))
         #expect(labelsSource.contains("Text(\"+\\(hiddenCount) more\")"))
         #expect(labelsSource.contains(".help(hiddenDescription)"))
+        #expect(labelsSource.contains("for index in subviews.indices"))
+        #expect(labelsSource.contains("index != selection.overflowIndex"))
+        #expect(labelsSource.contains(".clipped()"))
+        #expect(labelsSource.contains(".accessibilityElement(children: .ignore)"))
     }
 
     @Test

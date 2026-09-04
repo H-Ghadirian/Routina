@@ -4052,6 +4052,7 @@ Given a Mac main task-list row has several enabled Tags, Flags, Goals, or status
 When `Multiline Details` is off
 Then every visible chip keeps its complete recognizable label
 And details that do not fit are represented by one `+N more` chip
+And unused overflow candidates never appear or overlap the selected labels
 And hover and accessibility text identify the omitted details
 And the status badge keeps its trailing placement
 

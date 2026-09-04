@@ -63,6 +63,9 @@ struct HomeMacTaskRowSecondaryLabels: View {
                         )
                     }
                 }
+                .clipped()
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(compactAccessibilityLabel)
             }
 
             Spacer(minLength: labels.isEmpty ? 0 : 6)
@@ -74,6 +77,10 @@ struct HomeMacTaskRowSecondaryLabels: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
+    }
+
+    private var compactAccessibilityLabel: String {
+        labels.map(\.overflowDescription).joined(separator: ", ")
     }
 
     @ViewBuilder
@@ -209,6 +216,18 @@ private struct HomeMacTaskRowCompactLabelsLayout: Layout {
             let size = cache.sizes[overflowIndex]
             subviews[overflowIndex].place(
                 at: CGPoint(x: x, y: bounds.midY - size.height / 2),
+                proposal: ProposedViewSize(size)
+            )
+        }
+
+        for index in subviews.indices
+        where index >= selection.visibleLabelCount && index != selection.overflowIndex {
+            let size = cache.sizes[index]
+            subviews[index].place(
+                at: CGPoint(
+                    x: bounds.maxX + size.width + 1,
+                    y: bounds.maxY + size.height + 1
+                ),
                 proposal: ProposedViewSize(size)
             )
         }
