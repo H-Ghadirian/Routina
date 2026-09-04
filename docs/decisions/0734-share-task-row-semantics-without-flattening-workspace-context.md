@@ -8,6 +8,10 @@ Accepted
 
 2026-09-04
 
+## Refined By
+
+- [0735 — Compose Main Task List From Shared Task-Row Semantics](0735-compose-main-task-list-from-shared-task-row-semantics.md) brings Main Task List identity and stable lifecycle meaning into the shared snapshot while preserving its richer occurrence and action context.
+
 ## Refines
 
 - [0038 — Configure Home Task Row Fields](0038-configure-home-task-row-fields.md)

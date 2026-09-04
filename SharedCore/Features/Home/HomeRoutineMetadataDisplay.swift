@@ -1,6 +1,7 @@
 import Foundation
 
 protocol HomeRoutineMetadataDisplay: HomeTaskRowDisplay {
+    var taskRowSemantics: TaskRowSemanticPresentation? { get }
     var locationAvailability: RoutineLocationAvailability { get }
     var canceledAt: Date? { get }
     var isSoftIntervalRoutine: Bool { get }
@@ -16,4 +17,10 @@ protocol HomeRoutineMetadataDisplay: HomeTaskRowDisplay {
     var nextPendingChecklistItemTitle: String? { get }
     var nextDueChecklistItemTitle: String? { get }
     var doneCount: Int { get }
+}
+
+extension HomeRoutineMetadataDisplay {
+    var taskRowSemantics: TaskRowSemanticPresentation? {
+        nil
+    }
 }

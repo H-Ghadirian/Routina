@@ -12,7 +12,9 @@ extension HomeFeature {
         sprintBoardData: SprintBoardData,
         fileAttachmentTaskIDs: Set<UUID> = [],
         showsPlaces: Bool = true,
-        showsGoals: Bool = true
+        showsGoals: Bool = true,
+        flagRules: [RoutineFlagRule] = [],
+        isRelationshipBlocked: Bool = false
     ) -> RoutineDisplay {
         let core = HomeRoutineDisplayFactory(now: now, calendar: calendar).makeCore(
             for: task,
@@ -22,7 +24,9 @@ extension HomeFeature {
             doneStats: doneStats,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
             showsPlaces: showsPlaces,
-            showsGoals: showsGoals
+            showsGoals: showsGoals,
+            flagRules: flagRules,
+            isRelationshipBlocked: isRelationshipBlocked
         )
         let assignedSprint = sprintBoardData.sprint(for: task.id)
         let assignedBacklog = sprintBoardData.backlog(for: task.id)
@@ -51,7 +55,8 @@ extension HomeFeature {
         )
 
         for task in state.routineTasks {
-            var display = makeRoutineDisplay(
+            let isRelationshipBlocked = relationshipBlockedTaskIDs.contains(task.id)
+            let display = makeRoutineDisplay(
                 task,
                 placesByID: placesByID,
                 goalsByID: goalsByID,
@@ -60,9 +65,10 @@ extension HomeFeature {
                 sprintBoardData: state.sprintBoardData,
                 fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
                 showsPlaces: showsPlaces,
-                showsGoals: showsGoals
+                showsGoals: showsGoals,
+                flagRules: state.flagRules,
+                isRelationshipBlocked: isRelationshipBlocked
             )
-            display.hasActiveRelationshipBlocker = relationshipBlockedTaskIDs.contains(task.id)
 
             if task.isOneOffTask {
                 boardTodos.append(display)
@@ -204,6 +210,7 @@ private extension HomeFeature.RoutineDisplay {
             hasPassedSoftThreshold: core.hasPassedSoftThreshold,
             completedStepCount: core.completedStepCount,
             isInProgress: core.isInProgress,
+            hasActiveRelationshipBlocker: core.hasActiveRelationshipBlocker,
             blocksManualCompletionForIncompleteChecklist: core.blocksManualCompletionForIncompleteChecklist,
             nextStepTitle: core.nextStepTitle,
             checklistItemCount: core.checklistItemCount,
@@ -219,7 +226,8 @@ private extension HomeFeature.RoutineDisplay {
             assignedSprintID: assignedSprint?.id,
             assignedSprintTitle: assignedSprint?.title,
             assignedBacklogID: assignedBacklog?.id,
-            assignedBacklogTitle: assignedBacklog?.title
+            assignedBacklogTitle: assignedBacklog?.title,
+            taskRowSemantics: core.taskRowSemantics
         )
     }
 }

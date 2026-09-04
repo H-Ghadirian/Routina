@@ -6,14 +6,26 @@ struct HomeBlockedStatusBadgeSourceTests {
     func platformHomeRefreshesCacheRelationshipBlockingInRowSnapshots() throws {
         let sources = try [
             sourceFile("RoutinaMacApp/Features/Home/HomeFeature+Display.swift"),
-            sourceFile("iOS/Features/Home/HomeFeature+Display.swift")
+            sourceFile("iOS/Features/Home/HomeFeature+Display.swift"),
         ]
 
         for source in sources {
             #expect(source.contains("HomeDisplayFilterSupport.activeRelationshipBlockedTaskIDs("))
             #expect(source.contains("completionDatesByTaskID: state.doneStats.completedDatesByTaskID"))
-            #expect(source.contains("display.hasActiveRelationshipBlocker = relationshipBlockedTaskIDs.contains(task.id)"))
+            #expect(source.contains("let isRelationshipBlocked = relationshipBlockedTaskIDs.contains(task.id)"))
+            #expect(source.contains("flagRules: state.flagRules"))
+            #expect(source.contains("isRelationshipBlocked: isRelationshipBlocked"))
         }
+    }
+
+    @Test
+    func mainTaskListBadgePresentationReadsTheCachedSharedStatus() throws {
+        let source = try sourceFile(
+            "SharedCore/Features/Home/HomeRoutineDisplayBadgePresentation.swift"
+        )
+
+        #expect(source.contains("task.taskRowSemantics?.status"))
+        #expect(source.contains("return semanticStyle"))
     }
 
     @Test

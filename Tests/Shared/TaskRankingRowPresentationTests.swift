@@ -83,29 +83,57 @@ struct TaskRankingRowPresentationTests {
         let calendar = Calendar(identifier: .gregorian)
         let referenceDate = Date(timeIntervalSince1970: 1_735_905_600)
         let task = RoutineTask(
-            name: "Review roadmap",
+            name: "  Review roadmap  ",
             emoji: "🧭",
             deadline: referenceDate,
+            imageData: Data([0x01]),
+            destinationAddress: "Library",
             tags: ["Work"],
+            flags: ["Off radar"],
+            steps: [RoutineStep(title: "Outline")],
             scheduleMode: .oneOff,
+            pinnedAt: referenceDate,
+            color: .purple,
             todoStateRawValue: TodoState.inProgress.rawValue
         )
+        let flagRules = [RoutineFlagRule(flag: "Off radar", kind: .hideFromTaskLists)]
 
         let backlog = BacklogTaskRowPresentation.make(
             task: task,
-            flagRules: [],
+            flagRules: flagRules,
             referenceDate: referenceDate,
             calendar: calendar
         )
         let ladder = TaskRankingRowPresentation.make(
             task: task,
             isContainerGroup: false,
-            flagRules: [],
+            flagRules: flagRules,
             referenceDate: referenceDate,
             calendar: calendar
         )
+        let home = HomeRoutineDisplayFactory(now: referenceDate, calendar: calendar).makeCore(
+            for: task,
+            placesByID: [:],
+            goalsByID: [:],
+            locationSnapshot: LocationSnapshot(
+                authorizationStatus: .notDetermined,
+                coordinate: nil,
+                horizontalAccuracy: nil,
+                timestamp: nil
+            ),
+            doneStats: HomeDoneStats(),
+            flagRules: flagRules
+        )
 
         #expect(backlog == ladder)
+        #expect(home.taskRowSemantics == backlog)
+        #expect(home.name == backlog.name)
+        #expect(home.emoji == backlog.emoji)
+        #expect(home.hasImage == backlog.hasImage)
+        #expect(home.isPinned == backlog.isPinned)
+        #expect(home.tags == backlog.tags)
+        #expect(home.flags == backlog.flags)
+        #expect(home.color == backlog.color)
         #expect(backlog.status?.title == "In Progress")
         #expect(backlog.scheduleText == "Due today")
     }

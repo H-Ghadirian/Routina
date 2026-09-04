@@ -61,6 +61,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var hasPassedSoftThreshold: Bool
     var completedStepCount: Int
     var isInProgress: Bool
+    var hasActiveRelationshipBlocker: Bool
     var blocksManualCompletionForIncompleteChecklist: Bool
     var nextStepTitle: String?
     var checklistItemCount: Int
@@ -73,4 +74,5 @@ struct HomeRoutineDisplayCore: Equatable {
     var manualSectionOrders: [String: Int]
     var color: RoutineTaskColor
     var todoState: TodoState?
+    var taskRowSemantics: TaskRowSemanticPresentation
 }

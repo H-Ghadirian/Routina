@@ -1,18 +1,25 @@
 # Cross-Workspace Task-Row Semantics
 
 Area: Tasks / Main Task List / Backlog / Task Ladder / iOS / macOS
-Decision links: [0734](../decisions/0734-share-task-row-semantics-without-flattening-workspace-context.md)
+Decision links: [0734](../decisions/0734-share-task-row-semantics-without-flattening-workspace-context.md), [0735](../decisions/0735-compose-main-task-list-from-shared-task-row-semantics.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskRowPresentationTests.swift`
+- `Tests/Shared/HomeBlockedStatusBadgeSourceTests.swift`
 - `Tests/Shared/TaskRankingRowPresentationTests.swift`
 - `Tests/Shared/IOSHomeWorkspaceNavigationSourceTests.swift`
 
-Given the same active task can be presented in Backlog and Task Ladder
+Given the same active task can be presented in Main Task List, Backlog, and Task Ladder
 When each feature rebuilds its cached row snapshot
-Then both use the same normalized title, emoji, task type, lifecycle status,
+Then all three use the same normalized title, emoji, task type, lifecycle status,
 schedule, progress, next-step, Tag, Flag, and semantic tone values
 And their scrolling row builders do not derive those values again
+
+Given an in-progress one-time task has several steps
+When Main Task List builds and renders its cached display
+Then its lifecycle badge uses the shared `In Progress` wording, icon, and tone
+And its current step remains separate Progress metadata
+And Main Task List retains its occurrence, planning, location, and action context
 
 Given a Backlog task has an unresolved confirmed prerequisite
 And its stored one-time state is Ready or In Progress
@@ -31,7 +38,7 @@ Then each row keeps its rank section, Tags, temporal context, and child count
 And container groups, task groups, and ordinary tasks remain visually distinct
 And the task's shared identity and status presentation is unchanged
 
-Given a person changes a Mac Backlog or Task Ladder Appearance preference
+Given a person changes a Mac Main Task List, Backlog, or Task Ladder Appearance preference
 When a semantic field is hidden or shown
 Then only that workspace's row density changes
 And filtering, sorting, task placement, and the meaning of the field remain unchanged

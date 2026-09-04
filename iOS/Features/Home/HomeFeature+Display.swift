@@ -11,7 +11,9 @@ extension HomeFeature {
         doneStats: DoneStats,
         fileAttachmentTaskIDs: Set<UUID> = [],
         showsPlaces: Bool = true,
-        showsGoals: Bool = true
+        showsGoals: Bool = true,
+        flagRules: [RoutineFlagRule] = [],
+        isRelationshipBlocked: Bool = false
     ) -> RoutineDisplay {
         let core = HomeRoutineDisplayFactory(now: now, calendar: calendar).makeCore(
             for: task,
@@ -21,7 +23,9 @@ extension HomeFeature {
             doneStats: doneStats,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
             showsPlaces: showsPlaces,
-            showsGoals: showsGoals
+            showsGoals: showsGoals,
+            flagRules: flagRules,
+            isRelationshipBlocked: isRelationshipBlocked
         )
         return RoutineDisplay(core: core)
     }
@@ -46,7 +50,8 @@ extension HomeFeature {
         )
 
         for task in state.routineTasks {
-            var display = makeRoutineDisplay(
+            let isRelationshipBlocked = relationshipBlockedTaskIDs.contains(task.id)
+            let display = makeRoutineDisplay(
                 task,
                 placesByID: placesByID,
                 goalsByID: goalsByID,
@@ -54,9 +59,10 @@ extension HomeFeature {
                 doneStats: state.doneStats,
                 fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
                 showsPlaces: showsPlaces,
-                showsGoals: showsGoals
+                showsGoals: showsGoals,
+                flagRules: state.flagRules,
+                isRelationshipBlocked: isRelationshipBlocked
             )
-            display.hasActiveRelationshipBlocker = relationshipBlockedTaskIDs.contains(task.id)
 
             if task.isArchived(referenceDate: now, calendar: calendar) {
                 archived.append(display)
@@ -159,6 +165,7 @@ private extension HomeFeature.RoutineDisplay {
             hasPassedSoftThreshold: core.hasPassedSoftThreshold,
             completedStepCount: core.completedStepCount,
             isInProgress: core.isInProgress,
+            hasActiveRelationshipBlocker: core.hasActiveRelationshipBlocker,
             blocksManualCompletionForIncompleteChecklist: core.blocksManualCompletionForIncompleteChecklist,
             nextStepTitle: core.nextStepTitle,
             checklistItemCount: core.checklistItemCount,
@@ -170,7 +177,8 @@ private extension HomeFeature.RoutineDisplay {
             doneCount: core.doneCount,
             manualSectionOrders: core.manualSectionOrders,
             color: core.color,
-            todoState: core.todoState
+            todoState: core.todoState,
+            taskRowSemantics: core.taskRowSemantics
         )
     }
 }

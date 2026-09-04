@@ -12,7 +12,9 @@ struct HomeRoutineDisplayFactory {
         doneStats: HomeDoneStats,
         fileAttachmentTaskIDs: Set<UUID> = [],
         showsPlaces: Bool = true,
-        showsGoals: Bool = true
+        showsGoals: Bool = true,
+        flagRules: [RoutineFlagRule] = [],
+        isRelationshipBlocked: Bool = false
     ) -> HomeRoutineDisplayCore {
         // Completion logs can arrive before the task's legacy `lastDone` summary catches up.
         // Home presentation follows recorded history, while `task.lastDone` remains the
@@ -78,7 +80,11 @@ struct HomeRoutineDisplayFactory {
         let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
-        let taskTags = task.tags
+        let taskRowSemantics = makeTaskRowSemantics(
+            for: task,
+            flagRules: flagRules,
+            isRelationshipBlocked: isRelationshipBlocked
+        )
         let missedExactTimedOccurrenceDates = RoutineDateMath.missedExactTimedOccurrenceDates(
             for: task,
             referenceDate: now,
@@ -93,8 +99,6 @@ struct HomeRoutineDisplayFactory {
             )
         }
 
-        let taskName = task.name ?? "Unnamed task"
-        let taskEmoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
         let taskDescription = task.taskDescription
         let taskNotes = CalendarTaskImportSupport.displayNotes(from: task.notes)
         let goalTitles = showsGoals
@@ -108,29 +112,31 @@ struct HomeRoutineDisplayFactory {
 
         return HomeRoutineDisplayCore(
             taskID: task.id,
-            name: taskName,
-            emoji: taskEmoji,
+            name: taskRowSemantics.name,
+            emoji: taskRowSemantics.emoji,
             taskDescription: taskDescription,
             notes: taskNotes,
-            hasImage: task.hasImage,
+            hasImage: taskRowSemantics.hasImage,
             hasFileAttachment: fileAttachmentTaskIDs.contains(task.id),
             placeID: showsPlaces ? task.placeID : nil,
             placeIDs: showsPlaces ? task.placeIDs : [],
             placeName: displayPlaceName,
             locationAvailability: locationAvailability,
-            tags: taskTags,
-            flags: task.flags,
-            taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(for: taskTags),
+            tags: taskRowSemantics.tags,
+            flags: taskRowSemantics.flags,
+            taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(
+                for: taskRowSemantics.tags
+            ),
             goalIDs: showsGoals ? task.goalIDs : [],
             goalTitles: goalTitles,
             indexedSearchText: HomeTaskSearchIndex.make(
-                name: taskName,
-                emoji: taskEmoji,
+                name: taskRowSemantics.name,
+                emoji: taskRowSemantics.emoji,
                 taskDescription: taskDescription,
                 notes: taskNotes,
                 placeName: displayPlaceName,
-                tags: taskTags,
-                flags: task.flags,
+                tags: taskRowSemantics.tags,
+                flags: taskRowSemantics.flags,
                 goalTitles: goalTitles
             ),
             steps: task.steps.map(\.title),
@@ -176,7 +182,7 @@ struct HomeRoutineDisplayFactory {
             isAssumedDoneToday: assumedDoneToday,
             isPaused: isArchived,
             isSnoozed: isSnoozed,
-            isPinned: task.isPinned,
+            isPinned: taskRowSemantics.isPinned,
             isOngoing: task.isOngoing,
             ongoingSince: task.ongoingSince,
             hasPassedSoftThreshold: RoutineDateMath.hasPassedSoftIntervalThreshold(
@@ -186,6 +192,7 @@ struct HomeRoutineDisplayFactory {
             ),
             completedStepCount: task.completedSteps,
             isInProgress: task.isInProgress,
+            hasActiveRelationshipBlocker: isRelationshipBlocked,
             blocksManualCompletionForIncompleteChecklist: task.blocksManualCompletionForIncompleteChecklist,
             nextStepTitle: task.nextStepTitle,
             checklistItemCount: task.checklistItems.count,
@@ -200,8 +207,23 @@ struct HomeRoutineDisplayFactory {
             nextDueChecklistItemTitle: nextDueChecklistItem?.title,
             doneCount: doneStats.countsByTaskID[task.id, default: 0],
             manualSectionOrders: task.manualSectionOrders,
-            color: task.color,
-            todoState: task.todoState
+            color: taskRowSemantics.color,
+            todoState: task.todoState,
+            taskRowSemantics: taskRowSemantics
+        )
+    }
+
+    private func makeTaskRowSemantics(
+        for task: RoutineTask,
+        flagRules: [RoutineFlagRule],
+        isRelationshipBlocked: Bool
+    ) -> TaskRowSemanticPresentation {
+        TaskRowSemanticPresentation.make(
+            task: task,
+            flagRules: flagRules,
+            referenceDate: now,
+            calendar: calendar,
+            isRelationshipBlocked: isRelationshipBlocked
         )
     }
 

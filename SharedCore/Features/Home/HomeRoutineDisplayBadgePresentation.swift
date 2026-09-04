@@ -14,6 +14,9 @@ enum HomeRoutineMetadataBadgeMode {
 
 extension HomeRoutineDisplayMetadataPresenter {
     func badgeStyle(for task: Display) -> HomeRoutineMetadataBadgeStyle? {
+        if let semanticStyle = sharedLifecycleBadgeStyle(for: task) {
+            return semanticStyle
+        }
         if task.isPaused {
             return task.isSnoozed
                 ? badge("Not today", "moon.zzz.fill", .indigo, Color.indigo.opacity(0.16))
@@ -150,5 +153,54 @@ extension HomeRoutineDisplayMetadataPresenter {
             foregroundColor: foregroundColor,
             backgroundColor: backgroundColor
         )
+    }
+
+    private func sharedLifecycleBadgeStyle(for task: Display) -> HomeRoutineMetadataBadgeStyle? {
+        if task.isPaused {
+            return semanticBadgeStyle(for: task)
+        }
+        if case .away = task.locationAvailability {
+            return nil
+        }
+        if !task.isCompletedOneOff,
+           !task.isCanceledOneOff,
+           task.hasActiveRelationshipBlocker,
+           !task.isOneOffTask || task.todoState == .ready || task.todoState == .inProgress {
+            return semanticBadgeStyle(for: task)
+        }
+        if task.isOngoing || !task.isOneOffTask {
+            return nil
+        }
+        if badgeMode == .compact,
+           !task.isCompletedOneOff,
+           !task.isCanceledOneOff,
+           !task.isInProgress,
+           task.todoState != .blocked {
+            return nil
+        }
+        return semanticBadgeStyle(for: task)
+    }
+
+    private func semanticBadgeStyle(for task: Display) -> HomeRoutineMetadataBadgeStyle? {
+        guard let status = task.taskRowSemantics?.status else { return nil }
+        let foregroundColor = color(for: status.tone)
+        return badge(
+            status.title,
+            status.systemImage,
+            foregroundColor,
+            foregroundColor.opacity(0.14)
+        )
+    }
+
+    private func color(for tone: TaskRowSemanticTone) -> Color {
+        switch tone {
+        case .secondary: return .secondary
+        case .blue: return .blue
+        case .green: return .green
+        case .indigo: return .indigo
+        case .orange: return .orange
+        case .red: return .red
+        case .teal: return .teal
+        }
     }
 }

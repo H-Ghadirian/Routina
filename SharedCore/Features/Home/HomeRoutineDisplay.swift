@@ -79,6 +79,9 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var assignedSprintTitle: String? = nil
     var assignedBacklogID: UUID? = nil
     var assignedBacklogTitle: String? = nil
+    /// Cached cross-workspace task meaning. Main Task List layers occurrence,
+    /// planning, and action context on top of this shared semantic snapshot.
+    var taskRowSemantics: TaskRowSemanticPresentation?
 
     var currentTaskLadderImportance: RoutineTaskImportance {
         currentTaskLadderImportanceOverride ?? importance
