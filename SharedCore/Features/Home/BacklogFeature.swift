@@ -7,6 +7,7 @@ struct BacklogFeature {
     private enum CancelID: Hashable {
         case load
         case automaticRefresh
+        case dueDateBoundaryRefresh
         case taskDetail(UUID)
     }
 
@@ -51,6 +52,7 @@ struct BacklogFeature {
         case searchTextChanged(String)
         case filtersChanged(BacklogFilterState)
         case clearFilters
+        case dueDateBoundaryReached
         case superSectionDisclosureToggled(UUID)
         case subsectionDisclosureToggled(UUID)
         case taskSelected(UUID)
@@ -76,6 +78,7 @@ struct BacklogFeature {
                 return .merge(
                     .cancel(id: CancelID.load),
                     .cancel(id: CancelID.automaticRefresh),
+                    .cancel(id: CancelID.dueDateBoundaryRefresh),
                     state.selectedTaskID.map { .cancel(id: CancelID.taskDetail($0)) } ?? .none
                 )
 
@@ -83,7 +86,10 @@ struct BacklogFeature {
                 let selectedTaskID = state.selectedTaskID
                 state.selectedTaskID = nil
                 state.taskDetailState = nil
-                return selectedTaskID.map { .cancel(id: CancelID.taskDetail($0)) } ?? .none
+                return .merge(
+                    .cancel(id: CancelID.dueDateBoundaryRefresh),
+                    selectedTaskID.map { .cancel(id: CancelID.taskDetail($0)) } ?? .none
+                )
 
             case .refresh:
                 guard !state.isLoading else { return .none }
@@ -124,7 +130,7 @@ struct BacklogFeature {
                     state.selectedTaskID = nil
                     state.taskDetailState = nil
                 }
-                return .none
+                return scheduleDueDateBoundaryRefresh(for: state)
 
             case let .loadFailed(message):
                 state.isLoading = false
@@ -156,13 +162,17 @@ struct BacklogFeature {
                 guard state.filters != filters else { return .none }
                 state.filters = filters
                 rebuildPresentation(&state)
-                return .none
+                return scheduleDueDateBoundaryRefresh(for: state)
 
             case .clearFilters:
                 guard state.filters.hasNonDefaultOptions else { return .none }
                 state.filters = .default
                 rebuildPresentation(&state)
-                return .none
+                return scheduleDueDateBoundaryRefresh(for: state)
+
+            case .dueDateBoundaryReached:
+                rebuildPresentation(&state)
+                return scheduleDueDateBoundaryRefresh(for: state)
 
             case let .superSectionDisclosureToggled(sectionID):
                 guard HomeTaskSearchIndex.query(state.searchText) == nil else { return .none }
@@ -240,6 +250,24 @@ struct BacklogFeature {
             }
         }
         .cancellable(id: CancelID.load, cancelInFlight: true)
+    }
+
+    private func scheduleDueDateBoundaryRefresh(for state: State) -> Effect<Action> {
+        guard state.filters.dueDateFilter.dependsOnCurrentDay,
+              let nextDay = calendar.date(
+                  byAdding: .day,
+                  value: 1,
+                  to: calendar.startOfDay(for: now)
+              )
+        else {
+            return .cancel(id: CancelID.dueDateBoundaryRefresh)
+        }
+        let seconds = max(nextDay.timeIntervalSince(now), 1)
+        return .run { send in
+            try await continuousClock.sleep(for: .seconds(seconds))
+            await send(.dueDateBoundaryReached)
+        }
+        .cancellable(id: CancelID.dueDateBoundaryRefresh, cancelInFlight: true)
     }
 
     private func moveTask(_ taskID: UUID, to destinationSectionID: UUID?) -> Effect<Action> {

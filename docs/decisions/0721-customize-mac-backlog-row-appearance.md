@@ -8,6 +8,10 @@ Accepted
 
 2026-09-04
 
+## Revised By
+
+- [0723: Filter Mac Backlog by Due Status](0723-filter-mac-backlog-by-due-status.md) adds Has Due Date, Due Today, and Overdue choices to the independent Filter tab.
+
 ## Revises
 
 - [0690: Place Mac Filters Beside Planner and Backlog Workspaces](0690-place-mac-filters-beside-planner-and-backlog-workspaces.md)

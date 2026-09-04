@@ -89,6 +89,9 @@ struct MacWorkspaceNavigationSourceTests {
         #expect(sidebarSource.contains("DispatchQueue.main.async"))
         #expect(backlogFeatureSource.contains("case workspaceDeactivated"))
         #expect(backlogFeatureSource.contains("state.taskDetailState = nil"))
+        #expect(backlogFeatureSource.contains("case dueDateBoundaryReached"))
+        #expect(backlogFeatureSource.contains("state.filters.dueDateFilter.dependsOnCurrentDay"))
+        #expect(backlogFeatureSource.contains(".cancel(id: CancelID.dueDateBoundaryRefresh)"))
     }
 
     @Test
@@ -145,6 +148,9 @@ struct MacWorkspaceNavigationSourceTests {
         #expect(backlogFiltersSource.contains("case .sort:"))
         #expect(backlogFiltersSource.contains("case .appearance:"))
         #expect(backlogFiltersSource.contains("Filtering, sorting, and appearance affect Backlog only."))
+        #expect(backlogFiltersSource.contains("HomeMacAdaptiveFilterControlRow(\"Due\")"))
+        #expect(backlogFiltersSource.contains("options: BacklogDueDateFilter.allCases"))
+        #expect(backlogFiltersSource.contains("filterBinding(\\.dueDateFilter)"))
         #expect(backlogFiltersSource.contains("HomeMacAdaptiveFilterControlRow(\"Sort\")"))
         #expect(backlogFiltersSource.contains("options: BacklogSortOrder.allCases"))
         #expect(backlogFiltersSource.contains("UserDefaultStringValueKey.appSettingBacklogTaskRowHiddenFields"))

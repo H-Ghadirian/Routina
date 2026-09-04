@@ -21,11 +21,70 @@ enum BacklogSortOrder: String, CaseIterable, Equatable, Hashable, Identifiable, 
     }
 }
 
+enum BacklogDueDateFilter: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case all = "All"
+    case hasDueDate = "Has Due Date"
+    case dueToday = "Due Today"
+    case overdue = "Overdue"
+
+    var id: Self { self }
+
+    var title: String { rawValue }
+
+    var systemImage: String {
+        switch self {
+        case .all:
+            return "calendar"
+        case .hasDueDate:
+            return "calendar.badge.clock"
+        case .dueToday:
+            return "calendar.circle.fill"
+        case .overdue:
+            return "exclamationmark.circle.fill"
+        }
+    }
+
+    var dependsOnCurrentDay: Bool {
+        self == .dueToday || self == .overdue
+    }
+
+    func matches(
+        _ task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard self != .all else { return true }
+        guard let dueDate = BacklogTaskListPresentation.sortableDueDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) else {
+            return false
+        }
+
+        switch self {
+        case .all:
+            return true
+        case .hasDueDate:
+            return true
+        case .dueToday:
+            return calendar.isDate(dueDate, inSameDayAs: referenceDate)
+        case .overdue:
+            return RoutineDateMath.overdueDays(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) > 0
+        }
+    }
+}
+
 struct BacklogFilterState: Equatable {
     var sortOrder: BacklogSortOrder = .defaultOrder
     var taskListMode: HomeTaskListMode = .all
     var selectedTodoState: TodoState?
     var createdDateFilter: HomeTaskCreatedDateFilter = .all
+    var dueDateFilter: BacklogDueDateFilter = .all
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     var selectedPressureFilter: RoutineTaskPressure?
     var selectedThinkingNeededFilter: RoutineTaskThinkingNeeded?
@@ -46,6 +105,7 @@ struct BacklogFilterState: Equatable {
         taskListMode != .all
             || selectedTodoState != nil
             || createdDateFilter != .all
+            || dueDateFilter != .all
             || selectedImportanceUrgencyFilter != nil
             || selectedPressureFilter != nil
             || selectedThinkingNeededFilter != nil
@@ -74,6 +134,11 @@ struct BacklogFilterState: Equatable {
                 todoState: task.todoState
               ),
               matchesCreatedDate(task, referenceDate: referenceDate, calendar: calendar),
+              dueDateFilter.matches(
+                  task,
+                  referenceDate: referenceDate,
+                  calendar: calendar
+              ),
               HomeDisplayFilterSupport.matchesThinkingNeededFilter(
                 selectedThinkingNeededFilter,
                 thinkingNeeded: task.thinkingNeeded

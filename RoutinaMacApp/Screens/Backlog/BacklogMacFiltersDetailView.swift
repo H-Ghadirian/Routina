@@ -92,6 +92,18 @@ struct BacklogMacFiltersDetailView: View {
                     }
                 }
 
+                HomeMacAdaptiveFilterControlRow("Due") {
+                    HomeMacAdaptiveFilterChoiceControl(
+                        accessibilityLabel: "Backlog due date",
+                        options: BacklogDueDateFilter.allCases,
+                        selection: filterBinding(\.dueDateFilter),
+                        minimumSegmentWidth: 126,
+                        compactPickerWidth: HomeMacFilterControlLayout.compactPickerWidth
+                    ) { filter in
+                        Label(filter.title, systemImage: filter.systemImage)
+                    }
+                }
+
                 if store.filters.taskListMode != .routines {
                     HomeMacAdaptiveFilterControlRow("Status") {
                         HomeMacAdaptiveFilterChoiceControl(

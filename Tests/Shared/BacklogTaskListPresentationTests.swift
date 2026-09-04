@@ -528,6 +528,102 @@ struct BacklogTaskListPresentationTests {
     }
 
     @Test
+    func filtersBacklogTasksByDueDateAndOverdueState() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let referenceDate = Date(timeIntervalSince1970: 1_000_000)
+        let sectionID = UUID()
+        let dueToday = RoutineTask(
+            name: "Due today",
+            deadline: calendar.date(byAdding: .hour, value: 2, to: referenceDate),
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let overdue = RoutineTask(
+            name: "Overdue",
+            deadline: calendar.date(byAdding: .day, value: -1, to: referenceDate),
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let upcoming = RoutineTask(
+            name: "Upcoming",
+            deadline: calendar.date(byAdding: .day, value: 2, to: referenceDate),
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let repeatingDue = RoutineTask(
+            name: "Repeating due",
+            customTaskSectionID: sectionID,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 3),
+            scheduleAnchor: referenceDate
+        )
+        let undated = RoutineTask(
+            name: "Undated",
+            customTaskSectionID: sectionID,
+            scheduleMode: .oneOff
+        )
+        let gentle = RoutineTask(
+            name: "Gentle",
+            customTaskSectionID: sectionID,
+            scheduleMode: .softInterval,
+            recurrenceRule: .interval(days: 1),
+            scheduleAnchor: referenceDate
+        )
+        let section = HomeCustomTaskSection(
+            id: sectionID,
+            surface: .backlog,
+            title: "Someday",
+            createdAt: nil
+        )
+        let tasks = [dueToday, overdue, upcoming, repeatingDue, undated, gentle]
+
+        var filters = BacklogFilterState.default
+        filters.dueDateFilter = .hasDueDate
+        let dated = BacklogTaskListPresentation.make(
+            tasks: tasks,
+            customSections: [section],
+            flagRules: [],
+            filters: filters,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(
+            Set(try #require(dated.sections.first).tasks.map(\.id)) == [
+                dueToday.id,
+                overdue.id,
+                upcoming.id,
+                repeatingDue.id,
+            ])
+        #expect(filters.hasActiveFilters)
+
+        filters.dueDateFilter = .dueToday
+        let dueTodayOnly = BacklogTaskListPresentation.make(
+            tasks: tasks,
+            customSections: [section],
+            flagRules: [],
+            filters: filters,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(dueTodayOnly.sections.first?.tasks.map(\.id) == [dueToday.id])
+
+        filters.dueDateFilter = .overdue
+        let overdueOnly = BacklogTaskListPresentation.make(
+            tasks: tasks,
+            customSections: [section],
+            flagRules: [],
+            filters: filters,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(overdueOnly.sections.first?.tasks.map(\.id) == [overdue.id])
+    }
+
+    @Test
     func appliesBacklogOnlyFiltersAtTheCachedPresentationBoundary() throws {
         let sectionID = UUID()
         let referenceDate = Date(timeIntervalSince1970: 1_000_000)

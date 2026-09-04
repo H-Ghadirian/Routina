@@ -414,7 +414,7 @@ And the manual Refresh Backlog control remains immediately available when no ref
 ### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
 
 Area: Tasks / Mac Backlog
-Decision links: [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0723](../decisions/0723-filter-mac-backlog-by-due-status.md), [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
@@ -482,6 +482,16 @@ And the unfiltered Backlog-owned catalog remains available for Tag and Flag sele
 And changing filters never moves tasks or rewrites their Backlog paths
 When the person clears the filters
 Then deliberately empty Backlog sections and subsections return
+
+Given Backlog contains a one-time deadline, an active repeating Due task, an undated one-time task, and a Gentle routine
+When Due is `Has Due Date`
+Then only tasks with a true one-time deadline or active repeating Due occurrence remain
+When Due is `Due Today`
+Then only tasks whose true due boundary is on the current local calendar day remain
+When Due is `Overdue`
+Then only tasks overdue by at least one full local calendar day remain
+And undated one-time tasks, Gentle routines, and cadence-free routines remain excluded
+And the cached hierarchy refreshes at the next local day boundary while Due Today or Overdue is active
 
 Given Mac Backlog's right-side controls are open
 When the person moves among `Filter`, `Sort`, and `Appearance`

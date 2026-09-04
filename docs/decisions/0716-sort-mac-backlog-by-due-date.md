@@ -10,6 +10,7 @@ Accepted
 
 ## Revised By
 
+- [0723: Filter Mac Backlog by Due Status](0723-filter-mac-backlog-by-due-status.md) reuses the same true due boundary for Has Due Date, Due Today, and Overdue filtering.
 - [0721: Customize Mac Backlog Row Appearance](0721-customize-mac-backlog-row-appearance.md) separates Backlog filtering and sorting into tabs and adds independent row appearance in the same companion surface.
 
 ## Revises
