@@ -109,7 +109,9 @@ struct IOSHomeWorkspaceNavigationSourceTests {
 
         #expect(backlogView.contains("IOSWorkspaceControlsButton("))
         #expect(backlogView.contains("isCustomized: store.filters.hasNonDefaultOptions"))
-        #expect(backlogView.contains("BacklogIOSControlsView(store: store)"))
+        #expect(backlogView.contains("BacklogIOSControlsView(store: store, initialTab: tab)"))
+        #expect(backlogView.contains("IOSWorkspaceControlSummaryTitle("))
+        #expect(backlogView.contains("workspaceControlSummary.text(maximumItemCount: 3)"))
         #expect(backlogControls.contains("case filter = \"Filter\""))
         #expect(backlogControls.contains("case sort = \"Sort\""))
         #expect(backlogControls.contains("store.filters.resettingFilters()"))
@@ -118,7 +120,9 @@ struct IOSHomeWorkspaceNavigationSourceTests {
         #expect(backlogDetails.contains("ForEach(BacklogSortOrder.allCases)"))
 
         #expect(taskLadderView.contains("IOSWorkspaceControlsButton("))
-        #expect(taskLadderView.contains("TaskRankingIOSControlsView(store: store)"))
+        #expect(taskLadderView.contains("TaskRankingIOSControlsView(store: store, initialTab: tab)"))
+        #expect(taskLadderView.contains("IOSWorkspaceControlSummaryTitle("))
+        #expect(taskLadderView.contains("store.hasNonDefaultSortControls"))
         #expect(!taskLadderView.contains("private var controlsSection"))
         #expect(taskLadderControls.contains("case view = \"View\""))
         #expect(taskLadderControls.contains("case sort = \"Sort\""))

@@ -471,6 +471,32 @@ struct BacklogTaskListPresentationTests {
     }
 
     @Test
+    func controlSummaryKeepsFilterAndSortMeaningDistinct() {
+        var filters = BacklogFilterState.default
+        filters.taskListMode = .todos
+        filters.dueDateFilter = .overdue
+        filters.sortOrder = .dueSoonestFirst
+
+        #expect(filters.activeFilterCount == 2)
+        #expect(filters.workspaceControlSummary.items.map(\.category) == [.filter, .sort])
+        #expect(
+            filters.workspaceControlSummary.text(maximumItemCount: 3)
+                == "2 filters • Due Soonest"
+        )
+    }
+
+    @Test
+    func nonDefaultRuleOptionsRemainDiscoverableWithoutSelectedValues() {
+        var filters = BacklogFilterState.default
+        filters.includeTagMatchMode = .any
+
+        #expect(filters.activeFilterCount == 0)
+        #expect(filters.hasNonDefaultFilters)
+        #expect(filters.hasNonDefaultOptions)
+        #expect(filters.workspaceControlSummary.text(maximumItemCount: 3) == "Filter options")
+    }
+
+    @Test
     func sortsBacklogTasksByTrueDueDateInEitherDirectionAndLeavesUndatedTasksLast() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

@@ -6,7 +6,7 @@ struct TaskRankingIOSView: View {
     private let isInnerLadderDestination: Bool
 
     @State private var innerLadderNodeID: UUID?
-    @State private var isControlsPresented = false
+    @State private var presentedControlsTab: TaskRankingIOSControlTab?
 
     @AppStorage(
         UserDefaultStringValueKey.appSettingMacTaskRankingReversedMetrics.rawValue,
@@ -87,12 +87,20 @@ struct TaskRankingIOSView: View {
             )
         }
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                IOSWorkspaceControlSummaryTitle(
+                    title: store.scopeParentName ?? "Task Ladder",
+                    summary: workspaceControlSummary.text(maximumItemCount: 3),
+                    onOpenControls: openPreferredControls
+                )
+            }
+
             ToolbarItemGroup(placement: .primaryAction) {
                 IOSWorkspaceControlsButton(
                     title: "Task Ladder Controls",
                     isCustomized: hasCustomizedControls
                 ) {
-                    isControlsPresented = true
+                    presentedControlsTab = .view
                 }
 
                 Button {
@@ -103,8 +111,8 @@ struct TaskRankingIOSView: View {
                 .disabled(store.isLoading)
             }
         }
-        .sheet(isPresented: $isControlsPresented) {
-            TaskRankingIOSControlsView(store: store)
+        .sheet(item: $presentedControlsTab) { tab in
+            TaskRankingIOSControlsView(store: store, initialTab: tab)
         }
         .onAppear {
             store.send(
@@ -146,6 +154,20 @@ struct TaskRankingIOSView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(store.errorMessage ?? "")
+        }
+    }
+
+    private var workspaceControlSummary: WorkspaceControlSummary {
+        store.workspaceControlSummary
+    }
+
+    private func openPreferredControls() {
+        if store.hasNonDefaultViewControls {
+            presentedControlsTab = .view
+        } else if store.hasNonDefaultSortControls {
+            presentedControlsTab = .sort
+        } else {
+            presentedControlsTab = .view
         }
     }
 

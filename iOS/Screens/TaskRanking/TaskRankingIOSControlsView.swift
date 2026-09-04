@@ -12,7 +12,15 @@ struct TaskRankingIOSControlsView: View {
     let store: StoreOf<TaskRankingFeature>
 
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTab = TaskRankingIOSControlTab.view
+    @State private var selectedTab: TaskRankingIOSControlTab
+
+    init(
+        store: StoreOf<TaskRankingFeature>,
+        initialTab: TaskRankingIOSControlTab = .view
+    ) {
+        self.store = store
+        _selectedTab = State(initialValue: initialTab)
+    }
 
     var body: some View {
         NavigationStack {

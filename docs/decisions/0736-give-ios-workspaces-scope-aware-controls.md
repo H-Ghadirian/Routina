@@ -8,6 +8,10 @@ Accepted
 
 2026-09-04
 
+## Refined By
+
+- [0737 — Summarize Active Workspace Controls in Place](0737-summarize-active-workspace-controls-in-place.md) makes non-default Backlog and Task Ladder state readable before opening the controls.
+
 ## Refines
 
 - [0089 — Prefer Native Apple Platform Patterns](0089-prefer-native-apple-platform-patterns.md)

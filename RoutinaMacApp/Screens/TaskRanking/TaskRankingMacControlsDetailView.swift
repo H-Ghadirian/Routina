@@ -2,7 +2,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct TaskRankingMacControlsDetailView: View {
-    @State private var selectedTab: HomeMacFilterDetailTab = .filter
+    @State private var selectedTab: HomeMacFilterDetailTab
     @AppStorage(
         UserDefaultStringValueKey.appSettingTaskLadderTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
@@ -15,6 +15,18 @@ struct TaskRankingMacControlsDetailView: View {
     let store: StoreOf<TaskRankingFeature>
     let onNewContainerGroup: () -> Void
     let onUseRepeatingTaskAsGroup: () -> Void
+
+    init(
+        store: StoreOf<TaskRankingFeature>,
+        initialTab: HomeMacFilterDetailTab = .filter,
+        onNewContainerGroup: @escaping () -> Void,
+        onUseRepeatingTaskAsGroup: @escaping () -> Void
+    ) {
+        self.store = store
+        self.onNewContainerGroup = onNewContainerGroup
+        self.onUseRepeatingTaskAsGroup = onUseRepeatingTaskAsGroup
+        _selectedTab = State(initialValue: initialTab)
+    }
 
     var body: some View {
         HomeMacFilterDetailContainerView(
@@ -56,10 +68,10 @@ struct TaskRankingMacControlsDetailView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Button("Reset") {
-                resetControls()
+            Button("Reset \(tabTitle(selectedTab))") {
+                resetSelectedTab()
             }
-            .disabled(!hasNonDefaultControls)
+            .disabled(!canResetSelectedTab)
         }
     }
 
@@ -266,16 +278,27 @@ struct TaskRankingMacControlsDetailView: View {
         AppSettingsPersistenceMirror.schedule()
     }
 
-    private func resetControls() {
-        store.send(.metricChanged(.pressure))
-        store.send(.valueModeChanged(.base))
-        store.send(.reversedMetricsChanged([]))
-        persistTaskRowVisibility(.taskLadderDefaultValue)
+    private func resetSelectedTab() {
+        switch selectedTab {
+        case .filter:
+            store.send(.metricChanged(.pressure))
+            store.send(.valueModeChanged(.base))
+        case .sort:
+            store.send(.reversedMetricsChanged([]))
+        case .appearance:
+            persistTaskRowVisibility(.taskLadderDefaultValue)
+        }
     }
 
-    private var hasNonDefaultControls: Bool {
-        store.hasNonDefaultWorkspaceControls
-            || taskRowVisibility != .taskLadderDefaultValue
+    private var canResetSelectedTab: Bool {
+        switch selectedTab {
+        case .filter:
+            return store.hasNonDefaultViewControls
+        case .sort:
+            return store.hasNonDefaultSortControls
+        case .appearance:
+            return taskRowVisibility != .taskLadderDefaultValue
+        }
     }
 
     private func appearanceTitle(for field: HomeTaskRowField) -> String {

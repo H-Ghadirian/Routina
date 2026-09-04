@@ -11,6 +11,7 @@ Accepted
 ## Revised By
 
 - [0732: Keep Mac Task Ladder Movement in Row Context Menus](0732-keep-mac-task-ladder-movement-in-row-context-menus.md) removes the persistent Up and Down controls while preserving the same movement actions in eligible row context menus.
+- [0737: Summarize Active Workspace Controls in Place](0737-summarize-active-workspace-controls-in-place.md) makes active View, Sort, and Appearance state readable in toolbar chrome and scopes Reset to the selected tab.
 
 ## Supersedes
 

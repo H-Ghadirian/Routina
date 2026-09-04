@@ -241,6 +241,7 @@ let package = Package(
                 "Features/Home/BacklogFeature.swift",
                 "Features/Home/BacklogTaskListPresentation.swift",
                 "Features/Home/BacklogTaskRowPresentation.swift",
+                "Features/Home/WorkspaceControlSummary.swift",
                 "Features/Home/TaskRankingFeature.swift",
                 "Features/Home/TaskRankingWorkspaceControlState.swift",
                 "Features/Home/TaskRankingPresentation.swift",

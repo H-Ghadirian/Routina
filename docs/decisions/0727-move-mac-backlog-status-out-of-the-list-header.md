@@ -11,6 +11,7 @@ Accepted
 ## Refined By
 
 - [0728: Scope Mac Backlog Reset to Each Control Tab](0728-scope-mac-backlog-reset-to-each-control-tab.md) removes the repeated inner control title and gives each tab an independent reset.
+- [0737: Summarize Active Workspace Controls in Place](0737-summarize-active-workspace-controls-in-place.md) reports active Backlog controls in the existing toolbar action without restoring list-level status chrome.
 
 ## Revises
 

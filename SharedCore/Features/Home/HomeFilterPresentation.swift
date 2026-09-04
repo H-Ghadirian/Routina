@@ -324,6 +324,14 @@ struct HomeFilterPresentation: Equatable, Sendable {
         return Self.summaryWithResultCount(summary, resultCount: resultCount)
     }
 
+    var workspaceControlSummary: WorkspaceControlSummary {
+        WorkspaceControlSummary(
+            items: filterLabels.map {
+                WorkspaceControlSummaryItem(category: .filter, title: $0)
+            }
+        )
+    }
+
     static func summarizedFilterLabels(from labels: [String], maxVisibleCount: Int) -> String {
         guard !labels.isEmpty else { return "" }
         let visibleLabels = Array(labels.prefix(maxVisibleCount))

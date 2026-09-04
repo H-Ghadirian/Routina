@@ -117,8 +117,27 @@ struct BacklogFilterState: Equatable {
             || !excludedFlags.isEmpty
     }
 
+    var activeFilterCount: Int {
+        var count = 0
+        if taskListMode != .all { count += 1 }
+        if selectedTodoState != nil { count += 1 }
+        if createdDateFilter != .all { count += 1 }
+        if dueDateFilter != .all { count += 1 }
+        if selectedImportanceUrgencyFilter?.minimumImportance != nil { count += 1 }
+        if selectedImportanceUrgencyFilter?.minimumUrgency != nil { count += 1 }
+        if selectedPressureFilter != nil { count += 1 }
+        if selectedThinkingNeededFilter != nil { count += 1 }
+        if selectedEstimationFilter != .all { count += 1 }
+        if selectedMediaFilter != .all { count += 1 }
+        if !selectedTags.isEmpty { count += 1 }
+        if !excludedTags.isEmpty { count += 1 }
+        if !selectedFlags.isEmpty { count += 1 }
+        if !excludedFlags.isEmpty { count += 1 }
+        return count
+    }
+
     var hasNonDefaultOptions: Bool {
-        hasActiveFilters || sortOrder != .defaultOrder
+        hasNonDefaultFilters || hasNonDefaultSortOrder
     }
 
     var hasNonDefaultFilters: Bool {
@@ -127,6 +146,25 @@ struct BacklogFilterState: Equatable {
 
     var hasNonDefaultSortOrder: Bool {
         sortOrder != .defaultOrder
+    }
+
+    var workspaceControlSummary: WorkspaceControlSummary {
+        var items: [WorkspaceControlSummaryItem] = []
+        if hasNonDefaultFilters {
+            let filterTitle: String
+            if activeFilterCount == 0 {
+                filterTitle = "Filter options"
+            } else if activeFilterCount == 1 {
+                filterTitle = "1 filter"
+            } else {
+                filterTitle = "\(activeFilterCount) filters"
+            }
+            items.append(.init(category: .filter, title: filterTitle))
+        }
+        if hasNonDefaultSortOrder {
+            items.append(.init(category: .sort, title: sortOrder.title))
+        }
+        return WorkspaceControlSummary(items: items)
     }
 
     func resettingFilters() -> Self {

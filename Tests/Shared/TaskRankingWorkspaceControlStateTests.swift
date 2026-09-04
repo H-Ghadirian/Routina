@@ -33,4 +33,26 @@ struct TaskRankingWorkspaceControlStateTests {
         #expect(state.hasNonDefaultSortControls)
         #expect(state.hasNonDefaultWorkspaceControls)
     }
+
+    @Test
+    func summaryNamesTheCurrentLadderViewAndOrder() {
+        var state = TaskRankingFeature.State()
+        state.metric = .importance
+        state.valueMode = .now
+        state.reversedMetrics = [.importance]
+
+        #expect(state.workspaceControlSummary.items.map(\.category) == [.view, .view, .sort])
+        #expect(
+            state.workspaceControlSummary.text(maximumItemCount: 3)
+                == "Importance • Now • Least important"
+        )
+    }
+
+    @Test
+    func defaultLadderDoesNotClaimActiveControls() {
+        let state = TaskRankingFeature.State()
+
+        #expect(state.workspaceControlSummary.isEmpty)
+        #expect(state.workspaceControlSummary.text(maximumItemCount: 3) == nil)
+    }
 }

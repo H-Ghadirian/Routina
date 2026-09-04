@@ -67,6 +67,7 @@ extension TaskRankingMacView {
     private var controlsDetail: some View {
         TaskRankingMacControlsDetailView(
             store: store,
+            initialTab: initialControlsTab,
             onNewContainerGroup: {
                 groupEditorPresentation = TaskLadderGroupEditorPresentation(group: nil)
             },

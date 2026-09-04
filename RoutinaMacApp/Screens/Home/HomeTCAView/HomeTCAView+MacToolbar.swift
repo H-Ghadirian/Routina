@@ -35,7 +35,12 @@ extension HomeTCAView {
     }
 
     var homeTopToolbarChrome: some View {
-        HomeMacTopToolbarChrome(
+        let controlSummary = homeToolbarControlSummary
+        let isControlActive = !controlSummary.isEmpty
+            || (isMacRoutinesMode
+                && HomeMacFilterDetailScope.allCases.contains(where: macFilterScopeIsActive))
+
+        return HomeMacTopToolbarChrome(
             mode: homeToolbarMode,
             doneCount: store.doneStats.totalCount,
             showsDoneCount: showsDoneCountInToolbar,
@@ -45,7 +50,8 @@ extension HomeTCAView {
             showsSearch: showsHomeToolbarSearch,
             showsSidebarToggle: !isMacBacklogMode && !isMacTaskLadderMode,
             isFilterPresented: store.isMacFilterDetailPresented,
-            isFilterActive: homeToolbarFilterIsActive,
+            isFilterActive: isControlActive,
+            filterSummary: controlSummary.text(maximumItemCount: 3),
             progressMode: macHomeProgressModeBinding,
             selectedSidebarMode: macSidebarModeBinding,
             searchText: toolbarSearchTextBinding,
@@ -100,21 +106,42 @@ extension HomeTCAView {
             && !isMacAddTaskMode
     }
 
-    var homeToolbarFilterIsActive: Bool {
+    var homeToolbarControlSummary: WorkspaceControlSummary {
         if isMacBacklogMode {
-            return backlogStore.filters.hasNonDefaultOptions
+            return backlogStore.filters.workspaceControlSummary.appending(
+                backlogRowVisibility == .backlogDefaultValue
+                    ? nil
+                    : .init(category: .appearance, title: "Custom row")
+            )
         }
         if isMacTaskLadderMode {
-            let rowVisibility = HomeTaskRowVisibility(
-                storageRawValue: taskLadderTaskRowHiddenFieldsRawValue
+            return taskRankingStore.workspaceControlSummary.appending(
+                taskLadderRowVisibility == .taskLadderDefaultValue
+                    ? nil
+                    : .init(category: .appearance, title: "Custom row")
             )
-            return taskRankingStore.metric != .pressure
-                || taskRankingStore.valueMode != .base
-                || !taskRankingStore.reversedMetrics.isEmpty
-                || rowVisibility != .taskLadderDefaultValue
         }
-        guard isMacRoutinesMode else { return false }
-        return HomeMacFilterDetailScope.allCases.contains(where: macFilterScopeIsActive)
+        guard isMacRoutinesMode else { return .empty }
+        var summary = macHomeFilterPresentation.workspaceControlSummary
+        if macFilterScopeIsActive(.timeline) {
+            summary.items.append(.init(category: .filter, title: "Timeline filters"))
+        }
+        if macFilterScopeIsActive(.calendar) {
+            summary.items.append(.init(category: .filter, title: "Calendar filters"))
+        }
+        return summary.appending(
+            taskRowVisibility == .defaultValue
+                ? nil
+                : .init(category: .appearance, title: "Custom row")
+        )
+    }
+
+    private var backlogRowVisibility: HomeTaskRowVisibility {
+        HomeTaskRowVisibility(storageRawValue: backlogTaskRowHiddenFieldsRawValue)
+    }
+
+    private var taskLadderRowVisibility: HomeTaskRowVisibility {
+        HomeTaskRowVisibility(storageRawValue: taskLadderTaskRowHiddenFieldsRawValue)
     }
 
     func toggleHomeToolbarFilters() {
@@ -122,6 +149,7 @@ extension HomeTCAView {
             if store.isMacFilterDetailPresented {
                 closeMacFilterDetailPane()
             } else {
+                macWorkspaceControlInitialTab = initialMacWorkspaceControlTab
                 withAnimation(MacHomeDetailAnimation.secondaryPane) {
                     isMacFilterDetailFullscreen = false
                     store.send(.setMacFilterDetailPresented(true))
@@ -131,7 +159,59 @@ extension HomeTCAView {
         }
 
         guard isMacRoutinesMode else { return }
+        if !homeToolbarControlSummary.isEmpty {
+            toggleMacHomeFilterDetail(scope: preferredMacHomeFilterScope)
+            return
+        }
         toggleMacCalendarFilterDetailFromPlanner()
+    }
+
+    private var preferredMacHomeFilterScope: HomeMacFilterDetailScope {
+        if macFilterScopeIsActive(.taskList) || taskRowVisibility != .defaultValue {
+            return .taskList
+        }
+        if macFilterScopeIsActive(.timeline) {
+            return .timeline
+        }
+        if macFilterScopeIsActive(.calendar) {
+            return .calendar
+        }
+        return .both
+    }
+
+    private func toggleMacHomeFilterDetail(scope: HomeMacFilterDetailScope) {
+        if store.isMacFilterDetailPresented && macFilterDetailScope == scope {
+            closeMacFilterDetailPane()
+            return
+        }
+
+        macFilterDetailScope = scope
+        withAnimation(MacHomeDetailAnimation.secondaryPane) {
+            isMacFilterDetailFullscreen = false
+            taskDetailPanePlacement = nil
+            store.send(.setMacFilterDetailPresented(true))
+        }
+    }
+
+    private var initialMacWorkspaceControlTab: HomeMacFilterDetailTab {
+        if isMacBacklogMode {
+            if backlogStore.filters.hasNonDefaultFilters { return .filter }
+            if backlogStore.filters.hasNonDefaultSortOrder { return .sort }
+            if backlogRowVisibility != .backlogDefaultValue { return .appearance }
+        }
+        if isMacTaskLadderMode {
+            if taskRankingStore.hasNonDefaultViewControls { return .filter }
+            if taskRankingStore.hasNonDefaultSortControls { return .sort }
+            if taskLadderRowVisibility != .taskLadderDefaultValue { return .appearance }
+        }
+        switch homeToolbarControlSummary.preferredCategory {
+        case .sort:
+            return .sort
+        case .appearance:
+            return .appearance
+        case .filter, .view, nil:
+            return .filter
+        }
     }
 
     var toolbarSearchTextBinding: Binding<String> {
@@ -206,7 +286,10 @@ extension HomeTCAView {
                         onMinimizeFilter: minimizeFullscreenMacFilterDetail,
                         onCloseFilter: closeMacFilterDetailPane
                     ) {
-                        BacklogMacFiltersDetailView(store: backlogStore)
+                        BacklogMacFiltersDetailView(
+                            store: backlogStore,
+                            initialTab: macWorkspaceControlInitialTab
+                        )
                     }
                 } else if isMacTaskLadderMode {
                     TaskRankingMacView(
@@ -215,7 +298,8 @@ extension HomeTCAView {
                         isControlsFullscreen: isMacFilterDetailFullscreen,
                         onExpandControls: expandMacFilterDetailPane,
                         onMinimizeControls: minimizeFullscreenMacFilterDetail,
-                        onCloseControls: closeMacFilterDetailPane
+                        onCloseControls: closeMacFilterDetailPane,
+                        initialControlsTab: macWorkspaceControlInitialTab
                     )
                 } else {
                     HomeMacNavigationContent(

@@ -13,6 +13,7 @@ struct TaskRankingMacView: View {
     let onExpandControls: () -> Void
     let onMinimizeControls: () -> Void
     let onCloseControls: () -> Void
+    let initialControlsTab: HomeMacFilterDetailTab
 
     init(
         store: StoreOf<TaskRankingFeature>,
@@ -20,7 +21,8 @@ struct TaskRankingMacView: View {
         isControlsFullscreen: Bool = false,
         onExpandControls: @escaping () -> Void = {},
         onMinimizeControls: @escaping () -> Void = {},
-        onCloseControls: @escaping () -> Void = {}
+        onCloseControls: @escaping () -> Void = {},
+        initialControlsTab: HomeMacFilterDetailTab = .filter
     ) {
         self.store = store
         self.isControlsPresented = isControlsPresented
@@ -28,6 +30,7 @@ struct TaskRankingMacView: View {
         self.onExpandControls = onExpandControls
         self.onMinimizeControls = onMinimizeControls
         self.onCloseControls = onCloseControls
+        self.initialControlsTab = initialControlsTab
     }
 
     @AppStorage(

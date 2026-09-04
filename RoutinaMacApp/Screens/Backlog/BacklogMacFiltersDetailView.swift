@@ -2,7 +2,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct BacklogMacFiltersDetailView: View {
-    @State private var selectedTab: HomeMacFilterDetailTab = .filter
+    @State private var selectedTab: HomeMacFilterDetailTab
     @AppStorage(
         UserDefaultStringValueKey.appSettingBacklogTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
@@ -13,6 +13,14 @@ struct BacklogMacFiltersDetailView: View {
     ) private var isPlacesEnabled = false
 
     let store: StoreOf<BacklogFeature>
+
+    init(
+        store: StoreOf<BacklogFeature>,
+        initialTab: HomeMacFilterDetailTab = .filter
+    ) {
+        self.store = store
+        _selectedTab = State(initialValue: initialTab)
+    }
 
     var body: some View {
         HomeMacFilterDetailContainerView(

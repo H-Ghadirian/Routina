@@ -174,6 +174,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) private var taskRowHiddenFieldsRawValue = ""
     @AppStorage(
+        UserDefaultStringValueKey.appSettingBacklogTaskRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) var backlogTaskRowHiddenFieldsRawValue = HomeTaskRowVisibility.backlogDefaultStorageRawValue
+    @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue,
         store: SharedDefaults.app
     ) private var timelineRowHiddenFieldsRawValue = ""
@@ -344,6 +348,7 @@ struct HomeTCAView: View {
     @State var macTaskSourceListScrollViewReference = MacTaskSourceListScrollViewReference()
     @State var isMacSearchSidebarRestoreInProgress = false
     @State var macFilterDetailScope: HomeMacFilterDetailScope = .taskList
+    @State var macWorkspaceControlInitialTab: HomeMacFilterDetailTab = .filter
     @State var isMacFilterDetailFullscreen = false
     @State var selectedStatsDashboardScope: StatsDashboardScope = .all
     @State var macNavigationHistory = HomeMacNavigationHistory()

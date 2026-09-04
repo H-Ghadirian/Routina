@@ -18,6 +18,7 @@ struct HomeMacTopToolbarChrome: View {
     let showsSidebarToggle: Bool
     let isFilterPresented: Bool
     let isFilterActive: Bool
+    let filterSummary: String?
     @Binding var progressMode: MacHomeProgressMode
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     @Binding var searchText: String
@@ -137,6 +138,7 @@ struct HomeMacTopToolbarChrome: View {
                 HomeMacToolbarFilterButton(
                     isPresented: isFilterPresented,
                     isActive: isFilterActive,
+                    summary: filterSummary,
                     workspace: selectedSidebarMode,
                     onToggle: onToggleFilters
                 )
@@ -202,19 +204,31 @@ enum HomeMacToolbarFilterPresentation {
 private struct HomeMacToolbarFilterButton: View {
     let isPresented: Bool
     let isActive: Bool
+    let summary: String?
     let workspace: HomeFeature.MacSidebarMode
     let onToggle: () -> Void
 
     var body: some View {
         Button(action: onToggle) {
-            Image(
-                systemName: isActive
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease.circle"
-            )
-            .font(.system(size: 15, weight: .semibold))
+            HStack(spacing: 6) {
+                Image(
+                    systemName: isActive
+                        ? "line.3.horizontal.decrease.circle.fill"
+                        : "line.3.horizontal.decrease.circle"
+                )
+                .font(.system(size: 15, weight: .semibold))
+
+                if let summary {
+                    Text(summary)
+                        .font(.caption.weight(.medium))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: 220, alignment: .leading)
+                }
+            }
             .foregroundStyle(isPresented || isActive ? Color.accentColor : Color.secondary)
-            .frame(width: 32, height: 32)
+            .padding(.horizontal, summary == nil ? 0 : 9)
+            .frame(minWidth: 32, minHeight: 32)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(isPresented ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
@@ -223,8 +237,8 @@ private struct HomeMacToolbarFilterButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(actionTitle)
-        .accessibilityValue(isActive ? activeValue : inactiveValue)
-        .help(actionTitle)
+        .accessibilityValue(summary ?? (isActive ? activeValue : inactiveValue))
+        .help(summary.map { "\(actionTitle): \($0)" } ?? actionTitle)
     }
 
     private var actionTitle: String {

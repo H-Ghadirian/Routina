@@ -4,7 +4,7 @@ import SwiftUI
 struct BacklogIOSView: View {
     let store: StoreOf<BacklogFeature>
 
-    @State private var isControlsPresented = false
+    @State private var presentedControlsTab: BacklogIOSControlTab?
 
     @AppStorage(
         UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
@@ -50,12 +50,20 @@ struct BacklogIOSView: View {
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: searchTextBinding, prompt: "Search Backlog")
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                IOSWorkspaceControlSummaryTitle(
+                    title: "Backlog",
+                    summary: workspaceControlSummary.text(maximumItemCount: 3),
+                    onOpenControls: openPreferredControls
+                )
+            }
+
             ToolbarItemGroup(placement: .primaryAction) {
                 IOSWorkspaceControlsButton(
                     title: "Backlog Controls",
                     isCustomized: store.filters.hasNonDefaultOptions
                 ) {
-                    isControlsPresented = true
+                    presentedControlsTab = .filter
                 }
 
                 Button {
@@ -66,8 +74,8 @@ struct BacklogIOSView: View {
                 .disabled(store.isLoading)
             }
         }
-        .sheet(isPresented: $isControlsPresented) {
-            BacklogIOSControlsView(store: store)
+        .sheet(item: $presentedControlsTab) { tab in
+            BacklogIOSControlsView(store: store, initialTab: tab)
         }
         .onAppear {
             store.send(.onAppear)
@@ -96,6 +104,19 @@ struct BacklogIOSView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(store.errorMessage ?? "")
+        }
+    }
+
+    private var workspaceControlSummary: WorkspaceControlSummary {
+        store.filters.workspaceControlSummary
+    }
+
+    private func openPreferredControls() {
+        switch workspaceControlSummary.preferredCategory {
+        case .sort:
+            presentedControlsTab = .sort
+        case .filter, .view, .appearance, nil:
+            presentedControlsTab = .filter
         }
     }
 

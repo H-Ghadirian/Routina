@@ -414,7 +414,7 @@ And the manual Refresh Backlog control remains available in the right-side Backl
 ### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
 
 Area: Tasks / Mac Backlog
-Decision links: [0729](../decisions/0729-plan-backlog-tasks-from-their-context-menu.md), [0728](../decisions/0728-scope-mac-backlog-reset-to-each-control-tab.md), [0727](../decisions/0727-move-mac-backlog-status-out-of-the-list-header.md), [0723](../decisions/0723-filter-mac-backlog-by-due-status.md), [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0737](../decisions/0737-summarize-active-workspace-controls-in-place.md), [0729](../decisions/0729-plan-backlog-tasks-from-their-context-menu.md), [0728](../decisions/0728-scope-mac-backlog-reset-to-each-control-tab.md), [0727](../decisions/0727-move-mac-backlog-status-out-of-the-list-header.md), [0723](../decisions/0723-filter-mac-backlog-by-due-status.md), [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
@@ -522,6 +522,10 @@ Then ordering returns to Default while Filter and Appearance remain unchanged
 When the person chooses Reset Appearance
 Then only the Backlog row returns to its sparse multiline defaults
 And scrolling consumes cached row metadata and row numbers instead of deriving them in row builders
+
+Given Backlog Filter, Sort, or Appearance differs from its default
+Then the existing toolbar action summarizes filter count, due-date order, and bounded row appearance state
+And activating it opens Filter first, or Sort or Appearance when that is the first changed category
 
 Given an active Backlog filter hides a task that matches the current search query
 When Routina evaluates search creation and outside-Backlog results
@@ -868,7 +872,7 @@ Then both the legacy temporal rule and the new entry choice remain readable and 
 ### Mac Task Ladder Moves Workspace Controls to the Right Sidebar
 
 Area: Tasks / Mac Task Ladder / UI
-Decision links: [0722](../decisions/0722-move-mac-task-ladder-controls-to-the-right-sidebar.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0632](../decisions/0632-integrate-mac-workspaces-in-the-main-window.md), [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md)
+Decision links: [0737](../decisions/0737-summarize-active-workspace-controls-in-place.md), [0722](../decisions/0722-move-mac-task-ladder-controls-to-the-right-sidebar.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0632](../decisions/0632-integrate-mac-workspaces-in-the-main-window.md), [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md)
 Current behavior: [Tasks](../current-behavior/tasks.md), [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/TaskRankingPresentationTests.swift`
@@ -900,6 +904,13 @@ Then multiline titles and each available row field change Task Ladder only
 And Main Task List and Backlog appearance remain unchanged
 And group kind, inherited value, temporal timing, child count, inner navigation, and move controls remain visible structural context
 And the durable preference participates in synchronization, backup, and restore
+
+Given Task Ladder View, Sort, or Appearance differs from its default
+Then the existing toolbar control summarizes the current metric, available Base/Now mode, direction, and bounded appearance state
+And activating it opens the first relevant changed category
+When the person resets View, Sort, or Appearance
+Then only the selected category returns to its default
+And the other two categories remain unchanged
 
 Given a container group's details are visible
 Then its subtitle states only its actionable task count

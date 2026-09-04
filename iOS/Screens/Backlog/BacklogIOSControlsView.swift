@@ -30,8 +30,16 @@ struct BacklogIOSControlsView: View {
     let store: StoreOf<BacklogFeature>
 
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTab = BacklogIOSControlTab.filter
+    @State private var selectedTab: BacklogIOSControlTab
     @State private var presentedDetail: BacklogIOSControlDestination?
+
+    init(
+        store: StoreOf<BacklogFeature>,
+        initialTab: BacklogIOSControlTab = .filter
+    ) {
+        self.store = store
+        _selectedTab = State(initialValue: initialTab)
+    }
 
     var body: some View {
         NavigationStack {
