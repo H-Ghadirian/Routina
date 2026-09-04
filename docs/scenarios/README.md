@@ -3722,17 +3722,24 @@ And selecting the full header expands or collapses only that day’s assumed-don
 
 Given the Calendar List default is set to `Expanded`
 When a newly shown Calendar List day has assumed-done rows
-Then its `Assumed done` rows start expanded without changing the Planner snapshot, filters, completion history, or the focused day-task sidebar
+Then its `Assumed done` rows start expanded without changing the Planner snapshot, filters, or completion history
 
 Given a Mac Calendar `List` day has recorded completion rows
 When its day-task column first appears with the Calendar List default set to `Collapsed`
 Then the `Done` header and count are visible while its rows are hidden
 And selecting the full header expands or collapses only that day’s recorded completion rows
-And the focused right-side day-task sidebar remains expanded
+And the focused right-side Day Tasks sidebar is not present in List
+
+Given the focused Day Tasks sidebar is open in Calendar `Schedule`
+When the user switches the Calendar task view to `List`
+Then the Day Tasks sidebar closes and cannot reappear while List remains active
+And returning to Schedule leaves it closed until the user deliberately selects a day-header task button
+And List still permits Filters, Go to date, and task-detail companions
 
 Given the user opens Calendar filters and selects `Appearance`
 When they hide Icon, Time and Duration, or Row Color
-Then Calendar `List` columns and the focused day-task sidebar update their shared task rows
+Then Calendar `List` columns update their shared task rows
+And Schedule's focused day-task sidebar uses the same choices when it is opened later
 And the main Task List and Timeline row appearance choices remain unchanged
 And row titles and eligible inline resolution actions remain available
 

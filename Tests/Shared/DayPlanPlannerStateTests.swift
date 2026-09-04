@@ -1189,6 +1189,47 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func calendarListDismissesAndSuppressesDayTaskSidebar() throws {
+        let calendarSource = try Self.sourceFile(
+            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
+        )
+        let dismissStart = try #require(
+            calendarSource.range(of: "private func dismissScheduleInteractionState() {")
+        )
+        let dismissEnd = try #require(
+            calendarSource[dismissStart.upperBound...].range(of: "\n    }")
+        )
+        let dismissSource = calendarSource[dismissStart.lowerBound..<dismissEnd.lowerBound]
+        let presentStart = try #require(
+            calendarSource.range(of: "private func presentDayTaskListSidebar(on date: Date) {")
+        )
+        let presentEnd = try #require(
+            calendarSource[presentStart.upperBound...].range(of: "\n    }")
+        )
+        let presentSource = calendarSource[presentStart.lowerBound..<presentEnd.lowerBound]
+
+        #expect(
+            calendarSource.contains(
+                ".onChange(of: calendarTaskViewMode) { _, mode in\n"
+                    + "            guard mode == .list else { return }\n"
+                    + "            dismissScheduleInteractionState()"
+            )
+        )
+        #expect(dismissSource.contains("selectedDayTaskListDate = nil"))
+        #expect(presentSource.contains("guard calendarTaskViewMode == .schedule"))
+        #expect(
+            calendarSource.contains(
+                "calendarTaskViewMode == .schedule\n                    && selectedDayTaskListDate != nil"
+            )
+        )
+        #expect(
+            calendarSource.contains(
+                "else if calendarTaskViewMode == .schedule,\n            let selectedDayTaskListDate"
+            )
+        )
+    }
+
+    @Test
     func rightSidebarDayTaskRowsDragButCalendarListColumnsDoNotDrag() throws {
         let calendarSource = try [
             Self.sourceFile("SharedCore/Views/DayPlan/DayPlanDayTaskColumnsView.swift"),

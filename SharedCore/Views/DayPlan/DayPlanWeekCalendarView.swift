@@ -656,6 +656,7 @@ struct DayPlanWeekCalendarView: View {
 
     private func dismissScheduleInteractionState() {
         selectedSlotDraft = nil
+        selectedDayTaskListDate = nil
         selectedTagFocusSessionID = nil
         draftResizeBaseline = nil
         isCompletingDrop = false
@@ -733,7 +734,11 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func presentDayTaskListSidebar(on date: Date) {
-        guard dayTaskListSidebarContent != nil else { return }
+        guard calendarTaskViewMode == .schedule,
+            dayTaskListSidebarContent != nil
+        else {
+            return
+        }
         onSidebarPresentationRequested?()
         isFilterSidebarPresented.wrappedValue = false
         isDatePickerSidebarPresented.wrappedValue = false
@@ -825,7 +830,9 @@ struct DayPlanWeekCalendarView: View {
     private var isRightSidebarPresented: Bool {
         !isExternalInspectorPresented
             && ((selectedSlotDraft != nil && slotSidebarContent != nil)
-                || (selectedDayTaskListDate != nil && dayTaskListSidebarContent != nil)
+                || (calendarTaskViewMode == .schedule
+                    && selectedDayTaskListDate != nil
+                    && dayTaskListSidebarContent != nil)
                 || (selectedTagFocusSessionID != nil && tagFocusSidebarContent != nil)
                 || (isFilterSidebarPresented.wrappedValue && filterSidebarContent != nil)
                 || (isDatePickerSidebarPresented.wrappedValue && datePickerSidebarContent != nil))
@@ -840,7 +847,10 @@ struct DayPlanWeekCalendarView: View {
                 selectedSlotDurationBinding(for: selectedSlotDraft),
                 dismissSelectedSlotSidebar
             )
-        } else if let selectedDayTaskListDate, let dayTaskListSidebarContent {
+        } else if calendarTaskViewMode == .schedule,
+            let selectedDayTaskListDate,
+            let dayTaskListSidebarContent
+        {
             dayTaskListSidebarContent(
                 selectedDayTaskListDate,
                 dismissDayTaskListSidebar
