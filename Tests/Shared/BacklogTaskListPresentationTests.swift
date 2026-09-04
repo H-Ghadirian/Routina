@@ -452,6 +452,25 @@ struct BacklogTaskListPresentationTests {
     }
 
     @Test
+    func resetScopesPreserveTheOtherBacklogControlSections() {
+        var filters = BacklogFilterState.default
+        filters.taskListMode = .todos
+        filters.selectedTags = ["Home"]
+        filters.includeTagMatchMode = .any
+        filters.sortOrder = .dueSoonestFirst
+
+        let resetFilters = filters.resettingFilters()
+        #expect(!resetFilters.hasNonDefaultFilters)
+        #expect(resetFilters.sortOrder == .dueSoonestFirst)
+
+        let resetSort = filters.resettingSortOrder()
+        #expect(resetSort.taskListMode == .todos)
+        #expect(resetSort.selectedTags == ["Home"])
+        #expect(resetSort.includeTagMatchMode == .any)
+        #expect(resetSort.sortOrder == .defaultOrder)
+    }
+
+    @Test
     func sortsBacklogTasksByTrueDueDateInEitherDirectionAndLeavesUndatedTasksLast() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

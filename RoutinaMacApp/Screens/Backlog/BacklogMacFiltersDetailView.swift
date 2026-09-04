@@ -19,11 +19,11 @@ struct BacklogMacFiltersDetailView: View {
             title: "Backlog Controls",
             showsTitle: false
         ) {
-            header
             HomeMacFilterDetailTabStrip(
                 selection: $selectedTab,
                 accessibilityLabel: "Backlog tabs"
             )
+            sectionControls
 
             switch selectedTab {
             case .filter:
@@ -36,23 +36,29 @@ struct BacklogMacFiltersDetailView: View {
         }
     }
 
-    private var header: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Backlog")
-                    .font(.title2.weight(.semibold))
+    private var sectionControls: some View {
+        HStack(spacing: 10) {
+            Text(backlogCountLabel)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
 
-                Text("Filtering, sorting, and appearance affect Backlog only.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Button {
+                store.send(.refresh)
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.borderless)
+            .help("Refresh Backlog")
+            .disabled(store.isLoading)
 
             Spacer(minLength: 8)
 
-            Button("Reset") {
-                store.send(.clearFilters)
+            Button(resetButtonTitle) {
+                resetSelectedSection()
             }
-            .disabled(!store.filters.hasNonDefaultOptions)
+            .disabled(!canResetSelectedSection)
         }
     }
 
@@ -269,6 +275,40 @@ struct BacklogMacFiltersDetailView: View {
 
     private var todoStateOptions: [TodoState?] {
         [nil] + TodoState.filterableCases.map(Optional.some)
+    }
+
+    private var backlogCountLabel: String {
+        let count = store.presentation.taskCount
+        if HomeTaskSearchIndex.query(store.searchText) != nil {
+            return count == 1 ? "1 in Backlog" : "\(count) in Backlog"
+        }
+        return count == 1 ? "1 task" : "\(count) tasks"
+    }
+
+    private var resetButtonTitle: String {
+        "Reset \(selectedTab.title)"
+    }
+
+    private var canResetSelectedSection: Bool {
+        switch selectedTab {
+        case .filter:
+            return store.filters.hasNonDefaultFilters
+        case .sort:
+            return store.filters.hasNonDefaultSortOrder
+        case .appearance:
+            return taskRowVisibility != .backlogDefaultValue
+        }
+    }
+
+    private func resetSelectedSection() {
+        switch selectedTab {
+        case .filter:
+            store.send(.filtersChanged(store.filters.resettingFilters()))
+        case .sort:
+            store.send(.filtersChanged(store.filters.resettingSortOrder()))
+        case .appearance:
+            persistTaskRowVisibility(.backlogDefaultValue)
+        }
     }
 
     private func filterBinding<Value: Equatable>(

@@ -409,17 +409,22 @@ When CloudKit or another Routina surface produces a burst of persistence changes
 Then Backlog does not rebuild its task snapshot for every raw SwiftData save
 And it waits for the semantic update burst to settle before performing one refresh
 And an automatic refresh does not enter the user-visible loading state
-And the manual Refresh Backlog control remains immediately available when no refresh is in progress
+And the manual Refresh Backlog control remains available in the right-side Backlog controls when no refresh is in progress
 
 ### Mac Backlog Keeps Its Hierarchy Reachable and Searchable
 
 Area: Tasks / Mac Backlog
-Decision links: [0723](../decisions/0723-filter-mac-backlog-by-due-status.md), [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
+Decision links: [0728](../decisions/0728-scope-mac-backlog-reset-to-each-control-tab.md), [0727](../decisions/0727-move-mac-backlog-status-out-of-the-list-header.md), [0723](../decisions/0723-filter-mac-backlog-by-due-status.md), [0721](../decisions/0721-customize-mac-backlog-row-appearance.md), [0690](../decisions/0690-place-mac-filters-beside-planner-and-backlog-workspaces.md), [0641](../decisions/0641-create-backlog-sections-from-context.md), [0634](../decisions/0634-unify-mac-workspace-search-and-creation.md), [0633](../decisions/0633-make-mac-backlog-hierarchical-and-searchable.md), [0546](../decisions/0546-separate-mac-backlog-from-the-radar-sidebar.md), [0419](../decisions/0419-nest-custom-subsections-under-super-sections.md), [0418](../decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/BacklogTaskListPresentationTests.swift`
 - `Tests/macOS/BacklogFeatureTests.swift`
 - `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
+
+Given Backlog is the active Mac workspace
+When its sidebar is presented
+Then the loading state, empty state, or section hierarchy begins at the top without a repeated Backlog title and subtitle band
+And the current count and manual refresh action are available in the right-side Backlog controls
 
 Given a person creates an empty Backlog super section with no active search or filter
 When its cached task presentation contains no assigned task
@@ -496,13 +501,19 @@ And the cached hierarchy refreshes at the next local day boundary while Due Toda
 Given Mac Backlog's right-side controls are open
 When the person moves among `Filter`, `Sort`, and `Appearance`
 Then each concern appears in its own tab instead of one mixed form
+And the tabs appear without a repeated inner Backlog title or explanatory subtitle
 And `Appearance` offers multiline titles and the Backlog-relevant Icon, color, number, type, status, schedule, pressure, progress, step, Place, Tag, and Flag fields
 And unavailable Places or Goals are not offered
 When the person changes Backlog row appearance
 Then only Backlog-owned rows change and the Main Task List appearance remains unchanged
 And Backlog path plus pinned state remain visible structural context
 And the row choice persists through relaunch, synchronization, backup, and restore
-And Reset changes only transient Backlog filters and sorting
+When the person chooses Reset Filter
+Then every filter returns to its default while Sort and Appearance remain unchanged
+When the person chooses Reset Sort
+Then ordering returns to Default while Filter and Appearance remain unchanged
+When the person chooses Reset Appearance
+Then only the Backlog row returns to its sparse multiline defaults
 And scrolling consumes cached row metadata and row numbers instead of deriving them in row builders
 
 Given an active Backlog filter hides a task that matches the current search query

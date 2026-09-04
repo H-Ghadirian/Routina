@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0728](0728-scope-mac-backlog-reset-to-each-control-tab.md) revises [0721](0721-customize-mac-backlog-row-appearance.md) and refines [0727](0727-move-mac-backlog-status-out-of-the-list-header.md):** Backlog controls remove their repeated inner title and subtitle, and Filter, Sort, and Appearance each reset only their own state while preserving the other tabs.
+- **[0727](0727-move-mac-backlog-status-out-of-the-list-header.md) revises [0632](0632-integrate-mac-workspaces-in-the-main-window.md) and refines [0633](0633-make-mac-backlog-hierarchical-and-searchable.md), [0721](0721-customize-mac-backlog-row-appearance.md), and [0722](0722-move-mac-task-ladder-controls-to-the-right-sidebar.md):** Mac Backlog begins directly with list content instead of repeating its workspace title, subtitle, count, and refresh strip; count and manual refresh move into the existing right-side controls.
 - **[0726](0726-keep-selected-assumed-day-confirmation-primary.md) revises [0725](0725-resolve-selected-assumed-days-from-mac-task-details.md) and refines [0626](0626-join-mac-task-detail-completion-and-overflow.md):** selecting an assumed date keeps confirmation scoped to that date; full Mac Task Details moves counted bulk confirmation into the adjacent `⋮` menu beside `Missed`.
 - **[0725](0725-resolve-selected-assumed-days-from-mac-task-details.md) refines [0370](0370-confirm-assumed-done-rows-inline.md), [0521](0521-group-secondary-mac-task-detail-actions.md), and [0626](0626-join-mac-task-detail-completion-and-overflow.md):** full Mac Task Details offers `Missed` in the adjacent lifecycle menu when the selected calendar date is assumed done, resolving only that date without creating a completion.
 - **[0724](0724-keep-day-tasks-sidebar-out-of-calendar-list.md) revises [0369](0369-show-day-task-list-columns-in-planner-calendar.md) and [0529](0529-collapse-calendar-list-planned-task-sections.md), and refines [0288](0288-open-planned-day-task-list-from-planner-headers.md) and [0674](0674-hide-flagged-tasks-from-calendar-list.md):** Calendar List dismisses and suppresses the redundant Day Tasks sidebar while leaving filters, date selection, and task-detail companions available.
@@ -847,6 +849,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0728](0728-scope-mac-backlog-reset-to-each-control-tab.md) | Scope Mac Backlog Reset to Each Control Tab | Accepted | 2026-09-04 |
+| [0727](0727-move-mac-backlog-status-out-of-the-list-header.md) | Move Mac Backlog Status Out of the List Header | Accepted | 2026-09-04 |
 | [0726](0726-keep-selected-assumed-day-confirmation-primary.md) | Keep Selected Assumed-Day Confirmation Primary | Accepted | 2026-09-04 |
 | [0725](0725-resolve-selected-assumed-days-from-mac-task-details.md) | Resolve Selected Assumed Days From Mac Task Details | Accepted | 2026-09-04 |
 | [0724](0724-keep-day-tasks-sidebar-out-of-calendar-list.md) | Keep Day Tasks Sidebar Out of Calendar List | Accepted | 2026-09-04 |

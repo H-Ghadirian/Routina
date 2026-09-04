@@ -121,6 +121,26 @@ struct BacklogFilterState: Equatable {
         hasActiveFilters || sortOrder != .defaultOrder
     }
 
+    var hasNonDefaultFilters: Bool {
+        self != resettingFilters()
+    }
+
+    var hasNonDefaultSortOrder: Bool {
+        sortOrder != .defaultOrder
+    }
+
+    func resettingFilters() -> Self {
+        var reset = Self.default
+        reset.sortOrder = sortOrder
+        return reset
+    }
+
+    func resettingSortOrder() -> Self {
+        var reset = self
+        reset.sortOrder = .defaultOrder
+        return reset
+    }
+
     func matches(
         _ task: RoutineTask,
         fileAttachmentTaskIDs: Set<UUID>,

@@ -10,6 +10,7 @@ Accepted
 
 ## Revised By
 
+- [0728: Scope Mac Backlog Reset to Each Control Tab](0728-scope-mac-backlog-reset-to-each-control-tab.md) replaces the combined transient Reset with independent Filter, Sort, and Appearance resets.
 - [0723: Filter Mac Backlog by Due Status](0723-filter-mac-backlog-by-due-status.md) adds Has Due Date, Due Today, and Overdue choices to the independent Filter tab.
 
 ## Revises

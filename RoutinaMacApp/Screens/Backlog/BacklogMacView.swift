@@ -202,37 +202,6 @@ struct BacklogMacView<FilterView: View>: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Backlog")
-                        .font(.title2.weight(.semibold))
-
-                    Spacer(minLength: 8)
-
-                    Text(backlogCountLabel)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    Button {
-                        store.send(.refresh)
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .frame(width: 24, height: 24)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Refresh Backlog")
-                    .disabled(store.isLoading)
-                }
-
-                Text("Tasks kept off your main task list")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(16)
-
-            Divider()
-
             if store.isLoading && store.presentation.isEmpty {
                 ProgressView("Loading Backlog…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

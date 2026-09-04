@@ -261,14 +261,6 @@ extension BacklogMacView {
         HomeTaskRowVisibility(storageRawValue: backlogTaskRowHiddenFieldsRawValue)
     }
 
-    var backlogCountLabel: String {
-        let count = store.presentation.taskCount
-        if isSearching {
-            return count == 1 ? "1 in Backlog" : "\(count) in Backlog"
-        }
-        return count == 1 ? "1 task" : "\(count) tasks"
-    }
-
     var isSearching: Bool {
         HomeTaskSearchIndex.query(store.searchText) != nil
     }
