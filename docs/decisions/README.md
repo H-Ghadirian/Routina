@@ -20,6 +20,8 @@ User-experience documents explain who needs what and what success looks like. De
 
 ## Recent Decisions
 
+- **[0733](0733-distinguish-mac-task-ladder-row-kinds-visually.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0571](0571-show-task-identity-metadata-in-mac-task-ladder.md), [0574](0574-separate-task-ladder-placement-from-completion.md), and [0722](0722-move-mac-task-ladder-controls-to-the-right-sidebar.md):** Mac Task Ladder uses a folder identity for container groups, stacked tiles for task groups, and a single tile for ordinary tasks, removing the repeated visible type badges while retaining explicit accessibility labels.
+- **[0732](0732-keep-mac-task-ladder-movement-in-row-context-menus.md) revises [0722](0722-move-mac-task-ladder-controls-to-the-right-sidebar.md) and refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) and [0561](0561-add-separate-mac-task-ranking-ladder.md):** Mac Task Ladder removes persistent Up/Down controls from ranked rows while retaining the same Move Up and Move Down actions in each eligible row's context menu.
 - **[0731](0731-let-mac-task-row-details-wrap.md) refines [0038](0038-configure-home-task-row-fields.md), [0254](0254-move-mac-task-row-appearance-to-home-filter-detail.md), [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md), [0662](0662-reserve-the-first-mac-task-row-line-for-the-title.md), and [0663](0663-allow-optional-multiline-mac-task-titles.md):** Mac Main Task List appearance adds independent Multiline Details; expanded rows flow every enabled secondary label, while compact rows keep complete labels and summarize overflow with an accessible `+N more` chip.
 - **[0730](0730-name-the-created-task-chart-for-its-time-range.md) refines [0415](0415-support-custom-stats-date-ranges.md) and [0668](0668-separate-general-stats-and-standardize-task-type-language.md):** the created-task chart heading follows the selected Day, Week, Month, or Year preset, while arbitrary Custom ranges retain their day-based chart label.
 - **[0729](0729-plan-backlog-tasks-from-their-context-menu.md) refines [0200](0200-support-task-planned-dates.md), [0363](0363-gate-mac-plan-tomorrow-menu-item.md), and [0546](0546-separate-mac-backlog-from-the-radar-sidebar.md):** eligible Mac Backlog rows offer the Main Task List's Plan to do choices while preserving their Backlog path and the existing planning semantics.
@@ -852,6 +854,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0733](0733-distinguish-mac-task-ladder-row-kinds-visually.md) | Distinguish Mac Task Ladder Row Kinds Visually | Accepted | 2026-09-04 |
+| [0732](0732-keep-mac-task-ladder-movement-in-row-context-menus.md) | Keep Mac Task Ladder Movement in Row Context Menus | Accepted | 2026-09-04 |
 | [0731](0731-let-mac-task-row-details-wrap.md) | Let Mac Task-Row Details Wrap | Accepted | 2026-09-04 |
 | [0730](0730-name-the-created-task-chart-for-its-time-range.md) | Name the Created-Task Chart for Its Time Range | Accepted | 2026-09-04 |
 | [0729](0729-plan-backlog-tasks-from-their-context-menu.md) | Plan Backlog Tasks From Their Context Menu | Accepted | 2026-09-04 |

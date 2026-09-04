@@ -19,40 +19,34 @@ struct TaskRankingMacRow: View {
     let onMoveDown: () -> Void
 
     var body: some View {
-        HStack(spacing: 9) {
-            Button(action: onSelect) {
-                HStack(alignment: .top, spacing: 9) {
-                    leadingIdentity
-                    content
-                    Spacer(minLength: 2)
-                    if canOpenInnerLadder {
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                            .padding(.top, 5)
-                    }
+        Button(action: onSelect) {
+            HStack(alignment: .top, spacing: 9) {
+                leadingIdentity
+                content
+                Spacer(minLength: 2)
+                if canOpenInnerLadder {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .padding(.top, 5)
                 }
-                .padding(.vertical, 9)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .help(
-                canOpenInnerLadder
-                    ? "Click to show details; double-click to open the inner Task Ladder"
-                    : "Click to show details"
-            )
-            .accessibilityHint(
-                canOpenInnerLadder
-                    ? "Double-click to open the inner Task Ladder"
-                    : "Shows task details"
-            )
-            .onMacDoubleClick(enabled: canOpenInnerLadder, perform: onOpenInnerLadder)
-
-            if supportsManualOrdering {
-                orderingControls
-            }
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .help(
+            canOpenInnerLadder
+                ? "Click to show details; double-click to open the inner Task Ladder"
+                : "Click to show details"
+        )
+        .accessibilityHint(
+            canOpenInnerLadder
+                ? "Double-click to open the inner Task Ladder"
+                : "Shows task details"
+        )
+        .onMacDoubleClick(enabled: canOpenInnerLadder, perform: onOpenInnerLadder)
         .padding(.leading, 12)
         .padding(.trailing, 8)
         .background(rowBackground)
@@ -65,9 +59,9 @@ struct TaskRankingMacRow: View {
 
     @ViewBuilder
     private var leadingIdentity: some View {
-        if visibility.shows(.icon) || visibility.shows(.rowNumber) {
+        if showsIdentityIcon || visibility.shows(.rowNumber) {
             VStack(spacing: 4) {
-                if visibility.shows(.icon) {
+                if showsIdentityIcon {
                     taskIcon
                 }
                 if visibility.shows(.rowNumber), let rowNumber {
@@ -81,10 +75,14 @@ struct TaskRankingMacRow: View {
         }
     }
 
+    private var showsIdentityIcon: Bool {
+        visibility.shows(.icon) || metadata.isGroup || metadata.isTaskGroup
+    }
+
     private var content: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(metadata.appearance.name)
-                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                .font(.subheadline.weight(titleWeight))
                 .lineLimit(visibility.allowsMultilineTitles ? nil : 1)
                 .fixedSize(horizontal: false, vertical: visibility.allowsMultilineTitles)
                 .multilineTextAlignment(.leading)
@@ -109,49 +107,100 @@ struct TaskRankingMacRow: View {
         }
     }
 
+    private var titleWeight: Font.Weight {
+        isSelected || metadata.isGroup || metadata.isTaskGroup ? .semibold : .regular
+    }
+
+    @ViewBuilder
     private var taskIcon: some View {
+        if metadata.isGroup {
+            containerGroupIcon
+        } else if metadata.isTaskGroup {
+            taskGroupIcon
+        } else {
+            ordinaryTaskIcon
+        }
+    }
+
+    private var containerGroupIcon: some View {
+        ZStack {
+            Image(systemName: "folder.fill")
+                .font(.system(size: 28, weight: .medium))
+                .foregroundStyle(identityTint.opacity(0.20))
+            Image(systemName: "folder")
+                .font(.system(size: 28, weight: .medium))
+                .foregroundStyle(identityTint.opacity(0.78))
+            Text(metadata.appearance.emoji)
+                .font(.system(size: 12))
+                .offset(y: 2)
+        }
+        .frame(width: 30, height: 30)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Container group")
+    }
+
+    private var taskGroupIcon: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(identityTint.opacity(0.08))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(identityTint.opacity(0.30), lineWidth: 1)
+                }
+                .frame(width: 25, height: 25)
+                .offset(x: 3, y: -3)
+
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(identityTint.opacity(0.16))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(identityTint.opacity(0.48), lineWidth: 1)
+                }
+                .frame(width: 25, height: 25)
+                .offset(x: -2, y: 2)
+
+            Text(metadata.appearance.emoji)
+                .font(.body)
+                .offset(x: -2, y: 2)
+
+            imageIndicator
+        }
+        .frame(width: 30, height: 30)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Task group")
+    }
+
+    private var ordinaryTaskIcon: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(metadata.appearance.color.swiftUIColor?.opacity(0.14) ?? Color.secondary.opacity(0.10))
             Text(metadata.appearance.emoji)
                 .font(.body)
-            if metadata.appearance.hasImage {
-                Image(systemName: "photo.fill")
-                    .font(.system(size: 8, weight: .semibold))
-                    .padding(2)
-                    .background(Color(nsColor: .windowBackgroundColor), in: Circle())
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                    .padding(1)
-            }
+            imageIndicator
         }
         .frame(width: 30, height: 30)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Task")
     }
 
-    private var orderingControls: some View {
-        VStack(spacing: 2) {
-            Button(action: onMoveUp) {
-                Image(systemName: "chevron.up")
-                    .frame(width: 22, height: 18)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.borderless)
-            .help("Move up")
-
-            Button(action: onMoveDown) {
-                Image(systemName: "chevron.down")
-                    .frame(width: 22, height: 18)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.borderless)
-            .help("Move down")
+    @ViewBuilder
+    private var imageIndicator: some View {
+        if metadata.appearance.hasImage {
+            Image(systemName: "photo.fill")
+                .font(.system(size: 8, weight: .semibold))
+                .padding(2)
+                .background(Color(nsColor: .windowBackgroundColor), in: Circle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(1)
         }
-        .foregroundStyle(.secondary)
+    }
+
+    private var identityTint: Color {
+        metadata.appearance.color.swiftUIColor ?? .accentColor
     }
 
     private var showsBadges: Bool {
-        metadata.isGroup
-            || metadata.isTaskGroup
-            || metadata.inheritsMetricValue
+        metadata.inheritsMetricValue
             || metadata.childCount > 0
             || metadata.temporalTimingLabel != nil
             || visibility.shows(.taskTypeBadge) && metadata.isRepeating
@@ -162,14 +211,8 @@ struct TaskRankingMacRow: View {
 
     @ViewBuilder
     private var rowBadges: some View {
-        if metadata.isGroup {
-            badge("Group", systemImage: "folder", tint: .secondary)
-        }
         if metadata.inheritsMetricValue {
             badge("Inherited", systemImage: "arrow.triangle.branch", tint: .secondary)
-        }
-        if metadata.isTaskGroup {
-            badge("Task group", systemImage: "square.stack.3d.up", tint: .secondary)
         }
         if visibility.shows(.taskTypeBadge), metadata.isRepeating {
             badge("Repeating", systemImage: "repeat", tint: .green)

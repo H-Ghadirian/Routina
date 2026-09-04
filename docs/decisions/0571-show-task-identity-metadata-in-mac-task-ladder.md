@@ -8,6 +8,10 @@ Accepted
 
 2026-08-15
 
+## Refined By
+
+- [0733: Distinguish Mac Task Ladder Row Kinds Visually](0733-distinguish-mac-task-ladder-row-kinds-visually.md) replaces visible group-type badges with distinct structural leading shapes while retaining other task and state metadata.
+
 ## Context
 
 Every Task Ladder row repeated the selected metric value even though the enclosing

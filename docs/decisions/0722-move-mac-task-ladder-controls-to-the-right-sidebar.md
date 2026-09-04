@@ -8,6 +8,10 @@ Accepted
 
 2026-09-04
 
+## Revised By
+
+- [0732: Keep Mac Task Ladder Movement in Row Context Menus](0732-keep-mac-task-ladder-movement-in-row-context-menus.md) removes the persistent Up and Down controls while preserving the same movement actions in eligible row context menus.
+
 ## Supersedes
 
 - [0666: Keep Mac Task Ladder Chrome Context-Specific](superseded/0666-keep-mac-task-ladder-chrome-context-specific.md)

@@ -775,6 +775,23 @@ struct TaskRankingPresentationTests {
     }
 
     @Test
+    func macTaskLadderRowKindsUseVisualIdentityInsteadOfTypeBadges() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacRow.swift"
+        )
+
+        #expect(source.contains("private var containerGroupIcon"))
+        #expect(source.contains("Image(systemName: \"folder.fill\")"))
+        #expect(source.contains("private var taskGroupIcon"))
+        #expect(source.contains("private var ordinaryTaskIcon"))
+        #expect(source.contains(".accessibilityLabel(\"Container group\")"))
+        #expect(source.contains(".accessibilityLabel(\"Task group\")"))
+        #expect(source.contains(".accessibilityLabel(\"Task\")"))
+        #expect(!source.contains("badge(\"Group\""))
+        #expect(!source.contains("badge(\"Task group\""))
+    }
+
+    @Test
     func taskLadderSearchFindsNestedTasksWithoutFlatteningTheirLocation() throws {
         let referenceDate = Date(timeIntervalSince1970: 1_000)
         let calendar = Calendar(identifier: .gregorian)
@@ -1128,6 +1145,20 @@ struct TaskRankingPresentationTests {
         #expect(groupDetailSource.contains("Tasks inside this group are completed independently."))
         #expect(!groupDetailSource.contains("This is an organizational container."))
         #expect(!groupDetailSource.contains("Task Ladder group ·"))
+    }
+
+    @Test
+    func macTaskLadderKeepsManualMovementInTheRowContextMenu() throws {
+        let rowSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacRow.swift"
+        )
+
+        #expect(!rowSource.contains("private var orderingControls"))
+        #expect(!rowSource.contains("Image(systemName: \"chevron.up\")"))
+        #expect(!rowSource.contains("Image(systemName: \"chevron.down\")"))
+        #expect(rowSource.contains("if supportsManualOrdering {"))
+        #expect(rowSource.contains("Button(\"Move Up\", action: onMoveUp)"))
+        #expect(rowSource.contains("Button(\"Move Down\", action: onMoveDown)"))
     }
 
     @Test
