@@ -536,6 +536,7 @@ let package = Package(
                 "Views/GoalsEditorForm.swift",
                 "Views/ImportanceUrgencyMatrixPicker.swift",
                 "Views/StatsDashboardComponents.swift",
+                "Views/StatsChartComponents.swift",
                 "Views/StatsDashboardPalette.swift",
                 "Views/StatsDashboardReorderDropDelegate.swift",
                 "Views/StatsDashboardScrollContainer.swift",
