@@ -498,6 +498,7 @@ let package = Package(
                 "Sync/CloudKitDirectPullService.swift",
                 "Sync/CloudKitDirectPullSupport.swift",
                 "Sync/CloudKitDirectPullTaskRecordParser.swift",
+                "Sync/CloudKitDirectPullTaskRecordDecodingSupport.swift",
                 "Sync/CloudKitDirectPullUpserter.swift",
                 "Sync/CloudKitPushSubscriptionService.swift",
                 "Sync/CloudSyncedSurfaceRefreshCoordinator.swift",

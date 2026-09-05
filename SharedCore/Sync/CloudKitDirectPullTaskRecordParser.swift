@@ -21,7 +21,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "COMMENTSSTORAGE",
                 "zcommentsstorage",
                 "ZCOMMENTSSTORAGE",
-                "cd_commentsstorage"
+                "cd_commentsstorage",
             ]
         )
         let linkValue = stringValue(in: record, keys: ["link", "LINK", "zlink", "ZLINK", "cd_link"])
@@ -41,7 +41,8 @@ enum CloudKitDirectPullTaskRecordParser {
         let destinationAddressValue = stringValue(in: record, keys: storageKeys("destinationAddress"))
         let destinationLatitudeValue = doubleValue(in: record, keys: storageKeys("destinationLatitude"))
         let destinationLongitudeValue = doubleValue(in: record, keys: storageKeys("destinationLongitude"))
-        let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
+        let tagsStorageValue = stringValue(
+            in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
         let flagsStorageValue = stringValue(in: record, keys: storageKeys("flagsStorage"))
         let goalIDsStorageValue = stringValue(
             in: record,
@@ -51,7 +52,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "GOALIDSSTORAGE",
                 "zgoalidsstorage",
                 "ZGOALIDSSTORAGE",
-                "cd_goalidsstorage"
+                "cd_goalidsstorage",
             ]
         )
         let eventIDsStorageValue = stringValue(
@@ -62,7 +63,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "EVENTIDSSTORAGE",
                 "zeventidsstorage",
                 "ZEVENTIDSSTORAGE",
-                "cd_eventidsstorage"
+                "cd_eventidsstorage",
             ]
         )
         let relationshipsStorageValue = stringValue(
@@ -81,7 +82,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "CHECKLISTITEMSSTORAGE",
                 "zchecklistitemsstorage",
                 "ZCHECKLISTITEMSSTORAGE",
-                "cd_checklistitemsstorage"
+                "cd_checklistitemsstorage",
             ]
         )
         let scheduleModeValue = stringValue(
@@ -92,7 +93,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "SCHEDULEMODERAWVALUE",
                 "zschedulemoderawvalue",
                 "ZSCHEDULEMODERAWVALUE",
-                "cd_schedulemoderawvalue"
+                "cd_schedulemoderawvalue",
             ]
         )
         let recurrenceRuleStorageValue = stringValue(
@@ -103,7 +104,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "RECURRENCERULESTORAGE",
                 "zrecurrencerulestorage",
                 "ZRECURRENCERULESTORAGE",
-                "cd_recurrencerulestorage"
+                "cd_recurrencerulestorage",
             ]
         )
         let recurrenceStorageVersionValue = intValue(in: record, keys: storageKeys("recurrenceStorageVersion"))
@@ -132,7 +133,8 @@ enum CloudKitDirectPullTaskRecordParser {
             dayOfMonth: recurrenceDayOfMonthValue
         )
         let recurrenceRuleStorageRule = recurrenceRuleStorageValue.flatMap(RoutineRecurrenceRuleStorage.deserialize)
-        let recurrenceRuleValue = recurrenceRuleStorageRule?.requiresStructuredStorage == true
+        let recurrenceRuleValue =
+            recurrenceRuleStorageRule?.requiresStructuredStorage == true
             ? recurrenceRuleStorageRule
             : (recurrenceRuleColumnValue ?? recurrenceRuleStorageRule)
         let imageDataValue = dataValue(
@@ -194,7 +196,10 @@ enum CloudKitDirectPullTaskRecordParser {
         )
         let activityStateRawValueValue = stringValue(
             in: record,
-            keys: ["activityStateRawValue", "ACTIVITYSTATERAWVALUE", "zactivitystaterawvalue", "ZACTIVITYSTATERAWVALUE", "cd_activitystaterawvalue"]
+            keys: [
+                "activityStateRawValue", "ACTIVITYSTATERAWVALUE", "zactivitystaterawvalue", "ZACTIVITYSTATERAWVALUE",
+                "cd_activitystaterawvalue",
+            ]
         )
         let ongoingSinceValue = dateValue(
             in: record,
@@ -207,7 +212,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "AUTOPAUSEAFTERCOMPLETION",
                 "zautopauseaftercompletion",
                 "ZAUTOPAUSEAFTERCOMPLETION",
-                "cd_autopauseaftercompletion"
+                "cd_autopauseaftercompletion",
             ]
         )
         let autoAssumeDailyDoneValue = boolValue(
@@ -217,7 +222,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "AUTOASSUMEDAILYDONE",
                 "zautoassumedailydone",
                 "ZAUTOASSUMEDAILYDONE",
-                "cd_autoassumedailydone"
+                "cd_autoassumedailydone",
             ]
         )
         let hidesAssumedDoneCalendarBlockValue = boolValue(
@@ -227,7 +232,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "HIDESASSUMEDDONECALENDARBLOCK",
                 "zhidesassumeddonecalendarblock",
                 "ZHIDESASSUMEDDONECALENDARBLOCK",
-                "cd_hidesassumeddonecalendarblock"
+                "cd_hidesassumeddonecalendarblock",
             ]
         )
         let autoAssumeDoneTimeOfDayHourValue = intValue(
@@ -237,7 +242,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "AUTOASSUMEDONETIMEOFDAYHOUR",
                 "zautoassumedonetimeofdayhour",
                 "ZAUTOASSUMEDONETIMEOFDAYHOUR",
-                "cd_autoassumedonetimeofdayhour"
+                "cd_autoassumedonetimeofdayhour",
             ]
         )
         let autoAssumeDoneTimeOfDayMinuteValue = intValue(
@@ -247,7 +252,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "AUTOASSUMEDONETIMEOFDAYMINUTE",
                 "zautoassumedonetimeofdayminute",
                 "ZAUTOASSUMEDONETIMEOFDAYMINUTE",
-                "cd_autoassumedonetimeofdayminute"
+                "cd_autoassumedonetimeofdayminute",
             ]
         )
         let estimatedDurationMinutesValue = intValue(
@@ -257,7 +262,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "ESTIMATEDDURATIONMINUTES",
                 "zestimateddurationminutes",
                 "ZESTIMATEDDURATIONMINUTES",
-                "cd_estimateddurationminutes"
+                "cd_estimateddurationminutes",
             ]
         )
         let actualDurationMinutesValue = intValue(
@@ -267,7 +272,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "ACTUALDURATIONMINUTES",
                 "zactualdurationminutes",
                 "ZACTUALDURATIONMINUTES",
-                "cd_actualdurationminutes"
+                "cd_actualdurationminutes",
             ]
         )
         let storyPointsValue = intValue(
@@ -277,7 +282,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "STORYPOINTS",
                 "zstorypoints",
                 "ZSTORYPOINTS",
-                "cd_storypoints"
+                "cd_storypoints",
             ]
         )
         let cadenceEnabledValue = boolValue(
@@ -307,7 +312,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "TASKDESCRIPTION",
                 "ztaskdescription",
                 "ZTASKDESCRIPTION",
-                "cd_taskdescription"
+                "cd_taskdescription",
             ]
         )
         let thinkingNeededValue = stringValue(
@@ -317,7 +322,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 "THINKINGNEEDEDRAWVALUE",
                 "zthinkingneededrawvalue",
                 "ZTHINKINGNEEDEDRAWVALUE",
-                "cd_thinkingneededrawvalue"
+                "cd_thinkingneededrawvalue",
             ]
         ).flatMap(RoutineTaskThinkingNeeded.init(rawValue:))
 
@@ -473,127 +478,4 @@ enum CloudKitDirectPullTaskRecordParser {
         )
     }
 
-    private static func isTaskRecordType(_ recordType: String) -> Bool {
-        CloudKitDirectPullService.isTaskRecordType(recordType)
-    }
-
-    private static func stringValue(in record: CKRecord, keys: [String]) -> String? {
-        CloudKitDirectPullService.stringValue(in: record, keys: keys)
-    }
-
-    private static func dataValue(in record: CKRecord, keys: [String]) -> Data? {
-        CloudKitDirectPullService.dataValue(in: record, keys: keys)
-    }
-
-    private static func intValue(in record: CKRecord, keys: [String]) -> Int? {
-        CloudKitDirectPullService.intValue(in: record, keys: keys)
-    }
-
-    private static func boolValue(in record: CKRecord, keys: [String]) -> Bool? {
-        CloudKitDirectPullService.boolValue(in: record, keys: keys)
-    }
-
-    private static func doubleValue(in record: CKRecord, keys: [String]) -> Double? {
-        CloudKitDirectPullService.doubleValue(in: record, keys: keys)
-    }
-
-    private static func dateValue(in record: CKRecord, keys: [String]) -> Date? {
-        CloudKitDirectPullService.dateValue(in: record, keys: keys)
-    }
-
-    private static func uuidValue(in record: CKRecord, keys: [String]) -> UUID? {
-        CloudKitDirectPullService.uuidValue(in: record, keys: keys)
-    }
-
-    private static func storageKeys(_ property: String) -> [String] {
-        [
-            property,
-            property.lowercased(),
-            property.uppercased(),
-            "z\(property.lowercased())",
-            "Z\(property.uppercased())",
-            "cd_\(property.lowercased())"
-        ]
-    }
-
-    private static func recurrenceRuleFromColumns(
-        storageVersion: Int?,
-        kindRawValue: String?,
-        interval: Int?,
-        timeOfDayHour: Int?,
-        timeOfDayMinute: Int?,
-        timeRangeStartHour: Int?,
-        timeRangeStartMinute: Int?,
-        timeRangeEndHour: Int?,
-        timeRangeEndMinute: Int?,
-        weekday: Int?,
-        dayOfMonth: Int?
-    ) -> RoutineRecurrenceRule? {
-        guard storageVersion != nil
-                || kindRawValue != nil
-                || timeOfDayHour != nil
-                || timeOfDayMinute != nil
-                || timeRangeStartHour != nil
-                || timeRangeStartMinute != nil
-                || timeRangeEndHour != nil
-                || timeRangeEndMinute != nil
-                || weekday != nil
-                || dayOfMonth != nil else {
-            return nil
-        }
-
-        let kind = kindRawValue.flatMap(RoutineRecurrenceRule.Kind.init(rawValue:)) ?? .intervalDays
-        let exactTime = timeOfDay(hour: timeOfDayHour, minute: timeOfDayMinute)
-        let range = timeRange(
-            startHour: timeRangeStartHour,
-            startMinute: timeRangeStartMinute,
-            endHour: timeRangeEndHour,
-            endMinute: timeRangeEndMinute
-        )
-
-        switch kind {
-        case .intervalDays:
-            return .interval(
-                days: max(interval ?? 1, 1),
-                at: exactTime,
-                timeRange: range
-            )
-        case .dailyTime:
-            return RoutineRecurrenceRule(
-                kind: .dailyTime,
-                timeOfDay: exactTime,
-                timeRange: range
-            )
-        case .weekly:
-            return .weekly(
-                on: weekday ?? Calendar.current.firstWeekday,
-                at: exactTime,
-                timeRange: range
-            )
-        case .monthlyDay:
-            return .monthly(
-                on: dayOfMonth ?? Calendar.current.component(.day, from: Date()),
-                at: exactTime,
-                timeRange: range
-            )
-        }
-    }
-
-    private static func timeOfDay(hour: Int?, minute: Int?) -> RoutineTimeOfDay? {
-        guard let hour, let minute else { return nil }
-        return RoutineTimeOfDay(hour: hour, minute: minute)
-    }
-
-    private static func timeRange(
-        startHour: Int?,
-        startMinute: Int?,
-        endHour: Int?,
-        endMinute: Int?
-    ) -> RoutineTimeRange? {
-        guard let start = timeOfDay(hour: startHour, minute: startMinute),
-              let end = timeOfDay(hour: endHour, minute: endMinute) else {
-            return nil
-        }
-        return RoutineTimeRange(start: start, end: end)
-    }
 }
