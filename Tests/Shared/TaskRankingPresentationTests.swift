@@ -906,9 +906,13 @@ extension TaskRankingPresentationTests {
         let rowSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacRow.swift"
         )
-        let featureSource = try Self.sourceFile(
-            "SharedCore/Features/Home/TaskRankingFeature.swift"
-        )
+        let featureSource =
+            try Self.sourceFile(
+                "SharedCore/Features/Home/TaskRankingFeature.swift"
+            )
+            + Self.sourceFile(
+                "SharedCore/Features/Home/TaskRankingFeaturePresentationSupport.swift"
+            )
         let sharedEditorSource = try Self.sourceFile(
             "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
         )

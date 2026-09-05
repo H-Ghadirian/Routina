@@ -4,7 +4,7 @@ import SwiftData
 
 @Reducer
 struct TaskRankingFeature {
-    private enum CancelID: Hashable {
+    enum CancelID: Hashable {
         case load
         case automaticRefresh
         case temporalRefresh
@@ -49,7 +49,8 @@ struct TaskRankingFeature {
 
         var detailGroup: TaskLadderGroup? {
             if let selectedGroupID,
-               let selectedGroup = organization.group(id: selectedGroupID) {
+                let selectedGroup = organization.group(id: selectedGroupID)
+            {
                 return selectedGroup
             }
             return scopeParentGroup
@@ -104,11 +105,11 @@ struct TaskRankingFeature {
         case taskDetail(TaskDetailFeature.Action)
     }
 
-    @Dependency(\.appSettingsClient) private var appSettingsClient
-    @Dependency(\.calendar) private var calendar
-    @Dependency(\.continuousClock) private var continuousClock
-    @Dependency(\.date.now) private var now
-    @Dependency(\.modelContext) private var modelContext
+    @Dependency(\.appSettingsClient) var appSettingsClient
+    @Dependency(\.calendar) var calendar
+    @Dependency(\.continuousClock) var continuousClock
+    @Dependency(\.date.now) var now
+    @Dependency(\.modelContext) var modelContext
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -151,12 +152,14 @@ struct TaskRankingFeature {
                 }
                 rebuildPresentation(&state)
                 if let selectedTaskID = state.selectedTaskID,
-                   !tasks.contains(where: { $0.id == selectedTaskID }) {
+                    !tasks.contains(where: { $0.id == selectedTaskID })
+                {
                     state.selectedTaskID = nil
                     state.taskDetailState = nil
                 }
                 if let selectedGroupID = state.selectedGroupID,
-                   state.organization.group(id: selectedGroupID) == nil {
+                    state.organization.group(id: selectedGroupID) == nil
+                {
                     state.selectedGroupID = nil
                 }
                 return scheduleTemporalRefresh(for: state)
@@ -170,7 +173,8 @@ struct TaskRankingFeature {
                 state.organization = appSettingsClient.taskLadderOrganization()
                     .sanitized(validTaskIDs: Set(state.tasks.map(\.id)))
                 if let selectedGroupID = state.selectedGroupID,
-                   state.organization.group(id: selectedGroupID) == nil {
+                    state.organization.group(id: selectedGroupID) == nil
+                {
                     state.selectedGroupID = nil
                 }
                 rebuildPresentation(&state)
@@ -222,10 +226,12 @@ struct TaskRankingFeature {
                 return .none
 
             case let .searchMatchSelected(taskID):
-                guard let match = state.searchPresentation.matches.first(where: {
-                    $0.task.id == taskID
-                }),
-                      let task = state.tasks.first(where: { $0.id == taskID }) else {
+                guard
+                    let match = state.searchPresentation.matches.first(where: {
+                        $0.task.id == taskID
+                    }),
+                    let task = state.tasks.first(where: { $0.id == taskID })
+                else {
                     return .none
                 }
                 state.scopePath = match.scopePath
@@ -249,8 +255,9 @@ struct TaskRankingFeature {
 
             case let .childLadderOpened(nodeID):
                 guard !state.scopePath.contains(nodeID),
-                      let metadata = state.presentation.rowMetadataByTaskID[nodeID],
-                      metadata.childCount > 0 || metadata.isGroup || metadata.isTaskGroup else {
+                    let metadata = state.presentation.rowMetadataByTaskID[nodeID],
+                    metadata.childCount > 0 || metadata.isGroup || metadata.isTaskGroup
+                else {
                     return .none
                 }
                 state.scopePath.append(nodeID)
@@ -271,11 +278,13 @@ struct TaskRankingFeature {
                 return .none
 
             case let .moveTask(taskID, direction):
-                guard let update = TaskRankingOrderingSupport.moveTask(
-                    taskID: taskID,
-                    direction: direction,
-                    in: state.presentation
-                ) else {
+                guard
+                    let update = TaskRankingOrderingSupport.moveTask(
+                        taskID: taskID,
+                        direction: direction,
+                        in: state.presentation
+                    )
+                else {
                     return .none
                 }
                 var tasks = state.tasks
@@ -311,11 +320,13 @@ struct TaskRankingFeature {
 
             case let .taskPlacementSaved(taskID, parent, behavior):
                 let validTaskIDs = Set(state.tasks.map(\.id))
-                guard state.organization.place(
-                    taskID: taskID,
-                    inside: parent,
-                    validTaskIDs: validTaskIDs
-                ) else {
+                guard
+                    state.organization.place(
+                        taskID: taskID,
+                        inside: parent,
+                        validTaskIDs: validTaskIDs
+                    )
+                else {
                     state.errorMessage = "That placement would create an invalid Task Ladder hierarchy."
                     return .none
                 }
@@ -338,17 +349,21 @@ struct TaskRankingFeature {
                 )
 
             case let .linkedTaskChildSuggestionAccepted(parentTaskID, childTaskID):
-                guard state.presentation.linkedTaskChildSuggestions.contains(where: {
-                    $0.parentTaskID == parentTaskID && $0.taskID == childTaskID
-                }) else {
+                guard
+                    state.presentation.linkedTaskChildSuggestions.contains(where: {
+                        $0.parentTaskID == parentTaskID && $0.taskID == childTaskID
+                    })
+                else {
                     return .none
                 }
                 let validTaskIDs = Set(state.tasks.map(\.id))
-                guard state.organization.place(
-                    taskID: childTaskID,
-                    inside: .task(parentTaskID),
-                    validTaskIDs: validTaskIDs
-                ) else {
+                guard
+                    state.organization.place(
+                        taskID: childTaskID,
+                        inside: .task(parentTaskID),
+                        validTaskIDs: validTaskIDs
+                    )
+                else {
                     state.errorMessage = "That placement would create an invalid Task Ladder hierarchy."
                     return .none
                 }
@@ -358,9 +373,11 @@ struct TaskRankingFeature {
                 return .none
 
             case let .linkedTaskChildSuggestionRejected(parentTaskID, childTaskID):
-                guard state.presentation.linkedTaskChildSuggestions.contains(where: {
-                    $0.parentTaskID == parentTaskID && $0.taskID == childTaskID
-                }) else {
+                guard
+                    state.presentation.linkedTaskChildSuggestions.contains(where: {
+                        $0.parentTaskID == parentTaskID && $0.taskID == childTaskID
+                    })
+                else {
                     return .none
                 }
                 state.organization.setLinkedTaskChildSuggestionRejected(
@@ -374,7 +391,8 @@ struct TaskRankingFeature {
 
             case let .temporalWeightRuleSaved(taskID, importance, urgency, pressure, rule):
                 guard let taskIndex = state.tasks.firstIndex(where: { $0.id == taskID }),
-                      RoutineTaskTemporalWeightResolver.supportsTemporalWeight(state.tasks[taskIndex]) else {
+                    RoutineTaskTemporalWeightResolver.supportsTemporalWeight(state.tasks[taskIndex])
+                else {
                     return .none
                 }
                 let task = state.tasks[taskIndex].detachedCopy()
@@ -426,7 +444,7 @@ struct TaskRankingFeature {
         }
     }
 
-    private func rebuildPresentation(_ state: inout State) {
+    func rebuildPresentation(_ state: inout State) {
         let effectiveValueMode = state.metric.supportsTemporalWeight ? state.valueMode : .base
         state.presentation = TaskRankingPresentation.make(
             tasks: state.tasks,
@@ -443,189 +461,4 @@ struct TaskRankingFeature {
         rebuildSearchPresentation(&state)
     }
 
-    private func rebuildSearchPresentation(_ state: inout State) {
-        let effectiveValueMode = state.metric.supportsTemporalWeight ? state.valueMode : .base
-        state.searchPresentation = TaskRankingSearchPresentation.make(
-            tasks: state.tasks,
-            organization: state.organization,
-            eligibleTaskIDs: state.presentation.eligibleTaskIDs,
-            flagRules: state.flagRules,
-            metric: state.metric,
-            valueMode: effectiveValueMode,
-            searchText: state.searchText,
-            referenceDate: now,
-            calendar: calendar
-        )
-        let scopePath = state.scopePath
-        let matches = state.searchPresentation.matches
-        state.currentScopeSearchMatchTaskIDs = Set(
-            matches.lazy.filter { $0.scopePath == scopePath }.map(\.task.id)
-        )
-    }
-
-    private func scheduleTemporalRefresh(for state: State) -> Effect<Action> {
-        let needsTemporalWeightRefresh = state.valueMode == .now
-            && state.metric.supportsTemporalWeight
-            && state.tasks.contains(where: {
-                  RoutineTaskTemporalWeightResolver.supportsTemporalWeight($0)
-                      && $0.temporalWeightRule != nil
-              })
-        let needsEntryWindowRefresh = state.tasks.contains(where: {
-            RoutineTaskLadderEntryResolver.supportsEntryWindow($0)
-                && $0.taskLadderEntryWindow != .throughoutCycle
-        })
-        guard needsTemporalWeightRefresh || needsEntryWindowRefresh,
-              let nextDay = calendar.date(
-                  byAdding: .day,
-                  value: 1,
-                  to: calendar.startOfDay(for: now)
-              ) else {
-            return .cancel(id: CancelID.temporalRefresh)
-        }
-        let seconds = max(nextDay.timeIntervalSince(now), 1)
-        return .run { send in
-            try await continuousClock.sleep(for: .seconds(seconds))
-            await send(.temporalBoundaryReached)
-        }
-        .cancellable(id: CancelID.temporalRefresh, cancelInFlight: true)
-    }
-
-    private func selectTask(_ task: RoutineTask, state: inout State) {
-        state.selectedGroupID = nil
-        state.selectedTaskID = task.id
-        state.taskDetailState = HomeTaskSupport.makeTaskDetailState(
-            for: task,
-            now: now,
-            calendar: calendar
-        )
-    }
-
-    private func loadTasks() -> Effect<Action> {
-        .run { @MainActor send in
-            do {
-                let tasks = try modelContext().fetch(FetchDescriptor<RoutineTask>())
-                let logs = try modelContext().fetch(FetchDescriptor<RoutineLog>())
-                let completionDatesByTaskID = HomeTaskSupport.makeDoneStats(
-                    tasks: tasks,
-                    logs: logs
-                ).completedDatesByTaskID
-                send(.tasksLoaded(
-                    tasks,
-                    appSettingsClient.flagRules(),
-                    appSettingsClient.taskLadderOrganization(),
-                    completionDatesByTaskID
-                ))
-            } catch {
-                send(.loadFailed("Couldn’t load task ranking. \(error.localizedDescription)"))
-            }
-        }
-        .cancellable(id: CancelID.load, cancelInFlight: true)
-    }
-
-    private func persist(_ update: TaskRankingOrderUpdate) -> Effect<Action> {
-        .run { @MainActor send in
-            do {
-                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
-                var tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                var organization = appSettingsClient.taskLadderOrganization()
-                TaskRankingOrderingSupport.apply(
-                    update,
-                    to: &tasks,
-                    organization: &organization
-                )
-                try context.save()
-                appSettingsClient.setTaskLadderOrganization(organization)
-                NotificationCenter.default.postRoutineDidUpdate()
-            } catch {
-                send(.loadFailed("Couldn’t update task ranking. \(error.localizedDescription)"))
-            }
-        }
-    }
-
-    private func persistPlacement(
-        taskID: UUID,
-        parent: TaskLadderNodeID?,
-        behavior: TaskLadderCompletionBehavior
-    ) -> Effect<Action> {
-        .run { @MainActor send in
-            guard case let .task(parentTaskID)? = parent else { return }
-            do {
-                _ = try RoutineTaskRelationshipMutationSupport.setCompletionBehavior(
-                    sourceTaskID: taskID,
-                    targetTaskID: parentTaskID,
-                    behavior: behavior,
-                    timestamp: now,
-                    calendar: calendar,
-                    context: modelContext()
-                )
-            } catch {
-                send(.loadFailed("Couldn’t update completion behavior. \(error.localizedDescription)"))
-            }
-        }
-    }
-
-    private func persistTemporalWeightRule(
-        taskID: UUID,
-        importance: RoutineTaskImportance,
-        urgency: RoutineTaskUrgency,
-        pressure: RoutineTaskPressure,
-        rule: RoutineTaskTemporalWeightRule?
-    ) -> Effect<Action> {
-        .run { @MainActor send in
-            do {
-                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
-                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                guard let task = tasks.first(where: { $0.id == taskID }) else {
-                    send(.loadFailed("Couldn’t find that task to update its changes over time."))
-                    return
-                }
-                task.importance = importance
-                task.urgency = urgency
-                task.pressure = pressure
-                task.priority = AddRoutinePriorityMatrix.priority(
-                    importance: importance,
-                    urgency: urgency
-                )
-                task.temporalWeightRule = RoutineTaskTemporalWeightResolver.sanitizedRule(
-                    rule,
-                    for: task
-                )
-                task.hasExplicitImportance = true
-                task.hasExplicitUrgency = true
-                try context.save()
-                NotificationCenter.default.postRoutineDidUpdate()
-            } catch {
-                send(.loadFailed("Couldn’t update changes over time. \(error.localizedDescription)"))
-            }
-        }
-    }
-
-    private func updateCompletionBehavior(
-        _ behavior: TaskLadderCompletionBehavior,
-        sourceTaskID: UUID,
-        parentTaskID: UUID,
-        tasks: inout [RoutineTask]
-    ) {
-        guard let sourceIndex = tasks.firstIndex(where: { $0.id == sourceTaskID }) else { return }
-        let candidates = RoutineTaskRelationshipCandidate.from(
-            tasks,
-            excluding: sourceTaskID,
-            referenceDate: now,
-            calendar: calendar
-        )
-        var relationships = RoutineTask.editableRelationships(
-            for: tasks[sourceIndex],
-            within: candidates
-        )
-        relationships.removeAll { relationship in
-            relationship.targetTaskID == parentTaskID
-                && (relationship.kind == .canComplete || relationship.kind == .completes)
-        }
-        if let kind = behavior.relationshipKind {
-            relationships.removeAll { $0.targetTaskID == parentTaskID }
-            relationships.append(RoutineTaskRelationship(targetTaskID: parentTaskID, kind: kind))
-        }
-        tasks[sourceIndex].replaceRelationships(relationships)
-        RoutineTask.removeInverseRelationships(targeting: sourceTaskID, from: tasks)
-    }
 }
