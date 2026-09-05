@@ -299,7 +299,8 @@ struct AdvancedRecurrenceEditor: View {
 
     private func addTime() {
         updateRule { updatedRule in
-            let last = updatedRule.timesOfDay.last
+            let last =
+                updatedRule.timesOfDay.last
                 ?? RoutineTimeOfDay.from(updatedRule.startDate, calendar: calendar)
             updatedRule.timesOfDay.append(last.addingMinutes(60))
         }
@@ -309,7 +310,7 @@ struct AdvancedRecurrenceEditor: View {
         guard rule.timesOfDay.count > 1, rule.timesOfDay.indices.contains(index) else { return }
         updateRule { updatedRule in
             guard updatedRule.timesOfDay.count > 1,
-                  updatedRule.timesOfDay.indices.contains(index)
+                updatedRule.timesOfDay.indices.contains(index)
             else { return }
             updatedRule.timesOfDay.remove(at: index)
         }
@@ -323,4 +324,3 @@ struct AdvancedRecurrenceEditor: View {
         rule = updatedRule.normalized(calendar: calendar)
     }
 }
-

@@ -340,7 +340,7 @@ struct UnifiedRecurrenceEditor: View {
         }
     }
 
-    private var fixedStartComponents: DatePickerComponents {
+    var fixedStartComponents: DatePickerComponents {
         TaskFormFixedSchedulePresentation.startIncludesTime(
             frequency: draft.frequency,
             availabilityUsesWindow: draft.availability.usesWindow
@@ -438,4 +438,3 @@ struct UnifiedRecurrenceEditor: View {
         }
     }
 }
-

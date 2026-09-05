@@ -104,4 +104,3 @@ struct RecurrenceTimeZoneSelectionView: View {
         .frame(minHeight: 420)
     }
 }
-

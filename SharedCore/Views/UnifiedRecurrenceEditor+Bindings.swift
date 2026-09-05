@@ -217,7 +217,8 @@ extension UnifiedRecurrenceEditor {
     func addTime() {
         updateDraft(
             { updated in
-                let last = updated.occurrenceTimes.last
+                let last =
+                    updated.occurrenceTimes.last
                     ?? RoutineTimeOfDay.from(updated.startDate ?? referenceDate, calendar: calendar)
                 updated.occurrenceTimes.append(last.addingMinutes(60))
             },
@@ -229,7 +230,7 @@ extension UnifiedRecurrenceEditor {
         updateDraft(
             { updated in
                 guard updated.occurrenceTimes.count > 1,
-                      updated.occurrenceTimes.indices.contains(index)
+                    updated.occurrenceTimes.indices.contains(index)
                 else { return }
                 updated.occurrenceTimes.remove(at: index)
             },
@@ -294,4 +295,3 @@ extension UnifiedRecurrenceEditor {
         }
     }
 }
-

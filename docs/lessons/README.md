@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0304 — Keep cross-file extension members module-visible](0304-keep-cross-file-extension-members-module-visible.md)
 - [0303 — Keep action fixtures aligned with payload contracts](0303-keep-action-fixtures-aligned-with-payload-contracts.md)
 - [0302 — Measure stable identities, not rendered lines](0302-measure-stable-identities-not-rendered-lines.md)
 - [0301 — Do not let a broken test gate hide drift](0301-do-not-let-a-broken-test-gate-hide-drift.md)
