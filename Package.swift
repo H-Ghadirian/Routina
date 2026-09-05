@@ -331,6 +331,7 @@ let package = Package(
                 "Features/Home/HomeTagFilterSupport.swift",
                 "Features/Home/HomeFeatureTaskLifecycleCommandRouter.swift",
                 "Features/Home/HomeTaskLifecycleCoordinator.swift",
+                "Features/Home/HomeTaskOccurrenceResolutionSupport.swift",
                 "Features/Home/HomeTaskLifecycleSupport.swift",
                 "Features/Home/HomeTaskLifecycleExecutionSupport.swift",
                 "Features/Home/HomeTaskVisibilityExecutionSupport.swift",
