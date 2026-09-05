@@ -482,6 +482,7 @@ let package = Package(
                 "Services/AwaySessionSupport.swift",
                 "Services/SleepSessionSupport.swift",
                 "Services/RoutinaCrashReporter.swift",
+                "Services/RoutinaPerformanceProfileSupport.swift",
                 "Services/RoutinaPerformanceProfiler.swift",
                 "Services/RoutinaMacScrollInteractionGate.swift",
                 "Services/PlaceCheckInSupport.swift",
