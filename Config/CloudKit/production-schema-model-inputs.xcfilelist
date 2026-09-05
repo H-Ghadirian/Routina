@@ -1,6 +1,7 @@
 $(SRCROOT)/SharedCore/Models/AttachmentItem.swift
 $(SRCROOT)/SharedCore/Models/AwaySession.swift
 $(SRCROOT)/SharedCore/Models/DayPlanModels.swift
+$(SRCROOT)/SharedCore/Models/DayPlanAutomaticBlockSync.swift
 $(SRCROOT)/SharedCore/Models/DeviceActivityModels.swift
 $(SRCROOT)/SharedCore/Models/EmotionLog.swift
 $(SRCROOT)/SharedCore/Models/FocusSession.swift
