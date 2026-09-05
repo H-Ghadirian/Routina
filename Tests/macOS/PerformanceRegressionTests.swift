@@ -204,9 +204,7 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testDisabledEmotionFeatureExcludesEmotionRowsFromMacTimelines() throws {
         let standaloneSource = try SourceInspectionSupport.readMacTimelineSources()
-        let integratedSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
-        )
+        let integratedSource = try SourceInspectionSupport.readMacHomeTimelineSources()
 
         XCTAssertTrue(
             standaloneSource.contains(
@@ -224,9 +222,7 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testDisabledEventFeatureExcludesEventRowsFromMacTimelineAndPlannerSnapshots() throws {
         let standaloneSource = try SourceInspectionSupport.readMacTimelineSources()
-        let integratedSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
-        )
+        let integratedSource = try SourceInspectionSupport.readMacHomeTimelineSources()
         let plannerSource =
             try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
             + "\n"
@@ -268,9 +264,7 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testDisabledSleepFeatureExcludesSleepRowsFromMacTimelines() throws {
         let standaloneSource = try SourceInspectionSupport.readMacTimelineSources()
-        let integratedSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
-        )
+        let integratedSource = try SourceInspectionSupport.readMacHomeTimelineSources()
         let integratedOwnerSource = try SourceInspectionSupport.readMacHomeRootSources()
 
         XCTAssertTrue(
@@ -530,9 +524,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacTimelineRowsAvoidPerRowGlassAndCoalesceRefreshes() throws {
-        let homeTimelineSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
-        )
+        let homeTimelineSource = try SourceInspectionSupport.readMacHomeTimelineSources()
         let standaloneTimelineSource = try SourceInspectionSupport.readMacTimelineSources()
         let refreshSource = try Self.sourceFile(
             "SharedCore/Screens/Home/HomeTCAView+Refresh.swift"
@@ -1954,7 +1946,7 @@ final class PerformanceRegressionTests: XCTestCase {
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
         let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
         let boardSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Board.swift")
-        let timelineSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
+        let timelineSource = try SourceInspectionSupport.readMacHomeTimelineSources()
         guard
             let fullscreenFilterStart = detailSource.range(of: "private var fullscreenFilterDetailContent: some View"),
             let fullscreenFilterEnd = detailSource.range(
@@ -2100,7 +2092,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testPlannerTimelineListUsesHomeTimelineFilters() throws {
-        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
+        let source = try SourceInspectionSupport.readMacHomeTimelineSources()
         let listSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTimelineSidebarView.swift")
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
         let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
@@ -2158,7 +2150,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacTimelineCachesWholeHistoryPresentationDuringScroll() throws {
-        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
+        let source = try SourceInspectionSupport.readMacHomeTimelineSources()
         let homeSource = try SourceInspectionSupport.readMacHomeRootSources()
         let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
         let listSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTimelineSidebarView.swift")

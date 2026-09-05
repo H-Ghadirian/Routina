@@ -7,9 +7,7 @@ struct HomeMacAllFiltersSourceTests {
         let sharedFilters = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+SharedFilters.swift"
         )
-        let timeline = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
-        )
+        let timeline = try SourceInspectionSupport.readMacHomeTimelineSources()
         let calendar = try SourceInspectionSupport.readMacDetailContainerSources()
 
         #expect(sharedFilters.contains("HomeMacTaskLadderFiltersSection("))
