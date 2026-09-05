@@ -238,6 +238,7 @@ let package = Package(
                 "Features/Home/HomeFeatureAddRoutineActionHandler.swift",
                 "Features/Home/HomeAddRoutineSupport.swift",
                 "Features/Home/HomeAdvancedQueryInputSupport.swift",
+                "Features/Home/HomeAdvancedQueryInputTypes.swift",
                 "Features/Home/HomeAdvancedQuerySuggestionSelectionSupport.swift",
                 "Features/Home/HomeFeatureAddRoutinePresentationRouter.swift",
                 "Features/Home/HomeDeduplicationSupport.swift",

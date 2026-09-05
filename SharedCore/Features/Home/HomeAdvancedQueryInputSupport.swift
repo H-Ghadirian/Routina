@@ -41,9 +41,11 @@ struct HomeAdvancedQueryInputState: Equatable {
     func committingDraft(_ draft: String) -> String {
         let state = replacingDraftForEditing(with: draft)
         let draftState = HomeAdvancedQueryInputState(query: state, options: options)
-        guard let exactSuggestion = draftState.suggestions.first(where: {
-            $0.matchesExactDraft(draft)
-        }) else {
+        guard
+            let exactSuggestion = draftState.suggestions.first(where: {
+                $0.matchesExactDraft(draft)
+            })
+        else {
             return state
         }
         return draftState.replacingDraft(with: exactSuggestion.insertionToken, addsTrailingSpace: exactSuggestion.isAtomic)
@@ -112,7 +114,7 @@ struct HomeAdvancedQueryInputState: Equatable {
 
         var parts = [
             HomeAdvancedQueryDisplayPart(title: keyTitle, kind: .key),
-            HomeAdvancedQueryDisplayPart(title: ":", kind: .operatorToken)
+            HomeAdvancedQueryDisplayPart(title: ":", kind: .operatorToken),
         ]
         if let comparison = parsed.comparison {
             parts.append(HomeAdvancedQueryDisplayPart(title: comparison, kind: .operatorToken))
@@ -137,7 +139,8 @@ struct HomeAdvancedQueryInputState: Equatable {
     }
 
     private func normalizedQuerySpacing(_ value: String, addsTrailingSpace: Bool = false) -> String {
-        let normalized = value
+        let normalized =
+            value
             .split(whereSeparator: \.isWhitespace)
             .map(String.init)
             .joined(separator: " ")
@@ -155,7 +158,8 @@ struct HomeAdvancedQueryInputState: Equatable {
 
     private func split(_ value: String) -> QueryParts {
         let hasTrailingSpace = value.last?.isWhitespace == true
-        let rawTokens = value
+        let rawTokens =
+            value
             .split(whereSeparator: \.isWhitespace)
             .map(String.init)
 
@@ -176,65 +180,6 @@ struct HomeAdvancedQueryInputState: Equatable {
     private struct QueryParts: Equatable {
         var committedTokens: [String]
         var draft: String
-    }
-}
-
-struct HomeAdvancedQueryOptions: Equatable {
-    var tags: [String] = []
-    var places: [String] = []
-}
-
-enum HomeAdvancedQueryPartKind: Equatable {
-    case key
-    case operatorToken
-    case value
-    case conjunction
-}
-
-struct HomeAdvancedQueryDisplayPart: Identifiable, Equatable {
-    var title: String
-    var kind: HomeAdvancedQueryPartKind
-
-    var id: String { "\(kind)-\(title)" }
-}
-
-struct HomeAdvancedQuerySuggestion: Identifiable, Equatable {
-    var token: String
-    var replacementToken: String?
-    var description: String
-    var kind: HomeAdvancedQueryPartKind
-
-    var id: String { "\(kind)-\(token)-\(replacementToken ?? "")" }
-
-    var insertionToken: String {
-        replacementToken ?? token
-    }
-
-    var isAtomic: Bool {
-        kind == .value || kind == .conjunction
-    }
-
-    var searchText: String {
-        "\(token) \(insertionToken) \(description)".normalizedAdvancedQueryToken
-    }
-
-    func matchesPrefix(_ draft: String) -> Bool {
-        let normalizedDraft = draft.normalizedAdvancedQueryToken
-        let normalizedToken = token.normalizedAdvancedQueryToken
-        let normalizedInsertion = insertionToken.normalizedAdvancedQueryToken
-        return normalizedToken.hasPrefix(normalizedDraft)
-            || normalizedInsertion.hasPrefix(normalizedDraft)
-            || normalizedInsertion.hasSuffix(":\(normalizedDraft)")
-            || normalizedInsertion.hasSuffix(">\(normalizedDraft)")
-            || normalizedInsertion.hasSuffix(">=" + normalizedDraft)
-            || normalizedInsertion.hasSuffix("<\(normalizedDraft)")
-            || normalizedInsertion.hasSuffix("<=" + normalizedDraft)
-    }
-
-    func matchesExactDraft(_ draft: String) -> Bool {
-        let normalizedDraft = draft.normalizedAdvancedQueryToken
-        return token.normalizedAdvancedQueryToken == normalizedDraft
-            || insertionToken.normalizedAdvancedQueryToken == normalizedDraft
     }
 }
 
@@ -325,7 +270,7 @@ private enum HomeAdvancedQueryField: String, CaseIterable, Equatable {
 extension HomeAdvancedQueryInputState {
     static let operatorSuggestions: [HomeAdvancedQuerySuggestion] = [
         HomeAdvancedQuerySuggestion(token: "AND", description: "Require another condition", kind: .conjunction),
-        HomeAdvancedQuerySuggestion(token: "OR", description: "Match an alternative condition", kind: .conjunction)
+        HomeAdvancedQuerySuggestion(token: "OR", description: "Match an alternative condition", kind: .conjunction),
     ]
 
     static let keySuggestions: [HomeAdvancedQuerySuggestion] = HomeAdvancedQueryField.allCases.map {
@@ -369,9 +314,11 @@ private extension HomeAdvancedQueryInputState {
 
     var shouldCommitExactAtomicDraft: Bool {
         guard !draft.isEmpty else { return false }
-        guard let exactSuggestion = suggestions.first(where: {
-            $0.matchesExactDraft(draft)
-        }) else {
+        guard
+            let exactSuggestion = suggestions.first(where: {
+                $0.matchesExactDraft(draft)
+            })
+        else {
             return false
         }
         return exactSuggestion.isAtomic
@@ -406,31 +353,32 @@ private extension HomeAdvancedQueryInputState {
         queryKey: String,
         comparison: String?
     ) -> [HomeAdvancedQuerySuggestion] {
-        let values: [(title: String, queryValue: String)] = switch field {
-        case .tag:
-            options.tags.map { ($0, Self.queryValue($0)) }.uniquedByQueryValue()
-        case .place:
-            options.places.map { ($0, Self.queryValue($0)) }.uniquedByQueryValue()
-        case .type:
-            [("One-time", "one-time"), ("Repeating", "repeating")]
-        case .state:
-            [
-                ("Done", "done"),
-                ("Pinned", "pinned"),
-                ("Blocked", "blocked"),
-                ("Ready", "ready"),
-                ("In progress", "inprogress"),
-                ("Paused", "paused")
-            ]
-        case .due:
-            [("Overdue", "overdue"), ("Today", "today"), ("Soon", "soon"), ("Future", "future")]
-        case .pressure:
-            [("Low", "low"), ("Medium", "medium"), ("High", "high")]
-        case .priority:
-            [("Low", "low"), ("Medium", "medium"), ("High", "high")]
-        case .importance, .urgency:
-            [("L1", "l1"), ("L2", "l2"), ("L3", "l3"), ("L4", "l4")]
-        }
+        let values: [(title: String, queryValue: String)] =
+            switch field {
+            case .tag:
+                options.tags.map { ($0, Self.queryValue($0)) }.uniquedByQueryValue()
+            case .place:
+                options.places.map { ($0, Self.queryValue($0)) }.uniquedByQueryValue()
+            case .type:
+                [("One-time", "one-time"), ("Repeating", "repeating")]
+            case .state:
+                [
+                    ("Done", "done"),
+                    ("Pinned", "pinned"),
+                    ("Blocked", "blocked"),
+                    ("Ready", "ready"),
+                    ("In progress", "inprogress"),
+                    ("Paused", "paused"),
+                ]
+            case .due:
+                [("Overdue", "overdue"), ("Today", "today"), ("Soon", "soon"), ("Future", "future")]
+            case .pressure:
+                [("Low", "low"), ("Medium", "medium"), ("High", "high")]
+            case .priority:
+                [("Low", "low"), ("Medium", "medium"), ("High", "high")]
+            case .importance, .urgency:
+                [("L1", "l1"), ("L2", "l2"), ("L3", "l3"), ("L4", "l4")]
+            }
 
         return values.map { title, queryValue in
             let operatorPrefix = comparison ?? ""
@@ -481,7 +429,7 @@ private extension HomeAdvancedQueryInputState {
                     replacementToken: "\(queryKey):<=",
                     description: "Less than or equal",
                     kind: .operatorToken
-                )
+                ),
             ])
         }
 
