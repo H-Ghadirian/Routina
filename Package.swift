@@ -479,6 +479,7 @@ let package = Package(
                 "Services/FocusShieldMacBrowserAutomation.swift",
                 "Services/FocusShieldMacSettingsSupport.swift",
                 "Services/FocusShieldMacWebsiteBlocker.swift",
+                "Services/FocusSessionLifecycleSupport.swift",
                 "Services/FocusSessionSupport.swift",
                 "Services/AwaySessionSupport.swift",
                 "Services/SleepSessionSupport.swift",
