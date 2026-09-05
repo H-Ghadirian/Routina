@@ -327,6 +327,7 @@ let package = Package(
                 "Features/Home/HomeTaskLifecycleCoordinator.swift",
                 "Features/Home/HomeTaskLifecycleSupport.swift",
                 "Features/Home/HomeTaskLifecycleExecutionSupport.swift",
+                "Features/Home/HomeTaskVisibilityExecutionSupport.swift",
                 "Features/Settings/SettingsFeature.swift",
                 "Features/Settings/SettingsFeatureState.swift",
                 "Features/Settings/SettingsAutoAssumeDoneFlagRuleSupport.swift",
