@@ -74,13 +74,17 @@ struct TaskFormIOSLayoutRegressionTests {
 
     @Test
     func tagsKeepSuggestionsBoundedAndBrowseTheFullCatalogInASearchablePicker() throws {
-        let source = try Self.sourceFile(
+        let organizationSource = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormIOSOrganizationSection.swift"
         )
+        let supportSource = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSTagSupport.swift"
+        )
+        let source = organizationSource + supportSource
         let tagChips = try Self.sourceSection(
             startingAt: "private var tagChipsContent",
             endingAt: "private var browseTagsButton",
-            in: source
+            in: organizationSource
         )
 
         #expect(source.contains("ForEach(visibleAvailableTags, id: \\.self)"))
