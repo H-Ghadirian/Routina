@@ -292,11 +292,12 @@ And the person can verify the reminder without opening Edit Task
 ### iOS Task Details Join Completion And Routine Actions
 
 Area: Tasks / iOS Task Details
-Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md), [0643](../decisions/0643-join-ios-task-detail-completion-and-routine-actions.md)
+Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0507](../decisions/0507-clarify-ios-task-detail-action-hierarchy.md), [0643](../decisions/0643-join-ios-task-detail-completion-and-routine-actions.md), [0739](../decisions/0739-preserve-ios-assumed-completion-transition-geometry.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailPlatformActionParityTests.swift`
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+- `Tests/Shared/TaskDetailTransitionPresentationTests.swift`
 
 Given a routine has a primary completion action and related routine actions
 When the person opens iOS Task Details
@@ -308,6 +309,13 @@ Given the selected routine day is assumed done
 Then a compact `Assumed done` pill replaces the visible instructional paragraph
 And `Confirm done` remains the direct prominent action
 And the menu lists `Not today — hide until tomorrow` before a divider and the pause actions
+
+When the person confirms that selected assumed day
+Then the pill changes in place to `Confirmed` for the open Task Detail presentation
+And the header temporarily preserves the pre-confirmation Status-card height while status, due, and count values update
+And the joined completion segment changes from a green checkmark action to orange Undo without a blank or disabled-looking intermediate label
+And reopening Task Details uses the ordinary compact completed layout without persisted presentation-only spacing
+And Reduce Motion skips the custom symbol and text transition
 
 ### iOS Task Detail History Stays Compact And Correctable
 

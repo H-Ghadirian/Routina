@@ -1775,12 +1775,18 @@ struct TaskDetailFeatureCompletionTests {
                 cancelledIDs.withValue { $0.append(identifier) }
             }
         }
+        let selectedDay = calendar.startOfDay(for: now)
+        let assumedStatusTitle = store.state.summaryStatusTitle
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.confirmAssumedPastDays) {
                 $0.task.lastDone = now
                 $0.taskRefreshID = 1
                 $0.isDoneToday = true
+                $0.assumedCompletionAcknowledgement = .init(
+                    day: selectedDay,
+                    previousStatusTitle: assumedStatusTitle
+                )
             }
         }
 
@@ -1808,6 +1814,8 @@ struct TaskDetailFeatureCompletionTests {
         ])
         #expect(scheduledIDs.value.isEmpty)
         #expect(cancelledIDs.value == [task.id.uuidString])
+        #expect(store.state.completionStatusPillPhase == .confirmed)
+        #expect(store.state.assumedCompletionStatusHeightReservationText == assumedStatusTitle)
     }
 
     @Test
@@ -1919,6 +1927,7 @@ struct TaskDetailFeatureCompletionTests {
         #expect(!store.state.isCompletionButtonDisabled)
         #expect(store.state.completionButtonAction == TaskDetailFeature.Action.markAsDone)
         #expect(store.state.completionButtonTitle.hasPrefix("Confirm"))
+        let assumedStatusTitle = store.state.summaryStatusTitle
 
         _ = await store.withExhaustivity(.off) {
             await store.send(TaskDetailFeature.Action.markAsDone) {
@@ -1929,6 +1938,10 @@ struct TaskDetailFeatureCompletionTests {
                 $0.daysSinceLastRoutine = 0
                 $0.overdueDays = 0
                 $0.pendingLocalCompletionDates = [now]
+                $0.assumedCompletionAcknowledgement = .init(
+                    day: calendar.startOfDay(for: now),
+                    previousStatusTitle: assumedStatusTitle
+                )
             }
         }
 
@@ -1956,6 +1969,8 @@ struct TaskDetailFeatureCompletionTests {
                 && $0.timestamp == now
                 && $0.isConfirmedAssumedDone
         })
+        #expect(store.state.completionStatusPillPhase == .confirmed)
+        #expect(store.state.assumedCompletionStatusHeightReservationText == assumedStatusTitle)
     }
 
     @Test
@@ -2000,6 +2015,7 @@ struct TaskDetailFeatureCompletionTests {
         }
 
         #expect(store.state.isSelectedDateAssumedDone)
+        let assumedStatusTitle = store.state.summaryStatusTitle
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.markAsDone) {
@@ -2009,6 +2025,10 @@ struct TaskDetailFeatureCompletionTests {
                 $0.isDoneToday = true
                 $0.isAssumedDoneToday = false
                 $0.pendingLocalCompletionDates = [completedAt]
+                $0.assumedCompletionAcknowledgement = .init(
+                    day: calendar.startOfDay(for: scheduledDay),
+                    previousStatusTitle: assumedStatusTitle
+                )
             }
         }
 
@@ -2038,6 +2058,8 @@ struct TaskDetailFeatureCompletionTests {
         #expect(persistedLog.actualDurationMinutes == 180)
         #expect(persistedLog.hasSpecificWorkTime == true)
         #expect(persistedLog.isConfirmedAssumedDone)
+        #expect(store.state.completionStatusPillPhase == .confirmed)
+        #expect(store.state.assumedCompletionStatusHeightReservationText == assumedStatusTitle)
     }
 
     @Test

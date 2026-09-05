@@ -128,10 +128,7 @@ struct TaskDetailRoutinePrimaryActionSection: View {
             Button {
                 store.send(store.completionButtonAction)
             } label: {
-                TaskDetailCompletionButtonLabel(
-                    title: TaskDetailIOSCompletionPresentation.title(for: store.state),
-                    systemImage: TaskDetailIOSCompletionPresentation.systemImage(for: store.state)
-                )
+                TaskDetailIOSCompletionButtonLabel(state: store.state)
                 .font(.body.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .contentShape(Rectangle())
@@ -272,8 +269,18 @@ private struct TaskDetailJoinedLifecyclePrimaryButtonStyle: ButtonStyle {
 }
 
 struct TaskDetailAssumedDoneStatusPill: View {
+    let phase: TaskDetailCompletionStatusPillPhase
+
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     var body: some View {
-        Label("Assumed done", systemImage: "checkmark.circle.dashed")
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .contentTransition(.symbolEffect(.replace))
+
+            Text(title)
+                .contentTransition(.opacity)
+        }
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.mint)
             .padding(.horizontal, 10)
@@ -284,8 +291,49 @@ struct TaskDetailAssumedDoneStatusPill: View {
                     .stroke(Color.mint.opacity(0.24), lineWidth: 1)
             )
             .fixedSize(horizontal: true, vertical: false)
-            .accessibilityLabel("Assumed done")
-            .accessibilityHint("This day is provisional until you confirm it")
+            .animation(
+                accessibilityReduceMotion ? nil : .easeInOut(duration: 0.18),
+                value: phase
+            )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint(accessibilityHint)
+    }
+
+    private var title: String {
+        switch phase {
+        case .assumed:
+            "Assumed done"
+        case .confirmed:
+            "Confirmed"
+        }
+    }
+
+    private var systemImage: String {
+        switch phase {
+        case .assumed:
+            "checkmark.circle.dashed"
+        case .confirmed:
+            "checkmark.circle.fill"
+        }
+    }
+
+    private var accessibilityLabel: String {
+        switch phase {
+        case .assumed:
+            "Assumed done"
+        case .confirmed:
+            "Completion confirmed"
+        }
+    }
+
+    private var accessibilityHint: String {
+        switch phase {
+        case .assumed:
+            "This day is provisional until you confirm it"
+        case .confirmed:
+            "The completion was recorded and can be undone"
+        }
     }
 }
 
@@ -297,10 +345,7 @@ struct TaskDetailPrimaryActionButton: View {
         Button {
             store.send(store.completionButtonAction)
         } label: {
-            TaskDetailCompletionButtonLabel(
-                title: TaskDetailIOSCompletionPresentation.title(for: store.state),
-                systemImage: TaskDetailIOSCompletionPresentation.systemImage(for: store.state)
-            )
+            TaskDetailIOSCompletionButtonLabel(state: store.state)
             .routinaPlatformPrimaryActionLabelLayout()
         }
         .buttonStyle(.borderedProminent)
@@ -326,7 +371,10 @@ enum TaskDetailIOSCompletionPresentation {
 
     static func systemImage(for state: TaskDetailFeature.State) -> String? {
         guard isCadenceFreeRoutineCompletedToday(state) else {
-            return state.completionButtonSystemImage
+            if let systemImage = state.completionButtonSystemImage {
+                return systemImage
+            }
+            return state.isCompletionButtonDisabled ? nil : "checkmark.circle.fill"
         }
         return "plus.circle.fill"
     }
@@ -339,6 +387,36 @@ enum TaskDetailIOSCompletionPresentation {
             && !state.isChecklistDrivenFromStoredItems
             && state.isSelectedDateTerminal
             && Calendar.current.isDateInToday(state.resolvedSelectedDate)
+    }
+}
+
+private struct TaskDetailIOSCompletionButtonLabel: View {
+    let state: TaskDetailFeature.State
+
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    private var title: String {
+        TaskDetailIOSCompletionPresentation.title(for: state)
+    }
+
+    private var systemImage: String? {
+        TaskDetailIOSCompletionPresentation.systemImage(for: state)
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+
+            Text(title)
+                .contentTransition(.opacity)
+        }
+        .animation(
+            accessibilityReduceMotion ? nil : .easeInOut(duration: 0.18),
+            value: title
+        )
     }
 }
 

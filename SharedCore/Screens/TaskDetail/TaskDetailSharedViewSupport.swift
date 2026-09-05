@@ -16,11 +16,28 @@ enum TaskDetailEventActionVisibility {
 }
 
 struct TaskDetailHeaderBadgeItem: Identifiable {
-    let id = UUID()
+    let id: UUID
     let title: String
     let value: String
     let systemImage: String?
     let tint: Color
+    let heightReservationValue: String?
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        value: String,
+        systemImage: String?,
+        tint: Color,
+        heightReservationValue: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.value = value
+        self.systemImage = systemImage
+        self.tint = tint
+        self.heightReservationValue = heightReservationValue
+    }
 }
 
 enum TaskDetailHeaderBadgePresentation {
@@ -134,7 +151,8 @@ enum TaskDetailHeaderBadgePresentation {
                 title: "Status",
                 value: summaryStatusTitle ?? state.summaryStatusTitle,
                 systemImage: nil,
-                tint: summaryStatusColor
+                tint: summaryStatusColor,
+                heightReservationValue: state.assumedCompletionStatusHeightReservationText
             ),
             TaskDetailHeaderBadgeItem(
                 title: "Frequency",

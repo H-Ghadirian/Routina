@@ -1147,8 +1147,8 @@ detailBody
 
     @ViewBuilder
     private var assumedDoneStatusPill: some View {
-        if store.isSelectedDateAssumedDone {
-            TaskDetailAssumedDoneStatusPill()
+        if let phase = store.completionStatusPillPhase {
+            TaskDetailAssumedDoneStatusPill(phase: phase)
         }
     }
 

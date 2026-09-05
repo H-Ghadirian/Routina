@@ -33,19 +33,40 @@ struct TaskDetailPlatformActionParityTests {
     }
 
     @Test
-    func iosAssumedDoneUsesACompactStatusPillInsteadOfInstructionalCopy() throws {
+    func iosAssumedDoneStatusMorphsWithoutCollapsingItsHeader() throws {
         let detailSource = try Self.sourceFile(
             "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
         )
         let actionControlsSource = try Self.sourceFile(
             "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
         )
+        let headerSource = try Self.sourceFile(
+            "SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift"
+        )
 
         #expect(detailSource.contains("titleSupplementaryContent: { assumedDoneStatusPill }"))
         #expect(detailSource.contains("guard !store.isSelectedDateAssumedDone else { return nil }"))
-        #expect(detailSource.contains("if store.isSelectedDateAssumedDone"))
-        #expect(actionControlsSource.contains("Label(\"Assumed done\", systemImage: \"checkmark.circle.dashed\")"))
-        #expect(actionControlsSource.contains(".accessibilityHint(\"This day is provisional until you confirm it\")"))
+        #expect(detailSource.contains("if let phase = store.completionStatusPillPhase"))
+        #expect(detailSource.contains("TaskDetailAssumedDoneStatusPill(phase: phase)"))
+        #expect(actionControlsSource.contains("case .confirmed:"))
+        #expect(actionControlsSource.contains("\"Confirmed\""))
+        #expect(actionControlsSource.contains(".contentTransition(.symbolEffect(.replace))"))
+        #expect(actionControlsSource.contains("accessibilityReduceMotion ? nil"))
+        #expect(headerSource.contains("if let heightReservationValue = item.heightReservationValue"))
+        #expect(headerSource.contains(".hidden()"))
+        #expect(headerSource.contains(".accessibilityHidden(true)"))
+    }
+
+    @Test
+    func iosCompletionButtonKeepsAnIconAcrossConfirmAndUndoStates() throws {
+        let source = try Self.sourceFile(
+            "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
+        )
+
+        #expect(source.contains("TaskDetailIOSCompletionButtonLabel(state: store.state)"))
+        #expect(source.contains("return state.isCompletionButtonDisabled ? nil : \"checkmark.circle.fill\""))
+        #expect(source.contains(".contentTransition(.symbolEffect(.replace))"))
+        #expect(source.contains("value: title"))
     }
 
     @Test

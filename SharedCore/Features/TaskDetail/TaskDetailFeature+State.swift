@@ -19,6 +19,11 @@ extension TaskDetailFeature {
         var selectedTargetIDs: [UUID] = []
     }
 
+    struct AssumedCompletionAcknowledgement: Equatable {
+        var day: Date
+        var previousStatusTitle: String
+    }
+
     @ObservableState
     struct State: Equatable {
         var task: RoutineTask
@@ -27,6 +32,7 @@ extension TaskDetailFeature {
         var logs: [RoutineLog] = []
         var pendingLocalCompletionDates: [Date] = []
         var pendingLocalRemovalDates: [Date] = []
+        var assumedCompletionAcknowledgement: AssumedCompletionAcknowledgement?
         var selectedDate: Date?
         var selectedOccurrenceDate: Date?
         var daysSinceLastRoutine: Int = 0

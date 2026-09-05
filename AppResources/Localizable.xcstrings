@@ -1395,6 +1395,9 @@
     "Completion behavior" : {
 
     },
+    "Completion confirmed" : {
+
+    },
     "Conference day" : {
 
     },
@@ -1411,6 +1414,9 @@
 
     },
     "Confirming App Lock..." : {
+
+    },
+    "Confirmed" : {
 
     },
     "Connect Outlook" : {
@@ -4617,6 +4623,9 @@
 
     },
     "Terms of Use" : {
+
+    },
+    "The completion was recorded and can be undone" : {
 
     },
     "The MCP helper is not included in this build of Routina." : {

@@ -291,10 +291,20 @@ struct TaskDetailHeaderBadgeView: View {
                         .foregroundStyle(item.tint)
                 }
 
-                Text(item.value)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
+                ZStack(alignment: .topLeading) {
+                    if let heightReservationValue = item.heightReservationValue {
+                        Text(heightReservationValue)
+                            .font(.subheadline.weight(.semibold))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .hidden()
+                            .accessibilityHidden(true)
+                    }
+
+                    Text(item.value)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

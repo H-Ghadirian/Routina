@@ -28,6 +28,7 @@ struct TaskDetailCompletionLogActionHandler {
             return .none
         }
         let selectedDay = resolvedSelectedDay(state.selectedDate)
+        clearAssumedCompletionAcknowledgement(on: selectedDay, state: &state)
         let selectedResolvedOccurrenceTimestamp = state.validSelectedOccurrenceDate.flatMap {
             selectedOccurrence in
             state.logs.first(where: { log in
@@ -66,6 +67,7 @@ struct TaskDetailCompletionLogActionHandler {
     }
 
     func removeLogEntry(_ timestamp: Date, state: inout State) -> Effect<Action> {
+        clearAssumedCompletionAcknowledgement(on: timestamp, state: &state)
         removePendingLocalCompletion(timestamp, &state)
         trackPendingLocalRemoval(timestamp, &state)
         removeLogEntryLocally(timestamp, &state)
@@ -134,6 +136,13 @@ struct TaskDetailCompletionLogActionHandler {
         )
         guard !assumedDays.isEmpty else { return .none }
 
+        let selectedAssumedDay = state.isSelectedDateAssumedDone
+            ? resolvedSelectedDay(state.selectedDate)
+            : nil
+        let assumedCompletionPreviousStatusTitle = selectedAssumedDay == nil
+            ? nil
+            : state.summaryStatusTitle
+
         for day in assumedDays {
             let completionDate = RoutineAssumedCompletion.completionTimestamp(
                 for: state.task,
@@ -144,8 +153,26 @@ struct TaskDetailCompletionLogActionHandler {
             _ = state.task.advance(completedAt: completionDate, calendar: calendar)
             upsertConfirmedAssumedDoneLocalLog(completionDate, &state)
         }
+        if let selectedAssumedDay,
+           let assumedCompletionPreviousStatusTitle {
+            state.assumedCompletionAcknowledgement = TaskDetailFeature.AssumedCompletionAcknowledgement(
+                day: selectedAssumedDay,
+                previousStatusTitle: assumedCompletionPreviousStatusTitle
+            )
+        }
         refreshTaskView(&state)
         updateDerivedState(&state)
         return persistConfirmAssumedPastDays(state.task.id, assumedDays)
+    }
+
+    private func clearAssumedCompletionAcknowledgement(
+        on day: Date,
+        state: inout State
+    ) {
+        guard let acknowledgement = state.assumedCompletionAcknowledgement,
+              calendar.isDate(acknowledgement.day, inSameDayAs: day) else {
+            return
+        }
+        state.assumedCompletionAcknowledgement = nil
     }
 }

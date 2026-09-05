@@ -138,6 +138,9 @@ struct TaskDetailFeature: Reducer {
             let manualFulfillmentTargetIDs = Set(pendingManualCompletion?.selectedTargetIDs ?? [])
             let completionReferenceDate = pendingManualCompletion?.referenceDate ?? now
             let persistedPreviousTodoStateTitle = pendingManualCompletion?.previousTodoStateTitle ?? previousTodoStateTitle
+            let assumedCompletionPreviousStatusTitle = isConfirmingAssumedDone
+                ? state.summaryStatusTitle
+                : nil
             state.pendingManualCompletion = nil
             state.isManualCompletionConfirmationPresented = false
             state.task.preserveCurrentScheduleAnchorForBackfill(
@@ -163,6 +166,12 @@ struct TaskDetailFeature: Reducer {
                     in: &state
                 )
                 trackPendingLocalCompletion(at: completionDate, in: &state)
+                if let assumedCompletionPreviousStatusTitle {
+                    state.assumedCompletionAcknowledgement = AssumedCompletionAcknowledgement(
+                        day: selectedDay,
+                        previousStatusTitle: assumedCompletionPreviousStatusTitle
+                    )
+                }
                 appendLocalTodoStateChange(
                     to: state.task,
                     previousStateTitle: persistedPreviousTodoStateTitle,

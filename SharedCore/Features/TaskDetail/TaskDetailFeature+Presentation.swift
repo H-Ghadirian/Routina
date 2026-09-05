@@ -1,5 +1,10 @@
 import Foundation
 
+enum TaskDetailCompletionStatusPillPhase: Equatable {
+    case assumed
+    case confirmed
+}
+
 struct TaskDetailMissedOccurrenceReviewPresentation {
     let occurrence: Date
     let nextOccurrence: Date?
@@ -412,6 +417,23 @@ extension TaskDetailFeature.State {
             on: resolvedSelectedDate,
             logs: logs
         )
+    }
+
+    var completionStatusPillPhase: TaskDetailCompletionStatusPillPhase? {
+        if isSelectedDateAssumedDone {
+            return .assumed
+        }
+        guard let acknowledgement = assumedCompletionAcknowledgement,
+              canUndoSelectedDate,
+              Calendar.current.isDate(acknowledgement.day, inSameDayAs: resolvedSelectedDate) else {
+            return nil
+        }
+        return .confirmed
+    }
+
+    var assumedCompletionStatusHeightReservationText: String? {
+        guard completionStatusPillPhase == .confirmed else { return nil }
+        return assumedCompletionAcknowledgement?.previousStatusTitle
     }
 
     var pastAssumedDates: [Date] {
