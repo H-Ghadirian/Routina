@@ -127,6 +127,12 @@ let package = Package(
             sources: [
                 "App/AppEnvironment.swift",
                 "App/RoutinaAppIntents.swift",
+                "App/RoutinaScreenshotDataSeeder+Fixtures.swift",
+                "App/RoutinaScreenshotDataSeeder+PersonalTasks.swift",
+                "App/RoutinaScreenshotDataSeeder+ReleaseTasks.swift",
+                "App/RoutinaScreenshotDataSeeder+RoutineTasks.swift",
+                "App/RoutinaScreenshotDataSeeder+Seed.swift",
+                "App/RoutinaScreenshotDataSeeder+Storage.swift",
                 "App/RoutinaScreenshotDataSeeder.swift",
                 "App/RoutinaTimelineE2ESeeder.swift",
                 "App/RoutinaUITestSeeder.swift",

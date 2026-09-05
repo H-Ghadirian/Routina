@@ -119,8 +119,8 @@ check_size_budget() {
     over_2000=$(printf '%s\n' "$measurements" | awk '$1 > 2000 { count += 1 } END { print count + 0 }')
     largest=$(printf '%s\n' "$measurements" | awk 'BEGIN { maximum = 0 } $1 > maximum { maximum = $1 } END { print maximum }')
 
-    assert_at_most "Production Swift files over 500 lines" "$over_500" 107
-    assert_at_most "Production Swift files over 1,000 lines" "$over_1000" 28
+    assert_at_most "Production Swift files over 500 lines" "$over_500" 106
+    assert_at_most "Production Swift files over 1,000 lines" "$over_1000" 27
     assert_at_most "Production Swift files over 2,000 lines" "$over_2000" 0
     assert_at_most "Largest production Swift file" "$largest" 1477
 }
