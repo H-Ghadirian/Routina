@@ -188,7 +188,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacTimelineDoesNotBindWholeHistoryQueriesIntoRenderPath() throws {
-        let source = try Self.sourceFile("RoutinaMacApp/Screens/Timeline/TimelineView.swift")
+        let source = try SourceInspectionSupport.readMacTimelineSources()
 
         XCTAssertFalse(
             source.contains("@Query"),
@@ -205,9 +205,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testDisabledEmotionFeatureExcludesEmotionRowsFromMacTimelines() throws {
-        let standaloneSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Timeline/TimelineView.swift"
-        )
+        let standaloneSource = try SourceInspectionSupport.readMacTimelineSources()
         let integratedSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
         )
@@ -227,9 +225,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testDisabledEventFeatureExcludesEventRowsFromMacTimelineAndPlannerSnapshots() throws {
-        let standaloneSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Timeline/TimelineView.swift"
-        )
+        let standaloneSource = try SourceInspectionSupport.readMacTimelineSources()
         let integratedSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
         )
@@ -273,9 +269,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testDisabledSleepFeatureExcludesSleepRowsFromMacTimelines() throws {
-        let standaloneSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Timeline/TimelineView.swift"
-        )
+        let standaloneSource = try SourceInspectionSupport.readMacTimelineSources()
         let integratedSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
         )
@@ -545,9 +539,7 @@ final class PerformanceRegressionTests: XCTestCase {
         let homeTimelineSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
         )
-        let standaloneTimelineSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Timeline/TimelineView.swift"
-        )
+        let standaloneTimelineSource = try SourceInspectionSupport.readMacTimelineSources()
         let refreshSource = try Self.sourceFile(
             "SharedCore/Screens/Home/HomeTCAView+Refresh.swift"
         )

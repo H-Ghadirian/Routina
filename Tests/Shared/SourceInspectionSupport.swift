@@ -42,6 +42,18 @@ enum SourceInspectionSupport {
         .joined(separator: "\n")
     }
 
+    static func readMacTimelineSources(
+        callerFile: StaticString = #filePath
+    ) throws -> String {
+        try [
+            "RoutinaMacApp/Screens/Timeline/TimelineView.swift",
+            "RoutinaMacApp/Screens/Timeline/TimelineView+Filters.swift",
+            "RoutinaMacApp/Screens/Timeline/TimelineView+Rows.swift",
+        ]
+        .map { try readProjectFile($0, callerFile: callerFile) }
+        .joined(separator: "\n")
+    }
+
     static func readIOSHomeSources(
         callerFile: StaticString = #filePath
     ) throws -> String {

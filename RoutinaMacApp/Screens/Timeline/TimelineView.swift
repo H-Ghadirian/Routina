@@ -4,42 +4,42 @@ import SwiftUI
 
 struct TimelineView: View {
     let store: StoreOf<TimelineFeature>
-    @Environment(\.calendar) private var calendar
+    @Environment(\.calendar) var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
     @State private var dataSnapshot = TimelineDataSnapshot()
     @State private var hasDeferredDataSnapshotRefresh = false
     @State private var deferredDataSnapshotRefreshTask: Task<Void, Never>?
-    @State private var relatedFilterTagSuggestionAnchor: String?
+    @State var relatedFilterTagSuggestionAnchor: String?
     @AppStorage(
         UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
         store: SharedDefaults.app
-    ) private var areMacTimelineQuickFiltersVisible = false
+    ) var areMacTimelineQuickFiltersVisible = false
     @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue,
         store: SharedDefaults.app
-    ) private var timelineRowHiddenFieldsRawValue = ""
+    ) var timelineRowHiddenFieldsRawValue = ""
     @AppStorage(
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var areMacEventEmotionActionsEnabled = false
+    ) var areMacEventEmotionActionsEnabled = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isPlacesEnabled = false
+    ) var isPlacesEnabled = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isNotesEnabled = false
+    ) var isNotesEnabled = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isAwayEnabled = false
+    ) var isAwayEnabled = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isStatsSleepTabEnabled = false
-    @State private var editingAwaySession: AwaySession?
+    ) var isStatsSleepTabEnabled = false
+    @State var editingAwaySession: AwaySession?
 
     var body: some View {
         NavigationStack {
@@ -126,14 +126,14 @@ struct TimelineView: View {
     private var tasks: [RoutineTask] { dataSnapshot.tasks }
     private var logs: [RoutineLog] { dataSnapshot.logs }
     private var fileAttachments: [RoutineAttachment] { dataSnapshot.fileAttachments }
-    private var events: [RoutineEvent] {
+    var events: [RoutineEvent] {
         areMacEventEmotionActionsEnabled ? dataSnapshot.events : []
     }
-    private var emotionLogs: [EmotionLog] {
+    var emotionLogs: [EmotionLog] {
         areMacEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []
     }
-    private var notes: [RoutineNote] { dataSnapshot.notes }
-    private var noteAttachments: [RoutineNoteAttachment] { dataSnapshot.noteAttachments }
+    var notes: [RoutineNote] { dataSnapshot.notes }
+    var noteAttachments: [RoutineNoteAttachment] { dataSnapshot.noteAttachments }
     private var focusSessions: [FocusSession] { dataSnapshot.focusSessions }
     private var sprintFocusSessions: [SprintFocusSessionRecord] { dataSnapshot.sprintFocusSessions }
     private var focusSessionEvents: [FocusSessionActionEvent] { dataSnapshot.focusSessionEvents }
@@ -141,8 +141,8 @@ struct TimelineView: View {
     private var sleepSessions: [SleepSession] {
         includesSleepTimelineFilters ? dataSnapshot.sleepSessions : []
     }
-    private var awaySessions: [AwaySession] { dataSnapshot.awaySessions }
-    private var placeCheckInSessions: [PlaceCheckInSession] { dataSnapshot.placeCheckInSessions }
+    var awaySessions: [AwaySession] { dataSnapshot.awaySessions }
+    var placeCheckInSessions: [PlaceCheckInSession] { dataSnapshot.placeCheckInSessions }
 
     private var noteAttachmentNoteIDs: Set<UUID> {
         Set(noteAttachments.map(\.noteID))
@@ -163,22 +163,23 @@ struct TimelineView: View {
     }
 
     private func syncTimelineData() {
-        store.send(.setData(
-            tasks: tasks,
-            logs: logs,
-            events: events,
-            emotionLogs: emotionLogs,
-            notes: isNotesEnabled ? notes : [],
-            focusSessions: focusSessions,
-            sprintFocusSessions: sprintFocusSessions,
-            focusSessionEvents: focusSessionEvents,
-            boardSprints: boardSprints,
-            sleepSessions: sleepSessions,
-            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
-            awaySessions: isAwayEnabled ? awaySessions : [],
-            fileAttachmentTaskIDs: fileAttachmentTaskIDs,
-            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : []
-        ))
+        store.send(
+            .setData(
+                tasks: tasks,
+                logs: logs,
+                events: events,
+                emotionLogs: emotionLogs,
+                notes: isNotesEnabled ? notes : [],
+                focusSessions: focusSessions,
+                sprintFocusSessions: sprintFocusSessions,
+                focusSessionEvents: focusSessionEvents,
+                boardSprints: boardSprints,
+                sleepSessions: sleepSessions,
+                placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
+                awaySessions: isAwayEnabled ? awaySessions : [],
+                fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+                noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : []
+            ))
     }
 
     private func requestTimelineDataSnapshotRefresh() {
@@ -215,103 +216,7 @@ struct TimelineView: View {
         }
     }
 
-    private var filterSheetBinding: Binding<Bool> {
-        Binding(
-            get: { store.isFilterSheetPresented },
-            set: { store.send(.setFilterSheet($0)) }
-        )
-    }
-
-    private var selectedRangeBinding: Binding<TimelineRange> {
-        Binding(
-            get: { store.selectedRange },
-            set: { store.send(.selectedRangeChanged($0)) }
-        )
-    }
-
-    private var filterTypeBinding: Binding<TimelineFilterType> {
-        Binding(
-            get: { effectiveFilterType },
-            set: {
-                store.send(.filterTypeChanged(
-                    $0.normalized(
-                        includingEventEmotion: areMacEventEmotionActionsEnabled,
-                        includingPlaces: isPlacesEnabled,
-                        includingNotes: isNotesEnabled,
-                        includingAway: isAwayEnabled,
-                        includingSleep: includesSleepTimelineFilters
-                    )
-                ))
-            }
-        )
-    }
-
-    private var mediaFilterBinding: Binding<TaskMediaFilter> {
-        Binding(
-            get: { store.mediaFilter },
-            set: { store.send(.mediaFilterChanged($0)) }
-        )
-    }
-
-    private var groupedByDay: [TimelineFeature.TimelineSection] {
-        store.groupedEntries
-    }
-
-    private var latestTimelineEntryID: UUID? {
-        groupedByDay.first?.entries.first?.id
-    }
-
-    private var availableTags: [String] {
-        store.availableTags
-    }
-
-    private var filterPresentation: TimelineFilterPresentation {
-        TimelineFilterPresentation(
-            selectedTags: store.effectiveSelectedTags,
-            excludedTags: store.excludedTags,
-            includeTagMatchMode: store.includeTagMatchMode,
-            availableTags: availableTags,
-            relatedTagRules: store.relatedTagRules
-        )
-    }
-
-    private var suggestedRelatedFilterTags: [String] {
-        filterPresentation.suggestedRelatedTags(suggestionAnchor: relatedFilterTagSuggestionAnchor)
-    }
-
-    private var availableExcludeTags: [String] {
-        filterPresentation.availableExcludeTags()
-    }
-
-    private func isIncludedTagSelected(_ tag: String) -> Bool {
-        filterPresentation.isIncludedTagSelected(tag)
-    }
-
-    private func toggleIncludedTag(_ tag: String) {
-        let mutation = filterPresentation.toggledIncludedTag(
-            tag,
-            currentSuggestionAnchor: relatedFilterTagSuggestionAnchor
-        )
-        relatedFilterTagSuggestionAnchor = mutation.suggestionAnchor
-        store.send(.selectedTagsChanged(mutation.selectedTags))
-    }
-
-    private func addIncludedTag(_ tag: String) {
-        guard let mutation = filterPresentation.addedIncludedTag(
-            tag,
-            currentSuggestionAnchor: relatedFilterTagSuggestionAnchor
-        ) else { return }
-        relatedFilterTagSuggestionAnchor = mutation.suggestionAnchor
-        store.send(.selectedTagsChanged(mutation.selectedTags))
-    }
-
-    private func toggleExcludedTag(_ tag: String) {
-        let mutation = filterPresentation.toggledExcludedTag(tag)
-        store.send(.selectedTagsChanged(mutation.selectedTags))
-        store.send(.excludedTagsChanged(mutation.excludedTags))
-    }
-
-    private var hasActiveFilters: Bool {
+    var hasActiveFilters: Bool {
         store.selectedRange != .all
             || effectiveFilterType != .all
             || !store.effectiveSelectedTags.isEmpty
@@ -320,7 +225,7 @@ struct TimelineView: View {
             || store.mediaFilter != .all
     }
 
-    private var effectiveFilterType: TimelineFilterType {
+    var effectiveFilterType: TimelineFilterType {
         store.filterType.normalized(
             includingEventEmotion: areMacEventEmotionActionsEnabled,
             includingPlaces: isPlacesEnabled,
@@ -330,7 +235,7 @@ struct TimelineView: View {
         )
     }
 
-    private var includesSleepTimelineFilters: Bool {
+    var includesSleepTimelineFilters: Bool {
         isAwayEnabled && isStatsSleepTabEnabled
     }
 
@@ -363,7 +268,7 @@ struct TimelineView: View {
         return "\(items.joined(separator: ", ")) will appear here newest first."
     }
 
-    private var showsTypeFilterSection: Bool {
+    var showsTypeFilterSection: Bool {
         tasks.contains(where: { $0.isOneOffTask })
             || (areMacEventEmotionActionsEnabled && (!events.isEmpty || !emotionLogs.isEmpty))
             || (isNotesEnabled && !notes.isEmpty)
@@ -405,12 +310,12 @@ struct TimelineView: View {
     @ViewBuilder
     private var content: some View {
         if !hasAnyTimelineRecords {
-                ContentUnavailableView(
-                    "No timeline entries yet",
-                    systemImage: "clock.arrow.circlepath",
-                    description: Text(timelineEmptyDescription)
-                )
-            } else {
+            ContentUnavailableView(
+                "No timeline entries yet",
+                systemImage: "clock.arrow.circlepath",
+                description: Text(timelineEmptyDescription)
+            )
+        } else {
             VStack(spacing: 0) {
                 if areMacTimelineQuickFiltersVisible {
                     timelinePigmentControl
@@ -446,433 +351,6 @@ struct TimelineView: View {
             }
         }
         .listStyle(.plain)
-    }
-
-    private var filterSheetButton: some View {
-        Button {
-            store.send(.setFilterSheet(true))
-        } label: {
-            Image(
-                systemName: hasActiveFilters
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease.circle"
-            )
-            .foregroundStyle(hasActiveFilters ? Color.accentColor : Color.secondary)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Filters")
-    }
-
-    private var timelineFiltersSheet: some View {
-        NavigationStack {
-            List {
-                Section("Range") {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Range",
-                        options: TimelineRange.allCases,
-                        selection: selectedRangeBinding
-                    ) { range in
-                        Text(range.rawValue)
-                    }
-                }
-
-                if showsTypeFilterSection {
-                    Section("Type") {
-                        RoutinaGlassSegmentedControl(
-                            accessibilityLabel: "Type",
-                            options: TimelineFilterType.visibleCases(
-                                includingEventEmotion: areMacEventEmotionActionsEnabled,
-                                includingPlaces: isPlacesEnabled,
-                                includingNotes: isNotesEnabled,
-                                includingAway: isAwayEnabled,
-                                includingSleep: includesSleepTimelineFilters
-                            ),
-                            selection: filterTypeBinding
-                        ) { type in
-                            Text(type.title)
-                        }
-                    }
-                }
-
-                Section("Media") {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Media",
-                        options: TaskMediaFilter.allCases,
-                        selection: mediaFilterBinding,
-                        minimumSegmentWidth: 92
-                    ) { filter in
-                        Label(filter.title, systemImage: filter.systemImage)
-                    }
-                }
-
-                if !availableTags.isEmpty {
-                    Section("Tag Rules") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("Show items with")
-                                    .font(.subheadline.weight(.semibold))
-                                Spacer()
-                                RoutinaGlassSegmentedControl(
-                                    accessibilityLabel: "Show items with",
-                                    options: RoutineTagMatchMode.allCases,
-                                    selection: Binding(
-                                        get: { store.includeTagMatchMode },
-                                        set: { store.send(.includeTagMatchModeChanged($0)) }
-                                    ),
-                                    fillsAvailableWidth: true
-                                ) { mode in
-                                    Text(mode.rawValue)
-                                }
-                                .frame(maxWidth: 180)
-                            }
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    if store.effectiveSelectedTags.isEmpty {
-                                        timelineTagButton(title: "All Tags", isSelected: true) {
-                                            relatedFilterTagSuggestionAnchor = nil
-                                            store.send(.selectedTagsChanged([]))
-                                        }
-                                    } else {
-                                        ForEach(store.effectiveSelectedTags.sorted(), id: \.self) { tag in
-                                            timelineTagButton(title: "#\(tag)", isSelected: true) {
-                                                toggleIncludedTag(tag)
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-
-                            if !suggestedRelatedFilterTags.isEmpty {
-                                Text("Suggested")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 8) {
-                                        ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
-                                            timelineTagButton(title: "#\(tag)", isSelected: false) {
-                                                addIncludedTag(tag)
-                                            }
-                                        }
-                                    }
-                                    .padding(.vertical, 4)
-                                }
-                            }
-
-                            Text("Add more")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(availableTags.filter { !isIncludedTagSelected($0) }, id: \.self) { tag in
-                                        timelineTagButton(title: "#\(tag)", isSelected: false) {
-                                            toggleIncludedTag(tag)
-                                        }
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("Hide items with")
-                                    .font(.subheadline.weight(.semibold))
-                                Spacer()
-                                RoutinaGlassSegmentedControl(
-                                    accessibilityLabel: "Hide items with",
-                                    options: RoutineTagMatchMode.allCases,
-                                    selection: Binding(
-                                        get: { store.excludeTagMatchMode },
-                                        set: { store.send(.excludeTagMatchModeChanged($0)) }
-                                    ),
-                                    fillsAvailableWidth: true
-                                ) { mode in
-                                    Text(mode.rawValue)
-                                }
-                                .frame(maxWidth: 180)
-                            }
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    if store.excludedTags.isEmpty {
-                                        Text("No hidden tags")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    } else {
-                                        ForEach(store.excludedTags.sorted(), id: \.self) { tag in
-                                            timelineTagButton(title: "#\(tag)", isSelected: true, selectedColor: .red) {
-                                                toggleExcludedTag(tag)
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-
-                            if !availableExcludeTags.isEmpty {
-                                Text("Add tags to hide")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 8) {
-                                        ForEach(availableExcludeTags.filter { tag in
-                                            !store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
-                                        }, id: \.self) { tag in
-                                            timelineTagButton(title: "#\(tag)", isSelected: false, selectedColor: .red) {
-                                                toggleExcludedTag(tag)
-                                            }
-                                        }
-                                    }
-                                    .padding(.vertical, 4)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if hasActiveFilters {
-                    Section {
-                        Button("Clear Filters") {
-                            store.send(.clearFilters)
-                        }
-                        .foregroundStyle(.red)
-                    }
-                }
-            }
-            .navigationTitle("Filters")
-            .toolbar {
-                ToolbarItem {
-                    Button("Done") {
-                        store.send(.setFilterSheet(false))
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .onChange(of: availableTags) { _, newValue in
-            store.send(.selectedTagsChanged(store.effectiveSelectedTags.filter { RoutineTag.contains($0, in: newValue) }))
-        }
-    }
-
-    @ViewBuilder
-    private func timelineRow(_ entry: TimelineEntry) -> some View {
-        if let taskID = entry.taskID {
-            NavigationLink(value: taskID) {
-                timelineRowContent(entry)
-            }
-        } else if entry.isEmotion, let emotion = emotionLog(for: entry) {
-            NavigationLink {
-                EmotionLogDetailView(emotion: emotion)
-            } label: {
-                timelineRowContent(entry)
-            }
-        } else if entry.isEvent, let event = event(for: entry) {
-            NavigationLink {
-                RoutineEventDetailView(event: event)
-            } label: {
-                timelineRowContent(entry)
-            }
-        } else if entry.isNote, let note = note(for: entry) {
-            NavigationLink {
-                RoutineNoteDetailView(
-                    note: note,
-                    attachments: noteAttachments(for: note)
-                )
-            } label: {
-                timelineRowContent(entry)
-            }
-        } else if entry.isPlaceCheckIn, let session = placeCheckInSession(for: entry) {
-            NavigationLink {
-                PlaceCheckInSessionDetailView(session: session)
-            } label: {
-                timelineRowContent(entry)
-            }
-        } else if entry.isSleep {
-            Button {
-                RoutinaDeepLinkDispatcher.open(.sleep(entry.id))
-            } label: {
-                timelineRowContent(entry)
-            }
-            .buttonStyle(.plain)
-        } else if entry.isAway, let session = awaySession(for: entry) {
-            Button {
-                editingAwaySession = session
-            } label: {
-                timelineRowContent(entry)
-            }
-            .buttonStyle(.plain)
-        } else {
-            timelineRowContent(entry)
-        }
-    }
-
-    private func timelineRowContent(_ entry: TimelineEntry) -> some View {
-        HStack(spacing: 12) {
-            if timelineRowVisibility.shows(.icon) {
-                Text(entry.taskEmoji)
-                    .font(.title2)
-                    .frame(width: 36, height: 36)
-                    .routinaScrollingRoundedFill(
-                        cornerRadius: 8,
-                        tint: .secondary,
-                        tintOpacity: 0.06
-                    )
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.taskName)
-                    .font(.body.weight(.medium))
-                    .lineLimit(1)
-
-                if timelineRowVisibility.shows(.subtitle) {
-                    Text(timelineSubtitle(for: entry))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer(minLength: 0)
-
-            if timelineRowVisibility.shows(.kindBadge) {
-                Text(timelineKindLabel(for: entry))
-                    .font(.caption2.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .routinaScrollingPillFill(
-                        tint: timelineKindColor(for: entry),
-                        tintOpacity: 0.15
-                    )
-                    .foregroundStyle(timelineKindColor(for: entry))
-            }
-        }
-        .padding(.vertical, 2)
-    }
-
-    private var timelineRowVisibility: HomeTimelineRowVisibility {
-        HomeTimelineRowVisibility(storageRawValue: timelineRowHiddenFieldsRawValue)
-    }
-
-    private func timelineKindLabel(for entry: TimelineEntry) -> String {
-        TimelineEntryKindPresentation.label(for: entry)
-    }
-
-    private func timelineKindColor(for entry: TimelineEntry) -> Color {
-        TimelineEntryKindPresentation.tint(for: entry).color
-    }
-
-    private func timelineSubtitle(for entry: TimelineEntry) -> String {
-        if entry.isSleep {
-            let startedAt = entry.startTimestamp ?? entry.timestamp
-            let endedAt = entry.endTimestamp ?? entry.timestamp
-            let range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
-            if let durationSeconds = entry.durationSeconds {
-                return "\(range) · \(SleepSessionFormatting.durationText(seconds: durationSeconds))"
-            }
-            return range
-        }
-
-        if entry.isPlaceCheckIn {
-            let startedAt = entry.startTimestamp ?? entry.timestamp
-            let range: String
-            if let endedAt = entry.endTimestamp {
-                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
-            } else {
-                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
-            }
-            let duration = entry.durationSeconds.map { PlaceCheckInFormatting.durationText(seconds: $0) }
-            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
-        }
-
-        if entry.isEmotion {
-            return [
-                entry.timestamp.formatted(date: .omitted, time: .shortened),
-                entry.activityTitle,
-            ].compactMap(\.self).joined(separator: " · ")
-        }
-
-        if entry.isEvent {
-            let startedAt = entry.startTimestamp ?? entry.timestamp
-            guard let endedAt = entry.endTimestamp, endedAt > startedAt else {
-                return startedAt.formatted(date: .omitted, time: .shortened)
-            }
-            if calendar.isDate(startedAt, inSameDayAs: endedAt) {
-                return "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
-            }
-            return RoutineEventDateFormatting.text(
-                startedAt: startedAt,
-                endedAt: endedAt,
-                isAllDay: calendar.startOfDay(for: startedAt) == startedAt,
-                calendar: calendar
-            )
-        }
-
-        if entry.isNote {
-            let mediaSummary = RoutineNoteMediaSummary.text(
-                hasImage: entry.hasImage,
-                hasFileAttachment: entry.hasFileAttachment,
-                hasVoiceNote: entry.hasVoiceNote
-            )
-            return [
-                entry.timestamp.formatted(date: .omitted, time: .shortened),
-                mediaSummary
-            ].compactMap(\.self).joined(separator: " · ")
-        }
-
-        if entry.isFocus {
-            let startedAt = entry.startTimestamp ?? entry.timestamp
-            let range: String
-            if let endedAt = entry.endTimestamp {
-                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
-            } else {
-                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
-            }
-            let duration = entry.durationSeconds.map { FocusSessionFormatting.compactDurationText(seconds: $0) }
-            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
-        }
-
-        if entry.isAway {
-            let startedAt = entry.startTimestamp ?? entry.timestamp
-            let range: String
-            if let endedAt = entry.endTimestamp {
-                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
-            } else {
-                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
-            }
-            let duration = entry.durationSeconds.map { AwaySessionFormatting.durationText(seconds: $0) }
-            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
-        }
-
-        return entry.timestamp.formatted(date: .omitted, time: .shortened)
-    }
-
-    private func note(for entry: TimelineEntry) -> RoutineNote? {
-        notes.first { $0.id == entry.id }
-    }
-
-    private func event(for entry: TimelineEntry) -> RoutineEvent? {
-        events.first { $0.id == entry.id }
-    }
-
-    private func emotionLog(for entry: TimelineEntry) -> EmotionLog? {
-        emotionLogs.first { $0.id == entry.id }
-    }
-
-    private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {
-        guard isPlacesEnabled else { return nil }
-        return placeCheckInSessions.first { $0.id == entry.id }
-    }
-
-    private func awaySession(for entry: TimelineEntry) -> AwaySession? {
-        awaySessions.first { $0.id == entry.id }
-    }
-
-    private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
-        noteAttachments
-            .filter { $0.noteID == note.id }
-            .sorted { $0.createdAt < $1.createdAt }
     }
 
     @ViewBuilder
@@ -916,7 +394,8 @@ struct TimelineView: View {
     private func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {
         let detailTask = task.detachedCopy()
         let now = Date()
-        let defaultSelectedDate = (detailTask.isCompletedOneOff || detailTask.isCanceledOneOff)
+        let defaultSelectedDate =
+            (detailTask.isCompletedOneOff || detailTask.isCanceledOneOff)
             ? calendar.startOfDay(for: detailTask.lastDone ?? detailTask.canceledAt ?? now)
             : calendar.startOfDay(for: now)
 
@@ -937,26 +416,6 @@ struct TimelineView: View {
         return state
     }
 
-    private func timelineTagButton(
-        title: String,
-        isSelected: Bool,
-        selectedColor: Color = .accentColor,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .routinaGlassPill(
-                    tint: isSelected ? selectedColor : .secondary,
-                    tintOpacity: isSelected ? 0.16 : 0.10,
-                    interactive: true
-                )
-                .foregroundStyle(isSelected ? selectedColor : .secondary)
-        }
-        .buttonStyle(.plain)
-    }
 }
 
 private struct TimelineNoteDeepLinkPresentation: Identifiable, Equatable {
