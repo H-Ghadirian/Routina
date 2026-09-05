@@ -6,7 +6,6 @@ enum WorkspaceControlCategory: String, Equatable, Hashable, Sendable {
     case sort
     case appearance
 }
-
 struct WorkspaceControlSummaryItem: Equatable, Hashable, Sendable {
     let category: WorkspaceControlCategory
     let title: String
@@ -41,4 +40,3 @@ struct WorkspaceControlSummary: Equatable, Sendable {
         return copy
     }
 }
-

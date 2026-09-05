@@ -116,7 +116,7 @@ struct UnassignedFocusSessionsCard: View {
                 context: modelContext
             )
         } catch {
-            NSLog("Failed to assign focus session to task: \(error.localizedDescription)")
+            RoutinaLog.error("Failed to assign focus session to task: \(error.localizedDescription)")
         }
     }
 
@@ -128,7 +128,7 @@ struct UnassignedFocusSessionsCard: View {
                 context: modelContext
             )
         } catch {
-            NSLog("Failed to assign focus session to board: \(error.localizedDescription)")
+            RoutinaLog.error("Failed to assign focus session to board: \(error.localizedDescription)")
         }
     }
 

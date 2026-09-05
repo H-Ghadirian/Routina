@@ -50,6 +50,12 @@ struct TaskDetailPlatformActionParityTests {
         #expect(detailSource.contains("TaskDetailAssumedDoneStatusPill(phase: phase)"))
         #expect(actionControlsSource.contains("case .confirmed:"))
         #expect(actionControlsSource.contains("\"Confirmed\""))
+        #expect(actionControlsSource.contains("String(localized: \"Completion confirmed\")"))
+        #expect(
+            actionControlsSource.contains(
+                "String(localized: \"The completion was recorded and can be undone\")"
+            )
+        )
         #expect(actionControlsSource.contains(".contentTransition(.symbolEffect(.replace))"))
         #expect(actionControlsSource.contains("accessibilityReduceMotion ? nil"))
         #expect(headerSource.contains("if let heightReservationValue = item.heightReservationValue"))

@@ -48,6 +48,7 @@ enum SourceInspectionSupport {
         try [
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift",
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+MacToolbar.swift",
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+WorkspaceControls.swift",
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+MacSearchRefresh.swift",
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+MacQuickAddPresentation.swift",
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+MacQuickAddCreation.swift",

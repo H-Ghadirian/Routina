@@ -1,6 +1,19 @@
 import Foundation
 import Testing
 
+private struct MacWorkspaceControlSources {
+    var toolbar: String
+    var platform: String
+    var detailContainer: String
+    var backlog: String
+    var backlogFilters: String
+    var backlogSupport: String
+    var ladder: String
+    var ladderControls: String
+    var ladderControlsPresentation: String
+    var sidebar: String
+}
+
 struct MacWorkspaceNavigationSourceTests {
     @Test
     func backlogAndTaskLadderAreMainWindowWorkspaces() throws {
@@ -96,41 +109,14 @@ struct MacWorkspaceNavigationSourceTests {
 
     @Test
     func workspaceControlsEntryLivesBesidePlannerBacklogAndTaskLadder() throws {
-        let toolbarSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"
-        )
-        let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
-        let detailContainerSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"
-        )
-        let backlogSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Backlog/BacklogMacView.swift"
-        )
-        let backlogFiltersSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Backlog/BacklogMacFiltersDetailView.swift"
-        )
-        let backlogSupportSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Backlog/BacklogMacView+Support.swift"
-        )
-        let ladderSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
-        )
-        let ladderControlsSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacControlsDetailView.swift"
-        )
-        let ladderControlsPresentationSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView+ControlsPresentation.swift"
-        )
-        let sidebarSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift"
-        )
+        let sources = try Self.workspaceControlSources()
 
-        #expect(toolbarSource.contains("mode == .routines || mode == .backlog || mode == .taskLadder"))
-        #expect(toolbarSource.contains("HomeMacToolbarFilterButton("))
+        #expect(sources.toolbar.contains("mode == .routines || mode == .backlog || mode == .taskLadder"))
+        #expect(sources.toolbar.contains("HomeMacToolbarFilterButton("))
         let commandClusterStart = try #require(
-            toolbarSource.range(of: "private var toolbarCommandCluster")
+            sources.toolbar.range(of: "private var toolbarCommandCluster")
         )
-        let commandClusterSource = toolbarSource[commandClusterStart.lowerBound...]
+        let commandClusterSource = sources.toolbar[commandClusterStart.lowerBound...]
         let filterButtonRange = try #require(
             commandClusterSource.range(of: "HomeMacToolbarFilterButton(")
         )
@@ -138,53 +124,53 @@ struct MacWorkspaceNavigationSourceTests {
             commandClusterSource.range(of: "HomeMacWorkspaceToolbarControls(")
         )
         #expect(filterButtonRange.lowerBound < workspaceControlRange.lowerBound)
-        #expect(toolbarSource.contains("workspace: selectedSidebarMode"))
-        #expect(toolbarSource.contains("summary: filterSummary"))
-        #expect(platformSource.contains("controlSummary.text(maximumItemCount: 3)"))
-        #expect(platformSource.contains("initialTab: macWorkspaceControlInitialTab"))
-        #expect(platformSource.contains("onToggleFilters: toggleHomeToolbarFilters"))
-        #expect(detailContainerSource.contains("showsCalendarFilterButton: false"))
-        #expect(backlogSource.contains("\"Filter, Sort, and Appearance\""))
-        #expect(!backlogSource.contains("Tasks kept off your main task list"))
-        #expect(!backlogSource.contains("backlogCountLabel"))
-        #expect(backlogFiltersSource.contains("struct BacklogMacFiltersDetailView"))
-        #expect(!backlogFiltersSource.contains("Filtering, sorting, and appearance affect Backlog only."))
-        #expect(!backlogFiltersSource.contains("private var header"))
-        #expect(backlogFiltersSource.contains("private var sectionControls"))
-        #expect(backlogFiltersSource.contains("Text(backlogCountLabel)"))
-        #expect(backlogFiltersSource.contains("store.send(.refresh)"))
-        #expect(backlogFiltersSource.contains("\"Refresh Backlog\""))
-        #expect(backlogFiltersSource.contains("\"Reset \\(selectedTab.title)\""))
-        #expect(backlogFiltersSource.contains("store.filters.resettingFilters()"))
-        #expect(backlogFiltersSource.contains("store.filters.resettingSortOrder()"))
-        #expect(backlogFiltersSource.contains("persistTaskRowVisibility(.backlogDefaultValue)"))
-        #expect(backlogFiltersSource.contains("HomeMacFilterDetailTabStrip("))
-        #expect(backlogFiltersSource.contains("case .filter:"))
-        #expect(backlogFiltersSource.contains("case .sort:"))
-        #expect(backlogFiltersSource.contains("case .appearance:"))
-        #expect(backlogFiltersSource.contains("HomeMacAdaptiveFilterControlRow(\"Due\")"))
-        #expect(backlogFiltersSource.contains("options: BacklogDueDateFilter.allCases"))
-        #expect(backlogFiltersSource.contains("filterBinding(\\.dueDateFilter)"))
-        #expect(backlogFiltersSource.contains("HomeMacAdaptiveFilterControlRow(\"Sort\")"))
-        #expect(backlogFiltersSource.contains("options: BacklogSortOrder.allCases"))
-        #expect(backlogFiltersSource.contains("UserDefaultStringValueKey.appSettingBacklogTaskRowHiddenFields"))
-        #expect(backlogFiltersSource.contains("HomeMacFilterAppearanceToggleRow("))
-        #expect(backlogFiltersSource.contains("HomeTaskRowField.backlogAppearanceFields"))
-        #expect(backlogSupportSource.contains("store.presentation.rowPresentationsByTaskID[task.id]"))
-        #expect(backlogSupportSource.contains("store.presentation.rowNumbersByTaskID[task.id]"))
-        #expect(!ladderSource.contains("private func workspaceControls("))
-        #expect(ladderControlsSource.contains("struct TaskRankingMacControlsDetailView"))
-        #expect(ladderControlsSource.contains("case .filter:"))
-        #expect(ladderControlsSource.contains("case .sort:"))
-        #expect(ladderControlsSource.contains("case .appearance:"))
-        #expect(ladderControlsSource.contains("TaskRankingMetric.allCases"))
-        #expect(ladderControlsSource.contains("options: [false, true]"))
-        #expect(ladderControlsSource.contains("HomeTaskRowField.taskLadderAppearanceFields"))
-        #expect(ladderControlsSource.contains("Button(\"Reset \\(tabTitle(selectedTab))\")"))
-        #expect(ladderControlsSource.contains("private func resetSelectedTab()"))
-        #expect(ladderControlsPresentationSource.contains("\"View, Sort, and Appearance\""))
-        #expect(sidebarSource.contains("func clearAllMacTimelineFilters()"))
-        #expect(sidebarSource.contains("store.send(.clearTimelineAndSharedFilters)"))
+        #expect(sources.toolbar.contains("workspace: selectedSidebarMode"))
+        #expect(sources.toolbar.contains("summary: filterSummary"))
+        #expect(sources.platform.contains("controlSummary.text(maximumItemCount: 3)"))
+        #expect(sources.platform.contains("initialTab: macWorkspaceControlInitialTab"))
+        #expect(sources.platform.contains("onToggleFilters: toggleHomeToolbarFilters"))
+        #expect(sources.detailContainer.contains("showsCalendarFilterButton: false"))
+        #expect(sources.backlog.contains("\"Filter, Sort, and Appearance\""))
+        #expect(!sources.backlog.contains("Tasks kept off your main task list"))
+        #expect(!sources.backlog.contains("backlogCountLabel"))
+        #expect(sources.backlogFilters.contains("struct BacklogMacFiltersDetailView"))
+        #expect(!sources.backlogFilters.contains("Filtering, sorting, and appearance affect Backlog only."))
+        #expect(!sources.backlogFilters.contains("private var header"))
+        #expect(sources.backlogFilters.contains("private var sectionControls"))
+        #expect(sources.backlogFilters.contains("Text(backlogCountLabel)"))
+        #expect(sources.backlogFilters.contains("store.send(.refresh)"))
+        #expect(sources.backlogFilters.contains("\"Refresh Backlog\""))
+        #expect(sources.backlogFilters.contains("\"Reset \\(selectedTab.title)\""))
+        #expect(sources.backlogFilters.contains("store.filters.resettingFilters()"))
+        #expect(sources.backlogFilters.contains("store.filters.resettingSortOrder()"))
+        #expect(sources.backlogFilters.contains("persistTaskRowVisibility(.backlogDefaultValue)"))
+        #expect(sources.backlogFilters.contains("HomeMacFilterDetailTabStrip("))
+        #expect(sources.backlogFilters.contains("case .filter:"))
+        #expect(sources.backlogFilters.contains("case .sort:"))
+        #expect(sources.backlogFilters.contains("case .appearance:"))
+        #expect(sources.backlogFilters.contains("HomeMacAdaptiveFilterControlRow(\"Due\")"))
+        #expect(sources.backlogFilters.contains("options: BacklogDueDateFilter.allCases"))
+        #expect(sources.backlogFilters.contains("filterBinding(\\.dueDateFilter)"))
+        #expect(sources.backlogFilters.contains("HomeMacAdaptiveFilterControlRow(\"Sort\")"))
+        #expect(sources.backlogFilters.contains("options: BacklogSortOrder.allCases"))
+        #expect(sources.backlogFilters.contains("UserDefaultStringValueKey.appSettingBacklogTaskRowHiddenFields"))
+        #expect(sources.backlogFilters.contains("HomeMacFilterAppearanceToggleRow("))
+        #expect(sources.backlogFilters.contains("HomeTaskRowField.backlogAppearanceFields"))
+        #expect(sources.backlogSupport.contains("store.presentation.rowPresentationsByTaskID[task.id]"))
+        #expect(sources.backlogSupport.contains("store.presentation.rowNumbersByTaskID[task.id]"))
+        #expect(!sources.ladder.contains("private func workspaceControls("))
+        #expect(sources.ladderControls.contains("struct TaskRankingMacControlsDetailView"))
+        #expect(sources.ladderControls.contains("case .filter:"))
+        #expect(sources.ladderControls.contains("case .sort:"))
+        #expect(sources.ladderControls.contains("case .appearance:"))
+        #expect(sources.ladderControls.contains("TaskRankingMetric.allCases"))
+        #expect(sources.ladderControls.contains("options: [false, true]"))
+        #expect(sources.ladderControls.contains("HomeTaskRowField.taskLadderAppearanceFields"))
+        #expect(sources.ladderControls.contains("Button(\"Reset \\(tabTitle(selectedTab))\")"))
+        #expect(sources.ladderControls.contains("private func resetSelectedTab()"))
+        #expect(sources.ladderControlsPresentation.contains("\"View, Sort, and Appearance\""))
+        #expect(sources.sidebar.contains("func clearAllMacTimelineFilters()"))
+        #expect(sources.sidebar.contains("store.send(.clearTimelineAndSharedFilters)"))
     }
 
     @Test
@@ -242,6 +228,23 @@ struct MacWorkspaceNavigationSourceTests {
         #expect(sectionsSource.contains(".transition(.identity)"))
         #expect(sectionsSource.contains(".clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))"))
         #expect(!sectionsSource.contains(".transition(.opacity.combined(with: .move(edge: .top)))"))
+    }
+
+    private static func workspaceControlSources() throws -> MacWorkspaceControlSources {
+        try MacWorkspaceControlSources(
+            toolbar: sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"),
+            platform: SourceInspectionSupport.readMacHomePlatformSources(),
+            detailContainer: sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"),
+            backlog: sourceFile("RoutinaMacApp/Screens/Backlog/BacklogMacView.swift"),
+            backlogFilters: sourceFile("RoutinaMacApp/Screens/Backlog/BacklogMacFiltersDetailView.swift"),
+            backlogSupport: sourceFile("RoutinaMacApp/Screens/Backlog/BacklogMacView+Support.swift"),
+            ladder: sourceFile("RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"),
+            ladderControls: sourceFile("RoutinaMacApp/Screens/TaskRanking/TaskRankingMacControlsDetailView.swift"),
+            ladderControlsPresentation: sourceFile(
+                "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView+ControlsPresentation.swift"
+            ),
+            sidebar: sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
+        )
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {

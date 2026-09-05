@@ -303,9 +303,9 @@ struct TaskDetailAssumedDoneStatusPill: View {
     private var title: String {
         switch phase {
         case .assumed:
-            "Assumed done"
+            String(localized: "Assumed done")
         case .confirmed:
-            "Confirmed"
+            String(localized: "Confirmed")
         }
     }
 
@@ -321,18 +321,18 @@ struct TaskDetailAssumedDoneStatusPill: View {
     private var accessibilityLabel: String {
         switch phase {
         case .assumed:
-            "Assumed done"
+            String(localized: "Assumed done")
         case .confirmed:
-            "Completion confirmed"
+            String(localized: "Completion confirmed")
         }
     }
 
     private var accessibilityHint: String {
         switch phase {
         case .assumed:
-            "This day is provisional until you confirm it"
+            String(localized: "This day is provisional until you confirm it")
         case .confirmed:
-            "The completion was recorded and can be undone"
+            String(localized: "The completion was recorded and can be undone")
         }
     }
 }

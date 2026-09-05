@@ -849,8 +849,7 @@ struct DayPlanWeekCalendarView: View {
             )
         } else if calendarTaskViewMode == .schedule,
             let selectedDayTaskListDate,
-            let dayTaskListSidebarContent
-        {
+            let dayTaskListSidebarContent {
             dayTaskListSidebarContent(
                 selectedDayTaskListDate,
                 dismissDayTaskListSidebar

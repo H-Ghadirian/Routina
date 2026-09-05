@@ -57,6 +57,61 @@ assert_at_least() {
     printf '%-42s %s/%s minimum\n' "$label" "$actual" "$minimum"
 }
 
+check_swiftlint_budget() {
+    baseline_file=".swiftlint-baseline.json"
+    current_baseline=$(mktemp "${TMPDIR:-/tmp}/routina-swiftlint-baseline.XXXXXX")
+    trap 'rm -f "$current_baseline"' EXIT HUP INT TERM
+
+    lint_status=0
+    swiftlint lint \
+        --quiet \
+        --no-cache \
+        --config .swiftlint.yml \
+        --write-baseline "$current_baseline" \
+        >/dev/null 2>&1 || lint_status=$?
+    if [ "$lint_status" -ne 0 ] && [ "$lint_status" -ne 2 ]; then
+        echo "error: SwiftLint failed before producing its current findings." >&2
+        return 1
+    fi
+
+    # SwiftLint's native baseline includes source locations, so unrelated line
+    # movement can invalidate every later entry in a file. Compare stable
+    # file/rule/source-text identities instead while preserving duplicate counts.
+    overages=$(jq -r \
+        --arg project_prefix "$project_root/" \
+        --slurpfile budget "$baseline_file" \
+        --slurpfile actual "$current_baseline" '
+            def normalized_file($file): $file | ltrimstr($project_prefix);
+            def identity($entry):
+                normalized_file($entry.violation.location.file)
+                + "\u001f" + $entry.violation.ruleIdentifier
+                + "\u001f" + $entry.text;
+            ($budget[0]
+                | group_by(identity(.))
+                | map({key: identity(.[0]), value: length})
+                | from_entries) as $allowed
+            | ($actual[0]
+                | group_by(identity(.))
+                | map({key: identity(.[0]), value: length, sample: .[0]}))[]
+            | select(.value > ($allowed[.key] // 0))
+            | .sample.violation.location as $location
+            | "\(normalized_file($location.file)):\($location.line):\($location.character): "
+                + "error: SwiftLint \(.sample.violation.ruleIdentifier) finding exceeds its stable budget "
+                + "(\(.value)/\($allowed[.key] // 0)): \(.sample.text)"
+        ')
+    if [ -n "$overages" ]; then
+        printf '%s\n' "$overages" >&2
+        return 1
+    fi
+
+    current_count=$(jq 'length' "$current_baseline")
+    baseline_count=$(jq 'length' "$baseline_file")
+    printf '%-42s %s/%s\n' "Stable SwiftLint findings" "$current_count" "$baseline_count"
+
+    rm -f "$current_baseline"
+    trap - EXIT HUP INT TERM
+}
+
 check_size_budget() {
     measurements=$(find $app_roots -type f -name '*.swift' -print0 | xargs -0 wc -l | sed '$d')
     over_500=$(printf '%s\n' "$measurements" | awk '$1 > 500 { count += 1 } END { print count + 0 }')
@@ -64,7 +119,7 @@ check_size_budget() {
     over_2000=$(printf '%s\n' "$measurements" | awk '$1 > 2000 { count += 1 } END { print count + 0 }')
     largest=$(printf '%s\n' "$measurements" | awk 'BEGIN { maximum = 0 } $1 > maximum { maximum = $1 } END { print maximum }')
 
-    assert_at_most "Production Swift files over 500 lines" "$over_500" 119
+    assert_at_most "Production Swift files over 500 lines" "$over_500" 118
     assert_at_most "Production Swift files over 1,000 lines" "$over_1000" 34
     assert_at_most "Production Swift files over 2,000 lines" "$over_2000" 0
     assert_at_most "Largest production Swift file" "$largest" 1477
@@ -97,7 +152,7 @@ check_raw_print_budget() {
     raw_prints=$(count_matching_lines '(^|[^A-Za-z0-9_])print\(' $app_roots)
     legacy_nslog_calls=$(count_matching_lines '(^|[^A-Za-z0-9_])NSLog\(' $app_roots)
     assert_at_most "Raw app print calls" "$raw_prints" 0
-    assert_at_most "Legacy direct NSLog calls" "$legacy_nslog_calls" 140
+    assert_at_most "Legacy direct NSLog calls" "$legacy_nslog_calls" 139
 }
 
 check_cross_platform_duplicates() {
@@ -152,12 +207,12 @@ check_localized_content_boundaries() {
     done
 
     require_command xcrun
-    main_catalog_keys=$(xcrun xcstringstool print "$main_catalog" | wc -l | tr -d ' ')
-    widget_catalog_keys=$(xcrun xcstringstool print "$widget_catalog" | wc -l | tr -d ' ')
-    watch_catalog_keys=$(xcrun xcstringstool print "$watch_catalog" | wc -l | tr -d ' ')
-    assert_at_least "Main app localization catalog keys" "$main_catalog_keys" 1500
-    assert_at_least "Widget localization catalog keys" "$widget_catalog_keys" 20
-    assert_at_least "Watch localization catalog keys" "$watch_catalog_keys" 10
+    main_catalog_keys=$(jq '.strings | length' "$main_catalog")
+    widget_catalog_keys=$(jq '.strings | length' "$widget_catalog")
+    watch_catalog_keys=$(jq '.strings | length' "$watch_catalog")
+    assert_at_least "Main app localization catalog keys" "$main_catalog_keys" 1576
+    assert_at_least "Widget localization catalog keys" "$widget_catalog_keys" 21
+    assert_at_least "Watch localization catalog keys" "$watch_catalog_keys" 22
 
     if rg -q 'static let topics: \[RoutinaHelpTopic\] = \[' SharedCore/Help/RoutinaHelpCatalog.swift; then
         echo "error: Product Help content must remain in its localized JSON resource." >&2
@@ -206,7 +261,8 @@ format_added_files() {
 
 require_command swiftlint
 require_command rg
-swiftlint lint --strict --quiet --no-cache --config .swiftlint.yml --baseline .swiftlint-baseline.json
+require_command jq
+check_swiftlint_budget
 format_added_files
 check_size_budget
 check_concurrency_budget

@@ -329,7 +329,7 @@ enum DayPlanFocusSessionBlocks {
                 startMinute: startMinute,
                 minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             ),
-            titleSnapshot: "Plan Focus",
+            titleSnapshot: String(localized: "Plan Focus"),
             emojiSnapshot: nil,
             createdAt: renderStart,
             updatedAt: renderEnd,

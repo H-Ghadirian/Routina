@@ -136,7 +136,9 @@ struct DayPlanWeekDayHeader: View {
     private var dayTaskBreakdownText: String {
         let recordedDoneCount = dayTaskCounts.confirmedAssumedDone + dayTaskCounts.done
         return [
-            dayTaskCounts.planned > 0 ? "\(dayTaskCounts.planned) planned" : nil,
+            dayTaskCounts.planned > 0
+                ? String(localized: "\(dayTaskCounts.planned) planned")
+                : nil,
             dayTaskCounts.assumedDone > 0 ? "\(dayTaskCounts.assumedDone) assumed done" : nil,
             recordedDoneCount > 0 ? "\(recordedDoneCount) done" : nil,
         ]
