@@ -1,11 +1,11 @@
 import Foundation
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 struct StatsFeatureDerivedStateSupportTests {
@@ -72,9 +72,10 @@ struct StatsFeatureDerivedStateSupportTests {
         )
 
         #expect(excludingAssumedDone.availableFlags.contains("Assumed done"))
-        #expect(excludingAssumedDone.excludedFlags.contains {
-            RoutineFlag.contains("Assumed done", in: [$0])
-        })
+        #expect(
+            excludingAssumedDone.excludedFlags.contains {
+                RoutineFlag.contains("Assumed done", in: [$0])
+            })
         #expect(excludingAssumedDone.filteredTaskCount == 2)
         #expect(excludingAssumedDone.metrics.totalDoneCount == 2)
         #expect(requiringEveryFlag.filteredTaskCount == 1)
@@ -94,7 +95,7 @@ struct StatsFeatureDerivedStateSupportTests {
             RoutineLog(timestamp: makeDate("2026-02-09T18:00:00Z"), taskID: task.id, kind: .completed),
             RoutineLog(timestamp: makeDate("2026-02-10T18:00:00Z"), taskID: task.id, kind: .completed),
             RoutineLog(timestamp: makeDate("2026-02-12T18:00:00Z"), taskID: task.id, kind: .completed),
-            RoutineLog(timestamp: makeDate("2026-02-13T18:00:00Z"), taskID: task.id, kind: .completed)
+            RoutineLog(timestamp: makeDate("2026-02-13T18:00:00Z"), taskID: task.id, kind: .completed),
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
@@ -122,7 +123,7 @@ struct StatsFeatureDerivedStateSupportTests {
             RoutineLog(timestamp: makeDate("2026-03-05T18:00:00Z"), taskID: task.id, kind: .completed),
             RoutineLog(timestamp: makeDate("2026-03-20T18:00:00Z"), taskID: task.id, kind: .completed),
             RoutineLog(timestamp: makeDate("2026-04-10T18:00:00Z"), taskID: task.id, kind: .completed),
-            RoutineLog(timestamp: makeDate("2026-06-08T18:00:00Z"), taskID: task.id, kind: .completed)
+            RoutineLog(timestamp: makeDate("2026-06-08T18:00:00Z"), taskID: task.id, kind: .completed),
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
@@ -143,23 +144,30 @@ struct StatsFeatureDerivedStateSupportTests {
         )
 
         #expect(state.metrics.sparklinePoints.count == 12)
-        #expect(state.metrics.sparklinePoints.first == DoneChartPoint(
-            date: makeDate("2025-07-01T00:00:00Z"),
-            count: 0
-        ))
-        #expect(state.metrics.sparklinePoints.last == DoneChartPoint(
-            date: makeDate("2026-06-01T00:00:00Z"),
-            count: 1
-        ))
-        #expect(state.metrics.sparklinePoints.first {
-            calendar.isDate($0.date, equalTo: makeDate("2026-03-01T00:00:00Z"), toGranularity: .month)
-        }?.count == 2)
-        #expect(state.metrics.sparklinePoints.first {
-            calendar.isDate($0.date, equalTo: makeDate("2026-04-01T00:00:00Z"), toGranularity: .month)
-        }?.count == 1)
-        #expect(state.metrics.sparklinePoints.first {
-            calendar.isDate($0.date, equalTo: makeDate("2026-05-01T00:00:00Z"), toGranularity: .month)
-        }?.count == .zero)
+        #expect(
+            state.metrics.sparklinePoints.first
+                == DoneChartPoint(
+                    date: makeDate("2025-07-01T00:00:00Z"),
+                    count: 0
+                ))
+        #expect(
+            state.metrics.sparklinePoints.last
+                == DoneChartPoint(
+                    date: makeDate("2026-06-01T00:00:00Z"),
+                    count: 1
+                ))
+        #expect(
+            state.metrics.sparklinePoints.first {
+                calendar.isDate($0.date, equalTo: makeDate("2026-03-01T00:00:00Z"), toGranularity: .month)
+            }?.count == 2)
+        #expect(
+            state.metrics.sparklinePoints.first {
+                calendar.isDate($0.date, equalTo: makeDate("2026-04-01T00:00:00Z"), toGranularity: .month)
+            }?.count == 1)
+        #expect(
+            state.metrics.sparklinePoints.first {
+                calendar.isDate($0.date, equalTo: makeDate("2026-05-01T00:00:00Z"), toGranularity: .month)
+            }?.count == .zero)
         #expect(state.metrics.sparklineMaxCount == 2)
     }
 
@@ -174,7 +182,7 @@ struct StatsFeatureDerivedStateSupportTests {
             RoutineLog(timestamp: makeDate("2026-03-01T18:00:00Z"), taskID: task.id, kind: .completed),
             RoutineLog(timestamp: makeDate("2026-03-07T18:00:00Z"), taskID: task.id, kind: .completed),
             RoutineLog(timestamp: makeDate("2026-03-14T18:00:00Z"), taskID: task.id, kind: .completed),
-            RoutineLog(timestamp: makeDate("2026-03-30T18:00:00Z"), taskID: task.id, kind: .completed)
+            RoutineLog(timestamp: makeDate("2026-03-30T18:00:00Z"), taskID: task.id, kind: .completed),
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
@@ -194,13 +202,14 @@ struct StatsFeatureDerivedStateSupportTests {
             calendar: calendar
         )
 
-        #expect(state.metrics.sparklinePoints == [
-            DoneChartPoint(date: makeDate("2026-03-01T00:00:00Z"), count: 2),
-            DoneChartPoint(date: makeDate("2026-03-08T00:00:00Z"), count: 1),
-            DoneChartPoint(date: makeDate("2026-03-15T00:00:00Z"), count: 0),
-            DoneChartPoint(date: makeDate("2026-03-22T00:00:00Z"), count: 0),
-            DoneChartPoint(date: makeDate("2026-03-29T00:00:00Z"), count: 1)
-        ])
+        #expect(
+            state.metrics.sparklinePoints == [
+                DoneChartPoint(date: makeDate("2026-03-01T00:00:00Z"), count: 2),
+                DoneChartPoint(date: makeDate("2026-03-08T00:00:00Z"), count: 1),
+                DoneChartPoint(date: makeDate("2026-03-15T00:00:00Z"), count: 0),
+                DoneChartPoint(date: makeDate("2026-03-22T00:00:00Z"), count: 0),
+                DoneChartPoint(date: makeDate("2026-03-29T00:00:00Z"), count: 1),
+            ])
         #expect(state.metrics.sparklineMaxCount == 2)
     }
 
@@ -285,7 +294,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let logs = [
             RoutineLog(timestamp: makeDate("2026-05-07T18:30:00Z"), taskID: task.id, kind: .completed),
             RoutineLog(timestamp: makeDate("2026-05-08T18:30:00Z"), taskID: task.id, kind: .missed),
-            RoutineLog(timestamp: makeDate("2026-05-09T18:30:00Z"), taskID: task.id, kind: .canceled)
+            RoutineLog(timestamp: makeDate("2026-05-09T18:30:00Z"), taskID: task.id, kind: .canceled),
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
@@ -311,9 +320,15 @@ struct StatsFeatureDerivedStateSupportTests {
         #expect(state.metrics.totalCount == 3)
         #expect(state.metrics.activeDayCount == 3)
         #expect(state.metrics.outcomeMixChartPoints.count == 7)
-        #expect(state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-07T00:00:00Z")) }?.doneCount == 1)
-        #expect(state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-08T00:00:00Z")) }?.missedCount == 1)
-        #expect(state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-09T00:00:00Z")) }?.canceledCount == 1)
+        #expect(
+            state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-07T00:00:00Z")) }?.doneCount
+                == 1)
+        #expect(
+            state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-08T00:00:00Z")) }?
+                .missedCount == 1)
+        #expect(
+            state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-09T00:00:00Z")) }?
+                .canceledCount == 1)
     }
 
     @Test
@@ -551,7 +566,7 @@ struct StatsFeatureDerivedStateSupportTests {
                 taskID: task.id,
                 startedAt: makeDate("2026-03-04T14:00:00Z"),
                 completedAt: makeDate("2026-03-04T14:30:00Z")
-            )
+            ),
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
@@ -592,7 +607,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let logs = [
             RoutineLog(timestamp: makeDate("2026-03-03T10:00:00Z"), taskID: task.id, kind: .completed),
             RoutineLog(timestamp: makeDate("2026-03-03T12:00:00Z"), taskID: task.id, kind: .completed),
-            RoutineLog(timestamp: makeDate("2026-03-04T10:00:00Z"), taskID: task.id, kind: .missed)
+            RoutineLog(timestamp: makeDate("2026-03-04T10:00:00Z"), taskID: task.id, kind: .missed),
         ]
         let focusSessions = [
             FocusSession(
@@ -604,7 +619,7 @@ struct StatsFeatureDerivedStateSupportTests {
                 taskID: task.id,
                 startedAt: makeDate("2026-03-05T14:00:00Z"),
                 completedAt: makeDate("2026-03-05T14:30:00Z")
-            )
+            ),
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
@@ -663,7 +678,7 @@ struct StatsFeatureDerivedStateSupportTests {
                 taskID: hiddenTask.id,
                 kind: .completed,
                 actualDurationMinutes: 30
-            )
+            ),
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
@@ -749,7 +764,7 @@ struct StatsFeatureDerivedStateSupportTests {
                 taskID: hiddenRoutine.id,
                 kind: .completed,
                 actualDurationMinutes: 100
-            )
+            ),
         ]
 
         let state = StatsFeatureDerivedStateBuilder.build(
@@ -795,7 +810,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let referenceDate = makeDate("2026-03-08T12:00:00Z")
         let logs = [
             RoutineLog(timestamp: makeDate("2026-03-04T10:00:00Z"), taskID: task.id, kind: .completed),
-            RoutineLog(timestamp: makeDate("2026-03-04T10:00:00Z"), taskID: hiddenTask.id, kind: .completed)
+            RoutineLog(timestamp: makeDate("2026-03-04T10:00:00Z"), taskID: hiddenTask.id, kind: .completed),
         ]
         let focusSessions = [
             FocusSession(
@@ -915,10 +930,11 @@ struct StatsFeatureDerivedStateSupportTests {
             filteredTaskCount: 0
         )
 
-        #expect(items.map(\.accessibilityIdentifier) == [
-            "stats.summary.assumedDones",
-            "stats.summary.assumedEstimatedTime"
-        ])
+        #expect(
+            items.map(\.accessibilityIdentifier) == [
+                "stats.summary.assumedDones",
+                "stats.summary.assumedEstimatedTime",
+            ])
         #expect(items.first { $0.accessibilityIdentifier == "stats.summary.assumedDones" }?.value == "2")
         #expect(items.first { $0.accessibilityIdentifier == "stats.summary.assumedEstimatedTime" }?.value == "1h 15m")
     }
@@ -939,10 +955,11 @@ struct StatsFeatureDerivedStateSupportTests {
             filteredTaskCount: 0
         )
 
-        #expect(items.map(\.accessibilityIdentifier) == [
-            "stats.summary.sleepTime",
-            "stats.summary.sleepSessions"
-        ])
+        #expect(
+            items.map(\.accessibilityIdentifier) == [
+                "stats.summary.sleepTime",
+                "stats.summary.sleepSessions",
+            ])
     }
 
     @Test
@@ -958,9 +975,10 @@ struct StatsFeatureDerivedStateSupportTests {
             filteredTaskCount: 0
         )
 
-        #expect(items.map(\.accessibilityIdentifier) == [
-            "stats.summary.sleepSessions"
-        ])
+        #expect(
+            items.map(\.accessibilityIdentifier) == [
+                "stats.summary.sleepSessions"
+            ])
     }
 
     @Test
@@ -968,7 +986,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let chartPaths = [
             "SharedCore/Views/StatsCreatedTasksChartSection.swift",
             "SharedCore/Views/StatsCompletionChartSection.swift",
-            "SharedCore/Views/StatsFocusChartSection.swift"
+            "SharedCore/Views/StatsFocusChartSection.swift",
         ]
 
         for path in chartPaths {
@@ -980,9 +998,7 @@ struct StatsFeatureDerivedStateSupportTests {
 
     @Test
     func focusChartScrollContentFillsItsAvailableViewport() throws {
-        let source = try SourceInspectionSupport.readProjectFile(
-            "SharedCore/Views/StatsFocusChartSection.swift"
-        )
+        let source = try SourceInspectionSupport.readStatsFocusChartSources()
 
         #expect(source.contains(".containerRelativeFrame(.horizontal)"))
         #expect(source.contains("focusDayXAxisDates(from: points.map(\\.date))"))
@@ -991,10 +1007,8 @@ struct StatsFeatureDerivedStateSupportTests {
 
     @Test
     func cumulativeFocusChartFitsItsWholeTrendInTheViewport() throws {
-        let source = try SourceInspectionSupport.readProjectFile(
-            "SharedCore/Views/StatsFocusChartSection.swift"
-        )
-        let start = try #require(source.range(of: "private struct StatsFocusCumulativeChart"))
+        let source = try SourceInspectionSupport.readStatsFocusChartSources()
+        let start = try #require(source.range(of: "struct StatsFocusCumulativeChart"))
         let end = try #require(
             source.range(
                 of: "private struct StatsFocusCumulativePointPanel",
@@ -1065,7 +1079,7 @@ struct StatsFeatureDerivedStateSupportTests {
                             value: "1 done",
                             systemImage: "checkmark",
                             domain: .done
-                        )
+                        ),
                     ]
                 )
             ]

@@ -54,6 +54,19 @@ enum SourceInspectionSupport {
         .joined(separator: "\n")
     }
 
+    static func readStatsFocusChartSources(
+        callerFile: StaticString = #filePath
+    ) throws -> String {
+        try [
+            "SharedCore/Views/StatsFocusChartSection.swift",
+            "SharedCore/Views/StatsFocusChartGrouping.swift",
+            "SharedCore/Views/StatsFocusCumulativeChart.swift",
+            "SharedCore/Views/StatsFocusWeekdayAverageChart.swift",
+        ]
+        .map { try readProjectFile($0, callerFile: callerFile) }
+        .joined(separator: "\n")
+    }
+
     static func readIOSHomeSources(
         callerFile: StaticString = #filePath
     ) throws -> String {
