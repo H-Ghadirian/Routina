@@ -948,9 +948,13 @@ extension TaskRankingPresentationTests {
 
     @Test
     func taskLadderGroupEditorSnapshotsExistingGroupBeforePresentation() throws {
-        let rankingSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
-        )
+        let rankingSource =
+            try Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+            )
+            + Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacViewSupport.swift"
+            )
         let editorSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskRanking/TaskLadderGroupEditorSheet.swift"
         )
@@ -994,16 +998,21 @@ extension TaskRankingPresentationTests {
 
     @Test
     func taskLadderLetsPeopleAcceptOrRejectLinkedTaskChildSuggestions() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
-        )
+        let source =
+            try Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+            )
+            + Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacSearchContent.swift"
+            )
 
         #expect(source.contains("Linked task suggestions"))
         #expect(source.contains("Label(\"Reject\", systemImage: \"xmark\")"))
         #expect(source.contains("Label(\"Accept\", systemImage: \"checkmark\")"))
         #expect(source.contains(".linkedTaskChildSuggestionRejected("))
         #expect(source.contains(".linkedTaskChildSuggestionAccepted("))
-        #expect(source.contains("keeps the task link and its completion behavior unchanged"))
+        #expect(source.contains("keeps the task link"))
+        #expect(source.contains("completion behavior unchanged."))
         #expect(source.contains("ForEach(presentation.linkedTaskChildSuggestions)"))
     }
 
@@ -1187,7 +1196,7 @@ extension TaskRankingPresentationTests {
         )
 
         #expect(source.contains("@State private var collapsedSectionIDs = Set<String>()"))
-        #expect(source.contains("let isCollapsed = collapsedSectionIDs.contains(section.id)"))
+        #expect(source.contains("collapsedSectionIDs.contains(section.id)"))
         #expect(source.contains("toggleRankingSection(section)"))
         #expect(source.contains("collapsedSectionIDs.insert(section.id)"))
         #expect(source.contains("collapsedSectionIDs.remove(section.id)"))

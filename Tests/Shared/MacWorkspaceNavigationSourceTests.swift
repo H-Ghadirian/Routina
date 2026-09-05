@@ -70,9 +70,13 @@ struct MacWorkspaceNavigationSourceTests {
         let backlogSupportSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Backlog/BacklogMacView+Support.swift"
         )
-        let ladderSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
-        )
+        let ladderSource =
+            try Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
+            )
+            + Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacSearchContent.swift"
+            )
 
         #expect(platformSource.contains("searchText: toolbarSearchTextBinding"))
         #expect(platformSource.contains("get: { backlogStore.searchText }"))

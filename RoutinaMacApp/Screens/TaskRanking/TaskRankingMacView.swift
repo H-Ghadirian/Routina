@@ -1,11 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct TaskLadderGroupEditorPresentation: Identifiable {
-    let id = UUID()
-    let group: TaskLadderGroup?
-}
-
 struct TaskRankingMacView: View {
     let store: StoreOf<TaskRankingFeature>
     let isControlsPresented: Bool
@@ -72,13 +67,14 @@ struct TaskRankingMacView: View {
         let isSearching = HomeTaskSearchIndex.query(searchText) != nil
         let selectedTaskID = store.selectedTaskID
         let selectedGroupID = store.selectedGroupID
-        let selectedNodeID: TaskLadderNodeID? = if let selectedGroupID {
-            .group(selectedGroupID)
-        } else if let selectedTaskID {
-            .task(selectedTaskID)
-        } else {
-            nil
-        }
+        let selectedNodeID: TaskLadderNodeID? =
+            if let selectedGroupID {
+                .group(selectedGroupID)
+            } else if let selectedTaskID {
+                .task(selectedTaskID)
+            } else {
+                nil
+            }
 
         return taskRankingControlsPresentation {
             HSplitView {
@@ -90,7 +86,7 @@ struct TaskRankingMacView: View {
                     isSearching: isSearching,
                     selectedNodeID: selectedNodeID
                 )
-                    .frame(minWidth: 340, idealWidth: 440, maxWidth: 560)
+                .frame(minWidth: 340, idealWidth: 440, maxWidth: 560)
 
                 taskDetail
                     .frame(minWidth: 620, maxWidth: .infinity, maxHeight: .infinity)
@@ -137,12 +133,15 @@ struct TaskRankingMacView: View {
                 onDelete: { store.send(.groupDeleted($0)) }
             )
         }
-        .sheet(isPresented: Binding(
-            get: { placementTaskID != nil },
-            set: { if !$0 { placementTaskID = nil } }
-        )) {
+        .sheet(
+            isPresented: Binding(
+                get: { placementTaskID != nil },
+                set: { if !$0 { placementTaskID = nil } }
+            )
+        ) {
             if let taskID = placementTaskID,
-               let task = store.tasks.first(where: { $0.id == taskID }) {
+                let task = store.tasks.first(where: { $0.id == taskID })
+            {
                 TaskLadderPlacementEditorSheet(
                     task: task,
                     tasks: store.tasks,
@@ -155,31 +154,35 @@ struct TaskRankingMacView: View {
         }
         .sheet(
             isPresented: $isRepeatingTaskGroupEditorPresented,
-            onDismiss: { repeatingTaskGroupParentID = nil }
-        ) {
-            TaskLadderRepeatingTaskGroupEditorSheet(
-                tasks: store.tasks,
-                organization: store.organization,
-                eligibleTaskIDs: store.presentation.eligibleTaskIDs,
-                initialParentTaskID: repeatingTaskGroupParentID,
-                onSave: { childTaskID, parentTaskID, behavior in
-                    store.send(
-                        .taskPlacementSaved(
-                            childTaskID,
-                            .task(parentTaskID),
-                            behavior
+            onDismiss: { repeatingTaskGroupParentID = nil },
+            content: {
+                TaskLadderRepeatingTaskGroupEditorSheet(
+                    tasks: store.tasks,
+                    organization: store.organization,
+                    eligibleTaskIDs: store.presentation.eligibleTaskIDs,
+                    initialParentTaskID: repeatingTaskGroupParentID,
+                    onSave: { childTaskID, parentTaskID, behavior in
+                        store.send(
+                            .taskPlacementSaved(
+                                childTaskID,
+                                .task(parentTaskID),
+                                behavior
+                            )
                         )
-                    )
-                    store.send(.childLadderOpened(parentTaskID))
-                }
+                        store.send(.childLadderOpened(parentTaskID))
+                    }
+                )
+            }
+        )
+        .sheet(
+            isPresented: Binding(
+                get: { temporalWeightTaskID != nil },
+                set: { if !$0 { temporalWeightTaskID = nil } }
             )
-        }
-        .sheet(isPresented: Binding(
-            get: { temporalWeightTaskID != nil },
-            set: { if !$0 { temporalWeightTaskID = nil } }
-        )) {
+        ) {
             if let taskID = temporalWeightTaskID,
-               let task = store.tasks.first(where: { $0.id == taskID }) {
+                let task = store.tasks.first(where: { $0.id == taskID })
+            {
                 TaskTemporalWeightRuleSheet(
                     task: task,
                     onSave: { importance, urgency, pressure, rule in
@@ -234,15 +237,18 @@ struct TaskRankingMacView: View {
                 ProgressView("Loading active tasks…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if presentation.isEmpty
-                        && searchPresentation.matches.isEmpty
-                        && searchPresentation.outsideMatches.isEmpty {
+                && searchPresentation.matches.isEmpty
+                && searchPresentation.outsideMatches.isEmpty
+            {
                 ContentUnavailableView(
-                    isSearching ? "No Task Ladder matches" : emptyStateTitle,
+                    isSearching
+                        ? "No Task Ladder matches"
+                        : TaskRankingMacEmptyState.title(isNested: !store.scopePath.isEmpty),
                     systemImage: isSearching ? "magnifyingglass" : "line.3.horizontal.decrease.circle",
                     description: Text(
                         isSearching
                             ? "Try a different task name, tag, Flag, note, or group path."
-                            : emptyStateDescription
+                            : TaskRankingMacEmptyState.description(parentName: store.scopeParentName)
                     )
                 )
                 .padding(24)
@@ -252,9 +258,11 @@ struct TaskRankingMacView: View {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 0) {
                             if isSearching {
-                                taskLadderSearchResults(
+                                TaskRankingMacSearchResults(
                                     searchPresentation: searchPresentation,
-                                    searchText: searchText
+                                    searchText: searchText,
+                                    onSelectMatch: { store.send(.searchMatchSelected($0)) },
+                                    onOpenOutsideMatch: { store.send(.taskSelected($0)) }
                                 )
 
                                 Color.clear
@@ -263,20 +271,23 @@ struct TaskRankingMacView: View {
                             }
 
                             if !presentation.linkedTaskChildSuggestions.isEmpty {
-                                linkedTaskChildSuggestionsHeader(
-                                    count: presentation.linkedTaskChildSuggestions.count
-                                )
-
-                                ForEach(presentation.linkedTaskChildSuggestions) { suggestion in
-                                    VStack(spacing: 0) {
-                                        linkedTaskChildSuggestionRow(suggestion)
-
-                                        if suggestion.id != presentation.linkedTaskChildSuggestions.last?.id {
-                                            Divider().padding(.leading, 12)
-                                        }
+                                TaskRankingMacLinkedTaskSuggestions(
+                                    presentation: presentation,
+                                    onReject: { parentTaskID, childTaskID in
+                                        store.send(
+                                            .linkedTaskChildSuggestionRejected(
+                                                parentTaskID: parentTaskID,
+                                                childTaskID: childTaskID
+                                            ))
+                                    },
+                                    onAccept: { parentTaskID, childTaskID in
+                                        store.send(
+                                            .linkedTaskChildSuggestionAccepted(
+                                                parentTaskID: parentTaskID,
+                                                childTaskID: childTaskID
+                                            ))
                                     }
-                                    .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
-                                }
+                                )
 
                                 Color.clear
                                     .frame(height: 12)
@@ -287,14 +298,16 @@ struct TaskRankingMacView: View {
                                 let containsSearchMatch = section.tasks.contains {
                                     currentScopeSearchMatchTaskIDs.contains($0.id)
                                 }
-                                let isCollapsed = collapsedSectionIDs.contains(section.id)
+                                let isCollapsed =
+                                    collapsedSectionIDs.contains(section.id)
                                     && !containsSearchMatch
 
                                 Section {
                                     if !isCollapsed {
                                         ForEach(section.tasks) { task in
                                             let metadata = presentation.rowMetadataByTaskID[task.id]
-                                            let nodeID: TaskLadderNodeID = metadata?.isGroup == true
+                                            let nodeID: TaskLadderNodeID =
+                                                metadata?.isGroup == true
                                                 ? .group(task.id)
                                                 : .task(task.id)
                                             let rowIdentity = TaskLadderLazyRowIdentity(
@@ -340,14 +353,16 @@ struct TaskRankingMacView: View {
                     }
                     .onChange(of: store.selectedTaskID) { _, selectedTaskID in
                         guard let selectedTaskID,
-                              store.currentScopeSearchMatchTaskIDs.contains(selectedTaskID) else { return }
+                            store.currentScopeSearchMatchTaskIDs.contains(selectedTaskID)
+                        else { return }
                         withAnimation(.easeInOut(duration: 0.2)) {
                             proxy.scrollTo(selectedTaskID, anchor: .center)
                         }
                     }
                     .onChange(of: store.searchLocateRequestID) { _, _ in
                         guard let selectedTaskID = store.selectedTaskID,
-                              store.currentScopeSearchMatchTaskIDs.contains(selectedTaskID) else { return }
+                            store.currentScopeSearchMatchTaskIDs.contains(selectedTaskID)
+                        else { return }
                         withAnimation(.easeInOut(duration: 0.2)) {
                             proxy.scrollTo(selectedTaskID, anchor: .center)
                         }
@@ -356,201 +371,6 @@ struct TaskRankingMacView: View {
             }
         }
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.42))
-    }
-
-    @ViewBuilder
-    private func taskLadderSearchResults(
-        searchPresentation: TaskRankingSearchPresentation,
-        searchText: String
-    ) -> some View {
-        if searchPresentation.matches.isEmpty
-            && searchPresentation.outsideMatches.isEmpty {
-            ContentUnavailableView.search(text: searchText)
-                .padding(.vertical, 18)
-        } else {
-            VStack(alignment: .leading, spacing: 8) {
-                if !searchPresentation.matches.isEmpty {
-                    searchResultHeader(
-                        title: "Found in Task Ladder",
-                        count: searchPresentation.matches.count
-                    )
-
-                    ForEach(searchPresentation.matches) { match in
-                        Button {
-                            store.send(.searchMatchSelected(match.task.id))
-                        } label: {
-                            HStack(spacing: 9) {
-                                Text(match.task.emoji ?? "✨")
-
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(match.task.name ?? "Untitled task")
-                                        .font(.subheadline.weight(.medium))
-                                        .lineLimit(2)
-
-                                    Text(match.locationTitle)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
-
-                                Spacer(minLength: 4)
-
-                                Text("Locate")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tint)
-                            }
-                            .padding(10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .background(
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(Color.accentColor.opacity(0.08))
-                        )
-                    }
-                }
-
-                if !searchPresentation.outsideMatches.isEmpty {
-                    searchResultHeader(
-                        title: "Outside Task Ladder",
-                        count: searchPresentation.outsideMatches.count
-                    )
-                    .padding(.top, searchPresentation.matches.isEmpty ? 0 : 6)
-
-                    ForEach(searchPresentation.outsideMatches) { match in
-                        Button {
-                            store.send(.taskSelected(match.task.id))
-                        } label: {
-                            HStack(spacing: 9) {
-                                Text(match.task.emoji ?? "✨")
-
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(match.task.name ?? "Untitled task")
-                                        .font(.subheadline.weight(.medium))
-                                        .lineLimit(2)
-
-                                    Text(match.reason)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
-
-                                Spacer(minLength: 4)
-
-                                Text("Open")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tint)
-                            }
-                            .padding(10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .background(
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(Color.secondary.opacity(0.08))
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private func searchResultHeader(title: String, count: Int) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-            Text("\(count)")
-                .font(.caption2.weight(.semibold).monospacedDigit())
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 4)
-    }
-
-    private func linkedTaskChildSuggestionsHeader(count: Int) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Label("Linked task suggestions", systemImage: "link.badge.plus")
-                    .font(.headline)
-
-                Text("\(count)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                Spacer(minLength: 0)
-            }
-
-            Text("Accept a linked task to place it in this group. Rejecting only hides the suggestion; either choice keeps the task link and its completion behavior unchanged.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(12)
-        .background(Color.accentColor.opacity(0.09))
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(nsColor: .textBackgroundColor).opacity(0.62))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
-        )
-    }
-
-    private func linkedTaskChildSuggestionRow(
-        _ suggestion: TaskRankingPresentation.LinkedTaskChildSuggestion
-    ) -> some View {
-        HStack(spacing: 10) {
-            Text(suggestion.taskEmoji)
-                .font(.body)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(suggestion.taskName)
-                    .font(.subheadline)
-                    .lineLimit(2)
-
-                HStack(spacing: 6) {
-                    Label(
-                        suggestion.relationshipKind.title,
-                        systemImage: suggestion.relationshipKind.systemImage
-                    )
-
-                    if suggestion.willMoveFromAnotherPlacement {
-                        Text("Moves from its current Ladder location")
-                    }
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 6)
-
-            Button {
-                store.send(.linkedTaskChildSuggestionRejected(
-                    parentTaskID: suggestion.parentTaskID,
-                    childTaskID: suggestion.taskID
-                ))
-            } label: {
-                Label("Reject", systemImage: "xmark")
-            }
-            .buttonStyle(.bordered)
-            .help("Hide this child suggestion without removing the task link")
-
-            Button {
-                store.send(.linkedTaskChildSuggestionAccepted(
-                    parentTaskID: suggestion.parentTaskID,
-                    childTaskID: suggestion.taskID
-                ))
-            } label: {
-                Label("Accept", systemImage: "checkmark")
-            }
-            .buttonStyle(.borderedProminent)
-            .help("Place this linked task inside the group")
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
     }
 
     private func rankingSectionHeader(
@@ -674,19 +494,6 @@ struct TaskRankingMacView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-
-    private var emptyStateTitle: String {
-        store.scopePath.isEmpty
-            ? "No tasks in Task Ladder"
-            : "No actionable nested tasks"
-    }
-
-    private var emptyStateDescription: String {
-        if let parentName = store.scopeParentName {
-            return "\(parentName) has no nested tasks available in Task Ladder right now."
-        }
-        return "Paused, blocked, completed, canceled, archived, nested, and Flag-hidden tasks stay out of the root task ladder."
     }
 
 }
