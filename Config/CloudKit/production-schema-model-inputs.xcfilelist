@@ -26,12 +26,14 @@ $(SRCROOT)/SharedCore/Models/RoutineTaskChecklistSupport.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskChangeLog.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskColor.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskComment.swift
+$(SRCROOT)/SharedCore/Models/RoutineTaskLadderEntrySupport.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskPriority.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskProgressSupport.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskRelationship.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskStatusSupport.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskStorage.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskTemporalWeight.swift
+$(SRCROOT)/SharedCore/Models/RoutineTaskTemporalWeightResolution.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskValueSupport.swift
 $(SRCROOT)/SharedCore/Models/RoutineTimeOfDay.swift
 $(SRCROOT)/SharedCore/Models/SleepSession.swift
