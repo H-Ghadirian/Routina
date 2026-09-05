@@ -157,6 +157,7 @@ let package = Package(
                 "Domain/StatsAchievementModels.swift",
                 "Domain/FocusActivityIntervals.swift",
                 "Domain/FocusDurationStats.swift",
+                "Domain/FocusStatsSessionCanonicalization.swift",
                 "Domain/FocusTimerActivityAttributes.swift",
                 "Domain/FocusTimerWidgetData.swift",
                 "Domain/NotificationPreferences.swift",
