@@ -2,11 +2,11 @@ import CloudKit
 import Foundation
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 struct CloudKitSyncDiagnosticsTests {
@@ -79,29 +79,38 @@ struct CloudKitSyncDiagnosticsTests {
         let fetcherSource = try SourceInspectionSupport.readProjectFile(
             "SharedCore/Sync/CloudKitDirectPullFetcher.swift"
         )
+        let requestStateSource = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Sync/CloudKitZoneChangesRequestState.swift"
+        )
         let serviceSource = try SourceInspectionSupport.readProjectFile(
             "SharedCore/Sync/CloudKitDirectPullService.swift"
         )
 
-        let changedStart = try #require(fetcherSource.range(of: "func recordChanged"))
+        let changedStart = try #require(requestStateSource.range(of: "func recordChanged"))
         let changedEnd = try #require(
-            fetcherSource.range(of: "func recordDeleted", range: changedStart.upperBound..<fetcherSource.endIndex)
+            requestStateSource.range(
+                of: "func recordDeleted",
+                range: changedStart.upperBound..<requestStateSource.endIndex
+            )
         )
         let deletedEnd = try #require(
-            fetcherSource.range(of: "func recordActivity", range: changedEnd.upperBound..<fetcherSource.endIndex)
+            requestStateSource.range(
+                of: "func recordActivity",
+                range: changedEnd.upperBound..<requestStateSource.endIndex
+            )
         )
         #expect(
-            fetcherSource[changedStart.lowerBound..<changedEnd.lowerBound]
+            requestStateSource[changedStart.lowerBound..<changedEnd.lowerBound]
                 .contains("resetIdleTimeoutLocked()")
         )
         #expect(
-            fetcherSource[changedEnd.lowerBound..<deletedEnd.lowerBound]
+            requestStateSource[changedEnd.lowerBound..<deletedEnd.lowerBound]
                 .contains("resetIdleTimeoutLocked()")
         )
         #expect(fetcherSource.contains("requestState.recordFailure(error)"))
-        #expect(fetcherSource.contains("if let firstRecordError = self.firstRecordError"))
+        #expect(requestStateSource.contains("if let firstRecordError = self.firstRecordError"))
         #expect(
-            fetcherSource.contains(
+            requestStateSource.contains(
                 "progress.receivedRecordCount - lastReportedRecordCount >= 25"
             )
         )

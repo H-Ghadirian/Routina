@@ -503,6 +503,7 @@ let package = Package(
                 "Sync/CloudKitDirectPullTaskRecordParser.swift",
                 "Sync/CloudKitDirectPullTaskRecordDecodingSupport.swift",
                 "Sync/CloudKitDirectPullUpserter.swift",
+                "Sync/CloudKitZoneChangesRequestState.swift",
                 "Sync/CloudKitPushSubscriptionService.swift",
                 "Sync/CloudSyncedSurfaceRefreshCoordinator.swift",
                 "Sync/CloudKitSyncDiagnostics.swift",
