@@ -311,6 +311,7 @@ let package = Package(
                 "Features/Home/StatsFeatureDerivedStateSupport.swift",
                 "Features/Home/StatsSummaryItemPresentation.swift",
                 "Features/Home/StatsSummaryTaskListPresentation.swift",
+                "Features/Home/StatsSummaryTaskListPresentationSupport.swift",
                 "Features/Home/StatsTaskFilterResolver.swift",
                 "Features/Home/StatsTaskTypeMatrixFilterSupport.swift",
                 "Features/Home/HomeFeatureTaskLoadEffectFactory.swift",
