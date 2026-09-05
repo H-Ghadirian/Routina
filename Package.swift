@@ -108,6 +108,7 @@ let package = Package(
                 "Views/SettingsTimelineRowPreviewView.swift",
                 "Views/StatsFocus2048Section.swift",
                 "Views/StatsHourlyActivitySection.swift",
+                "Views/StatsHourlyActivityPresentation.swift",
                 "Views/StatsGitHubChartView.swift",
                 "Views/StatsGitHubSummaryViews.swift",
                 // Shared by the app targets, but these views still rely on
