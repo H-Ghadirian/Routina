@@ -233,6 +233,7 @@ let package = Package(
                 "Features/CreationDrafts/CreationDraftSnapshots.swift",
                 "Features/Goals/GoalsFeature.swift",
                 "Features/Goals/GoalsFeature+GoalDisplayComparable.swift",
+                "Features/MissingData/GuidedMissingTaskDataSupport.swift",
                 "Features/MissingData/MissingTaskMetadataFeature.swift",
                 "Features/MissingData/MissingPressureDataFeature.swift",
                 "Features/MissingData/MissingPressureDataTaskPresentation.swift",

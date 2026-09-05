@@ -3,11 +3,11 @@ import Foundation
 import SwiftData
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 @MainActor
@@ -164,7 +164,9 @@ struct MissingThinkingNeededDataFeatureTests {
 
     @Test
     func iOSProcedureViewUsesTheSharedNoneValuedMetadataReducer() throws {
-        let featureSource = try Self.sourceFile("SharedCore/Features/MissingData/MissingPressureDataFeature.swift")
+        let featureSource =
+            try Self.sourceFile("SharedCore/Features/MissingData/MissingPressureDataFeature.swift")
+            + Self.sourceFile("SharedCore/Features/MissingData/GuidedMissingTaskDataSupport.swift")
         let viewSource = try Self.sourceFile("iOS/Screens/More/MissingPressureDataView.swift")
 
         #expect(featureSource.contains("case .thinkingNeeded"))
