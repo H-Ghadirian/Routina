@@ -102,7 +102,10 @@ struct TaskDetailTimeSpentHeaderBox: View {
                 .frame(width: 32, height: 32)
                 .routinaGlassPill(tint: .cyan, tintOpacity: 0.16)
 
-            effortSummary(isContentExpanded: isContentExpanded)
+            TaskDetailEffortSummary(
+                isContentExpanded: isContentExpanded,
+                metrics: effortMetrics
+            )
 
             Spacer(minLength: 8)
 
@@ -115,53 +118,6 @@ struct TaskDetailTimeSpentHeaderBox: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-    }
-
-    private func effortSummary(isContentExpanded: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("EFFORT")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            if !isContentExpanded {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .firstTextBaseline, spacing: 18) {
-                        ForEach(effortMetrics) { metric in
-                            effortMetricView(metric)
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(effortMetrics) { metric in
-                            effortMetricView(metric)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func effortMetricView(_ metric: TaskDetailEffortMetric) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(metric.title)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                if let systemImage = metric.systemImage {
-                    Image(systemName: systemImage)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(metric.tint)
-                }
-
-                Text(metric.value)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(metric.isMuted ? .secondary : .primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-        }
-        .fixedSize(horizontal: true, vertical: false)
     }
 
     private var expandedContent: some View {
@@ -181,7 +137,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
     }
 
     private var actualTimeContent: some View {
-        compactEffortRow(
+        TaskDetailCompactEffortRow(
             title: "Actual time",
             value: actualTimeDisplayText,
             systemImage: task.actualDurationMinutes == nil ? "clock.badge" : "clock.fill",
@@ -219,7 +175,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
 
     private var focusTimerContent: some View {
         VStack(alignment: .leading, spacing: 10) {
-            compactEffortRow(
+            TaskDetailCompactEffortRow(
                 title: "Focus",
                 value: focusSummaryText,
                 systemImage: hasActiveFocusForTask ? "timer.circle.fill" : "timer",
@@ -251,176 +207,25 @@ struct TaskDetailTimeSpentHeaderBox: View {
         }
     }
 
-    private func compactEffortRow<Actions: View>(
-        title: String,
-        value: String,
-        systemImage: String,
-        tint: Color,
-        isValueMuted: Bool,
-        @ViewBuilder actions: () -> Actions
-    ) -> some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 12) {
-                compactEffortValue(
-                    title: title,
-                    value: value,
-                    systemImage: systemImage,
-                    tint: tint,
-                    isValueMuted: isValueMuted
-                )
-
-                Spacer(minLength: 16)
-
-                actions()
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                compactEffortValue(
-                    title: title,
-                    value: value,
-                    systemImage: systemImage,
-                    tint: tint,
-                    isValueMuted: isValueMuted
-                )
-                actions()
-            }
-        }
-        .frame(maxWidth: 720, alignment: .leading)
-    }
-
-    private func compactEffortValue(
-        title: String,
-        value: String,
-        systemImage: String,
-        tint: Color,
-        isValueMuted: Bool
-    ) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(tint)
-                .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-
-                Text(value)
-                    .font(.caption)
-                    .foregroundStyle(isValueMuted ? .secondary : .primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-        }
-    }
-
     private var actualTimeEditor: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(task.actualDurationMinutes == nil ? "Log actual time" : "Add actual time")
-                    .font(.headline)
-                Text(
-                    task.actualDurationMinutes == nil
-                        ? "Record time without changing Focus history."
-                        : "Add this duration to the recorded total."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            Stepper(
-                value: actualTimeEntryBinding,
-                in: TaskDetailTimeSpentPresentation.minimumMinutes...TaskDetailTimeSpentPresentation.maximumMinutes,
-                step: 5
-            ) {
-                HStack {
-                    Text("Duration")
-                    Spacer()
-                    Text(RoutineTimeSpentFormatting.compactMinutesText(entryTotalMinutes))
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                }
-            }
-
-            if task.actualDurationMinutes != nil {
-                Text(
-                    TaskDetailTimeSpentPresentation.previewText(
-                        currentMinutes: task.actualDurationMinutes,
-                        entryMinutes: entryTotalMinutes
-                    )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            HStack {
-                Spacer()
-
-                Button(task.actualDurationMinutes == nil ? "Log time" : "Add time") {
-                    applyEntry()
-                    isActualTimeEditorPresented = false
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.cyan)
-                .disabled(!canApplyEntry)
-                .keyboardShortcut(.defaultAction)
-            }
+        TaskDetailActualTimeEditor(
+            currentMinutes: task.actualDurationMinutes,
+            entryMinutes: actualTimeEntryBinding,
+            canApplyEntry: canApplyEntry
+        ) {
+            applyEntry()
+            isActualTimeEditorPresented = false
         }
-        .frame(width: 340)
-        .padding(18)
     }
 
     private var focusStartEditor: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Start focus")
-                    .font(.headline)
-                Text("Focus time stays separate from Actual time.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Picker("Timer", selection: $focusStartMode) {
-                ForEach(TaskDetailFocusStartMode.allCases) { mode in
-                    Text(mode.title)
-                        .tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            if focusStartMode == .countdown {
-                Stepper(
-                    value: focusCountdownMinutesBinding,
-                    in: TaskDetailTimeSpentPresentation.minimumMinutes...TaskDetailTimeSpentPresentation.maximumMinutes,
-                    step: 5
-                ) {
-                    HStack {
-                        Text("Duration")
-                        Spacer()
-                        Text(RoutineTimeSpentFormatting.compactMinutesText(focusCountdownMinutes))
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                    }
-                }
-            }
-
-            HStack {
-                Spacer()
-
-                Button("Start focus") {
-                    let durationSeconds = focusStartMode == .countdown
-                        ? TimeInterval(focusCountdownMinutes * 60)
-                        : 0
-                    startFocus(durationSeconds: durationSeconds)
-                    isFocusStartEditorPresented = false
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.teal)
-                .keyboardShortcut(.defaultAction)
-            }
+        TaskDetailFocusStartEditor(
+            mode: $focusStartMode,
+            countdownMinutes: focusCountdownMinutesBinding
+        ) { durationSeconds in
+            startFocus(durationSeconds: durationSeconds)
+            isFocusStartEditorPresented = false
         }
-        .frame(width: 340)
-        .padding(18)
     }
 
     private var awaySessionBlockingContent: some View {
@@ -570,12 +375,10 @@ struct TaskDetailTimeSpentHeaderBox: View {
 
     private var shouldShowFocusDetails: Bool {
         shouldShowFocusTimerSection
-            && (
-                !activeSleepSessions.isEmpty
-                    || !focusSnapshot.completedSessionsForTask.isEmpty
-                    || focusSessions.contains { $0.state == .active }
-                    || blockingFocusTitle != nil
-            )
+            && (!activeSleepSessions.isEmpty
+                || !focusSnapshot.completedSessionsForTask.isEmpty
+                || focusSessions.contains { $0.state == .active }
+                || blockingFocusTitle != nil)
     }
 
     private var effectiveFocusEnabled: Bool {
@@ -624,7 +427,8 @@ struct TaskDetailTimeSpentHeaderBox: View {
 
     private func resetEntry() {
         let storedMinutes = TaskDetailTimeSpentPresentation.clampedMinutes(savedActualTimeEntryMinutes)
-        let defaultMinutes = savedActualTimeEntryMinutes > 0
+        let defaultMinutes =
+            savedActualTimeEntryMinutes > 0
             ? storedMinutes
             : TaskDetailTimeSpentPresentation.defaultAdditionalEntryMinutes(
                 currentMinutes: task.actualDurationMinutes,
@@ -652,14 +456,4 @@ struct TaskDetailTimeSpentHeaderBox: View {
             NSLog("Failed to start task focus from Effort: \(error.localizedDescription)")
         }
     }
-}
-
-private struct TaskDetailEffortMetric: Identifiable {
-    let title: String
-    let value: String
-    let systemImage: String?
-    let tint: Color
-    var isMuted = false
-
-    var id: String { title }
 }

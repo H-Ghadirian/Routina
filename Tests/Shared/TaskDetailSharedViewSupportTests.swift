@@ -3,11 +3,11 @@ import ComposableArchitecture
 import SwiftUI
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 @MainActor
@@ -173,9 +173,13 @@ struct TaskDetailSharedViewSupportTests {
 
     @Test
     func macTaskDetailKeepsActualTimeAndFocusCompactAndIndependent() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
-        )
+        let source =
+            try Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
+            )
+            + Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentComponents.swift"
+            )
         let focusCardSource = try Self.sourceFile("SharedCore/Views/FocusSessionCard.swift")
         let focusContentSource = try Self.sourceFile("SharedCore/Views/FocusSessionCardContent.swift")
         let actualEditorStart = try #require(source.range(of: "private var actualTimeEditor"))
@@ -203,8 +207,8 @@ struct TaskDetailSharedViewSupportTests {
         #expect(source.contains("Label(\"Start focus\", systemImage: \"timer\")"))
         #expect(source.contains(".popover(isPresented: $isActualTimeEditorPresented"))
         #expect(source.contains(".popover(isPresented: $isFocusStartEditorPresented"))
-        #expect(source.contains("Picker(\"Timer\", selection: $focusStartMode)"))
-        #expect(source.contains("if focusStartMode == .countdown"))
+        #expect(source.contains("Picker(\"Timer\", selection: $mode)"))
+        #expect(source.contains("if mode == .countdown"))
         #expect(source.contains("title: \"FOCUS\""))
         #expect(source.contains("value: focusSummaryText"))
         #expect(source.contains("macTaskDetailLastActualTimeEntryMinutes"))
@@ -320,7 +324,7 @@ struct TaskDetailSharedViewSupportTests {
         let logs = [
             RoutineLog(taskID: routine.id, kind: .completed, actualDurationMinutes: 20),
             RoutineLog(taskID: routine.id, kind: .canceled, actualDurationMinutes: 30),
-            RoutineLog(taskID: routine.id, kind: .completed, actualDurationMinutes: 25)
+            RoutineLog(taskID: routine.id, kind: .completed, actualDurationMinutes: 25),
         ]
 
         #expect(TaskDetailHeaderBadgePresentation.displayedActualDurationMinutes(task: todo, logs: logs) == 15)
@@ -357,16 +361,18 @@ struct TaskDetailSharedViewSupportTests {
             layout: .desktop
         )
 
-        #expect(mobileRows.map { $0.map(\.title) } == [
-            ["Status"],
-            ["Location"],
-            ["Due"],
-            ["Estimate", "Spent", "Points"]
-        ])
-        #expect(desktopRows.map { $0.map(\.title) } == [
-            ["Location"],
-            ["Due"]
-        ])
+        #expect(
+            mobileRows.map { $0.map(\.title) } == [
+                ["Status"],
+                ["Location"],
+                ["Due"],
+                ["Estimate", "Spent", "Points"],
+            ])
+        #expect(
+            desktopRows.map { $0.map(\.title) } == [
+                ["Location"],
+                ["Due"],
+            ])
     }
 
     @Test
@@ -438,7 +444,7 @@ struct TaskDetailSharedViewSupportTests {
         ]
         state.logs = [
             RoutineLog(taskID: task.id, kind: .completed, actualDurationMinutes: 25),
-            RoutineLog(taskID: task.id, kind: .canceled)
+            RoutineLog(taskID: task.id, kind: .canceled),
         ]
 
         let mobileRows = TaskDetailHeaderBadgePresentation.routineBadgeRows(
@@ -454,19 +460,21 @@ struct TaskDetailSharedViewSupportTests {
             layout: .desktop
         )
 
-        #expect(mobileRows.map { $0.map(\.title) } == [
-            ["Status", "Frequency"],
-            ["Due"],
-            ["Location", "Completed"],
-            ["Canceled"],
-            ["Estimate", "Spent", "Points"]
-        ])
-        #expect(desktopRows.map { $0.map(\.title) } == [
-            ["Status", "Frequency"],
-            ["Completed", "Canceled", "Due"],
-            ["Location"],
-            ["Estimate"]
-        ])
+        #expect(
+            mobileRows.map { $0.map(\.title) } == [
+                ["Status", "Frequency"],
+                ["Due"],
+                ["Location", "Completed"],
+                ["Canceled"],
+                ["Estimate", "Spent", "Points"],
+            ])
+        #expect(
+            desktopRows.map { $0.map(\.title) } == [
+                ["Status", "Frequency"],
+                ["Completed", "Canceled", "Due"],
+                ["Location"],
+                ["Estimate"],
+            ])
     }
 
     @Test
@@ -502,7 +510,7 @@ struct TaskDetailSharedViewSupportTests {
             imageData: Data([1]),
             steps: [
                 RoutineStep(title: "Outline"),
-                RoutineStep(title: "Draft")
+                RoutineStep(title: "Draft"),
             ],
             scheduleMode: .fixedInterval,
             interval: 2
@@ -709,7 +717,8 @@ struct TaskDetailSharedViewSupportTests {
         let importance = try #require(taskLadderControls.range(of: "TaskDetailImportancePickerPill(store: store, isReadOnly: isReadOnly)"))
         let urgency = try #require(taskLadderControls.range(of: "TaskDetailUrgencyPickerPill(store: store, isReadOnly: isReadOnly)"))
         let pressure = try #require(taskLadderControls.range(of: "TaskDetailPressurePickerPill(store: store, isReadOnly: isReadOnly)"))
-        let thinking = try #require(taskLadderControls.range(of: "TaskDetailThinkingNeededPickerPill(store: store, isReadOnly: isReadOnly)"))
+        let thinking = try #require(
+            taskLadderControls.range(of: "TaskDetailThinkingNeededPickerPill(store: store, isReadOnly: isReadOnly)"))
         #expect(importance.lowerBound < urgency.lowerBound)
         #expect(urgency.lowerBound < pressure.lowerBound)
         #expect(pressure.lowerBound < thinking.lowerBound)
@@ -740,18 +749,21 @@ struct TaskDetailSharedViewSupportTests {
 
     @Test
     func addEventsActionRequiresEventActionsEnabledAndNoLinkedEvents() {
-        #expect(TaskDetailEventActionVisibility.shouldShowAddEventsAction(
-            hasLinkedEvents: false,
-            areEventActionsEnabled: true
-        ))
-        #expect(!TaskDetailEventActionVisibility.shouldShowAddEventsAction(
-            hasLinkedEvents: false,
-            areEventActionsEnabled: false
-        ))
-        #expect(!TaskDetailEventActionVisibility.shouldShowAddEventsAction(
-            hasLinkedEvents: true,
-            areEventActionsEnabled: true
-        ))
+        #expect(
+            TaskDetailEventActionVisibility.shouldShowAddEventsAction(
+                hasLinkedEvents: false,
+                areEventActionsEnabled: true
+            ))
+        #expect(
+            !TaskDetailEventActionVisibility.shouldShowAddEventsAction(
+                hasLinkedEvents: false,
+                areEventActionsEnabled: false
+            ))
+        #expect(
+            !TaskDetailEventActionVisibility.shouldShowAddEventsAction(
+                hasLinkedEvents: true,
+                areEventActionsEnabled: true
+            ))
     }
 
     @Test
@@ -784,18 +796,20 @@ struct TaskDetailSharedViewSupportTests {
         )
         let state = TaskDetailFeature.State(task: completedTodo)
 
-        #expect(TaskDetailStatusMetadataPresentation.statusContextMessage(
-            for: state,
-            showPersianDates: false,
-            style: .mobile,
-            referenceDate: makeDate("2026-04-25T10:00:00Z")
-        ) == nil)
-        #expect(TaskDetailStatusMetadataPresentation.statusContextMessage(
-            for: state,
-            showPersianDates: false,
-            style: .desktop,
-            referenceDate: makeDate("2026-04-25T10:00:00Z")
-        ) == nil)
+        #expect(
+            TaskDetailStatusMetadataPresentation.statusContextMessage(
+                for: state,
+                showPersianDates: false,
+                style: .mobile,
+                referenceDate: makeDate("2026-04-25T10:00:00Z")
+            ) == nil)
+        #expect(
+            TaskDetailStatusMetadataPresentation.statusContextMessage(
+                for: state,
+                showPersianDates: false,
+                style: .desktop,
+                referenceDate: makeDate("2026-04-25T10:00:00Z")
+            ) == nil)
     }
 
     @Test
@@ -812,16 +826,18 @@ struct TaskDetailSharedViewSupportTests {
 
         #expect(message?.hasPrefix("Reviewing ") == true)
         #expect(message?.hasSuffix(".") == true)
-        #expect(TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
-            rawText: "Apr 26",
-            dueDate: nil,
-            showPersianDates: true
-        ) == "Apr 26")
-        #expect(TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
-            rawText: "Apr 26",
-            dueDate: makeDate("2026-04-26T09:00:00Z"),
-            showPersianDates: false
-        ) == "Apr 26")
+        #expect(
+            TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
+                rawText: "Apr 26",
+                dueDate: nil,
+                showPersianDates: true
+            ) == "Apr 26")
+        #expect(
+            TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
+                rawText: "Apr 26",
+                dueDate: makeDate("2026-04-26T09:00:00Z"),
+                showPersianDates: false
+            ) == "Apr 26")
     }
 
     @Test
@@ -863,7 +879,7 @@ struct TaskDetailSharedViewSupportTests {
         var state = TaskDetailFeature.State(task: task)
         state.availableGoals = [
             RoutineGoalSummary(id: healthID, title: "Health", emoji: "H", color: .green),
-            RoutineGoalSummary(id: focusID, title: "Focus", emoji: "F", color: .blue)
+            RoutineGoalSummary(id: focusID, title: "Focus", emoji: "F", color: .blue),
         ]
 
         #expect(state.taskGoalSummaries.map(\.id) == [focusID, healthID])
@@ -1011,7 +1027,7 @@ struct TaskDetailSharedViewSupportTests {
             name: "Restock pantry",
             checklistItems: [
                 RoutineChecklistItem(title: "Beans", intervalDays: 14),
-                RoutineChecklistItem(title: "Rice", intervalDays: 30)
+                RoutineChecklistItem(title: "Rice", intervalDays: 30),
             ],
             scheduleMode: .fixedIntervalChecklist
         )
@@ -1468,20 +1484,22 @@ struct TaskDetailSharedViewSupportTests {
         )
 
         #expect(sortedItems.map(\.title) == ["Coffee", "Milk"])
-        #expect(TaskDetailChecklistPresentation.statusText(
-            for: overdue,
-            task: task,
-            isMarkedDone: false,
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) == "Overdue by 1 day")
-        #expect(TaskDetailChecklistPresentation.statusText(
-            for: dueToday,
-            task: task,
-            isMarkedDone: false,
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) == "Due today")
+        #expect(
+            TaskDetailChecklistPresentation.statusText(
+                for: overdue,
+                task: task,
+                isMarkedDone: false,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == "Overdue by 1 day")
+        #expect(
+            TaskDetailChecklistPresentation.statusText(
+                for: dueToday,
+                task: task,
+                isMarkedDone: false,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == "Due today")
     }
 
     @Test
@@ -1493,16 +1511,18 @@ struct TaskDetailSharedViewSupportTests {
             lastPurchasedAt: makeDate("2026-04-25T10:00:00Z")
         )
 
-        #expect(TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
-            item,
-            referenceDate: makeDate("2026-04-25T20:00:00Z"),
-            calendar: calendar
-        ))
-        #expect(!TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
-            item,
-            referenceDate: makeDate("2026-04-26T10:00:00Z"),
-            calendar: calendar
-        ))
+        #expect(
+            TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
+                item,
+                referenceDate: makeDate("2026-04-25T20:00:00Z"),
+                calendar: calendar
+            ))
+        #expect(
+            !TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
+                item,
+                referenceDate: makeDate("2026-04-26T10:00:00Z"),
+                calendar: calendar
+            ))
     }
 
     @Test
@@ -1563,7 +1583,7 @@ struct TaskDetailSharedViewSupportTests {
             name: "Working Hours",
             checklistItems: [
                 RoutineChecklistItem(title: "Sciforma", intervalDays: 30),
-                RoutineChecklistItem(title: "Excel", intervalDays: 30)
+                RoutineChecklistItem(title: "Excel", intervalDays: 30),
             ],
             scheduleMode: .fixedIntervalChecklist
         )
@@ -1622,13 +1642,14 @@ struct TaskDetailSharedViewSupportTests {
         task.completedChecklistItemIDs = [itemID]
         task.completedChecklistProgressStartedAt = now
 
-        #expect(!TaskDetailChecklistPresentation.canToggleItem(
-            task.checklistItems[0],
-            task: task,
-            selectedDate: now,
-            isSelectedDateCompleted: true,
-            calendar: .current
-        ))
+        #expect(
+            !TaskDetailChecklistPresentation.canToggleItem(
+                task.checklistItems[0],
+                task: task,
+                selectedDate: now,
+                isSelectedDateCompleted: true,
+                calendar: .current
+            ))
     }
 
     @Test
