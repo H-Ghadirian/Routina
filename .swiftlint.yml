@@ -15,6 +15,8 @@ excluded:
 disabled_rules:
   # swift-format deliberately keeps trailing commas in multiline collections.
   - trailing_comma
+  # swift-format puts braces after multiline conditions on their own line.
+  - opening_brace
   # Short domain names such as `id`, `x`, and `y` are established throughout
   # the scheduling and geometry code.
   - identifier_name
