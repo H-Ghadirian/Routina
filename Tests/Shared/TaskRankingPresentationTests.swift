@@ -1,11 +1,11 @@
 import Foundation
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 struct TaskRankingPresentationTests {
@@ -63,9 +63,10 @@ struct TaskRankingPresentationTests {
         #expect(presentation.sections.last?.tasks.map(\.id) == [unknown.id])
         #expect(presentation.taskCount == 3)
         #expect(presentation.eligibleTaskIDs == Set([high.id, medium.id, unknown.id]))
-        #expect(!presentation.sections.contains { section in
-            section.tasks.contains(where: { $0.id == blocked.id })
-        })
+        #expect(
+            !presentation.sections.contains { section in
+                section.tasks.contains(where: { $0.id == blocked.id })
+            })
     }
 
     @Test
@@ -155,7 +156,7 @@ struct TaskRankingPresentationTests {
             calendar: calendar,
             completionDatesByTaskID: [
                 blocker.id: [olderBlockerCompletion],
-                dependent.id: [dependentCompletion]
+                dependent.id: [dependentCompletion],
             ]
         )
         let unlocked = TaskRankingPresentation.make(
@@ -167,7 +168,7 @@ struct TaskRankingPresentationTests {
             calendar: calendar,
             completionDatesByTaskID: [
                 blocker.id: [newerBlockerCompletion],
-                dependent.id: [dependentCompletion]
+                dependent.id: [dependentCompletion],
             ]
         )
 
@@ -189,7 +190,7 @@ struct TaskRankingPresentationTests {
             tasks: [excluded, included, hiddenFromHomeOnly],
             flagRules: [
                 RoutineFlagRule(flag: "someday", kind: .hideFromTaskLadder),
-                RoutineFlagRule(flag: "Off radar", kind: .hideFromTaskLists)
+                RoutineFlagRule(flag: "Off radar", kind: .hideFromTaskLists),
             ],
             metric: .pressure,
             isReversed: false,
@@ -197,10 +198,12 @@ struct TaskRankingPresentationTests {
             calendar: calendar
         )
 
-        #expect(Set(presentation.sections.flatMap(\.tasks).map(\.id)) == Set([
-            included.id,
-            hiddenFromHomeOnly.id
-        ]))
+        #expect(
+            Set(presentation.sections.flatMap(\.tasks).map(\.id))
+                == Set([
+                    included.id,
+                    hiddenFromHomeOnly.id,
+                ]))
         #expect(presentation.taskCount == 2)
     }
 
@@ -230,7 +233,7 @@ struct TaskRankingPresentationTests {
             TaskLadderPlacement(taskID: walk.id, parent: .task(exercise.id)),
             TaskLadderPlacement(taskID: gym.id, parent: .task(exercise.id)),
             TaskLadderPlacement(taskID: run.id, parent: .task(exercise.id)),
-            TaskLadderPlacement(taskID: blockedSwim.id, parent: .task(exercise.id))
+            TaskLadderPlacement(taskID: blockedSwim.id, parent: .task(exercise.id)),
         ])
 
         let root = TaskRankingPresentation.make(
@@ -309,7 +312,7 @@ struct TaskRankingPresentationTests {
             RoutineTaskRelationship(targetTaskID: rejected.id, kind: .related),
             RoutineTaskRelationship(targetTaskID: hidden.id, kind: .related),
             RoutineTaskRelationship(targetTaskID: cycle.id, kind: .related),
-            RoutineTaskRelationship(targetTaskID: moveMe.id, kind: .blockedBy)
+            RoutineTaskRelationship(targetTaskID: moveMe.id, kind: .blockedBy),
         ])
         walk.replaceRelationships([
             RoutineTaskRelationship(targetTaskID: exercise.id, kind: .canComplete)
@@ -320,7 +323,7 @@ struct TaskRankingPresentationTests {
             placements: [
                 TaskLadderPlacement(taskID: placed.id, parent: .task(exercise.id)),
                 TaskLadderPlacement(taskID: exercise.id, parent: .task(cycle.id)),
-                TaskLadderPlacement(taskID: moveMe.id, parent: .group(company.id))
+                TaskLadderPlacement(taskID: moveMe.id, parent: .group(company.id)),
             ],
             taskGroupIDs: [exercise.id],
             rejectedLinkedTaskChildSuggestions: [
@@ -343,14 +346,16 @@ struct TaskRankingPresentationTests {
         )
 
         #expect(presentation.linkedTaskChildSuggestions.map(\.taskName) == ["Gym", "Move me", "Walk"])
-        #expect(presentation.linkedTaskChildSuggestions.map(\.relationshipKind) == [
-            .related,
-            .blockedBy,
-            .canBeCompletedBy
-        ])
-        #expect(presentation.linkedTaskChildSuggestions.first {
-            $0.taskID == moveMe.id
-        }?.willMoveFromAnotherPlacement == true)
+        #expect(
+            presentation.linkedTaskChildSuggestions.map(\.relationshipKind) == [
+                .related,
+                .blockedBy,
+                .canBeCompletedBy,
+            ])
+        #expect(
+            presentation.linkedTaskChildSuggestions.first {
+                $0.taskID == moveMe.id
+            }?.willMoveFromAnotherPlacement == true)
         #expect(!presentation.linkedTaskChildSuggestions.contains { $0.taskID == placed.id })
         #expect(!presentation.linkedTaskChildSuggestions.contains { $0.taskID == rejected.id })
         #expect(!presentation.linkedTaskChildSuggestions.contains { $0.taskID == hidden.id })
@@ -429,6 +434,9 @@ struct TaskRankingPresentationTests {
         #expect(AnyHashable(suggestion.id) != AnyHashable(walk.id))
     }
 
+}
+
+extension TaskRankingPresentationTests {
     @Test
     func groupInheritsHighestCategoricalValuesFromItsActionableDirectTasks() throws {
         let company = TaskLadderGroup(
@@ -474,7 +482,7 @@ struct TaskRankingPresentationTests {
             .pressure: .pressure(.medium),
             .urgency: .urgency(.level3),
             .importance: .importance(.level3),
-            .thinkingNeeded: .thinkingNeeded(.medium)
+            .thinkingNeeded: .thinkingNeeded(.medium),
         ]
 
         for (metric, expectedValue) in expectedValues {
@@ -517,7 +525,7 @@ struct TaskRankingPresentationTests {
             TaskRankingMetric.pressure,
             .urgency,
             .importance,
-            .thinkingNeeded
+            .thinkingNeeded,
         ] {
             let presentation = TaskRankingPresentation.make(
                 tasks: [missing],
@@ -546,7 +554,7 @@ struct TaskRankingPresentationTests {
         let exercise = RoutineTask(name: "Exercise", pressure: .low)
         let organization = TaskLadderOrganization(placements: [
             TaskLadderPlacement(taskID: walk.id, parent: .task(exercise.id)),
-            TaskLadderPlacement(taskID: gym.id, parent: .task(exercise.id))
+            TaskLadderPlacement(taskID: gym.id, parent: .task(exercise.id)),
         ])
         walk.setTaskRankingOrder(0, for: .pressure, value: .pressure(.medium))
         gym.setTaskRankingOrder(1_000_000, for: .pressure, value: .pressure(.medium))
@@ -583,15 +591,17 @@ struct TaskRankingPresentationTests {
 
         let movedWalk = try #require(tasks.first(where: { $0.id == walk.id }))
         #expect(update.scopeTaskID == exercise.id)
-        #expect(movedWalk.taskRankingOrder(
-            for: .pressure,
-            value: .pressure(.medium)
-        ) == 0)
-        #expect(movedWalk.taskRankingOrder(
-            for: .pressure,
-            value: .pressure(.medium),
-            scopeTaskID: exercise.id
-        ) != 1_000_000)
+        #expect(
+            movedWalk.taskRankingOrder(
+                for: .pressure,
+                value: .pressure(.medium)
+            ) == 0)
+        #expect(
+            movedWalk.taskRankingOrder(
+                for: .pressure,
+                value: .pressure(.medium),
+                scopeTaskID: exercise.id
+            ) != 1_000_000)
     }
 
     @Test
@@ -643,14 +653,16 @@ struct TaskRankingPresentationTests {
         )
         #expect(finalPresentation.sections.first?.tasks.map(\.id) == [d.id, a.id, c.id])
         #expect(tasks.first(where: { $0.id == a.id })?.pressure == .medium)
-        #expect(tasks.first(where: { $0.id == d.id })?.taskRankingOrder(
-            for: .pressure,
-            value: .pressure(.medium)
-        ) == 0)
-        #expect(tasks.first(where: { $0.id == a.id })?.taskRankingOrder(
-            for: .pressure,
-            value: .pressure(.medium)
-        ) == 1_000_000)
+        #expect(
+            tasks.first(where: { $0.id == d.id })?.taskRankingOrder(
+                for: .pressure,
+                value: .pressure(.medium)
+            ) == 0)
+        #expect(
+            tasks.first(where: { $0.id == a.id })?.taskRankingOrder(
+                for: .pressure,
+                value: .pressure(.medium)
+            ) == 1_000_000)
     }
 
     @Test
@@ -880,6 +892,9 @@ struct TaskRankingPresentationTests {
         #expect(try #require(search.outsideMatches.first).reason == "Enters Task Ladder in 29 days")
     }
 
+}
+
+extension TaskRankingPresentationTests {
     @Test
     func taskLadderOffersBaseNowAndTemporalRuleEditing() throws {
         let rankingSource = try Self.sourceFile(
@@ -919,7 +934,7 @@ struct TaskRankingPresentationTests {
     @Test
     func taskLadderGroupEditorOffersInheritedValues() throws {
         let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
+            "RoutinaMacApp/Screens/TaskRanking/TaskLadderGroupEditorSheet.swift"
         )
 
         #expect(source.contains("Inherit (highest task value)"))
@@ -933,7 +948,7 @@ struct TaskRankingPresentationTests {
             "RoutinaMacApp/Screens/TaskRanking/TaskRankingMacView.swift"
         )
         let editorSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskRanking/TaskLadderOrganizationMacViews.swift"
+            "RoutinaMacApp/Screens/TaskRanking/TaskLadderGroupEditorSheet.swift"
         )
 
         #expect(rankingSource.contains("struct TaskLadderGroupEditorPresentation: Identifiable"))
@@ -1232,6 +1247,9 @@ struct TaskRankingPresentationTests {
         )
     }
 
+}
+
+extension TaskRankingPresentationTests {
     @Test
     func gradualRuleStepsTowardDueTargetsInsideLeadWindow() throws {
         let interval = 10
