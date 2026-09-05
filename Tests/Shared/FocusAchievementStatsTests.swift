@@ -10,6 +10,13 @@ import Testing
 
 struct FocusAchievementStatsTests {
     @Test
+    func achievementContentResourceResolvesFromRuntimeBundles() throws {
+        let resourceURL = try #require(StatsAchievementContentCatalog.bundledResourceURL)
+
+        #expect(resourceURL.lastPathComponent == "StatsAchievementContentCatalog.json")
+    }
+
+    @Test
     func contentCatalogCoversEveryGeneratedAchievementAndItsVariants() throws {
         let calendar = makeTestCalendar()
         let place = RoutinePlace(

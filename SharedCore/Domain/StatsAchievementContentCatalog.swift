@@ -1,5 +1,7 @@
 import Foundation
 
+private final class StatsAchievementContentBundleToken: NSObject {}
+
 enum StatsAchievementSubtitleVariant: String {
     case standard
     case withoutPlaces
@@ -77,12 +79,7 @@ struct StatsAchievementContentCatalog {
     }
 
     private static func load() -> StatsAchievementContentCatalog {
-        guard
-            let resourceURL = resourceBundle.url(
-                forResource: "StatsAchievementContentCatalog",
-                withExtension: "json"
-            )
-        else {
+        guard let resourceURL = bundledResourceURL else {
             preconditionFailure(
                 "StatsAchievementContentCatalog.json is missing from the resource bundle."
             )
@@ -95,12 +92,38 @@ struct StatsAchievementContentCatalog {
         }
     }
 
-    private static var resourceBundle: Bundle {
+    static var bundledResourceURL: URL? {
+        resourceBundles.lazy.compactMap(resourceURL(in:)).first
+    }
+
+    private static func resourceURL(in bundle: Bundle) -> URL? {
+        bundle.url(
+            forResource: "StatsAchievementContentCatalog",
+            withExtension: "json"
+        )
+            ?? bundle.url(
+                forResource: "StatsAchievementContentCatalog",
+                withExtension: "json",
+                subdirectory: nil,
+                localization: "en"
+            )
+    }
+
+    private static var resourceBundles: [Bundle] {
         #if SWIFT_PACKAGE
-            Bundle.module
+            [Bundle.module]
         #else
-            Bundle.main
+            uniqueBundles(
+                [Bundle.main, Bundle(for: StatsAchievementContentBundleToken.self)]
+                    + Bundle.allBundles
+                    + Bundle.allFrameworks
+            )
         #endif
+    }
+
+    private static func uniqueBundles(_ bundles: [Bundle]) -> [Bundle] {
+        var seenURLs: Set<URL> = []
+        return bundles.filter { seenURLs.insert($0.bundleURL).inserted }
     }
 }
 
