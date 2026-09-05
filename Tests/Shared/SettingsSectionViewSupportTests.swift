@@ -85,7 +85,7 @@ struct SettingsSectionViewSupportTests {
                 statusNeedle: "store.cloud.syncStatusText"
             ),
             (
-                path: "RoutinaMacApp/Screens/Settings/SettingsMacDataSupportDetailViews.swift",
+                path: "RoutinaMacApp/Screens/Settings/SettingsMacCloudDetailView.swift",
                 statusNeedle: "store.cloud.syncStatusText"
             ),
             (

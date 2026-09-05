@@ -321,15 +321,14 @@ struct AppStoreComplianceConfigurationTests {
     @Test
     func productionSettingsDoNotExposeBetaExperiments() throws {
         let macSettings = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Settings/SettingsMacDataSupportDetailViews.swift"
+            "RoutinaMacApp/Screens/Settings/SettingsMacAboutDetailView.swift"
         )
         let iOSSettings = try Self.sourceFile(
             "iOS/Screens/Settings/SettingsDataSupportDetailViews.swift"
         )
 
-        #expect(macSettings.contains(
-            "if AppEnvironment.isDevelopmentAppVariant {\n            SettingsMacBetaExperimentsCard"
-        ))
+        #expect(macSettings.contains("if AppEnvironment.isDevelopmentAppVariant {"))
+        #expect(macSettings.contains("SettingsMacBetaExperimentsCard(store: store)"))
         #expect(iOSSettings.contains(
             "if AppEnvironment.isDevelopmentAppVariant {\n            SettingsBetaExperimentsSection"
         ))

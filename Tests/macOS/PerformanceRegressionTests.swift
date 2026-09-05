@@ -630,7 +630,9 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testMacStatsDashboardToolbarControlsAreBetaGated() throws {
         let statsSource = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
-        let settingsSource = try Self.sourceFile("RoutinaMacApp/Screens/Settings/SettingsMacDataSupportDetailViews.swift")
+        let settingsSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Settings/SettingsMacAboutDetailView.swift"
+        )
 
         XCTAssertTrue(statsSource.contains("appSettingMacStatsDashboardControlsEnabled"))
         XCTAssertTrue(
