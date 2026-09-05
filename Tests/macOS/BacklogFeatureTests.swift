@@ -60,7 +60,7 @@ struct BacklogFeatureTests {
         }
 
         await store.send(.automaticRefresh)
-        await store.receive(.tasksLoaded([], [], [], [], [], [:]))
+        await store.receive(.tasksLoaded([], [:], [], [], [], [], [:]))
     }
 
     @Test
@@ -76,7 +76,7 @@ struct BacklogFeatureTests {
         await store.send(.refresh) {
             $0.isLoading = true
         }
-        await store.receive(.tasksLoaded([], [], [], [], [], [:])) {
+        await store.receive(.tasksLoaded([], [:], [], [], [], [], [:])) {
             $0.isLoading = false
         }
     }
