@@ -8,6 +8,11 @@ enum StatsAchievementSubtitleVariant: String {
 }
 
 struct StatsAchievementContentCatalog {
+    private static let resourceNames = [
+        "StatsAchievementContentCatalog",
+        "StatsAchievementContentCatalogFallback",
+    ]
+
     struct CountUnit: Decodable, Equatable {
         let singular: String
         let plural: String
@@ -97,16 +102,18 @@ struct StatsAchievementContentCatalog {
     }
 
     private static func resourceURL(in bundle: Bundle) -> URL? {
-        bundle.url(
-            forResource: "StatsAchievementContentCatalog",
-            withExtension: "json"
-        )
-            ?? bundle.url(
-                forResource: "StatsAchievementContentCatalog",
-                withExtension: "json",
-                subdirectory: nil,
-                localization: "en"
+        resourceNames.lazy.compactMap { resourceName in
+            bundle.url(
+                forResource: resourceName,
+                withExtension: "json"
             )
+                ?? bundle.url(
+                    forResource: resourceName,
+                    withExtension: "json",
+                    subdirectory: nil,
+                    localization: "en"
+                )
+        }.first
     }
 
     private static var resourceBundles: [Bundle] {

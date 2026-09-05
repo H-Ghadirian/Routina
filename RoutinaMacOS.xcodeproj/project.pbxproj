@@ -274,6 +274,7 @@
 				2C0000052E60000100000001 /* Sources */,
 				2C0000032E60000100000001 /* Frameworks */,
 				2C0000042E60000100000001 /* Resources */,
+				A70000012FB0000100000001 /* Embed Stats Achievement Content Fallback */,
 				F20003012FA0000100000001 /* Copy Firebase Configuration */,
 				C20000102F90000100000001 /* Verify CloudKit Production Schema */,
 				7D00000130A0000100000001 /* Embed Routina AI MCP Helper */,
@@ -483,6 +484,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		A70000012FB0000100000001 /* Embed Stats Achievement Content Fallback */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/script/embed_stats_achievement_content.sh",
+				"$(SRCROOT)/SharedCore/Resources/en.lproj/StatsAchievementContentCatalog.json",
+			);
+			name = "Embed Stats Achievement Content Fallback";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/StatsAchievementContentCatalogFallback.json",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/script/embed_stats_achievement_content.sh\"\n";
+		};
 		7D00000130A0000100000001 /* Embed Routina AI MCP Helper */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

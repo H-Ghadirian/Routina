@@ -92,6 +92,26 @@ struct AppStoreComplianceConfigurationTests {
     }
 
     @Test
+    func productionAppsEmbedStatsAchievementContentFallback() throws {
+        let embedScript = try Self.sourceFile("script/embed_stats_achievement_content.sh")
+        #expect(embedScript.contains("StatsAchievementContentCatalog.json"))
+        #expect(embedScript.contains("StatsAchievementContentCatalogFallback.json"))
+
+        for projectPath in [
+            "RoutinaMacOS.xcodeproj/project.pbxproj",
+            "RoutinaiOS.xcodeproj/project.pbxproj",
+        ] {
+            let project = try Self.sourceFile(projectPath)
+            #expect(project.contains("Embed Stats Achievement Content Fallback"))
+            #expect(project.contains("$(SRCROOT)/script/embed_stats_achievement_content.sh"))
+            #expect(
+                project.contains(
+                    "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/StatsAchievementContentCatalogFallback.json"
+                ))
+        }
+    }
+
+    @Test
     func productionSchemaGuardStopsAfterSandboxReadFailures() throws {
         let guardScript = try Self.sourceFile("script/cloudkit_schema_guard.sh")
         #expect(guardScript.contains("Unable to read SwiftData model source"))
