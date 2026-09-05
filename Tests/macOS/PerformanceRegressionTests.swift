@@ -594,7 +594,10 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacStatsDoesNotReloadItsWholeSnapshotOnEveryAppearance() throws {
-        let source = try Self.sourceFile("RoutinaMacApp/Features/App/AppFeature.swift")
+        let source = try [
+            Self.sourceFile("RoutinaMacApp/Features/App/StatsFeature.swift"),
+            Self.sourceFile("RoutinaMacApp/Features/App/StatsFeature+Effects.swift"),
+        ].joined(separator: "\n")
 
         XCTAssertTrue(source.contains("var hasLoadedDataSnapshot = false"))
         XCTAssertTrue(source.contains("state.hasLoadedDataSnapshot = true"))
@@ -604,7 +607,11 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testMacStatsViewDoesNotBindSwiftDataQueriesIntoRenderPath() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
-        let appFeatureSource = try Self.sourceFile("RoutinaMacApp/Features/App/AppFeature.swift")
+        let appFeatureSource = try [
+            Self.sourceFile("RoutinaMacApp/Features/App/AppFeature.swift"),
+            Self.sourceFile("RoutinaMacApp/Features/App/StatsFeature.swift"),
+            Self.sourceFile("RoutinaMacApp/Features/App/StatsFeature+Effects.swift"),
+        ].joined(separator: "\n")
 
         XCTAssertFalse(
             source.contains("@Query"),
