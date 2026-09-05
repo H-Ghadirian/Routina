@@ -185,9 +185,13 @@ struct TaskDetailPlatformActionParityTests {
 
     @Test
     func macFullDetailGroupsSecondaryTaskActionsInAnOverflowMenu() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift"
-        )
+        let source =
+            try Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift"
+            )
+            + Self.sourceFile(
+                "RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarSupport.swift"
+            )
         let lifecycleControl = try Self.sourceSection(
             startingAt: "private var taskLifecycleControl",
             endingAt: "private func completionActionButton",
