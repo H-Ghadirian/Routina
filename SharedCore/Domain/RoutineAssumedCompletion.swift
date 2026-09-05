@@ -1,11 +1,6 @@
 import Foundation
 
 enum RoutineAssumedCompletion {
-    struct ScheduledBlockCompletionTiming: Equatable, Sendable {
-        let completedAt: Date
-        let actualDurationMinutes: Int
-    }
-
     static let defaultDoneTimeOfDay = RoutineTimeOfDay(hour: 12, minute: 0)
     static let flagRuleAvailabilitySummary =
         "Available for scheduled daily, weekly, monthly, or yearly repeating tasks with one occurrence per day; "
@@ -48,12 +43,12 @@ enum RoutineAssumedCompletion {
         }
 
         guard scheduleMode.usesRoutineCadence,
-              cadenceEnabled,
-              !hasSequentialSteps,
-              supportsAssumedCompletion(
+            cadenceEnabled,
+            !hasSequentialSteps,
+            supportsAssumedCompletion(
                 recurrenceRule,
                 scheduleMode: scheduleMode
-              )
+            )
         else {
             return false
         }
@@ -76,17 +71,19 @@ enum RoutineAssumedCompletion {
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> Bool {
-        guard isEligible(
-            scheduleMode: scheduleMode,
-            recurrenceRule: recurrenceRule,
-            recurrenceTimeRangeRole: recurrenceTimeRangeRole,
-            availabilityStartDate: availabilityStartDate,
-            availabilityEndDate: availabilityEndDate,
-            isAllDay: isAllDay,
-            cadenceEnabled: cadenceEnabled,
-            hasSequentialSteps: hasSequentialSteps,
-            hasChecklistItems: hasChecklistItems
-        ) else {
+        guard
+            isEligible(
+                scheduleMode: scheduleMode,
+                recurrenceRule: recurrenceRule,
+                recurrenceTimeRangeRole: recurrenceTimeRangeRole,
+                availabilityStartDate: availabilityStartDate,
+                availabilityEndDate: availabilityEndDate,
+                isAllDay: isAllDay,
+                cadenceEnabled: cadenceEnabled,
+                hasSequentialSteps: hasSequentialSteps,
+                hasChecklistItems: hasChecklistItems
+            )
+        else {
             return false
         }
 
@@ -108,17 +105,19 @@ enum RoutineAssumedCompletion {
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> String? {
-        guard !canEnable(
-            scheduleMode: scheduleMode,
-            recurrenceRule: recurrenceRule,
-            recurrenceTimeRangeRole: recurrenceTimeRangeRole,
-            availabilityStartDate: availabilityStartDate,
-            availabilityEndDate: availabilityEndDate,
-            isAllDay: isAllDay,
-            cadenceEnabled: cadenceEnabled,
-            hasSequentialSteps: hasSequentialSteps,
-            hasChecklistItems: hasChecklistItems
-        ) else {
+        guard
+            !canEnable(
+                scheduleMode: scheduleMode,
+                recurrenceRule: recurrenceRule,
+                recurrenceTimeRangeRole: recurrenceTimeRangeRole,
+                availabilityStartDate: availabilityStartDate,
+                availabilityEndDate: availabilityEndDate,
+                isAllDay: isAllDay,
+                cadenceEnabled: cadenceEnabled,
+                hasSequentialSteps: hasSequentialSteps,
+                hasChecklistItems: hasChecklistItems
+            )
+        else {
             return nil
         }
 
@@ -141,10 +140,11 @@ enum RoutineAssumedCompletion {
             return "Use a schedule with at most one occurrence per day."
         }
         if scheduleMode.scheduleBehavior != .soft,
-           !supportsRollingAfterCompletionAssumption(
+            !supportsRollingAfterCompletionAssumption(
                 recurrenceRule,
                 scheduleMode: scheduleMode
-           ) {
+            )
+        {
             return "Only eligible multi-day After done Standard repeating tasks can use it."
         }
         return "This schedule does not support auto-assume done."
@@ -177,7 +177,8 @@ enum RoutineAssumedCompletion {
         }
 
         if selectedDay == today,
-           task.isArchived(referenceDate: referenceDate, calendar: calendar) {
+            task.isArchived(referenceDate: referenceDate, calendar: calendar)
+        {
             return false
         }
 
@@ -215,13 +216,13 @@ enum RoutineAssumedCompletion {
 
         if task.isOneOffTask {
             guard let occurrenceDay = task.availabilityStartDate,
-                  isAssumedDone(
+                isAssumedDone(
                     for: task,
                     on: occurrenceDay,
                     referenceDate: referenceDate,
                     logs: logs,
                     calendar: calendar
-                  )
+                )
             else {
                 return []
             }
@@ -289,87 +290,6 @@ enum RoutineAssumedCompletion {
         )
     }
 
-    static func completionTimestamp(
-        for day: Date,
-        timeOfDay: RoutineTimeOfDay? = nil,
-        referenceDate: Date = Date(),
-        calendar: Calendar = .current
-    ) -> Date {
-        if calendar.isDate(day, inSameDayAs: referenceDate) {
-            return referenceDate
-        }
-
-        return (timeOfDay ?? defaultDoneTimeOfDay).date(on: day, calendar: calendar)
-    }
-
-    static func completionTimestamp(
-        for task: RoutineTask,
-        on day: Date,
-        referenceDate: Date = Date(),
-        calendar: Calendar = .current
-    ) -> Date {
-        completionTimestamp(
-            for: day,
-            timeOfDay: task.autoAssumeDoneTimeOfDay,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-    }
-
-    /// Resolves the concrete interval that an eligible one-off assumed completion
-    /// represents when the user confirms it.
-    static func scheduledBlockCompletionTiming(
-        for task: RoutineTask,
-        on day: Date,
-        calendar: Calendar = .current
-    ) -> ScheduledBlockCompletionTiming? {
-        guard task.isOneOffTask,
-              isEligible(task),
-              let availabilityStartDate = task.availabilityStartDate,
-              task.availabilityEndDate == nil,
-              calendar.isDate(availabilityStartDate, inSameDayAs: day),
-              let timeRange = task.recurrenceRule.timeRange
-        else {
-            return nil
-        }
-
-        let startsAt = timeRange.startDate(on: availabilityStartDate, calendar: calendar)
-        let completedAt = timeRange.endDate(on: availabilityStartDate, calendar: calendar)
-        let actualDurationMinutes = calendar.dateComponents(
-            [.minute],
-            from: startsAt,
-            to: completedAt
-        ).minute ?? 0
-        guard actualDurationMinutes > 0 else { return nil }
-
-        return ScheduledBlockCompletionTiming(
-            completedAt: completedAt,
-            actualDurationMinutes: actualDurationMinutes
-        )
-    }
-
-    static func currentOccurrenceDay(
-        for task: RoutineTask,
-        referenceDate: Date,
-        calendar: Calendar = .current
-    ) -> Date {
-        let today = calendar.startOfDay(for: referenceDate)
-        guard let timeRange = task.recurrenceRule.timeRange,
-              timeRange.isOvernight
-        else {
-            return today
-        }
-
-        let referenceTime = RoutineTimeOfDay.from(referenceDate, calendar: calendar)
-        guard referenceTime.minutesFromStartOfDay < timeRange.start.minutesFromStartOfDay,
-              let previousDay = calendar.date(byAdding: .day, value: -1, to: today)
-        else {
-            return today
-        }
-
-        return previousDay
-    }
-
     static func requiresIndividualAssumedCompletionConfirmation(
         for task: RoutineTask
     ) -> Bool {
@@ -385,11 +305,12 @@ enum RoutineAssumedCompletion {
         calendar: Calendar
     ) -> Date {
         if task.recurrenceRule.advanced != nil,
-           let firstOccurrence = RoutineDateMath.scheduledOccurrences(
+            let firstOccurrence = RoutineDateMath.scheduledOccurrences(
                 for: task,
                 on: day,
                 calendar: calendar
-           ).min() {
+            ).min()
+        {
             return firstOccurrence
         }
         if let timeRange = task.recurrenceRule.timeRange {
@@ -437,7 +358,8 @@ enum RoutineAssumedCompletion {
     ) -> Bool {
         if task.isOneOffTask {
             guard let availabilityStartDate = task.availabilityStartDate,
-                  task.availabilityEndDate == nil else {
+                task.availabilityEndDate == nil
+            else {
                 return false
             }
             return calendar.isDate(availabilityStartDate, inSameDayAs: day)
@@ -454,10 +376,12 @@ enum RoutineAssumedCompletion {
 
         switch recurrenceRule.kind {
         case .intervalDays:
-            guard let rollingAssumptionStartDay = rollingAssumptionStartDay(
-                for: task,
-                calendar: calendar
-            ) else {
+            guard
+                let rollingAssumptionStartDay = rollingAssumptionStartDay(
+                    for: task,
+                    calendar: calendar
+                )
+            else {
                 return recurrenceRule.isDaily
             }
             return day >= rollingAssumptionStartDay
@@ -477,9 +401,9 @@ enum RoutineAssumedCompletion {
         calendar: Calendar
     ) -> Date? {
         guard task.scheduleMode.usesRoutineCadence,
-              task.scheduleMode.routineFormat == .standard,
-              task.recurrenceRule.kind == .intervalDays,
-              task.recurrenceRule.interval > 1
+            task.scheduleMode.routineFormat == .standard,
+            task.recurrenceRule.kind == .intervalDays,
+            task.recurrenceRule.interval > 1
         else {
             return nil
         }
@@ -500,7 +424,8 @@ enum RoutineAssumedCompletion {
         calendar: Calendar
     ) -> Bool {
         if let lastDone = task.lastDone,
-           isRecordedDate(lastDone, for: task, on: day, calendar: calendar) {
+            isRecordedDate(lastDone, for: task, on: day, calendar: calendar)
+        {
             return true
         }
 
@@ -518,7 +443,8 @@ enum RoutineAssumedCompletion {
         calendar: Calendar
     ) -> Bool {
         if let canceledAt = task.canceledAt,
-           isRecordedDate(canceledAt, for: task, on: day, calendar: calendar) {
+            isRecordedDate(canceledAt, for: task, on: day, calendar: calendar)
+        {
             return true
         }
 

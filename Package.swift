@@ -169,6 +169,7 @@ let package = Package(
                 "Domain/RoutinaDeepLink.swift",
                 "Domain/WidgetStats.swift",
                 "Domain/RoutineAssumedCompletion.swift",
+                "Domain/RoutineAssumedCompletionTiming.swift",
                 "Domain/RoutineDateMath.swift",
                 "Domain/RoutineDateMath+MissedOccurrences.swift",
                 "Domain/RoutineDateMath+Recurrence.swift",
