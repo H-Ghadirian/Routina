@@ -13,80 +13,6 @@ enum CloudSharingService {
         CKRecordZone.ID(zoneName: zoneName, ownerName: CKCurrentUserDefaultName)
     }
 
-    struct SharedTaskPayload: Codable, Sendable {
-        var id: UUID
-        var name: String?
-        var emoji: String?
-        var taskDescription: String?
-        var notes: String?
-        var link: String?
-        var links: [String]?
-        var linkItems: [RoutineTaskLink]?
-        var deadline: Date?
-        var plannedDate: Date?
-        var isAllDay: Bool?
-        var routineDurationMode: RoutineDurationMode?
-        var availabilityStartDate: Date?
-        var availabilityEndDate: Date?
-        var reminderAt: Date?
-        var priority: RoutineTaskPriority
-        var importance: RoutineTaskImportance
-        var urgency: RoutineTaskUrgency
-        var hasExplicitImportance: Bool?
-        var hasExplicitUrgency: Bool?
-        var pressure: RoutineTaskPressure
-        var pressureUpdatedAt: Date?
-        var thinkingNeeded: RoutineTaskThinkingNeeded?
-        var imageData: Data?
-        var voiceNoteData: Data?
-        var voiceNoteDurationSeconds: Double?
-        var voiceNoteCreatedAt: Date?
-        var placeID: UUID?
-        var placeIDs: [UUID]?
-        var destinationAddress: String?
-        var destinationLatitude: Double?
-        var destinationLongitude: Double?
-        var tags: [String]
-        var flags: [String]?
-        var goalIDs: [UUID]?
-        var eventIDs: [UUID]?
-        var relationships: [RoutineTaskRelationship]
-        var steps: [RoutineStep]
-        var checklistItems: [RoutineChecklistItem]
-        var scheduleMode: RoutineScheduleMode
-        var interval: Int16
-        var recurrenceRule: RoutineRecurrenceRule?
-        var recurrenceTimeRangeRole: RoutineTimeRangeRole?
-        var lastDone: Date?
-        var lastSatisfiedScheduledOccurrenceAt: Date?
-        var canceledAt: Date?
-        var scheduleAnchor: Date?
-        var pausedAt: Date?
-        var pauseUntil: Date?
-        var snoozedUntil: Date?
-        var pinnedAt: Date?
-        var taskRankingOrderStorage: String?
-        var temporalWeightRuleStorage: String?
-        var completedStepCount: Int16
-        var sequenceStartedAt: Date?
-        var color: RoutineTaskColor
-        var createdAt: Date?
-        var todoStateRawValue: String?
-        var activityStateRawValue: String?
-        var ongoingSince: Date?
-        var autoAssumeDailyDone: Bool
-        var hidesAssumedDoneCalendarBlock: Bool?
-        var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
-        var estimatedDurationMinutes: Int?
-        var actualDurationMinutes: Int?
-        var storyPoints: Int?
-        var focusModeEnabled: Bool
-        var cadenceEnabled: Bool?
-        var autoPauseAfterCompletion: Bool?
-        var nudgesEnabled: Bool?
-        var comments: [RoutineTaskComment]?
-    }
-
     static func prepareShare(
         for task: RoutineTask,
         completion: @escaping @Sendable (CKShare?, CKContainer?, Error?) -> Void
@@ -150,8 +76,8 @@ enum CloudSharingService {
     @MainActor
     static func importSharedTask(from record: CKRecord, into context: ModelContext) throws {
         guard record.recordType == recordType,
-              let payloadString = record[payloadKey] as? String,
-              let payloadData = payloadString.data(using: .utf8)
+            let payloadString = record[payloadKey] as? String,
+            let payloadData = payloadString.data(using: .utf8)
         else {
             throw CloudSharingError.invalidSharedRecord
         }
@@ -169,12 +95,14 @@ enum CloudSharingService {
         let recordID = CKRecord.ID(recordName: payload.id.uuidString, zoneID: zoneID)
         try await ensureZoneExists(in: database)
 
-        let record = await existingRecord(for: recordID, in: database)
+        let record =
+            await existingRecord(for: recordID, in: database)
             ?? CKRecord(recordType: recordType, recordID: recordID)
         try apply(payload: payload, to: record)
 
         if let shareReference = record.share,
-           let existingShare = try? await fetchRecord(with: shareReference.recordID, in: database) as? CKShare {
+            let existingShare = try? await fetchRecord(with: shareReference.recordID, in: database) as? CKShare
+        {
             _ = try await database.modifyRecords(
                 saving: [record],
                 deleting: [],
@@ -210,7 +138,8 @@ enum CloudSharingService {
         let zone = CKRecordZone(zoneID: zoneID)
         let result = try await database.modifyRecordZones(saving: [zone], deleting: [])
         if case let .failure(error)? = result.saveResults[zoneID],
-           !isZoneAlreadyExistsError(error) {
+            !isZoneAlreadyExistsError(error)
+        {
             throw error
         }
     }
@@ -376,7 +305,8 @@ extension CloudSharingService.SharedTaskPayload {
         task.name = RoutineTask.trimmedName(name)
         task.emoji = emoji
         task.notes = RoutineTask.sanitizedNotes(notes)
-        task.linkItems = linkItems
+        task.linkItems =
+            linkItems
             ?? links?.map { RoutineTaskLink(title: nil, url: $0) }
             ?? link.map { [RoutineTaskLink(title: nil, url: $0)] }
             ?? []
@@ -428,7 +358,8 @@ extension CloudSharingService.SharedTaskPayload {
         task.replaceChecklistItems(checklistItems)
         task.scheduleMode = scheduleMode
         task.recurrenceRule = recurrenceRule ?? .interval(days: max(Int(interval), 1))
-        task.recurrenceTimeRangeRole = task.recurrenceRule.timeRange == nil
+        task.recurrenceTimeRangeRole =
+            task.recurrenceRule.timeRange == nil
             ? .availability
             : (recurrenceTimeRangeRole ?? .availability)
         task.interval = Int16(clamping: scheduleMode.usesRoutineCadence ? max(Int(interval), 1) : 1)
@@ -447,10 +378,12 @@ extension CloudSharingService.SharedTaskPayload {
         task.color = color
         task.createdAt = createdAt
         task.todoStateRawValue = todoStateRawValue
-        task.activityStateRawValue = RoutineActivityState(rawValue: activityStateRawValue ?? "")?.rawValue ?? RoutineActivityState.idle.rawValue
+        task.activityStateRawValue =
+            RoutineActivityState(rawValue: activityStateRawValue ?? "")?.rawValue ?? RoutineActivityState.idle.rawValue
         task.ongoingSince = ongoingSince
         task.autoAssumeDailyDone = autoAssumeDailyDone
-        task.hidesAssumedDoneCalendarBlock = autoAssumeDailyDone
+        task.hidesAssumedDoneCalendarBlock =
+            autoAssumeDailyDone
             && (hidesAssumedDoneCalendarBlock ?? false)
         task.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
@@ -462,10 +395,12 @@ extension CloudSharingService.SharedTaskPayload {
         }
         task.focusModeEnabled = focusModeEnabled
         task.cadenceEnabled = scheduleMode.taskType == .todo ? true : (cadenceEnabled ?? true)
-        task.autoPauseAfterCompletion = scheduleMode.taskType != .todo
+        task.autoPauseAfterCompletion =
+            scheduleMode.taskType != .todo
             && !task.cadenceEnabled
             && (autoPauseAfterCompletion ?? false)
-        task.nudgesEnabled = scheduleMode.usesRoutineCadence
+        task.nudgesEnabled =
+            scheduleMode.usesRoutineCadence
             ? task.cadenceEnabled && (nudgesEnabled ?? true)
             : true
         task.comments = comments ?? []
@@ -544,7 +479,8 @@ private extension RoutineTask {
             nudgesEnabled: payload.nudgesEnabled ?? true,
             comments: payload.comments ?? []
         )
-        self.linkItems = payload.linkItems
+        self.linkItems =
+            payload.linkItems
             ?? payload.links?.map { RoutineTaskLink(title: nil, url: $0) }
             ?? payload.link.map { [RoutineTaskLink(title: nil, url: $0)] }
             ?? []
