@@ -4,22 +4,22 @@ import WatchKit
 
 @MainActor
 final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate {
-    private struct ConnectivityState: Sendable {
+    struct ConnectivityState: Sendable {
         let isCompanionAppInstalled: Bool
         let isPhoneReachable: Bool
     }
 
-    private struct FocusPayloadUpdate: Sendable {
+    struct FocusPayloadUpdate: Sendable {
         let wasPresent: Bool
         let focus: WatchFocusSession?
     }
 
-    private struct PlaceCheckInPayloadUpdate: Sendable {
+    struct PlaceCheckInPayloadUpdate: Sendable {
         let wasPresent: Bool
         let checkIn: WatchPlaceCheckIn?
     }
 
-    private struct SleepPayloadUpdate: Sendable {
+    struct SleepPayloadUpdate: Sendable {
         let wasPresent: Bool
         let sleep: WatchSleepSession?
     }
@@ -32,7 +32,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     @Published private(set) var isCompanionAppInstalled = false
     @Published private(set) var isPhoneReachable = false
 
-    private let session: WCSession? = WCSession.isSupported() ? WCSession.default : nil
+    let session: WCSession? = WCSession.isSupported() ? WCSession.default : nil
     private let cacheKey = "watch.cachedRoutines.v3"
     private let placesCacheKey = "watch.cachedPlaces.v1"
     private let placeCheckInCacheKey = "watch.cachedPlaceCheckIn.v1"
@@ -40,9 +40,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     private let focusCacheKey = "watch.cachedFocusSession.v1"
     private let locallyEndedSleepAtKey = "watch.locallyEndedSleepAt.v1"
     private let pendingRoutineKey = "watch.pendingRoutines.v3"
-    private let installationIDKey = "watch.device.installationID.v1"
+    let installationIDKey = "watch.device.installationID.v1"
     private var pendingRoutineByID: [UUID: WatchRoutine] = [:]
-    private var batteryRefreshTask: Task<Void, Never>?
+    var batteryRefreshTask: Task<Void, Never>?
 
     override init() {
         super.init()
@@ -85,7 +85,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let payload = actionPayload([
             "action": "markDone",
             "taskID": id.uuidString,
-            "completedAt": completionDate.timeIntervalSince1970
+            "completedAt": completionDate.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch mark routine done message failed")
@@ -107,7 +107,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let payload = actionPayload([
             "action": "checkInPlace",
             "placeID": id.uuidString,
-            "checkedInAt": checkedInAt.timeIntervalSince1970
+            "checkedInAt": checkedInAt.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch place check-in message failed")
@@ -120,7 +120,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         let payload = actionPayload([
             "action": "endPlaceCheckIn",
-            "endedAt": endedAt.timeIntervalSince1970
+            "endedAt": endedAt.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch end place check-in message failed")
@@ -139,7 +139,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         let payload = actionPayload([
             "action": "startSleep",
-            "startedAt": startedAt.timeIntervalSince1970
+            "startedAt": startedAt.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch start sleep message failed")
@@ -153,7 +153,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         let payload = actionPayload([
             "action": "endSleep",
-            "endedAt": endedAt.timeIntervalSince1970
+            "endedAt": endedAt.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch end sleep message failed")
@@ -179,7 +179,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let payload = actionPayload([
             "action": "startUnassignedFocus",
             "sessionID": sessionID.uuidString,
-            "startedAt": startedAt.timeIntervalSince1970
+            "startedAt": startedAt.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch start focus message failed")
@@ -194,7 +194,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "action": "pauseFocus",
             "sessionID": focus.id.uuidString,
             "focusKind": focus.resolvedFocusKind.rawValue,
-            "pausedAt": pausedAt.timeIntervalSince1970
+            "pausedAt": pausedAt.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch pause focus message failed")
@@ -209,7 +209,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "action": "resumeFocus",
             "sessionID": focus.id.uuidString,
             "focusKind": focus.resolvedFocusKind.rawValue,
-            "resumedAt": resumedAt.timeIntervalSince1970
+            "resumedAt": resumedAt.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch resume focus message failed")
@@ -224,7 +224,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "action": "finishFocus",
             "sessionID": focus.id.uuidString,
             "focusKind": focus.resolvedFocusKind.rawValue,
-            "endedAt": endedAt.timeIntervalSince1970
+            "endedAt": endedAt.timeIntervalSince1970,
         ])
 
         sendActionPayload(payload, failureLog: "Watch finish focus message failed")
@@ -242,7 +242,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         var payload = actionPayload([
             "action": "openDeepLink",
             "url": url.absoluteString,
-            "focusKind": focus.resolvedFocusKind.rawValue
+            "focusKind": focus.resolvedFocusKind.rawValue,
         ])
         payload["targetID"] = focus.deepLinkTargetID?.uuidString
 
@@ -261,269 +261,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
     }
 
-    nonisolated func session(
-        _ session: WCSession,
-        activationDidCompleteWith activationState: WCSessionActivationState,
-        error: (any Error)?
-    ) {
-        if let error {
-            NSLog("WatchConnectivity (watch) activation failed: \(error.localizedDescription)")
-            return
-        }
-
-        let context = session.receivedApplicationContext
-        let parsed = Self.parsePayload(context)
-        let hasRoutinesPayload = Self.containsRoutinesPayload(context)
-        let parsedPlaces = Self.parsePlacesPayload(context)
-        let hasPlacesPayload = Self.containsPlacesPayload(context)
-        let placeCheckInUpdate = Self.parsePlaceCheckInPayload(context)
-        let sleepUpdate = Self.parseSleepPayload(context)
-        let focusUpdate = Self.parseFocusPayload(context)
-        let connectivityState = Self.makeConnectivityState(from: session)
-        Task { @MainActor [weak self] in
-            self?.updateConnectivityState(connectivityState)
-            if hasRoutinesPayload {
-                self?.setRoutines(parsed)
-            }
-            if hasPlacesPayload {
-                self?.setPlaces(parsedPlaces)
-            }
-            if placeCheckInUpdate.wasPresent {
-                self?.setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
-            }
-            if sleepUpdate.wasPresent {
-                self?.setActiveSleepSession(sleepUpdate.sleep)
-            }
-            if focusUpdate.wasPresent {
-                self?.setActiveFocusSession(focusUpdate.focus)
-            }
-            self?.sendBatteryStatus()
-        }
-    }
-
-    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        let parsed = Self.parsePayload(applicationContext)
-        let hasRoutinesPayload = Self.containsRoutinesPayload(applicationContext)
-        let parsedPlaces = Self.parsePlacesPayload(applicationContext)
-        let hasPlacesPayload = Self.containsPlacesPayload(applicationContext)
-        let placeCheckInUpdate = Self.parsePlaceCheckInPayload(applicationContext)
-        let sleepUpdate = Self.parseSleepPayload(applicationContext)
-        let focusUpdate = Self.parseFocusPayload(applicationContext)
-        let connectivityState = Self.makeConnectivityState(from: session)
-        Task { @MainActor [weak self] in
-            self?.updateConnectivityState(connectivityState)
-            if hasRoutinesPayload {
-                self?.setRoutines(parsed)
-            }
-            if hasPlacesPayload {
-                self?.setPlaces(parsedPlaces)
-            }
-            if placeCheckInUpdate.wasPresent {
-                self?.setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
-            }
-            if sleepUpdate.wasPresent {
-                self?.setActiveSleepSession(sleepUpdate.sleep)
-            }
-            if focusUpdate.wasPresent {
-                self?.setActiveFocusSession(focusUpdate.focus)
-            }
-        }
-    }
-
-    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-        let parsed = Self.parsePayload(message)
-        let parsedPlaces = Self.parsePlacesPayload(message)
-        let placeCheckInUpdate = Self.parsePlaceCheckInPayload(message)
-        let sleepUpdate = Self.parseSleepPayload(message)
-        let focusUpdate = Self.parseFocusPayload(message)
-        guard !parsed.isEmpty || !parsedPlaces.isEmpty || placeCheckInUpdate.wasPresent || sleepUpdate.wasPresent || focusUpdate.wasPresent else { return }
-        let connectivityState = Self.makeConnectivityState(from: session)
-        Task { @MainActor [weak self] in
-            self?.updateConnectivityState(connectivityState)
-            if !parsed.isEmpty {
-                self?.setRoutines(parsed)
-            }
-            if !parsedPlaces.isEmpty {
-                self?.setPlaces(parsedPlaces)
-            }
-            if placeCheckInUpdate.wasPresent {
-                self?.setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
-            }
-            if sleepUpdate.wasPresent {
-                self?.setActiveSleepSession(sleepUpdate.sleep)
-            }
-            if focusUpdate.wasPresent {
-                self?.setActiveFocusSession(focusUpdate.focus)
-            }
-        }
-    }
-
-    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
-        let parsed = Self.parsePayload(userInfo)
-        let parsedPlaces = Self.parsePlacesPayload(userInfo)
-        let placeCheckInUpdate = Self.parsePlaceCheckInPayload(userInfo)
-        let sleepUpdate = Self.parseSleepPayload(userInfo)
-        let focusUpdate = Self.parseFocusPayload(userInfo)
-        guard !parsed.isEmpty || !parsedPlaces.isEmpty || placeCheckInUpdate.wasPresent || sleepUpdate.wasPresent || focusUpdate.wasPresent else { return }
-        let connectivityState = Self.makeConnectivityState(from: session)
-        Task { @MainActor [weak self] in
-            self?.updateConnectivityState(connectivityState)
-            if !parsed.isEmpty {
-                self?.setRoutines(parsed)
-            }
-            if !parsedPlaces.isEmpty {
-                self?.setPlaces(parsedPlaces)
-            }
-            if placeCheckInUpdate.wasPresent {
-                self?.setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
-            }
-            if sleepUpdate.wasPresent {
-                self?.setActiveSleepSession(sleepUpdate.sleep)
-            }
-            if focusUpdate.wasPresent {
-                self?.setActiveFocusSession(focusUpdate.focus)
-            }
-        }
-    }
-
-    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
-        let connectivityState = Self.makeConnectivityState(from: session)
-        Task { @MainActor [weak self] in
-            self?.updateConnectivityState(connectivityState)
-            guard connectivityState.isPhoneReachable else { return }
-            self?.requestSync()
-        }
-    }
-
-    private func applyPayload(_ payload: [String: Any]) {
-        if Self.containsRoutinesPayload(payload) {
-            setRoutines(Self.parsePayload(payload))
-        }
-
-        if Self.containsPlacesPayload(payload) {
-            setPlaces(Self.parsePlacesPayload(payload))
-        }
-
-        let placeCheckInUpdate = Self.parsePlaceCheckInPayload(payload)
-        if placeCheckInUpdate.wasPresent {
-            setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
-        }
-
-        let sleepUpdate = Self.parseSleepPayload(payload)
-        if sleepUpdate.wasPresent {
-            setActiveSleepSession(sleepUpdate.sleep)
-        }
-
-        let focusUpdate = Self.parseFocusPayload(payload)
-        if focusUpdate.wasPresent {
-            setActiveFocusSession(focusUpdate.focus)
-        }
-    }
-
-    private func startPeriodicBatteryRefresh() {
-        batteryRefreshTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(15 * 60))
-                guard !Task.isCancelled else { return }
-                self?.sendBatteryStatus()
-            }
-        }
-    }
-
-    private func sendBatteryStatus() {
-        guard let session else { return }
-        guard session.activationState == .activated else { return }
-        guard let payload = currentBatteryPayload() else { return }
-
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil) { error in
-                NSLog("Watch battery status message failed: \(error.localizedDescription)")
-                session.transferUserInfo(payload)
-            }
-        } else {
-            session.transferUserInfo(payload)
-        }
-    }
-
-    private func currentBatteryPayload() -> [String: Any]? {
-        let device = WKInterfaceDevice.current()
-        device.isBatteryMonitoringEnabled = true
-
-        let level = device.batteryLevel
-        guard level >= 0 else { return nil }
-
-        let state = device.batteryState
-        let isCharging = state == .charging || state == .full
-        return [
-            "action": "batteryStatus",
-            "deviceKind": "appleWatch",
-            "levelPercent": Int((level * 100).rounded()),
-            "isCharging": isCharging,
-            "capturedAt": Date().timeIntervalSince1970,
-            "sourceDevice": currentDeviceSourcePayload()
-        ]
-    }
-
-    private func actionPayload(_ payload: [String: Any]) -> [String: Any] {
-        var payload = payload
-        payload["sourceDevice"] = currentDeviceSourcePayload()
-        return payload
-    }
-
-    private func sendActionPayload(_ payload: [String: Any], failureLog: String) {
-        guard let session else { return }
-
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil) { error in
-                NSLog("\(failureLog): \(error.localizedDescription)")
-                session.transferUserInfo(payload)
-            }
-        } else {
-            session.transferUserInfo(payload)
-        }
-    }
-
-    private func currentDeviceSourcePayload() -> [String: Any] {
-        let device = WKInterfaceDevice.current()
-        return [
-            "installationID": watchInstallationID(),
-            "displayName": device.name,
-            "platform": "appleWatch",
-            "modelName": device.model,
-            "systemName": device.systemName,
-            "systemVersion": device.systemVersion,
-            "appVersion": Self.currentAppVersion,
-            "bundleIdentifier": Bundle.main.bundleIdentifier ?? ""
-        ]
-    }
-
-    private func watchInstallationID() -> String {
-        if let existing = UserDefaults.standard.string(forKey: installationIDKey),
-           !existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return existing
-        }
-
-        let installationID = UUID().uuidString
-        UserDefaults.standard.set(installationID, forKey: installationIDKey)
-        return installationID
-    }
-
-    private static var currentAppVersion: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
-        switch (version, build) {
-        case let (.some(version), .some(build)) where !build.isEmpty:
-            return "\(version) (\(build))"
-        case let (.some(version), _):
-            return version
-        case let (_, .some(build)):
-            return build
-        default:
-            return ""
-        }
-    }
-
-    private func setRoutines(_ mapped: [WatchRoutine]) {
+    func setRoutines(_ mapped: [WatchRoutine]) {
         let merged = mapped.map { routine in
             guard let pendingRoutine = pendingRoutineByID[routine.id] else { return routine }
             return remoteHasCaughtUp(routine, pending: pendingRoutine) ? routine : pendingRoutine
@@ -536,26 +274,27 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             return !remoteHasCaughtUp(remoteRoutine, pending: pendingRoutine)
         }
 
-        routines = merged
+        routines =
+            merged
             .filter { !$0.isCompletedOneOff }
             .sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
         savePendingRoutines()
         saveCachedRoutines()
     }
 
-    private func setPlaces(_ mapped: [WatchPlace]) {
+    func setPlaces(_ mapped: [WatchPlace]) {
         places = mapped
         saveCachedPlaces()
     }
 
-    private func setActivePlaceCheckIn(_ checkIn: WatchPlaceCheckIn?) {
+    func setActivePlaceCheckIn(_ checkIn: WatchPlaceCheckIn?) {
         activePlaceCheckIn = checkIn
         saveCachedPlaceCheckIn()
     }
 
-    private func setActiveSleepSession(_ sleep: WatchSleepSession?) {
+    func setActiveSleepSession(_ sleep: WatchSleepSession?) {
         if let sleep {
             if let locallyEndedAt = locallyEndedSleepAt(), sleep.startedAt <= locallyEndedAt {
                 activeSleepSession = nil
@@ -572,219 +311,14 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         saveCachedSleepSession()
     }
 
-    private func setActiveFocusSession(_ focus: WatchFocusSession?) {
+    func setActiveFocusSession(_ focus: WatchFocusSession?) {
         activeFocusSession = focus
         saveCachedFocusSession()
     }
 
-    private func updateConnectivityState(_ state: ConnectivityState) {
+    func updateConnectivityState(_ state: ConnectivityState) {
         isCompanionAppInstalled = state.isCompanionAppInstalled
         isPhoneReachable = state.isPhoneReachable
-    }
-
-    nonisolated private static func parsePayload(_ payload: [String: Any]) -> [WatchRoutine] {
-        guard let rawRoutines = payload["routines"] as? [[String: Any]] else { return [] }
-
-        return rawRoutines.compactMap { raw in
-            guard
-                let idString = raw["id"] as? String,
-                let id = UUID(uuidString: idString)
-            else {
-                return nil
-            }
-
-            let name = ((raw["name"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            let safeName = name.isEmpty ? "Unnamed task" : name
-            let emoji = ((raw["emoji"] as? String) ?? "").isEmpty ? "✨" : ((raw["emoji"] as? String) ?? "✨")
-            let interval = max((raw["interval"] as? Int) ?? 1, 1)
-            let scheduleModeRawValue = (raw["scheduleMode"] as? String) ?? "fixedInterval"
-            let isOneOffTask = scheduleModeRawValue == "oneOff"
-            let isChecklistDriven = (raw["isChecklistDriven"] as? Bool) ?? false
-            let isChecklistCompletionRoutine = (raw["isChecklistCompletionRoutine"] as? Bool) ?? false
-            let steps = ((raw["steps"] as? [String]) ?? []).compactMap { value in
-                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-                return trimmed.isEmpty ? nil : trimmed
-            }
-            let checklistItemCount = max((raw["checklistItemCount"] as? Int) ?? 0, 0)
-            let completedChecklistItemCount = max((raw["completedChecklistItemCount"] as? Int) ?? 0, 0)
-            let nextPendingChecklistItemTitle = (raw["nextPendingChecklistItemTitle"] as? String)?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let dueDateTimestamp = raw["dueDate"] as? TimeInterval
-            let dueDate = dueDateTimestamp.map(Date.init(timeIntervalSince1970:))
-            let dueChecklistItemCount = max((raw["dueChecklistItemCount"] as? Int) ?? 0, 0)
-            let nextDueChecklistItemTitle = (raw["nextDueChecklistItemTitle"] as? String)?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let lastDoneTimestamp = raw["lastDone"] as? TimeInterval
-            let lastDone = lastDoneTimestamp.map(Date.init(timeIntervalSince1970:))
-            let completedStepCount = max((raw["completedStepCount"] as? Int) ?? 0, 0)
-
-            return WatchRoutine(
-                id: id,
-                name: safeName,
-                emoji: emoji,
-                intervalDays: interval,
-                isOneOffTask: isOneOffTask,
-                isChecklistDriven: isChecklistDriven,
-                isChecklistCompletionRoutine: isChecklistCompletionRoutine,
-                steps: steps,
-                checklistItemCount: checklistItemCount,
-                completedChecklistItemCount: min(completedChecklistItemCount, checklistItemCount),
-                nextPendingChecklistItemTitle: nextPendingChecklistItemTitle?.isEmpty == true ? nil : nextPendingChecklistItemTitle,
-                dueDate: dueDate,
-                dueChecklistItemCount: dueChecklistItemCount,
-                nextDueChecklistItemTitle: nextDueChecklistItemTitle?.isEmpty == true ? nil : nextDueChecklistItemTitle,
-                lastDone: lastDone,
-                completedStepCount: min(completedStepCount, steps.count)
-            )
-        }
-    }
-
-    nonisolated private static func parsePlacesPayload(_ payload: [String: Any]) -> [WatchPlace] {
-        guard let rawPlaces = payload["places"] as? [[String: Any]] else { return [] }
-
-        return rawPlaces.compactMap { raw in
-            guard
-                let idString = raw["id"] as? String,
-                let id = UUID(uuidString: idString)
-            else {
-                return nil
-            }
-
-            let name = ((raw["name"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            return WatchPlace(id: id, name: name.isEmpty ? "Unnamed place" : name)
-        }
-    }
-
-    nonisolated private static func parsePlaceCheckInPayload(_ payload: [String: Any]) -> PlaceCheckInPayloadUpdate {
-        guard let rawCheckIn = payload["placeCheckIn"] as? [String: Any] else {
-            return PlaceCheckInPayloadUpdate(wasPresent: false, checkIn: nil)
-        }
-
-        guard (rawCheckIn["isActive"] as? Bool) == true else {
-            return PlaceCheckInPayloadUpdate(wasPresent: true, checkIn: nil)
-        }
-
-        guard
-            let sessionIDString = rawCheckIn["sessionID"] as? String,
-            let sessionID = UUID(uuidString: sessionIDString),
-            let startedAtTimestamp = rawCheckIn["startedAt"] as? TimeInterval
-        else {
-            return PlaceCheckInPayloadUpdate(wasPresent: true, checkIn: nil)
-        }
-
-        let placeName = ((rawCheckIn["placeName"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let placeID = (rawCheckIn["placeID"] as? String).flatMap(UUID.init(uuidString:))
-        let activity = (rawCheckIn["activity"] as? String).flatMap(WatchPlaceActivity.init(rawValue:))
-
-        return PlaceCheckInPayloadUpdate(
-            wasPresent: true,
-            checkIn: WatchPlaceCheckIn(
-                id: sessionID,
-                placeID: placeID,
-                placeName: placeName.isEmpty ? "Current place" : placeName,
-                activity: activity,
-                startedAt: Date(timeIntervalSince1970: startedAtTimestamp)
-            )
-        )
-    }
-
-    nonisolated private static func parseSleepPayload(_ payload: [String: Any]) -> SleepPayloadUpdate {
-        guard let rawSleep = payload["sleep"] as? [String: Any] else {
-            return SleepPayloadUpdate(wasPresent: false, sleep: nil)
-        }
-
-        guard (rawSleep["isActive"] as? Bool) == true else {
-            return SleepPayloadUpdate(wasPresent: true, sleep: nil)
-        }
-
-        guard
-            let sessionIDString = rawSleep["sessionID"] as? String,
-            let sessionID = UUID(uuidString: sessionIDString),
-            let startedAtTimestamp = rawSleep["startedAt"] as? TimeInterval
-        else {
-            return SleepPayloadUpdate(wasPresent: true, sleep: nil)
-        }
-
-        let startedAt = Date(timeIntervalSince1970: startedAtTimestamp)
-        let targetDurationMinutes = max((rawSleep["targetDurationMinutes"] as? Int) ?? 8 * 60, 1)
-        let targetWakeAt = (rawSleep["targetWakeAt"] as? TimeInterval)
-            .map(Date.init(timeIntervalSince1970:))
-            ?? startedAt.addingTimeInterval(TimeInterval(targetDurationMinutes * 60))
-
-        return SleepPayloadUpdate(
-            wasPresent: true,
-            sleep: WatchSleepSession(
-                id: sessionID,
-                startedAt: startedAt,
-                targetWakeAt: targetWakeAt,
-                targetDurationMinutes: targetDurationMinutes
-            )
-        )
-    }
-
-    nonisolated private static func parseFocusPayload(_ payload: [String: Any]) -> FocusPayloadUpdate {
-        guard let rawFocus = payload["focus"] as? [String: Any] else {
-            return FocusPayloadUpdate(wasPresent: false, focus: nil)
-        }
-
-        guard (rawFocus["isActive"] as? Bool) == true else {
-            return FocusPayloadUpdate(wasPresent: true, focus: nil)
-        }
-
-        guard
-            let sessionIDString = rawFocus["sessionID"] as? String,
-            let sessionID = UUID(uuidString: sessionIDString),
-            let startedAtTimestamp = rawFocus["startedAt"] as? TimeInterval
-        else {
-            return FocusPayloadUpdate(wasPresent: true, focus: nil)
-        }
-
-        let focusKind = WatchFocusKind(rawValue: (rawFocus["focusKind"] as? String) ?? "") ?? .task
-        let taskID = (rawFocus["taskID"] as? String).flatMap(UUID.init(uuidString:))
-        let targetID = ((rawFocus["targetID"] as? String) ?? (rawFocus["sprintID"] as? String))
-            .flatMap(UUID.init(uuidString:))
-            ?? taskID
-
-        guard focusKind == .unassigned || targetID != nil else {
-            return FocusPayloadUpdate(wasPresent: true, focus: nil)
-        }
-
-        let taskName = ((rawFocus["taskName"] as? String) ?? "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let taskEmoji = ((rawFocus["taskEmoji"] as? String) ?? "").isEmpty
-            ? "🎯"
-            : ((rawFocus["taskEmoji"] as? String) ?? "🎯")
-
-        return FocusPayloadUpdate(
-            wasPresent: true,
-            focus: WatchFocusSession(
-                id: sessionID,
-                focusKind: focusKind,
-                targetID: targetID,
-                taskID: taskID,
-                taskName: taskName.isEmpty ? "Focus session" : taskName,
-                taskEmoji: taskEmoji,
-                startedAt: Date(timeIntervalSince1970: startedAtTimestamp),
-                plannedDurationSeconds: (rawFocus["plannedDurationSeconds"] as? TimeInterval) ?? 0,
-                pausedAt: (rawFocus["pausedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)),
-                accumulatedPausedSeconds: max(0, (rawFocus["accumulatedPausedSeconds"] as? TimeInterval) ?? 0)
-            )
-        )
-    }
-
-    nonisolated private static func makeConnectivityState(from session: WCSession) -> ConnectivityState {
-        ConnectivityState(
-            isCompanionAppInstalled: session.isCompanionAppInstalled,
-            isPhoneReachable: session.isReachable
-        )
-    }
-
-    nonisolated private static func containsRoutinesPayload(_ payload: [String: Any]) -> Bool {
-        payload["routines"] != nil
-    }
-
-    nonisolated private static func containsPlacesPayload(_ payload: [String: Any]) -> Bool {
-        payload["places"] != nil
     }
 
     private func loadCachedRoutines() {
@@ -793,11 +327,12 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let merged = decoded.map { routine in
             pendingRoutineByID[routine.id] ?? routine
         }
-        routines = merged
+        routines =
+            merged
             .filter { !$0.isCompletedOneOff }
             .sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
     }
 
     private func loadCachedPlaces() {
