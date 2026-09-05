@@ -1323,9 +1323,7 @@ struct DayPlanPlannerStateTests {
         let calendarSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
         )
-        let blockLayerSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"
-        )
+        let blockLayerSource = try Self.readDayPlanBlockLayerSources()
 
         #expect(calendarSource.contains("resizingContentLayoutHeight: resizeSession?.contentLayoutHeight"))
         #expect(calendarSource.contains("contentLayoutHeight: blockHeight(for: block, timeAxis: timeAxis)"))
@@ -1342,9 +1340,7 @@ struct DayPlanPlannerStateTests {
         let resizeHandleSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanResizeHandle.swift"
         )
-        let blockLayerSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"
-        )
+        let blockLayerSource = try Self.readDayPlanBlockLayerSources()
 
         #expect(resizeHandleSource.contains("var hitHeight: CGFloat = 16"))
         #expect(resizeHandleSource.contains(".frame(height: hitHeight)"))
@@ -1358,9 +1354,7 @@ struct DayPlanPlannerStateTests {
         let gridSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanWeekGridView.swift"
         )
-        let blockLayerSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"
-        )
+        let blockLayerSource = try Self.readDayPlanBlockLayerSources()
 
         #expect(gridSource.contains(".frame(width: contentWidth, height: contentHeight, alignment: .topLeading)"))
         #expect(blockLayerSource.contains(".frame(width: contentWidth, height: contentHeight, alignment: .topLeading)"))
@@ -1381,9 +1375,7 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func unassignedFocusBlocksUseDayScopedRenderIDs() throws {
-        let blockLayerSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"
-        )
+        let blockLayerSource = try Self.readDayPlanBlockLayerSources()
 
         #expect(blockLayerSource.contains("block.taskID == FocusSession.unassignedTaskID"))
         #expect(blockLayerSource.contains("\"planned-focus\""))
@@ -7327,6 +7319,11 @@ struct DayPlanPlannerStateTests {
 
     private static func sourceFile(_ relativePath: String) throws -> String {
         try SourceInspectionSupport.readProjectFile(relativePath)
+    }
+
+    private static func readDayPlanBlockLayerSources() throws -> String {
+        try sourceFile("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift")
+            + sourceFile("SharedCore/Views/DayPlan/DayPlanFocusBlockLayers.swift")
     }
 }
 

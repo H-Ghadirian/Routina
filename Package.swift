@@ -598,6 +598,7 @@ let package = Package(
                 "Views/DayPlan/DayPlanDayTaskListPresentation.swift",
                 "Views/DayPlan/DayPlanSupport.swift",
                 "Views/DayPlan/DayPlanBlockLayer.swift",
+                "Views/DayPlan/DayPlanFocusBlockLayers.swift",
                 "Views/DayPlan/DayPlanBlockCard.swift",
                 "Views/DayPlan/DayPlanBlockCardContent.swift",
                 "Views/DayPlan/DayPlanCurrentTimeIndicator.swift",
