@@ -1,5 +1,4 @@
 import ComposableArchitecture
-import SwiftData
 import SwiftUI
 
 private enum SettingsMacLayout {
@@ -22,52 +21,52 @@ struct SettingsMacView: View {
     ) private var isPlacesEnabled = false
 
     var body: some View {
-NavigationSplitView {
-    List(selection: $selectedSection) {
-        if filteredVisibleSections.isEmpty {
-            ContentUnavailableView("No Matching Settings", systemImage: "magnifyingglass")
-        } else {
-            ForEach(filteredVisibleSections) { section in
-            SettingsMacSidebarRow(
-                section: section,
-                store: store,
-                searchQuery: settingsSearchQuery
+        NavigationSplitView {
+            List(selection: $selectedSection) {
+                if filteredVisibleSections.isEmpty {
+                    ContentUnavailableView("No Matching Settings", systemImage: "magnifyingglass")
+                } else {
+                    ForEach(filteredVisibleSections) { section in
+                        SettingsMacSidebarRow(
+                            section: section,
+                            store: store,
+                            searchQuery: settingsSearchQuery
+                        )
+                        .tag(section)
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .searchable(
+                text: $settingsSearchQuery,
+                placement: .sidebar,
+                prompt: "Search Settings"
             )
-            .tag(section)
+            .navigationTitle("Settings")
+            .toolbar(removing: .sidebarToggle)
+            .navigationSplitViewColumnWidth(
+                min: SettingsMacLayout.sidebarMinimumWidth,
+                ideal: SettingsMacLayout.sidebarIdealWidth,
+                max: SettingsMacLayout.sidebarMaximumWidth
+            )
+            .background(
+                SettingsMacSidebarSplitViewConfigurator(
+                    minimumWidth: SettingsMacLayout.sidebarMinimumWidth
+                )
+            )
+        } detail: {
+            SettingsMacDetailView(
+                section: selectedDetailSection,
+                store: store,
+            )
+            .toolbar {
+                RoutinaMacFocusTimerToolbarItem()
             }
         }
-    }
-    .listStyle(.sidebar)
-    .searchable(
-        text: $settingsSearchQuery,
-        placement: .sidebar,
-        prompt: "Search Settings"
-    )
-    .navigationTitle("Settings")
-    .toolbar(removing: .sidebarToggle)
-    .navigationSplitViewColumnWidth(
-        min: SettingsMacLayout.sidebarMinimumWidth,
-        ideal: SettingsMacLayout.sidebarIdealWidth,
-        max: SettingsMacLayout.sidebarMaximumWidth
-    )
-    .background(
-        SettingsMacSidebarSplitViewConfigurator(
-            minimumWidth: SettingsMacLayout.sidebarMinimumWidth
+        .navigationSplitViewStyle(.balanced)
+        .settingsMacPresentations(
+            store: store
         )
-    )
-} detail: {
-    SettingsMacDetailView(
-        section: selectedDetailSection,
-        store: store,
-    )
-    .toolbar {
-        RoutinaMacFocusTimerToolbarItem()
-    }
-}
-.navigationSplitViewStyle(.balanced)
-.settingsMacPresentations(
-    store: store
-)
     }
 
     private var selectedDetailSection: SettingsMacSection {
@@ -141,13 +140,13 @@ struct EmbeddedSettingsMacDetailView: View {
     let section: SettingsMacSection
 
     var body: some View {
-SettingsMacDetailView(
-    section: section,
-    store: store,
-)
-.settingsMacPresentations(
-    store: store
-)
+        SettingsMacDetailView(
+            section: section,
+            store: store,
+        )
+        .settingsMacPresentations(
+            store: store
+        )
     }
 }
 
@@ -159,72 +158,70 @@ private struct SettingsMacNotificationsDetailView: View {
     ) private var areMacEventEmotionActionsEnabled = false
 
     var body: some View {
-SettingsMacDetailShell(
-    title: "Notifications",
-    subtitle: "Choose when Routina should remind you and review every notification currently scheduled on this Mac."
-) {
-    SettingsMacDetailCard(title: "Repeating-task Reminders") {
-        Toggle("Enable notifications", isOn: notificationsBinding)
-            .toggleStyle(.switch)
+        SettingsMacDetailShell(
+            title: "Notifications",
+            subtitle: "Choose when Routina should remind you and review every notification currently scheduled on this Mac."
+        ) {
+            SettingsMacDetailCard(title: "Repeating-task Reminders") {
+                Toggle("Enable notifications", isOn: notificationsBinding)
+                    .toggleStyle(.switch)
 
-        DatePicker(
-            "Default time for untimed repeating tasks",
-            selection: reminderTimeBinding,
-            displayedComponents: .hourAndMinute
-        )
-        .disabled(store.notifications.notificationsEnabled == false)
+                DatePicker(
+                    "Default time for untimed repeating tasks",
+                    selection: reminderTimeBinding,
+                    displayedComponents: .hourAndMinute
+                )
+                .disabled(store.notifications.notificationsEnabled == false)
 
-        Text("Timed repeating tasks alert at their scheduled time. Notifications include quick actions for Done and Snooze.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
-    SettingsMacDetailCard(title: scheduledNotificationsTitle) {
-        if store.notifications.hasLoadedScheduledNotifications == false {
-            HStack(spacing: 10) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Loading scheduled notifications…")
+                Text("Timed repeating tasks alert at their scheduled time. Notifications include quick actions for Done and Snooze.")
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-        } else if visibleScheduledNotifications.isEmpty {
-            Text(scheduledNotificationsEmptyText)
-                .foregroundStyle(.secondary)
-        } else {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(visibleScheduledNotificationGroups) { group in
-                    SettingsMacScheduledNotificationGroup(
-                        group: group,
-                        store: store
-                    )
 
-                    if group.id != visibleScheduledNotificationGroups.last?.id {
-                        Divider()
+            SettingsMacDetailCard(title: scheduledNotificationsTitle) {
+                if store.notifications.hasLoadedScheduledNotifications == false {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Loading scheduled notifications…")
+                            .foregroundStyle(.secondary)
                     }
+                } else if visibleScheduledNotifications.isEmpty {
+                    Text(scheduledNotificationsEmptyText)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(visibleScheduledNotificationGroups) { group in
+                            SettingsMacScheduledNotificationGroup(
+                                group: group,
+                                store: store
+                            )
+
+                            if group.id != visibleScheduledNotificationGroups.last?.id {
+                                Divider()
+                            }
+                        }
+                    }
+                }
+
+                Text(scheduledNotificationsExplanation)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            if store.notifications.systemSettingsNotificationsEnabled == false {
+                SettingsMacDetailCard(title: "System Settings") {
+                    Text("Notifications are disabled in system settings.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Button("Allow in System Settings") {
+                        store.send(.openAppSettingsTapped)
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
             }
         }
-
-        Text(areMacEventEmotionActionsEnabled
-            ? "Notifications are grouped by task or event. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this Mac."
-            : "Notifications are grouped by task. Expand a group to review its queued alerts, postpone one, or remove only that occurrence from this Mac.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
-    if store.notifications.systemSettingsNotificationsEnabled == false {
-        SettingsMacDetailCard(title: "System Settings") {
-            Text("Notifications are disabled in system settings.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
-            Button("Allow in System Settings") {
-                store.send(.openAppSettingsTapped)
-            }
-            .buttonStyle(.borderedProminent)
-        }
-    }
-}
     }
 
     private var notificationsBinding: Binding<Bool> {
@@ -264,6 +261,19 @@ SettingsMacDetailShell(
             return "Notifications are disabled in system settings, so nothing is scheduled."
         }
         return "No notifications are currently scheduled."
+    }
+
+    private var scheduledNotificationsExplanation: LocalizedStringKey {
+        if areMacEventEmotionActionsEnabled {
+            return """
+                Notifications are grouped by task or event. Expand a group to review its queued alerts, postpone one, \
+                or remove only that occurrence from this Mac.
+                """
+        }
+        return """
+            Notifications are grouped by task. Expand a group to review its queued alerts, postpone one, or remove \
+            only that occurrence from this Mac.
+            """
     }
 }
 
@@ -452,98 +462,5 @@ private struct SettingsMacCustomNotificationPauseSheet: View {
         }
         .padding(24)
         .frame(width: 420)
-    }
-}
-
-private struct SettingsMacCalendarDetailView: View {
-    let store: StoreOf<SettingsFeature>
-    @Query private var existingTasks: [RoutineTask]
-    @State private var isCalendarTaskImportPresented = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingDayPlanCalendarListAssumedDoneCollapsedByDefault.rawValue,
-        store: SharedDefaults.app
-    ) private var areCalendarListTaskSectionsCollapsedByDefault = true
-
-    var body: some View {
-SettingsMacDetailShell(
-    title: "Calendar",
-    subtitle: "Review calendar events before adding tasks and choose how dates are displayed."
-) {
-    SettingsMacDetailCard(title: "Calendar Tasks") {
-        Button {
-            isCalendarTaskImportPresented = true
-        } label: {
-            Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
-        }
-        .buttonStyle(.borderedProminent)
-
-        Text("Review calendar events one by one before adding them as tasks.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
-    SettingsMacDetailCard(title: "Planner Calendar") {
-        Toggle("Show timeline tasks automatically in planner", isOn: showTimelineTasksInDayPlannerBinding)
-            .toggleStyle(.switch)
-
-        Text("When off, planner dates show a timeline badge that opens the activity list instead.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
-    SettingsMacDetailCard(title: "Calendar List") {
-        Picker("Task sections default", selection: $areCalendarListTaskSectionsCollapsedByDefault) {
-            Text("Collapsed").tag(true)
-            Text("Expanded").tag(false)
-        }
-        .pickerStyle(.segmented)
-
-        Text("Newly shown Planned tasks, Assumed done, Confirmed assumed done, and Done sections use this state. You can still open or collapse each section for a day directly in Calendar List.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
-    SettingsMacDetailCard(title: "Date Display") {
-        Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
-            .toggleStyle(.switch)
-
-        if store.appearance.showPersianDates {
-            Text(persianDatePreviewText)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-
-        Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-}
-.sheet(isPresented: $isCalendarTaskImportPresented) {
-    CalendarTaskImportSheet(existingTasks: existingTasks) {}
-}
-    }
-
-    private var showPersianDatesBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.showPersianDates },
-            set: { store.send(.showPersianDatesToggled($0)) }
-        )
-    }
-
-    private var showTimelineTasksInDayPlannerBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.showsTimelineTasksInDayPlanner },
-            set: { store.send(.showTimelineTasksInDayPlannerToggled($0)) }
-        )
-    }
-
-    private var persianDatePreviewText: String {
-        let today = Date()
-        let dateText = today.formatted(date: .abbreviated, time: .omitted)
-        return "Today: " + PersianDateDisplay.appendingSupplementaryDate(
-            to: dateText,
-            for: today,
-            enabled: true
-        )
     }
 }

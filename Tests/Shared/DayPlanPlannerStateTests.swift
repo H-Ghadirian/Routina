@@ -327,7 +327,7 @@ struct DayPlanPlannerStateTests {
                 "SharedCore/Views/DayPlan/DayPlanDayTaskListContentView.swift"
             )
         let settingsSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Settings/SettingsMacView.swift"
+            "RoutinaMacApp/Screens/Settings/SettingsMacCalendarDetailView.swift"
         )
         let defaultsSource = try Self.sourceFile(
             "SharedCore/Dependencies/UserDefaultsProtocol.swift"

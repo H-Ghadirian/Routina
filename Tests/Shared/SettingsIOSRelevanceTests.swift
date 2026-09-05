@@ -1,18 +1,20 @@
 import Foundation
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 struct SettingsIOSRelevanceTests {
     @Test
     func iOSCalendarOmitsTheMacPlannerPreferenceWhileMacRetainsIt() throws {
         let iOSSource = try Self.sourceFile("iOS/Screens/Settings/SettingsIOSViews.swift")
-        let macSource = try Self.sourceFile("RoutinaMacApp/Screens/Settings/SettingsMacView.swift")
+        let macSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Settings/SettingsMacCalendarDetailView.swift"
+        )
 
         #expect(!iOSSource.contains("Section(\"Planner Calendar\")"))
         #expect(!iOSSource.contains("showTimelineTasksInDayPlannerBinding"))
@@ -92,109 +94,137 @@ struct SettingsIOSRelevanceTests {
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"
         )
 
-        #expect(taskFormSource.contains(
-            "case .events:\n                return areEventEmotionActionsEnabled"
-        ))
-        #expect(taskDetailSource.contains(
-            "areEventEmotionActionsEnabled && !store.taskEventCandidates.isEmpty"
-        ))
-        #expect(taskDetailSource.contains(
-            "areEventActionsEnabled: areEventEmotionActionsEnabled"
-        ))
-        #expect(tagsSource.contains(
-            "includesEvents: areEventEmotionActionsEnabled"
-        ))
-        #expect(notificationsSource.contains(
-            "areEventEmotionActionsEnabled || $0.sourceKind != .event"
-        ))
-        #expect(dataQuerySource.contains(
-            "return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]"
-        ))
-        #expect(dataQuerySource.contains(
-            "return SharedDefaults.app[.appSettingGoalsTabEnabled]"
-        ))
+        #expect(
+            taskFormSource.contains(
+                "case .events:\n                return areEventEmotionActionsEnabled"
+            ))
+        #expect(
+            taskDetailSource.contains(
+                "areEventEmotionActionsEnabled && !store.taskEventCandidates.isEmpty"
+            ))
+        #expect(
+            taskDetailSource.contains(
+                "areEventActionsEnabled: areEventEmotionActionsEnabled"
+            ))
+        #expect(
+            tagsSource.contains(
+                "includesEvents: areEventEmotionActionsEnabled"
+            ))
+        #expect(
+            notificationsSource.contains(
+                "areEventEmotionActionsEnabled || $0.sourceKind != .event"
+            ))
+        #expect(
+            dataQuerySource.contains(
+                "return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]"
+            ))
+        #expect(
+            dataQuerySource.contains(
+                "return SharedDefaults.app[.appSettingGoalsTabEnabled]"
+            ))
         #expect(!dataQuerySource.contains("#if os(iOS)"))
-        #expect(dataQuerySource.components(
-            separatedBy: "let goals = shouldIncludeGoals"
-        ).count - 1 == 2)
-        #expect(dataQuerySource.components(
-            separatedBy: "let events = shouldIncludeEvents"
-        ).count - 1 == 2)
-        #expect(executionSource.contains(
-            "guard appSettingsClient.eventEmotionActionsEnabled() else { return }"
-        ))
-        #expect(transferExecutionSource.contains(
-            "if SharedDefaults.app[.appSettingGoalsTabEnabled]"
-        ))
+        #expect(
+            dataQuerySource.components(
+                separatedBy: "let goals = shouldIncludeGoals"
+            ).count - 1 == 2)
+        #expect(
+            dataQuerySource.components(
+                separatedBy: "let events = shouldIncludeEvents"
+            ).count - 1 == 2)
+        #expect(
+            executionSource.contains(
+                "guard appSettingsClient.eventEmotionActionsEnabled() else { return }"
+            ))
+        #expect(
+            transferExecutionSource.contains(
+                "if SharedDefaults.app[.appSettingGoalsTabEnabled]"
+            ))
         #expect(!executionSource.contains("#if os(iOS)"))
-        #expect(tagPersistenceSource.contains(
-            "return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]"
-        ))
-        #expect(tagPersistenceSource.contains(
-            "return SharedDefaults.app[.appSettingGoalsTabEnabled]"
-        ))
+        #expect(
+            tagPersistenceSource.contains(
+                "return SharedDefaults.app[.appSettingMacEventEmotionActionsEnabled]"
+            ))
+        #expect(
+            tagPersistenceSource.contains(
+                "return SharedDefaults.app[.appSettingGoalsTabEnabled]"
+            ))
         #expect(!tagPersistenceSource.contains("#if os(iOS)"))
-        #expect(tagPersistenceSource.components(
-            separatedBy: "let goals = shouldMutateGoals"
-        ).count - 1 == 2)
-        #expect(tagPersistenceSource.components(
-            separatedBy: "let events = shouldMutateEvents"
-        ).count - 1 == 2)
-        #expect(macTaskFormSource.contains(
-            "if section == .events {\n            return areMacEventEmotionActionsEnabled"
-        ))
-        #expect(macTaskDetailSource.contains(
-            "areMacEventEmotionActionsEnabled && !store.taskEventCandidates.isEmpty"
-        ))
-        #expect(macTaskDetailSource.contains(
-            "let event =\n"
-                + "            areMacEventEmotionActionsEnabled\n"
-                + "            ? events.first(where: { $0.id == eventID })\n"
-                + "            : nil"
-        ))
-        #expect(macTaskDetailSource.contains(
-            "goals: isGoalsTabEnabled ? store.taskGoalSummaries : []"
-        ))
-        #expect(macTaskDetailSource.contains(
-            "inlineEditSections.removeAll { $0 == .goals }"
-        ))
-        #expect(macTagsSource.contains(
-            "includesEvents: areMacEventEmotionActionsEnabled"
-        ))
-        #expect(macTagsSource.contains(
-            "includesGoals: isGoalsTabEnabled"
-        ))
-        #expect(macNotificationsSource.contains(
-            "areMacEventEmotionActionsEnabled || $0.sourceKind != .event"
-        ))
-        #expect(macTaskRowsSource.contains(
-            "isGoalsTabEnabled && rowVisibility.shows(.goals)"
-        ))
-        #expect(tagsSource.contains(
-            "includesGoals: isGoalsTabEnabled"
-        ))
+        #expect(
+            tagPersistenceSource.components(
+                separatedBy: "let goals = shouldMutateGoals"
+            ).count - 1 == 2)
+        #expect(
+            tagPersistenceSource.components(
+                separatedBy: "let events = shouldMutateEvents"
+            ).count - 1 == 2)
+        #expect(
+            macTaskFormSource.contains(
+                "if section == .events {\n            return areMacEventEmotionActionsEnabled"
+            ))
+        #expect(
+            macTaskDetailSource.contains(
+                "areMacEventEmotionActionsEnabled && !store.taskEventCandidates.isEmpty"
+            ))
+        #expect(
+            macTaskDetailSource.contains(
+                "let event =\n"
+                    + "            areMacEventEmotionActionsEnabled\n"
+                    + "            ? events.first(where: { $0.id == eventID })\n"
+                    + "            : nil"
+            ))
+        #expect(
+            macTaskDetailSource.contains(
+                "goals: isGoalsTabEnabled ? store.taskGoalSummaries : []"
+            ))
+        #expect(
+            macTaskDetailSource.contains(
+                "inlineEditSections.removeAll { $0 == .goals }"
+            ))
+        #expect(
+            macTagsSource.contains(
+                "includesEvents: areMacEventEmotionActionsEnabled"
+            ))
+        #expect(
+            macTagsSource.contains(
+                "includesGoals: isGoalsTabEnabled"
+            ))
+        #expect(
+            macNotificationsSource.contains(
+                "areMacEventEmotionActionsEnabled || $0.sourceKind != .event"
+            ))
+        #expect(
+            macTaskRowsSource.contains(
+                "isGoalsTabEnabled && rowVisibility.shows(.goals)"
+            ))
+        #expect(
+            tagsSource.contains(
+                "includesGoals: isGoalsTabEnabled"
+            ))
     }
 
     @Test
     func tagSourceCopyOmitsUnavailableGoalsAndEventsWithoutBreakingGrammar() {
-        #expect(SettingsTagSourcePresentation.pluralSourceList(
-            includesGoals: false,
-            includesNotes: false,
-            includesEvents: false,
-            conjunction: "or"
-        ) == "tasks")
-        #expect(SettingsTagSourcePresentation.pluralSourceList(
-            includesGoals: false,
-            includesNotes: true,
-            includesEvents: false,
-            conjunction: "or"
-        ) == "tasks or notes")
-        #expect(SettingsTagSourcePresentation.pluralSourceList(
-            includesGoals: true,
-            includesNotes: true,
-            includesEvents: true,
-            conjunction: "and"
-        ) == "tasks, goals, notes, and events")
+        #expect(
+            SettingsTagSourcePresentation.pluralSourceList(
+                includesGoals: false,
+                includesNotes: false,
+                includesEvents: false,
+                conjunction: "or"
+            ) == "tasks")
+        #expect(
+            SettingsTagSourcePresentation.pluralSourceList(
+                includesGoals: false,
+                includesNotes: true,
+                includesEvents: false,
+                conjunction: "or"
+            ) == "tasks or notes")
+        #expect(
+            SettingsTagSourcePresentation.pluralSourceList(
+                includesGoals: true,
+                includesNotes: true,
+                includesEvents: true,
+                conjunction: "and"
+            ) == "tasks, goals, notes, and events")
     }
 
     private static func sourceFile(_ relativePath: String) throws -> String {
