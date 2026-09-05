@@ -10,6 +10,54 @@ import Testing
 
 struct FocusAchievementStatsTests {
     @Test
+    func contentCatalogCoversEveryGeneratedAchievementAndItsVariants() throws {
+        let calendar = makeTestCalendar()
+        let place = RoutinePlace(
+            name: "Catalog Place",
+            latitude: 0,
+            longitude: 0
+        )
+        let achievements = StatsAchievementStats.achievements(
+            focusSessions: [],
+            places: [place],
+            calendar: calendar
+        )
+        let catalog = StatsAchievementContentCatalog.shared
+
+        #expect(achievements.count == 68)
+        #expect(Set(achievements.map(\.id)) == Set(catalog.achievements.map(\.id)))
+
+        let firstFocus = try #require(achievement("focus.first", in: achievements))
+        #expect(firstFocus.title == "First Focus")
+        #expect(firstFocus.subtitle == "Complete your first focus session.")
+        #expect(firstFocus.unit == .count(singular: "session", plural: "sessions"))
+
+        let contextWithPlaces = try #require(achievement("emotion.linked.10", in: achievements))
+        #expect(contextWithPlaces.subtitle == "Link ten emotions to tasks, notes, goals, places, or sleep.")
+
+        let achievementsWithoutPlaces = StatsAchievementStats.emotionAchievements(
+            logs: [],
+            calendar: calendar,
+            includingPlaces: false
+        )
+        let contextWithoutPlaces = try #require(
+            achievement("emotion.linked.10", in: achievementsWithoutPlaces)
+        )
+        #expect(contextWithoutPlaces.subtitle == "Link ten emotions to tasks, notes, goals, or sleep.")
+    }
+
+    @Test
+    func contentCatalogRejectsDuplicateAchievementIDs() {
+        let duplicateCatalog = Data(
+            #"{"achievements":[{"id":"duplicate","title":"One","subtitle":"First"},{"id":"duplicate","title":"Two","subtitle":"Second"}]}"#.utf8
+        )
+
+        #expect(throws: StatsAchievementContentCatalogError.self) {
+            try StatsAchievementContentCatalog.decode(duplicateCatalog)
+        }
+    }
+
+    @Test
     func achievementsUnlockTotalBlocksAndSessionDepth() throws {
         let calendar = makeTestCalendar()
         let sessions = [

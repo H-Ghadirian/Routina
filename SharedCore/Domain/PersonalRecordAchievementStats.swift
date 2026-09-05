@@ -18,95 +18,70 @@ extension StatsAchievementStats {
         }).count
 
         return [
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "emotion.first",
-                title: "First Emotion",
-                subtitle: "Log your first emotion.",
                 systemImage: "heart.text.square.fill",
                 domain: .emotions,
                 category: .emotion,
                 currentValue: Double(logs.count),
                 targetValue: 1,
-                unit: .count(singular: "log", plural: "logs")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "emotion.total.25",
-                title: "Feeling Library",
-                subtitle: "Log 25 emotions.",
                 systemImage: "books.vertical.fill",
                 domain: .emotions,
                 category: .emotion,
                 currentValue: Double(logs.count),
                 targetValue: 25,
-                unit: .count(singular: "log", plural: "logs")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "emotion.total.100",
-                title: "Emotion Atlas",
-                subtitle: "Log 100 emotions.",
                 systemImage: "map.fill",
                 domain: .emotions,
                 category: .emotion,
                 currentValue: Double(logs.count),
                 targetValue: 100,
-                unit: .count(singular: "log", plural: "logs")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "emotion.days.7",
-                title: "Seven Check-In Days",
-                subtitle: "Log emotions on seven different days.",
                 systemImage: "calendar.badge.plus",
                 domain: .emotions,
                 category: .emotionStreak,
                 currentValue: Double(emotionDays.count),
                 targetValue: 7,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "emotion.streak.14d",
-                title: "Two-Week Feeling Thread",
-                subtitle: "Log emotions on 14 days in a row.",
                 systemImage: "calendar.badge.clock",
                 domain: .emotions,
                 category: .emotionStreak,
                 currentValue: Double(longestEmotionStreakDays),
                 targetValue: 14,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "emotion.family.all",
-                title: "Full Feeling Spectrum",
-                subtitle: "Use every emotion family at least once.",
                 systemImage: "sparkles",
                 domain: .emotions,
                 category: .emotion,
                 currentValue: Double(familyCount),
                 targetValue: Double(EmotionFamily.allCases.count),
-                unit: .count(singular: "family", plural: "families")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "emotion.reflection.10",
-                title: "Ten Reflections",
-                subtitle: "Add reflections to ten emotion logs.",
                 systemImage: "text.bubble.fill",
                 domain: .emotions,
                 category: .emotion,
                 currentValue: Double(reflectedLogCount),
                 targetValue: 10,
-                unit: .count(singular: "reflection", plural: "reflections")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "emotion.linked.10",
-                title: "Context Weaver",
-                subtitle: includingPlaces
-                    ? "Link ten emotions to tasks, notes, goals, places, or sleep."
-                    : "Link ten emotions to tasks, notes, goals, or sleep.",
+                subtitleVariant: includingPlaces ? .standard : .withoutPlaces,
                 systemImage: "link.circle.fill",
                 domain: .emotions,
                 category: .emotion,
                 currentValue: Double(linkedLogCount),
                 targetValue: 10,
-                unit: .count(singular: "link", plural: "links")
             ),
         ]
     }
@@ -128,93 +103,69 @@ extension StatsAchievementStats {
         }.count
 
         return [
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "place.saved.first",
-                title: "First Saved Place",
-                subtitle: "Save your first place.",
                 systemImage: "mappin.and.ellipse",
                 domain: .places,
                 category: .place,
                 currentValue: Double(places.count),
                 targetValue: 1,
-                unit: .count(singular: "place", plural: "places")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "place.saved.5",
-                title: "Place Library",
-                subtitle: "Save five places.",
                 systemImage: "map.circle.fill",
                 domain: .places,
                 category: .place,
                 currentValue: Double(places.count),
                 targetValue: 5,
-                unit: .count(singular: "place", plural: "places")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "place.checkin.first",
-                title: "First Check-In",
-                subtitle: "Finish your first place check-in.",
                 systemImage: "location.fill",
                 domain: .places,
                 category: .place,
                 currentValue: Double(finishedSessions.count),
                 targetValue: 1,
-                unit: .count(singular: "check-in", plural: "check-ins")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "place.checkin.25",
-                title: "Neighborhood Regular",
-                subtitle: "Finish 25 place check-ins.",
                 systemImage: "figure.walk.circle.fill",
                 domain: .places,
                 category: .place,
                 currentValue: Double(finishedSessions.count),
                 targetValue: 25,
-                unit: .count(singular: "check-in", plural: "check-ins")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "place.days.7",
-                title: "Place Week",
-                subtitle: "Check in on seven different days.",
                 systemImage: "calendar.day.timeline.left",
                 domain: .places,
                 category: .placeStreak,
                 currentValue: Double(checkInDays.count),
                 targetValue: 7,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "place.unique.5",
-                title: "Five-Place Loop",
-                subtitle: "Visit five distinct places.",
                 systemImage: "mappin.circle.fill",
                 domain: .places,
                 category: .place,
                 currentValue: Double(uniqueVisitedPlaceCount),
                 targetValue: 5,
-                unit: .count(singular: "place", plural: "places")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "place.activity.10",
-                title: "Activity Mapper",
-                subtitle: "Add activities to ten check-ins.",
                 systemImage: "tag.fill",
                 domain: .places,
                 category: .place,
                 currentValue: Double(activitySessionCount),
                 targetValue: 10,
-                unit: .count(singular: "activity", plural: "activities")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "place.detail.5",
-                title: "Place Notes",
-                subtitle: "Add notes or images to five check-ins.",
                 systemImage: "photo.on.rectangle.angled",
                 domain: .places,
                 category: .place,
                 currentValue: Double(detailedSessionCount),
                 targetValue: 5,
-                unit: .count(singular: "detail", plural: "details")
             ),
         ]
     }
@@ -227,93 +178,69 @@ extension StatsAchievementStats {
         let childGoalCount = goals.filter { $0.parentGoalID != nil }.count
 
         return [
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "goal.first",
-                title: "First Goal",
-                subtitle: "Create your first goal.",
                 systemImage: "target",
                 domain: .goals,
                 category: .goal,
                 currentValue: Double(goals.count),
                 targetValue: 1,
-                unit: .count(singular: "goal", plural: "goals")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "goal.total.5",
-                title: "Goal Bench",
-                subtitle: "Create five goals.",
                 systemImage: "list.star",
                 domain: .goals,
                 category: .goal,
                 currentValue: Double(goals.count),
                 targetValue: 5,
-                unit: .count(singular: "goal", plural: "goals")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "goal.total.20",
-                title: "Goal Portfolio",
-                subtitle: "Create 20 goals.",
                 systemImage: "folder.badge.gearshape",
                 domain: .goals,
                 category: .goal,
                 currentValue: Double(goals.count),
                 targetValue: 20,
-                unit: .count(singular: "goal", plural: "goals")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "goal.active.3",
-                title: "Three Active Goals",
-                subtitle: "Keep three goals active.",
                 systemImage: "scope",
                 domain: .goals,
                 category: .goal,
                 currentValue: Double(activeGoalCount),
                 targetValue: 3,
-                unit: .count(singular: "active goal", plural: "active goals")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "goal.targetDate.5",
-                title: "Dated Intentions",
-                subtitle: "Give five goals target dates.",
                 systemImage: "calendar.badge.clock",
                 domain: .goals,
                 category: .goal,
                 currentValue: Double(targetedGoalCount),
                 targetValue: 5,
-                unit: .count(singular: "dated goal", plural: "dated goals")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "goal.tagged.5",
-                title: "Tagged Goals",
-                subtitle: "Add tags to five goals.",
                 systemImage: "tag.circle.fill",
                 domain: .goals,
                 category: .goal,
                 currentValue: Double(taggedGoalCount),
                 targetValue: 5,
-                unit: .count(singular: "tagged goal", plural: "tagged goals")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "goal.child.3",
-                title: "Goal Tree",
-                subtitle: "Create three sub-goals.",
                 systemImage: "point.3.connected.trianglepath.dotted",
                 domain: .goals,
                 category: .goal,
                 currentValue: Double(childGoalCount),
                 targetValue: 3,
-                unit: .count(singular: "sub-goal", plural: "sub-goals")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "goal.archived.1",
-                title: "Closed Loop",
-                subtitle: "Archive your first completed or retired goal.",
                 systemImage: "archivebox.fill",
                 domain: .goals,
                 category: .goal,
                 currentValue: Double(archivedGoalCount),
                 targetValue: 1,
-                unit: .count(singular: "archived goal", plural: "archived goals")
             ),
         ]
     }
@@ -336,93 +263,69 @@ extension StatsAchievementStats {
         let voiceNoteCount = notes.filter(\.hasVoiceNote).count
 
         return [
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "note.first",
-                title: "First Note",
-                subtitle: "Create your first note.",
                 systemImage: "note.text",
                 domain: .notes,
                 category: .note,
                 currentValue: Double(notes.count),
                 targetValue: 1,
-                unit: .count(singular: "note", plural: "notes")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "note.total.25",
-                title: "Notebook Stack",
-                subtitle: "Create 25 notes.",
                 systemImage: "doc.text.fill",
                 domain: .notes,
                 category: .note,
                 currentValue: Double(notes.count),
                 targetValue: 25,
-                unit: .count(singular: "note", plural: "notes")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "note.total.100",
-                title: "Hundred Notes",
-                subtitle: "Create 100 notes.",
                 systemImage: "tray.full.fill",
                 domain: .notes,
                 category: .note,
                 currentValue: Double(notes.count),
                 targetValue: 100,
-                unit: .count(singular: "note", plural: "notes")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "note.tagged.10",
-                title: "Tagged Notebook",
-                subtitle: "Add tags to ten notes.",
                 systemImage: "tag.fill",
                 domain: .notes,
                 category: .note,
                 currentValue: Double(taggedNoteCount),
                 targetValue: 10,
-                unit: .count(singular: "tagged note", plural: "tagged notes")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "note.media.10",
-                title: "Media Notes",
-                subtitle: "Add image, file, or voice media to ten notes.",
                 systemImage: "paperclip.circle.fill",
                 domain: .notes,
                 category: .note,
                 currentValue: Double(mediaNoteCount),
                 targetValue: 10,
-                unit: .count(singular: "media note", plural: "media notes")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "note.voice.5",
-                title: "Voice Notebook",
-                subtitle: "Record voice on five notes.",
                 systemImage: "waveform.circle.fill",
                 domain: .notes,
                 category: .note,
                 currentValue: Double(voiceNoteCount),
                 targetValue: 5,
-                unit: .count(singular: "voice note", plural: "voice notes")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "note.streak.7d",
-                title: "Seven-Day Notes",
-                subtitle: "Create notes on seven days in a row.",
                 systemImage: "calendar.badge.checkmark",
                 domain: .notes,
                 category: .noteStreak,
                 currentValue: Double(longestNoteStreakDays),
                 targetValue: 7,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "note.week.5d",
-                title: "Steady Note Week",
-                subtitle: "Create notes on five days inside any seven-day span.",
                 systemImage: "calendar.day.timeline.left",
                 domain: .notes,
                 category: .noteStreak,
                 currentValue: Double(bestRollingWeekNoteDays),
                 targetValue: 5,
-                unit: .count(singular: "day", plural: "days")
             ),
         ]
     }

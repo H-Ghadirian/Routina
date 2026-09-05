@@ -1,118 +1,5 @@
 import Foundation
 
-enum StatsAchievementCategory: String, Equatable {
-    case total
-    case blocks
-    case streak
-    case session
-    case daily
-    case weekly
-    case comeback
-    case sleep
-    case sleepStreak
-    case away
-    case done
-    case doneStreak
-    case emotion
-    case emotionStreak
-    case place
-    case placeStreak
-    case goal
-    case note
-    case noteStreak
-}
-
-enum StatsAchievementDomain: String, CaseIterable, Equatable, Identifiable {
-    case all
-    case focus
-    case sleep
-    case away
-    case done
-    case emotions
-    case places
-    case goals
-    case notes
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .all:
-            return "All"
-        case .focus:
-            return "Focus"
-        case .sleep:
-            return "Sleep"
-        case .away:
-            return "Away"
-        case .done:
-            return "Done"
-        case .emotions:
-            return "Emotions"
-        case .places:
-            return "Places"
-        case .goals:
-            return "Goals"
-        case .notes:
-            return "Notes"
-        }
-    }
-}
-
-enum StatsAchievementUnit: Equatable {
-    case seconds
-    case count(singular: String, plural: String)
-
-    func text(for value: Double) -> String {
-        switch self {
-        case .seconds:
-            return Self.durationText(seconds: value)
-        case let .count(singular, plural):
-            let count = max(0, Int(value.rounded(.down)))
-            return "\(count.formatted()) \(count == 1 ? singular : plural)"
-        }
-    }
-
-    private static func durationText(seconds: TimeInterval) -> String {
-        let totalMinutes = max(0, Int((seconds / 60).rounded(.down)))
-        guard totalMinutes > 0 else { return "0m" }
-
-        if totalMinutes < 60 {
-            return "\(totalMinutes)m"
-        }
-
-        let hours = totalMinutes / 60
-        let minutes = totalMinutes % 60
-        guard minutes > 0 else { return "\(hours)h" }
-        return "\(hours)h \(minutes)m"
-    }
-}
-
-struct StatsAchievementProgress: Equatable, Identifiable {
-    let id: String
-    let title: String
-    let subtitle: String
-    let systemImage: String
-    let domain: StatsAchievementDomain
-    let category: StatsAchievementCategory
-    let currentValue: Double
-    let targetValue: Double
-    let unit: StatsAchievementUnit
-
-    var isEarned: Bool {
-        currentValue >= targetValue
-    }
-
-    var progress: Double {
-        guard targetValue > 0 else { return 0 }
-        return min(max(currentValue / targetValue, 0), 1)
-    }
-
-    var progressText: String {
-        "\(unit.text(for: currentValue)) / \(unit.text(for: targetValue))"
-    }
-}
-
 enum StatsAchievementStats {
     static func achievements(
         focusSessions: [FocusSession],
@@ -193,32 +80,24 @@ enum StatsAchievementStats {
         let comebackQuietDays = longestQuietGapBeforeComeback(in: focusDays, calendar: calendar)
 
         return [
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.first",
-                title: "First Focus",
-                subtitle: "Complete your first focus session.",
                 systemImage: "sparkles",
                 domain: .focus,
                 category: .session,
                 currentValue: Double(completedSessions.count),
                 targetValue: 1,
-                unit: .count(singular: "session", plural: "sessions")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.blocks.100",
-                title: "Block Builder",
-                subtitle: "Earn 100 five-minute focus blocks.",
                 systemImage: "square.grid.3x3.fill",
                 domain: .focus,
                 category: .blocks,
                 currentValue: Double(totalBlocks),
                 targetValue: 100,
-                unit: .count(singular: "block", plural: "blocks")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.total.10h",
-                title: "Ten-Hour Foundation",
-                subtitle: "Reach 10 total hours of focus.",
                 systemImage: "timer",
                 domain: .focus,
                 category: .total,
@@ -226,10 +105,8 @@ enum StatsAchievementStats {
                 targetValue: 10 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.total.50h",
-                title: "Deep Work Builder",
-                subtitle: "Reach 50 total hours of focus.",
                 systemImage: "clock.badge.checkmark.fill",
                 domain: .focus,
                 category: .total,
@@ -237,10 +114,8 @@ enum StatsAchievementStats {
                 targetValue: 50 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.total.100h",
-                title: "Focus Centurion",
-                subtitle: "Reach 100 total hours of focus.",
                 systemImage: "trophy.fill",
                 domain: .focus,
                 category: .total,
@@ -248,10 +123,8 @@ enum StatsAchievementStats {
                 targetValue: 100 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.session.1h",
-                title: "One-Hour Deep Dive",
-                subtitle: "Complete a one-hour focus session.",
                 systemImage: "stopwatch.fill",
                 domain: .focus,
                 category: .session,
@@ -259,10 +132,8 @@ enum StatsAchievementStats {
                 targetValue: 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.session.2h",
-                title: "Two-Hour Flow",
-                subtitle: "Complete a two-hour focus session.",
                 systemImage: "hourglass",
                 domain: .focus,
                 category: .session,
@@ -270,10 +141,8 @@ enum StatsAchievementStats {
                 targetValue: 2 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.day.2h",
-                title: "Strong Focus Day",
-                subtitle: "Log two hours of focus in one day.",
                 systemImage: "sun.max.fill",
                 domain: .focus,
                 category: .daily,
@@ -281,10 +150,8 @@ enum StatsAchievementStats {
                 targetValue: 2 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.day.4h",
-                title: "Protected Day",
-                subtitle: "Log four hours of focus in one day.",
                 systemImage: "shield.lefthalf.filled",
                 domain: .focus,
                 category: .daily,
@@ -292,60 +159,45 @@ enum StatsAchievementStats {
                 targetValue: 4 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.streak.5d",
-                title: "Five-Day Thread",
-                subtitle: "Focus on five days in a row.",
                 systemImage: "flame.fill",
                 domain: .focus,
                 category: .streak,
                 currentValue: Double(longestStreakDays),
                 targetValue: 5,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.streak.14d",
-                title: "Two-Week Rhythm",
-                subtitle: "Focus on 14 days in a row.",
                 systemImage: "calendar.badge.checkmark",
                 domain: .focus,
                 category: .streak,
                 currentValue: Double(longestStreakDays),
                 targetValue: 14,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.streak.30d",
-                title: "Monthly Anchor",
-                subtitle: "Focus on 30 days in a row.",
                 systemImage: "calendar.circle.fill",
                 domain: .focus,
                 category: .streak,
                 currentValue: Double(longestStreakDays),
                 targetValue: 30,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.week.5d",
-                title: "Steady Week",
-                subtitle: "Focus on five days inside any seven-day span.",
                 systemImage: "calendar.day.timeline.left",
                 domain: .focus,
                 category: .weekly,
                 currentValue: Double(bestRollingWeekFocusDays),
                 targetValue: 5,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "focus.comeback.7d",
-                title: "Comeback Focus",
-                subtitle: "Return to focus after seven quiet days.",
                 systemImage: "arrow.uturn.forward.circle.fill",
                 domain: .focus,
                 category: .comeback,
                 currentValue: Double(comebackQuietDays),
                 targetValue: 7,
-                unit: .count(singular: "quiet day", plural: "quiet days")
             ),
         ]
     }
@@ -368,21 +220,16 @@ enum StatsAchievementStats {
         let longestSleepStreakDays = longestStreak(in: sleepDays, calendar: calendar)
 
         return [
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "sleep.first",
-                title: "First Sleep",
-                subtitle: "Finish your first sleep session.",
                 systemImage: "bed.double.fill",
                 domain: .sleep,
                 category: .sleep,
                 currentValue: Double(completedSessions.count),
                 targetValue: 1,
-                unit: .count(singular: "session", plural: "sessions")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "sleep.total.56h",
-                title: "Sleep Bank",
-                subtitle: "Record 56 total hours of sleep.",
                 systemImage: "moon.zzz.fill",
                 domain: .sleep,
                 category: .sleep,
@@ -390,10 +237,8 @@ enum StatsAchievementStats {
                 targetValue: 56 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "sleep.session.7h",
-                title: "Seven-Hour Stretch",
-                subtitle: "Finish a sleep session lasting seven hours.",
                 systemImage: "moon.stars.fill",
                 domain: .sleep,
                 category: .sleep,
@@ -401,16 +246,13 @@ enum StatsAchievementStats {
                 targetValue: 7 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "sleep.streak.7d",
-                title: "Week of Sleep",
-                subtitle: "Record sleep on seven days in a row.",
                 systemImage: "calendar.badge.clock",
                 domain: .sleep,
                 category: .sleepStreak,
                 currentValue: Double(longestSleepStreakDays),
                 targetValue: 7,
-                unit: .count(singular: "day", plural: "days")
             ),
         ]
     }
@@ -430,21 +272,16 @@ enum StatsAchievementStats {
         )
 
         return [
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "away.first",
-                title: "First Away",
-                subtitle: "Finish your first Away session.",
                 systemImage: "lock.shield.fill",
                 domain: .away,
                 category: .away,
                 currentValue: Double(finishedSessions.count),
                 targetValue: 1,
-                unit: .count(singular: "session", plural: "sessions")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "away.total.5h",
-                title: "Protected Hours",
-                subtitle: "Record five total hours in Away sessions.",
                 systemImage: "shield.checkered",
                 domain: .away,
                 category: .away,
@@ -452,38 +289,29 @@ enum StatsAchievementStats {
                 targetValue: 5 * 60 * 60,
                 unit: .seconds
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "away.sessions.10",
-                title: "Ten True Breaks",
-                subtitle: "Finish ten Away sessions.",
                 systemImage: "figure.walk.circle.fill",
                 domain: .away,
                 category: .away,
                 currentValue: Double(finishedSessions.count),
                 targetValue: 10,
-                unit: .count(singular: "session", plural: "sessions")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "away.completed.5",
-                title: "Stay the Course",
-                subtitle: "Complete five Away sessions for their planned duration.",
                 systemImage: "checkmark.shield.fill",
                 domain: .away,
                 category: .away,
                 currentValue: Double(completedTimedSessions.count),
                 targetValue: 5,
-                unit: .count(singular: "session", plural: "sessions")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "away.days.5",
-                title: "Away Week",
-                subtitle: "Use Away on five different days.",
                 systemImage: "calendar.day.timeline.left",
                 domain: .away,
                 category: .away,
                 currentValue: Double(awayDays.count),
                 targetValue: 5,
-                unit: .count(singular: "day", plural: "days")
             ),
         ]
     }
@@ -506,155 +334,111 @@ enum StatsAchievementStats {
         let bestRollingWeekDoneDays = bestActiveDaysInRollingWeek(completedDays, calendar: calendar)
 
         return [
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.first",
-                title: "First Done",
-                subtitle: "Mark your first task done.",
                 systemImage: "checkmark.seal.fill",
                 domain: .done,
                 category: .done,
                 currentValue: Double(completedLogs.count),
                 targetValue: 1,
-                unit: .count(singular: "done", plural: "done")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.total.100",
-                title: "Century of Done",
-                subtitle: "Mark 100 tasks done.",
                 systemImage: "trophy.fill",
                 domain: .done,
                 category: .done,
                 currentValue: Double(completedLogs.count),
                 targetValue: 100,
-                unit: .count(singular: "done", plural: "done")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.total.250",
-                title: "Quarter-K Done",
-                subtitle: "Mark 250 tasks done.",
                 systemImage: "flag.checkered",
                 domain: .done,
                 category: .done,
                 currentValue: Double(completedLogs.count),
                 targetValue: 250,
-                unit: .count(singular: "done", plural: "done")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.total.500",
-                title: "Five Hundred Done",
-                subtitle: "Mark 500 tasks done.",
                 systemImage: "medal.fill",
                 domain: .done,
                 category: .done,
                 currentValue: Double(completedLogs.count),
                 targetValue: 500,
-                unit: .count(singular: "done", plural: "done")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.total.1000",
-                title: "Thousand Done",
-                subtitle: "Mark 1,000 tasks done.",
                 systemImage: "crown.fill",
                 domain: .done,
                 category: .done,
                 currentValue: Double(completedLogs.count),
                 targetValue: 1_000,
-                unit: .count(singular: "done", plural: "done")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.day.5",
-                title: "Five-Done Day",
-                subtitle: "Mark five tasks done in one day.",
                 systemImage: "5.circle.fill",
                 domain: .done,
                 category: .done,
                 currentValue: Double(bestDailyDoneCount),
                 targetValue: 5,
-                unit: .count(singular: "done", plural: "done")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.day.10",
-                title: "Ten-Done Day",
-                subtitle: "Mark ten tasks done in one day.",
                 systemImage: "10.circle.fill",
                 domain: .done,
                 category: .done,
                 currentValue: Double(bestDailyDoneCount),
                 targetValue: 10,
-                unit: .count(singular: "done", plural: "done")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.day.20",
-                title: "Twenty-Done Day",
-                subtitle: "Mark 20 tasks done in one day.",
                 systemImage: "20.circle.fill",
                 domain: .done,
                 category: .done,
                 currentValue: Double(bestDailyDoneCount),
                 targetValue: 20,
-                unit: .count(singular: "done", plural: "done")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.streak.7d",
-                title: "Seven-Day Done Streak",
-                subtitle: "Mark something done on seven days in a row.",
                 systemImage: "flame.fill",
                 domain: .done,
                 category: .doneStreak,
                 currentValue: Double(longestDoneStreakDays),
                 targetValue: 7,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.streak.30d",
-                title: "Thirty-Day Done Streak",
-                subtitle: "Mark something done on 30 days in a row.",
                 systemImage: "calendar.badge.checkmark",
                 domain: .done,
                 category: .doneStreak,
                 currentValue: Double(longestDoneStreakDays),
                 targetValue: 30,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.streak.100d",
-                title: "Hundred-Day Done Streak",
-                subtitle: "Mark something done on 100 days in a row.",
                 systemImage: "calendar.circle.fill",
                 domain: .done,
                 category: .doneStreak,
                 currentValue: Double(longestDoneStreakDays),
                 targetValue: 100,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.week.5d",
-                title: "Steady Done Week",
-                subtitle: "Mark work done on five days inside any seven-day span.",
                 systemImage: "calendar.day.timeline.left",
                 domain: .done,
                 category: .doneStreak,
                 currentValue: Double(bestRollingWeekDoneDays),
                 targetValue: 5,
-                unit: .count(singular: "day", plural: "days")
             ),
-            StatsAchievementProgress(
+            StatsAchievementProgress.catalogued(
                 id: "done.week.7d",
-                title: "Everyday Done Week",
-                subtitle: "Mark work done on all seven days inside a week.",
                 systemImage: "calendar",
                 domain: .done,
                 category: .doneStreak,
                 currentValue: Double(bestRollingWeekDoneDays),
                 targetValue: 7,
-                unit: .count(singular: "day", plural: "days")
             ),
         ]
     }
 
 }
-
-typealias FocusAchievementCategory = StatsAchievementCategory
-typealias FocusAchievementUnit = StatsAchievementUnit
-typealias FocusAchievementProgress = StatsAchievementProgress
-typealias FocusAchievementStats = StatsAchievementStats

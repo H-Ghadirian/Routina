@@ -119,7 +119,7 @@ check_size_budget() {
     over_2000=$(printf '%s\n' "$measurements" | awk '$1 > 2000 { count += 1 } END { print count + 0 }')
     largest=$(printf '%s\n' "$measurements" | awk 'BEGIN { maximum = 0 } $1 > maximum { maximum = $1 } END { print maximum }')
 
-    assert_at_most "Production Swift files over 500 lines" "$over_500" 118
+    assert_at_most "Production Swift files over 500 lines" "$over_500" 116
     assert_at_most "Production Swift files over 1,000 lines" "$over_1000" 34
     assert_at_most "Production Swift files over 2,000 lines" "$over_2000" 0
     assert_at_most "Largest production Swift file" "$largest" 1477
@@ -190,6 +190,7 @@ check_localized_content_boundaries() {
     watch_catalog="RoutinaWatchExtension/Localizable.xcstrings"
     help_content="SharedCore/Help/Resources/en.lproj/RoutinaHelpCatalog.json"
     settings_content="SharedCore/Resources/en.lproj/SettingsContentCatalog.json"
+    achievement_content="SharedCore/Resources/en.lproj/StatsAchievementContentCatalog.json"
     adventure_content="RoutinaMacApp/Resources/en.lproj/HomeAdventureCatalog.json"
 
     for resource in \
@@ -198,6 +199,7 @@ check_localized_content_boundaries() {
         "$watch_catalog" \
         "$help_content" \
         "$settings_content" \
+        "$achievement_content" \
         "$adventure_content"
     do
         if [ ! -f "$resource" ]; then
@@ -210,12 +212,18 @@ check_localized_content_boundaries() {
     main_catalog_keys=$(jq '.strings | length' "$main_catalog")
     widget_catalog_keys=$(jq '.strings | length' "$widget_catalog")
     watch_catalog_keys=$(jq '.strings | length' "$watch_catalog")
-    assert_at_least "Main app localization catalog keys" "$main_catalog_keys" 1576
+    assert_at_least "Main app localization catalog keys" "$main_catalog_keys" 1578
     assert_at_least "Widget localization catalog keys" "$widget_catalog_keys" 21
     assert_at_least "Watch localization catalog keys" "$watch_catalog_keys" 22
 
     if rg -q 'static let topics: \[RoutinaHelpTopic\] = \[' SharedCore/Help/RoutinaHelpCatalog.swift; then
         echo "error: Product Help content must remain in its localized JSON resource." >&2
+        return 1
+    fi
+    if rg -q '^\s+(title|subtitle): "|unit: \.count\(' \
+        SharedCore/Domain/FocusAchievementStats.swift \
+        SharedCore/Domain/PersonalRecordAchievementStats.swift; then
+        echo "error: Stats achievement copy must remain in its localized JSON resource." >&2
         return 1
     fi
     if rg -q '(WorldTemplate|ItemTemplate)\(' RoutinaMacApp/Features/Home/HomeAdventureProgression.swift; then

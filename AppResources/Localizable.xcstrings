@@ -1011,6 +1011,9 @@
     "Avg focus" : {
 
     },
+    "Away" : {
+
+    },
     "Away time is active — end it before starting Focus." : {
 
     },
@@ -1880,6 +1883,9 @@
 
     },
     "Emotion" : {
+
+    },
+    "Emotions" : {
 
     },
     "Enable Git features" : {

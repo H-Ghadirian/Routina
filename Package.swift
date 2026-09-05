@@ -144,6 +144,8 @@ let package = Package(
                 "Domain/EmojiCatalog.swift",
                 "Domain/BlockingWebsiteDomain.swift",
                 "Domain/FocusAchievementStats.swift",
+                "Domain/StatsAchievementContentCatalog.swift",
+                "Domain/StatsAchievementModels.swift",
                 "Domain/FocusActivityIntervals.swift",
                 "Domain/FocusDurationStats.swift",
                 "Domain/FocusTimerActivityAttributes.swift",
