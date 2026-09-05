@@ -59,13 +59,16 @@ struct TaskFormIOSLayoutRegressionTests {
         let source = try Self.sourceFile(
             "iOS/Screens/Shared/TaskFormContentPlatform.swift"
         )
+        let addDetailsSource = try Self.sourceFile(
+            "iOS/Screens/Shared/TaskFormIOSAddDetailsSection.swift"
+        )
 
         #expect(source.contains("@State private var revealedSections"))
-        #expect(source.contains("Label(\"Add details\", systemImage: \"plus.circle.fill\")"))
+        #expect(addDetailsSource.contains("Label(\"Add details\", systemImage: \"plus.circle.fill\")"))
         #expect(source.contains("_ = revealedSections.insert(section)"))
         #expect(source.contains("proxy.scrollTo(section, anchor: .top)"))
-        #expect(source.contains(".frame(maxWidth: .infinity, minHeight: 44"))
-        #expect(source.contains(".contentShape(.rect)"))
+        #expect(addDetailsSource.contains(".frame(maxWidth: .infinity, minHeight: 44"))
+        #expect(addDetailsSource.contains(".contentShape(.rect)"))
         #expect(!source.contains("isShowingMoreDetails.toggle()"))
     }
 
@@ -298,7 +301,7 @@ struct TaskFormIOSLayoutRegressionTests {
             "goal",
             "media",
             "estimation",
-            "place"
+            "place",
         ] {
             #expect(filterSections.contains("destination: .\(destination)"))
         }
@@ -411,18 +414,21 @@ struct TaskFormIOSLayoutRegressionTests {
         let homeRow = try Self.sourceFile("iOS/Screens/Home/HomeIOSRoutineRowView.swift")
         let taskDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
 
-        #expect(homePlatform.contains(
-            "showsGoals: isGoalsEnabled && taskRowVisibility.shows(.goals)"
-        ))
+        #expect(
+            homePlatform.contains(
+                "showsGoals: isGoalsEnabled && taskRowVisibility.shows(.goals)"
+            ))
         #expect(homeRow.contains("let showsGoals: Bool"))
         #expect(homeRow.contains("if showsGoals, !task.goalTitles.isEmpty"))
-        #expect(taskDetail.contains(
-            "UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue"
-        ))
+        #expect(
+            taskDetail.contains(
+                "UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue"
+            ))
         #expect(taskDetail.contains("private var isGoalsTabEnabled = false"))
-        #expect(taskDetail.contains(
-            "if isGoalsTabEnabled, !store.taskGoalSummaries.isEmpty"
-        ))
+        #expect(
+            taskDetail.contains(
+                "if isGoalsTabEnabled, !store.taskGoalSummaries.isEmpty"
+            ))
     }
 
     @Test
