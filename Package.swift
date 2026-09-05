@@ -88,6 +88,7 @@ let package = Package(
                 "Screens/TaskDetail/TaskDetailTaskLadderValuesBox.swift",
                 "Screens/TaskDetail/TaskDetailRoutineLogRowContent.swift",
                 "Screens/TaskDetail/TaskDetailRoutineLogRowPresentation.swift",
+                "Screens/TaskDetail/TaskDetailOccurrenceSectionView.swift",
                 "Screens/TaskDetail/TaskDetailStatusActionSectionView.swift",
                 "Screens/TaskDetail/TaskDetailExtrasSectionView.swift",
                 "Screens/TaskDetail/TaskDetailLinkedEventsSectionView.swift",
