@@ -4,160 +4,6 @@ import SwiftData
 
 @Reducer
 struct HomeFeature {
-    enum Action: Equatable {
-        case onAppear
-        case manualRefreshRequested
-        case manualRefreshFailed(String)
-        case manualRefreshErrorDismissed
-        case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], [RoutineGoal], [RoutineLog], DoneStats)
-        case sprintBoardLoaded(SprintBoardData)
-        case sprintBoardLoadedFromStorage(SprintBoardData, revision: Int)
-        case tasksLoadFailed
-        case locationSnapshotUpdated(LocationSnapshot)
-        case hideUnavailableRoutinesChanged(Bool)
-        case setSelectedTask(UUID?)
-
-        case setAddRoutineSheet(Bool)
-        case openAddTaskSheet(seedName: String?)
-        case openAddTaskInCustomSection(UUID)
-        case openAddTaskInCustomSectionWithName(UUID, String)
-        case dismissTaskCreationConfirmation
-        case deleteTasksTapped([UUID])
-        case setDeleteConfirmation(Bool)
-        case setMacFilterDetailPresented(Bool)
-        case taskListModeChanged(TaskListMode)
-        case taskListModeFilterChanged(TaskListMode)
-        case deleteTasksConfirmed
-        case deleteTasks([UUID])
-        case markTaskDone(UUID)
-        case markTaskMissed(UUID)
-        case confirmAssumedTaskDone(UUID)
-        case markAssumedTaskMissed(UUID)
-        case markTaskCanceled(UUID)
-        case moveTodoToState(UUID, TodoState)
-        case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
-        case selectedBoardScopeChanged(BoardScope)
-        case openTaskDeepLink(UUID)
-        case openNoteDeepLink(UUID)
-        case openEventDeepLink(UUID)
-        case openSprintDeepLink(UUID)
-        case openSleepDeepLink(UUID)
-        case sleepPlannerDeepLinkHandled(UUID)
-        case createBacklogTapped
-        case createBacklogTitleChanged(String)
-        case createBacklogConfirmed
-        case createBacklogCanceled
-        case createSprintTapped
-        case createSprintTitleChanged(String)
-        case createSprintConfirmed
-        case createSprintCanceled
-        case startSprintTapped(UUID)
-        case finishSprintTapped(UUID)
-        case assignTodoToBacklog(taskID: UUID, backlogID: UUID?)
-        case assignTodosToBacklog(taskIDs: [UUID], backlogID: UUID?)
-        case assignTodoToSprint(taskID: UUID, sprintID: UUID?)
-        case assignTodosToSprint(taskIDs: [UUID], sprintID: UUID?)
-        case setBacklogRoutingTags(backlogID: UUID, tags: [String])
-        case renameSprintTapped(UUID)
-        case renamingSprintTitleChanged(String)
-        case renameSprintConfirmed
-        case renameSprintCanceled
-        case deleteSprintTapped(UUID)
-        case deleteSprintConfirmed(UUID)
-        case deleteSprintCanceled
-        case startSprintFocusTapped(UUID)
-        case pauseSprintFocusTapped(UUID)
-        case resumeSprintFocusTapped(UUID)
-        case stopSprintFocusTapped(UUID)
-        case abandonSprintFocusTapped(UUID)
-        case reviewSprintFocusAllocationTapped(UUID)
-        case deleteSprintFocusSessionTapped(UUID)
-        case sprintFocusAllocationMinutesChanged(taskID: UUID, minutes: Int)
-        case sprintFocusAllocationSaveTapped
-        case sprintFocusAllocationCancelTapped
-        case notTodayTask(UUID)
-        case pauseTask(UUID)
-        case resumeTask(UUID)
-        case pauseCustomTaskSectionTasks([UUID])
-        case resumeCustomTaskSectionTasks([UUID])
-        case pinTask(UUID)
-        case planTask(UUID, Date?)
-        case moveTaskToCustomSection(taskID: UUID, sectionID: UUID?)
-        case deleteCustomTaskSection(sectionID: UUID)
-        case unpinTask(UUID)
-        case moveTaskInSection(taskID: UUID, sectionKey: String, orderedTaskIDs: [UUID], direction: MoveDirection)
-        case setTaskOrderInSection(sectionKey: String, orderedTaskIDs: [UUID])
-
-        // Filter actions
-        case selectedFilterChanged(RoutineListFilter)
-        case advancedQueryChanged(String)
-        case selectedTagChanged(String?)
-        case selectedTagsChanged(Set<String>)
-        case taskDetailTagFilterTapped(String)
-        case includeTagMatchModeChanged(RoutineTagMatchMode)
-        case selectedFlagsChanged(Set<String>)
-        case includeFlagMatchModeChanged(RoutineTagMatchMode)
-        case excludedFlagsChanged(Set<String>)
-        case excludeFlagMatchModeChanged(RoutineTagMatchMode)
-        case excludedTagsChanged(Set<String>)
-        case excludeTagMatchModeChanged(RoutineTagMatchMode)
-        case selectedManualPlaceFilterIDChanged(UUID?)
-        case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
-        case selectedTodoStateFilterChanged(TodoState?)
-        case selectedPressureFilterChanged(RoutineTaskPressure?)
-        case selectedThinkingNeededFilterChanged(RoutineTaskThinkingNeeded?)
-        case selectedGoalFilterChanged(HomeTaskGoalFilter)
-        case selectedMediaFilterChanged(TaskMediaFilter)
-        case selectedEstimationFilterChanged(TaskEstimationFilter)
-        case hideAssumedDoneTasksChanged(Bool)
-        case taskListViewModeChanged(HomeTaskListViewMode)
-        case taskListSortOrderChanged(HomeTaskListSortOrder)
-        case createdDateFilterChanged(HomeTaskCreatedDateFilter)
-        case showArchivedTasksChanged(Bool)
-        case isFilterSheetPresentedChanged(Bool)
-        case clearOptionalFilters
-        case clearTaskListAndSharedFilters
-        case clearTimelineAndSharedFilters
-
-        // Timeline filter actions
-        case selectedTimelineRangeChanged(TimelineRange)
-        case selectedTimelineFilterTypeChanged(TimelineFilterType)
-        case selectedTimelineStatusFilterChanged(TimelineStatusFilter)
-        case selectedTimelineTagChanged(String?)
-        case selectedTimelineTagsChanged(Set<String>)
-        case selectedTimelineIncludeTagMatchModeChanged(RoutineTagMatchMode)
-        case selectedTimelineFlagsChanged(Set<String>)
-        case selectedTimelineIncludeFlagMatchModeChanged(RoutineTagMatchMode)
-        case selectedTimelineExcludedTagsChanged(Set<String>)
-        case selectedTimelineExcludeTagMatchModeChanged(RoutineTagMatchMode)
-        case selectedTimelineImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
-        case selectedTimelinePressureFilterChanged(RoutineTaskPressure?)
-        case selectedTimelineThinkingNeededFilterChanged(RoutineTaskThinkingNeeded?)
-        case selectedTimelineEstimationFilterChanged(TaskEstimationFilter)
-        case selectedTimelineMediaFilterChanged(TaskMediaFilter)
-        case fileAttachmentTaskIDsChanged(Set<UUID>)
-
-        // Stats filter actions
-        case statsSelectedRangeChanged(DoneChartRange)
-        case statsSelectedTagChanged(String?)
-        case statsSelectedTagsChanged(Set<String>)
-        case statsIncludeTagMatchModeChanged(RoutineTagMatchMode)
-
-        // macOS navigation actions
-        case macSidebarModeChanged(MacSidebarMode)
-        case macSidebarSelectionChanged(MacSidebarSelection?)
-        case selectedSettingsSectionChanged(SettingsMacSection?)
-
-        case statusComposerSaveRequested(String)
-        case statusComposerSaveSucceeded
-        case statusComposerSaveFailed
-
-        case addRoutineSheet(AddRoutineFeature.Action)
-        case taskDetail(TaskDetailFeature.Action)
-        case routineSavedSuccessfully(RoutineTask)
-        case routineSaveFailed
-    }
-
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.modelContext) var modelContext
     @Dependency(\.calendar) var calendar
@@ -176,150 +22,31 @@ struct HomeFeature {
             }
             Reduce { state, action in
                 switch action {
-                case .onAppear:
-                    return lifecycleActionHandler().onAppear(state: &state)
-
-                case .manualRefreshRequested:
-                    state.isLoading = true
-                    state.manualRefreshErrorMessage = nil
-                    return lifecycleActionHandler().manualRefreshRequested()
-
-                case let .manualRefreshFailed(message):
-                    state.manualRefreshErrorMessage = message
-                    return .none
-
-                case .manualRefreshErrorDismissed:
-                    state.manualRefreshErrorMessage = nil
-                    return .none
-
-                case let .statusComposerSaveRequested(rawText):
-                    guard let text = RoutineNote.cleanedText(rawText) else { return .none }
-                    state.statusComposerErrorMessage = nil
-                    let createdAt = now
-                    return .run { @MainActor send in
-                        let context = modelContext()
-                        let note = RoutineNote(
-                            body: text,
-                            tags: ["Status"],
-                            createdAt: createdAt,
-                            updatedAt: createdAt
-                        )
-                        context.insert(note)
-                        do {
-                            try context.save()
-                            send(.statusComposerSaveSucceeded)
-                        } catch {
-                            context.delete(note)
-                            send(.statusComposerSaveFailed)
-                        }
-                    }
-
-                case .statusComposerSaveSucceeded:
-                    state.statusComposerSaveCount += 1
-                    state.statusComposerErrorMessage = nil
-                    return .none
-
-                case .statusComposerSaveFailed:
-                    state.statusComposerErrorMessage = "Status was not saved."
-                    return .none
-
-                case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
-                    return taskLoadHandler().applyLoadedTasks(
-                        tasks: tasks,
-                        places: places,
-                        goals: goals,
-                        logs: logs,
-                        doneStats: doneStats,
-                        state: &state
-                    )
-
-                case let .sprintBoardLoaded(sprintBoardData):
-                    return applySprintBoardLoaded(sprintBoardData, state: &state)
-
-                case let .sprintBoardLoadedFromStorage(sprintBoardData, revision):
-                    guard revision == state.board.sprintBoardRevision else {
-                        return .none
-                    }
-                    return applySprintBoardLoaded(sprintBoardData, state: &state)
-
-                case .tasksLoadFailed:
-                    state.isLoading = false
-                    state.hasLoadedTaskSnapshot = true
-                    return lifecycleActionHandler().tasksLoadFailed()
-
-                case let .locationSnapshotUpdated(snapshot):
-                    return .merge(
-                        lifecycleActionHandler().locationSnapshotUpdated(snapshot, state: &state),
-                        automaticPlaceCheckInEffect(for: snapshot)
-                    )
-
-                case let .hideUnavailableRoutinesChanged(isHidden):
-                    return lifecycleActionHandler().hideUnavailableRoutinesChanged(isHidden, state: &state)
-
-                case let .setSelectedTask(taskID):
-                    return selectionRouter().setSelectedTask(taskID, state: &state)
-
-                case let .setAddRoutineSheet(isPresented):
-                    addRoutinePresentationRouter().setSheet(isPresented, state: &state)
-                    return .none
-
-                case let .openAddTaskSheet(seedName):
-                    state.navigation.enterAddTask()
-                    state.macSidebarSelection = nil
-                    addRoutinePresentationRouter().setSheet(
-                        true,
-                        state: &state,
-                        seedName: seedName
-                    )
-                    persistTemporaryViewState(state)
-                    return .none
-
-                case let .openAddTaskInCustomSection(sectionID):
-                    state.navigation.enterAddTask()
-                    state.macSidebarSelection = nil
-                    addRoutinePresentationRouter().setSheet(
-                        true,
-                        state: &state,
-                        customTaskSectionID: sectionID
-                    )
-                    persistTemporaryViewState(state)
-                    return .none
-
-                case let .openAddTaskInCustomSectionWithName(sectionID, seedName):
-                    state.navigation.enterAddTask()
-                    state.macSidebarSelection = nil
-                    addRoutinePresentationRouter().setSheet(
-                        true,
-                        state: &state,
-                        seedName: seedName,
-                        customTaskSectionID: sectionID
-                    )
-                    persistTemporaryViewState(state)
-                    return .none
-
-                case .dismissTaskCreationConfirmation:
-                    state.taskCreationConfirmation = nil
-                    return .none
-
-                case let .deleteTasksTapped(ids):
-                    presentationRouter().requestDeleteTasks(ids, state: &state)
-                    return .none
-
-                case let .setDeleteConfirmation(isPresented):
-                    presentationRouter().setDeleteConfirmation(isPresented, state: &state)
-                    return .none
-
-                case let .taskListModeChanged(mode):
-                    taskListModeRouter().changeMode(mode, state: &state)
-                    return .none
-
-                case let .taskListModeFilterChanged(mode):
-                    taskListModeRouter().changeMode(mode, state: &state, closesFilterDetail: false)
-                    return .none
-
-                case let .setMacFilterDetailPresented(isPresented):
-                    presentationRouter().setFilterDetailPresented(isPresented, state: &state)
-                    return .none
+                case .onAppear,
+                    .manualRefreshRequested,
+                    .manualRefreshFailed,
+                    .manualRefreshErrorDismissed,
+                    .statusComposerSaveRequested,
+                    .statusComposerSaveSucceeded,
+                    .statusComposerSaveFailed,
+                    .tasksLoadedSuccessfully,
+                    .sprintBoardLoaded,
+                    .sprintBoardLoadedFromStorage,
+                    .tasksLoadFailed,
+                    .locationSnapshotUpdated,
+                    .hideUnavailableRoutinesChanged,
+                    .setSelectedTask,
+                    .setAddRoutineSheet,
+                    .openAddTaskSheet,
+                    .openAddTaskInCustomSection,
+                    .openAddTaskInCustomSectionWithName,
+                    .dismissTaskCreationConfirmation,
+                    .deleteTasksTapped,
+                    .setDeleteConfirmation,
+                    .taskListModeChanged,
+                    .taskListModeFilterChanged,
+                    .setMacFilterDetailPresented:
+                    return reducePrimaryAction(into: &state, action: action)
 
                 // MARK: - Filter actions
 
@@ -749,11 +476,4 @@ struct HomeFeature {
         }
     }
 
-    func loadTasksEffect(performingMaintenance: Bool = false) -> Effect<Action> {
-        taskLoadEffectFactory().loadTasksEffect(performingMaintenance: performingMaintenance)
-    }
-
-    func syncSelectedTaskDetailState(_ state: inout State) {
-        selectionRouter().refreshSelectedTaskDetailState(&state)
-    }
 }
