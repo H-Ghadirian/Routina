@@ -45,7 +45,7 @@ struct FocusSessionCard: View {
         self.blockingFocusTitle = blockingFocusTitle
     }
 
-    private let durationOptions: [TimeInterval] = [
+    let durationOptions: [TimeInterval] = [
         15 * 60,
         25 * 60,
         45 * 60,
@@ -131,58 +131,58 @@ struct FocusSessionCard: View {
         }
         .sheet(item: $editingSession) { session in
             #if os(macOS)
-            macEditSheet(for: session)
-                .frame(width: 420)
-                .padding(24)
+                macEditSheet(for: session)
+                    .frame(width: 420)
+                    .padding(24)
             #else
-            NavigationStack {
-                Form {
-                    Section("Session") {
-                        DatePicker(
-                            "Started",
-                            selection: $editStartedAt,
-                            displayedComponents: [.date, .hourAndMinute]
-                        )
+                NavigationStack {
+                    Form {
+                        Section("Session") {
+                            DatePicker(
+                                "Started",
+                                selection: $editStartedAt,
+                                displayedComponents: [.date, .hourAndMinute]
+                            )
 
-                        Stepper(value: $editDurationMinutes, in: 1...720) {
-                            HStack {
-                                Text("Duration")
-                                Spacer()
-                                Text(FocusSessionFormatting.compactDurationText(seconds: TimeInterval(editDurationMinutes * 60)))
-                                    .foregroundStyle(.secondary)
+                            Stepper(value: $editDurationMinutes, in: 1...720) {
+                                HStack {
+                                    Text("Duration")
+                                    Spacer()
+                                    Text(FocusSessionFormatting.compactDurationText(seconds: TimeInterval(editDurationMinutes * 60)))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+
+                        Section {
+                            Button(role: .destructive) {
+                                delete(session)
+                                editingSession = nil
+                            } label: {
+                                Label("Delete Session", systemImage: "trash")
                             }
                         }
                     }
+                    .navigationTitle("Edit Focus")
+                    #if os(iOS)
+                        .navigationBarTitleDisplayMode(.inline)
+                    #endif
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") {
+                                editingSession = nil
+                            }
+                        }
 
-                    Section {
-                        Button(role: .destructive) {
-                            delete(session)
-                            editingSession = nil
-                        } label: {
-                            Label("Delete Session", systemImage: "trash")
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") {
+                                saveEdits(to: session)
+                                editingSession = nil
+                            }
                         }
                     }
                 }
-                .navigationTitle("Edit Focus")
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            editingSession = nil
-                        }
-                    }
-
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            saveEdits(to: session)
-                            editingSession = nil
-                        }
-                    }
-                }
-            }
-            .presentationDetents([.medium])
+                .presentationDetents([.medium])
             #endif
         }
         .onChange(of: task.id) { _, _ in
@@ -199,107 +199,61 @@ struct FocusSessionCard: View {
         }
     }
 
-    private func focusHeader(
-        snapshot: FocusSessionCardSnapshot,
-        isContentExpanded: Bool,
-        showsDisclosureIndicator: Bool
-    ) -> some View {
-        HStack(alignment: isEmbedded ? .center : .top, spacing: isEmbedded ? 8 : 12) {
-            if !isEmbedded {
-                Image(systemName: "timer")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.teal)
-                    .frame(width: 30, height: 30)
-                    .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Focus")
-                    .font(isEmbedded ? .subheadline.weight(.semibold) : .headline)
-                    .foregroundStyle(.primary)
-
-                if !isEmbedded {
-                    Text(focusSubtitle(snapshot: snapshot))
+    #if os(macOS)
+        private func macEditSheet(for session: FocusSession) -> some View {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Edit Focus")
+                        .font(.title3.weight(.semibold))
+                    Text("Adjust the recorded start time and duration.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else if let statusText = embeddedFocusStatusText(snapshot: snapshot) {
-                    Text(statusText)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
                 }
-            }
 
-            Spacer(minLength: 8)
+                VStack(alignment: .leading, spacing: 12) {
+                    DatePicker(
+                        "Started",
+                        selection: $editStartedAt,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.compact)
 
-            if showsDisclosureIndicator {
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
-                    .padding(.top, isEmbedded ? 0 : 6)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-    }
-
-    #if os(macOS)
-    private func macEditSheet(for session: FocusSession) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Edit Focus")
-                    .font(.title3.weight(.semibold))
-                Text("Adjust the recorded start time and duration.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                DatePicker(
-                    "Started",
-                    selection: $editStartedAt,
-                    displayedComponents: [.date, .hourAndMinute]
-                )
-                .datePickerStyle(.compact)
-
-                Stepper(value: $editDurationMinutes, in: 1...720) {
-                    HStack {
-                        Text("Duration")
-                        Spacer()
-                        Text(FocusSessionFormatting.compactDurationText(seconds: TimeInterval(editDurationMinutes * 60)))
-                            .foregroundStyle(.secondary)
+                    Stepper(value: $editDurationMinutes, in: 1...720) {
+                        HStack {
+                            Text("Duration")
+                            Spacer()
+                            Text(FocusSessionFormatting.compactDurationText(seconds: TimeInterval(editDurationMinutes * 60)))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-            }
 
-            HStack {
-                Button(role: .destructive) {
-                    delete(session)
-                    editingSession = nil
-                } label: {
-                    Label("Delete", systemImage: "trash")
+                HStack {
+                    Button(role: .destructive) {
+                        delete(session)
+                        editingSession = nil
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+
+                    Spacer()
+
+                    Button("Cancel") {
+                        editingSession = nil
+                    }
+                    .keyboardShortcut(.cancelAction)
+
+                    Button("Save") {
+                        saveEdits(to: session)
+                        editingSession = nil
+                    }
+                    .keyboardShortcut(.defaultAction)
                 }
-
-                Spacer()
-
-                Button("Cancel") {
-                    editingSession = nil
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button("Save") {
-                    saveEdits(to: session)
-                    editingSession = nil
-                }
-                .keyboardShortcut(.defaultAction)
             }
         }
-    }
     #endif
 
-    private func focusSubtitle(snapshot: FocusSessionCardSnapshot) -> String {
+    func focusSubtitle(snapshot: FocusSessionCardSnapshot) -> String {
         if isSleepModeActive {
             return "Sleep mode is active"
         }
@@ -318,7 +272,7 @@ struct FocusSessionCard: View {
         return "\(FocusSessionFormatting.compactDurationText(seconds: snapshot.totalCompletedSeconds)) logged for this task"
     }
 
-    private func embeddedFocusStatusText(snapshot: FocusSessionCardSnapshot) -> String? {
+    func embeddedFocusStatusText(snapshot: FocusSessionCardSnapshot) -> String? {
         if isSleepModeActive {
             return "Sleep active"
         }
@@ -334,188 +288,11 @@ struct FocusSessionCard: View {
         return nil
     }
 
-    private var startFocusControls: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) {
-                    countUpStartButton
-                    if !isEmbedded {
-                        durationStartButtons
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    countUpStartButton
-                    if !isEmbedded {
-                        durationStartButtons
-                    }
-                }
-            }
-
-            if !isEmbedded {
-                Text(focusTrackingDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var countUpStartButton: some View {
-        Button {
-            startCountUpSession()
-        } label: {
-            Label(isEmbedded ? "Count up" : "Start count up", systemImage: "stopwatch")
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(.teal)
-        .controlSize(.regular)
-    }
-
-    private var durationStartButtons: some View {
-        HStack(spacing: 8) {
-            ForEach(durationOptions.prefix(3), id: \.self) { seconds in
-                Button(FocusSessionFormatting.compactDurationText(seconds: seconds)) {
-                    startSession(duration: seconds)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-            }
-
-            Menu {
-                ForEach(durationOptions.dropFirst(3), id: \.self) { seconds in
-                    Button(FocusSessionFormatting.compactDurationText(seconds: seconds)) {
-                        startSession(duration: seconds)
-                    }
-                }
-            } label: {
-                Label("More durations", systemImage: "ellipsis.circle")
-                    .labelStyle(.iconOnly)
-            }
-            .buttonStyle(.bordered)
-            .accessibilityLabel("More focus durations")
-        }
-    }
-
-    private var focusTrackingDescription: String {
-        return "Focus time is tracked separately from completions."
-    }
-
     private var isSleepModeActive: Bool {
         !activeSleepSessions.isEmpty
     }
 
-    private var sleepModeActiveContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Sleep mode is active", systemImage: "bed.double.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Text("Wake up before starting a focus timer.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func activeSessionContent(_ session: FocusSession, snapshot: FocusSessionCardSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
-                let isCountUp = session.plannedDurationSeconds <= 0
-                let elapsedSeconds = elapsedSeconds(for: session, now: context.date)
-                let progress = progress(for: session, now: context.date)
-                let displaySeconds = isCountUp
-                    ? elapsedSeconds
-                    : remainingSeconds(for: session, now: context.date)
-                let timerStateLabel = session.isPaused
-                    ? "paused"
-                    : (isCountUp ? "elapsed" : "remaining")
-
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(alignment: .lastTextBaseline) {
-                        Text(FocusSessionFormatting.durationText(seconds: displaySeconds))
-                            .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                            .monospacedDigit()
-                        Text(timerStateLabel)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        Spacer(minLength: 8)
-                    }
-
-                    if isCountUp {
-                        FocusSessionBlockProgressView(elapsedSeconds: elapsedSeconds)
-                    } else {
-                        ProgressView(value: progress)
-                            .tint(.teal)
-                    }
-
-                    HStack(spacing: 10) {
-                        Button {
-                            if session.isPaused {
-                                resume(session)
-                            } else {
-                                pause(session)
-                            }
-                        } label: {
-                            Label(
-                                session.isPaused ? "Resume" : "Pause",
-                                systemImage: session.isPaused ? "play.circle.fill" : "pause.circle.fill"
-                            )
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(.teal)
-
-                        Button {
-                            finish(session)
-                        } label: {
-                            Label("Finish", systemImage: "checkmark.circle.fill")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.teal)
-
-                        Button(role: .destructive) {
-                            abandon(session)
-                        } label: {
-                            Label("Abandon", systemImage: "xmark.circle")
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                }
-            }
-        }
-    }
-
-    private func otherTaskActiveContent(_ session: FocusSession) -> some View {
-        let taskName = session.focusTagTitle
-            ?? (session.isUnassigned
-                ? "unassigned focus"
-                : allTasks.first { $0.id == session.taskID }?.name ?? "another task")
-
-        return VStack(alignment: .leading, spacing: 10) {
-            Label("Focusing on \(taskName)", systemImage: "timer")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Text("Finish or abandon that session before starting a task focus session.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func blockingFocusContent(_ title: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Focusing on \(title)", systemImage: "timer")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Text("Stop that focus timer before starting a task focus session.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func startSession(duration: TimeInterval) {
+    func startSession(duration: TimeInterval) {
         do {
             _ = try FocusSessionSupport.startTaskFocus(
                 task: task,
@@ -528,11 +305,11 @@ struct FocusSessionCard: View {
         }
     }
 
-    private func startCountUpSession() {
+    func startCountUpSession() {
         startSession(duration: 0)
     }
 
-    private func finish(_ session: FocusSession) {
+    func finish(_ session: FocusSession) {
         guard session.completedAt == nil else { return }
         let endedAt = Date()
         let pausedAt = session.pausedAt
@@ -555,7 +332,7 @@ struct FocusSessionCard: View {
         syncFocusShieldForCurrentContext()
     }
 
-    private func abandon(_ session: FocusSession) {
+    func abandon(_ session: FocusSession) {
         let endedAt = Date()
         session.closePauseIfNeeded(at: endedAt)
         session.abandonedAt = endedAt
@@ -572,7 +349,7 @@ struct FocusSessionCard: View {
         syncFocusShieldForCurrentContext()
     }
 
-    private func pause(_ session: FocusSession) {
+    func pause(_ session: FocusSession) {
         let pausedAt = Date()
         guard session.pause(at: pausedAt) else { return }
         syncPausedCountUpPlannerSegment(for: session, pausedAt: pausedAt)
@@ -589,7 +366,7 @@ struct FocusSessionCard: View {
         syncFocusShieldForCurrentContext()
     }
 
-    private func resume(_ session: FocusSession) {
+    func resume(_ session: FocusSession) {
         let resumedAt = Date()
         let pausedAt = session.pausedAt
         if let pausedAt {
@@ -680,21 +457,6 @@ struct FocusSessionCard: View {
         syncFocusShieldForCurrentContext()
     }
 
-    private func progress(for session: FocusSession, now: Date) -> Double {
-        let elapsed = session.activeDurationSeconds(at: now)
-        guard session.plannedDurationSeconds > 0 else { return 1 }
-        return min(1, elapsed / session.plannedDurationSeconds)
-    }
-
-    private func elapsedSeconds(for session: FocusSession, now: Date) -> TimeInterval {
-        session.activeDurationSeconds(at: now)
-    }
-
-    private func remainingSeconds(for session: FocusSession, now: Date) -> TimeInterval {
-        let elapsed = session.activeDurationSeconds(at: now)
-        return max(0, session.plannedDurationSeconds - elapsed)
-    }
-
     private func saveContext() {
         do {
             try modelContext.save()
@@ -706,16 +468,16 @@ struct FocusSessionCard: View {
     }
 
     private func syncFocusTimerSurfaces() {
-#if os(iOS) && canImport(ActivityKit)
-        Task { @MainActor in
-            await FocusTimerLiveActivityService.sync(using: modelContext)
-        }
-#endif
+        #if os(iOS) && canImport(ActivityKit)
+            Task { @MainActor in
+                await FocusTimerLiveActivityService.sync(using: modelContext)
+            }
+        #endif
     }
 
     private func syncFocusShieldForCurrentContext() {
-#if (os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)) || os(macOS)
-        FocusShieldSupport.syncFocusShield(using: modelContext)
-    #endif
+        #if (os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls) && canImport(ManagedSettings)) || os(macOS)
+            FocusShieldSupport.syncFocusShield(using: modelContext)
+        #endif
     }
 }

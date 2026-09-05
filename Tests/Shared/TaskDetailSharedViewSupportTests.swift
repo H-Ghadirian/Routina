@@ -148,7 +148,7 @@ struct TaskDetailSharedViewSupportTests {
 
     @Test
     func taskFocusRemainsSeparateFromActualTimeAcrossPlatforms() throws {
-        let focusCardSource = try Self.sourceFile("SharedCore/Views/FocusSessionCard.swift")
+        let focusCardSource = try Self.readFocusSessionCardSources()
         let focusSectionSource = try Self.sourceFile(
             "SharedCore/Screens/TaskDetail/TaskDetailFocusSessionSectionView.swift"
         )
@@ -180,7 +180,7 @@ struct TaskDetailSharedViewSupportTests {
             + Self.sourceFile(
                 "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentComponents.swift"
             )
-        let focusCardSource = try Self.sourceFile("SharedCore/Views/FocusSessionCard.swift")
+        let focusCardSource = try Self.readFocusSessionCardSources()
         let focusContentSource = try Self.sourceFile("SharedCore/Views/FocusSessionCardContent.swift")
         let actualEditorStart = try #require(source.range(of: "private var actualTimeEditor"))
         let focusEditorStart = try #require(
@@ -300,6 +300,11 @@ struct TaskDetailSharedViewSupportTests {
 
     private static func sourceFile(_ relativePath: String) throws -> String {
         try SourceInspectionSupport.readProjectFile(relativePath)
+    }
+
+    private static func readFocusSessionCardSources() throws -> String {
+        try sourceFile("SharedCore/Views/FocusSessionCard.swift")
+            + sourceFile("SharedCore/Views/FocusSessionCardContentViews.swift")
     }
 
     private static func sourceSection(
@@ -631,7 +636,7 @@ struct TaskDetailSharedViewSupportTests {
         let effortHeader = try Self.sourceFile(
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailTimeSpentHeaderBox.swift"
         )
-        let focusCard = try Self.sourceFile("SharedCore/Views/FocusSessionCard.swift")
+        let focusCard = try Self.readFocusSessionCardSources()
 
         #expect(effortHeader.contains("showsDisclosureControl("))
         #expect(effortHeader.contains("showsDisclosureIndicator: false"))

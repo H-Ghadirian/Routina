@@ -538,6 +538,7 @@ let package = Package(
                 "Views/PlaceLocationPickerCameraConfiguration.swift",
                 "Views/FocusSessionCard.swift",
                 "Views/FocusSessionCardContent.swift",
+                "Views/FocusSessionCardContentViews.swift",
                 "Views/GoalsEditorForm.swift",
                 "Views/ImportanceUrgencyMatrixPicker.swift",
                 "Views/StatsDashboardComponents.swift",
