@@ -105,13 +105,11 @@ struct DayPlanPlannerStateTests {
         let axisSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanSupport.swift"
         )
-        let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
-        )
+        let calendarSource = try SourceInspectionSupport.readDayPlanWeekCalendarSources()
 
         #expect(axisSource.contains("final class DayPlanAdaptiveTimeAxisCache"))
         #expect(calendarSource.contains("@StateObject private var adaptiveTimeAxisCache"))
-        #expect(calendarSource.contains("private var adaptiveTimeAxisIntervals"))
+        #expect(calendarSource.contains("var adaptiveTimeAxisIntervals"))
         #expect(calendarSource.contains("for date in dates"))
         #expect(!axisSource.contains("FetchDescriptor"))
         #expect(!axisSource.contains("ModelContext"))
@@ -1318,9 +1316,7 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func resizingPlannerBlockKeepsHandlesOutsideChangingCardContent() throws {
-        let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
-        )
+        let calendarSource = try SourceInspectionSupport.readDayPlanWeekCalendarSources()
         let blockLayerSource = try Self.readDayPlanBlockLayerSources()
 
         #expect(calendarSource.contains("resizingContentLayoutHeight: resizeSession?.contentLayoutHeight"))
@@ -1360,12 +1356,10 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func calendarTimedLayerRebuildsWhenRangeBlockSignatureChanges() throws {
-        let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
-        )
+        let calendarSource = try SourceInspectionSupport.readDayPlanWeekCalendarSources()
 
         #expect(calendarSource.contains(".id(timedBlockLayerIdentity)"))
-        #expect(calendarSource.contains("private var timedBlockLayerIdentity: String"))
+        #expect(calendarSource.contains("var timedBlockLayerIdentity: String"))
         #expect(calendarSource.contains("blocksForDate(date)"))
         #expect(calendarSource.contains("block.id.uuidString"))
         #expect(calendarSource.contains("block.dayKey"))
@@ -1385,10 +1379,8 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func plannedTaskSidebarOpeningDoesNotSelectDate() throws {
-        let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
-        )
-        let functionStart = try #require(calendarSource.range(of: "private func presentDayTaskListSidebar(on date: Date) {"))
+        let calendarSource = try SourceInspectionSupport.readDayPlanWeekCalendarSources()
+        let functionStart = try #require(calendarSource.range(of: "func presentDayTaskListSidebar(on date: Date) {"))
         let functionEnd = try #require(calendarSource[functionStart.upperBound...].range(of: "\n    }\n\n    @ViewBuilder"))
         let functionSource = calendarSource[functionStart.lowerBound..<functionEnd.lowerBound]
 
@@ -1398,18 +1390,16 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func calendarListDismissesAndSuppressesDayTaskSidebar() throws {
-        let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
-        )
+        let calendarSource = try SourceInspectionSupport.readDayPlanWeekCalendarSources()
         let dismissStart = try #require(
-            calendarSource.range(of: "private func dismissScheduleInteractionState() {")
+            calendarSource.range(of: "func dismissScheduleInteractionState() {")
         )
         let dismissEnd = try #require(
             calendarSource[dismissStart.upperBound...].range(of: "\n    }")
         )
         let dismissSource = calendarSource[dismissStart.lowerBound..<dismissEnd.lowerBound]
         let presentStart = try #require(
-            calendarSource.range(of: "private func presentDayTaskListSidebar(on date: Date) {")
+            calendarSource.range(of: "func presentDayTaskListSidebar(on date: Date) {")
         )
         let presentEnd = try #require(
             calendarSource[presentStart.upperBound...].range(of: "\n    }")
@@ -5134,9 +5124,7 @@ struct DayPlanPlannerStateTests {
         let cardSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanBlockCard.swift"
         )
-        let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
-        )
+        let calendarSource = try SourceInspectionSupport.readDayPlanWeekCalendarSources()
         let dayPlanSource = try Self.sourceFile(
             "SharedCore/Views/DayPlanView.swift"
         )

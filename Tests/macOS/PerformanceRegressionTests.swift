@@ -299,13 +299,11 @@ final class PerformanceRegressionTests: XCTestCase {
         let axisSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanSupport.swift"
         )
-        let calendarSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"
-        )
+        let calendarSource = try SourceInspectionSupport.readDayPlanWeekCalendarSources()
 
         XCTAssertTrue(axisSource.contains("final class DayPlanAdaptiveTimeAxisCache"))
         XCTAssertTrue(calendarSource.contains("@StateObject private var adaptiveTimeAxisCache"))
-        XCTAssertTrue(calendarSource.contains("private var adaptiveTimeAxisIntervals"))
+        XCTAssertTrue(calendarSource.contains("var adaptiveTimeAxisIntervals"))
         XCTAssertTrue(calendarSource.contains("for date in dates"))
         XCTAssertFalse(axisSource.contains("FetchDescriptor"))
         XCTAssertFalse(axisSource.contains("ModelContext"))
