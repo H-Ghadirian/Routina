@@ -22,11 +22,9 @@ struct TaskFormMacLayoutRegressionTests {
 
     @Test
     func taskLadderValuesShareOneMacCardWithIndependentControlsAndTimeRules() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"
-        )
+        let source = try Self.taskFormContentSource()
         let valuesCard = try Self.sourceSection(
-            startingAt: "private var taskLadderValuesCard: some View",
+            startingAt: "var taskLadderValuesCard: some View",
             endingAt: "// MARK: Organization",
             in: source
         )
@@ -93,12 +91,10 @@ struct TaskFormMacLayoutRegressionTests {
 
     @Test
     func repeatingTaskFormsExposePathTagsFlagsAndTaskLadderGroupInOrganization() throws {
-        let source = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"
-        )
+        let source = try Self.taskFormContentSource()
         let organization = try Self.sourceSection(
-            startingAt: "private var organizationCard: some View",
-            endingAt: "private var estimationCard: some View",
+            startingAt: "var organizationCard: some View",
+            endingAt: "var estimationCard: some View",
             in: source
         )
 
@@ -118,6 +114,13 @@ struct TaskFormMacLayoutRegressionTests {
         #expect(source.contains("routineFlags: routineFlags"))
         #expect(source.contains("routineFlags: organization.routineFlags"))
         #expect(source.contains("routineFlags: editRoutineFlags"))
+    }
+
+    private static func taskFormContentSource() throws -> String {
+        try [
+            sourceFile("RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"),
+            sourceFile("RoutinaMacApp/Screens/Shared/TaskFormContentCards.swift"),
+        ].joined(separator: "\n")
     }
 
     private static func sourceSection(

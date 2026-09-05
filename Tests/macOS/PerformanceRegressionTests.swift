@@ -338,9 +338,10 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacTaskFormsAndToolbarSearchKeepInputWorkOutOfScrollAndKeystrokeFrames() throws {
-        let formSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"
-        )
+        let formSource = try [
+            Self.sourceFile("RoutinaMacApp/Screens/Shared/TaskFormContentPlatform.swift"),
+            Self.sourceFile("RoutinaMacApp/Screens/Shared/TaskFormContentCards.swift"),
+        ].joined(separator: "\n")
         let cardSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Shared/TaskFormMacCards.swift"
         )

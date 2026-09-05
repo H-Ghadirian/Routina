@@ -13,26 +13,26 @@ struct TaskFormContent: View {
     let layout: TaskFormContentLayout
 
     @FocusState private var fallbackNameFocused: Bool
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var isFileImporterPresented = false
-    @State private var isAttachmentDropTargeted = false
-    @State private var isImageDropTargeted = false
+    @State var selectedPhotoItem: PhotosPickerItem?
+    @State var isFileImporterPresented = false
+    @State var isAttachmentDropTargeted = false
+    @State var isImageDropTargeted = false
     @State private var hasAppliedInitialNameAutofocus = false
-    @State private var isTagManagerPresented = false
+    @State var isTagManagerPresented = false
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
-    @State private var isPlaceManagerPresented = false
+    @State var isPlaceManagerPresented = false
     @State private var placeManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
     @State private var fallbackFormCoordinator = AddEditFormCoordinator()
-    @Environment(\.calendar) private var calendar
+    @Environment(\.calendar) var calendar
     @Environment(\.addEditFormCoordinator) private var inheritedFormCoordinator
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
-    ) private var showPersianDates = false
+    ) var showPersianDates = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
@@ -40,7 +40,7 @@ struct TaskFormContent: View {
     @AppStorage(
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isPlacesEnabled = false
+    ) var isPlacesEnabled = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
@@ -206,7 +206,7 @@ struct TaskFormContent: View {
         }
     }
 
-    private var planningPlacement: TaskFormMacPlanningPlacement {
+    var planningPlacement: TaskFormMacPlanningPlacement {
         TaskFormMacPlanningPlacement.resolve(
             taskType: model.taskType.wrappedValue,
             supportsPlanning: model.supportsPlanning
@@ -302,546 +302,41 @@ struct TaskFormContent: View {
     @ViewBuilder
     private func formSectionView(for section: FormSection) -> some View {
         switch section {
-        case .identity:           EmptyView() // identityCard is rendered separately above the ScrollView
-        case .taskDescription:    taskDescriptionCard
-        case .emoji:              emojiCard
-        case .color:              colorCard
-        case .behavior:           behaviorCard
-        case .taskLadderValues:   taskLadderValuesCard
-        case .organization:       organizationCard
-        case .estimation:         estimationCard
+        case .identity: EmptyView()  // identityCard is rendered separately above the ScrollView
+        case .taskDescription: taskDescriptionCard
+        case .emoji: emojiCard
+        case .color: colorCard
+        case .behavior: behaviorCard
+        case .taskLadderValues: taskLadderValuesCard
+        case .organization: organizationCard
+        case .estimation: estimationCard
         case .places:
             if isPlacesEnabled {
                 placesCard
             }
         case .destination:
             destinationCard
-        case .goals:              goalsCard
-        case .events:             eventsCard
-        case .linkedTasks:        linkedTasksCard
-        case .planning:           planningCard
-        case .linkURL:            linkURLCard
+        case .goals: goalsCard
+        case .events: eventsCard
+        case .linkedTasks: linkedTasksCard
+        case .planning: planningCard
+        case .linkURL: linkURLCard
         case .notes:
             if isNotesEnabled {
                 notesCard
             }
-        case .steps:              stepsCard
-        case .checklist:          checklistCard
-        case .image:              imageCard
+        case .steps: stepsCard
+        case .checklist: checklistCard
+        case .image: imageCard
         case .voiceNote:
             if isNotesEnabled {
                 voiceNoteCard
             }
-        case .attachment:         attachmentCard
-        case .dangerZone:         dangerZoneCard
+        case .attachment: attachmentCard
+        case .dangerZone: dangerZoneCard
         }
     }
 
     // MARK: Identity
 
-    private var identityCard: some View {
-        let parsedSmartNameDraft = smartNameDraft
-        return TaskFormMacIdentityCard(
-            model: model,
-            smartNameDraft: parsedSmartNameDraft,
-            smartNameCalendar: calendar,
-            onApplySmartName: model.onApplySmartName
-        ) {
-            taskNameField(onTab: parsedSmartNameDraft == nil ? nil : model.onApplySmartName)
-        }
-        .id(FormSection.identity)
-    }
-
-    private var emojiCard: some View {
-        macSectionCard(title: "Emoji") {
-            TaskFormMacEmojiContent(model: model)
-        }
-        .id(FormSection.emoji)
-    }
-
-    private var smartNameDraft: RoutinaQuickAddDraft? {
-        guard let draft = RoutinaQuickAddParser.parse(
-            model.name.wrappedValue,
-            calendar: calendar,
-            includingPlaces: isPlacesEnabled
-        ),
-              draft.hasDetectedMetadata else {
-            return nil
-        }
-        return draft
-    }
-
-    private func taskNameField(onTab: (() -> Void)?) -> some View {
-        MacFocusableTextField(
-            placeholder: smartNamePlaceholder,
-            text: model.name,
-            isFocusRequested: model.autofocusName,
-            focusRequestID: model.nameFocusRequestID,
-            onTab: onTab
-        )
-        .frame(height: 50)
-    }
-
-    private var smartNamePlaceholder: String {
-        if isPlacesEnabled {
-            return "Water plants every Sat at 9am #home @Balcony !high 25m"
-        }
-        return "Water plants every Sat at 9am #home !high 25m"
-    }
-
-    // MARK: Color
-
-    private var colorCard: some View {
-        TaskFormMacColorCard(model: model)
-    }
-
-    // MARK: Behavior
-
-    private var behaviorCard: some View {
-        TaskFormMacBehaviorCard(
-            model: model,
-            presentation: presentation,
-            persianDeadlineText: persianDeadlineText
-        )
-        .id(FormSection.behavior)
-    }
-
-    // MARK: Task Ladder values
-
-    private var taskLadderValuesCard: some View {
-        macSectionCard(
-            title: "Task Ladder values",
-            subtitle: "Set the four independent signals used to place this task."
-        ) {
-            TaskTemporalWeightRuleEditor(
-                rule: model.temporalWeightRule,
-                importance: model.importance,
-                urgency: model.urgency,
-                pressure: model.pressure,
-                allowsTemporalChanges: model.supportsTemporalWeightValues,
-                maximumBeforeDueDays: model.maximumTemporalWeightBeforeDueDays,
-                usesAfterDoneLanguage: model.taskType.wrappedValue == .routine
-            )
-
-            TaskTemporalThinkingSentenceEditor(
-                thinking: model.thinkingNeeded,
-                usesAfterDoneLanguage: model.taskType.wrappedValue == .routine
-            )
-
-            if model.supportsTaskLadderEntryWindow {
-                Divider()
-                TaskLadderEntryWindowEditor(
-                    window: model.taskLadderEntryWindow,
-                    maximumBeforeDueDays: model.maximumTaskLadderEntryBeforeDueDays
-                )
-            }
-
-            if model.taskType.wrappedValue == .routine,
-               !model.supportsTemporalWeightValues,
-               let message = model.temporalWeightAvailabilityMessage {
-                Label(message, systemImage: "info.circle")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .id(FormSection.taskLadderValues)
-    }
-
-    // MARK: Organization
-
-    private var organizationCard: some View {
-        macSectionCard(title: "Organization") {
-            TaskFormMacPathControl(model: model)
-
-            Divider()
-
-            TaskFormMacTagsContent(model: model) {
-                isTagManagerPresented = true
-            }
-
-            if model.taskType.wrappedValue == .routine {
-                Divider()
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Task Ladder group")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    TaskFormMacTaskLadderGroupControl(model: model)
-                }
-            }
-        }
-        .id(FormSection.organization)
-    }
-
-    private var estimationCard: some View {
-        TaskFormMacEstimationCard(model: model)
-        .id(FormSection.estimation)
-    }
-
-    // MARK: Places
-
-    private var placesCard: some View {
-        TaskFormMacPlacesCard(model: model) {
-            isPlaceManagerPresented = true
-        }
-        .id(FormSection.places)
-    }
-
-    private var destinationCard: some View {
-        TaskFormMacDestinationCard(model: model)
-            .id(FormSection.destination)
-    }
-
-    // MARK: Goals
-
-    private var goalsCard: some View {
-        macSectionCard(
-            title: "Goals"
-        ) {
-            TaskFormMacGoalsContent(model: model, presentation: presentation)
-        }
-        .id(FormSection.goals)
-    }
-
-    // MARK: Events
-
-    private var eventsCard: some View {
-        macSectionCard(
-            title: "Events"
-        ) {
-            TaskFormLinkedEventsContent(
-                events: model.availableEvents,
-                selectedEventIDs: model.selectedEventIDs,
-                onToggleEvent: model.onToggleEventSelection
-            )
-        }
-        .id(FormSection.events)
-    }
-
-    // MARK: Linked Tasks
-
-    private var linkedTasksCard: some View {
-        macSectionCard(
-            title: "Linked tasks"
-        ) {
-            TaskRelationshipsEditor(
-                relationships: model.relationships,
-                candidates: model.availableRelationshipTasks,
-                addRelationship: model.onAddRelationship,
-                removeRelationship: model.onRemoveRelationship,
-                createLinkedTask: model.onCreateLinkedTask
-            ) { searchText in
-                TextField("Search tasks", text: searchText)
-                    .routinaTaskRelationshipSearchFieldPlatform()
-            }
-        }
-        .id(FormSection.linkedTasks)
-    }
-
-    // MARK: Planning
-
-    @ViewBuilder
-    private var planningCard: some View {
-        if planningPlacement == .standaloneSection {
-            TaskFormMacPlanningCard(model: model)
-                .id(FormSection.planning)
-        }
-    }
-
-    // MARK: Links
-
-    private var linkURLCard: some View {
-        TaskFormMacLinkCard(model: model, presentation: presentation)
-        .id(FormSection.linkURL)
-    }
-
-    // MARK: Description
-
-    private var taskDescriptionCard: some View {
-        TaskFormMacDescriptionCard(model: model)
-            .id(FormSection.taskDescription)
-    }
-
-    // MARK: Notes
-
-    private var notesCard: some View {
-        TaskFormMacNotesCard(model: model)
-        .id(FormSection.notes)
-    }
-
-    // MARK: Steps
-
-    private var stepsCard: some View {
-        macSectionCard(title: "Steps") {
-            TaskFormMacStepsContent(model: model)
-        }
-        .id(FormSection.steps)
-    }
-
-    // MARK: Checklist
-
-    private var checklistCard: some View {
-        macSectionCard(
-            title: "Checklist",
-            subtitle: presentation.checklistSectionDescription(includesDerivedChecklistDueDetail: true)
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                TaskFormMacChecklistComposer(model: model)
-                if let message = model.checklistValidationMessage {
-                    Text(message)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-                TaskFormMacChecklistItemsContent(model: model)
-            }
-        }
-        .id(FormSection.checklist)
-    }
-
-    // MARK: Image
-
-    private var imageCard: some View {
-        macSectionCard(
-            title: "Image"
-        ) {
-            TaskFormMacImageContent(
-                model: model,
-                selectedPhotoItem: $selectedPhotoItem,
-                isDropTargeted: $isImageDropTargeted,
-                isSupportedImageFile: { isSupportedImageFile($0) },
-                onLoadPickedImageURL: { loadPickedImage(fromFileAt: $0) },
-                onBrowseImageFile: browseForImageFile
-            )
-        }
-        .id(FormSection.image)
-    }
-
-    // MARK: Voice Note
-
-    private var voiceNoteCard: some View {
-        macSectionCard(
-            title: "Voice Note"
-        ) {
-            TaskFormMacVoiceNoteContent(model: model)
-        }
-        .id(FormSection.voiceNote)
-    }
-
-    // MARK: Attachment
-
-    private var attachmentCard: some View {
-        macSectionCard(
-            title: "File Attachment"
-        ) {
-            TaskFormMacAttachmentContent(
-                model: model,
-                isFileImporterPresented: $isFileImporterPresented,
-                isDropTargeted: $isAttachmentDropTargeted,
-                onLoadAttachment: { loadAttachment(fromFileAt: $0) }
-            )
-        }
-        .id(FormSection.attachment)
-    }
-
-    // MARK: Danger Zone
-
-    private var dangerZoneCard: some View {
-        TaskFormMacDangerZoneCard(
-            pauseResumeAction: model.pauseResumeAction,
-            pauseResumeTitle: model.pauseResumeTitle,
-            pauseResumeDescription: model.pauseResumeDescription,
-            pauseResumeTint: model.pauseResumeTint,
-            onDelete: model.onDelete
-        )
-        .id(FormSection.dangerZone)
-    }
-
-    // MARK: - Card helpers
-
-    @ViewBuilder
-    private func macSectionCard<Content: View>(
-        title: String,
-        subtitle: String? = nil,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        TaskFormMacSectionCard(title: title, subtitle: subtitle) {
-            content()
-        }
-    }
-
-    @ViewBuilder
-    private func macControlBlock<Content: View>(
-        title: String,
-        caption: String? = nil,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        TaskFormMacControlBlock(title: title, caption: caption) {
-            content()
-        }
-    }
-
-    // MARK: - Computed helpers
-
-    private var presentation: TaskFormPresentation {
-        TaskFormPresentation(
-            taskType: model.taskType.wrappedValue,
-            scheduleMode: model.scheduleMode.wrappedValue,
-            recurrenceKind: model.recurrenceKind.wrappedValue,
-            recurrenceHasExplicitTime: model.recurrenceHasExplicitTime.wrappedValue,
-            recurrenceHasTimeRange: model.recurrenceHasTimeRange.wrappedValue,
-            recurrenceWeekday: model.recurrenceWeekday.wrappedValue,
-            recurrenceDayOfMonth: model.recurrenceDayOfMonth.wrappedValue,
-            recurrenceWeekdays: model.effectiveRecurrenceWeekdays,
-            recurrenceDaysOfMonth: model.effectiveRecurrenceDaysOfMonth,
-            importance: model.importance.wrappedValue,
-            urgency: model.urgency.wrappedValue,
-            hasAvailableTags: !model.availableTags.isEmpty,
-            hasAvailableGoals: !model.availableGoals.isEmpty,
-            goalDraft: model.goalDraft.wrappedValue,
-            selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
-            canAutoAssumeDailyDone: model.canAutoAssumeDailyDone
-        )
-    }
-
-    private var selectedPlaceName: String? {
-        if let id = model.selectedPlaceIDsValue.first,
-           let place = model.availablePlaces.first(where: { $0.id == id }) {
-            return place.name
-        }
-        return nil
-    }
-
-    // MARK: - Live preview helpers
-
-    private var previewTitle: String {
-        let trimmed = model.name.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        let taskTypeTitle = model.taskType.wrappedValue.userFacingTitle.lowercased()
-        return trimmed.isEmpty
-            ? "New \(taskTypeTitle)"
-            : trimmed
-    }
-
-    private var previewSubtitle: String {
-        switch model.taskType.wrappedValue {
-        case .todo:
-            return model.deadlineEnabled.wrappedValue
-                ? "A one-off task with a deadline."
-                : "A one-off task you can finish once."
-        case .routine:
-            break
-        }
-        switch model.scheduleMode.wrappedValue {
-        case .fixedInterval: return "A repeating task with one shared cadence."
-        case .softInterval: return "A gentle repeating task that stays visible and resurfaces without overdue pressure."
-        case .fixedIntervalChecklist: return "A repeating task you complete by finishing every checklist item."
-        case .softIntervalChecklist: return "A gentle repeating task you complete by finishing every checklist item."
-        case .derivedFromChecklist: return "A repeating task driven by the due dates of its checklist items."
-        case .softDerivedFromChecklist: return "A gentle repeating task driven by checklist item timing."
-        case .oneOff: return "A one-off task you can finish once."
-        }
-    }
-
-    private var previewScheduleSummary: String {
-        switch model.taskType.wrappedValue {
-        case .todo:
-            return model.deadlineEnabled.wrappedValue
-                ? "Due \(deadlineSummaryText)"
-                : "One-off"
-        case .routine:
-            break
-        }
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays:
-            return TaskFormPresentation.stepperLabel(
-                unit: model.frequencyUnit.wrappedValue,
-                value: model.frequencyValue.wrappedValue
-            )
-        case .dailyTime:
-            if model.recurrenceHasTimeRange.wrappedValue {
-                return "Daily \(previewTimeRangeText)"
-            }
-            return "Daily at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
-        case .weekly:
-            let weekdayText = TaskFormPresentation.weekdayListText(for: model.effectiveRecurrenceWeekdays)
-            if model.recurrenceHasTimeRange.wrappedValue {
-                return "Every \(weekdayText) \(previewTimeRangeText)"
-            }
-            if model.recurrenceHasExplicitTime.wrappedValue {
-                return "Every \(weekdayText) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
-            }
-            return "Every \(weekdayText)"
-        case .monthlyDay:
-            if model.recurrenceHasTimeRange.wrappedValue {
-                return TaskFormPresentation.monthlyScheduleSummary(
-                    for: model.effectiveRecurrenceDaysOfMonth,
-                    timingText: previewTimeRangeText
-                )
-            }
-            if model.recurrenceHasExplicitTime.wrappedValue {
-                return TaskFormPresentation.monthlyScheduleSummary(
-                    for: model.effectiveRecurrenceDaysOfMonth,
-                    timingText: "at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
-                )
-            }
-            return TaskFormPresentation.monthlyScheduleSummary(for: model.effectiveRecurrenceDaysOfMonth)
-        }
-    }
-
-    private var deadlineSummaryText: String {
-        PersianDateDisplay.appendingSupplementaryDate(
-            to: model.deadline.wrappedValue.formatted(date: .abbreviated, time: .omitted),
-            for: model.deadline.wrappedValue,
-            enabled: showPersianDates
-        )
-    }
-
-    private var previewTimeRangeText: String {
-        "\(model.recurrenceTimeRangeStart.wrappedValue.formatted(date: .omitted, time: .shortened))-\(model.recurrenceTimeRangeEnd.wrappedValue.formatted(date: .omitted, time: .shortened))"
-    }
-
-    private var persianDeadlineText: String? {
-        PersianDateDisplay.supplementaryText(
-            for: model.deadline.wrappedValue,
-            enabled: showPersianDates
-        )
-    }
-
-    // MARK: - Utilities
-
-    private func isSupportedImageFile(_ url: URL) -> Bool {
-        guard let type = UTType(filenameExtension: url.pathExtension) else { return false }
-        return type.conforms(to: .image)
-    }
-
-    private func loadPickedImage(from item: PhotosPickerItem) {
-        _ = Task {
-            let data = try? await item.loadTransferable(type: Data.self)
-            _ = await MainActor.run {
-                model.onImagePicked(data)
-            }
-        }
-    }
-
-    private func loadPickedImage(fromFileAt url: URL) {
-        let compressedData = TaskImageProcessor.compressedImageData(fromFileAt: url)
-        model.onImagePicked(compressedData)
-    }
-
-    private func browseForImageFile() {
-        Task { @MainActor in
-            guard let url = await PlatformSupport.selectTaskImageURL(),
-                  isSupportedImageFile(url)
-            else {
-                return
-            }
-            loadPickedImage(fromFileAt: url)
-        }
-    }
-
-    private func loadAttachment(fromFileAt url: URL) {
-        let maxSize = 20 * 1024 * 1024  // 20 MB
-        guard url.startAccessingSecurityScopedResource() else { return }
-        defer { url.stopAccessingSecurityScopedResource() }
-        guard let data = try? Data(contentsOf: url), data.count <= maxSize else { return }
-        model.onAttachmentPicked(data, url.lastPathComponent)
-    }
 }
