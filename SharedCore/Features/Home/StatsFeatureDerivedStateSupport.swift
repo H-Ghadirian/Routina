@@ -61,93 +61,6 @@ struct StatsFeatureMetrics: Equatable {
     var sparklineMaxCount: Int = 1
     var xAxisDates: [Date] = []
 }
-
-struct StatsAchievementPresentationSnapshot: Equatable {
-    var achievements: [StatsAchievementProgress] = []
-    var earnedAchievementIDsByPeriod: [StatsAchievementCelebrationPeriod: Set<String>] = [:]
-    var celebrations: [StatsAchievementCelebration] = []
-
-    static func build(
-        focusSessions: [FocusSession],
-        sleepSessions: [SleepSession],
-        awaySessions: [AwaySession],
-        logs: [RoutineLog],
-        emotionLogs: [EmotionLog],
-        notes: [RoutineNote],
-        noteAttachmentNoteIDs: Set<UUID>,
-        goals: [RoutineGoal],
-        places: [RoutinePlace],
-        placeCheckInSessions: [PlaceCheckInSession],
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> Self {
-        let canonicalFocusSessions = FocusStatsSessionCanonicalization.canonicalTaskSessions(
-            focusSessions
-        )
-        return Self(
-            achievements: StatsAchievementStats.achievements(
-                focusSessions: canonicalFocusSessions,
-                sleepSessions: sleepSessions,
-                awaySessions: awaySessions,
-                logs: logs,
-                emotionLogs: emotionLogs,
-                notes: notes,
-                noteAttachmentNoteIDs: noteAttachmentNoteIDs,
-                goals: goals,
-                places: places,
-                placeCheckInSessions: placeCheckInSessions,
-                calendar: calendar
-            ),
-            earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
-                focusSessions: canonicalFocusSessions,
-                sleepSessions: sleepSessions,
-                awaySessions: awaySessions,
-                logs: logs,
-                emotionLogs: emotionLogs,
-                notes: notes,
-                noteAttachmentNoteIDs: noteAttachmentNoteIDs,
-                goals: goals,
-                places: places,
-                placeCheckInSessions: placeCheckInSessions,
-                referenceDate: referenceDate,
-                calendar: calendar
-            ),
-            celebrations: StatsAchievementStats.celebrationPeriods(
-                focusSessions: canonicalFocusSessions,
-                sleepSessions: sleepSessions,
-                awaySessions: awaySessions,
-                logs: logs,
-                emotionLogs: emotionLogs,
-                notes: notes,
-                goals: goals,
-                places: places,
-                placeCheckInSessions: placeCheckInSessions,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        )
-    }
-
-    func filteringDomains(
-        _ isIncluded: (StatsAchievementDomain) -> Bool
-    ) -> Self {
-        Self(
-            achievements: achievements.filter { isIncluded($0.domain) },
-            earnedAchievementIDsByPeriod: earnedAchievementIDsByPeriod,
-            celebrations: celebrations.compactMap { celebration in
-                let highlights = celebration.highlights.filter {
-                    isIncluded($0.domain)
-                }
-                guard !highlights.isEmpty else { return nil }
-                return StatsAchievementCelebration(
-                    period: celebration.period,
-                    highlights: highlights
-                )
-            }
-        )
-    }
-}
-
 struct StatsFeatureDerivedState: Equatable {
     var availableTags: [String] = []
     var selectedTags: Set<String> = []
@@ -165,474 +78,7 @@ struct StatsFeatureDerivedState: Equatable {
 }
 
 enum StatsFeatureDerivedStateBuilder {
-    static func build(
-        tasks: [RoutineTask],
-        logs: [RoutineLog],
-        focusSessions: [FocusSession],
-        sprintFocusSessions: [SprintFocusSessionRecord] = [],
-        focusSessionEvents: [FocusSessionActionEvent] = [],
-        boardSprints: [BoardSprintRecord] = [],
-        sleepSessions: [SleepSession] = [],
-        awaySessions: [AwaySession] = [],
-        emotionLogs: [EmotionLog] = [],
-        notes: [RoutineNote] = [],
-        events: [RoutineEvent] = [],
-        noteAttachmentNoteIDs: Set<UUID> = [],
-        goals: [RoutineGoal] = [],
-        selectedRange: DoneChartRange,
-        taskTypeFilter: StatsTaskTypeFilter,
-        createdChartTaskTypeFilter: StatsTaskTypeFilter? = nil,
-        selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
-        advancedQuery: String,
-        selectedTags: Set<String>,
-        includeTagMatchMode: RoutineTagMatchMode,
-        excludedTags: Set<String>,
-        excludeTagMatchMode: RoutineTagMatchMode,
-        selectedFlags: Set<String> = [],
-        includeFlagMatchMode: RoutineTagMatchMode = .all,
-        excludedFlags: Set<String> = [],
-        excludeFlagMatchMode: RoutineTagMatchMode = .any,
-        tagColors: [String: String],
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> StatsFeatureDerivedState {
-        let normalizedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(selectedImportanceUrgencyFilter)
-        let query = HomeTaskAdvancedQuery<StatsTaskQueryDisplay>(advancedQuery)
-        let queryMetrics = HomeTaskListMetrics<StatsTaskQueryDisplay>(
-            configuration: HomeTaskListFilteringConfiguration(
-                selectedFilter: .all,
-                advancedQuery: "",
-                selectedManualPlaceFilterID: nil,
-                selectedImportanceUrgencyFilter: nil,
-                selectedTodoStateFilter: nil,
-                selectedPressureFilter: nil,
-                selectedGoalFilter: .all,
-                selectedMediaFilter: .all,
-                selectedEstimationFilter: .all,
-                hideAssumedDoneTasks: false,
-                taskListViewMode: .all,
-                taskListSortOrder: .smart,
-                createdDateFilter: .all,
-                selectedTags: [],
-                includeTagMatchMode: .all,
-                excludedTags: [],
-                excludeTagMatchMode: .any,
-                searchText: "",
-                routineListSectioningMode: .status,
-                routineTasks: tasks,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        )
-        let tasksMatchingTaskTypeAndMatrixFilters = taskTypeAndMatrixFilteredTasks(
-            tasks: tasks,
-            taskTypeFilter: taskTypeFilter,
-            selectedImportanceUrgencyFilter: normalizedImportanceUrgencyFilter
-        )
-        let tasksMatchingQuery = queryMatchedTasks(
-            tasks: tasks,
-            taskTypeFilter: taskTypeFilter,
-            selectedImportanceUrgencyFilter: normalizedImportanceUrgencyFilter,
-            query: query,
-            queryMetrics: queryMetrics,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-
-        let availableTags = RoutineTag.allTags(from: tasksMatchingQuery.map(\.tags))
-        let sanitizedSelectedTags = selectedTags.filter { RoutineTag.contains($0, in: availableTags) }
-        let availableExcludeTags = availableTags.filter { tag in
-            !sanitizedSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
-        }
-        let sanitizedExcludedTags = excludedTags.filter { RoutineTag.contains($0, in: availableExcludeTags) }
-        let availableFlags = RoutineFlag.allFlags(from: tasksMatchingQuery.map(\.flags))
-        let sanitizedSelectedFlags = selectedFlags.filter { RoutineFlag.contains($0, in: availableFlags) }
-        let availableExcludeFlags = availableFlags.filter { flag in
-            !sanitizedSelectedFlags.contains { RoutineFlag.contains($0, in: [flag]) }
-        }
-        let sanitizedExcludedFlags = excludedFlags.filter { RoutineFlag.contains($0, in: availableExcludeFlags) }
-        let sidebarAvailableExcludeTags = RoutineTag.allTags(
-            from: tasksMatchingTaskTypeAndMatrixFilters.filter { task in
-                HomeDisplayFilterSupport.matchesSelectedTags(
-                    sanitizedSelectedTags,
-                    mode: includeTagMatchMode,
-                    in: task.tags
-                )
-            }.map(\.tags)
-        ).filter { tag in
-            !sanitizedSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
-        }
-        let tagSummaries = RoutineTagColors.applying(
-            tagColors,
-            to: RoutineTag.summaries(from: tasksMatchingTaskTypeAndMatrixFilters)
-        )
-        let filteredTasks = filteredTasks(
-            tasksMatchingQuery,
-            selectedTags: sanitizedSelectedTags,
-            includeTagMatchMode: includeTagMatchMode,
-            excludedTags: sanitizedExcludedTags,
-            excludeTagMatchMode: excludeTagMatchMode,
-            selectedFlags: sanitizedSelectedFlags,
-            includeFlagMatchMode: includeFlagMatchMode,
-            excludedFlags: sanitizedExcludedFlags,
-            excludeFlagMatchMode: excludeFlagMatchMode
-        )
-        let filteredTaskIDs = Set(filteredTasks.map(\.id))
-        let filteredLogs = logs.filter { filteredTaskIDs.contains($0.taskID) }
-        let filteredFocusSessions = focusSessions.filter { session in
-            if session.isUnassigned {
-                return sanitizedSelectedFlags.isEmpty
-            }
-            if !sanitizedSelectedFlags.isEmpty || !sanitizedExcludedFlags.isEmpty {
-                return filteredTaskIDs.contains(session.taskID)
-            }
-            if let tagName = session.focusTagName {
-                return HomeDisplayFilterSupport.matchesSelectedTags(
-                    sanitizedSelectedTags,
-                    mode: includeTagMatchMode,
-                    in: [tagName]
-                )
-                && HomeDisplayFilterSupport.matchesExcludedTags(
-                    sanitizedExcludedTags,
-                    mode: excludeTagMatchMode,
-                    in: [tagName]
-                )
-            }
-            return filteredTaskIDs.contains(session.taskID)
-        }
-        let createdChartFilteredTasks: [RoutineTask]
-        if let createdChartTaskTypeFilter {
-            let tasksMatchingCreatedQuery = queryMatchedTasks(
-                tasks: tasks,
-                taskTypeFilter: createdChartTaskTypeFilter,
-                selectedImportanceUrgencyFilter: normalizedImportanceUrgencyFilter,
-                query: query,
-                queryMetrics: queryMetrics,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-            createdChartFilteredTasks = Self.filteredTasks(
-                tasksMatchingCreatedQuery,
-                selectedTags: sanitizedSelectedTags,
-                includeTagMatchMode: includeTagMatchMode,
-                excludedTags: sanitizedExcludedTags,
-                excludeTagMatchMode: excludeTagMatchMode,
-                selectedFlags: sanitizedSelectedFlags,
-                includeFlagMatchMode: includeFlagMatchMode,
-                excludedFlags: sanitizedExcludedFlags,
-                excludeFlagMatchMode: excludeFlagMatchMode
-            )
-        } else {
-            createdChartFilteredTasks = []
-        }
-
-        let completionDates = filteredLogs
-            .filter { $0.kind == .completed }
-            .compactMap(\.timestamp)
-        let canceledDates = filteredLogs
-            .filter { $0.kind == .canceled }
-            .compactMap(\.timestamp)
-        let missedDates = filteredLogs
-            .filter { $0.kind == .missed }
-            .compactMap(\.timestamp)
-        let assumedCompletionSummary = assumedCompletions(
-            tasks: filteredTasks,
-            logs: filteredLogs,
-            selectedRange: selectedRange,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-        let activityDates = completionDates + canceledDates + missedDates
-        let createdDates = createdChartFilteredTasks.compactMap(\.createdAt)
-        let emotionLogsInRange = emotionLogs.filter { emotion in
-            dateIsInRange(
-                emotion.createdAt,
-                selectedRange: selectedRange,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        }
-        let notesInRange = notes.filter { note in
-            dateIsInRange(
-                note.createdAt,
-                selectedRange: selectedRange,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        }
-        let eventsInRange = events.filter { event in
-            dateIsInRange(
-                event.startedAt ?? event.createdAt,
-                selectedRange: selectedRange,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        }
-        let sleepSessionsInRange = sleepSessions.filter { session in
-            dateIsInRange(
-                session.startedAt,
-                selectedRange: selectedRange,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        }
-        let awaySessionsInRange = awaySessions.filter { session in
-            dateIsInRange(
-                session.startedAt ?? session.createdAt,
-                selectedRange: selectedRange,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        }
-        let goalsCreatedInRange = goals.filter { goal in
-            dateIsInRange(
-                goal.createdAt,
-                selectedRange: selectedRange,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        }
-        let earliestActivityDate = [
-            filteredTasks.compactMap(\.createdAt).min(),
-            createdChartFilteredTasks.compactMap(\.createdAt).min(),
-            filteredLogs.compactMap(\.timestamp).min(),
-            filteredFocusSessions.compactMap(\.startedAt).min(),
-            sprintFocusSessions.map(\.startedAt).min(),
-            awaySessions.compactMap(\.startedAt).min()
-        ].compactMap { $0 }.min()
-
-        let chartPoints: [DoneChartPoint] = RoutineCompletionStats.points(
-            for: selectedRange,
-            timestamps: activityDates,
-            earliestActivityDate: earliestActivityDate,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-        let outcomeMixChartPoints = RoutineCompletionStats.outcomePoints(
-            for: selectedRange,
-            logs: filteredLogs,
-            earliestActivityDate: earliestActivityDate,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-        let createdChartPoints: [DoneChartPoint]
-        if createdChartTaskTypeFilter == nil {
-            createdChartPoints = []
-        } else {
-            createdChartPoints = RoutineCompletionStats.points(
-                for: selectedRange,
-                timestamps: createdDates,
-                earliestActivityDate: earliestActivityDate,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        }
-        let focusChartPoints: [FocusDurationChartPoint] = FocusDurationStats.points(
-            for: selectedRange,
-            sessions: filteredFocusSessions,
-            sprintSessions: sprintFocusSessions,
-            focusSessionEvents: focusSessionEvents,
-            tasks: filteredTasks,
-            boardSprints: boardSprints,
-            earliestActivityDate: earliestActivityDate,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-        let focusWorkChartPoints = FocusWorkStats.points(
-            outcomePoints: outcomeMixChartPoints,
-            focusPoints: focusChartPoints
-        )
-        let hourlyActivityChartPoints = HourlyActivityStats.points(
-            tasks: filteredTasks,
-            logs: filteredLogs,
-            focusSessions: filteredFocusSessions,
-            sprintFocusSessions: sprintFocusSessions,
-            focusSessionEvents: focusSessionEvents,
-            selectedRange: selectedRange,
-            earliestActivityDate: earliestActivityDate,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-        let estimateActualChartPoints = EstimateActualStats.points(
-            tasks: filteredTasks,
-            logs: filteredLogs,
-            outcomePoints: outcomeMixChartPoints,
-            calendar: calendar
-        )
-        let tagUsagePoints = RoutineCompletionStats.tagUsagePoints(
-            tasks: filteredTasks,
-            logs: filteredLogs,
-            chartPoints: chartPoints,
-            tagColors: tagColors,
-            calendar: calendar
-        )
-        let goalProgressChartPoints = GoalProgressStats.points(
-            goals: goals,
-            tasks: filteredTasks,
-            logs: filteredLogs,
-            focusSessions: filteredFocusSessions,
-            outcomePoints: outcomeMixChartPoints,
-            calendar: calendar
-        )
-        let totalCount = RoutineCompletionStats.totalCount(in: chartPoints)
-        let averagePerDay = RoutineCompletionStats.averageCount(in: chartPoints)
-        let busiestDay = RoutineCompletionStats.busiestDay(in: chartPoints)
-        let createdTotalCount = RoutineCompletionStats.totalCount(in: createdChartPoints)
-        let createdAveragePerDay = RoutineCompletionStats.averageCount(in: createdChartPoints)
-        let busiestCreatedDay = RoutineCompletionStats.busiestDay(in: createdChartPoints)
-        let totalFocusSeconds = FocusDurationStats.totalSeconds(in: focusChartPoints)
-        let averageFocusSecondsPerDay = FocusDurationStats.averageSeconds(in: focusChartPoints)
-        let busiestFocusDay = FocusDurationStats.busiestDay(in: focusChartPoints)
-        let focusWeekdayAveragePoints = FocusDurationStats.weekdayAveragePoints(
-            from: focusChartPoints,
-            calendar: calendar
-        )
-        let strongestFocusWeekdayAverage = FocusDurationStats.strongestWeekdayAverage(
-            in: focusWeekdayAveragePoints
-        )
-        let emotionActiveDayCount = Set(
-            emotionLogsInRange
-                .compactMap(\.createdAt)
-                .map { calendar.startOfDay(for: $0) }
-        ).count
-        let averageEmotionIntensity = emotionLogsInRange.isEmpty
-            ? 0
-            : Double(emotionLogsInRange.reduce(0) { $0 + $1.clampedIntensity }) / Double(emotionLogsInRange.count)
-        let emotionTrendChartPoints = EmotionTrendStats.points(
-            emotionLogs: emotionLogsInRange,
-            calendar: calendar
-        )
-        let noteWithMediaCount = notesInRange.filter {
-            $0.hasImage || $0.hasVoiceNote || noteAttachmentNoteIDs.contains($0.id)
-        }.count
-        let eventActiveDayCount = Set(
-            eventsInRange
-                .compactMap { $0.startedAt ?? $0.createdAt }
-                .map { calendar.startOfDay(for: $0) }
-        ).count
-        let totalSleepSeconds = sleepSessionsInRange.reduce(0) { total, session in
-            total + session.durationSeconds(referenceDate: referenceDate)
-        }
-        let sleepActiveDayCount = Set(
-            sleepSessionsInRange
-                .compactMap(\.startedAt)
-                .map { calendar.startOfDay(for: $0) }
-        ).count
-        let completedSleepSessionCount = sleepSessionsInRange.filter { !$0.isActive }.count
-        let totalAwaySeconds = awaySessionsInRange.reduce(0) { total, session in
-            total + session.durationSeconds(referenceDate: referenceDate)
-        }
-        let awayActiveDayCount = Set(
-            awaySessionsInRange
-                .compactMap(\.startedAt)
-                .map { calendar.startOfDay(for: $0) }
-        ).count
-        let completedAwaySessionCount = awaySessionsInRange.filter { $0.state == .completed }.count
-        let endedEarlyAwaySessionCount = awaySessionsInRange.filter { $0.state == .endedEarly }.count
-        let activeGoalCount = goals.filter { $0.status == .active }.count
-        let archivedGoalCount = goals.filter { $0.status == .archived }.count
-        let routineCount = filteredTasks.filter {
-            $0.scheduleMode.taskType == .routine
-        }.count
-        let openTodoCount = filteredTasks.filter {
-            $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff
-        }.count
-        let archiveCounts = taskArchiveCounts(
-            filteredTasks,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-        let sparklinePoints = sampledSparklinePoints(
-            from: chartPoints,
-            for: selectedRange,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-        let maxCount = chartPoints.map(\.count).max() ?? 0
-        let maxCreatedCount = createdChartPoints.map(\.count).max() ?? 0
-        let maxFocusMinutes = focusChartPoints.map(\.minutes).max() ?? 0
-        let maxFocusWeekdayAverageMinutes = focusWeekdayAveragePoints.map(\.minutes).max() ?? 0
-
-        return StatsFeatureDerivedState(
-            availableTags: availableTags,
-            selectedTags: sanitizedSelectedTags,
-            excludedTags: sanitizedExcludedTags,
-            tagSummaries: tagSummaries,
-            availableExcludeTags: sidebarAvailableExcludeTags,
-            availableFlags: availableFlags,
-            selectedFlags: sanitizedSelectedFlags,
-            excludedFlags: sanitizedExcludedFlags,
-            availableExcludeFlags: availableExcludeFlags,
-            taskCountForSelectedTypeFilter: tasksMatchingTaskTypeAndMatrixFilters.count,
-            filteredTaskCount: filteredTasks.count,
-            filteredTaskIDs: filteredTaskIDs,
-            metrics: StatsFeatureMetrics(
-                chartPoints: chartPoints,
-                outcomeMixChartPoints: outcomeMixChartPoints,
-                createdChartPoints: createdChartPoints,
-                focusChartPoints: focusChartPoints,
-                focusWorkChartPoints: focusWorkChartPoints,
-                hourlyActivityChartPoints: hourlyActivityChartPoints,
-                estimateActualChartPoints: estimateActualChartPoints,
-                focusWeekdayAveragePoints: focusWeekdayAveragePoints,
-                goalProgressChartPoints: goalProgressChartPoints,
-                tagUsagePoints: tagUsagePoints,
-                totalDoneCount: outcomeMixChartPoints.reduce(0) { $0 + $1.doneCount },
-                totalCanceledCount: outcomeMixChartPoints.reduce(0) { $0 + $1.canceledCount },
-                totalMissedCount: outcomeMixChartPoints.reduce(0) { $0 + $1.missedCount },
-                assumedDoneCount: assumedCompletionSummary.count,
-                totalAssumedEstimatedMinutes: assumedCompletionSummary.estimatedMinutes,
-                createdTotalCount: createdTotalCount,
-                totalFocusSeconds: totalFocusSeconds,
-                averageFocusSecondsPerDay: averageFocusSecondsPerDay,
-                emotionLogCount: emotionLogsInRange.count,
-                emotionActiveDayCount: emotionActiveDayCount,
-                averageEmotionIntensity: averageEmotionIntensity,
-                emotionTrendChartPoints: emotionTrendChartPoints,
-                noteCount: notesInRange.count,
-                noteWithMediaCount: noteWithMediaCount,
-                eventCount: eventsInRange.count,
-                eventActiveDayCount: eventActiveDayCount,
-                sleepSessionCount: sleepSessionsInRange.count,
-                completedSleepSessionCount: completedSleepSessionCount,
-                totalSleepSeconds: totalSleepSeconds,
-                sleepActiveDayCount: sleepActiveDayCount,
-                awaySessionCount: awaySessionsInRange.count,
-                completedAwaySessionCount: completedAwaySessionCount,
-                endedEarlyAwaySessionCount: endedEarlyAwaySessionCount,
-                totalAwaySeconds: totalAwaySeconds,
-                awayActiveDayCount: awayActiveDayCount,
-                activeGoalCount: activeGoalCount,
-                archivedGoalCount: archivedGoalCount,
-                goalsCreatedCount: goalsCreatedInRange.count,
-                routineCount: routineCount,
-                openTodoCount: openTodoCount,
-                activeRoutineCount: archiveCounts.active,
-                archivedRoutineCount: archiveCounts.archived,
-                totalCount: totalCount,
-                averagePerDay: averagePerDay,
-                createdAveragePerDay: createdAveragePerDay,
-                highlightedBusiestDay: (busiestDay?.count ?? 0) > 0 ? busiestDay : nil,
-                highlightedCreatedDay: (busiestCreatedDay?.count ?? 0) > 0 ? busiestCreatedDay : nil,
-                highlightedFocusDay: (busiestFocusDay?.seconds ?? 0) > 0 ? busiestFocusDay : nil,
-                highlightedFocusWeekdayAverage: (strongestFocusWeekdayAverage?.seconds ?? 0) > 0
-                    ? strongestFocusWeekdayAverage
-                    : nil,
-                activeDayCount: chartPoints.filter { $0.count > .zero }.count,
-                createdActiveDayCount: createdChartPoints.filter { $0.count > .zero }.count,
-                focusActiveDayCount: focusChartPoints.filter { $0.seconds > 0 }.count,
-                chartUpperBound: Double(max(maxCount, Int(ceil(averagePerDay))) + 1),
-                createdChartUpperBound: Double(max(maxCreatedCount, Int(ceil(createdAveragePerDay))) + 1),
-                focusChartUpperBound: max(10, ceil(max(maxFocusMinutes, averageFocusSecondsPerDay / 60)) + 5),
-                focusWeekdayAverageUpperBound: max(10, ceil(maxFocusWeekdayAverageMinutes) + 5),
-                sparklinePoints: sparklinePoints,
-                sparklineMaxCount: max(sparklinePoints.map(\.count).max() ?? 0, 1),
-                xAxisDates: makeXAxisDates(from: chartPoints, for: selectedRange, calendar: calendar)
-            )
-        )
-    }
-
-    private static func taskTypeAndMatrixFilteredTasks(
+    static func taskTypeAndMatrixFilteredTasks(
         tasks: [RoutineTask],
         taskTypeFilter: StatsTaskTypeFilter,
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
@@ -644,7 +90,7 @@ enum StatsFeatureDerivedStateBuilder {
         )
     }
 
-    private static func queryMatchedTasks(
+    static func queryMatchedTasks(
         tasks: [RoutineTask],
         taskTypeFilter: StatsTaskTypeFilter,
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
@@ -671,7 +117,7 @@ enum StatsFeatureDerivedStateBuilder {
         return tasksMatchingMatrixFilter.filter { queryMatchedTaskIDs.contains($0.id) }
     }
 
-    private static func filteredTasks(
+    static func filteredTasks(
         _ tasks: [RoutineTask],
         selectedTags: Set<String>,
         includeTagMatchMode: RoutineTagMatchMode,
@@ -715,7 +161,7 @@ enum StatsFeatureDerivedStateBuilder {
         }
     }
 
-    private static func taskArchiveCounts(
+    static func taskArchiveCounts(
         _ tasks: [RoutineTask],
         referenceDate: Date,
         calendar: Calendar
@@ -729,7 +175,7 @@ enum StatsFeatureDerivedStateBuilder {
         }
     }
 
-    private static func assumedCompletions(
+    static func assumedCompletions(
         tasks: [RoutineTask],
         logs: [RoutineLog],
         selectedRange: DoneChartRange,
@@ -748,7 +194,7 @@ enum StatsFeatureDerivedStateBuilder {
         }
     }
 
-    private static func sampledSparklinePoints(
+    static func sampledSparklinePoints(
         from chartPoints: [DoneChartPoint],
         for range: DoneChartRange,
         referenceDate: Date,
@@ -772,7 +218,7 @@ enum StatsFeatureDerivedStateBuilder {
         }
     }
 
-    private static func bucketedSparklinePoints(
+    static func bucketedSparklinePoints(
         from chartPoints: [DoneChartPoint],
         bucketSize: Int
     ) -> [DoneChartPoint] {
@@ -791,7 +237,7 @@ enum StatsFeatureDerivedStateBuilder {
         }
     }
 
-    private static func monthlySparklinePoints(
+    static func monthlySparklinePoints(
         from chartPoints: [DoneChartPoint],
         referenceDate: Date,
         calendar: Calendar
@@ -799,12 +245,14 @@ enum StatsFeatureDerivedStateBuilder {
         var countsByMonth: [Date: Int] = [:]
 
         for point in chartPoints {
-            let monthStart = calendar.dateInterval(of: .month, for: point.date)?.start
+            let monthStart =
+                calendar.dateInterval(of: .month, for: point.date)?.start
                 ?? calendar.startOfDay(for: point.date)
             countsByMonth[monthStart, default: 0] += point.count
         }
 
-        let endMonth = calendar.dateInterval(of: .month, for: referenceDate)?.start
+        let endMonth =
+            calendar.dateInterval(of: .month, for: referenceDate)?.start
             ?? calendar.startOfDay(for: referenceDate)
         let startMonth = calendar.date(byAdding: .month, value: -11, to: endMonth) ?? endMonth
         let monthOrder = (0..<12).compactMap { offset in
@@ -819,7 +267,7 @@ enum StatsFeatureDerivedStateBuilder {
         }
     }
 
-    private static func makeXAxisDates(
+    static func makeXAxisDates(
         from chartPoints: [DoneChartPoint],
         for range: DoneChartRange,
         calendar: Calendar
@@ -858,7 +306,7 @@ enum StatsFeatureDerivedStateBuilder {
         }
     }
 
-    private static func dateIsInRange(
+    static func dateIsInRange(
         _ date: Date?,
         selectedRange: DoneChartRange,
         referenceDate: Date,
@@ -866,11 +314,13 @@ enum StatsFeatureDerivedStateBuilder {
     ) -> Bool {
         guard let date else { return false }
         let endDate = calendar.startOfDay(for: referenceDate)
-        guard let startDate = calendar.date(
-            byAdding: .day,
-            value: -(selectedRange.trailingDayCount - 1),
-            to: endDate
-        ) else {
+        guard
+            let startDate = calendar.date(
+                byAdding: .day,
+                value: -(selectedRange.trailingDayCount - 1),
+                to: endDate
+            )
+        else {
             return false
         }
         let day = calendar.startOfDay(for: date)
@@ -879,7 +329,7 @@ enum StatsFeatureDerivedStateBuilder {
     }
 }
 
-private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
+struct StatsTaskQueryDisplay: HomeTaskListDisplay {
     let taskID: UUID
     let name: String
     let emoji: String
@@ -956,11 +406,12 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
             referenceDate: referenceDate,
             calendar: calendar
         )
-        self.hasMissedExactTimedOccurrence = RoutineDateMath.missedExactTimedOccurrenceDate(
-            for: task,
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) != nil
+        self.hasMissedExactTimedOccurrence =
+            RoutineDateMath.missedExactTimedOccurrenceDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) != nil
         self.isOneOffTask = task.isOneOffTask
         self.isCompletedOneOff = task.isCompletedOneOff
         self.isCanceledOneOff = task.isCanceledOneOff
