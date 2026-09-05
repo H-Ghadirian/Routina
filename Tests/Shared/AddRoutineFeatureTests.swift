@@ -1917,11 +1917,11 @@ struct AddRoutineFeatureTests {
             )
         )
 
-        let recurrenceEditorSource = try SourceInspectionSupport.readProjectFile(
-            "SharedCore/Views/AdvancedRecurrenceEditor.swift"
+        let recurrenceTimeZoneSource = try SourceInspectionSupport.readProjectFile(
+            "SharedCore/Views/RecurrenceTimeZoneField.swift"
         )
-        #expect(recurrenceEditorSource.contains("static let options: [Option]"))
-        #expect(recurrenceEditorSource.contains("List(options)"))
+        #expect(recurrenceTimeZoneSource.contains("static let options: [Option]"))
+        #expect(recurrenceTimeZoneSource.contains("List(options)"))
     }
 
     @Test
