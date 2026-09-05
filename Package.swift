@@ -567,6 +567,7 @@ let package = Package(
                 "Views/TaskVoiceNoteViews.swift",
                 "Views/CalendarTaskSuggestionRowPresentation.swift",
                 "Views/CalendarTaskImportSheet.swift",
+                "Views/CalendarTaskImportViewModel.swift",
                 "Views/DayPlan/DayPlanPlannerPresentationModels.swift",
                 "Views/DayPlan/DayPlanPlannerState.swift",
                 "Views/DayPlan/DayPlanPlannerState+Undo.swift",
