@@ -30,7 +30,7 @@ struct HomeBlockedStatusBadgeSourceTests {
 
     @Test
     func macTodosModeKeepsBlockedStatusBadgesVisible() throws {
-        let source = try sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let source = try SourceInspectionSupport.readMacHomeRootSources()
         let functionStart = try #require(
             source.range(of: "func statusBadge(\n        for task:")
         )

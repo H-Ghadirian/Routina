@@ -2,147 +2,6 @@ import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
-private let homeFocusPauseResumeActionPredicate = #Predicate<RoutinaDeviceActionLog> { log in
-    log.entityRawValue == "focusSession"
-        && (log.actionRawValue == "paused" || log.actionRawValue == "resumed")
-}
-
-final class HomeCollapsedTagTaskListSectionIDsCache: ObservableObject {
-    private var cachedStorage: String?
-    private var cachedIDs: Set<String> = []
-
-    func ids(for storage: String) -> Set<String> {
-        guard cachedStorage != storage else { return cachedIDs }
-        cachedStorage = storage
-        cachedIDs = Set(storage.split(separator: "\n").map(String.init))
-        return cachedIDs
-    }
-}
-
-enum MacHomeDetailMode: String, CaseIterable, Identifiable {
-    case details = "Details"
-    case planner = "Planner"
-    case board = "Board"
-    case places = "Places"
-
-    var id: Self { self }
-
-    static var visibleModes: [Self] {
-        var modes: [Self] = [.details, .planner]
-        if SharedDefaults.app[.appSettingBoardScreenEnabled] {
-            modes.append(.board)
-        }
-        if SharedDefaults.app[.appSettingPlacesEnabled] {
-            modes.append(.places)
-        }
-        return modes
-    }
-
-    static var defaultLandingMode: Self { .planner }
-
-    var visibleSurfaceMode: Self {
-        Self.visibleModes.contains(self) ? self : .details
-    }
-}
-
-enum MacHomeProgressMode: String, CaseIterable, Identifiable {
-    case stats = "Stats"
-    case adventure = "Adventure"
-
-    var id: Self { self }
-
-    static var visibleModes: [Self] {
-        guard SharedDefaults.app[.appSettingAdventureMapEnabled] else {
-            return [.stats]
-        }
-        return [.stats, .adventure]
-    }
-
-    var visibleSurfaceMode: Self {
-        Self.visibleModes.contains(self) ? self : .stats
-    }
-}
-
-enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
-    case both
-    case taskList
-    case timeline
-    case calendar
-
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .both:
-            return "Shared"
-        case .taskList:
-            return "Task List"
-        case .timeline:
-            return "Timeline"
-        case .calendar:
-            return "Calendar"
-        }
-    }
-
-    var scopeDescription: String {
-        switch self {
-        case .both:
-            return "Applies to task-backed rows in Task List, Timeline, and Calendar."
-        case .taskList:
-            return "Filters and organizes Task List rows only."
-        case .timeline:
-            return "Filters Timeline activity only."
-        case .calendar:
-            return "Controls Calendar layers and Calendar task rows only."
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .both:
-            return "slider.horizontal.3"
-        case .taskList:
-            return "checklist"
-        case .timeline:
-            return "clock.arrow.circlepath"
-        case .calendar:
-            return "calendar"
-        }
-    }
-}
-
-struct MacSidebarTaskScrollRequest: Equatable {
-    enum Anchor: Equatable {
-        case center
-        case minimalReveal
-    }
-
-    let taskID: UUID
-    let anchor: Anchor
-    let destination: MacSidebarTaskScrollDestination?
-    private let token = UUID()
-
-    init(
-        taskID: UUID,
-        anchor: Anchor = .center,
-        destination: MacSidebarTaskScrollDestination? = nil
-    ) {
-        self.taskID = taskID
-        self.anchor = anchor
-        self.destination = destination
-    }
-}
-
-struct MacSidebarTaskScrollDestination: Equatable {
-    let sectionID: String
-    let groupIDs: [String]
-}
-
-struct MacTimelineSidebarScrollRequest: Equatable {
-    let entryID: UUID
-    private let token = UUID()
-}
-
 struct HomeMacSearchSidebarRevealSnapshot {
     let sidebarColumnVisibility: NavigationSplitViewVisibility
     let isDailyRoutinesSectionCollapsed: Bool
@@ -172,7 +31,7 @@ struct HomeTCAView: View {
     @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
-    ) private var taskRowHiddenFieldsRawValue = ""
+    ) var taskRowHiddenFieldsRawValue = ""
     @AppStorage(
         UserDefaultStringValueKey.appSettingBacklogTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
@@ -180,7 +39,7 @@ struct HomeTCAView: View {
     @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue,
         store: SharedDefaults.app
-    ) private var timelineRowHiddenFieldsRawValue = ""
+    ) var timelineRowHiddenFieldsRawValue = ""
     @AppStorage(
         UserDefaultStringValueKey.appSettingTaskLadderTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
@@ -298,7 +157,7 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var macHomeTaskListSectionOrderRawValue = ""
     @StateObject var collapsedTagTaskListSectionIDsCache = HomeCollapsedTagTaskListSectionIDsCache()
-    @State private var localSearchText = ""
+    @State var localSearchText = ""
     @State var isManualCloudRefreshInProgress = false
     @State var manualCloudRefreshStatusText = ""
     @State var macSearchPresentationText = ""
@@ -423,7 +282,7 @@ struct HomeTCAView: View {
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
     @Query(sort: \AwaySession.startedAt, order: .reverse) var awaySessions: [AwaySession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) var placeCheckInSessions: [PlaceCheckInSession]
-    @Query private var fileAttachments: [RoutineAttachment]
+    @Query var fileAttachments: [RoutineAttachment]
     @Query(sort: \RoutineEvent.startedAt, order: .reverse) var events: [RoutineEvent]
     @Query(sort: \EmotionLog.createdAt, order: .reverse) var emotionLogs: [EmotionLog]
     @Query(sort: \RoutineNote.createdAt, order: .reverse) var notes: [RoutineNote]
@@ -456,7 +315,7 @@ struct HomeTCAView: View {
     }
 
     var body: some View {
-homeContent
+        homeContent
     }
 
     private var homeContent: some View {
@@ -479,520 +338,122 @@ homeContent
                     )
                 )
             )
-                .sheet(isPresented: isFilterSheetPresentedBinding) {
-                    homeFiltersSheet
-                }
-                .sheet(isPresented: planningDatePickerPresentedBinding) {
-                    TaskPlanningDatePickerSheet(
-                        date: $planningDateDraft,
-                        onCancel: dismissPlanningDatePicker,
-                        onSave: savePlanningDatePicker
-                    )
-                }
-                .sheet(item: $homeToolbarFocusPickerPresentation) { presentation in
-                    HomeMacFocusTimerTaskPickerSheet(
-                        tasks: presentation.tasks,
-                        availableTags: presentation.availableTags,
-                        defaults: presentation.defaults
-                    )
-                }
-                .confirmationDialog(
-                    "Where should this task go?",
-                    isPresented: Binding(
-                        get: { pendingBacklogSearchCreationText != nil },
-                        set: { isPresented in
-                            if !isPresented {
-                                pendingBacklogSearchCreationText = nil
-                            }
-                        }
-                    ),
-                    titleVisibility: .visible
-                ) {
-                    ForEach(backlogSearchCreationDestinations) { destination in
-                        Button(destination.title) {
-                            createBacklogSearchTask(in: destination.id)
+            .sheet(isPresented: isFilterSheetPresentedBinding) {
+                homeFiltersSheet
+            }
+            .sheet(isPresented: planningDatePickerPresentedBinding) {
+                TaskPlanningDatePickerSheet(
+                    date: $planningDateDraft,
+                    onCancel: dismissPlanningDatePicker,
+                    onSave: savePlanningDatePicker
+                )
+            }
+            .sheet(item: $homeToolbarFocusPickerPresentation) { presentation in
+                HomeMacFocusTimerTaskPickerSheet(
+                    tasks: presentation.tasks,
+                    availableTags: presentation.availableTags,
+                    defaults: presentation.defaults
+                )
+            }
+            .confirmationDialog(
+                "Where should this task go?",
+                isPresented: Binding(
+                    get: { pendingBacklogSearchCreationText != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            pendingBacklogSearchCreationText = nil
                         }
                     }
+                ),
+                titleVisibility: .visible
+            ) {
+                ForEach(backlogSearchCreationDestinations) { destination in
+                    Button(destination.title) {
+                        createBacklogSearchTask(in: destination.id)
+                    }
+                }
 
-                    Button("Main task list") {
-                        createBacklogSearchTask(in: nil)
-                    }
+                Button("Main task list") {
+                    createBacklogSearchTask(in: nil)
+                }
 
-                    Button("Cancel", role: .cancel) {
-                        pendingBacklogSearchCreationText = nil
-                    }
-                } message: {
-                    Text("Choose a Backlog section, or add the task to your main task list.")
+                Button("Cancel", role: .cancel) {
+                    pendingBacklogSearchCreationText = nil
                 }
-                .task {
-                    syncFileAttachmentTaskIDs()
+            } message: {
+                Text("Choose a Backlog section, or add the task to your main task list.")
+            }
+            .task {
+                syncFileAttachmentTaskIDs()
+            }
+            .onChange(of: fileAttachmentChangeToken) { _, _ in
+                syncFileAttachmentTaskIDs()
+            }
+            .onAppear {
+                validateMacEventEmotionFilterVisibility()
+                handlePendingSleepPlannerDeepLink(store.pendingSleepPlannerSessionID)
+            }
+            .onChange(of: areMacEventEmotionActionsEnabled) { _, isEnabled in
+                validateMacTimelineFilterVisibility()
+                guard !isEnabled else { return }
+                isEventEditorPresented = false
+                if case let .timelineEntry(entryID) = store.macSidebarSelection,
+                    events.contains(where: { $0.id == entryID })
+                {
+                    store.send(.macSidebarSelectionChanged(nil))
                 }
-                .onChange(of: fileAttachmentChangeToken) { _, _ in
-                    syncFileAttachmentTaskIDs()
+            }
+            .onChange(of: isGoalsTabEnabled) { _, isEnabled in
+                store.send(.onAppear)
+                guard !isEnabled else { return }
+                goalsStore.send(.dismissEditor)
+            }
+            .onChange(of: isPlacesEnabled) { _, _ in
+                validateMacTimelineFilterVisibility()
+                if !isPlacesEnabled {
+                    macHomeDetailMode = .details
+                    placeCheckInSelectedPlaceID = nil
+                    placeCheckInSelectedHistoryMarkerID = nil
+                } else if macHomeDetailMode.visibleSurfaceMode != .places {
+                    placeCheckInSelectedPlaceID = nil
+                    placeCheckInSelectedHistoryMarkerID = nil
                 }
-                .onAppear {
-                    validateMacEventEmotionFilterVisibility()
-                    handlePendingSleepPlannerDeepLink(store.pendingSleepPlannerSessionID)
+            }
+            .onChange(of: isNotesEnabled) { _, _ in
+                validateMacTimelineFilterVisibility()
+                if !isNotesEnabled {
+                    isNoteEditorPresented = false
+                    editingNoteID = nil
+                    selectedNoteID = nil
                 }
-                .onChange(of: areMacEventEmotionActionsEnabled) { _, isEnabled in
-                    validateMacTimelineFilterVisibility()
-                    guard !isEnabled else { return }
-                    isEventEditorPresented = false
-                    if case let .timelineEntry(entryID) = store.macSidebarSelection,
-                       events.contains(where: { $0.id == entryID }) {
-                        store.send(.macSidebarSelectionChanged(nil))
-                    }
+            }
+            .onChange(of: isAwayEnabled) { _, _ in
+                validateMacTimelineFilterVisibility()
+                if !isAwayEnabled {
+                    closeAwayStart()
                 }
-                .onChange(of: isGoalsTabEnabled) { _, isEnabled in
-                    store.send(.onAppear)
-                    guard !isEnabled else { return }
-                    goalsStore.send(.dismissEditor)
+            }
+            .onChange(of: isStatsSleepTabEnabled) { _, _ in
+                validateMacTimelineFilterVisibility()
+            }
+            .onChange(of: store.selectedTimelineFilterType) { _, _ in
+                validateMacTimelineFilterVisibility()
+            }
+            .onChange(of: store.pendingSleepPlannerSessionID) { _, sleepID in
+                handlePendingSleepPlannerDeepLink(sleepID)
+            }
+            .onChange(of: macHomeDetailMode) { _, mode in
+                if mode.visibleSurfaceMode != .planner {
+                    dayPlanPlanner.clearPlannerUndo()
                 }
-                .onChange(of: isPlacesEnabled) { _, _ in
-                    validateMacTimelineFilterVisibility()
-                    if !isPlacesEnabled {
-                        macHomeDetailMode = .details
-                        placeCheckInSelectedPlaceID = nil
-                        placeCheckInSelectedHistoryMarkerID = nil
-                    } else if macHomeDetailMode.visibleSurfaceMode != .places {
-                        placeCheckInSelectedPlaceID = nil
-                        placeCheckInSelectedHistoryMarkerID = nil
-                    }
+                normalizeTaskDetailPanePlacement()
+            }
+            .onChange(of: store.macSidebarMode) { _, mode in
+                if mode != .routines {
+                    dayPlanPlanner.clearPlannerUndo()
                 }
-                .onChange(of: isNotesEnabled) { _, _ in
-                    validateMacTimelineFilterVisibility()
-                    if !isNotesEnabled {
-                        isNoteEditorPresented = false
-                        editingNoteID = nil
-                        selectedNoteID = nil
-                    }
-                }
-                .onChange(of: isAwayEnabled) { _, _ in
-                    validateMacTimelineFilterVisibility()
-                    if !isAwayEnabled {
-                        closeAwayStart()
-                    }
-                }
-                .onChange(of: isStatsSleepTabEnabled) { _, _ in
-                    validateMacTimelineFilterVisibility()
-                }
-                .onChange(of: store.selectedTimelineFilterType) { _, _ in
-                    validateMacTimelineFilterVisibility()
-                }
-                .onChange(of: store.pendingSleepPlannerSessionID) { _, sleepID in
-                    handlePendingSleepPlannerDeepLink(sleepID)
-                }
-                .onChange(of: macHomeDetailMode) { _, mode in
-                    if mode.visibleSurfaceMode != .planner {
-                        dayPlanPlanner.clearPlannerUndo()
-                    }
-                    normalizeTaskDetailPanePlacement()
-                }
-                .onChange(of: store.macSidebarMode) { _, mode in
-                    if mode != .routines {
-                        dayPlanPlanner.clearPlannerUndo()
-                    }
-                }
+            }
         )
         .environment(\.routinaMacOpenFocusTimerTarget, openFocusTimerTarget)
-    }
-
-    private var fileAttachmentChangeToken: [String] {
-        fileAttachments.map { "\($0.id.uuidString):\($0.taskID.uuidString)" }.sorted()
-    }
-
-    private func syncFileAttachmentTaskIDs() {
-        store.send(.fileAttachmentTaskIDsChanged(Set(fileAttachments.map(\.taskID))))
-    }
-
-    private func validateMacEventEmotionFilterVisibility() {
-        validateMacTimelineFilterVisibility()
-    }
-
-    private func validateMacTimelineFilterVisibility() {
-        let normalized = store.selectedTimelineFilterType.normalized(
-            includingEventEmotion: areMacEventEmotionActionsEnabled,
-            includingPlaces: isPlacesEnabled,
-            includingNotes: isNotesEnabled,
-            includingAway: isAwayEnabled,
-            includingSleep: includesMacSleepTimelineFilters
-        )
-        if normalized != store.selectedTimelineFilterType {
-            store.send(.selectedTimelineFilterTypeChanged(normalized))
-        }
-    }
-
-    private func openFocusTimerTarget(_ deepLink: RoutinaDeepLink?) {
-        RoutinaMacWindowRouter.shared.openHomeAndActivate()
-
-        guard let deepLink else { return }
-
-        isRestoringMacNavigationHistory = true
-        switch deepLink {
-        case .task:
-            macHomeDetailMode = .details
-            taskDetailPanePlacement = nil
-        case .sprint:
-            macHomeDetailMode = MacHomeDetailMode.board.visibleSurfaceMode
-            taskDetailPanePlacement = nil
-        case .sleep:
-            macHomeDetailMode = .planner
-            taskDetailPanePlacement = nil
-        case .goal, .note, .event:
-            break
-        }
-
-        openActiveFocusTarget(deepLink)
-
-        Task { @MainActor in
-            await Task.yield()
-            isRestoringMacNavigationHistory = false
-            macNavigationHistory.replaceCurrent(macNavigationSnapshot)
-        }
-    }
-
-    @ViewBuilder
-    var detailContent: some View {
-        if let detailStore = self.store.scope(
-            state: \.taskDetailState,
-            action: \.taskDetail
-        ) {
-            TaskDetailTCAView(
-                store: detailStore,
-                onOpenEventDetails: openSavedEvent,
-                onTagFilterSelected: { store.send(.taskDetailTagFilterTapped($0)) },
-                sidebarLocation: macTaskSourceListSidebarLocation(detailStore.task.id),
-                onLocateInSidebar: scrollSelectedTaskInMacSidebar
-            )
-        } else if let selectedNote {
-            RoutineNoteDetailView(
-                note: selectedNote,
-                attachments: noteAttachments(for: selectedNote),
-                onEdit: { openEditNote(selectedNote.id) },
-                onDelete: { closeDeletedNote(selectedNote.id) }
-            )
-        } else {
-            ContentUnavailableView(
-                "Select a task",
-                systemImage: "checklist",
-                description: Text("Choose a repeating or one-time task from the sidebar to see its schedule, logs, and actions.")
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    private var selectedNote: RoutineNote? {
-        guard let selectedNoteID else { return nil }
-        return notes.first { $0.id == selectedNoteID }
-    }
-
-    var editingNote: RoutineNote? {
-        guard let editingNoteID else { return nil }
-        return notes.first { $0.id == editingNoteID }
-    }
-
-    func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
-        noteAttachments
-            .filter { $0.noteID == note.id }
-            .sorted { $0.createdAt < $1.createdAt }
-    }
-
-    var addRoutineSheetBinding: Binding<Bool> {
-        Binding(
-            get: { store.isAddRoutineSheetPresented },
-            set: { store.send(.setAddRoutineSheet($0)) }
-        )
-    }
-
-    var searchTextBinding: Binding<String> {
-        if let externalSearchText {
-            externalSearchText
-        } else {
-            $localSearchText
-        }
-    }
-
-    var routineListSectioningMode: RoutineListSectioningMode {
-        get {
-            settingsStore.appearance.routineListSectioningMode
-        }
-        nonmutating set {
-            settingsStore.send(.routineListSectioningModeChanged(newValue))
-        }
-    }
-
-    var taskRowVisibility: HomeTaskRowVisibility {
-        HomeTaskRowVisibility(storageRawValue: taskRowHiddenFieldsRawValue)
-    }
-
-    var timelineRowVisibility: HomeTimelineRowVisibility {
-        HomeTimelineRowVisibility(storageRawValue: timelineRowHiddenFieldsRawValue)
-    }
-
-    var isMacSearchSidebarRevealActive: Bool {
-        macSearchSidebarRevealSnapshot != nil
-    }
-
-    var selectedTaskBinding: Binding<UUID?> {
-        Binding(
-            get: { store.selectedTaskID },
-            set: { store.send(.setSelectedTask($0)) }
-        )
-    }
-
-    var sidebarRowNumberMinWidth: CGFloat { 28 }
-
-    @ViewBuilder
-    var addRoutineSheetContent: some View {
-        if let addRoutineStore = self.store.scope(
-            state: \.addRoutineState,
-            action: \.addRoutineSheet
-        ) {
-            AddRoutineTCAView(store: addRoutineStore)
-        }
-    }
-
-    var timelineRangePicker: some View {
-        platformTimelineRangePicker
-    }
-
-    var timelineTypePicker: some View {
-        platformTimelineTypePicker
-    }
-
-    var overallDoneCountSummary: some View {
-        HStack(spacing: 12) {
-            Label("\(store.doneStats.totalCount) done", systemImage: "checkmark.seal.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.green)
-
-            Label("\(store.doneStats.canceledTotalCount) canceled", systemImage: "xmark.seal.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.orange)
-
-            Label("\(store.doneStats.missedTotalCount) missed", systemImage: "exclamationmark.triangle.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.yellow)
-
-            Label("\(store.homeToolbarRoutineCount) repeating", systemImage: "arrow.clockwise")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Label("\(store.homeToolbarTodoCount) one-time", systemImage: "checkmark.circle")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    var tagFilterBar: some View {
-        platformTagFilterBar
-    }
-
-    func listOfSortedTasksView(
-        routineDisplays: [HomeFeature.RoutineDisplay],
-        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
-        archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
-    ) -> some View {
-        platformListOfSortedTasksView(
-            routineDisplays: routineDisplays,
-            awayRoutineDisplays: awayRoutineDisplays,
-            archivedRoutineDisplays: archivedRoutineDisplays
-        )
-    }
-
-    var compactHomeHeader: some View {
-        platformCompactHomeHeader
-    }
-
-    var filterSheetButton: some View {
-        Button {
-            store.send(.isFilterSheetPresentedChanged(true))
-        } label: {
-            Image(
-                systemName: hasActiveOptionalFilters
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease.circle"
-            )
-            .foregroundStyle(hasActiveOptionalFilters ? Color.accentColor : Color.secondary)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Filters")
-    }
-
-    func routineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
-        platformRoutineRow(for: task, rowNumber: rowNumber)
-    }
-
-    func routineRow(
-        for task: HomeFeature.RoutineDisplay,
-        rowNumber: Int,
-        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>
-    ) -> some View {
-        platformRoutineRow(
-            for: task,
-            rowNumber: rowNumber,
-            metadataPresenter: metadataPresenter
-        )
-    }
-
-    @ViewBuilder
-    func taskDetailDestination(taskID: UUID) -> some View {
-        if store.selectedTaskID == taskID,
-           let detailStore = self.store.scope(
-               state: \.taskDetailState,
-               action: \.taskDetail
-        ) {
-            TaskDetailTCAView(
-                store: detailStore,
-                onOpenEventDetails: openSavedEvent,
-                onTagFilterSelected: { store.send(.taskDetailTagFilterTapped($0)) },
-                sidebarLocation: macTaskSourceListSidebarLocation(detailStore.task.id),
-                onLocateInSidebar: scrollSelectedTaskInMacSidebar
-            )
-        } else if store.routineTasks.contains(where: { $0.id == taskID }) {
-            HomeLoadingStateView(
-                title: "Opening Task",
-                message: "Loading task details and recent activity.",
-                systemImage: "checklist",
-                showsSkeleton: false
-            )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onAppear {
-                    openTask(taskID)
-                }
-        } else {
-            ContentUnavailableView(
-                "Task not found",
-                systemImage: "exclamationmark.triangle",
-                description: Text("The selected task is no longer available.")
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    func deleteTasks(
-        at offsets: IndexSet,
-        from sectionTasks: [HomeFeature.RoutineDisplay]
-    ) {
-        platformDeleteTasks(at: offsets, from: sectionTasks)
-    }
-
-    func openTask(_ taskID: UUID) {
-        platformOpenTask(taskID)
-    }
-
-    func deleteTask(_ taskID: UUID) {
-        platformDeleteTask(taskID)
-    }
-
-    @ViewBuilder
-    func statusBadge(for task: HomeFeature.RoutineDisplay) -> some View {
-        statusBadge(for: task, metadataPresenter: routineMetadataPresenter)
-    }
-
-    @ViewBuilder
-    func statusBadge(
-        for task: HomeFeature.RoutineDisplay,
-        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>
-    ) -> some View {
-        HomeStatusBadgeView(
-            style: taskListStatusBadgeStyle(for: task, metadataPresenter: metadataPresenter)
-        )
-    }
-
-    func taskListStatusBadgeStyle(
-        for task: HomeFeature.RoutineDisplay,
-        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>
-    ) -> HomeStatusBadgeStyle? {
-        if store.taskListMode == .todos,
-           task.isOneOffTask,
-           !task.isCompletedOneOff,
-           !task.isCanceledOneOff,
-           !task.isInProgress,
-           !task.hasActiveRelationshipBlocker,
-           task.todoState != .blocked {
-            return nil
-        }
-
-        return metadataPresenter.badgeStyle(for: task).map(HomeStatusBadgeStyle.init)
-    }
-
-    @ViewBuilder
-    func emptyStateView(
-        title: String,
-        message: String,
-        systemImage: String,
-        actionTitle: String = "Add Task",
-        action: (() -> Void)? = nil
-    ) -> some View {
-        HomeEmptyStateView(
-            title: title,
-            message: message,
-            systemImage: systemImage,
-            actionTitle: actionTitle,
-            action: action
-        )
-    }
-
-    func inlineEmptyStateRow(
-        title: String,
-        message: String,
-        systemImage: String
-    ) -> some View {
-        HomeInlineEmptyStateRowView(
-            title: title,
-            message: message,
-            systemImage: systemImage
-        )
-    }
-
-    func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {
-        let delta = newOffset - oldOffset
-
-        if newOffset <= 12 {
-            if isCompactHeaderHidden {
-                isCompactHeaderHidden = false
-            }
-            return
-        }
-
-        if delta > 10, !isCompactHeaderHidden {
-            isCompactHeaderHidden = true
-        } else if delta < -10, isCompactHeaderHidden {
-            isCompactHeaderHidden = false
-        }
-    }
-
-    @ViewBuilder
-    func iosTaskListModeButton(_ mode: HomeFeature.TaskListMode) -> some View {
-        let isSelected = store.taskListMode == mode
-
-        Button {
-            store.send(.taskListModeChanged(mode))
-        } label: {
-            Image(systemName: mode.systemImage)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                .frame(width: 30, height: 30)
-                .routinaIf(isSelected) { view in
-                    view.routinaGlassPill(tint: .accentColor, tintOpacity: 0.16, interactive: true)
-                }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(mode.accessibilityLabel)
-    }
-
-}
-
-extension HomeFeature.TaskListMode {
-    var filterTaskListKind: HomeFilterTaskListKind {
-        switch self {
-        case .all:
-            return .all
-        case .routines:
-            return .routines
-        case .todos:
-            return .todos
-        }
     }
 }

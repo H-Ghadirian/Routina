@@ -10,9 +10,7 @@ final class PerformanceRegressionTests: XCTestCase {
         let pickerSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacFocusTimerPickerViews.swift"
         )
-        let homeSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift"
-        )
+        let homeSource = try SourceInspectionSupport.readMacHomeRootSources()
         let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
 
         XCTAssertTrue(controlsSource.contains("case .focus:\n            onFocus()"))
@@ -273,9 +271,7 @@ final class PerformanceRegressionTests: XCTestCase {
         let integratedSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
         )
-        let integratedOwnerSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift"
-        )
+        let integratedOwnerSource = try SourceInspectionSupport.readMacHomeRootSources()
 
         XCTAssertTrue(
             standaloneSource.contains(
@@ -643,7 +639,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacHomeToolbarDoesNotScanRoutineTaskModelsForStatsModeBadges() throws {
-        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let source = try SourceInspectionSupport.readMacHomeRootSources()
         let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
         let featureSource = try Self.sourceFile("RoutinaMacApp/Features/Home/HomeFeature+Display.swift")
 
@@ -703,7 +699,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacToolbarSearchTemporarilyRevealsSidebarAndRestoresCollapseState() throws {
-        let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let homeSource = try SourceInspectionSupport.readMacHomeRootSources()
         let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
         let taskListSource = try [
             Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"),
@@ -1127,7 +1123,7 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testMacTaskDetailDefersRoutineUpdateRefreshWhileInspectorIsOpen() throws {
         let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
-        let macHomeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let macHomeSource = try SourceInspectionSupport.readMacHomeRootSources()
         let scrollGateSource = try Self.sourceFile("SharedCore/Services/RoutinaMacScrollInteractionGate.swift")
 
         XCTAssertTrue(refreshSource.contains("requestRoutineUpdateRefresh()"))
@@ -1368,7 +1364,7 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testMacHomeFocusToolbarUsesSingleTimerSlot() throws {
         let source = try Self.homeMacToolbarSource()
-        let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let homeSource = try SourceInspectionSupport.readMacHomeRootSources()
         let rootSceneSource = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
         let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
@@ -2165,7 +2161,7 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testMacTimelineCachesWholeHistoryPresentationDuringScroll() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
-        let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let homeSource = try SourceInspectionSupport.readMacHomeRootSources()
         let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
         let listSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTimelineSidebarView.swift")
 
