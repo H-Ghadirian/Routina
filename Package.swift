@@ -128,6 +128,7 @@ let package = Package(
                 "App/AppEnvironment.swift",
                 "App/RoutinaAppIntents.swift",
                 "App/RoutinaScreenshotDataSeeder.swift",
+                "App/RoutinaTimelineE2ESeeder.swift",
                 "App/RoutinaUITestSeeder.swift",
                 "AI",
                 "Models",
