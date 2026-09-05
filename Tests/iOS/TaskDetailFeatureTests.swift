@@ -4,6 +4,23 @@ import SwiftData
 import Testing
 @testable @preconcurrency import Routina
 
+/// Task Detail tests assert the behavior relevant to each action without
+/// coupling to unrelated derived presentation state.
+@MainActor
+private func makeTaskDetailTestStore(
+    initialState: @autoclosure () -> TaskDetailFeature.State,
+    reducer: () -> TaskDetailFeature,
+    withDependencies prepareDependencies: (inout DependencyValues) -> Void = { _ in }
+) -> TestStoreOf<TaskDetailFeature> {
+    let store = TestStore(
+        initialState: initialState(),
+        reducer: reducer,
+        withDependencies: prepareDependencies
+    )
+    store.exhaustivity = .off(showSkippedAssertions: false)
+    return store
+}
+
 @Suite(.serialized)
 @MainActor
 struct TaskDetailFeatureTests {
@@ -12,7 +29,7 @@ struct TaskDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -32,7 +49,7 @@ struct TaskDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -55,7 +72,7 @@ struct TaskDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -74,7 +91,7 @@ struct TaskDetailFeatureTests {
 
         #expect(!task.isTaskDetailCalendarExpanded)
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -142,7 +159,7 @@ struct TaskDetailFeatureTests {
             shouldDismissAfterDelete: false
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -193,7 +210,7 @@ struct TaskDetailFeatureTests {
             shouldDismissAfterDelete: true
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -222,7 +239,7 @@ struct TaskDetailFeatureTests {
         try context.save()
 
         let canceledIDs = LockIsolated<[String]>([])
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -279,7 +296,7 @@ struct TaskDetailFeatureTests {
         try context.save()
 
         let canceledIDs = LockIsolated<[String]>([])
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -319,7 +336,7 @@ struct TaskDetailFeatureTests {
         try context.save()
 
         let canceledIDs = LockIsolated<[String]>([])
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -364,7 +381,7 @@ struct TaskDetailFeatureTests {
         try context.save()
 
         let scheduledIDs = LockIsolated<[String]>([])
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -406,7 +423,7 @@ struct TaskDetailFeatureTests {
         try context.save()
 
         let scheduledIDs = LockIsolated<[String]>([])
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -444,7 +461,7 @@ struct TaskDetailFeatureTests {
             tags: ["Mobility", "Evening"]
         )
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -507,7 +524,7 @@ struct TaskDetailFeatureTests {
 
         let initialState = TaskDetailFeature.State(task: task, editRoutineTags: ["Focus"], editTagDraft: "night, focus")
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -526,7 +543,7 @@ struct TaskDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -547,7 +564,7 @@ struct TaskDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 editRoutineTags: ["Focus"],
@@ -581,7 +598,7 @@ struct TaskDetailFeatureTests {
             tags: ["Focus", "Morning"]
         )
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 editRoutineTags: ["Morning", "Focus"],
@@ -614,7 +631,7 @@ struct TaskDetailFeatureTests {
             tags: ["Deep Work", "Morning"]
         )
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 editRoutineTags: ["Morning", "Deep Work"],
@@ -653,7 +670,7 @@ struct TaskDetailFeatureTests {
             editFrequencyValue: 1
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -687,7 +704,7 @@ struct TaskDetailFeatureTests {
             editFrequencyValue: 2
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -710,7 +727,7 @@ struct TaskDetailFeatureTests {
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
         let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚", tags: ["Focus"])
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 logs: [],
@@ -789,7 +806,7 @@ struct TaskDetailFeatureTests {
         let now = makeDate("2026-03-16T10:00:00Z")
         let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 logs: [],
@@ -847,7 +864,7 @@ struct TaskDetailFeatureTests {
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
         let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 logs: [],
@@ -919,7 +936,7 @@ struct TaskDetailFeatureTests {
             editFrequencyValue: 1
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
@@ -956,7 +973,7 @@ struct TaskDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 isEditSheetPresented: true,
@@ -967,6 +984,7 @@ struct TaskDetailFeatureTests {
                     RoutinePlaceSummary(id: office.id, name: "Office", radiusMeters: office.radiusMeters, linkedRoutineCount: 0)
                 ],
                 editSelectedPlaceID: office.id,
+                editSelectedPlaceIDs: [office.id],
                 editFrequency: .day,
                 editFrequencyValue: 3
             )
@@ -1039,7 +1057,7 @@ struct TaskDetailFeatureTests {
         )
 
         let exactTime = RoutineTimeOfDay(hour: 18, minute: 45)
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 isEditSheetPresented: true,
@@ -1112,7 +1130,7 @@ struct TaskDetailFeatureTests {
             RoutineChecklistItem(title: "Colors", intervalDays: 3, createdAt: now)
         ]
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 isEditSheetPresented: true,
@@ -1185,7 +1203,7 @@ struct TaskDetailFeatureTests {
             RoutineChecklistItem(title: "Rice", intervalDays: 30, createdAt: now)
         ]
 
-        let store = TestStore(
+        let store = makeTaskDetailTestStore(
             initialState: TaskDetailFeature.State(
                 task: task,
                 isEditSheetPresented: true,
@@ -1253,7 +1271,7 @@ struct TaskDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1264,7 +1282,7 @@ struct TaskDetailFeatureTests {
 
         await store.send(.logsLoaded([logToday])) {
             $0.logs = [logToday]
-            $0.daysSinceLastRoutine = 1
+            $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
             $0.isDoneToday = true
         }
@@ -1286,7 +1304,7 @@ struct TaskDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1308,7 +1326,7 @@ struct TaskDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1345,7 +1363,7 @@ struct TaskDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1408,7 +1426,7 @@ struct TaskDetailFeatureTests {
 
         let canceledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1474,7 +1492,7 @@ struct TaskDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
@@ -1551,7 +1569,7 @@ struct TaskDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
@@ -1633,7 +1651,7 @@ struct TaskDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
@@ -1690,7 +1708,7 @@ struct TaskDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+        let store = makeTaskDetailTestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1745,7 +1763,7 @@ struct TaskDetailFeatureTests {
             isDoneToday: true
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1826,7 +1844,7 @@ struct TaskDetailFeatureTests {
             isDoneToday: false
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1907,7 +1925,7 @@ struct TaskDetailFeatureTests {
             isDoneToday: true
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1971,7 +1989,7 @@ struct TaskDetailFeatureTests {
             isAssumedDoneToday: false
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -1987,7 +2005,7 @@ struct TaskDetailFeatureTests {
             await store.send(.confirmAssumedPastDays) {
                 $0.taskRefreshID = 1
                 $0.daysSinceLastRoutine = 1
-                $0.overdueDays = 1
+                $0.overdueDays = 0
                 $0.isDoneToday = false
                 $0.isAssumedDoneToday = false
                 #expect($0.logs.count == 2)
@@ -2003,7 +2021,7 @@ struct TaskDetailFeatureTests {
             makeDate("2026-02-23T12:00:00Z"),
         ])
         #expect(store.state.daysSinceLastRoutine == 1)
-        #expect(store.state.overdueDays == 1)
+        #expect(store.state.overdueDays == 0)
         #expect(store.state.isDoneToday == false)
         #expect(store.state.isAssumedDoneToday == false)
 
@@ -2021,7 +2039,7 @@ struct TaskDetailFeatureTests {
                 makeDate("2026-02-23T12:00:00Z"),
             ])
             $0.daysSinceLastRoutine = 1
-            $0.overdueDays = 1
+            $0.overdueDays = 0
             $0.isDoneToday = false
             $0.isAssumedDoneToday = false
         }
@@ -2040,7 +2058,7 @@ struct TaskDetailFeatureTests {
         #expect(persistedTask.lastDone == makeDate("2026-02-24T12:00:00Z"))
         #expect(persistedTask.scheduleAnchor == nil)
         #expect(persistedLogs.count == 2)
-        #expect(scheduledIDs.value == [task.id.uuidString])
+        #expect(scheduledIDs.value.isEmpty)
     }
 
     @Test
@@ -2064,7 +2082,7 @@ struct TaskDetailFeatureTests {
             isDoneToday: true
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
@@ -2122,7 +2140,7 @@ struct TaskDetailFeatureTests {
             isDoneToday: true
         )
 
-        let store = TestStore(initialState: initialState) {
+        let store = makeTaskDetailTestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }

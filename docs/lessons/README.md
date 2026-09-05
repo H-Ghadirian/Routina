@@ -41,6 +41,7 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
+- [0301 — Do not let a broken test gate hide drift](0301-do-not-let-a-broken-test-gate-hide-drift.md)
 - [0300 — Preserve geometry across semantic state transitions](0300-preserve-geometry-across-semantic-state-transitions.md)
 - [0299 — Keep semantic badge wording independent from tint](0299-keep-semantic-badge-wording-independent-from-tint.md)
 - [0298 — Place or clip every custom-layout subview](0298-place-or-clip-every-custom-layout-subview.md)

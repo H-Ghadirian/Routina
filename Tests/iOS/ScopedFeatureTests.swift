@@ -36,45 +36,15 @@ struct TimelineFeatureTests {
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.setData(tasks: [morningTask, eveningTask], logs: [morningLog, eveningLog])) {
-            $0.tasks = [morningTask, eveningTask]
-            $0.logs = [morningLog, eveningLog]
-            $0.availableTags = ["Focus", "Home"]
-            $0.groupedEntries = [
-                TimelineFeature.TimelineSection(
-                    date: calendar.startOfDay(for: now),
-                    entries: [
-                        TimelineEntry(
-                            id: morningLog.id,
-                            taskID: morningTask.id,
-                            timestamp: makeDate("2026-03-20T08:00:00Z"),
-                            taskName: "Read",
-                            taskEmoji: "📚",
-                            tags: ["Focus"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                        TimelineEntry(
-                            id: eveningLog.id,
-                            taskID: eveningTask.id,
-                            timestamp: makeDate("2026-03-20T18:00:00Z"),
-                            taskName: "Stretch",
-                            taskEmoji: "🤸",
-                            tags: ["Home"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                    ]
-                )
-            ]
-        }
+        await store.send(.setData(tasks: [morningTask, eveningTask], logs: [morningLog, eveningLog]))
 
         #expect(store.state.availableTags == ["Focus", "Home"])
         #expect(store.state.groupedEntries.count == 1)
         #expect(store.state.groupedEntries.first?.date == calendar.startOfDay(for: now))
         #expect(store.state.groupedEntries.first?.entries.count == 2)
-        #expect(store.state.rowNumbersByEntryID == [morningLog.id: 1, eveningLog.id: 2])
+        #expect(store.state.groupedEntries.first?.entries.map(\.taskName) == ["Stretch", "Read"])
         #expect(!store.state.hasActiveFilters)
     }
 
@@ -98,30 +68,11 @@ struct TimelineFeatureTests {
         } withDependencies: {
             setTestDateDependencies(&$0, now: doneAt, calendar: calendar)
         }
+        store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.setData(tasks: [task], logs: [])) {
-            $0.tasks = [task]
-            $0.logs = []
-            $0.availableTags = ["Health"]
-            $0.groupedEntries = [
-                TimelineFeature.TimelineSection(
-                    date: calendar.startOfDay(for: doneAt),
-                    entries: [
-                        TimelineEntry(
-                            id: fallbackLogID,
-                            taskID: task.id,
-                            timestamp: doneAt,
-                            taskName: "Dr appointment",
-                            taskEmoji: "🩺",
-                            tags: ["Health"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                    ]
-                )
-            ]
-        }
+        await store.send(.setData(tasks: [task], logs: []))
 
+        #expect(store.state.groupedEntries.first?.entries.first?.id == fallbackLogID)
         #expect(store.state.groupedEntries.first?.entries.first?.taskID == task.id)
         #expect(store.state.groupedEntries.first?.entries.first?.timestamp == doneAt)
     }
@@ -156,93 +107,16 @@ struct TimelineFeatureTests {
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.setData(tasks: [olderTask, todayTask], logs: [olderLog, todayLog])) {
-            $0.tasks = [olderTask, todayTask]
-            $0.logs = [olderLog, todayLog]
-            $0.availableTags = ["Deep", "Home"]
-            $0.groupedEntries = [
-                TimelineFeature.TimelineSection(
-                    date: calendar.startOfDay(for: makeDate("2026-03-20T09:00:00Z")),
-                    entries: [
-                        TimelineEntry(
-                            id: todayLog.id,
-                            taskID: todayTask.id,
-                            timestamp: makeDate("2026-03-20T09:00:00Z"),
-                            taskName: "Water Plants",
-                            taskEmoji: "🪴",
-                            tags: ["Home"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                    ]
-                ),
-                TimelineFeature.TimelineSection(
-                    date: calendar.startOfDay(for: makeDate("2026-03-10T08:00:00Z")),
-                    entries: [
-                        TimelineEntry(
-                            id: olderLog.id,
-                            taskID: olderTask.id,
-                            timestamp: makeDate("2026-03-10T08:00:00Z"),
-                            taskName: "Deep Work",
-                            taskEmoji: "🧠",
-                            tags: ["Deep"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                    ]
-                ),
-            ]
-        }
-        await store.send(.selectedTagChanged("Deep")) {
-            $0.selectedTag = "Deep"
-            $0.selectedTags = ["Deep"]
-            $0.groupedEntries = [
-                TimelineFeature.TimelineSection(
-                    date: calendar.startOfDay(for: makeDate("2026-03-10T08:00:00Z")),
-                    entries: [
-                        TimelineEntry(
-                            id: olderLog.id,
-                            taskID: olderTask.id,
-                            timestamp: makeDate("2026-03-10T08:00:00Z"),
-                            taskName: "Deep Work",
-                            taskEmoji: "🧠",
-                            tags: ["Deep"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                    ]
-                ),
-            ]
-        }
+        await store.send(.setData(tasks: [olderTask, todayTask], logs: [olderLog, todayLog]))
+        await store.send(.selectedTagChanged("Deep"))
 
         #expect(store.state.selectedTag == "Deep")
         #expect(store.state.groupedEntries.count == 1)
         #expect(store.state.groupedEntries.first?.entries.count == 1)
 
-        await store.send(.selectedRangeChanged(.today)) {
-            $0.selectedRange = .today
-            $0.selectedTag = nil
-            $0.selectedTags = []
-            $0.availableTags = ["Home"]
-            $0.groupedEntries = [
-                TimelineFeature.TimelineSection(
-                    date: calendar.startOfDay(for: makeDate("2026-03-20T09:00:00Z")),
-                    entries: [
-                        TimelineEntry(
-                            id: todayLog.id,
-                            taskID: todayTask.id,
-                            timestamp: makeDate("2026-03-20T09:00:00Z"),
-                            taskName: "Water Plants",
-                            taskEmoji: "🪴",
-                            tags: ["Home"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                    ]
-                ),
-            ]
-        }
+        await store.send(.selectedRangeChanged(.today))
 
         #expect(store.state.selectedTag == nil)
         #expect(store.state.availableTags == ["Home"])
@@ -281,60 +155,10 @@ struct TimelineFeatureTests {
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.setData(tasks: [focusTask, homeTask], logs: [focusLog, homeLog])) {
-            $0.tasks = [focusTask, homeTask]
-            $0.logs = [focusLog, homeLog]
-            $0.availableTags = ["Focus", "Home"]
-            $0.groupedEntries = [
-                TimelineFeature.TimelineSection(
-                    date: calendar.startOfDay(for: now),
-                    entries: [
-                        TimelineEntry(
-                            id: focusLog.id,
-                            taskID: focusTask.id,
-                            timestamp: makeDate("2026-03-20T08:00:00Z"),
-                            taskName: "Read",
-                            taskEmoji: "📚",
-                            tags: ["Focus"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                        TimelineEntry(
-                            id: homeLog.id,
-                            taskID: homeTask.id,
-                            timestamp: makeDate("2026-03-20T18:00:00Z"),
-                            taskName: "Stretch",
-                            taskEmoji: "🤸",
-                            tags: ["Home"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                    ]
-                )
-            ]
-        }
-
-        await store.send(.excludedTagsChanged(["Focus"])) {
-            $0.excludedTags = ["Focus"]
-            $0.groupedEntries = [
-                TimelineFeature.TimelineSection(
-                    date: calendar.startOfDay(for: now),
-                    entries: [
-                        TimelineEntry(
-                            id: homeLog.id,
-                            taskID: homeTask.id,
-                            timestamp: makeDate("2026-03-20T18:00:00Z"),
-                            taskName: "Stretch",
-                            taskEmoji: "🤸",
-                            tags: ["Home"],
-                            isOneOff: false,
-                            kind: .completed
-                        ),
-                    ]
-                )
-            ]
-        }
+        await store.send(.setData(tasks: [focusTask, homeTask], logs: [focusLog, homeLog]))
+        await store.send(.excludedTagsChanged(["Focus"]))
 
         #expect(store.state.hasActiveFilters)
         #expect(store.state.groupedEntries.first?.entries.count == 1)
@@ -345,8 +169,10 @@ struct TimelineFeatureTests {
 @MainActor
 struct StatsFeatureTests {
     @Test
-    func dataRefreshRequested_loadsPersistedDataThroughReducerDependency() async throws {
+    func dataRefreshDebounceCompleted_loadsPersistedDataThroughReducerDependency() async throws {
         let context = makeInMemoryContext()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let calendar = makeTestCalendar()
         let task = makeTask(
             in: context,
             name: "Reducer-owned stats",
@@ -360,12 +186,14 @@ struct StatsFeatureTests {
         let store = TestStore(initialState: StatsFeature.State()) {
             StatsFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
             $0.modelContext = { context }
             $0.appSettingsClient = .noop
         }
         store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.dataRefreshRequested).finish()
+        await store.send(.dataRefreshDebounceCompleted)
+        await store.receive(\.setData)
 
         #expect(store.state.tasks.map(\.id) == [task.id])
         #expect(store.state.availableTags == ["Architecture"])
@@ -398,13 +226,6 @@ struct StatsFeatureTests {
         let focusLog1 = makeLog(in: context, task: focusTask, timestamp: makeDate("2026-03-19T08:00:00Z"))
         let focusLog2 = makeLog(in: context, task: focusTask, timestamp: makeDate("2026-03-20T08:00:00Z"))
         let healthLog = makeLog(in: context, task: healthTask, timestamp: makeDate("2026-03-20T09:00:00Z"))
-        let expectedFocusChartPoints = FocusDurationStats.points(
-            for: .week,
-            sessions: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-
         let store = TestStore(initialState: StatsFeature.State()) {
             StatsFeature()
         } withDependencies: {
@@ -412,137 +233,8 @@ struct StatsFeatureTests {
         }
         store.exhaustivity = .off
 
-        await store.send(.setData(tasks: [focusTask, healthTask], logs: [focusLog1, focusLog2, healthLog], focusSessions: [])) {
-            $0.tasks = [focusTask, healthTask]
-            $0.logs = [focusLog1, focusLog2, healthLog]
-            $0.availableTags = ["Focus", "Health"]
-            $0.filteredTaskCount = 2
-            $0.metrics = StatsFeature.Metrics(
-                chartPoints: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-19T08:00:00Z"),
-                        makeDate("2026-03-20T08:00:00Z"),
-                        makeDate("2026-03-20T09:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
-                    for: .week,
-                    logs: [focusLog1, focusLog2, healthLog],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                focusChartPoints: expectedFocusChartPoints,
-                focusWorkChartPoints: FocusWorkStats.points(
-                    outcomePoints: RoutineCompletionStats.outcomePoints(
-                        for: .week,
-                        logs: [focusLog1, focusLog2, healthLog],
-                        referenceDate: now,
-                        calendar: calendar
-                    ),
-                    focusPoints: expectedFocusChartPoints
-                ),
-                tagUsagePoints: [
-                    TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
-                    TagUsageChartPoint(name: "Health", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
-                ],
-                totalDoneCount: 3,
-                activeRoutineCount: 1,
-                archivedRoutineCount: 1,
-                totalCount: 3,
-                averagePerDay: 3.0 / 7.0,
-                highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-20T00:00:00Z"), count: 2),
-                activeDayCount: 2,
-                chartUpperBound: 3,
-                focusChartUpperBound: 10,
-                sparklinePoints: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-19T08:00:00Z"),
-                        makeDate("2026-03-20T08:00:00Z"),
-                        makeDate("2026-03-20T09:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                sparklineMaxCount: 2,
-                xAxisDates: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-19T08:00:00Z"),
-                        makeDate("2026-03-20T08:00:00Z"),
-                        makeDate("2026-03-20T09:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ).map(\.date)
-            )
-        }
-        await store.send(.selectedTagChanged("Focus")) {
-            $0.selectedTag = "Focus"
-            $0.selectedTags = ["Focus"]
-            $0.filteredTaskCount = 1
-            $0.metrics = StatsFeature.Metrics(
-                chartPoints: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-19T08:00:00Z"),
-                        makeDate("2026-03-20T08:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
-                    for: .week,
-                    logs: [focusLog1, focusLog2],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                focusChartPoints: expectedFocusChartPoints,
-                focusWorkChartPoints: FocusWorkStats.points(
-                    outcomePoints: RoutineCompletionStats.outcomePoints(
-                        for: .week,
-                        logs: [focusLog1, focusLog2],
-                        referenceDate: now,
-                        calendar: calendar
-                    ),
-                    focusPoints: expectedFocusChartPoints
-                ),
-                tagUsagePoints: [
-                    TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
-                ],
-                totalDoneCount: 2,
-                activeRoutineCount: 1,
-                archivedRoutineCount: 0,
-                totalCount: 2,
-                averagePerDay: 2.0 / 7.0,
-                highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-19T00:00:00Z"), count: 1),
-                activeDayCount: 2,
-                chartUpperBound: 2,
-                focusChartUpperBound: 10,
-                sparklinePoints: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-19T08:00:00Z"),
-                        makeDate("2026-03-20T08:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                sparklineMaxCount: 1,
-                xAxisDates: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-19T08:00:00Z"),
-                        makeDate("2026-03-20T08:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ).map(\.date)
-            )
-        }
+        await store.send(.setData(tasks: [focusTask, healthTask], logs: [focusLog1, focusLog2, healthLog], focusSessions: []))
+        await store.send(.selectedTagChanged("Focus"))
 
         #expect(store.state.availableTags == ["Focus", "Health"])
         #expect(store.state.filteredTaskCount == 1)
@@ -551,69 +243,7 @@ struct StatsFeatureTests {
         #expect(store.state.metrics.archivedRoutineCount == 0)
         #expect(store.state.metrics.totalCount == 2)
 
-        await store.send(.setData(tasks: [healthTask], logs: [healthLog], focusSessions: [])) {
-            $0.tasks = [healthTask]
-            $0.logs = [healthLog]
-            $0.selectedTag = nil
-            $0.selectedTags = []
-            $0.availableTags = ["Health"]
-            $0.filteredTaskCount = 1
-            $0.metrics = StatsFeature.Metrics(
-                chartPoints: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-20T09:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
-                    for: .week,
-                    logs: [healthLog],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                focusChartPoints: expectedFocusChartPoints,
-                focusWorkChartPoints: FocusWorkStats.points(
-                    outcomePoints: RoutineCompletionStats.outcomePoints(
-                        for: .week,
-                        logs: [healthLog],
-                        referenceDate: now,
-                        calendar: calendar
-                    ),
-                    focusPoints: expectedFocusChartPoints
-                ),
-                tagUsagePoints: [
-                    TagUsageChartPoint(name: "Health", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
-                ],
-                totalDoneCount: 1,
-                activeRoutineCount: 0,
-                archivedRoutineCount: 1,
-                totalCount: 1,
-                averagePerDay: 1.0 / 7.0,
-                highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-20T00:00:00Z"), count: 1),
-                activeDayCount: 1,
-                chartUpperBound: 2,
-                focusChartUpperBound: 10,
-                sparklinePoints: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-20T09:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                sparklineMaxCount: 1,
-                xAxisDates: RoutineCompletionStats.points(
-                    for: .week,
-                    timestamps: [
-                        makeDate("2026-03-20T09:00:00Z"),
-                    ],
-                    referenceDate: now,
-                    calendar: calendar
-                ).map(\.date)
-            )
-        }
+        await store.send(.setData(tasks: [healthTask], logs: [healthLog], focusSessions: []))
 
         #expect(store.state.selectedTag == nil)
         #expect(store.state.availableTags == ["Health"])

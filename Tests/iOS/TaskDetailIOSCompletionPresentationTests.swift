@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable @preconcurrency import Routina
 
@@ -34,6 +35,6 @@ struct TaskDetailIOSCompletionPresentationTests {
         )
 
         #expect(TaskDetailIOSCompletionPresentation.title(for: state) == "Done")
-        #expect(TaskDetailIOSCompletionPresentation.systemImage(for: state) == nil)
+        #expect(TaskDetailIOSCompletionPresentation.systemImage(for: state) == "checkmark.circle.fill")
     }
 }

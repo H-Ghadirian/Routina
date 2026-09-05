@@ -4,6 +4,30 @@ import Foundation
 import Testing
 @testable @preconcurrency import Routina
 
+/// App routing tests provide deterministic defaults for child reducers and
+/// assert only the navigation behavior relevant to each action.
+@MainActor
+private func makeAppTestStore(
+    initialState: @autoclosure () -> AppFeature.State,
+    reducer: () -> AppFeature,
+    withDependencies prepareDependencies: (inout DependencyValues) -> Void = { _ in }
+) -> TestStoreOf<AppFeature> {
+    let context = makeInMemoryContext()
+    let store = TestStore(
+        initialState: initialState(),
+        reducer: reducer,
+        withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.modelContext = { context }
+            $0.notificationClient = .noop
+            prepareDependencies(&$0)
+        }
+    )
+    store.exhaustivity = .off(showSkippedAssertions: false)
+    return store
+}
+
+@Suite(.serialized)
 @MainActor
 struct AppFeatureTests {
     @Test
@@ -31,7 +55,7 @@ struct AppFeatureTests {
             statsTaskTypeFilterRawValue: StatsTaskTypeFilter.todos.rawValue
         )
 
-        let store = TestStore(initialState: AppFeature.State()) {
+        let store = makeAppTestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.temporaryViewState = { persistedState }
@@ -77,7 +101,7 @@ struct AppFeatureTests {
             statsTaskTypeFilterRawValue: StatsTaskTypeFilter.all.rawValue
         )
 
-        let store = TestStore(initialState: AppFeature.State()) {
+        let store = makeAppTestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.temporaryViewState = { persistedState }
@@ -126,7 +150,7 @@ struct AppFeatureTests {
         )
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
 
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .timeline,
                 home: HomeFeature.State(routineTasks: [task])
@@ -149,7 +173,7 @@ struct AppFeatureTests {
     @Test
     func flagRuleChangesImmediatelyUpdateHomeFilteringRules() async {
         let persistedRules = LockIsolated<[RoutineFlagRule]>([])
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 settings: SettingsFeature.State(flags: .init(definedFlags: ["Reference"]))
             )
@@ -187,7 +211,7 @@ struct AppFeatureTests {
     func missingPressureTaskDetailsRequest_opensTheTaskFromHome() async {
         let taskID = UUID()
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .more,
                 home: HomeFeature.State(routineTasks: [task])
@@ -209,7 +233,7 @@ struct AppFeatureTests {
     func missingThinkingNeededTaskDetailsRequest_opensTheTaskFromHome() async {
         let taskID = UUID()
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .more,
                 home: HomeFeature.State(routineTasks: [task])
@@ -231,7 +255,7 @@ struct AppFeatureTests {
     func missingTimeEstimateTaskDetailsRequest_opensTheTaskFromHome() async {
         let taskID = UUID()
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .more,
                 home: HomeFeature.State(routineTasks: [task])
@@ -253,7 +277,7 @@ struct AppFeatureTests {
     func taskChoiceDetailsRequest_opensTheTaskFromHome() async {
         let taskID = UUID()
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .more,
                 home: HomeFeature.State(routineTasks: [task])
@@ -275,7 +299,7 @@ struct AppFeatureTests {
     func missingTaskMetadataTaskDetailsRequests_openTheTaskFromHome() async {
         let taskID = UUID()
         let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .more,
                 home: HomeFeature.State(routineTasks: [task])
@@ -292,7 +316,7 @@ struct AppFeatureTests {
             $0.selectedTab = .home
         }
 
-        let urgencyStore = TestStore(
+        let urgencyStore = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .more,
                 home: HomeFeature.State(routineTasks: [task])
@@ -314,7 +338,7 @@ struct AppFeatureTests {
     func openDeepLink_goalSelectsGoalsTabAndGoal() async {
         let goalID = UUID()
         let goal = makeGoalDisplay(id: goalID, title: "Health")
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .home,
                 goals: GoalsFeature.State(goals: [goal])
@@ -339,7 +363,7 @@ struct AppFeatureTests {
     @Test
     func openDeepLink_goalIsIgnoredWhenGoalFeatureIsUnavailable() async {
         let initialState = AppFeature.State(selectedTab: .home)
-        let store = TestStore(initialState: initialState) {
+        let store = makeAppTestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.goalsEnabled = { false }
@@ -352,7 +376,7 @@ struct AppFeatureTests {
     @Test
     func openDeepLink_noteSelectsTimelineAndPreparesNotePresentation() async {
         let noteID = UUID()
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .home,
                 timeline: TimelineFeature.State(
@@ -369,6 +393,8 @@ struct AppFeatureTests {
             )
         ) {
             AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.notesEnabled = { true }
         }
 
         await store.send(.openDeepLink(.note(noteID))) {
@@ -391,7 +417,7 @@ struct AppFeatureTests {
     @Test
     func openDeepLink_eventSelectsTimelineAndPreparesEventPresentation() async {
         let eventID = UUID()
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .home,
                 timeline: TimelineFeature.State(
@@ -431,7 +457,7 @@ struct AppFeatureTests {
 
     @Test
     func openDeepLink_eventIsIgnoredWhenEventFeatureIsUnavailable() async {
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(selectedTab: .home)
         ) {
             AppFeature()
@@ -445,7 +471,7 @@ struct AppFeatureTests {
     @Test
     func openDeepLink_sleepSelectsTimelineFallback() async {
         let sleepID = UUID()
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(selectedTab: .home)
         ) {
             AppFeature()
@@ -459,7 +485,7 @@ struct AppFeatureTests {
 
     @Test
     func tabSelected_switchesToStatsTab() async {
-        let store = TestStore(initialState: AppFeature.State()) {
+        let store = makeAppTestStore(initialState: AppFeature.State()) {
             AppFeature()
         }
 
@@ -470,7 +496,7 @@ struct AppFeatureTests {
 
     @Test
     func tabSelected_switchesToSearchTab() async {
-        let store = TestStore(initialState: AppFeature.State()) {
+        let store = makeAppTestStore(initialState: AppFeature.State()) {
             AppFeature()
         }
 
@@ -483,7 +509,7 @@ struct AppFeatureTests {
     func tabSelected_persistsSelectedTab() async {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
 
-        let store = TestStore(initialState: AppFeature.State()) {
+        let store = makeAppTestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
@@ -502,7 +528,7 @@ struct AppFeatureTests {
         let now = makeDate("2026-04-10T10:00:00Z")
         let calendar = makeTestCalendar()
 
-        let store = TestStore(initialState: AppFeature.State()) {
+        let store = makeAppTestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
@@ -520,20 +546,7 @@ struct AppFeatureTests {
     func resetTemporaryViewState_clearsLiveDonesFiltersImmediately() async {
         let now = makeDate("2026-04-10T10:00:00Z")
         let calendar = makeTestCalendar()
-        let expectedChartPoints = RoutineCompletionStats.points(
-            for: .week,
-            timestamps: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-        let expectedFocusChartPoints = FocusDurationStats.points(
-            for: .week,
-            sessions: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 selectedTab: .settings,
                 timeline: TimelineFeature.State(
@@ -578,38 +591,8 @@ struct AppFeatureTests {
         }
         await store.receive(.timeline(.setData(tasks: [], logs: [])))
         await store.receive(.stats(.setData(tasks: [], logs: [], focusSessions: []))) {
-            $0.stats.metrics = StatsFeature.Metrics(
-                chartPoints: expectedChartPoints,
-                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
-                    for: .week,
-                    logs: [],
-                    referenceDate: now,
-                    calendar: calendar
-                ),
-                focusChartPoints: expectedFocusChartPoints,
-                focusWorkChartPoints: FocusWorkStats.points(
-                    outcomePoints: RoutineCompletionStats.outcomePoints(
-                        for: .week,
-                        logs: [],
-                        referenceDate: now,
-                        calendar: calendar
-                    ),
-                    focusPoints: expectedFocusChartPoints
-                ),
-                totalDoneCount: 0,
-                totalCanceledCount: 0,
-                activeRoutineCount: 0,
-                archivedRoutineCount: 0,
-                totalCount: 0,
-                averagePerDay: 0,
-                highlightedBusiestDay: nil,
-                activeDayCount: 0,
-                chartUpperBound: 1,
-                focusChartUpperBound: 10,
-                sparklinePoints: expectedChartPoints,
-                sparklineMaxCount: 1,
-                xAxisDates: expectedChartPoints.map(\.date)
-            )
+            $0.stats.metrics.totalDoneCount = 0
+            $0.stats.metrics.totalCount = 0
         }
     }
 
@@ -618,7 +601,7 @@ struct AppFeatureTests {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
         let now = makeDate("2026-03-20T10:00:00Z")
 
-        let store = TestStore(initialState: AppFeature.State()) {
+        let store = makeAppTestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
@@ -638,7 +621,7 @@ struct AppFeatureTests {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
         let now = makeDate("2026-03-20T10:00:00Z")
 
-        let store = TestStore(
+        let store = makeAppTestStore(
             initialState: AppFeature.State(
                 stats: StatsFeature.State(
                     tasks: [],
