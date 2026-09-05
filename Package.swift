@@ -252,6 +252,7 @@ let package = Package(
                 "Features/Home/HomeFeatureTaskDetailActionRouter.swift",
                 "Features/Home/HomeFilterState.swift",
                 "Features/Home/HomeFilterPresentation.swift",
+                "Features/Home/HomeFilterMutations.swift",
                 "Features/Home/HomeFilterSupport.swift",
                 "Features/Home/HomeFeaturePostMutationRefresher.swift",
                 "Features/Home/HomeFeaturePresentationRouter.swift",
