@@ -556,6 +556,7 @@ let package = Package(
                 "Views/PlaceCheckInDockView.swift",
                 "Views/PlaceCheckInMapSheet.swift",
                 "Views/PlaceCheckInMapSheetContent.swift",
+                "Views/PlaceCheckInPlacesList.swift",
                 "Views/PlaceCheckInMapSheetSupport.swift",
                 "Views/PlaceCheckInSessionDetailView.swift",
                 "Views/PlaceCheckInSessionEditor.swift",
