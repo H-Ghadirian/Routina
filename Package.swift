@@ -355,6 +355,7 @@ let package = Package(
                 "Features/Settings/SettingsRoutineDataBackupModels.swift",
                 "Features/Settings/SettingsRoutineDataBackupPackageBuilder.swift",
                 "Features/Settings/SettingsRoutineDataBackupAudit.swift",
+                "Features/Settings/SettingsRoutineDataBackupAuditTypes.swift",
                 "Features/Settings/SettingsRoutineDataBackupVerification.swift",
                 "Features/Settings/SettingsRoutineDataImportEntityInserter.swift",
                 "Features/Settings/SettingsRoutineDataImportActivityEntityInserter.swift",

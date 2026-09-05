@@ -4,69 +4,6 @@ import SwiftData
 
 @MainActor
 public enum RoutinaBackupAudit {
-    public struct Report: Equatable, Sendable {
-        public let sourceSchemaVersion: Int
-        public let currentSchemaVersion: Int
-        public let recordCounts: [String: Int]
-        public let attachmentCount: Int
-        public let attachmentBytes: Int
-        public let semanticFingerprint: String
-        public let comparedSourceDirectly: Bool
-
-        public var totalRecordCount: Int {
-            recordCounts.values.reduce(0, +)
-        }
-    }
-
-    public struct ComparisonReport: Equatable, Sendable {
-        public let packageReport: Report
-        public let liveRecordCounts: [String: Int]
-        public let liveSemanticFingerprint: String
-        public let matchesLiveData: Bool
-        public let firstDifferencePath: String?
-    }
-
-    public struct PortableVerificationReport: Equatable, Sendable {
-        public let audit: Report
-        public let sourceReceiptVerified: Bool
-        public let sourceVerifiedAt: Date?
-    }
-
-    public enum AuditError: LocalizedError, Equatable, Sendable {
-        case invalidPackage(String)
-        case unsupportedSchema(found: Int, supported: ClosedRange<Int>)
-        case unsafeAttachmentFileName(String)
-        case duplicateAttachmentID(String)
-        case duplicateAttachmentFileName(String)
-        case missingAttachment(String)
-        case invalidAttachmentFile(String)
-        case danglingAttachmentReference(String)
-        case semanticMismatch(stage: String, path: String)
-
-        public var errorDescription: String? {
-            switch self {
-            case let .invalidPackage(reason):
-                return "Invalid Routina backup package: \(reason)"
-            case let .unsupportedSchema(found, supported):
-                return "Unsupported backup schema \(found); this build supports \(supported.lowerBound)...\(supported.upperBound)."
-            case let .unsafeAttachmentFileName(fileName):
-                return "Backup attachment uses an unsafe file name: \(fileName)"
-            case let .duplicateAttachmentID(id):
-                return "Backup declares the attachment ID more than once: \(id)"
-            case let .duplicateAttachmentFileName(fileName):
-                return "Backup declares the attachment file more than once: \(fileName)"
-            case let .missingAttachment(fileName):
-                return "Backup is missing attachment file: \(fileName)"
-            case let .invalidAttachmentFile(fileName):
-                return "Backup attachment is not a regular file: \(fileName)"
-            case let .danglingAttachmentReference(id):
-                return "Backup data references an attachment that is not declared: \(id)"
-            case let .semanticMismatch(stage, path):
-                return "Backup round-trip changed data during \(stage) at \(path)."
-            }
-        }
-    }
-
     public static func audit(packageAt sourcePackageURL: URL) throws -> Report {
         let source = try PackageSnapshot(packageURL: sourcePackageURL)
         let supportedSchemas = 1...SettingsRoutineDataPersistence.currentSchemaVersion
@@ -92,7 +29,8 @@ public enum RoutinaBackupAudit {
             importDate: source.backup.exportedAt
         )
 
-        let firstPackageURL = temporaryRoot
+        let firstPackageURL =
+            temporaryRoot
             .appendingPathComponent("first-restore")
             .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
         try SettingsRoutineDataPersistence.writeBackupPackage(
@@ -120,7 +58,8 @@ public enum RoutinaBackupAudit {
             importDate: source.backup.exportedAt
         )
 
-        let secondPackageURL = temporaryRoot
+        let secondPackageURL =
+            temporaryRoot
             .appendingPathComponent("second-restore")
             .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
         try SettingsRoutineDataPersistence.writeBackupPackage(
@@ -162,7 +101,8 @@ public enum RoutinaBackupAudit {
         )
         defer { try? FileManager.default.removeItem(at: temporaryRoot) }
 
-        let livePackageURL = temporaryRoot
+        let livePackageURL =
+            temporaryRoot
             .appendingPathComponent("live-source")
             .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
         try SettingsRoutineDataPersistence.writeBackupPackage(
@@ -207,7 +147,8 @@ public enum RoutinaBackupAudit {
     public static func audit(legacyJSONData: Data) throws -> Report {
         let temporaryRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent("RoutinaLegacyBackupAudit-\(UUID().uuidString)", isDirectory: true)
-        let packageURL = temporaryRoot
+        let packageURL =
+            temporaryRoot
             .appendingPathComponent("legacy")
             .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
         let attachmentsURL = packageURL.appendingPathComponent(
@@ -278,10 +219,12 @@ private extension RoutinaBackupAudit {
 
         init(packageURL: URL) throws {
             var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(
-                atPath: packageURL.path,
-                isDirectory: &isDirectory
-            ), isDirectory.boolValue else {
+            guard
+                FileManager.default.fileExists(
+                    atPath: packageURL.path,
+                    isDirectory: &isDirectory
+                ), isDirectory.boolValue
+            else {
                 throw AuditError.invalidPackage("\(packageURL.lastPathComponent) is not a directory package.")
             }
 
@@ -335,9 +278,9 @@ private extension RoutinaBackupAudit {
 
             for rawAttachment in rawAttachments {
                 guard var attachment = rawAttachment as? [String: Any],
-                      let id = attachment["id"] as? String,
-                      let role = attachment["role"] as? String,
-                      let fileName = attachment["fileName"] as? String
+                    let id = attachment["id"] as? String,
+                    let role = attachment["role"] as? String,
+                    let fileName = attachment["fileName"] as? String
                 else {
                     throw AuditError.invalidPackage("an attachment manifest is malformed.")
                 }
@@ -360,7 +303,7 @@ private extension RoutinaBackupAudit {
                     forKeys: [.isRegularFileKey, .isSymbolicLinkKey]
                 )
                 guard resourceValues.isRegularFile == true,
-                      resourceValues.isSymbolicLink != true
+                    resourceValues.isSymbolicLink != true
                 else {
                     throw AuditError.invalidAttachmentFile(fileName)
                 }
@@ -371,7 +314,8 @@ private extension RoutinaBackupAudit {
                 attachment["contentSHA256"] = contentHash
 
                 if volatileAttachmentRoles.contains(role) {
-                    let owner = (attachment["taskID"] as? String)
+                    let owner =
+                        (attachment["taskID"] as? String)
                         ?? (attachment["placeCheckInSessionID"] as? String)
                         ?? (attachment["noteID"] as? String)
                         ?? "unowned"
@@ -409,7 +353,8 @@ private extension RoutinaBackupAudit {
             if let dictionary = value as? [String: Any] {
                 for (key, child) in dictionary {
                     if key.hasSuffix("AttachmentID"), let id = child as? String,
-                       !declaredIDs.contains(id) {
+                        !declaredIDs.contains(id)
+                    {
                         throw AuditError.danglingAttachmentReference(id)
                     }
                     try validateAttachmentReferences(in: child, declaredIDs: declaredIDs)
@@ -502,11 +447,12 @@ private extension RoutinaBackupAudit {
         path: String
     ) -> String? {
         if let leftDictionary = left as? [String: Any],
-           let rightDictionary = right as? [String: Any] {
+            let rightDictionary = right as? [String: Any]
+        {
             let keys = Set(leftDictionary.keys).union(rightDictionary.keys).sorted()
             for key in keys {
                 guard let leftValue = leftDictionary[key],
-                      let rightValue = rightDictionary[key]
+                    let rightValue = rightDictionary[key]
                 else {
                     return "\(path).\(key)"
                 }
