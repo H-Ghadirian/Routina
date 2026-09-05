@@ -21,6 +21,7 @@ $(SRCROOT)/SharedCore/Models/RoutineRecurrenceRule+Presentation.swift
 $(SRCROOT)/SharedCore/Models/RoutineRecurrenceRule.swift
 $(SRCROOT)/SharedCore/Models/RoutineScheduleMode.swift
 $(SRCROOT)/SharedCore/Models/RoutineStep.swift
+$(SRCROOT)/SharedCore/Models/RoutineTaskChecklistSupport.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskChangeLog.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskColor.swift
 $(SRCROOT)/SharedCore/Models/RoutineTaskComment.swift
