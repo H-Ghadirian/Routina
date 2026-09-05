@@ -467,6 +467,7 @@ let package = Package(
                 "Screens/Shared/TaskFormModel.swift",
                 "Features/CalendarTaskImportFeature.swift",
                 "Services/NotificationCoordinator.swift",
+                "Services/NotificationCoordinatorDeliverySupport.swift",
                 "Services/BatteryRoutineService.swift",
                 "Services/CalendarTaskImportService.swift",
                 "Services/MicrosoftGraphCalendarService.swift",
