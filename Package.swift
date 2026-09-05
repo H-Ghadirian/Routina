@@ -493,6 +493,8 @@ let package = Package(
                 "Services/RoutinaPerformanceProfileSupport.swift",
                 "Services/RoutinaPerformanceProfiler.swift",
                 "Services/RoutinaMacScrollInteractionGate.swift",
+                "Services/PlaceCheckInSupport+LocationHistory.swift",
+                "Services/PlaceCheckInSupport+SessionEditing.swift",
                 "Services/PlaceCheckInSupport.swift",
                 "Services/WidgetStatsService.swift",
                 "Services/FocusTimerLiveActivityService.swift",
