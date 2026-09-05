@@ -14,7 +14,7 @@ enum CreationDraftPersistence {
         client: CreationDraftClient = .live
     ) -> T? {
         guard let rawValue = client.load(kind),
-              let data = rawValue.data(using: .utf8)
+            let data = rawValue.data(using: .utf8)
         else {
             return nil
         }
@@ -186,7 +186,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         recurrenceDayOfMonth = schedule.recurrenceDayOfMonth
         recurrenceWeekdays = schedule.recurrenceWeekdays
         recurrenceDaysOfMonth = schedule.recurrenceDaysOfMonth
-        autoPauseAfterCompletion = schedule.scheduleMode.taskType == .todo
+        autoPauseAfterCompletion =
+            schedule.scheduleMode.taskType == .todo
             ? nil
             : basics.autoPauseAfterCompletion
         autoAssumeDailyDone = schedule.autoAssumeDailyDone
@@ -285,7 +286,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         state.basics.deadline = deadline
         state.basics.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
         state.basics.isAllDay = isAllDay
-        state.basics.routineDurationMode = scheduleMode.taskType == .todo
+        state.basics.routineDurationMode =
+            scheduleMode.taskType == .todo
             ? .oneDay
             : (routineDurationMode ?? .oneDay)
         state.basics.availabilityStartDate = availabilityStartDate
@@ -313,7 +315,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         state.basics.actualDurationMinutes = actualDurationMinutes
         state.basics.storyPoints = storyPoints
         state.basics.focusModeEnabled = focusModeEnabled
-        state.basics.taskLadderGroupEnabled = scheduleMode.taskType == .todo
+        state.basics.taskLadderGroupEnabled =
+            scheduleMode.taskType == .todo
             ? false
             : (taskLadderGroupEnabled ?? false)
         state.organization.routineTags = RoutineTag.deduplicated(
@@ -341,7 +344,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         state.schedule.recurrenceKind = recurrenceKind
         state.schedule.recurrenceHasExplicitTime = recurrenceHasExplicitTime && !recurrenceHasTimeRange
         state.schedule.recurrenceHasTimeRange = recurrenceHasTimeRange
-        state.schedule.recurrenceTimeRangeRole = recurrenceHasTimeRange
+        state.schedule.recurrenceTimeRangeRole =
+            recurrenceHasTimeRange
             ? (recurrenceTimeRangeRole ?? .availability)
             : .availability
         state.schedule.recurrenceTimeOfDay = recurrenceTimeOfDay
@@ -357,7 +361,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
         if state.schedule.recurrenceDaysOfMonth.isEmpty {
             state.schedule.recurrenceDaysOfMonth = [state.schedule.recurrenceDayOfMonth]
         }
-        state.basics.autoPauseAfterCompletion = scheduleMode.taskType == .todo
+        state.basics.autoPauseAfterCompletion =
+            scheduleMode.taskType == .todo
             ? false
             : (autoPauseAfterCompletion ?? false)
         state.schedule.autoAssumeDailyDone = autoAssumeDailyDone
@@ -427,13 +432,16 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     ) -> RoutineTaskTemporalWeightRule? {
         guard let temporalWeightRule else { return nil }
 
-        let cadenceEnabled = state.schedule.scheduleMode.taskType == .todo
+        let cadenceEnabled =
+            state.schedule.scheduleMode.taskType == .todo
             ? true
             : state.basics.cadenceEnabled
-        guard RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
-            scheduleMode: state.schedule.scheduleMode,
-            cadenceEnabled: cadenceEnabled
-        ) else {
+        guard
+            RoutineTaskTemporalWeightResolver.supportsTemporalWeight(
+                scheduleMode: state.schedule.scheduleMode,
+                cadenceEnabled: cadenceEnabled
+            )
+        else {
             return nil
         }
 
@@ -447,151 +455,5 @@ struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
 
     private func hasText(_ value: String) -> Bool {
         !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-}
-
-struct GoalCreationDraftSnapshot: Codable, Equatable {
-    var draft: GoalsFeature.GoalDraft
-
-    init(draft: GoalsFeature.GoalDraft = GoalsFeature.GoalDraft()) {
-        self.draft = draft
-    }
-
-    var isMeaningful: Bool {
-        draft.id == nil
-            && (RoutineGoal.cleanedTitle(draft.title) != nil
-                || RoutineGoal.cleanedEmoji(draft.emoji) != nil
-                || RoutineGoal.cleanedNotes(draft.notes) != nil
-                || draft.targetDate != nil
-                || !draft.tags.isEmpty
-                || !draft.tagDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                || draft.color != .none
-                || draft.parentGoalID != nil)
-    }
-
-    func persist(client: CreationDraftClient) {
-        guard isMeaningful else {
-            CreationDraftPersistence.clear(.goal, client: client)
-            return
-        }
-
-        CreationDraftPersistence.save(self, for: .goal, client: client)
-    }
-
-    static func load(client: CreationDraftClient) -> GoalCreationDraftSnapshot? {
-        CreationDraftPersistence.load(Self.self, for: .goal, client: client)
-    }
-}
-
-struct RoutineNoteDraftSnapshot: Codable, Equatable {
-    var title = ""
-    var bodyText = ""
-    var tags: [String] = []
-    var tagDraft = ""
-    var imageData: Data?
-    var voiceNote: RoutineVoiceNote?
-    var attachments: [AttachmentItem] = []
-
-    var isMeaningful: Bool {
-        RoutineNote.cleanedText(title) != nil
-            || RoutineNote.cleanedText(bodyText) != nil
-            || !tags.isEmpty
-            || !tagDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || imageData?.isEmpty == false
-            || voiceNote != nil
-            || !attachments.isEmpty
-    }
-
-    func persist() {
-        guard isMeaningful else {
-            CreationDraftPersistence.clear(.note)
-            return
-        }
-
-        CreationDraftPersistence.save(self, for: .note)
-    }
-
-    static func load() -> Self? {
-        CreationDraftPersistence.load(Self.self, for: .note)
-    }
-}
-
-struct EmotionLogDraftSnapshot: Codable, Equatable {
-    var valence = 0.25
-    var arousal = -0.15
-    var selectedFamilies: [EmotionFamily] = [.calm]
-    var selectedLabels: [String] = [EmotionFamily.calm.defaultLabel]
-    var intensity = 3.0
-    var selectedBodyAreas: [EmotionBodyArea] = []
-    var reflection = ""
-    var linkedNoteID: UUID?
-    var linkedGoalID: UUID?
-    var linkedTaskID: UUID?
-    var linkedPlaceID: UUID?
-    var linkedSleepSessionID: UUID?
-
-    var isMeaningful: Bool {
-        valence != 0.25
-            || arousal != -0.15
-            || selectedFamilies != [.calm]
-            || selectedLabels != [EmotionFamily.calm.defaultLabel]
-            || intensity != 3.0
-            || !selectedBodyAreas.isEmpty
-            || EmotionLog.cleanedText(reflection) != nil
-            || linkedNoteID != nil
-            || linkedGoalID != nil
-            || linkedTaskID != nil
-            || linkedPlaceID != nil
-            || linkedSleepSessionID != nil
-    }
-
-    func persist() {
-        guard isMeaningful else {
-            CreationDraftPersistence.clear(.emotion)
-            return
-        }
-
-        CreationDraftPersistence.save(self, for: .emotion)
-    }
-
-    static func load() -> Self? {
-        CreationDraftPersistence.load(Self.self, for: .emotion)
-    }
-}
-
-struct RoutineEventDraftSnapshot: Codable, Equatable {
-    var title = ""
-    var notesText = ""
-    var emoji = ""
-    var isAllDay = true
-    var startDate = Date()
-    var endDate = Date().addingTimeInterval(60 * 60)
-    var reminderAt: Date?
-    var tags: [String] = []
-    var tagDraft = ""
-
-    func isMeaningful(comparedTo baseline: RoutineEventDraftSnapshot) -> Bool {
-        RoutineEvent.cleanedText(title) != nil
-            || RoutineEvent.cleanedText(notesText) != nil
-            || RoutineEvent.cleanedText(emoji) != nil
-            || isAllDay != baseline.isAllDay
-            || startDate != baseline.startDate
-            || endDate != baseline.endDate
-            || reminderAt != baseline.reminderAt
-            || !tags.isEmpty
-            || !tagDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    func persist(comparedTo baseline: RoutineEventDraftSnapshot) {
-        guard isMeaningful(comparedTo: baseline) else {
-            CreationDraftPersistence.clear(.event)
-            return
-        }
-
-        CreationDraftPersistence.save(self, for: .event)
-    }
-
-    static func load() -> Self? {
-        CreationDraftPersistence.load(Self.self, for: .event)
     }
 }

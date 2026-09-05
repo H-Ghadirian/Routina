@@ -229,6 +229,7 @@ let package = Package(
                 "Features/AddRoutine/AddRoutineViewModifiers.swift",
                 "Features/AddRoutine/TaskFormDurationEntryPresentation.swift",
                 "Features/AddRoutine/TaskFormPresentation.swift",
+                "Features/CreationDrafts/AuxiliaryCreationDraftSnapshots.swift",
                 "Features/CreationDrafts/CreationDraftSnapshots.swift",
                 "Features/Goals/GoalsFeature.swift",
                 "Features/Goals/GoalsFeature+GoalDisplayComparable.swift",
