@@ -262,6 +262,7 @@ let package = Package(
                 "Features/Home/HomeReloadGuardSupport.swift",
                 "Features/Home/HomeSelectionSupport.swift",
                 "Features/Home/HomeCustomTaskSection.swift",
+                "Features/Home/HomeCustomTaskSectionRules.swift",
                 "Features/Home/BacklogFeature.swift",
                 "Features/Home/BacklogTaskListPresentation.swift",
                 "Features/Home/BacklogTaskRowPresentation.swift",

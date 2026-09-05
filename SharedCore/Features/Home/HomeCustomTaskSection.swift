@@ -8,78 +8,6 @@ enum HomeTaskSectionSurface: String, Codable, CaseIterable, Equatable, Hashable,
     case backlog
 }
 
-struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
-    var tagNames: [String]
-    var tagMatchMode: RoutineTagMatchMode
-
-    init(
-        tagNames: [String] = [],
-        tagMatchMode: RoutineTagMatchMode = .any
-    ) {
-        self.tagNames = Self.sanitizedTagNames(tagNames)
-        self.tagMatchMode = tagMatchMode
-    }
-
-    var isEmpty: Bool {
-        tagNames.isEmpty
-    }
-
-    func settingTagNames(_ rawTagNames: [String]) -> Self {
-        HomeCustomTaskSectionRules(
-            tagNames: rawTagNames,
-            tagMatchMode: tagMatchMode
-        )
-    }
-
-    func settingTagMatchMode(_ tagMatchMode: RoutineTagMatchMode) -> Self {
-        HomeCustomTaskSectionRules(
-            tagNames: tagNames,
-            tagMatchMode: tagMatchMode
-        )
-    }
-
-    func matchesTags(_ taskTags: [String]) -> Bool {
-        guard !tagNames.isEmpty else { return false }
-
-        switch tagMatchMode {
-        case .any:
-            return tagNames.contains { tagName in
-                RoutineTag.contains(tagName, in: taskTags)
-            }
-        case .all:
-            return tagNames.allSatisfy { tagName in
-                RoutineTag.contains(tagName, in: taskTags)
-            }
-        }
-    }
-
-    static func sanitizedTagNames(_ tagNames: [String]) -> [String] {
-        RoutineTag.deduplicated(tagNames)
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case tags
-        case tagMatchMode
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        tagNames = Self.sanitizedTagNames(
-            (try? container.decode([String].self, forKey: .tags)) ?? []
-        )
-        tagMatchMode = (try? container.decode(
-            RoutineTagMatchMode.self,
-            forKey: .tagMatchMode
-        )) ?? .any
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(tagNames, forKey: .tags)
-        try container.encode(tagMatchMode, forKey: .tagMatchMode)
-    }
-}
-
 struct HomeCustomTaskSectionDraftState: Equatable, Sendable {
     var titleDrafts: [UUID: String] = [:]
     var tagRuleDrafts: [UUID: String] = [:]
@@ -99,11 +27,13 @@ struct HomeCustomTaskSectionDraftState: Equatable, Sendable {
             let tagRuleText = section.rules.tagNames.joined(separator: ", ")
 
             if titleDrafts[section.id] == nil
-                || titleDrafts[section.id] == syncedTitles[section.id] {
+                || titleDrafts[section.id] == syncedTitles[section.id]
+            {
                 titleDrafts[section.id] = section.title
             }
             if tagRuleDrafts[section.id] == nil
-                || tagRuleDrafts[section.id] == syncedTagRuleDrafts[section.id] {
+                || tagRuleDrafts[section.id] == syncedTagRuleDrafts[section.id]
+            {
                 tagRuleDrafts[section.id] = tagRuleText
             }
 
@@ -148,7 +78,8 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         self.rules = rules
         self.colorHex = HomeCustomTaskSectionStorage.sanitizedColorHex(colorHex)
         self.pausedAt = parentSectionID == nil ? pausedAt : nil
-        self.pausedTaskIDs = parentSectionID == nil
+        self.pausedTaskIDs =
+            parentSectionID == nil
             ? HomeCustomTaskSectionStorage.deduplicatedTaskIDs(pausedTaskIDs)
             : []
     }
@@ -174,19 +105,23 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         id = try container.decode(UUID.self, forKey: .id)
         parentSectionID = try container.decodeIfPresent(UUID.self, forKey: .parentSectionID)
         surface = try container.decodeIfPresent(HomeTaskSectionSurface.self, forKey: .surface) ?? .radar
-        title = HomeCustomTaskSectionStorage.sanitizedTitle(
-            try container.decode(String.self, forKey: .title)
-        ) ?? "Section"
+        title =
+            HomeCustomTaskSectionStorage.sanitizedTitle(
+                try container.decode(String.self, forKey: .title)
+            ) ?? "Section"
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
-        rules = (try? container.decodeIfPresent(HomeCustomTaskSectionRules.self, forKey: .rules))
+        rules =
+            (try? container.decodeIfPresent(HomeCustomTaskSectionRules.self, forKey: .rules))
             ?? HomeCustomTaskSectionRules()
         colorHex = HomeCustomTaskSectionStorage.sanitizedColorHex(
             try? container.decodeIfPresent(String.self, forKey: .colorHex)
         )
-        pausedAt = parentSectionID == nil
+        pausedAt =
+            parentSectionID == nil
             ? try? container.decodeIfPresent(Date.self, forKey: .pausedAt)
             : nil
-        pausedTaskIDs = parentSectionID == nil
+        pausedTaskIDs =
+            parentSectionID == nil
             ? HomeCustomTaskSectionStorage.deduplicatedTaskIDs(
                 (try? container.decodeIfPresent([UUID].self, forKey: .pausedTaskIDs)) ?? []
             )
@@ -227,8 +162,8 @@ enum HomeCustomTaskSectionStorage {
 
     static func decoded(from rawValue: String?) -> [HomeCustomTaskSection] {
         guard let rawValue,
-              let data = rawValue.data(using: .utf8),
-              let decoded = try? JSONDecoder().decode([HomeCustomTaskSection].self, from: data)
+            let data = rawValue.data(using: .utf8),
+            let decoded = try? JSONDecoder().decode([HomeCustomTaskSection].self, from: data)
         else {
             return []
         }
@@ -239,8 +174,8 @@ enum HomeCustomTaskSectionStorage {
     static func encoded(_ sections: [HomeCustomTaskSection]) -> String {
         let sections = sanitized(sections)
         guard !sections.isEmpty,
-              let data = try? JSONEncoder().encode(sections),
-              let rawValue = String(data: data, encoding: .utf8)
+            let data = try? JSONEncoder().encode(sections),
+            let rawValue = String(data: data, encoding: .utf8)
         else {
             return ""
         }
@@ -254,11 +189,12 @@ enum HomeCustomTaskSectionStorage {
         // inherited below.
         var seenTitleKeysByScope: [String: Set<String>] = [:]
         var sanitizedSections: [HomeCustomTaskSection] = []
-        let candidateTopLevelSections = sections.reduce(into: [UUID: HomeTaskSectionSurface]()) {
-            partialResult,
-            section in
+        let candidateTopLevelSections = sections.reduce(
+            into: [UUID: HomeTaskSectionSurface]()
+        ) { partialResult, section in
             guard section.parentSectionID == nil,
-                  partialResult[section.id] == nil else {
+                partialResult[section.id] == nil
+            else {
                 return
             }
             partialResult[section.id] = section.surface
@@ -266,7 +202,8 @@ enum HomeCustomTaskSectionStorage {
 
         for section in sections {
             guard seenIDs.insert(section.id).inserted,
-                  let title = sanitizedTitle(section.title) else {
+                let title = sanitizedTitle(section.title)
+            else {
                 continue
             }
             let parentSectionID = section.parentSectionID.flatMap {
@@ -310,9 +247,11 @@ enum HomeCustomTaskSectionStorage {
         let sanitizedSections = sanitized(sections)
         let resolvedSurface: HomeTaskSectionSurface
         if let parentSectionID {
-            guard let parent = sanitizedSections.first(where: {
-                $0.id == parentSectionID && $0.parentSectionID == nil
-            }) else {
+            guard
+                let parent = sanitizedSections.first(where: {
+                    $0.id == parentSectionID && $0.parentSectionID == nil
+                })
+            else {
                 return nil
             }
             resolvedSurface = parent.surface
@@ -454,9 +393,11 @@ enum HomeCustomTaskSectionStorage {
         in sections: [HomeCustomTaskSection]
     ) -> [HomeCustomTaskSection]? {
         var sanitizedSections = sanitized(sections)
-        guard let sectionIndex = sanitizedSections.firstIndex(where: {
-            $0.id == sectionID && $0.parentSectionID == nil
-        }), !sanitizedSections[sectionIndex].isPaused else {
+        guard
+            let sectionIndex = sanitizedSections.firstIndex(where: {
+                $0.id == sectionID && $0.parentSectionID == nil
+            }), !sanitizedSections[sectionIndex].isPaused
+        else {
             return nil
         }
 
@@ -470,9 +411,11 @@ enum HomeCustomTaskSectionStorage {
         in sections: [HomeCustomTaskSection]
     ) -> [HomeCustomTaskSection]? {
         var sanitizedSections = sanitized(sections)
-        guard let sectionIndex = sanitizedSections.firstIndex(where: {
-            $0.id == sectionID && $0.parentSectionID == nil
-        }), sanitizedSections[sectionIndex].isPaused else {
+        guard
+            let sectionIndex = sanitizedSections.firstIndex(where: {
+                $0.id == sectionID && $0.parentSectionID == nil
+            }), sanitizedSections[sectionIndex].isPaused
+        else {
             return nil
         }
 
@@ -520,9 +463,11 @@ enum HomeCustomTaskSectionStorage {
         guard let parentSectionID = section.parentSectionID else {
             return [section.title]
         }
-        guard let parent = sanitizedSections.first(where: {
-            $0.id == parentSectionID && $0.parentSectionID == nil
-        }) else {
+        guard
+            let parent = sanitizedSections.first(where: {
+                $0.id == parentSectionID && $0.parentSectionID == nil
+            })
+        else {
             return nil
         }
         return [parent.title, section.title]
