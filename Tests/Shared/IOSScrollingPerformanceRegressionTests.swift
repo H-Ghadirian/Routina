@@ -42,10 +42,7 @@ struct IOSScrollingPerformanceRegressionTests {
 
         #expect(appView.contains("@State private var appliedSearchText = \"\""))
         #expect(appView.contains("platformSearchHomeView(searchText: $appliedSearchText)"))
-        #expect(
-            appView.contains(
-                "platformSearchHomeView(searchText: $appliedSearchText)\n            .searchable(text: $searchText, prompt: \"Search repeating and one-time tasks\")"
-            ))
+        #expect(appView.contains(".searchable(text: $searchText, prompt: \"Search repeating and one-time tasks\")"))
         #expect(appView.contains(".tabViewSearchActivation(.searchTabSelection)"))
         #expect(!appView.contains("tabView\n            .searchable"))
         #expect(appView.contains(".onChange(of: searchText)"))

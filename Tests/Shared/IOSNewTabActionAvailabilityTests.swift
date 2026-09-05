@@ -4,10 +4,10 @@ import Testing
 struct IOSNewTabActionAvailabilityTests {
     @Test
     func newSheetAlwaysOrdersCreateTaskBeforeFocus() throws {
-        let source = try Self.sourceFile("iOS/Screens/App/AppView.swift")
+        let source = try Self.sourceFile("iOS/Screens/App/AppViewSupport.swift")
         let actions = try Self.functionSource(
-            named: "private enum NewTabAction",
-            endingAt: "private extension AppColorScheme",
+            named: "enum NewTabAction",
+            endingAt: "extension AppColorScheme",
             in: source
         )
 
@@ -71,9 +71,10 @@ struct IOSNewTabActionAvailabilityTests {
     func emptyFocusPickerDismissesBeforeOpeningTaskCreation() throws {
         let app = try Self.sourceFile("iOS/Screens/App/AppView.swift")
 
-        #expect(app.contains(
-            ".sheet(item: $focusStartPresentation, onDismiss: performPendingFocusTaskCreation)"
-        ))
+        #expect(
+            app.contains(
+                ".sheet(item: $focusStartPresentation, onDismiss: performPendingFocusTaskCreation)"
+            ))
         #expect(app.contains("onCreateTask: queueFocusTaskCreation"))
         #expect(app.contains("shouldCreateTaskAfterFocusDismissal = true"))
         #expect(app.contains("focusStartPresentation = nil"))
@@ -112,9 +113,10 @@ struct IOSNewTabActionAvailabilityTests {
             "iOS/Screens/Settings/SettingsDataSupportDetailViews.swift"
         )
 
-        #expect(source.contains(
-            "Toggle(\"Show Event and Emotion features\", isOn: $areEventEmotionActionsEnabled)"
-        ))
+        #expect(
+            source.contains(
+                "Toggle(\"Show Event and Emotion features\", isOn: $areEventEmotionActionsEnabled)"
+            ))
     }
 
     @Test
@@ -157,19 +159,25 @@ struct IOSNewTabActionAvailabilityTests {
         #expect(source.contains("includesEventEmotion: areEventEmotionActionsEnabled"))
         #expect(source.contains("includesSleep: includesSleepTimelineFilters"))
         #expect(source.contains(".onChange(of: areEventEmotionActionsEnabled)"))
-        #expect(source.contains(
-            "areEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []"
-        ))
-        #expect(events.contains(
-            "areEventEmotionActionsEnabled ? dataSnapshot.events : []"
-        ))
+        #expect(
+            source.contains(
+                "areEventEmotionActionsEnabled ? dataSnapshot.emotionLogs : []"
+            ))
+        #expect(
+            events.contains(
+                "areEventEmotionActionsEnabled ? dataSnapshot.events : []"
+            ))
         #expect(emotionLogs.contains("areEventEmotionActionsEnabled"))
-        #expect(sleepSessions.contains(
-            "includesSleepTimelineFilters ? dataSnapshot.sleepSessions : []"
-        ))
-        #expect(source.contains(
-            ".onChange(of: isStatsSleepTabEnabled) { _, _ in\n                guard isActive else { return }\n                syncTimelineData()"
-        ))
+        #expect(
+            sleepSessions.contains(
+                "includesSleepTimelineFilters ? dataSnapshot.sleepSessions : []"
+            ))
+        #expect(
+            source.contains(
+                ".onChange(of: isStatsSleepTabEnabled) { _, _ in\n"
+                    + "                guard isActive else { return }\n"
+                    + "                syncTimelineData()"
+            ))
     }
 
     private static func functionSource(
