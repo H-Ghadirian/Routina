@@ -537,6 +537,8 @@ let package = Package(
                 "Views/PlaceCheckInMapSheet.swift",
                 "Views/PlaceCheckInMapSheetContent.swift",
                 "Views/PlaceCheckInMapSheetSupport.swift",
+                "Views/PlaceCheckInSessionDetailView.swift",
+                "Views/PlaceCheckInSessionEditor.swift",
                 "Views/EmotionLogContextLinkPicker.swift",
                 "Views/EmotionLogQuickPresetButton.swift",
                 "Views/EmotionLogViews.swift",
