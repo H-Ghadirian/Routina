@@ -238,7 +238,7 @@ struct MacWorkspaceNavigationSourceTests {
         try MacWorkspaceControlSources(
             toolbar: sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"),
             platform: SourceInspectionSupport.readMacHomePlatformSources(),
-            detailContainer: sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"),
+            detailContainer: SourceInspectionSupport.readMacDetailContainerSources(),
             backlog: sourceFile("RoutinaMacApp/Screens/Backlog/BacklogMacView.swift"),
             backlogFilters: sourceFile("RoutinaMacApp/Screens/Backlog/BacklogMacFiltersDetailView.swift"),
             backlogSupport: sourceFile("RoutinaMacApp/Screens/Backlog/BacklogMacView+Support.swift"),

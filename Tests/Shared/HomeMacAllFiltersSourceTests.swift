@@ -10,9 +10,7 @@ struct HomeMacAllFiltersSourceTests {
         let timeline = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
         )
-        let calendar = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"
-        )
+        let calendar = try SourceInspectionSupport.readMacDetailContainerSources()
 
         #expect(sharedFilters.contains("HomeMacTaskLadderFiltersSection("))
         #expect(sharedFilters.contains("selectedPressureFilter: macSharedPressureFilterBinding"))
@@ -170,22 +168,26 @@ struct HomeMacAllFiltersSourceTests {
             "RoutinaMacApp/Screens/Home/Components/HomeMacRoutineFiltersDetailView.swift"
         )
 
-        #expect(source.range(
-            of: #"blockedTasksToggle\s+assumedDoneTasksToggle\s+archivedToggle\s+}\s+filterControlSection\("Task type"\)"#,
-            options: .regularExpression
-        ) != nil)
-        #expect(source.range(
-            of: #"HomeMacFilterAppearanceToggleRow\(\s*"Show blocked tasks",\s*isOn: showBlockedTasksBinding\s*\)"#,
-            options: .regularExpression
-        ) != nil)
-        #expect(source.range(
-            of: #"HomeMacFilterAppearanceToggleRow\(\s*"Hide assumed-done tasks",\s*isOn: \$hideAssumedDoneTasks\s*\)"#,
-            options: .regularExpression
-        ) != nil)
-        #expect(source.range(
-            of: #"HomeMacFilterAppearanceToggleRow\(\s*"Show archived list",\s*isOn: \$showArchivedTasks\s*\)"#,
-            options: .regularExpression
-        ) != nil)
+        #expect(
+            source.range(
+                of: #"blockedTasksToggle\s+assumedDoneTasksToggle\s+archivedToggle\s+}\s+filterControlSection\("Task type"\)"#,
+                options: .regularExpression
+            ) != nil)
+        #expect(
+            source.range(
+                of: #"HomeMacFilterAppearanceToggleRow\(\s*"Show blocked tasks",\s*isOn: showBlockedTasksBinding\s*\)"#,
+                options: .regularExpression
+            ) != nil)
+        #expect(
+            source.range(
+                of: #"HomeMacFilterAppearanceToggleRow\(\s*"Hide assumed-done tasks",\s*isOn: \$hideAssumedDoneTasks\s*\)"#,
+                options: .regularExpression
+            ) != nil)
+        #expect(
+            source.range(
+                of: #"HomeMacFilterAppearanceToggleRow\(\s*"Show archived list",\s*isOn: \$showArchivedTasks\s*\)"#,
+                options: .regularExpression
+            ) != nil)
     }
 
     @Test

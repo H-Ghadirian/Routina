@@ -58,6 +58,18 @@ enum SourceInspectionSupport {
         .joined(separator: "\n")
     }
 
+    static func readMacDetailContainerSources(
+        callerFile: StaticString = #filePath
+    ) throws -> String {
+        try [
+            "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift",
+            "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView+Planner.swift",
+            "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView+Timeline.swift",
+        ]
+        .map { try readProjectFile($0, callerFile: callerFile) }
+        .joined(separator: "\n")
+    }
+
     private static func projectRoot(for callerFile: StaticString) -> URL {
         URL(fileURLWithPath: "\(callerFile)")
             .deletingLastPathComponent()

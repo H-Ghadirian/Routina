@@ -1012,7 +1012,7 @@ final class PerformanceRegressionTests: XCTestCase {
             "Mac Home should not resize below the expanded-sidebar plus Planner companion layout, with transition breathing room."
         )
 
-        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let detailSource = try SourceInspectionSupport.readMacDetailContainerSources()
         let dayPlanSource =
             try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
             + "\n"
@@ -1341,7 +1341,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testHomeNewMenuOwnsFocusInsteadOfThePlannerHeader() throws {
-        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let detailSource = try SourceInspectionSupport.readMacDetailContainerSources()
         let dayPlanSource =
             try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
             + "\n"
@@ -1382,7 +1382,7 @@ final class PerformanceRegressionTests: XCTestCase {
         let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
         let appShellSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeMacAppShell.swift")
         let navigationSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeMacNavigationContent.swift")
-        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let detailSource = try SourceInspectionSupport.readMacDetailContainerSources()
         let taskDetailSource = try SourceInspectionSupport.readMacTaskDetailSources()
         let taskToolbarSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift")
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
@@ -1949,7 +1949,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacHomeFiltersUseRightSideCompanionPane() throws {
-        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let detailSource = try SourceInspectionSupport.readMacDetailContainerSources()
         let filterContainerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacFilterDetailContainerView.swift")
         let sharedFilterControlsSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/Components/HomeMacImportanceUrgencyMatrixView.swift")

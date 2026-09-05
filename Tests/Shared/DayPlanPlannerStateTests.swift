@@ -261,9 +261,7 @@ struct DayPlanPlannerStateTests {
             + (try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanTimelineDataSnapshot.swift"))
             + "\n"
             + (try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanTimelineRenderSnapshot.swift"))
-        let macDetailSource = try Self.sourceFile(
-            "RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift"
-        )
+        let macDetailSource = try SourceInspectionSupport.readMacDetailContainerSources()
 
         #expect(source.contains("var calendarListHiddenTaskIDs: Set<UUID>"))
         #expect(source.contains("revealsHiddenCalendarListTasks: Bool"))
@@ -413,7 +411,7 @@ struct DayPlanPlannerStateTests {
     func macPlannerChoicesAreOwnedByPersistedHomePresentationState() throws {
         let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
         let platformSource = try SourceInspectionSupport.readMacHomePlatformSources()
-        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let detailSource = try SourceInspectionSupport.readMacDetailContainerSources()
         let dayPlanSource = try Self.sourceFile(
             "SharedCore/Views/DayPlan/DayPlanDetailView.swift"
         )
@@ -1786,7 +1784,7 @@ struct DayPlanPlannerStateTests {
             "RoutinaMacApp/Screens/TaskDetail/TaskDetailDoneOccurrenceSection.swift"
         )
         let durationEntrySource = try Self.sourceFile("SharedCore/Screens/Shared/TaskFormDurationEntry.swift")
-        let containerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let containerSource = try SourceInspectionSupport.readMacDetailContainerSources()
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
 
         #expect(calendarSource.contains("onOpenTaskDetails(item, date)"))
@@ -1816,7 +1814,7 @@ struct DayPlanPlannerStateTests {
     func plannerTaskDetailTitleUsesTaskUUIDDragPayload() throws {
         let headerSource = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift")
         let taskDetailSource = try SourceInspectionSupport.readMacTaskDetailSources()
-        let containerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let containerSource = try SourceInspectionSupport.readMacDetailContainerSources()
 
         #expect(headerSource.contains("let titleDragPayload: String?"))
         #expect(headerSource.contains(".taskDetailCopyableText(title)"))
