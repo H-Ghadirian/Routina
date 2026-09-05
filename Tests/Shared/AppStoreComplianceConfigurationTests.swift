@@ -194,7 +194,7 @@ struct AppStoreComplianceConfigurationTests {
             #expect(entitlements["com.apple.developer.healthkit"] == nil)
         }
 
-        let statsFeature = try Self.sourceFile("iOS/Features/App/AppFeature.swift")
+        let statsFeature = try SourceInspectionSupport.readIOSStatsFeatureSources()
         let statsView = try Self.sourceFile("iOS/Screens/Stats/StatsView.swift")
         #expect(!statsFeature.contains("HealthStats"))
         #expect(!statsView.contains("healthAccess"))

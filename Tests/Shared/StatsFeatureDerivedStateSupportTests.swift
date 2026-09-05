@@ -1097,9 +1097,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let viewSource = try SourceInspectionSupport.readProjectFile(
             "iOS/Screens/Stats/StatsView.swift"
         )
-        let featureSource = try SourceInspectionSupport.readProjectFile(
-            "iOS/Features/App/AppFeature.swift"
-        )
+        let featureSource = try SourceInspectionSupport.readIOSStatsFeatureSources()
         let dashboardStart = try #require(
             viewSource.range(of: "private var statsDashboardContent: some View")
         )
