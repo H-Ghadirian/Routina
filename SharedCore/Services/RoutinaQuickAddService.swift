@@ -2,67 +2,6 @@ import Foundation
 import SwiftData
 import UserNotifications
 
-enum RoutinaQuickAddError: LocalizedError, Equatable {
-    case emptyInput
-    case duplicateTaskName(String)
-    case taskNotFound(String?)
-    case taskAlreadyCompleted(String)
-    case checklistCompletionRequiresApp(String)
-    case activeFocusSession(String?)
-    case activeSleepSession
-    case activeAwaySession
-    case invalidFocusDuration
-
-    var errorDescription: String? {
-        switch self {
-        case .emptyInput:
-            return "Enter a task to add."
-        case let .duplicateTaskName(name):
-            return "\"\(name)\" already exists."
-        case let .taskNotFound(name):
-            if let name, !name.isEmpty {
-                return "No task matching \"\(name)\" was found."
-            }
-            return "No due task was found."
-        case let .taskAlreadyCompleted(name):
-            return "\"\(name)\" is already done."
-        case let .checklistCompletionRequiresApp(name):
-            return "\"\(name)\" uses checklist steps. Open Routina to choose the items to complete."
-        case let .activeFocusSession(name):
-            if let name {
-                return "A focus session is already active for \"\(name)\"."
-            }
-            return "A focus session is already active."
-        case .activeSleepSession:
-            return "Sleep mode is active. Wake up before starting focus."
-        case .activeAwaySession:
-            return "Away mode is active. End away time before starting focus."
-        case .invalidFocusDuration:
-            return "Choose a focus duration from 1 to 720 minutes."
-        }
-    }
-}
-
-struct RoutinaQuickAddCreateResult: Equatable, Sendable {
-    var taskID: UUID
-    var taskName: String
-    var draft: RoutinaQuickAddDraft
-    var matchedPlaceName: String?
-}
-
-struct RoutinaQuickAddCompletionResult: Equatable, Sendable {
-    var taskID: UUID
-    var taskName: String
-    var message: String
-}
-
-struct RoutinaQuickAddFocusResult: Equatable, Sendable {
-    var sessionID: UUID
-    var taskID: UUID
-    var taskName: String
-    var durationMinutes: Int
-}
-
 enum RoutinaQuickAddService {
     @MainActor
     static func createTask(
@@ -75,32 +14,36 @@ enum RoutinaQuickAddService {
         taskNameOverride: String? = nil,
         primaryLinkTitle: String? = nil
     ) async throws -> RoutinaQuickAddCreateResult {
-        guard var draft = RoutinaQuickAddParser.parse(
-            text,
-            referenceDate: referenceDate,
-            calendar: calendar,
-            includingPlaces: includingPlaces
-        ) else {
+        guard
+            var draft = RoutinaQuickAddParser.parse(
+                text,
+                referenceDate: referenceDate,
+                calendar: calendar,
+                includingPlaces: includingPlaces
+            )
+        else {
             throw RoutinaQuickAddError.emptyInput
         }
 
         if let taskNameOverride,
-           let trimmedOverride = RoutineTask.trimmedName(taskNameOverride),
-           !trimmedOverride.isEmpty {
+            let trimmedOverride = RoutineTask.trimmedName(taskNameOverride),
+            !trimmedOverride.isEmpty
+        {
             draft.name = trimmedOverride
         }
         if let primaryLinkTitle,
-           let firstLink = draft.linkItems.first,
-           let url = URL(string: firstLink.url),
-           let resolvedTitle = RoutinaQuickAddLinkSupport.resolvedLinkTitle(
-               from: primaryLinkTitle,
-               url: url
-           ) {
+            let firstLink = draft.linkItems.first,
+            let url = URL(string: firstLink.url),
+            let resolvedTitle = RoutinaQuickAddLinkSupport.resolvedLinkTitle(
+                from: primaryLinkTitle,
+                url: url
+            )
+        {
             draft.linkItems[0].title = resolvedTitle
         }
 
         guard let trimmedName = RoutineTask.trimmedName(draft.name),
-           !trimmedName.isEmpty
+            !trimmedName.isEmpty
         else {
             throw RoutinaQuickAddError.emptyInput
         }
@@ -163,12 +106,14 @@ enum RoutinaQuickAddService {
         calendar: Calendar = .current
     ) async throws -> RoutinaQuickAddCompletionResult {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        guard let task = bestTaskMatch(
-            named: taskName,
-            in: tasks,
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) else {
+        guard
+            let task = RoutinaQuickAddTaskMatcher.bestTaskMatch(
+                named: taskName,
+                in: tasks,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        else {
             throw RoutinaQuickAddError.taskNotFound(taskName)
         }
 
@@ -181,12 +126,14 @@ enum RoutinaQuickAddService {
         }
 
         if task.isChecklistDriven {
-            guard let update = try RoutineLogHistory.markDueChecklistItemsDone(
-                taskID: task.id,
-                doneAt: referenceDate,
-                context: context,
-                calendar: calendar
-            ) else {
+            guard
+                let update = try RoutineLogHistory.markDueChecklistItemsDone(
+                    taskID: task.id,
+                    doneAt: referenceDate,
+                    context: context,
+                    calendar: calendar
+                )
+            else {
                 throw RoutinaQuickAddError.taskAlreadyCompleted(name)
             }
             await refreshNotification(for: update.task, referenceDate: referenceDate, calendar: calendar)
@@ -199,12 +146,14 @@ enum RoutinaQuickAddService {
             )
         }
 
-        guard let update = try RoutineLogHistory.advanceTask(
-            taskID: task.id,
-            completedAt: referenceDate,
-            context: context,
-            calendar: calendar
-        ) else {
+        guard
+            let update = try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: referenceDate,
+                context: context,
+                calendar: calendar
+            )
+        else {
             throw RoutinaQuickAddError.taskNotFound(taskName)
         }
 
@@ -247,14 +196,16 @@ enum RoutinaQuickAddService {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let sessions = try context.fetch(FetchDescriptor<FocusSession>())
         if let activeSession = sessions.first(where: { $0.state == .active }) {
-            let activeTaskName = activeSession.focusTagTitle
+            let activeTaskName =
+                activeSession.focusTagTitle
                 ?? (activeSession.isUnassigned
                     ? "Unassigned focus"
                     : tasks.first { $0.id == activeSession.taskID }?.displayNameForQuickAdd)
             throw RoutinaQuickAddError.activeFocusSession(activeTaskName)
         }
         if let sprintBoardData = try? SprintBoardClient.loadLiveSnapshot(),
-           let activeSprintFocusSession = sprintBoardData.activeFocusSession {
+            let activeSprintFocusSession = sprintBoardData.activeFocusSession
+        {
             let activeSprintTitle = sprintBoardData.sprints
                 .first(where: { $0.id == activeSprintFocusSession.sprintID })?
                 .title
@@ -275,12 +226,14 @@ enum RoutinaQuickAddService {
             )
         }
 
-        guard let task = focusTaskMatch(
-            named: taskName,
-            in: tasks,
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) else {
+        guard
+            let task = RoutinaQuickAddTaskMatcher.focusTaskMatch(
+                named: taskName,
+                in: tasks,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        else {
             throw RoutinaQuickAddError.taskNotFound(taskName)
         }
 
@@ -315,38 +268,11 @@ enum RoutinaQuickAddService {
         calendar: Calendar = .current
     ) throws -> String {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let activeTasks = tasks.filter { task in
-            !task.isArchived(referenceDate: referenceDate, calendar: calendar)
-                && !task.isCompletedOneOff
-                && !task.isCanceledOneOff
-        }
-        let dueTasks = activeTasks.filter { task in
-            !task.isSoftIntervalRoutine
-                && RoutineDateMath.daysUntilDue(
-                    for: task,
-                    referenceDate: referenceDate,
-                    calendar: calendar
-                ) <= 0
-        }
-        let overdueCount = dueTasks.filter { task in
-            RoutineDateMath.daysUntilDue(
-                for: task,
-                referenceDate: referenceDate,
-                calendar: calendar
-            ) < 0
-        }.count
-
-        guard !dueTasks.isEmpty else {
-            return "Nothing is due today in Routina."
-        }
-
-        let names = dueTasks
-            .sorted { taskSortKey($0, referenceDate: referenceDate, calendar: calendar) < taskSortKey($1, referenceDate: referenceDate, calendar: calendar) }
-            .prefix(3)
-            .map(\.displayNameForQuickAdd)
-            .joined(separator: ", ")
-        let overdueText = overdueCount > 0 ? " \(overdueCount) overdue." : ""
-        return "\(dueTasks.count) due today.\(overdueText) Top items: \(names)."
+        return RoutinaQuickAddTaskMatcher.todaySummary(
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
     }
 
     @MainActor
@@ -355,7 +281,7 @@ enum RoutinaQuickAddService {
         context: ModelContext
     ) throws -> RoutinePlace? {
         guard let placeName,
-              let normalizedName = RoutinePlace.normalizedName(placeName)
+            let normalizedName = RoutinePlace.normalizedName(placeName)
         else {
             return nil
         }
@@ -375,98 +301,14 @@ enum RoutinaQuickAddService {
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-        let notes = SharedDefaults.app[.appSettingNotesEnabled]
+        let notes =
+            SharedDefaults.app[.appSettingNotesEnabled]
             ? try context.fetch(FetchDescriptor<RoutineNote>())
             : []
         let availableTags = RoutineTag.allTags(
             from: tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags)
         )
         return RoutineTag.deduplicated(tags, preferredTags: availableTags)
-    }
-
-    private static func bestTaskMatch(
-        named taskName: String?,
-        in tasks: [RoutineTask],
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> RoutineTask? {
-        if let namedMatch = namedTaskMatch(taskName, in: tasks) {
-            return namedMatch
-        }
-
-        return tasks
-            .filter { task in
-                !task.isChecklistCompletionRoutine
-                    && RoutineDateMath.canMarkDone(
-                        for: task,
-                        referenceDate: referenceDate,
-                        calendar: calendar
-                    )
-                    && !task.isCompletedOneOff
-                    && !task.isCanceledOneOff
-            }
-            .sorted { taskSortKey($0, referenceDate: referenceDate, calendar: calendar) < taskSortKey($1, referenceDate: referenceDate, calendar: calendar) }
-            .first
-    }
-
-    private static func focusTaskMatch(
-        named taskName: String?,
-        in tasks: [RoutineTask],
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> RoutineTask? {
-        if let namedMatch = namedTaskMatch(taskName, in: tasks),
-           !namedMatch.isArchived(referenceDate: referenceDate, calendar: calendar),
-           !namedMatch.isCompletedOneOff,
-           !namedMatch.isCanceledOneOff {
-            return namedMatch
-        }
-
-        let candidates = tasks.filter { task in
-            !task.isArchived(referenceDate: referenceDate, calendar: calendar)
-                && !task.isCompletedOneOff
-                && !task.isCanceledOneOff
-        }
-
-        return candidates
-            .filter(\.focusModeEnabled)
-            .sorted { taskSortKey($0, referenceDate: referenceDate, calendar: calendar) < taskSortKey($1, referenceDate: referenceDate, calendar: calendar) }
-            .first
-            ?? candidates
-                .sorted { taskSortKey($0, referenceDate: referenceDate, calendar: calendar) < taskSortKey($1, referenceDate: referenceDate, calendar: calendar) }
-                .first
-    }
-
-    private static func namedTaskMatch(_ taskName: String?, in tasks: [RoutineTask]) -> RoutineTask? {
-        guard let taskName,
-              let normalizedQuery = RoutineTask.normalizedName(taskName)
-        else {
-            return nil
-        }
-
-        let activeTasks = tasks.filter { !$0.isCompletedOneOff && !$0.isCanceledOneOff }
-        if let exact = activeTasks.first(where: { RoutineTask.normalizedName($0.name) == normalizedQuery }) {
-            return exact
-        }
-
-        return activeTasks.first { task in
-            guard let normalizedName = RoutineTask.normalizedName(task.name) else { return false }
-            return normalizedName.contains(normalizedQuery)
-        }
-    }
-
-    private static func taskSortKey(
-        _ task: RoutineTask,
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> (Int, Int, String) {
-        let dueDays = RoutineDateMath.daysUntilDue(
-            for: task,
-            referenceDate: referenceDate,
-            calendar: calendar
-        )
-        let priorityRank = -task.priority.sortOrder
-        return (dueDays, priorityRank, task.displayNameForQuickAdd)
     }
 
     private static func completionMessage(
@@ -513,31 +355,25 @@ enum RoutinaQuickAddService {
         _ payload: NotificationPayload,
         now: Date
     ) async {
-#if SWIFT_PACKAGE
-        return
-#else
-        _ = now
-        await NotificationCoordinator.scheduleNotification(payload)
-#endif
+        #if SWIFT_PACKAGE
+            return
+        #else
+            _ = now
+            await NotificationCoordinator.scheduleNotification(payload)
+        #endif
     }
 
     private static func cancelNotification(_ identifier: String) {
-#if SWIFT_PACKAGE
-        return
-#else
-        NotificationCoordinator.cancelNotification(identifier)
-#endif
+        #if SWIFT_PACKAGE
+            return
+        #else
+            NotificationCoordinator.cancelNotification(identifier)
+        #endif
     }
 
     @MainActor
     private static func notifyDataChanged(using context: ModelContext) {
         WidgetStatsService.refreshAndReload(using: context)
         NotificationCenter.default.postRoutineDidUpdate()
-    }
-}
-
-private extension RoutineTask {
-    var displayNameForQuickAdd: String {
-        RoutineTask.trimmedName(name).flatMap { $0.isEmpty ? nil : $0 } ?? "Untitled task"
     }
 }

@@ -452,6 +452,8 @@ let package = Package(
                 "Services/CalendarTaskImportService.swift",
                 "Services/MicrosoftGraphCalendarService.swift",
                 "Services/RoutinaQuickAddService.swift",
+                "Services/RoutinaQuickAddTaskMatcher.swift",
+                "Services/RoutinaQuickAddTypes.swift",
                 "Services/DeviceActivityRecorder.swift",
                 "Services/FocusShieldSupport.swift",
                 "Services/FocusShieldMacAppBlocker.swift",
