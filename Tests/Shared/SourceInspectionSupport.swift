@@ -42,6 +42,17 @@ enum SourceInspectionSupport {
         .joined(separator: "\n")
     }
 
+    static func readIOSHomeSources(
+        callerFile: StaticString = #filePath
+    ) throws -> String {
+        try [
+            "iOS/Screens/Home/HomeTCAView.swift",
+            "iOS/Screens/Home/IOSSmartAddTaskSheet.swift",
+        ]
+        .map { try readProjectFile($0, callerFile: callerFile) }
+        .joined(separator: "\n")
+    }
+
     static func readMacHomePlatformSources(
         callerFile: StaticString = #filePath
     ) throws -> String {

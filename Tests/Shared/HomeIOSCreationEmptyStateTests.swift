@@ -4,7 +4,7 @@ import Testing
 struct HomeIOSCreationEmptyStateTests {
     @Test
     func emptyAndNoMatchStatesOfferTheRightSmartAddEntryPoint() throws {
-        let home = try sourceFile("iOS/Screens/Home/HomeTCAView.swift")
+        let home = try SourceInspectionSupport.readIOSHomeSources()
         let platform = try sourceFile("iOS/Screens/Home/HomeTCAViewPlatform.swift")
         let toolbar = try sourceFile("iOS/Screens/Home/HomeIOSHomeToolbarContent.swift")
         let rootScene = try sourceFile("iOS/App/RoutinaIOSRootScene.swift")

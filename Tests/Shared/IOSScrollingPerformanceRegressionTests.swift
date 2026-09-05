@@ -75,7 +75,7 @@ struct IOSScrollingPerformanceRegressionTests {
         #expect(home.contains("@State var hasDeferredRoutineUpdateRefresh = false"))
         #expect(home.contains("@State var deferredRoutineUpdateRefreshTask: Task<Void, Never>?"))
         #expect(home.contains("let isActive: Bool\n    let displayRevision"))
-        #expect(home.contains("guard isActive else { return }\n                    await refreshTaskListPresentation()"))
+        #expect(home.contains("guard isActive else { return }\n                await refreshTaskListPresentation()"))
         #expect(homeRefresh.contains(".onChange(of: isActive)"))
         #expect(homeRefresh.contains("needsRefreshWhenActive = true"))
         #expect(homeRefresh.contains("enum RoutinaIOSHomeScrollInteractionGate"))
