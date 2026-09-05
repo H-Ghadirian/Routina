@@ -467,6 +467,8 @@ let package = Package(
                 "Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift",
                 "Screens/Shared/AddRoutineTaskFormModelFactory.swift",
                 "Screens/Shared/TaskDestinationFormEditor.swift",
+                "Screens/Shared/TaskFormModel+ProgressivePresentation.swift",
+                "Screens/Shared/TaskFormModel+Schedule.swift",
                 "Screens/Shared/TaskFormModel.swift",
                 "Features/CalendarTaskImportFeature.swift",
                 "Services/NotificationCoordinator.swift",
