@@ -172,9 +172,7 @@ struct TaskDetailPlatformActionParityTests {
 
     @Test
     func multiDayPrimaryActionKeepsStartAndStopLifecycle() throws {
-        let source = try Self.sourceFile(
-            "SharedCore/Features/TaskDetail/TaskDetailFeature+Presentation.swift"
-        )
+        let source = try SourceInspectionSupport.readTaskDetailFeaturePresentationSources()
 
         #expect(source.contains("if task.isMultiDayRoutine"))
         #expect(source.contains("return .startOngoingTapped"))

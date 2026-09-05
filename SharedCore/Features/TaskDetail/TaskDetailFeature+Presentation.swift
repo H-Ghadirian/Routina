@@ -5,7 +5,7 @@ enum TaskDetailCompletionStatusPillPhase: Equatable {
     case confirmed
 }
 
-struct TaskDetailMissedOccurrenceReviewPresentation {
+struct TaskDetailMissedOccurrenceReview {
     let occurrence: Date
     let nextOccurrence: Date?
     let timeRange: RoutineTimeRange?
@@ -18,6 +18,15 @@ struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
         case canceled
         case due
         case upcoming
+    }
+
+    private struct ItemContext {
+        let task: RoutineTask
+        let defaultSelection: Date?
+        let referenceDate: Date
+        let logs: [RoutineLog]
+        let due: Date
+        let calendar: Calendar
     }
 
     var id: Date { occurrence }
@@ -60,9 +69,10 @@ struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
         calendar: Calendar = .current
     ) -> [Self] {
         guard task.usesEffectiveRoutineCadence,
-              !task.isChecklistDriven,
-              !task.hasSequentialSteps,
-              !task.isMultiDayRoutine else {
+            !task.isChecklistDriven,
+            !task.hasSequentialSteps,
+            !task.isMultiDayRoutine
+        else {
             return []
         }
 
@@ -73,7 +83,8 @@ struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
         )
         guard !occurrences.isEmpty else { return [] }
 
-        let defaultSelection = selectedOccurrence
+        let defaultSelection =
+            selectedOccurrence
             ?? RoutineDateMath.completionTargetDate(
                 for: task,
                 selectedDay: selectedDay,
@@ -81,1060 +92,156 @@ struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
                 calendar: calendar
             )
             ?? occurrences.first
-        let due = RoutineDateMath.dueDate(
-            for: task,
+        let context = ItemContext(
+            task: task,
+            defaultSelection: defaultSelection,
             referenceDate: referenceDate,
-            calendar: calendar
-        )
-
-        return occurrences.map { occurrence in
-            let matchingLog = logs.first { log in
-                guard let timestamp = log.timestamp else { return false }
-                guard log.kind.resolvesDoneDate || log.kind == .missed || log.kind == .canceled else {
-                    return false
-                }
-                return RoutineOccurrenceIdentity.matches(
-                    timestamp,
-                    occurrence,
-                    for: task,
-                    calendar: calendar
-                )
-            }
-            let isDone = matchingLog?.kind.resolvesDoneDate == true
-                || task.lastDone.map {
-                    RoutineOccurrenceIdentity.matches(
-                        $0,
-                        occurrence,
-                        for: task,
-                        calendar: calendar
-                    )
-                } == true
-            let isCanceled = matchingLog?.kind == .canceled
-            let hasRecordedMiss = matchingLog?.kind == .missed
-            let isMissedByTime = RoutineDateMath.isScheduledOccurrenceMissed(
-                occurrence,
+            logs: logs,
+            due: RoutineDateMath.dueDate(
                 for: task,
                 referenceDate: referenceDate,
                 calendar: calendar
-            )
-
-            let status: Status
-            if isDone {
-                status = .done
-            } else if isCanceled {
-                status = .canceled
-            } else if hasRecordedMiss || isMissedByTime {
-                status = .missed
-            } else if occurrence <= referenceDate {
-                status = .due
-            } else {
-                status = .upcoming
-            }
-
-            let canComplete: Bool
-            if isDone || task.isArchived(referenceDate: referenceDate, calendar: calendar) {
-                canComplete = false
-            } else if RoutineDateMath.usesExactTimedOccurrences(for: task) {
-                canComplete = occurrence <= referenceDate
-                    && (
-                        hasRecordedMiss
-                        || isCanceled
-                        || isMissedByTime
-                        || RoutineDateMath.canMarkDone(
-                            for: task,
-                            referenceDate: occurrence,
-                            calendar: calendar,
-                            ignoreArchiveAtReferenceDate: true
-                        )
-                    )
-            } else {
-                canComplete = occurrence <= referenceDate
-                    && RoutineOccurrenceIdentity.matches(
-                        due,
-                        occurrence,
-                        for: task,
-                        calendar: calendar
-                    )
-            }
-
-            let hasRecordedResolution = matchingLog != nil
-            return Self(
-                occurrence: occurrence,
-                status: status,
-                isSelected: defaultSelection.map {
-                    RoutineOccurrenceIdentity.matches(
-                        $0,
-                        occurrence,
-                        for: task,
-                        calendar: calendar
-                    )
-                } == true,
-                resolutionTimestamp: matchingLog?.timestamp,
-                hasRecordedResolution: hasRecordedResolution,
-                canComplete: canComplete,
-                canMarkMissed: !task.isArchived(referenceDate: referenceDate, calendar: calendar)
-                    && isMissedByTime
-                    && !hasRecordedResolution,
-                canCancel: RoutineDateMath.usesExactTimedOccurrences(for: task)
-                    && !task.isArchived(referenceDate: referenceDate, calendar: calendar)
-                    && occurrence <= referenceDate
-                    && !isDone
-                    && !isCanceled,
-                canClearResolution: hasRecordedResolution
-            )
-        }
-    }
-}
-
-// Derived, view-facing state computed from `TaskDetailFeature.State`.
-// Keep pure (no SwiftUI types) so these can be exercised from tests and used
-// by any platform view via `store.<property>` dynamic member lookup.
-extension TaskDetailFeature.State {
-    mutating func refreshChecklistItemsCache() {
-        let storage = task.checklistItemsStorage
-        guard checklistItemsCache.storage != storage else { return }
-        checklistItemsCache.items = RoutineChecklistItemStorage.deserialize(storage)
-        checklistItemsCache.storage = storage
-    }
-
-    var detailChecklistItems: [RoutineChecklistItem] {
-        if checklistItemsCache.storage == task.checklistItemsStorage {
-            return checklistItemsCache.items
-        }
-        return task.checklistItems
-    }
-
-    /// Resolves the optional `selectedDate` to a concrete start-of-day value.
-    var resolvedSelectedDate: Date {
-        let calendar = Calendar.current
-        return calendar.startOfDay(for: selectedDate ?? Date())
-    }
-
-    var hasStoredChecklistItems: Bool {
-        !detailChecklistItems.isEmpty
-    }
-
-    var isChecklistDrivenFromStoredItems: Bool {
-        task.scheduleMode.isChecklistDrivenMode && hasStoredChecklistItems
-    }
-
-    var isChecklistCompletionFromStoredItems: Bool {
-        task.scheduleMode.isChecklistCompletionMode && hasStoredChecklistItems
-    }
-
-    var selectedScheduledOccurrenceDate: Date? {
-        RoutineDateMath.scheduledOccurrence(
-            for: task,
-            on: resolvedSelectedDate,
-            calendar: .current
-        )
-    }
-
-    var validSelectedOccurrenceDate: Date? {
-        guard let selectedOccurrenceDate,
-              isScheduledOccurrenceOnSelectedDay(selectedOccurrenceDate) else {
-            return nil
-        }
-        return selectedOccurrenceDate
-    }
-
-    func isScheduledOccurrenceOnSelectedDay(
-        _ occurrence: Date,
-        calendar: Calendar = .current
-    ) -> Bool {
-        RoutineDateMath.scheduledOccurrences(
-            for: task,
-            on: resolvedSelectedDate,
-            calendar: calendar
-        ).contains {
-            RoutineOccurrenceIdentity.matches(
-                $0,
-                occurrence,
-                for: task,
-                calendar: calendar
-            )
-        }
-    }
-
-    var completionTargetDate: Date? {
-        if let validSelectedOccurrenceDate {
-            return validSelectedOccurrenceDate
-        }
-        return RoutineDateMath.completionTargetDate(
-            for: task,
-            selectedDay: resolvedSelectedDate,
-            referenceDate: Date(),
-            calendar: .current
-        )
-    }
-
-    var selectedDayOccurrences: [TaskDetailOccurrencePresentation] {
-        TaskDetailOccurrencePresentation.items(
-            for: task,
-            on: resolvedSelectedDate,
-            selectedOccurrence: validSelectedOccurrenceDate,
-            referenceDate: Date(),
-            logs: logs,
-            calendar: .current
-        )
-    }
-
-    var selectedCalendarOccurrence: TaskDetailOccurrencePresentation? {
-        let occurrences = TaskDetailOccurrencePresentation.allItems(
-            for: task,
-            on: resolvedSelectedDate,
-            selectedOccurrence: validSelectedOccurrenceDate,
-            referenceDate: Date(),
-            logs: logs,
-            calendar: .current
-        )
-        guard occurrences.count == 1 else { return nil }
-        return occurrences.first
-    }
-
-    func occurrencePresentation(
-        for occurrence: Date
-    ) -> TaskDetailOccurrencePresentation? {
-        TaskDetailOccurrencePresentation.allItems(
-            for: task,
-            on: resolvedSelectedDate,
-            selectedOccurrence: validSelectedOccurrenceDate,
-            referenceDate: Date(),
-            logs: logs,
-            calendar: .current
-        ).first {
-            RoutineOccurrenceIdentity.matches(
-                $0.occurrence,
-                occurrence,
-                for: task,
-                calendar: .current
-            )
-        }
-    }
-
-    var missedExactTimedOccurrenceDate: Date? {
-        RoutineDateMath.unresolvedMissedExactTimedOccurrenceDate(
-            for: task,
-            referenceDate: Date(),
-            logs: logs
-        )
-    }
-
-    var missedOccurrenceReviewPresentation: TaskDetailMissedOccurrenceReviewPresentation? {
-        missedOccurrenceReviewPresentation(referenceDate: Date())
-    }
-
-    func missedOccurrenceReviewPresentation(
-        referenceDate: Date,
-        calendar: Calendar = .current
-    ) -> TaskDetailMissedOccurrenceReviewPresentation? {
-        guard !task.isChecklistDriven,
-              !task.hasSequentialSteps,
-              !task.isMultiDayRoutine else {
-            return nil
-        }
-        guard let occurrence = RoutineDateMath.unresolvedMissedExactTimedOccurrenceDate(
-            for: task,
-            referenceDate: referenceDate,
-            logs: logs,
-            calendar: calendar
-        ) else {
-            return nil
-        }
-        let upcomingOccurrence = RoutineDateMath.upcomingDueDate(
-            for: task,
-            referenceDate: referenceDate,
+            ),
             calendar: calendar
         )
-        return TaskDetailMissedOccurrenceReviewPresentation(
-            occurrence: occurrence,
-            nextOccurrence: upcomingOccurrence == .distantFuture ? nil : upcomingOccurrence,
-            timeRange: task.recurrenceRule.timeRange
-        )
+        return occurrences.map { item(for: $0, context: context) }
     }
 
-    var isSelectedDateDone: Bool {
-        let calendar = Calendar.current
-        let day = resolvedSelectedDate
-        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
-            guard let occurrence = completionTargetDate ?? selectedScheduledOccurrenceDate else { return false }
-            guard !hasPendingLocalRemoval(on: occurrence, calendar: calendar) else { return false }
-            return logs.contains {
-                guard let timestamp = $0.timestamp else { return false }
-                return $0.kind.resolvesDoneDate
-                    && RoutineOccurrenceIdentity.matches(
-                        timestamp,
-                        occurrence,
-                        for: task,
-                        calendar: calendar
-                    )
-            }
-            || task.lastDone.map {
-                RoutineOccurrenceIdentity.matches($0, occurrence, for: task, calendar: calendar)
-            } == true
-        }
-        guard !hasPendingLocalRemoval(on: day, calendar: calendar) else { return false }
-        return logs.contains {
-            guard let timestamp = $0.timestamp else { return false }
-            return $0.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: day)
-        }
-        || task.lastDone.map { calendar.isDate($0, inSameDayAs: day) } == true
-    }
-
-    var isSelectedDateCanceled: Bool {
-        let calendar = Calendar.current
-        let day = resolvedSelectedDate
-        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
-            guard let occurrence = completionTargetDate ?? selectedScheduledOccurrenceDate else { return false }
-            return logs.contains {
-                guard let timestamp = $0.timestamp else { return false }
-                return $0.kind == .canceled
-                    && RoutineOccurrenceIdentity.matches(
-                        timestamp,
-                        occurrence,
-                        for: task,
-                        calendar: calendar
-                    )
-            }
-            || task.canceledAt.map {
-                RoutineOccurrenceIdentity.matches($0, occurrence, for: task, calendar: calendar)
-            } == true
-        }
-        return logs.contains {
-            guard let timestamp = $0.timestamp else { return false }
-            return $0.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: day)
-        }
-        || task.canceledAt.map { calendar.isDate($0, inSameDayAs: day) } == true
-    }
-
-    var isSelectedDateTerminal: Bool {
-        isSelectedDateDone || isSelectedDateCanceled
-    }
-
-    var isSelectedDateAssumedDone: Bool {
-        !isSelectedDateTerminal && RoutineAssumedCompletion.isAssumedDone(
-            for: task,
-            on: resolvedSelectedDate,
-            logs: logs
-        )
-    }
-
-    var completionStatusPillPhase: TaskDetailCompletionStatusPillPhase? {
-        if isSelectedDateAssumedDone {
-            return .assumed
-        }
-        guard let acknowledgement = assumedCompletionAcknowledgement,
-              canUndoSelectedDate,
-              Calendar.current.isDate(acknowledgement.day, inSameDayAs: resolvedSelectedDate) else {
-            return nil
-        }
-        return .confirmed
-    }
-
-    var assumedCompletionStatusHeightReservationText: String? {
-        guard completionStatusPillPhase == .confirmed else { return nil }
-        return assumedCompletionAcknowledgement?.previousStatusTitle
-    }
-
-    var pastAssumedDates: [Date] {
-        RoutineAssumedCompletion.pastAssumedDates(for: task, logs: logs)
-    }
-
-    var confirmableAssumedDates: [Date] {
-        RoutineAssumedCompletion.assumedDates(for: task, logs: logs)
-    }
-
-    var shouldShowBulkConfirmAssumedDays: Bool {
-        !RoutineAssumedCompletion.requiresIndividualAssumedCompletionConfirmation(for: task)
-            && !task.isArchived()
-            && !pastAssumedDates.isEmpty
-    }
-
-    var bulkConfirmAssumedDaysTitle: String {
-        let count = confirmableAssumedDates.count
-        return count == 1 ? "Confirm 1 assumed day" : "Confirm \(count) assumed days"
-    }
-
-    var completedLogCount: Int {
-        logs.filter { $0.kind.resolvesDoneDate }.count
-    }
-
-    var canceledLogCount: Int {
-        logs.filter { $0.kind == .canceled }.count
-    }
-
-    var checklistDueItemCount: Int {
-        dueChecklistItems(referenceDate: resolvedSelectedDate).count
-    }
-
-    var isSelectedDateInFuture: Bool {
-        let calendar = Calendar.current
-        return calendar.startOfDay(for: resolvedSelectedDate) > calendar.startOfDay(for: Date())
-    }
-
-    var isStepRoutineOffToday: Bool {
-        task.hasSequentialSteps && !Calendar.current.isDateInToday(resolvedSelectedDate)
-    }
-
-    var linkedPlaceSummary: RoutinePlaceSummary? {
-        guard let placeID = task.placeIDs.first else { return nil }
-        return availablePlaces.first(where: { $0.id == placeID })
-    }
-
-    var resolvedRelationships: [RoutineTaskResolvedRelationship] {
-        RoutineTask.resolvedRelationships(for: task, within: availableRelationshipTasks)
-    }
-
-    /// The complete preloaded catalog used when a person chooses a new task to
-    /// link from Task Details. `availableRelationshipTasks` remains limited to
-    /// existing relationship neighbors so normal detail presentation stays
-    /// lightweight.
-    var linkableRelationshipTasks: [RoutineTaskRelationshipCandidate] {
-        editAvailableRelationshipTasks.isEmpty
-            ? availableRelationshipTasks
-            : editAvailableRelationshipTasks
-    }
-
-    var groupedResolvedRelationships: [(kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])] {
-        let grouped = Dictionary(grouping: resolvedRelationships, by: \.kind)
-        return RoutineTaskRelationshipKind.allCases
-            .sorted { $0.sortOrder < $1.sortOrder }
-            .compactMap { kind in
-                guard let items = grouped[kind], !items.isEmpty else { return nil }
-                return (kind: kind, items: items)
-            }
-    }
-
-    var pendingManualCompletionTargets: [RoutineTaskResolvedRelationship] {
-        pendingManualCompletion?.targets ?? []
-    }
-
-    func manualCompletionTargets(for _: Date) -> [RoutineTaskResolvedRelationship] {
-        var resolvedByTaskID: [UUID: RoutineTaskResolvedRelationship] = [:]
-        let candidateByID = RoutineTaskRelationshipCandidate.lookupByID(availableRelationshipTasks)
-
-        func appendCandidate(
-            _ candidate: RoutineTaskRelationshipCandidate,
-            kind: RoutineTaskRelationshipKind
-        ) {
-            guard candidate.canBeFulfilledByLinkedTask,
-                  candidate.status.allowsManualFulfillmentPrompt else {
-                return
-            }
-            resolvedByTaskID[candidate.id] = RoutineTaskResolvedRelationship(
-                taskID: candidate.id,
-                taskName: candidate.displayName,
-                taskEmoji: candidate.emoji,
-                kind: kind,
-                status: candidate.status
-            )
-        }
-
-        for relationship in task.relationships where relationship.kind == .canComplete {
-            guard let candidate = candidateByID[relationship.targetTaskID] else { continue }
-            appendCandidate(candidate, kind: relationship.kind)
-        }
-
-        for candidate in availableRelationshipTasks {
-            var inverseSourceKind: RoutineTaskRelationshipKind?
-            for relationship in candidate.relationships where relationship.targetTaskID == task.id {
-                switch relationship.kind {
-                case .canBeCompletedBy:
-                    inverseSourceKind = .canComplete
-                default:
-                    continue
-                }
-                break
-            }
-            guard let inverseSourceKind else {
-                continue
-            }
-            appendCandidate(candidate, kind: inverseSourceKind)
-        }
-
-        return resolvedByTaskID.values.sorted {
-            $0.taskName.localizedCaseInsensitiveCompare($1.taskName) == .orderedAscending
-        }
-    }
-
-    var blockingRelationships: [RoutineTaskResolvedRelationship] {
-        resolvedRelationships.filter { $0.kind == .blockedBy }
-    }
-
-    /// True when at least one `.blockedBy` prerequisite has not handed off a
-    /// completion newer than this task's latest completion.
-    var hasActiveRelationshipBlocker: Bool {
-        RoutineTaskRelationshipResolution.hasActiveBlocker(
-            for: task,
-            within: availableRelationshipTasks,
-            dependentLatestCompletionAt: latestRecordedCompletion
-        )
-    }
-
-    /// The state Task Details should present after applying relationship-backed
-    /// availability. The stored workflow state remains unchanged so resolving
-    /// the prerequisite restores the person's previous Ready/In Progress state.
-    var effectiveTodoState: TodoState? {
-        guard let todoState = task.todoState else { return nil }
-        guard hasActiveRelationshipBlocker else { return todoState }
-
-        switch todoState {
-        case .ready, .inProgress:
-            return .blocked
-        case .blocked, .done, .paused:
-            return todoState
-        }
-    }
-
-    var isTodoStateDerivedFromRelationshipBlocker: Bool {
-        hasActiveRelationshipBlocker
-            && effectiveTodoState == .blocked
-            && task.todoState != .blocked
-    }
-
-    /// Ready and In Progress cannot be selected while an unresolved confirmed
-    /// prerequisite still makes the task unavailable. Paused and Done remain
-    /// valid lifecycle choices, with Done retaining its confirmation step.
-    var selectableTodoStates: [TodoState] {
-        guard hasActiveRelationshipBlocker else { return TodoState.allCases }
-        return TodoState.allCases.filter { state in
-            state == .blocked || state == .done || state == .paused
-        }
-    }
-
-    var blockerSummaryText: String {
-        if hasActiveRelationshipBlocker {
-            let count = blockingRelationships.filter { rel in
-                rel.status != .doneToday && rel.status != .completedOneOff && rel.status != .canceledOneOff
-            }.count
-            if count == 1, let blocker = blockingRelationships.first(where: { rel in
-                rel.status != .doneToday && rel.status != .completedOneOff && rel.status != .canceledOneOff
-            }) {
-                return "Blocked by \"\(blocker.taskName)\". Complete that task first."
-            }
-            return "Blocked by \(count) incomplete tasks. Complete them first."
-        }
-        let count = blockingRelationships.count
-        if count == 1, let blocker = blockingRelationships.first {
-            return "Blocked by \(blocker.taskName). You can still mark this done, but it may be worth checking that task first."
-        }
-        return "Blocked by \(count) tasks. You can still mark this done, but it may be worth checking them first."
-    }
-
-    var canUndoSelectedDate: Bool {
-        guard !isChecklistDrivenFromStoredItems, isSelectedDateTerminal else {
-            return false
-        }
-        if !task.isOneOffTask,
-           !task.usesEffectiveRoutineCadence,
-           Calendar.current.isDateInToday(resolvedSelectedDate) {
-            return false
-        }
-        return true
-    }
-
-    var completionButtonAction: TaskDetailFeature.Action {
-        if canUndoSelectedDate {
-            return .requestUndoSelectedDateCompletion
-        }
-        if task.usesOngoingLifecycle && task.isOngoing {
-            return .finishOngoingTapped
-        }
-        if task.isMultiDayRoutine {
-            return .startOngoingTapped
-        }
-        return .markAsDone
-    }
-
-    var completionButtonSystemImage: String? {
-        if canUndoSelectedDate { return "arrow.uturn.backward" }
-        if task.isMultiDayRoutine && task.isOngoing { return "stop.circle.fill" }
-        if task.isMultiDayRoutine && !task.isOngoing { return "play.circle.fill" }
-        return nil
-    }
-
-    var isCompletionButtonDisabled: Bool {
-        guard !canUndoSelectedDate else { return false }
-        if task.usesOngoingLifecycle && task.isOngoing {
-            if task.isMultiDayRoutine,
-               let ongoingSince = task.ongoingSince {
-                return Calendar.current.startOfDay(for: resolvedSelectedDate) < Calendar.current.startOfDay(for: ongoingSince)
-            }
-            return false
-        }
-        if task.isMultiDayRoutine {
-            return task.isArchived()
-        }
-        if task.isCompletedOneOff || task.isCanceledOneOff {
-            return true
-        }
-        if task.isOneOffTask && hasActiveRelationshipBlocker {
-            return true
-        }
-        if isSelectedDateAssumedDone {
-            return task.isArchived()
-        }
-        if blocksManualCompletionForIncompleteChecklist {
-            return true
-        }
-        if isChecklistCompletionFromStoredItems {
-            return true
-        }
-        if isChecklistDrivenFromStoredItems {
-            return task.isArchived()
-                || isSelectedDateInFuture
-                || checklistDueItemCount == 0
-        }
-        if RoutineDateMath.usesExactTimedOccurrences(for: task) {
-            guard let completionTargetDate else { return true }
-            return task.isArchived()
-                || !RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
-                    for: task,
-                    completionDate: completionTargetDate,
-                    referenceDate: Date(),
-                    logs: logs,
-                    calendar: .current
+    private static func item(for occurrence: Date, context: ItemContext) -> Self {
+        let matchingLog = matchingResolutionLog(for: occurrence, context: context)
+        let isDone =
+            matchingLog?.kind.resolvesDoneDate == true
+            || context.task.lastDone.map {
+                RoutineOccurrenceIdentity.matches(
+                    $0,
+                    occurrence,
+                    for: context.task,
+                    calendar: context.calendar
                 )
-                || isStepRoutineOffToday
-        }
-        return isSelectedDateInFuture || task.isArchived() || isStepRoutineOffToday
-    }
+            } == true
+        let isCanceled = matchingLog?.kind == .canceled
+        let hasRecordedMiss = matchingLog?.kind == .missed
+        let isMissedByTime = RoutineDateMath.isScheduledOccurrenceMissed(
+            occurrence,
+            for: context.task,
+            referenceDate: context.referenceDate,
+            calendar: context.calendar
+        )
+        let hasRecordedResolution = matchingLog != nil
 
-    /// Due date resolved from the task (one-off deadline or next recurrence).
-    var resolvedDueDate: Date? {
-        if task.isSoftIntervalRoutine {
-            return nil
-        }
-        if task.isOneOffTask {
-            return task.deadline
-        }
-        guard task.usesEffectiveRoutineCadence else {
-            return nil
-        }
-        let referenceDate = Date()
-        if isChecklistDrivenFromStoredItems {
-            return detailChecklistItems
-                .map {
-                    RoutineDateMath.dueDate(
-                        for: $0,
-                        referenceDate: referenceDate,
-                        calendar: .current
-                    )
-                }
-                .min()
-        }
-        return RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate)
-    }
-
-    /// Soft routines use a threshold date instead of a hard overdue date.
-    var resolvedSoftDueDate: Date? {
-        guard task.surfacesSoftIntervalNudges else { return nil }
-        return RoutineDateMath.softIntervalThresholdDate(for: task)
-    }
-
-    var dueDateMetadataText: String? {
-        TaskDetailDateMetadataPresentation.dueDateMetadataText(
-            dueDate: resolvedDueDate,
-            isOneOffTask: task.isOneOffTask,
-            usesExplicitTimeOfDay: task.recurrenceRule.usesTimeConstraint
+        return Self(
+            occurrence: occurrence,
+            status: status(
+                for: occurrence,
+                isDone: isDone,
+                isCanceled: isCanceled,
+                hasRecordedMiss: hasRecordedMiss,
+                isMissedByTime: isMissedByTime,
+                referenceDate: context.referenceDate
+            ),
+            isSelected: context.defaultSelection.map {
+                RoutineOccurrenceIdentity.matches(
+                    $0,
+                    occurrence,
+                    for: context.task,
+                    calendar: context.calendar
+                )
+            } == true,
+            resolutionTimestamp: matchingLog?.timestamp,
+            hasRecordedResolution: hasRecordedResolution,
+            canComplete: canComplete(
+                occurrence,
+                isDone: isDone,
+                isCanceled: isCanceled,
+                hasRecordedMiss: hasRecordedMiss,
+                isMissedByTime: isMissedByTime,
+                context: context
+            ),
+            canMarkMissed: !context.task.isArchived(
+                referenceDate: context.referenceDate,
+                calendar: context.calendar
+            )
+                && isMissedByTime
+                && !hasRecordedResolution,
+            canCancel: RoutineDateMath.usesExactTimedOccurrences(for: context.task)
+                && !context.task.isArchived(
+                    referenceDate: context.referenceDate,
+                    calendar: context.calendar
+                )
+                && occurrence <= context.referenceDate
+                && !isDone
+                && !isCanceled,
+            canClearResolution: hasRecordedResolution
         )
     }
 
-    var reminderMetadataText: String? {
-        guard task.isOneOffTask else { return nil }
-        return TaskDetailDateMetadataPresentation.reminderMetadataText(reminderAt: task.reminderAt)
-    }
-
-    var scheduledTimeBlockMetadataText: String? {
-        TaskDetailDateMetadataPresentation.scheduledTimeBlockMetadataText(task: task)
-    }
-
-    var notificationDisabledWarningText: String? {
-        TaskDetailNotificationWarningPresentation.warningText(
-            hasLoadedNotificationStatus: hasLoadedNotificationStatus,
-            expectsClockTimeNotification: expectsClockTimeNotification,
-            appNotificationsEnabled: appNotificationsEnabled,
-            systemNotificationsAuthorized: systemNotificationsAuthorized
-        )
-    }
-
-    var notificationDisabledWarningActionTitle: String? {
-        TaskDetailNotificationWarningPresentation.actionTitle(
-            warningText: notificationDisabledWarningText,
-            appNotificationsEnabled: appNotificationsEnabled
-        )
-    }
-
-    var expectsClockTimeNotification: Bool {
-        if task.isOneOffTask, task.reminderAt != nil {
-            return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
-        }
-        if task.isOneOffTask {
-            return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
-        }
-        guard task.recurrenceRule.usesTimeConstraint else { return false }
-        return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
-    }
-
-    var shouldShowSelectedDateMetadata: Bool {
-        TaskDetailDateMetadataPresentation.shouldShowSelectedDateMetadata(
-            selectedDate: resolvedSelectedDate,
-            task: task
-        )
-    }
-
-    var selectedDateMetadataText: String {
-        TaskDetailDateMetadataPresentation.selectedDateMetadataText(selectedDate: resolvedSelectedDate)
-    }
-
-    var cancelTodoButtonTitle: String {
-        TaskDetailDateMetadataPresentation.cancelTodoButtonTitle(selectedDate: resolvedSelectedDate)
-    }
-
-    var isCancelTodoButtonDisabled: Bool {
-        task.isArchived() || task.isCompletedOneOff || task.isCanceledOneOff || isSelectedDateInFuture
-    }
-
-    var routineEmoji: String {
-        CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
-    }
-
-    var frequencyText: String {
-        if task.isOneOffTask {
-            return "One-time task"
-        }
-        if !task.cadenceEnabled {
-            return "None"
-        }
-        if isChecklistDrivenFromStoredItems {
-            return "Checklist-driven"
-        }
-        return task.recurrenceRule.displayText()
-    }
-
-    var stepProgressText: String {
-        guard task.hasSequentialSteps else { return "" }
-        if task.isInProgress {
-            return "Step \(task.completedSteps + 1) of \(task.totalSteps)"
-        }
-        return "\(task.totalSteps) sequential \(task.totalSteps == 1 ? "step" : "steps")"
-    }
-
-    var checklistProgressText: String {
-        if isSelectedChecklistCompletionDateDone {
-            if Calendar.current.isDateInToday(resolvedSelectedDate) {
-                return "All items completed today"
+    private static func matchingResolutionLog(
+        for occurrence: Date,
+        context: ItemContext
+    ) -> RoutineLog? {
+        context.logs.first { log in
+            guard let timestamp = log.timestamp else { return false }
+            guard log.kind.resolvesDoneDate || log.kind == .missed || log.kind == .canceled else {
+                return false
             }
-            return "All items completed on selected day"
-        }
-        let completed = completedChecklistItemCount(referenceDate: resolvedSelectedDate)
-        let total = max(totalChecklistItemCount, 1)
-        return "\(completed) of \(total) items completed"
-    }
-
-    var isSelectedChecklistCompletionDateDone: Bool {
-        isChecklistCompletionFromStoredItems && isSelectedDateDone
-    }
-
-    var completedLogCountText: String {
-        completedLogCount == 1 ? "1 completion" : "\(completedLogCount) completions"
-    }
-
-    var canceledLogCountText: String {
-        canceledLogCount == 1 ? "1 cancel" : "\(canceledLogCount) cancels"
-    }
-
-    func priorityMetadataText(priorityLabel: String) -> String {
-        "\(priorityLabel) • \(task.importance.title) importance • \(task.urgency.title) urgency"
-    }
-
-    // MARK: - Summary status title
-
-    var summaryStatusTitle: String {
-        summaryStatusTitle(daysUntilDueIfActive: daysUntilDueIfActive)
-    }
-
-    func summaryStatusTitle(daysUntilDueIfActive: Int?) -> String {
-        let pausedAt = task.pausedAt
-        let snoozedUntil = task.isSnoozed() ? task.snoozedUntil : nil
-        let overdueDays = self.overdueDays
-        let daysSinceLastRoutine = self.daysSinceLastRoutine
-        let isDoneToday = self.isDoneToday
-
-        if let snoozedUntil {
-            return "Not today. Back on \(snoozedUntil.formatted(date: .abbreviated, time: .omitted))"
-        }
-        if task.isPaused(), let pausedAt {
-            if let pauseUntil = task.pauseUntil {
-                return "Paused until \(pauseUntil.formatted(date: .abbreviated, time: .shortened))"
-            }
-            return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
-        }
-        if task.usesOngoingLifecycle && task.isOngoing {
-            if let ongoingSince = task.ongoingSince {
-                let prefix = task.isMultiDayRoutine ? "In progress" : "Ongoing"
-                return "\(prefix) since \(ongoingSince.formatted(date: .abbreviated, time: .omitted))"
-            }
-            return task.isMultiDayRoutine ? "In progress" : "Ongoing"
-        }
-        if task.isOneOffTask {
-            if task.isInProgress {
-                return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
-            }
-            if let canceledAt = task.canceledAt {
-                if Calendar.current.isDateInToday(canceledAt) {
-                    return "Canceled today"
-                }
-                return "Canceled on \(canceledAt.formatted(date: .abbreviated, time: .omitted))"
-            }
-            if let lastDone = task.lastDone {
-                if isDoneToday {
-                    return "Completed today"
-                }
-                return "Completed on \(lastDone.formatted(date: .abbreviated, time: .omitted))"
-            }
-            return "To do"
-        }
-        if isChecklistCompletionFromStoredItems {
-            if isDoneToday {
-                return "Done today"
-            }
-            if isAssumedDoneToday {
-                return "Assumed done today"
-            }
-            if isChecklistInProgress(referenceDate: resolvedSelectedDate) {
-                return "Checklist \(completedChecklistItemCount(referenceDate: resolvedSelectedDate)) of \(totalChecklistItemCount) in progress"
-            }
-            if missedExactTimedOccurrenceDate != nil {
-                return "Missed"
-            }
-            if overdueDays > 0 {
-                return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"
-            }
-            guard let daysUntilDue = daysUntilDueIfActive else {
-                return "\(daysSinceLastRoutine) \(Self.dayWord(daysSinceLastRoutine)) since last done"
-            }
-            if daysUntilDue == 0 {
-                return "Due today"
-            }
-            if daysUntilDue > 0 {
-                return "Due in \(daysUntilDue) \(Self.dayWord(daysUntilDue))"
-            }
-            return "Overdue by \(-daysUntilDue) \(Self.dayWord(-daysUntilDue))"
-        }
-        if isChecklistDrivenFromStoredItems {
-            if overdueDays > 0 {
-                return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"
-            }
-            if let daysUntilDue = daysUntilDueIfActive {
-                if daysUntilDue == 0 {
-                    return "Due today"
-                }
-                if daysUntilDue > 0 {
-                    return "Due in \(daysUntilDue) \(Self.dayWord(daysUntilDue))"
-                }
-            }
-            if isDoneToday {
-                return "Updated today"
-            }
-            return "\(daysSinceLastRoutine) \(Self.dayWord(daysSinceLastRoutine)) since last update"
-        }
-        if task.isSoftIntervalRoutine {
-            if isDoneToday {
-                return "Done today"
-            }
-            guard latestRecordedCompletion != nil else { return "Ready whenever" }
-            if daysSinceLastRoutine == 1 {
-                return "1 day since last time"
-            }
-            if daysSinceLastRoutine < 14 {
-                return "\(daysSinceLastRoutine) days since last time"
-            }
-            if daysSinceLastRoutine < 60 {
-                let weeks = max(daysSinceLastRoutine / 7, 1)
-                return weeks == 1 ? "1 week since last time" : "\(weeks) weeks since last time"
-            }
-            let months = max(daysSinceLastRoutine / 30, 1)
-            return months == 1 ? "1 month since last time" : "\(months) months since last time"
-        }
-        if task.isInProgress {
-            return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
-        }
-        if isDoneToday {
-            return "Done today"
-        }
-        if isAssumedDoneToday {
-            return "Assumed done today"
-        }
-        if missedOccurrenceReviewPresentation != nil {
-            return "Needs review"
-        }
-        if overdueDays > 0 {
-            return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"
-        }
-        guard let daysUntilDue = daysUntilDueIfActive else {
-            return "\(daysSinceLastRoutine) \(Self.dayWord(daysSinceLastRoutine)) since last done"
-        }
-        if daysUntilDue == 0 {
-            return "Due today"
-        }
-        if daysUntilDue > 0 {
-            return "Due in \(daysUntilDue) \(Self.dayWord(daysUntilDue))"
-        }
-        return "Overdue by \(-daysUntilDue) \(Self.dayWord(-daysUntilDue))"
-    }
-
-    // MARK: - Completion button title
-
-    var completionButtonTitle: String {
-        TaskDetailCompletionButtonTitlePresentation(
-            task: task,
-            selectedDate: resolvedSelectedDate,
-            isSelectedDateTerminal: isSelectedDateTerminal,
-            isSelectedDateInFuture: isSelectedDateInFuture,
-            isSelectedDateAssumedDone: isSelectedDateAssumedDone,
-            completionTargetDate: completionTargetDate,
-            isChecklistDriven: isChecklistDrivenFromStoredItems,
-            isChecklistCompletionRoutine: isChecklistCompletionFromStoredItems,
-            blocksManualCompletionForIncompleteChecklist: blocksManualCompletionForIncompleteChecklist,
-            dueChecklistItems: dueChecklistItems(referenceDate: resolvedSelectedDate),
-            hasUnresolvedMissedExactTimedOccurrence: missedExactTimedOccurrenceDate != nil
-        ).title
-    }
-
-    var createdAtBadgeValue: String? {
-        guard let created = task.createdAt else { return nil }
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let createdDay = calendar.startOfDay(for: created)
-        let days = calendar.dateComponents([.day], from: createdDay, to: today).day ?? 0
-        let dateText = created.formatted(date: .abbreviated, time: .omitted)
-        if days == 0 {
-            return "\(dateText) · Today"
-        }
-        return "\(dateText) · \(days) \(Self.dayWord(days)) ago"
-    }
-
-    // MARK: - Helpers
-
-    /// Days until the task is due, or nil if the task is archived for now.
-    var daysUntilDueIfActive: Int? {
-        guard !task.isArchived() else { return nil }
-        guard !task.isSoftIntervalRoutine else { return nil }
-        guard task.isOneOffTask || task.usesEffectiveRoutineCadence else { return nil }
-        return RoutineDateMath.daysUntilDue(for: task, referenceDate: Date())
-    }
-
-    static func dayWord(_ count: Int) -> String {
-        abs(count) == 1 ? "day" : "days"
-    }
-
-    func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
-        if isChecklistDrivenFromStoredItems {
-            return TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
-                item,
-                referenceDate: resolvedSelectedDate,
-                calendar: .current
+            return RoutineOccurrenceIdentity.matches(
+                timestamp,
+                occurrence,
+                for: context.task,
+                calendar: context.calendar
             )
         }
-        if isSelectedChecklistCompletionDateDone {
-            return true
-        }
-        return task.isChecklistItemCompleted(item.id, referenceDate: resolvedSelectedDate)
     }
 
-    var supportsOptionalChecklistProgressFromStoredItems: Bool {
-        hasStoredChecklistItems
-            && !task.scheduleMode.isChecklistDrivenMode
-            && !task.scheduleMode.isChecklistCompletionMode
+    private static func status(
+        for occurrence: Date,
+        isDone: Bool,
+        isCanceled: Bool,
+        hasRecordedMiss: Bool,
+        isMissedByTime: Bool,
+        referenceDate: Date
+    ) -> Status {
+        if isDone { return .done }
+        if isCanceled { return .canceled }
+        if hasRecordedMiss || isMissedByTime { return .missed }
+        if occurrence <= referenceDate { return .due }
+        return .upcoming
     }
 
-    var totalChecklistItemCount: Int {
-        detailChecklistItems.count
-    }
-
-    var blocksManualCompletionForIncompleteChecklist: Bool {
-        supportsOptionalChecklistProgressFromStoredItems
-            && totalChecklistItemCount > completedChecklistItemCount(referenceDate: Date())
-    }
-
-    func completedChecklistItemCount(
-        referenceDate: Date,
-        calendar: Calendar = .current
-    ) -> Int {
-        let validIDs = Set(detailChecklistItems.map(\.id))
-        return currentCompletedChecklistItemIDs(referenceDate: referenceDate, calendar: calendar)
-            .intersection(validIDs)
-            .count
-    }
-
-    func isChecklistInProgress(
-        referenceDate: Date,
-        calendar: Calendar = .current
+    private static func canComplete(
+        _ occurrence: Date,
+        isDone: Bool,
+        isCanceled: Bool,
+        hasRecordedMiss: Bool,
+        isMissedByTime: Bool,
+        context: ItemContext
     ) -> Bool {
-        let completedCount = completedChecklistItemCount(referenceDate: referenceDate, calendar: calendar)
-        return isChecklistCompletionFromStoredItems
-            && completedCount > 0
-            && completedCount < totalChecklistItemCount
-    }
-
-    func nextDueChecklistItem(
-        referenceDate: Date,
-        calendar: Calendar = .current
-    ) -> RoutineChecklistItem? {
-        guard isChecklistDrivenFromStoredItems else { return nil }
-        return detailChecklistItems.min {
-            RoutineDateMath.dueDate(for: $0, referenceDate: referenceDate, calendar: calendar)
-                < RoutineDateMath.dueDate(for: $1, referenceDate: referenceDate, calendar: calendar)
+        if isDone
+            || context.task.isArchived(
+                referenceDate: context.referenceDate,
+                calendar: context.calendar
+            )
+        {
+            return false
         }
-    }
-
-    func dueChecklistItems(
-        referenceDate: Date,
-        calendar: Calendar = .current
-    ) -> [RoutineChecklistItem] {
-        guard isChecklistDrivenFromStoredItems else { return [] }
-        let dueBoundary = calendar.startOfDay(for: referenceDate)
-        return detailChecklistItems
-            .filter { item in
-                let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)
-                return calendar.startOfDay(for: dueDate) <= dueBoundary
-            }
-            .sorted {
-                RoutineDateMath.dueDate(for: $0, referenceDate: referenceDate, calendar: calendar)
-                    < RoutineDateMath.dueDate(for: $1, referenceDate: referenceDate, calendar: calendar)
-            }
-    }
-
-    func nextPendingChecklistItemTitle(
-        referenceDate: Date,
-        calendar: Calendar = .current
-    ) -> String? {
-        guard isChecklistCompletionFromStoredItems else { return nil }
-        let completedIDs = currentCompletedChecklistItemIDs(referenceDate: referenceDate, calendar: calendar)
-        return detailChecklistItems.first(where: { !completedIDs.contains($0.id) })?.title
-    }
-
-    private func currentCompletedChecklistItemIDs(
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> Set<UUID> {
-        if isChecklistCompletionFromStoredItems,
-           let lastDone = task.lastDone,
-           calendar.isDate(lastDone, inSameDayAs: referenceDate) {
-            return []
+        if RoutineDateMath.usesExactTimedOccurrences(for: context.task) {
+            return occurrence <= context.referenceDate
+                && (hasRecordedMiss
+                    || isCanceled
+                    || isMissedByTime
+                    || RoutineDateMath.canMarkDone(
+                        for: context.task,
+                        referenceDate: occurrence,
+                        calendar: context.calendar,
+                        ignoreArchiveAtReferenceDate: true
+                    ))
         }
-
-        guard isChecklistCompletionFromStoredItems && task.recurrenceRule.isDaily,
-              !task.completedChecklistItemIDs.isEmpty
-        else {
-            return task.completedChecklistItemIDs
-        }
-
-        guard let progressStartedAt = task.completedChecklistProgressStartedAt,
-              calendar.isDate(progressStartedAt, inSameDayAs: referenceDate) else {
-            return []
-        }
-        return task.completedChecklistItemIDs
+        return occurrence <= context.referenceDate
+            && RoutineOccurrenceIdentity.matches(
+                context.due,
+                occurrence,
+                for: context.task,
+                calendar: context.calendar
+            )
     }
 }

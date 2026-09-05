@@ -42,6 +42,21 @@ enum SourceInspectionSupport {
         .joined(separator: "\n")
     }
 
+    static func readTaskDetailFeaturePresentationSources(
+        callerFile: StaticString = #filePath
+    ) throws -> String {
+        try [
+            "SharedCore/Features/TaskDetail/TaskDetailFeature+Presentation.swift",
+            "SharedCore/Features/TaskDetail/TaskDetailFeature+SelectionPresentation.swift",
+            "SharedCore/Features/TaskDetail/TaskDetailFeature+CompletionPresentation.swift",
+            "SharedCore/Features/TaskDetail/TaskDetailFeature+MetadataPresentation.swift",
+            "SharedCore/Features/TaskDetail/TaskDetailFeature+SummaryPresentation.swift",
+            "SharedCore/Features/TaskDetail/TaskDetailFeature+ChecklistPresentation.swift",
+        ]
+        .map { try readProjectFile($0, callerFile: callerFile) }
+        .joined(separator: "\n")
+    }
+
     static func readMacTimelineSources(
         callerFile: StaticString = #filePath
     ) throws -> String {

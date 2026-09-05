@@ -60,7 +60,7 @@ struct TaskDetailStatusSectionView<TimeSpentButton: View>: View {
     let contentPadding: CGFloat
     let cardBackground: Color?
     let cardStroke: Color?
-    let missedOccurrenceReview: TaskDetailMissedOccurrenceReviewPresentation?
+    let missedOccurrenceReview: TaskDetailMissedOccurrenceReview?
     let timeSpentButton: () -> TimeSpentButton
     let onComplete: () -> Void
     let onResolveMissedAsDone: (Date) -> Void
@@ -161,7 +161,7 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
     let hasBlockingRelationships: Bool
     let blockerSummaryText: String
     let useLargePrimaryControl: Bool
-    let missedOccurrenceReview: TaskDetailMissedOccurrenceReviewPresentation?
+    let missedOccurrenceReview: TaskDetailMissedOccurrenceReview?
     let completionLabel: () -> CompletionLabel
     let timeSpentButton: () -> TimeSpentButton
     let onComplete: () -> Void
@@ -186,7 +186,7 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
         hasBlockingRelationships: Bool,
         blockerSummaryText: String,
         useLargePrimaryControl: Bool = false,
-        missedOccurrenceReview: TaskDetailMissedOccurrenceReviewPresentation? = nil,
+        missedOccurrenceReview: TaskDetailMissedOccurrenceReview? = nil,
         @ViewBuilder completionLabel: @escaping () -> CompletionLabel,
         @ViewBuilder timeSpentButton: @escaping () -> TimeSpentButton,
         onComplete: @escaping () -> Void,
@@ -306,7 +306,7 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
 }
 
 private struct TaskDetailMissedOccurrenceReviewView: View {
-    let presentation: TaskDetailMissedOccurrenceReviewPresentation
+    let presentation: TaskDetailMissedOccurrenceReview
     let onDone: () -> Void
     let onMissed: () -> Void
     let onCanceled: () -> Void
