@@ -183,7 +183,7 @@ struct IOSScrollingPerformanceRegressionTests {
 
     @Test
     func goalsAndStatsDoNotRebuildWholeCollectionsFromRows() throws {
-        let goals = try Self.sourceFile("SharedCore/Features/Goals/GoalsFeature.swift")
+        let goals = try SourceInspectionSupport.readGoalsFeatureSources()
         let stats = try Self.sourceFile("iOS/Screens/Stats/StatsView.swift")
         let unassignedCard = try Self.sourceFile("SharedCore/Views/UnassignedFocusSessionsCard.swift")
 

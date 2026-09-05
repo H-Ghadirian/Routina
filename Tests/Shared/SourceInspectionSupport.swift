@@ -67,6 +67,18 @@ enum SourceInspectionSupport {
         .joined(separator: "\n")
     }
 
+    static func readGoalsFeatureSources(
+        callerFile: StaticString = #filePath
+    ) throws -> String {
+        try [
+            "SharedCore/Features/Goals/GoalsFeature.swift",
+            "SharedCore/Features/Goals/GoalsFeaturePersistence.swift",
+            "SharedCore/Features/Goals/GoalsFeaturePresentation.swift",
+        ]
+        .map { try readProjectFile($0, callerFile: callerFile) }
+        .joined(separator: "\n")
+    }
+
     static func readIOSHomeSources(
         callerFile: StaticString = #filePath
     ) throws -> String {
