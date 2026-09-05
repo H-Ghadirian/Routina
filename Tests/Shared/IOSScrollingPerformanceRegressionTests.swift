@@ -125,7 +125,7 @@ struct IOSScrollingPerformanceRegressionTests {
 
     @Test
     func homeTemporaryStateCannotScheduleDurablePreferenceSync() throws {
-        let settings = try Self.sourceFile("SharedCore/Dependencies/UserDefaultsProtocol.swift")
+        let settings = try Self.sourceFile("SharedCore/Dependencies/AppSettingsClient+Live.swift")
         let setterStart = try #require(settings.range(of: "setTemporaryViewState: { state in"))
         let resetStart = try #require(
             settings.range(
