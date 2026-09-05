@@ -542,6 +542,7 @@ let package = Package(
                 "Views/StatsEmotionTrendSection.swift",
                 "Views/StatsEstimateActualChartSection.swift",
                 "Views/StatsFocusChartSection.swift",
+                "Views/StatsAchievementPresentation.swift",
                 "Views/StatsFocusAchievementsSection.swift",
                 "Views/StatsFocusWorkChartSection.swift",
                 "Views/StatsGoalProgressSection.swift",
