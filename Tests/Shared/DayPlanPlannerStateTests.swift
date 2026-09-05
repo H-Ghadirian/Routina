@@ -5184,7 +5184,7 @@ struct DayPlanPlannerStateTests {
     @Test
     func plannerBlockCardsPrioritizeVisibilityWithoutReorderingFieldsWhenWidthIsTight() throws {
         let cardSource = try Self.sourceFile(
-            "SharedCore/Views/DayPlan/DayPlanBlockCard.swift"
+            "SharedCore/Views/DayPlan/DayPlanBlockCardContent.swift"
         )
 
         #expect(cardSource.components(separatedBy: "ViewThatFits(in: .horizontal)").count == 5)
