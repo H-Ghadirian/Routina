@@ -412,6 +412,7 @@ let package = Package(
                 "Features/TaskDetail/TaskDetailStepChecklistEditActionHandler.swift",
                 "Features/TaskDetail/TaskDetailStatusMutationHandler.swift",
                 "Features/TaskDetail/TaskDetailTagGoalRelationshipEditActionHandler.swift",
+                "Persistence/PersistenceController+Diagnostics.swift",
                 "Persistence/PersistenceController.swift",
                 "Persistence/RoutinaUndoSupport.swift",
                 "Screens/TaskDetail/Graph/RelationshipGraphEdge.swift",
