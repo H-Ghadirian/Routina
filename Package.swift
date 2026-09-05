@@ -447,6 +447,7 @@ let package = Package(
                 "Screens/TaskDetail/TaskDetailCommentsSectionView.swift",
                 "Screens/TaskDetail/TaskDetailEditChangeSupport.swift",
                 "Screens/TaskDetail/TaskDetailFocusSessionSectionView.swift",
+                "Screens/TaskDetail/TaskDetailHeaderBadgePresentation.swift",
                 "Screens/TaskDetail/TaskDetailLogPresentation.swift",
                 "Screens/TaskDetail/TaskDetailOverviewHeightsPreferenceKey.swift",
                 "Screens/TaskDetail/TaskDetailValuePresentation.swift",
