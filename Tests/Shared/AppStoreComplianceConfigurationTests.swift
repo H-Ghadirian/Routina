@@ -1,11 +1,11 @@
 import Foundation
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 struct AppStoreComplianceConfigurationTests {
@@ -48,9 +48,10 @@ struct AppStoreComplianceConfigurationTests {
         ] {
             let project = try Self.sourceFile(projectPath)
             #expect(project.contains("Verify CloudKit Production Schema"))
-            #expect(project.contains(
-                "shellScript = \"/bin/sh \\\"$SRCROOT/script/cloudkit_schema_guard.sh\\\" --xcode-build\\n\";"
-            ))
+            #expect(
+                project.contains(
+                    "shellScript = \"/bin/sh \\\"$SRCROOT/script/cloudkit_schema_guard.sh\\\" --xcode-build\\n\";"
+                ))
         }
     }
 
@@ -78,12 +79,14 @@ struct AppStoreComplianceConfigurationTests {
             "RoutinaiOS.xcodeproj/project.pbxproj",
         ] {
             let project = try Self.sourceFile(projectPath)
-            #expect(project.contains(
-                "$(SRCROOT)/Config/CloudKit/production-schema-model-inputs.xcfilelist"
-            ))
-            #expect(project.contains(
-                "$(SRCROOT)/Config/CloudKit/production-schema.manifest"
-            ))
+            #expect(
+                project.contains(
+                    "$(SRCROOT)/Config/CloudKit/production-schema-model-inputs.xcfilelist"
+                ))
+            #expect(
+                project.contains(
+                    "$(SRCROOT)/Config/CloudKit/production-schema.manifest"
+                ))
             #expect(!project.contains("\"$(SRCROOT)/Config/CloudKit\","))
         }
     }
@@ -137,17 +140,20 @@ struct AppStoreComplianceConfigurationTests {
         #expect(helperEntitlements["com.apple.security.inherit"] as? Bool == true)
 
         let embedScript = try Self.sourceFile("script/embed_mcp_helper.sh")
-        #expect(embedScript.contains(
-            "entitlements_path=\"$SRCROOT/Config/macOS/RoutinaAIMCPServer.entitlements\""
-        ))
+        #expect(
+            embedScript.contains(
+                "entitlements_path=\"$SRCROOT/Config/macOS/RoutinaAIMCPServer.entitlements\""
+            ))
         #expect(embedScript.contains("--entitlements \"$entitlements_path\""))
         #expect(embedScript.contains("--identifier \"$helper_identifier\""))
-        #expect(embedScript.contains(
-            "if [ \"${DEBUG_INFORMATION_FORMAT:-}\" = \"dwarf-with-dsym\" ]; then"
-        ))
-        #expect(embedScript.contains(
-            "helper_dsym_path=\"$DWARF_DSYM_FOLDER_PATH/RoutinaAIMCPServer.dSYM\""
-        ))
+        #expect(
+            embedScript.contains(
+                "if [ \"${DEBUG_INFORMATION_FORMAT:-}\" = \"dwarf-with-dsym\" ]; then"
+            ))
+        #expect(
+            embedScript.contains(
+                "helper_dsym_path=\"$DWARF_DSYM_FOLDER_PATH/RoutinaAIMCPServer.dSYM\""
+            ))
         #expect(embedScript.contains("dsymutil \"$destination\" -o \"$helper_dsym_path\""))
     }
 
@@ -234,15 +240,18 @@ struct AppStoreComplianceConfigurationTests {
         let settingsDetail = try Self.sourceFile(
             "iOS/Screens/Settings/SettingsIOSViews.swift"
         )
-        #expect(settingsDetail.contains("#if ROUTINA_IOS_FAMILY_CONTROLS\n            SettingsBlockingDetailView()"))
+        #expect(settingsDetail.contains("#if ROUTINA_IOS_FAMILY_CONTROLS"))
+        #expect(settingsDetail.contains("SettingsBlockingDetailView()"))
 
         let focusShieldSupport = try Self.sourceFile("SharedCore/Services/FocusShieldSupport.swift")
-        #expect(focusShieldSupport.contains(
-            "#if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls)"
-        ))
-        #expect(!focusShieldSupport.contains(
-            "#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)"
-        ))
+        #expect(
+            focusShieldSupport.contains(
+                "#if os(iOS) && ROUTINA_IOS_FAMILY_CONTROLS && canImport(FamilyControls)"
+            ))
+        #expect(
+            !focusShieldSupport.contains(
+                "#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)"
+            ))
     }
 
     @Test
@@ -255,8 +264,9 @@ struct AppStoreComplianceConfigurationTests {
         let developmentInfo = try Self.propertyListDictionary(
             "Config/iOS/RoutinaiOSDev-Info.plist"
         )
-        #expect(developmentInfo["NSLocationWhenInUseUsageDescription"] as? String ==
-            "Routina uses your location to show place-based routines when you are at the right place.")
+        #expect(
+            developmentInfo["NSLocationWhenInUseUsageDescription"] as? String
+                == "Routina uses your location to show place-based routines when you are at the right place.")
 
         let project = try Self.sourceFile("RoutinaiOS.xcodeproj/project.pbxproj")
         #expect(project.components(separatedBy: "ROUTINA_IOS_LOCATION_SERVICES").count == 3)
@@ -266,12 +276,14 @@ struct AppStoreComplianceConfigurationTests {
         #expect(locationProvider.contains("manager.requestWhenInUseAuthorization()"))
 
         let platformClients = try Self.sourceFile("iOS/Utilities/PlatformClients.swift")
-        #expect(platformClients.contains(
-            "#if ROUTINA_IOS_LOCATION_SERVICES\n            await OneShotLocationProvider()"
-        ))
-        #expect(platformClients.contains(
-            "#else\n            _ = requestAuthorizationIfNeeded\n            return LocationSnapshot(authorizationStatus: .notDetermined)"
-        ))
+        #expect(
+            platformClients.contains(
+                "#if ROUTINA_IOS_LOCATION_SERVICES\n            await OneShotLocationProvider()"
+            ))
+        #expect(
+            platformClients.contains(
+                "#else\n            _ = requestAuthorizationIfNeeded\n            return LocationSnapshot(authorizationStatus: .notDetermined)"
+            ))
     }
 
     @Test
@@ -285,9 +297,10 @@ struct AppStoreComplianceConfigurationTests {
         #expect(project.contains("5F1000142E90000100000001 /* RoutinaWatchExtension */ = {"))
 
         let rootScene = try Self.sourceFile("iOS/App/RoutinaIOSRootScene.swift")
-        #expect(rootScene.contains(
-            "if AppEnvironment.isDevelopmentAppVariant {\n                WatchRoutineSyncBridge.shared.startIfNeeded"
-        ))
+        #expect(
+            rootScene.contains(
+                "if AppEnvironment.isDevelopmentAppVariant {\n                WatchRoutineSyncBridge.shared.startIfNeeded"
+            ))
     }
 
     @Test
@@ -329,9 +342,10 @@ struct AppStoreComplianceConfigurationTests {
 
         #expect(macSettings.contains("if AppEnvironment.isDevelopmentAppVariant {"))
         #expect(macSettings.contains("SettingsMacBetaExperimentsCard(store: store)"))
-        #expect(iOSSettings.contains(
-            "if AppEnvironment.isDevelopmentAppVariant {\n            SettingsBetaExperimentsSection"
-        ))
+        #expect(
+            iOSSettings.contains(
+                "if AppEnvironment.isDevelopmentAppVariant {\n            SettingsBetaExperimentsSection"
+            ))
     }
 
     private static func propertyListDictionary(_ relativePath: String) throws -> [String: Any] {

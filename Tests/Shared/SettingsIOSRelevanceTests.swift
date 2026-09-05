@@ -66,7 +66,7 @@ struct SettingsIOSRelevanceTests {
             "iOS/Screens/Settings/SettingsTagsDetailView.swift"
         )
         let notificationsSource = try Self.sourceFile(
-            "iOS/Screens/Settings/SettingsIOSViews.swift"
+            "iOS/Screens/Settings/SettingsIOSNotificationViews.swift"
         )
         let dataQuerySource = try Self.sourceFile(
             "SharedCore/Features/Settings/SettingsDataQuerySupport.swift"
