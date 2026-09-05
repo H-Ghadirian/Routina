@@ -193,7 +193,8 @@ struct TaskRankingIOSView: View {
     @ViewBuilder
     private var searchSections: some View {
         if store.searchPresentation.matches.isEmpty
-            && store.searchPresentation.outsideMatches.isEmpty {
+            && store.searchPresentation.outsideMatches.isEmpty
+        {
             Section {
                 ContentUnavailableView.search(text: store.searchText)
                     .frame(maxWidth: .infinity)
@@ -295,7 +296,8 @@ struct TaskRankingIOSView: View {
         in section: TaskRankingPresentation.Section
     ) -> some View {
         let metadata = store.presentation.rowMetadataByTaskID[task.id]
-        let canOpenInnerLadder = metadata?.isGroup == true
+        let canOpenInnerLadder =
+            metadata?.isGroup == true
             || metadata?.isTaskGroup == true
             || (metadata?.childCount ?? 0) > 0
 
@@ -361,7 +363,8 @@ struct TaskRankingIOSView: View {
         metadata: TaskRankingPresentation.RowMetadata?
     ) -> some View {
         if metadata?.isGroup == true,
-           let group = store.organization.group(id: task.id) {
+            let group = store.organization.group(id: task.id)
+        {
             TaskLadderIOSGroupDetailView(
                 group: group,
                 childCount: metadata?.childCount ?? 0
@@ -426,78 +429,5 @@ struct TaskRankingIOSView: View {
             return "Paused, completed, canceled, archived, blocked, and hidden tasks stay outside the Task Ladder."
         }
         return "This Task Ladder group has no currently actionable tasks."
-    }
-}
-
-private enum TaskRankingIOSSelection {
-    case task
-    case searchMatch
-}
-
-private struct TaskRankingIOSTaskDestination: View {
-    let store: StoreOf<TaskRankingFeature>
-    let taskID: UUID
-    let selection: TaskRankingIOSSelection
-
-    var body: some View {
-        Group {
-            if store.selectedTaskID == taskID,
-               let detailStore = store.scope(
-                   state: \.taskDetailState,
-                   action: \.taskDetail
-               ) {
-                TaskDetailTCAView(store: detailStore)
-            } else {
-                ProgressView("Opening task…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-        .task(id: taskID) {
-            guard store.selectedTaskID != taskID else { return }
-            switch selection {
-            case .task:
-                store.send(.taskSelected(taskID))
-            case .searchMatch:
-                store.send(.searchMatchSelected(taskID))
-            }
-        }
-    }
-}
-
-private struct TaskLadderIOSGroupDetailView: View {
-    let group: TaskLadderGroup
-    let childCount: Int
-
-    var body: some View {
-        List {
-            Section {
-                HStack(spacing: 12) {
-                    Text(group.displayEmoji)
-                        .font(.largeTitle)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(group.displayName)
-                            .font(.title2.weight(.semibold))
-
-                        Text(childCount == 1 ? "1 actionable task" : "\(childCount) actionable tasks")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.vertical, 6)
-            }
-
-            Section("Task Ladder values") {
-                ForEach(TaskRankingMetric.allCases.filter { $0 != .estimatedTime }) { metric in
-                    LabeledContent(metric.title) {
-                        Text(metric.value(for: group)?.title ?? "No value")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .navigationTitle("Group Details")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
