@@ -1,11 +1,11 @@
 import Foundation
 import Testing
 #if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
+    @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
-@testable @preconcurrency import RoutinaMacOSDev
+    @testable @preconcurrency import RoutinaMacOSDev
 #else
-@testable @preconcurrency import Routina
+    @testable @preconcurrency import Routina
 #endif
 
 struct StatsEmptyDashboardMessageTests {
@@ -48,7 +48,7 @@ struct StatsEmptyDashboardMessageTests {
     @Test
     func platformStatsViewsPassEffectiveSleepAvailability() throws {
         let iosSource = try Self.sourceFile("iOS/Screens/Stats/StatsView.swift")
-        let macSource = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
+        let macSource = try SourceInspectionSupport.readMacStatsSources()
         let effectiveGate = "isSleepEnabled: isAwayEnabled && isStatsSleepTabEnabled"
 
         #expect(iosSource.contains(effectiveGate))

@@ -585,7 +585,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacStatsViewDoesNotBindSwiftDataQueriesIntoRenderPath() throws {
-        let source = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
+        let source = try SourceInspectionSupport.readMacStatsSources()
         let appFeatureSource = try [
             Self.sourceFile("RoutinaMacApp/Features/App/AppFeature.swift"),
             Self.sourceFile("RoutinaMacApp/Features/App/StatsFeature.swift"),
@@ -615,7 +615,7 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testMacStatsDashboardToolbarControlsAreBetaGated() throws {
-        let statsSource = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
+        let statsSource = try SourceInspectionSupport.readMacStatsSources()
         let settingsSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Settings/SettingsMacAboutDetailView.swift"
         )

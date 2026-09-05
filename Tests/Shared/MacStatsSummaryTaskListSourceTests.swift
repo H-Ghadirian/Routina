@@ -4,7 +4,7 @@ import Testing
 struct MacStatsSummaryTaskListSourceTests {
     @Test
     func taskBackedStatsRectanglesOpenLazyAnchoredPopoversFromTheirFullSurface() throws {
-        let statsView = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
+        let statsView = try SourceInspectionSupport.readMacStatsSources()
         let popover = try Self.sourceFile("RoutinaMacApp/Screens/StatsSummaryTaskListPopover.swift")
 
         #expect(statsView.contains("StatsSummaryTaskListKind("))
@@ -22,10 +22,11 @@ struct MacStatsSummaryTaskListSourceTests {
 
     @Test
     func taskListEvidenceIsBuiltOnlyByTheDeliberateCardAction() throws {
-        let statsView = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
-        let builderCalls = statsView.components(
-            separatedBy: "StatsSummaryTaskListPresentationBuilder.build("
-        ).count - 1
+        let statsView = try SourceInspectionSupport.readMacStatsSources()
+        let builderCalls =
+            statsView.components(
+                separatedBy: "StatsSummaryTaskListPresentationBuilder.build("
+            ).count - 1
 
         #expect(builderCalls == 1)
         #expect(statsView.contains("private func showSummaryTaskList("))

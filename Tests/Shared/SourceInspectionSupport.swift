@@ -80,6 +80,20 @@ enum SourceInspectionSupport {
         .joined(separator: "\n")
     }
 
+    static func readMacStatsSources(
+        callerFile: StaticString = #filePath
+    ) throws -> String {
+        try [
+            "RoutinaMacApp/Screens/StatsView.swift",
+            "RoutinaMacApp/Screens/StatsView+Dashboard.swift",
+            "RoutinaMacApp/Screens/StatsView+Summary.swift",
+            "RoutinaMacApp/Screens/StatsView+MetricSections.swift",
+            "RoutinaMacApp/Screens/StatsView+Customization.swift",
+        ]
+        .map { try readProjectFile($0, callerFile: callerFile) }
+        .joined(separator: "\n")
+    }
+
     static func readGoalsFeatureSources(
         callerFile: StaticString = #filePath
     ) throws -> String {
