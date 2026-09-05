@@ -271,9 +271,13 @@ struct TaskDetailSharedViewSupportTests {
         let iosDetail = try Self.sourceFile(
             "iOS/Screens/TaskDetail/TaskDetailTCAView.swift"
         )
-        let iosControls = try Self.sourceFile(
-            "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
-        )
+        let iosControls =
+            try Self.sourceFile(
+                "iOS/Screens/TaskDetail/TaskDetailActionControls.swift"
+            )
+            + Self.sourceFile(
+                "iOS/Screens/TaskDetail/TaskDetailTaskLadderValueControls.swift"
+            )
 
         for detail in [macDetail, iosDetail] {
             #expect(detail.contains("|| store.hasActiveRelationshipBlocker"))
@@ -642,7 +646,9 @@ struct TaskDetailSharedViewSupportTests {
     @Test
     func taskDetailsKeepTaskLadderValuesTogetherAndLockConfiguredTimeRules() throws {
         let iosDetail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
-        let iosControls = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
+        let iosControls =
+            try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
+            + Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTaskLadderValueControls.swift")
         let macDetail = try SourceInspectionSupport.readMacTaskDetailSources()
         let macControls = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailActionControls.swift")
         let valuesBox = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailTaskLadderValuesBox.swift")
@@ -682,7 +688,9 @@ struct TaskDetailSharedViewSupportTests {
     @Test
     func iosTaskDetailsGroupThinkingBelowTheOtherPriorityMetadata() throws {
         let detail = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTCAView.swift")
-        let actionControls = try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
+        let actionControls =
+            try Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailActionControls.swift")
+            + Self.sourceFile("iOS/Screens/TaskDetail/TaskDetailTaskLadderValueControls.swift")
         let todoHeader = try Self.sourceSection(
             startingAt: "private var todoHeaderSection",
             endingAt: "private var todoStateTimingSummary",
