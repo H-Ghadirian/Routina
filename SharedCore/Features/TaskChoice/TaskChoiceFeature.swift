@@ -2,133 +2,6 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 
-enum TaskChoiceAvailableTime: String, CaseIterable, Equatable, Sendable {
-    case fifteenMinutes
-    case thirtyMinutes
-    case oneHour
-    case flexible
-
-    var title: String {
-        switch self {
-        case .fifteenMinutes:
-            return "15 min"
-        case .thirtyMinutes:
-            return "30 min"
-        case .oneHour:
-            return "1 hour"
-        case .flexible:
-            return "Flexible"
-        }
-    }
-
-    var maximumEstimatedMinutes: Int? {
-        switch self {
-        case .fifteenMinutes:
-            return 15
-        case .thirtyMinutes:
-            return 30
-        case .oneHour:
-            return 60
-        case .flexible:
-            return nil
-        }
-    }
-}
-
-enum TaskChoiceEnergy: String, CaseIterable, Equatable, Sendable {
-    case low
-    case medium
-    case high
-
-    var title: String { rawValue.capitalized }
-}
-
-enum TaskChoiceIntent: String, CaseIterable, Equatable, Sendable {
-    case reducePressure
-    case meetUrgency
-    case makeProgress
-
-    var title: String {
-        switch self {
-        case .reducePressure:
-            return "Reduce pressure"
-        case .meetUrgency:
-            return "Meet urgency"
-        case .makeProgress:
-            return "Make progress"
-        }
-    }
-}
-
-struct TaskChoiceCondition: Equatable, Sendable {
-    var availableTime: TaskChoiceAvailableTime = .thirtyMinutes
-    var energy: TaskChoiceEnergy = .medium
-    var intent: TaskChoiceIntent = .makeProgress
-
-    var summary: String {
-        "\(availableTime.title) • \(energy.title) energy • \(intent.title.lowercased())"
-    }
-}
-
-struct TaskChoiceCandidate: Identifiable, Equatable {
-    let id: UUID
-    let title: String
-    let importance: RoutineTaskImportance
-    let urgency: RoutineTaskUrgency
-    let pressure: RoutineTaskPressure
-    let thinkingNeeded: RoutineTaskThinkingNeeded
-    let estimatedDurationMinutes: Int?
-    let tags: [String]
-    let learnedTieBreakScore: Double
-    let comparisonCount: Int16
-
-    init(task: RoutineTask) {
-        id = task.id
-        title = RoutineTask.trimmedName(task.name) ?? "Untitled task"
-        importance = task.importance
-        urgency = task.urgency
-        pressure = task.pressure
-        thinkingNeeded = task.thinkingNeeded
-        estimatedDurationMinutes = task.estimatedDurationMinutes
-        tags = task.tags
-        learnedTieBreakScore = task.taskChoiceTieBreakScore
-        comparisonCount = task.taskChoiceComparisonCount
-    }
-}
-
-struct TaskChoiceMissingData: Equatable {
-    struct Item: Identifiable, Equatable {
-        let title: String
-        let count: Int
-
-        var id: String { title }
-    }
-
-    var importanceCount = 0
-    var urgencyCount = 0
-    var pressureCount = 0
-    var thinkingNeededCount = 0
-    var estimatedDurationCount = 0
-
-    var isEmpty: Bool {
-        importanceCount == 0
-            && urgencyCount == 0
-            && pressureCount == 0
-            && thinkingNeededCount == 0
-            && estimatedDurationCount == 0
-    }
-
-    var items: [Item] {
-        [
-            Item(title: "Importance", count: importanceCount),
-            Item(title: "Urgency", count: urgencyCount),
-            Item(title: "Pressure", count: pressureCount),
-            Item(title: "Thinking needed", count: thinkingNeededCount),
-            Item(title: "Time estimate", count: estimatedDurationCount)
-        ].filter { $0.count > .zero }
-    }
-}
-
 enum TaskChoiceCandidateRanking {
     static let tieBreakIncrement = 0.1
 
@@ -139,7 +12,7 @@ enum TaskChoiceCandidateRanking {
         logs: [RoutineLog] = []
     ) -> Bool {
         guard task.canceledAt == nil,
-              !task.isArchived(referenceDate: referenceDate, calendar: calendar)
+            !task.isArchived(referenceDate: referenceDate, calendar: calendar)
         else {
             return false
         }
@@ -153,24 +26,27 @@ enum TaskChoiceCandidateRanking {
             referenceDate: referenceDate,
             calendar: calendar
         )
-        guard !RoutineAssumedCompletion.isAssumedDone(
-            for: task,
-            on: currentOccurrenceDay,
-            referenceDate: referenceDate,
-            logs: logs,
-            calendar: calendar
-        ) else {
-            return false
-        }
-        let completedCurrentOccurrence = task.lastDone.flatMap {
-            RoutineDateMath.completionDisplayDay(
+        guard
+            !RoutineAssumedCompletion.isAssumedDone(
                 for: task,
-                completionDate: $0,
+                on: currentOccurrenceDay,
+                referenceDate: referenceDate,
+                logs: logs,
                 calendar: calendar
             )
-        }.map {
-            calendar.isDate($0, inSameDayAs: currentOccurrenceDay)
-        } ?? false
+        else {
+            return false
+        }
+        let completedCurrentOccurrence =
+            task.lastDone.flatMap {
+                RoutineDateMath.completionDisplayDay(
+                    for: task,
+                    completionDate: $0,
+                    calendar: calendar
+                )
+            }.map {
+                calendar.isDate($0, inSameDayAs: currentOccurrenceDay)
+            } ?? false
 
         return !RoutineDateMath.isCompletedForCurrentPeriod(
             completedCurrentOccurrence,
@@ -302,7 +178,7 @@ enum TaskChoiceCandidateRanking {
         for availableTime: TaskChoiceAvailableTime
     ) -> Int {
         guard let maximumEstimatedMinutes = availableTime.maximumEstimatedMinutes,
-              let estimatedDurationMinutes
+            let estimatedDurationMinutes
         else {
             return 0
         }
@@ -321,18 +197,8 @@ enum TaskChoiceCandidateRanking {
 struct TaskChoiceFeature {
     @ObservableState
     struct State: Equatable {
-        enum Phase: Equatable {
-            case setup
-            case loading
-            case needsData
-            case comparing
-            case recommendation
-            case empty
-            case failure
-        }
-
         var condition = TaskChoiceCondition()
-        var phase: Phase = .setup
+        var phase: TaskChoicePhase = .setup
         /// The view retains only the visible pair or recommendation; the reducer fetches and ranks tasks off the render path.
         var firstCandidate: TaskChoiceCandidate?
         var secondCandidate: TaskChoiceCandidate?
@@ -368,12 +234,7 @@ struct TaskChoiceFeature {
         case comparisonSaveFailed
         case taskDetailsTapped(UUID)
         case startAgainTapped
-        case delegate(Delegate)
-
-        @CasePathable
-        enum Delegate: Equatable {
-            case taskDetailsRequested(UUID)
-        }
+        case delegate(TaskChoiceDelegateAction)
     }
 
     @Dependency(\.modelContext) private var modelContext
@@ -437,10 +298,10 @@ struct TaskChoiceFeature {
 
             case let .preferredTaskSelected(taskID):
                 guard state.phase == .comparing,
-                      !state.isSavingSelection,
-                      let firstCandidate = state.firstCandidate,
-                      let secondCandidate = state.secondCandidate,
-                      taskID == firstCandidate.id || taskID == secondCandidate.id
+                    !state.isSavingSelection,
+                    let firstCandidate = state.firstCandidate,
+                    let secondCandidate = state.secondCandidate,
+                    taskID == firstCandidate.id || taskID == secondCandidate.id
                 else {
                     return .none
                 }
@@ -562,7 +423,7 @@ struct TaskChoiceFeature {
             do {
                 let context = modelContext()
                 guard let winnerTask = try context.fetch(TaskDetailFetchDescriptors.task(for: winner.id)).first,
-                      let loserTask = try context.fetch(TaskDetailFetchDescriptors.task(for: loser.id)).first
+                    let loserTask = try context.fetch(TaskDetailFetchDescriptors.task(for: loser.id)).first
                 else {
                     send(.comparisonSaveFailed)
                     return

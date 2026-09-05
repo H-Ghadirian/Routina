@@ -236,6 +236,7 @@ let package = Package(
                 "Features/MissingData/MissingPressureDataFeature.swift",
                 "Features/MissingData/MissingPressureDataTaskPresentation.swift",
                 "Features/TaskChoice/TaskChoiceFeature.swift",
+                "Features/TaskChoice/TaskChoiceModels.swift",
                 "Features/Home/AppFeatureTemporaryViewStateSupport.swift",
                 "Features/Home/HomeBoardMutationSupport.swift",
                 "Features/Home/HomeFeatureAddRoutineActionHandler.swift",
