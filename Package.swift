@@ -411,6 +411,7 @@ let package = Package(
                 "Features/TaskDetail/TaskDetailNotificationActionHandler.swift",
                 "Features/TaskDetail/TaskDetailNotificationWarningPresentation.swift",
                 "Features/TaskDetail/TaskDetailRecurrenceEditActionHandler.swift",
+                "Features/TaskDetail/TaskDetailRecurrenceEditProjection.swift",
                 "Features/TaskDetail/TaskDetailRoutineLifecycleActionHandler.swift",
                 "Features/TaskDetail/TaskDetailStatusActionHandler.swift",
                 "Features/TaskDetail/TaskDetailStepChecklistEditActionHandler.swift",

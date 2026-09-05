@@ -20,7 +20,8 @@ struct TaskDetailRecurrenceEditActionHandler {
 
     func editDeadlineDateChanged(_ deadline: Date, state: inout State) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
-            state.editDeadline = state.editIsAllDay
+            state.editDeadline =
+                state.editIsAllDay
                 ? calendar.startOfDay(for: deadline)
                 : deadline
         }
@@ -84,17 +85,19 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editPlannedDate = nil
             return .none
         }
-        state.editPlannedDate = RoutineTask.exactAvailabilityPlannedDate(
-            scheduleMode: state.editScheduleMode,
-            availabilityStartDate: state.editAvailabilityStartDate,
-            availabilityEndDate: state.editAvailabilityEndDate,
-            calendar: calendar
-        ) ?? RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+        state.editPlannedDate =
+            RoutineTask.exactAvailabilityPlannedDate(
+                scheduleMode: state.editScheduleMode,
+                availabilityStartDate: state.editAvailabilityStartDate,
+                availabilityEndDate: state.editAvailabilityEndDate,
+                calendar: calendar
+            ) ?? RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
         return .none
     }
 
     func editReminderEnabledChanged(_ isEnabled: Bool, state: inout State) -> Effect<Action> {
-        state.editReminderAt = isEnabled
+        state.editReminderAt =
+            isEnabled
             ? (state.editReminderAt ?? editReminderEventDate(for: state) ?? now())
             : nil
         return .none
@@ -110,7 +113,8 @@ struct TaskDetailRecurrenceEditActionHandler {
         state: inout State
     ) -> Effect<Action> {
         guard let leadMinutes,
-              let eventDate = editReminderEventDate(for: state) else {
+            let eventDate = editReminderEventDate(for: state)
+        else {
             return .none
         }
         state.editReminderAt = TaskFormReminderLeadTime.reminderDate(
@@ -339,7 +343,10 @@ struct TaskDetailRecurrenceEditActionHandler {
         state.editRecurrenceDraft = recurrenceDraft
         state.editRecurrenceDraftIsAuthoritative = true
         state.editAutoPauseAfterCompletion = recurrenceDraft.cadence == .manual
-        applyCadence(recurrenceDraft.cadence, state: &state)
+        TaskDetailRecurrenceEditProjection.applyCadence(
+            recurrenceDraft.cadence,
+            state: &state
+        )
 
         guard let recurrenceRule = recurrenceDraft.resolvedRecurrenceRule(calendar: calendar) else {
             disableAutoAssumeIfNeeded(state: &state)
@@ -347,9 +354,10 @@ struct TaskDetailRecurrenceEditActionHandler {
             return .none
         }
 
-        applyLegacyProjection(
+        TaskDetailRecurrenceEditProjection.applyLegacyProjection(
             recurrenceDraft,
             recurrenceRule: recurrenceRule,
+            calendar: calendar,
             state: &state
         )
         enforceRecurrenceConstraints(state: &state)
@@ -394,7 +402,8 @@ struct TaskDetailRecurrenceEditActionHandler {
         mutate(&state)
 
         guard let leadMinutes,
-              let eventDate = editReminderEventDate(for: state) else {
+            let eventDate = editReminderEventDate(for: state)
+        else {
             return
         }
 
@@ -421,8 +430,8 @@ struct TaskDetailRecurrenceEditActionHandler {
             return
         }
         guard state.editScheduleMode == .oneOff,
-              let availabilityStartDate = state.editAvailabilityStartDate,
-              state.editAvailabilityEndDate == nil
+            let availabilityStartDate = state.editAvailabilityStartDate,
+            state.editAvailabilityEndDate == nil
         else { return }
         state.editPlannedDate = calendar.startOfDay(for: availabilityStartDate)
     }
@@ -464,106 +473,10 @@ struct TaskDetailRecurrenceEditActionHandler {
         state.synchronizeRecurrenceDraftFromLegacy()
     }
 
-    private func applyCadence(
-        _ cadence: RoutineRecurrenceDraft.Cadence,
-        state: inout State
-    ) {
-        guard state.editScheduleMode.taskType != .todo else { return }
-
-        switch cadence {
-        case .none:
-            state.editCadenceEnabled = false
-            state.editAutoPauseAfterCompletion = false
-            state.editNudgesEnabled = false
-            state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
-
-        case .manual:
-            state.editCadenceEnabled = false
-            state.editAutoPauseAfterCompletion = true
-            state.editNudgesEnabled = false
-            state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
-
-        case .itemRunout:
-            state.editCadenceEnabled = true
-            state.editAutoPauseAfterCompletion = false
-            state.editScheduleMode = state.editScheduleMode.replacingChecklistTimingMode(.runout)
-
-        case .afterCompletion, .scheduled:
-            state.editCadenceEnabled = true
-            state.editAutoPauseAfterCompletion = false
-            state.editScheduleMode = nonRunoutScheduleMode(from: state.editScheduleMode)
-        }
-    }
-
-    private func applyLegacyProjection(
-        _ recurrenceDraft: RoutineRecurrenceDraft,
-        recurrenceRule: RoutineRecurrenceRule,
-        state: inout State
-    ) {
-        if let advanced = recurrenceRule.advanced {
-            state.editRecurrenceEditorMode = .advanced
-            state.editAdvancedRecurrenceRule = advanced
-        } else {
-            state.editRecurrenceEditorMode = .simple
-            state.editRecurrenceKind = recurrenceRule.kind
-        }
-
-        if recurrenceDraft.cadence == .afterCompletion {
-            switch recurrenceDraft.frequency {
-            case .daily:
-                state.editFrequency = .day
-            case .weekly:
-                state.editFrequency = .week
-            case .monthly:
-                state.editFrequency = .month
-            case .hourly, .yearly:
-                break
-            }
-            state.editFrequencyValue = max(recurrenceDraft.interval, 1)
-        }
-
-        state.editRecurrenceHasExplicitTime = recurrenceDraft.availability.timeOfDay != nil
-        state.editRecurrenceHasTimeRange = recurrenceDraft.availability.timeRange != nil
-        state.editRecurrenceTimeRangeRole = recurrenceDraft.availability.timeRange == nil
-            ? .availability
-            : recurrenceDraft.timeRangeRole
-        if let timeOfDay = recurrenceDraft.availability.timeOfDay {
-            state.editIsAllDay = false
-            state.editRecurrenceTimeOfDay = timeOfDay
-        }
-        if let timeRange = recurrenceDraft.availability.timeRange {
-            state.editIsAllDay = false
-            state.editRecurrenceTimeRangeStart = timeRange.start
-            state.editRecurrenceTimeRangeEnd = timeRange.end
-        }
-
-        if recurrenceRule.kind == .weekly {
-            state.editRecurrenceWeekdays = recurrenceRule.resolvedWeekdays(calendar: calendar)
-            if let firstWeekday = state.editRecurrenceWeekdays.first {
-                state.editRecurrenceWeekday = firstWeekday
-            }
-        }
-        if recurrenceRule.kind == .monthlyDay {
-            state.editRecurrenceDaysOfMonth = recurrenceRule.resolvedDaysOfMonth(calendar: calendar)
-            if let firstDay = state.editRecurrenceDaysOfMonth.first {
-                state.editRecurrenceDayOfMonth = firstDay
-            }
-        }
-    }
-
-    private func nonRunoutScheduleMode(
-        from scheduleMode: RoutineScheduleMode
-    ) -> RoutineScheduleMode {
-        guard scheduleMode.isChecklistDrivenMode else { return scheduleMode }
-        return RoutineScheduleMode.routineMode(
-            behavior: scheduleMode.scheduleBehavior,
-            format: .checklist
-        )
-    }
-
     private func enforceRecurrenceConstraints(state: inout State) {
         if state.editRoutineDurationMode == .multiDay,
-           state.editRecurrenceKind == .dailyTime {
+            state.editRecurrenceKind == .dailyTime
+        {
             state.editRecurrenceKind = .intervalDays
         }
         state.editFrequencyValue = TaskFormRecurrenceConstraints.clampedFrequencyValue(
