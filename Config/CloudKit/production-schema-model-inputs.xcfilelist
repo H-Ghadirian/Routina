@@ -6,6 +6,7 @@ $(SRCROOT)/SharedCore/Models/EmotionLog.swift
 $(SRCROOT)/SharedCore/Models/FocusSession.swift
 $(SRCROOT)/SharedCore/Models/PlaceCheckInSession.swift
 $(SRCROOT)/SharedCore/Models/RoutinaUserPreferences.swift
+$(SRCROOT)/SharedCore/Models/RoutineAdvancedRecurrencePresentation.swift
 $(SRCROOT)/SharedCore/Models/RoutineAdvancedRecurrenceRule.swift
 $(SRCROOT)/SharedCore/Models/RoutineAttachment.swift
 $(SRCROOT)/SharedCore/Models/RoutineEvent.swift
