@@ -913,9 +913,13 @@ extension TaskRankingPresentationTests {
             + Self.sourceFile(
                 "SharedCore/Features/Home/TaskRankingFeaturePresentationSupport.swift"
             )
-        let sharedEditorSource = try Self.sourceFile(
-            "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
-        )
+        let sharedEditorSource =
+            try Self.sourceFile(
+                "SharedCore/Screens/Shared/TaskTemporalWeightRuleEditor.swift"
+            )
+            + Self.sourceFile(
+                "SharedCore/Screens/Shared/TaskTemporalWeightSupportingViews.swift"
+            )
 
         #expect(controlsSource.contains("options: TaskRankingValueMode.allCases"))
         #expect(rowSource.contains("Button(\"Changes over Time…\""))
