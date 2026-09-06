@@ -4,6 +4,7 @@ import SwiftUI
 
 struct StatsView: View {
     @Environment(\.calendar) private var calendar
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var logs: [RoutineLog]
 
     @State private var selectedRange: DoneChartRange = .week
@@ -49,6 +50,8 @@ struct StatsView: View {
                     chartSection
                 }
                 .padding()
+                .frame(maxWidth: statsContentMaxWidth, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .top)
             }
             .navigationTitle("Stats")
         }
@@ -57,8 +60,7 @@ struct StatsView: View {
     private var summaryCards: some View {
         LazyVGrid(
             columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
+                GridItem(.adaptive(minimum: 180, maximum: 240), spacing: 12)
             ],
             spacing: 12
         ) {
@@ -157,6 +159,10 @@ struct StatsView: View {
         case .year:
             return 3200
         }
+    }
+
+    private var statsContentMaxWidth: CGFloat? {
+        horizontalSizeClass == .regular ? 980 : nil
     }
 
     private var xAxisDates: [Date] {

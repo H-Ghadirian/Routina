@@ -126,7 +126,12 @@ struct HomeTCAView: View {
         if let selectedTaskID {
             routineDetailTCAView(taskID: selectedTaskID, routineTasks: store.routineTasks)
         } else {
-            Color.clear
+            ContentUnavailableView(
+                "Select a routine",
+                systemImage: "checklist.checked",
+                description: Text("Choose a routine from the sidebar to see its schedule, logs, and actions.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
